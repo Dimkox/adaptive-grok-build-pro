@@ -1,13 +1,9 @@
-# Grok Build hooks (optional)
+# Grok Build hooks
 
-Project hooks live here and require `/hooks-trust` in the Grok TUI.
+Project hooks require `/hooks-trust` in the Grok TUI.
 
-The original Adaptive Codex Pro used Codex-specific lifecycle events
-(UserPromptSubmit, PreToolUse, …). Those JSON payloads differ in Grok Build.
+- `.grok/hooks.json` — Codex-compat contract used by doctor/structure tests (`command` + `commandWindows`).
+- `.grok/hooks/adaptive.json` — Grok discovery path (`<project>/.grok/hooks/*.json`).
+- `.grok/hooks/*.py` — lifecycle adapters over `adaptive_grok` routing, policy, and receipts.
 
-Recommended next step: add thin shell/python wrappers that call:
-
-- `python scripts/grok_route.py` on session/prompt start
-- `python scripts/grok_verify.py` before declaring done
-
-See https://docs.x.ai/build/features/skills-plugins-marketplaces
+They accept both Codex snake_case and Grok camelCase stdin envelopes.

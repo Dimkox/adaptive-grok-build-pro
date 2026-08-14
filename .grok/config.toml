@@ -1,8 +1,12 @@
 # Adaptive Grok Build Pro — project config
 # Docs: https://docs.x.ai/build/overview
+# sandbox_mode / features.hooks are also the Codex-compat doctor contract.
+
+sandbox_mode = "workspace-write"
 
 [models]
 default = "grok-4.6"
 
 [features]
-# hooks require /hooks-trust in TUI for project hooks
+hooks = true
+# Project hooks require /hooks-trust in the Grok TUI.

@@ -1,0 +1,61 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer"
+  ],
+  "base_commit": "ca63b2d8ae3ce39765e8c7e043a1bd739ed0c9f8",
+  "base_fingerprint": "29b081657effd10e4a203e7bd87d4780562c9384b76d5259a69a5f34f297f197",
+  "complexity": "micro",
+  "created_at": "2026-08-14T19:32:06+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "generic"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base"
+  ],
+  "rationale": [
+    "bounded change without high-risk signals",
+    "intent=bugfix",
+    "domains=generic",
+    "repository=generic",
+    "write-owner=general_implementer"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "low",
+  "route_id": "bf62a5f2e873",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "load repo and fix all errors",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow"
+  ],
+  "write_agent": "general_implementer"
+}

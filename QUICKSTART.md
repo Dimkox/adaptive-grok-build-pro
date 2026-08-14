@@ -8,7 +8,7 @@
 
 3. Install this stack into your repo:
    ```bash
-   python scripts/install_into.py /path/to/repo
+   python3 scripts/install_into.py /path/to/repo
    ```
 
 4. Work:
@@ -22,5 +22,7 @@
 
 6. Verify before finish:
    ```bash
-   python scripts/grok_verify.py --mode pr
+   python3 scripts/grok_verify.py --mode pr
+
+7. Trust project hooks in the TUI: `/hooks-trust`
    ```

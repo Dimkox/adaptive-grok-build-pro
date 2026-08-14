@@ -1,0 +1,53 @@
+{
+  "change_id": "20260814-fix-incomplete-grok-port-hooks-agents-skills-pat-bf62a5",
+  "created_at": "2026-08-14T19:34:03+00:00",
+  "history": [
+    {
+      "at": "2026-08-14T19:34:03+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-14T19:37:32+00:00",
+      "from": "draft",
+      "reason": "scope and acceptance criteria written from doctor/unittest reproduction",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-14T19:37:32+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; low-risk scaffold completion",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-14T19:37:32+00:00",
+      "from": "approved",
+      "reason": "general_implementer starting hook/agent/installer repair",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-14T19:46:09+00:00",
+      "from": "implementing",
+      "reason": "implementation complete; running base profile",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-14T19:46:09+00:00",
+      "from": "verifying",
+      "reason": "verification passed",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-14T19:46:09+00:00",
+      "from": "reviewing",
+      "reason": "independent reviews recorded",
+      "to": "ready"
+    }
+  ],
+  "route_id": "bf62a5f2e873",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Fix incomplete Grok port: hooks, agents, skills paths, installer",
+  "updated_at": "2026-08-14T19:46:09+00:00"
+}

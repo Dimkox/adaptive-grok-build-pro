@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.repo import detect_repo
 
-MANAGED_DIRS = ('.codex', '.agents', '.grok-stack')
+MANAGED_DIRS = ('.grok', '.agents', '.grok-stack')
 MANAGED_FILES = (
     'scripts/grok_route.py',
     'scripts/grok_change.py',
@@ -30,6 +30,8 @@ def iter_source_files(source: Path) -> list[tuple[str, Path]]:
     files: list[tuple[str, Path]] = []
     for dirname in MANAGED_DIRS:
         base = source / dirname
+        if not base.is_dir():
+            continue
         for path in base.rglob('*'):
             if not path.is_file():
                 continue

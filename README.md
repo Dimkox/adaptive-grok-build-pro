@@ -21,14 +21,14 @@ Enterprise-style adaptive workflow for Grok Build:
 
 ```bash
 # from this package root
-python scripts/install_into.py /path/to/your/repo
+python3 scripts/install_into.py /path/to/your/repo
 ```
 
 Or copy manually:
 
 ```text
-.grok/skills/     → project .grok/skills/
-.grok/config.toml → project .grok/config.toml
+.grok/            → project .grok/          (config, hooks, agents, skills)
+.agents/skills/   → project .agents/skills/
 .grok-stack/      → project .grok-stack/
 scripts/          → project scripts/
 AGENTS.md         → project AGENTS.md
@@ -63,12 +63,22 @@ or just describe a development task — Grok should pick up skills from `.grok/s
 | `scripts/grok_doctor.py` | Health check |
 | `scripts/install_into.py` | Install stack into target repo |
 
-## Hooks note
+## Hooks
 
-Original Codex hooks (`UserPromptSubmit`, `PreToolUse`, …) are **not** 1:1 portable.
-Grok Build uses its own hook model under `.grok/hooks/` (needs `/hooks-trust`).
+Lifecycle adapters live in `.grok/hooks/` and are registered in both:
 
-This port keeps the **Python policy/routing engine** and **skills**. Automatic route injection on every prompt is manual until you wire Grok hooks to `scripts/grok_route.py` / stack entrypoints.
+- `.grok/hooks.json` — doctor/structure contract (`command` + `commandWindows`)
+- `.grok/hooks/adaptive.json` — Grok project-hook discovery
+
+Trust the folder once (`/hooks-trust` or `grok --trust`). Hooks classify prompts, enforce policy (secrets, Bitrix core, destructive/production commands), and block Stop until required receipts exist.
+
+## Package
+
+```bash
+python3 scripts/package_stack.py --output dist/adaptive-grok-build-pro-v2.0.0.zip
+```
+
+The zip filename is `adaptive-grok-build-pro-v2.0.0.zip`. Members stay under `adaptive-codex-pro/` for compatibility with the existing manifest tests.
 
 ## Bitrix
 
