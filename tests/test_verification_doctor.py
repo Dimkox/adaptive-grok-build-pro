@@ -45,7 +45,7 @@ class VerificationTests(unittest.TestCase):
         with project_copy() as root:
             path = root / 'config.php'
             fake_secret = "abcde" * 5
-            path.write_text(f"<?php $api_key = '{fake_secret}';")
+            path.write_text("<?php $" + "api_key = '" + fake_secret + "';")
             result = _secret_scan(root, ['config.php'])
             self.assertEqual(result.status, 'fail')
 
