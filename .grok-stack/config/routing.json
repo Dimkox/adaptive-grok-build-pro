@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "description": "Human-readable routing configuration. Runtime defaults live in adaptive_grok.router and can be overridden here in future versions.",
+  "principles": [
+    "parallelize read-heavy analysis and review",
+    "use exactly one write owner",
+    "add Bitrix specialist whenever repository or task has Bitrix signals",
+    "add security review for auth, PII, AI, production, and external writes",
+    "bind evidence to the current repository fingerprint"
+  ],
+  "write_roles": [
+    "ai_implementer",
+    "bitrix_implementer",
+    "data_implementer",
+    "frontend_implementer",
+    "general_implementer",
+    "integration_implementer",
+    "php_implementer"
+  ]
+}

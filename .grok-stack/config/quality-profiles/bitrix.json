@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "name": "bitrix",
+  "required_checks": [
+    "php-lint",
+    "bitrix-policy"
+  ],
+  "optional_checks": [
+    "phpunit",
+    "phpstan",
+    "phpcs"
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "protected_paths": [
+    ".git/**",
+    ".env",
+    "**/.env.*",
+    "**/.env",
+    ".env.*",
+    "**/*.pem",
+    "**/*.key",
+    "**/*.p12",
+    "**/*.pfx",
+    "bitrix/**"
+  ],
+  "secret_read_paths": [
+    ".env",
+    ".env.*",
+    "**/.env.*",
+    "**/.env",
+    "**/*.pem",
+    "**/*.key",
+    "**/*.p12",
+    "**/*.pfx",
+    "**/id_rsa",
+    "**/id_ed25519",
+    "**/credentials*",
+    "**/secrets/**"
+  ],
+  "notes": [
+    "Bitrix core is protected by default. Put custom code in local/.",
+    "Use scripts/grok_approve.py for short-lived exceptional approvals.",
+    "Hooks are guardrails, not a complete OS security boundary."
+  ]
+}

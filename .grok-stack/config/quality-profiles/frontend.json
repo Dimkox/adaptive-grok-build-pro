@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "name": "frontend",
+  "required_checks": [],
+  "optional_checks": [
+    "npm-lint",
+    "npm-typecheck",
+    "npm-test",
+    "npm-build"
+  ]
+}

@@ -1,0 +1,21 @@
+asyncapi: 3.0.0
+info:
+  title: Example events
+  version: 1.0.0
+channels:
+  orderChanged:
+    address: orders.changed.v1
+    messages:
+      OrderChanged:
+        $ref: '#/components/messages/OrderChanged'
+operations:
+  consumeOrderChanged:
+    action: receive
+    channel:
+      $ref: '#/channels/orderChanged'
+components:
+  messages:
+    OrderChanged:
+      name: OrderChanged
+      payload:
+        $ref: './schemas/order-changed.v1.json'

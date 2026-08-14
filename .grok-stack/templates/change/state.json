@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "change_id": "{{CHANGE_ID}}",
+  "title": "{{TITLE}}",
+  "status": "draft",
+  "created_at": "{{CREATED_AT}}",
+  "history": []
+}

@@ -1,0 +1,42 @@
+# Adaptive Grok runtime state
+.grok-stack/runtime/*
+!.grok-stack/runtime/.gitkeep
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Dependencies and build output
+vendor/
+node_modules/
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.phpunit.cache/
+coverage/
+dist/
+build/
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Bitrix runtime/generated files
+upload/
+bitrix/cache/
+bitrix/managed_cache/
+bitrix/stack_cache/
+bitrix/html_pages/
+bitrix/backup/
+bitrix/tmp/
+
+# Docker local data
+.docker-data/

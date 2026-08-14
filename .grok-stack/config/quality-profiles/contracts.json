@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "name": "contracts",
+  "required_checks": [
+    "contract-structure"
+  ],
+  "optional_checks": []
+}

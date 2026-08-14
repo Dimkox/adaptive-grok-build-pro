@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "name": "data",
+  "required_checks": [
+    "sql-safety"
+  ],
+  "optional_checks": []
+}

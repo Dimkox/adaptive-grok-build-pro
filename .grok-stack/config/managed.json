@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "agents": [
+    "ai_architect",
+    "ai_implementer",
+    "architect",
+    "bitrix_architect",
+    "bitrix_implementer",
+    "bitrix_reviewer",
+    "code_reviewer",
+    "data_architect",
+    "data_implementer",
+    "data_reviewer",
+    "docs_researcher",
+    "frontend_implementer",
+    "general_implementer",
+    "integration_architect",
+    "integration_implementer",
+    "php_implementer",
+    "release_reviewer",
+    "repo_explorer",
+    "security_reviewer",
+    "task_analyst",
+    "test_reviewer"
+  ],
+  "skills": [
+    "adaptive-delivery",
+    "ai-rag-change",
+    "api-event-change",
+    "bitrix-development",
+    "bugfix-workflow",
+    "data-change",
+    "enterprise-integration",
+    "feature-workflow",
+    "frontend-change",
+    "incident-response",
+    "legacy-modernization",
+    "release-readiness",
+    "security-sensitive-change",
+    "task-triage",
+    "verification-evidence"
+  ],
+  "hook_types": [
+    "PostToolUse",
+    "PreCompact",
+    "PreToolUse",
+    "SessionEnd",
+    "SessionStart",
+    "Stop",
+    "SubagentStart",
+    "SubagentStop",
+    "UserPromptSubmit"
+  ],
+  "scripts": [
+    "grok_approve.py",
+    "grok_change.py",
+    "grok_doctor.py",
+    "grok_review.py",
+    "grok_route.py",
+    "grok_status.py",
+    "grok_verify.py"
+  ]
+}

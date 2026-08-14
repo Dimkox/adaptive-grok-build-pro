@@ -1,0 +1,24 @@
+{
+  "name": "acme/bitrix-adaptive-example",
+  "description": "Isolated-test reference for a custom Bitrix D7 module",
+  "type": "project",
+  "require": {
+    "php": ">=8.1"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^11.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Acme\\Adaptive\\": "local/modules/acme.adaptive/lib/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Acme\\Adaptive\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit"
+  }
+}

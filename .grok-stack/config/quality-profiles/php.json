@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "name": "php",
+  "required_checks": [
+    "php-lint"
+  ],
+  "optional_checks": [
+    "composer-validate",
+    "phpunit",
+    "phpstan",
+    "phpcs",
+    "deptrac"
+  ]
+}

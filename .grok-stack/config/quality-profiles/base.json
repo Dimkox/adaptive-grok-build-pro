@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "name": "base",
+  "required_checks": [
+    "git-diff-check",
+    "secret-scan"
+  ],
+  "optional_checks": [
+    "contract-structure",
+    "sql-safety"
+  ]
+}

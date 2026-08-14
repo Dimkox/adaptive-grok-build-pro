@@ -1,0 +1,8 @@
+# Adaptive Grok Build Pro — project config
+# Docs: https://docs.x.ai/build/overview
+
+[models]
+default = "grok-4.6"
+
+[features]
+# hooks require /hooks-trust in TUI for project hooks

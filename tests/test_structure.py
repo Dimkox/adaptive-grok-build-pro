@@ -1,0 +1,71 @@
+from __future__ import annotations
+
+import json
+import tomllib
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class StructureTests(unittest.TestCase):
+    def test_required_files_exist(self) -> None:
+        for rel in (
+            'AGENTS.md', 'README.md', '.grok/config.toml', '.grok/hooks.json',
+            '.agents/skills/adaptive-delivery/SKILL.md', 'scripts/grok_route.py',
+        ):
+            self.assertTrue((ROOT / rel).is_file(), rel)
+
+    def test_grok_config_is_valid_toml(self) -> None:
+        data = tomllib.loads((ROOT / '.grok/config.toml').read_text(encoding='utf-8'))
+        self.assertEqual(data['sandbox_mode'], 'workspace-write')
+        self.assertTrue(data['features']['hooks'])
+
+    def test_hooks_are_valid_and_cover_lifecycle(self) -> None:
+        data = json.loads((ROOT / '.grok/hooks.json').read_text(encoding='utf-8'))
+        expected = {
+            'SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse',
+            'PreCompact', 'SubagentStart', 'SubagentStop', 'Stop', 'SessionEnd',
+        }
+        self.assertTrue(expected.issubset(data['hooks']))
+        for entries in data['hooks'].values():
+            for entry in entries:
+                for hook in entry.get('hooks', []):
+                    self.assertIn('commandWindows', hook)
+
+    def test_agents_have_required_contract(self) -> None:
+        agents = list((ROOT / '.grok/agents').glob('*.toml'))
+        self.assertGreaterEqual(len(agents), 20)
+        names = set()
+        for path in agents:
+            data = tomllib.loads(path.read_text(encoding='utf-8'))
+            self.assertTrue(data.get('name'), path)
+            self.assertTrue(data.get('description'), path)
+            self.assertTrue(data.get('developer_instructions'), path)
+            self.assertIn(data.get('sandbox_mode'), {'read-only', 'workspace-write'})
+            self.assertNotIn(data['name'], names)
+            names.add(data['name'])
+        self.assertIn('bitrix_implementer', names)
+        self.assertIn('bitrix_reviewer', names)
+
+    def test_skills_have_frontmatter(self) -> None:
+        skills = list((ROOT / '.agents/skills').glob('*/SKILL.md'))
+        self.assertGreaterEqual(len(skills), 15)
+        for path in skills:
+            text = path.read_text(encoding='utf-8')
+            self.assertTrue(text.startswith('---\n'), path)
+            self.assertIn('\nname:', text[:500])
+            self.assertIn('\ndescription:', text[:1200])
+
+    def test_quality_profiles_are_valid(self) -> None:
+        profiles = list((ROOT / '.grok-stack/config/quality-profiles').glob('*.json'))
+        self.assertGreaterEqual(len(profiles), 9)
+        for path in profiles:
+            data = json.loads(path.read_text(encoding='utf-8'))
+            self.assertEqual(data['schema_version'], 1)
+            self.assertEqual(data['name'], path.stem)
+            self.assertIsInstance(data['required_checks'], list)
+
+
+if __name__ == '__main__':
+    unittest.main()

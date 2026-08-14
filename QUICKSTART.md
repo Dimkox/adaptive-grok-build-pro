@@ -1,0 +1,26 @@
+# Quickstart — Adaptive Grok Build Pro
+
+1. Install Grok Build:
+   - Windows: `irm https://x.ai/cli/install.ps1 | iex`
+   - macOS/Linux: `curl -fsSL https://x.ai/cli/install.sh | bash`
+
+2. Auth: run `grok` once, sign in with SuperGrok account.
+
+3. Install this stack into your repo:
+   ```bash
+   python scripts/install_into.py /path/to/repo
+   ```
+
+4. Work:
+   ```bash
+   cd /path/to/repo
+   grok
+   ```
+   Prompt example: `Добавь обработчик события OnAfterUserAdd в local-модуль`
+
+5. Optional explicit skill: `/adaptive-delivery`
+
+6. Verify before finish:
+   ```bash
+   python scripts/grok_verify.py --mode pr
+   ```
