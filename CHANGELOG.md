@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.4 — 2026-08-15
+
+Soft / fail-open hooks so the agent cannot lock itself out.
+
+- `pre_tool_use.py`: on any exception or import failure → **allow** (was hard deny via exit 2)
+- `stop_gate.py`: missing/stale evidence → **warn only**, never block stop; missing route → allow
+- Policy still blocks truly destructive/secret paths when it runs successfully
+- Docs: how to disable hooks entirely if needed
+
 ## 2.0.3 — 2026-08-14
 
 - Rename remaining Codex branding to Grok (`ADAPTIVE GROK ROUTE`, zip prefix, installer markers)

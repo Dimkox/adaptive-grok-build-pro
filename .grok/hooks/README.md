@@ -1,9 +1,25 @@
-# Grok Build hooks
+# Grok Build hooks (Adaptive)
 
-Project hooks require `/hooks-trust` in the Grok TUI.
+Project hooks need `/hooks-trust` in the Grok TUI.
 
-- `.grok/hooks.json` — doctor/structure contract (`command` + `commandWindows`).
-- `.grok/hooks/adaptive.json` — Grok discovery path (`<project>/.grok/hooks/*.json`).
-- `.grok/hooks/*.py` — lifecycle adapters over `adaptive_grok` routing, policy, and receipts.
+## Soft mode (default since v2.0.4)
 
-They accept both snake_case and camelCase stdin envelopes.
+- **PreToolUse**: real policy when import works; on any error → **allow**
+- **Stop**: evidence gaps are **warnings only**, never block the agent
+
+Hard lockouts (exit 2 / infinite stop loops) are intentional bugs — fixed in 2.0.4.
+
+## Disable all hooks
+
+```bash
+mv .grok/hooks .grok/hooks.disabled
+# or set in config:
+# [features]
+# hooks = false
+```
+
+Then restart `grok`.
+
+## Policy still enforced when healthy
+
+Secrets (`.env`, keys), destructive shell (`rm -rf /`, `git push --force`), and Bitrix core paths remain blocked by `policy.py` when the stack imports cleanly.
