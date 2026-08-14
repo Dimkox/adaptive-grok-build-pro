@@ -74,6 +74,21 @@ class PackageTests(unittest.TestCase):
                 mode = archive.getinfo('adaptive-codex-pro/scripts/run.sh').external_attr >> 16
                 self.assertTrue(mode & 0o100)
 
+    def test_archive_excludes_dotenv_and_keys(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            root.mkdir()
+            (root / 'keep.txt').write_text('keep', encoding='utf-8')
+            (root / '.env').write_text('GIT_FINE_GRAIN_TOKEN=should-not-pack', encoding='utf-8')
+            (root / '.env.local').write_text('SECRET=x', encoding='utf-8')
+            (root / 'dev.pem').write_text('nope', encoding='utf-8')
+            archive_path = Path(tmp) / 'project.zip'
+            PACKAGE.write_archive(root, archive_path)
+            with zipfile.ZipFile(archive_path) as archive:
+                names = set(archive.namelist())
+            self.assertIn('adaptive-codex-pro/keep.txt', names)
+            self.assertFalse(any(name.endswith('.env') or name.endswith('.env.local') or name.endswith('.pem') for name in names))
+
     def test_project_archive_excludes_generated_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'project'

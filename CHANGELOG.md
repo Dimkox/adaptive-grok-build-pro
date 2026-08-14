@@ -10,3 +10,4 @@ First working Adaptive Grok Build Pro release.
 - Grok/Codex-compatible lifecycle hooks (route, policy, stop gate, evidence invalidation)
 - Installer copies `.grok`, `.agents`, and `.grok-stack` without deleting unrelated agent files
 - Local verification: `make doctor` / `make verify` / `python3 -m unittest discover -s tests`
+- Packaging excludes `.env`, `.env.*`, and private-key files from the zip/manifest

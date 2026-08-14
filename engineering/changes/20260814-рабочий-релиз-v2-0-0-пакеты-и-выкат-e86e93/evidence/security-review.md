@@ -12,7 +12,7 @@ Reviewer: `security_reviewer` (parent session; child agents cannot run shell on 
 - No `github_pat_` / `GIT_FINE_GRAIN_TOKEN` matches in tracked/source files.
 - `evaluate_pre_tool` still blocks secret reads, Bitrix core writes, destructive git, unapproved `git push` / MCP writes.
 - Hooks do not echo credentials. Installer copies managed dirs only.
-- Package excludes `.zip`, runtime state, and `MANIFEST.sha256` from the hashed file list while embedding a freshly generated manifest.
+- First package build included `.env`. That zip was deleted unreleased. `included_files` now drops `.env`, `.env.*`, and key material; `test_archive_excludes_dotenv_and_keys` covers it.
 
 ## Residual risk
 
