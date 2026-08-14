@@ -1,4 +1,4 @@
-# Adaptive Grok Build Pro v2.0.1
+# Adaptive Grok Build Pro v2.0.2
 
 Port of Adaptive Codex Pro to **Grok Build** (xAI CLI coding agent).
 
@@ -78,7 +78,8 @@ Trust the folder once (`/hooks-trust` or `grok --trust`). Hooks classify prompts
 python3 scripts/package_stack.py
 ```
 
-Default output is `dist/adaptive-grok-build-pro-v<VERSION>.zip`. Members stay under `adaptive-codex-pro/` for compatibility with the existing manifest tests.
+Default output is `dist/adaptive-grok-build-pro-v<VERSION>.zip` (gitignored scratch).
+Published copies live in `packages/` and on the GitHub Release. Members stay under `adaptive-codex-pro/` for the existing manifest tests.
 
 ## Bitrix
 

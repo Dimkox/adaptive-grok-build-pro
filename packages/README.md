@@ -1,0 +1,18 @@
+# Release packages
+
+Tracked copies of published artifacts. Scratch rebuilds go to `dist/` (gitignored).
+
+| File | Version |
+| --- | --- |
+| `adaptive-grok-build-pro-v2.0.0.zip` | 2.0.0 |
+| `adaptive-grok-build-pro-v2.0.1.zip` | 2.0.1 |
+| `adaptive-grok-build-pro-v2.0.2.zip` | 2.0.2 |
+
+Each zip has a sibling `.sha256`. Rebuild:
+
+```bash
+python3 scripts/package_stack.py
+cp dist/adaptive-grok-build-pro-v$(tr -d '[:space:]' < VERSION).zip* packages/
+```
+
+`.env` and private keys are never packaged.

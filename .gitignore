@@ -11,6 +11,7 @@
 *.p12
 *.pfx
 
+# Scratch builds. Versioned release zips live in packages/ and are tracked.
 # Dependencies and build output
 vendor/
 node_modules/

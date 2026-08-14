@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.2 — 2026-08-14
+
+Full git + release artifacts.
+
+- Versioned zips and checksums are tracked under `packages/`
+- GitHub Release `v2.0.2` ships zip, sha256, and source tar.gz
+
 ## 2.0.1 — 2026-08-14
 
 Patch after 2.0.0 for a clean human-owned tag.
