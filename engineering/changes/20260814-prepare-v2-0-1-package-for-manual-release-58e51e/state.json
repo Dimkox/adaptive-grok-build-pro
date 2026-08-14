@@ -1,0 +1,29 @@
+{
+  "change_id": "20260814-prepare-v2-0-1-package-for-manual-release-58e51e",
+  "created_at": "2026-08-14T21:14:32+00:00",
+  "history": [
+    {
+      "at": "2026-08-14T21:14:32+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-14T21:15:06+00:00",
+      "from": "draft",
+      "reason": "v2.0.1 is the next patch; human publishes",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-14T21:15:06+00:00",
+      "from": "scoped",
+      "reason": "user asked to continue numbering and prepare only",
+      "to": "approved"
+    }
+  ],
+  "route_id": "58e51ee88411",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Prepare v2.0.1 package for manual release",
+  "updated_at": "2026-08-14T21:15:06+00:00"
+}

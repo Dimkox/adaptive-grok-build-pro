@@ -33,12 +33,18 @@ def write_archive(root: Path, output: Path) -> str:
     return digest
 
 
+def _default_output(root: Path) -> str:
+    version = (root / 'VERSION').read_text(encoding='utf-8').strip() or '0.0.0'
+    return f'dist/adaptive-grok-build-pro-v{version}.zip'
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument('--output', default='../adaptive-codex-pro-v2.0.0.zip')
+    parser.add_argument('--output', default=None)
     args = parser.parse_args()
     root = find_root(ROOT)
-    output = (root / args.output).resolve()
+    output = Path(args.output) if args.output else root / _default_output(root)
+    output = output.resolve()
     digest = write_archive(root, output)
     print(output)
     print(digest)

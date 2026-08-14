@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.1 — 2026-08-14
+
+Patch after 2.0.0 for a clean human-owned tag.
+
+- Version source of truth is `VERSION`; packager default output follows it
+- Ready-to-publish zip: `dist/adaptive-grok-build-pro-v2.0.1.zip`
+
 ## 2.0.0 — 2026-08-14
 
 First working Adaptive Grok Build Pro release.

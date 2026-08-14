@@ -49,6 +49,12 @@ class ManifestTests(unittest.TestCase):
 
 
 class PackageTests(unittest.TestCase):
+    def test_default_output_follows_version_file(self) -> None:
+        self.assertEqual(
+            PACKAGE._default_output(ROOT),
+            f"dist/adaptive-grok-build-pro-v{(ROOT / 'VERSION').read_text(encoding='utf-8').strip()}.zip",
+        )
+
     def test_archive_is_deterministic_and_self_verifying(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'project'
