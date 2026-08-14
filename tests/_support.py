@@ -14,7 +14,7 @@ PROJECT = Path(__file__).resolve().parents[1]
 
 @contextlib.contextmanager
 def project_copy(*, git: bool = False) -> Iterator[Path]:
-    with tempfile.TemporaryDirectory(prefix='adaptive-codex-test-') as tmp:
+    with tempfile.TemporaryDirectory(prefix='adaptive-grok-test-') as tmp:
         root = Path(tmp) / 'project'
         root.mkdir()
         for rel in ('.grok', '.agents', '.grok-stack'):

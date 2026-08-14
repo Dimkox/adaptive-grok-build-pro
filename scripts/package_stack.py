@@ -23,7 +23,7 @@ def write_archive(root: Path, output: Path) -> str:
     with zipfile.ZipFile(output, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in sorted(files, key=lambda item: item.relative_to(root).as_posix()):
             rel = path.relative_to(root).as_posix()
-            info = zipfile.ZipInfo(f'adaptive-codex-pro/{rel}', FIXED_ZIP_TIME)
+            info = zipfile.ZipInfo(f'adaptive-grok-build-pro/{rel}', FIXED_ZIP_TIME)
             mode = path.stat().st_mode
             info.external_attr = (mode & 0xFFFF) << 16
             info.compress_type = zipfile.ZIP_DEFLATED

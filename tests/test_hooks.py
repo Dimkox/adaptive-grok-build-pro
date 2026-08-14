@@ -25,7 +25,7 @@ class HookTests(unittest.TestCase):
             route = get_active_route(root)
             self.assertIsNotNone(route)
             self.assertEqual(route['write_agent'], 'bitrix_implementer')
-            self.assertIn('ADAPTIVE CODEX ROUTE', data['hookSpecificOutput']['additionalContext'])
+            self.assertIn('ADAPTIVE GROK ROUTE', data['hookSpecificOutput']['additionalContext'])
 
     def test_followup_reuses_active_route(self) -> None:
         with project_copy(git=True) as root:
@@ -33,7 +33,7 @@ class HookTests(unittest.TestCase):
             _, data, _ = run_hook(root, 'user_prompt_submit.py', {
                 'cwd': str(root), 'prompt': 'делай', 'session_id': 'session-1'
             })
-            self.assertIn('ADAPTIVE CODEX ROUTE', data['hookSpecificOutput']['additionalContext'])
+            self.assertIn('ADAPTIVE GROK ROUTE', data['hookSpecificOutput']['additionalContext'])
 
     def test_pre_tool_hook_denies_destructive_command(self) -> None:
         with project_copy() as root:

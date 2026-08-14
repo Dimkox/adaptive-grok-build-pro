@@ -22,8 +22,8 @@ MANAGED_FILES = (
     'scripts/grok_status.py',
 )
 SKIP_PREFIXES = ('.grok-stack/runtime/',)
-MANAGED_START = '<!-- ADAPTIVE-CODEX-PRO:START -->'
-MANAGED_END = '<!-- ADAPTIVE-CODEX-PRO:END -->'
+MANAGED_START = '<!-- ADAPTIVE-GROK-PRO:START -->'
+MANAGED_END = '<!-- ADAPTIVE-GROK-PRO:END -->'
 
 
 def iter_source_files(source: Path) -> list[tuple[str, Path]]:
@@ -97,7 +97,7 @@ def install(source: Path, target: Path, *, force: bool, dry_run: bool, with_ci: 
 
     if with_ci:
         ci_src = source / '.grok-stack/templates/ci/github-actions.yml'
-        ci_dst = target / '.github/workflows/adaptive-codex.yml'
+        ci_dst = target / '.github/workflows/adaptive-grok.yml'
         if ci_dst.exists() and different(ci_src, ci_dst) and not force:
             raise SystemExit(f'{ci_dst} already exists with different content; use --force only after review.')
         print(f'{"OVERWRITE" if ci_dst.exists() else "COPY"} {ci_dst.relative_to(target)}')

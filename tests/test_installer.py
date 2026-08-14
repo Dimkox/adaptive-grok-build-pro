@@ -29,7 +29,7 @@ class InstallerTests(unittest.TestCase):
             install_silent(ROOT, target, force=False, dry_run=False)
             self.assertTrue(unrelated.is_file())
             self.assertTrue((target / '.grok/agents/bitrix_implementer.toml').is_file())
-            self.assertIn('ADAPTIVE-CODEX-PRO:START', (target / 'AGENTS.md').read_text())
+            self.assertIn('ADAPTIVE-GROK-PRO:START', (target / 'AGENTS.md').read_text())
 
     def test_conflicting_managed_file_stops_without_force(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -69,7 +69,7 @@ class InstallerTests(unittest.TestCase):
             unrelated.write_text('name: existing\n', encoding='utf-8')
             install_silent(ROOT, target, force=False, dry_run=False, with_ci=True)
             self.assertEqual(unrelated.read_text(encoding='utf-8'), 'name: existing\n')
-            self.assertTrue((workflows / 'adaptive-codex.yml').is_file())
+            self.assertTrue((workflows / 'adaptive-grok.yml').is_file())
 
     def test_managed_agents_block_is_idempotent(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -77,7 +77,7 @@ class InstallerTests(unittest.TestCase):
             install_silent(ROOT, target, force=False, dry_run=False)
             install_silent(ROOT, target, force=False, dry_run=False)
             text = (target / 'AGENTS.md').read_text()
-            self.assertEqual(text.count('ADAPTIVE-CODEX-PRO:START'), 1)
+            self.assertEqual(text.count('ADAPTIVE-GROK-PRO:START'), 1)
 
 
 if __name__ == '__main__':

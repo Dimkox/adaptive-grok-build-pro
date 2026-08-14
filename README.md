@@ -1,15 +1,52 @@
-# Adaptive Grok Build Pro v2.0.2
+# Adaptive Grok Build Pro v2.0.3
 
-Port of Adaptive Codex Pro to **Grok Build** (xAI CLI coding agent).
+Enterprise-style adaptive workflow for **Grok Build** (xAI CLI coding agent).
 
 ## What this is
-
-Enterprise-style adaptive workflow for Grok Build:
 
 - Task routing + domain skills (Bitrix, API/events, data, frontend, security, incidents, …)
 - Quality profiles and change packages under `engineering/changes/`
 - Verification / review receipts via `scripts/grok_*.py`
 - Multi-agent discipline described in `AGENTS.md`
+
+## Stack graph
+
+Simple complete graph: every core piece is linked to every other.
+
+```mermaid
+graph TD
+  Route --- Skills
+  Route --- Agents
+  Route --- Hooks
+  Route --- Policy
+  Route --- Verify
+  Route --- Packages
+  Skills --- Agents
+  Skills --- Hooks
+  Skills --- Policy
+  Skills --- Verify
+  Skills --- Packages
+  Agents --- Hooks
+  Agents --- Policy
+  Agents --- Verify
+  Agents --- Packages
+  Hooks --- Policy
+  Hooks --- Verify
+  Hooks --- Packages
+  Policy --- Verify
+  Policy --- Packages
+  Verify --- Packages
+```
+
+| Node | Role |
+| --- | --- |
+| Route | `scripts/grok_route.py` / active-route |
+| Skills | `.grok/skills/` and `.agents/skills/` |
+| Agents | `.grok/agents/` |
+| Hooks | `.grok/hooks/` |
+| Policy | `.grok-stack/adaptive_grok/policy.py` |
+| Verify | `scripts/grok_verify.py` + receipts |
+| Packages | `packages/` + `scripts/package_stack.py` |
 
 ## Requirements
 
@@ -79,7 +116,7 @@ python3 scripts/package_stack.py
 ```
 
 Default output is `dist/adaptive-grok-build-pro-v<VERSION>.zip` (gitignored scratch).
-Published copies live in `packages/` and on the GitHub Release. Members stay under `adaptive-codex-pro/` for the existing manifest tests.
+Published copies live in `packages/` and on the GitHub Release. Zip members use the prefix `adaptive-grok-build-pro/`.
 
 ## Bitrix
 
@@ -87,9 +124,4 @@ See skills under `.grok/skills/bitrix-development/` and example module in `examp
 
 ## License
 
-Same as upstream package (see `LICENSE`).
-
-## License & CI
-
-**MIT.** No GitHub Actions, no paid hosted CI required.
-Local: `make doctor` / `make verify`.
+**MIT.** Local checks: `make doctor` / `make verify`.

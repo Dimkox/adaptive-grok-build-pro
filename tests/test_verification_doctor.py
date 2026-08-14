@@ -69,7 +69,7 @@ class DoctorTests(unittest.TestCase):
     def test_unmanaged_agent_does_not_break_harness_doctor(self) -> None:
         with project_copy() as root:
             custom = root / '.grok/agents/custom-user-agent.toml'
-            custom.write_text('this is not adaptive codex managed config', encoding='utf-8')
+            custom.write_text('this is not adaptive grok managed config', encoding='utf-8')
             items = run_doctor(root)
             failures = [item for item in items if item.status == 'fail']
             self.assertEqual(failures, [], [(item.name, item.message) for item in failures])

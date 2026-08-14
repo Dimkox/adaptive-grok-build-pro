@@ -340,7 +340,7 @@ def route_context(route: Route | dict[str, object]) -> str:
     skills = ', '.join(f'${name}' for name in data.get('workflow_skills', []))
     gates = ', '.join(data.get('human_gates', [])) or 'none'
     return (
-        'ADAPTIVE CODEX ROUTE\n'
+        'ADAPTIVE GROK ROUTE\n'
         f"Route ID: {data.get('route_id')}\n"
         f"Intent: {data.get('intent')} | Risk: {data.get('risk')} | Complexity: {data.get('complexity')}\n"
         f"Domains: {', '.join(data.get('domains', []))} (task focus: {', '.join(data.get('task_domains', [])) or 'repository default'})\n"

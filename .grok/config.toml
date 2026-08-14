@@ -1,6 +1,6 @@
 # Adaptive Grok Build Pro — project config
 # Docs: https://docs.x.ai/build/overview
-# sandbox_mode / features.hooks are also the Codex-compat doctor contract.
+# sandbox_mode / features.hooks are also the doctor contract.
 
 sandbox_mode = "workspace-write"
 

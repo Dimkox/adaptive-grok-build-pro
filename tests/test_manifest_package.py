@@ -75,9 +75,9 @@ class PackageTests(unittest.TestCase):
             with zipfile.ZipFile(first) as archive:
                 self.assertIsNone(archive.testzip())
                 names = set(archive.namelist())
-                self.assertIn('adaptive-codex-pro/MANIFEST.sha256', names)
-                self.assertIn('adaptive-codex-pro/scripts/run.sh', names)
-                mode = archive.getinfo('adaptive-codex-pro/scripts/run.sh').external_attr >> 16
+                self.assertIn('adaptive-grok-build-pro/MANIFEST.sha256', names)
+                self.assertIn('adaptive-grok-build-pro/scripts/run.sh', names)
+                mode = archive.getinfo('adaptive-grok-build-pro/scripts/run.sh').external_attr >> 16
                 self.assertTrue(mode & 0o100)
 
     def test_archive_excludes_dotenv_and_keys(self) -> None:
@@ -92,7 +92,7 @@ class PackageTests(unittest.TestCase):
             PACKAGE.write_archive(root, archive_path)
             with zipfile.ZipFile(archive_path) as archive:
                 names = set(archive.namelist())
-            self.assertIn('adaptive-codex-pro/keep.txt', names)
+            self.assertIn('adaptive-grok-build-pro/keep.txt', names)
             self.assertFalse(any(name.endswith('.env') or name.endswith('.env.local') or name.endswith('.pem') for name in names))
 
     def test_project_archive_excludes_generated_artifacts(self) -> None:
@@ -107,8 +107,8 @@ class PackageTests(unittest.TestCase):
             PACKAGE.write_archive(root, archive_path)
             with zipfile.ZipFile(archive_path) as archive:
                 names = set(archive.namelist())
-            self.assertIn('adaptive-codex-pro/keep.txt', names)
-            self.assertNotIn('adaptive-codex-pro/ignored.zip', names)
+            self.assertIn('adaptive-grok-build-pro/keep.txt', names)
+            self.assertNotIn('adaptive-grok-build-pro/ignored.zip', names)
             self.assertFalse(any('__pycache__' in name for name in names))
 
 
