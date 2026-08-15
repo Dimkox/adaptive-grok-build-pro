@@ -13,8 +13,22 @@ class StructureTests(unittest.TestCase):
         for rel in (
             'AGENTS.md', 'README.md', '.grok/config.toml', '.grok/hooks.json',
             '.agents/skills/adaptive-delivery/SKILL.md', 'scripts/grok_route.py',
+            'LICENSE',
         ):
             self.assertTrue((ROOT / rel).is_file(), rel)
+
+    def test_readme_is_free_mit_commercial_product(self) -> None:
+        text = (ROOT / 'README.md').read_text(encoding='utf-8')
+        license_text = (ROOT / 'LICENSE').read_text(encoding='utf-8')
+        self.assertIn('MIT', text)
+        self.assertIn('MIT License', license_text)
+        lowered = text.lower()
+        self.assertIn('commercial', lowered)
+        self.assertIn('free', lowered)
+        self.assertIn('public', lowered)
+        self.assertNotIn('enterprise-style', lowered)
+        self.assertIn('no eula', lowered)
+        self.assertIn('no paid tier', lowered)
 
     def test_grok_config_is_valid_toml(self) -> None:
         data = tomllib.loads((ROOT / '.grok/config.toml').read_text(encoding='utf-8'))
@@ -32,6 +46,25 @@ class StructureTests(unittest.TestCase):
             for entry in entries:
                 for hook in entry.get('hooks', []):
                     self.assertIn('commandWindows', hook)
+
+    def test_adaptive_hooks_are_path_qualified(self) -> None:
+        data = json.loads((ROOT / '.grok/hooks/adaptive.json').read_text(encoding='utf-8'))
+        for entries in data['hooks'].values():
+            for entry in entries:
+                for hook in entry.get('hooks', []):
+                    command = hook.get('command', '')
+                    self.assertTrue(
+                        command.startswith('python3 .grok/hooks/'),
+                        command,
+                    )
+
+    def test_workspace_root_does_not_host_hook_scripts(self) -> None:
+        for name in (
+            '_lib.py', 'user_prompt_submit.py', 'pre_tool_use.py', 'post_tool_use.py',
+            'pre_compact.py', 'session_start.py', 'session_end.py', 'stop_gate.py',
+            'subagent_start.py', 'subagent_stop.py',
+        ):
+            self.assertFalse((ROOT / name).exists(), name)
 
     def test_agents_have_required_contract(self) -> None:
         agents = list((ROOT / '.grok/agents').glob('*.toml'))

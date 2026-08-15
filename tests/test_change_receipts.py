@@ -11,7 +11,16 @@ from adaptive_grok.change import start_change, transition
 from adaptive_grok.receipts import invalidate_receipts, validate_evidence, write_receipt
 from adaptive_grok.router import build_route
 from adaptive_grok.state import get_active_change, get_active_route, set_active_route
+from adaptive_grok.verification import verify
 from tests._support import project_copy
+
+_PASSING_UNITTEST = (
+    'import unittest\n'
+    '\n'
+    'class OkTests(unittest.TestCase):\n'
+    '    def test_ok(self) -> None:\n'
+    '        self.assertTrue(True)\n'
+)
 
 
 class ChangeTests(unittest.TestCase):
@@ -85,6 +94,33 @@ class ReceiptTests(unittest.TestCase):
             path = write_receipt(root, 'code_review', 'pass')
             invalidate_receipts(root, route['route_id'], 'changed')
             self.assertIn('"stale": true', path.read_text(encoding='utf-8'))
+
+
+class ContourTests(unittest.TestCase):
+    def test_contour_route_change_verify_review_has_no_evidence_gaps(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            route['required_evidence'] = ['verification', 'code_review', 'test_review']
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            start_change(root)
+            active = get_active_change(root)
+            self.assertIsNotNone(active)
+            change = root / str(active['path'])
+            tests_dir = root / 'tests'
+            tests_dir.mkdir()
+            (tests_dir / 'test_ok.py').write_text(_PASSING_UNITTEST, encoding='utf-8')
+            evidence = change / 'evidence'
+            evidence.mkdir(parents=True, exist_ok=True)
+            (evidence / 'code-review.md').write_text('# dummy code review\n', encoding='utf-8')
+            (evidence / 'test-review.md').write_text('# dummy test review\n', encoding='utf-8')
+            report = verify(root, mode='fast', record=True)
+            checks = {item['name']: item for item in report['checks']}
+            self.assertIn('python-unittest', checks)
+            self.assertEqual(checks['python-unittest']['status'], 'pass')
+            write_receipt(root, 'code_review', 'pass')
+            write_receipt(root, 'test_review', 'pass')
+            self.assertEqual(validate_evidence(root, get_active_route(root) or route), [])
 
 
 if __name__ == '__main__':

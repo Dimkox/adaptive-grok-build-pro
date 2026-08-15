@@ -20,6 +20,7 @@ MANAGED_FILES = (
     'scripts/grok_approve.py',
     'scripts/grok_doctor.py',
     'scripts/grok_status.py',
+    'scripts/grok_deploy.py',
 )
 SKIP_PREFIXES = ('.grok-stack/runtime/',)
 MANAGED_START = '<!-- ADAPTIVE-GROK-PRO:START -->'

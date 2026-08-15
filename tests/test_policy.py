@@ -37,6 +37,127 @@ class PolicyTests(unittest.TestCase):
             allowed, _ = evaluate_pre_tool(root, {'tool_name': 'Bash', 'tool_input': {'command': 'git push origin feature'}})
             self.assertTrue(allowed)
 
+    def test_path_text_is_not_a_side_effect(self) -> None:
+        with project_copy() as root:
+            allowed, reason = evaluate_pre_tool(root, {
+                'tool_name': 'Bash',
+                'tool_input': {
+                    'command': 'ls engineering/changes/20260814-publish-v2-0-3-github-release-6d15cb/release.md',
+                },
+            })
+            self.assertTrue(allowed, reason)
+
+    def test_echo_and_cat_arguments_are_not_side_effects(self) -> None:
+        with project_copy() as root:
+            for command in (
+                'echo production deploy release publish',
+                'cat engineering/changes/demo/release.md',
+            ):
+                allowed, reason = evaluate_pre_tool(root, {
+                    'tool_name': 'Bash',
+                    'tool_input': {'command': command},
+                })
+                self.assertTrue(allowed, (command, reason))
+
+    def test_approve_script_is_not_blocked_by_scope_argument(self) -> None:
+        with project_copy() as root:
+            allowed, reason = evaluate_pre_tool(root, {
+                'tool_name': 'Bash',
+                'tool_input': {'command': 'python3 scripts/grok_approve.py production --reason "ship"'},
+            })
+            self.assertTrue(allowed, reason)
+
+    def test_real_side_effect_invocations_still_require_approval(self) -> None:
+        commands = (
+            'git push origin feature',
+            'gh pr merge 12',
+            'docker push img:tag',
+            'npm publish',
+            'gh release create v2.0.4',
+        )
+        with project_copy() as root:
+            for command in commands:
+                allowed, reason = evaluate_pre_tool(root, {
+                    'tool_name': 'Bash',
+                    'tool_input': {'command': command},
+                })
+                self.assertFalse(allowed, command)
+                self.assertIn('approval', reason or '', command)
+
+    def test_chained_push_still_requires_approval(self) -> None:
+        with project_copy() as root:
+            allowed, reason = evaluate_pre_tool(root, {
+                'tool_name': 'Bash',
+                'tool_input': {'command': 'cd dist && git push origin feature'},
+            })
+            self.assertFalse(allowed)
+            self.assertIn('approval', reason or '')
+
+    def test_approval_lifts_real_side_effect_invocations(self) -> None:
+        commands = (
+            'git push origin feature',
+            'gh pr merge 12',
+            'docker push img:tag',
+            'npm publish',
+            'gh release create v2.0.4',
+        )
+        with project_copy() as root:
+            add_approval(root, 'production', 'test', 5)
+            for command in commands:
+                allowed, reason = evaluate_pre_tool(root, {
+                    'tool_name': 'Bash',
+                    'tool_input': {'command': command},
+                })
+                self.assertTrue(allowed, (command, reason))
+
+    def test_wrapped_shell_push_requires_approval(self) -> None:
+        commands = (
+            "bash -lc 'git push origin feature'",
+            'bash -c "git push origin feature"',
+            "sh -c 'npm publish'",
+        )
+        with project_copy() as root:
+            for command in commands:
+                allowed, reason = evaluate_pre_tool(root, {
+                    'tool_name': 'Bash',
+                    'tool_input': {'command': command},
+                })
+                self.assertFalse(allowed, command)
+                self.assertIn('approval', reason or '', command)
+
+    def test_wrapped_shell_chained_push_requires_approval(self) -> None:
+        with project_copy() as root:
+            allowed, reason = evaluate_pre_tool(root, {
+                'tool_name': 'Bash',
+                'tool_input': {'command': "bash -lc 'cd dist && git push origin feature'"},
+            })
+            self.assertFalse(allowed)
+            self.assertIn('approval', reason or '')
+
+    def test_wrapped_shell_echo_is_not_a_side_effect(self) -> None:
+        with project_copy() as root:
+            allowed, reason = evaluate_pre_tool(root, {
+                'tool_name': 'Bash',
+                'tool_input': {'command': "bash -lc 'echo git push origin feature'"},
+            })
+            self.assertTrue(allowed, reason)
+
+    def test_approval_lifts_wrapped_shell_push(self) -> None:
+        commands = (
+            "bash -lc 'git push origin feature'",
+            'bash -c "git push origin feature"',
+            "sh -c 'npm publish'",
+            "bash -lc 'cd dist && git push origin feature'",
+        )
+        with project_copy() as root:
+            add_approval(root, 'production', 'test', 5)
+            for command in commands:
+                allowed, reason = evaluate_pre_tool(root, {
+                    'tool_name': 'Bash',
+                    'tool_input': {'command': command},
+                })
+                self.assertTrue(allowed, (command, reason))
+
     def test_blocks_secret_read(self) -> None:
         with project_copy() as root:
             (root / 'config').mkdir()

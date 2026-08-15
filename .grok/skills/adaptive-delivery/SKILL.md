@@ -98,4 +98,4 @@ Use `bitrix_review`, `security_review`, `data_review`, and `release_review` when
 
 Run `python scripts/grok_status.py`. Completion requires zero evidence gaps. For durable changes, transition to `ready` after verification and review.
 
-Do not deploy, publish, merge, or perform external writes as part of closure. Those are separate, explicitly approved actions.
+Do not deploy, publish, merge, or perform external writes as part of closure. Those are separate, explicitly approved actions. The last mile is `python3 scripts/grok_deploy.py`; humans own the printed commands.

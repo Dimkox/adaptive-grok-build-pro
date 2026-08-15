@@ -54,6 +54,7 @@
   "scripts": [
     "grok_approve.py",
     "grok_change.py",
+    "grok_deploy.py",
     "grok_doctor.py",
     "grok_review.py",
     "grok_route.py",

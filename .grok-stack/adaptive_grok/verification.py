@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -178,14 +179,26 @@ def _node(root: Path, mode: str) -> list[CheckResult]:
 
 
 def _python(root: Path) -> list[CheckResult]:
-    if not any((root / item).exists() for item in ('pyproject.toml', 'requirements.txt', 'setup.py')):
-        return []
+    has_project = any((root / item).exists() for item in ('pyproject.toml', 'requirements.txt', 'setup.py'))
+    tests_dir = root / 'tests'
+    has_unittest_files = tests_dir.is_dir() and any(tests_dir.glob('test*.py'))
     results: list[CheckResult] = []
-    if command_exists('ruff'):
-        results.append(_command_check(root, 'ruff', ['ruff', 'check', '.'], 300))
-    if command_exists('pytest') and (root / 'tests').is_dir():
-        results.append(_command_check(root, 'pytest', ['pytest', '-q'], 900))
-    return results
+    if has_project:
+        if command_exists('ruff'):
+            results.append(_command_check(root, 'ruff', ['ruff', 'check', '.'], 300))
+        if command_exists('pytest') and tests_dir.is_dir():
+            results.append(_command_check(root, 'pytest', ['pytest', '-q'], 900))
+            return results
+    if has_unittest_files:
+        results.append(
+            _command_check(
+                root,
+                'python-unittest',
+                [sys.executable, '-m', 'unittest', 'discover', '-s', 'tests'],
+                900,
+            )
+        )
+    return results or []
 
 
 def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, record: bool = True) -> dict[str, object]:

@@ -22,4 +22,4 @@ Then restart `grok`.
 
 ## Policy still enforced when healthy
 
-Secrets (`.env`, keys), destructive shell (`rm -rf /`, `git push --force`), and Bitrix core paths remain blocked by `policy.py` when the stack imports cleanly.
+Secrets (`.env`, keys), destructive shell (`rm -rf /`, `git push --force`), Bitrix core paths, and real side-effect invocations (`git push`, `gh pr merge`, `docker push`, `npm publish`, `gh release create`) remain blocked by `policy.py` when the stack imports cleanly. Bare words in file paths or `echo`/`cat` arguments are not side-effects.

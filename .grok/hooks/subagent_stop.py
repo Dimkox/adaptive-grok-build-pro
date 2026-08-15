@@ -9,12 +9,8 @@ def main() -> None:
     payload = read_payload()
     root = root_from(payload)
     record_agent_stop(root, agent_id(payload), agent_type(payload))
-    emit({
-        'hookSpecificOutput': {
-            'hookEventName': 'SubagentStop',
-            'additionalContext': f'Stopped agent {agent_id(payload)}',
-        }
-    })
+    # Empty payload: additionalContext retriggers Grok's SubagentStop (~8 retries).
+    emit({})
 
 
 if __name__ == '__main__':

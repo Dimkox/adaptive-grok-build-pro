@@ -34,10 +34,29 @@ DESTRUCTIVE_COMMANDS = [
     r'\brm\s+-rf\s+(?:/|~|\$HOME)\b',
     r'\bchmod\s+-R\s+777\b',
 ]
-PRODUCTION_COMMANDS = [
-    r'\bprod(?:uction)?\b', r'\bdeploy\b', r'\brelease\b', r'\bpublish\b',
-    r'\bgit\s+push\b', r'\bgh\s+pr\s+merge\b', r'\bdocker\s+push\b',
-]
+PRODUCTION_INVOCATIONS = (
+    ('git', 'push'),
+    ('gh', 'pr', 'merge'),
+    ('docker', 'push'),
+    ('npm', 'publish'),
+    ('gh', 'release', 'create'),
+)
+_COMMAND_SPLIT = re.compile(r'(?:&&|\|\||[;|\n])')
+_WRAPPERS = {'sudo', 'doas', 'command', 'time', 'nohup', 'nice'}
+_UNWRAP_SHELL = re.compile(
+    r'''
+    ^\s*
+    (?:(?:sudo|doas)\s+)?
+    (?:/(?:usr/)?bin/)?
+    (?:bash|sh|zsh|dash|ksh)
+    \s+
+    -\S*c\S*
+    \s+
+    (?P<rest>.+?)
+    \s*$
+    ''',
+    re.IGNORECASE | re.VERBOSE | re.DOTALL,
+)
 SIDE_EFFECT_TOOL = re.compile(
     r'(?:^|__)(?:create|update|delete|remove|send|write|publish|deploy|merge|close|execute|apply|archive|trash|move)(?:_|$)',
     re.IGNORECASE,
@@ -79,6 +98,41 @@ def _extract_patch_paths(command: str) -> list[str]:
     return result
 
 
+def _command_chunks(command: str) -> list[str]:
+    return [part for part in _COMMAND_SPLIT.split(command) if part.strip()]
+
+
+def _leading_argv(chunk: str) -> list[str]:
+    stripped = chunk.split('#', 1)[0].strip()
+    tokens = stripped.split()
+    while tokens and re.match(r'^[A-Za-z_][A-Za-z0-9_]*=', tokens[0]):
+        tokens = tokens[1:]
+    while tokens and tokens[0].lower() in _WRAPPERS:
+        tokens = tokens[1:]
+    return [token.lower() for token in tokens]
+
+
+def _unwrap_shell(chunk: str) -> str:
+    match = _UNWRAP_SHELL.match(chunk)
+    if not match:
+        return chunk
+    rest = match.group('rest')
+    if len(rest) >= 2 and rest[0] == rest[-1] and rest[0] in {'"', "'"}:
+        return rest[1:-1]
+    return rest
+
+
+def is_production_invocation(command: str) -> bool:
+    for chunk in _command_chunks(command):
+        inner = _unwrap_shell(chunk)
+        for piece in _command_chunks(inner):
+            argv = _leading_argv(piece)
+            for prefix in PRODUCTION_INVOCATIONS:
+                if argv[:len(prefix)] == list(prefix):
+                    return True
+    return False
+
+
 def _agent_type(tool_input: Any) -> str | None:
     if not isinstance(tool_input, dict):
         return None
@@ -102,7 +156,7 @@ def evaluate_pre_tool(root: Path, event: dict[str, Any]) -> tuple[bool, str | No
         for pattern in config.get('destructive_command_patterns', DESTRUCTIVE_COMMANDS):
             if re.search(pattern, command, flags=re.IGNORECASE):
                 return False, f'Blocked destructive command by repository policy: {pattern}'
-        if any(re.search(pattern, command, flags=re.IGNORECASE) for pattern in PRODUCTION_COMMANDS):
+        if is_production_invocation(command):
             if not has_valid_approval(root, 'production'):
                 return False, 'Production/publish side effect requires explicit approval: python scripts/grok_approve.py production --reason "..."'
 

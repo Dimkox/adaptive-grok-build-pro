@@ -1,0 +1,65 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect"
+  ],
+  "base_commit": "eaf0a0026734cded4310ffed2725c5ebe6a48669",
+  "base_fingerprint": "2ccfc371a5377765bfb2c278ddb8bfa11257ab17377d9aff746f34c8d9cafe2a",
+  "complexity": "standard",
+  "created_at": "2026-08-15T00:36:21+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "generic"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base"
+  ],
+  "rationale": [
+    "bounded change without high-risk signals",
+    "intent=feature",
+    "domains=generic",
+    "repository=generic",
+    "write-owner=general_implementer"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "low",
+  "route_id": "14464b550313",
+  "schema_version": 1,
+  "session_id": "01a002a7-a23b-7c02-9aee-0cc00c35e3d9",
+  "status": "routed",
+  "task": "<user_query>\nпроверь, насколько там два агента воши в бесконечный цикл правок и найди вариант их вытащить из них\n</user_query>",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow"
+  ],
+  "write_agent": "general_implementer"
+}

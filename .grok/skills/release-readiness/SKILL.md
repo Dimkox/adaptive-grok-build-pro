@@ -16,3 +16,5 @@ Bind the final tree/commit to current verification and review receipts. Check:
 - ownership, runbook, and go/no-go criteria.
 
 Do not deploy or merge. Produce a release decision report for the human owner.
+
+After go/no-go, run `python3 scripts/grok_deploy.py`. Use `--record` only with a valid production approval. Humans run the printed commands. Do not deploy from this skill.

@@ -4,10 +4,22 @@
 
 Soft / fail-open hooks so the agent cannot lock itself out.
 
+- `grok_verify` runs `python-unittest` when `tests/test*.py` exist, even without `pyproject.toml` / `requirements.txt` / `setup.py`
 - `pre_tool_use.py`: on any exception or import failure → **allow** (was hard deny via exit 2)
 - `stop_gate.py`: missing/stale evidence → **warn only**, never block stop; missing route → allow
 - Policy still blocks truly destructive/secret paths when it runs successfully
 - Docs: how to disable hooks entirely if needed
+- Production policy matches command invocations (`git push`, `gh pr merge`, `docker push`, `npm publish`, `gh release create`), not bare words in paths or arguments
+- One-layer `bash`/`sh`/`zsh`/`dash`/`ksh -c`/`-lc` payloads are unwrapped before production-invocation matching
+- Follow-up reuse (`делай`, `continue`) requires the leftover route to be the same session and not closed
+- `_python` unittest discovery matches top-level `tests/test*.py` (not nested rglob); pytest-wins is characterized
+- `SubagentStop` emits `{}` and records a stop once; extra host retries no longer append history or feed `additionalContext`
+- UserPromptSubmit rematches any non-follow-up request (including `repair yourself`) and ignores child-agent briefs
+- `.grok/hooks/adaptive.json` commands are path-qualified so Grok does not load stray root hook copies
+- Prepare-only `scripts/grok_deploy.py`: dry-run prints human publish commands; `--record` requires production approval and writes receipt `deploy`/`prepared`
+- This-repo GitHub Actions: verify plus a conditional package job (no publish)
+- README: commercial-grade product that is free, public, and MIT (no EULA, no paid tier)
+- Risk classifier matches `прод` as a word, not as a substring of `продукт`
 
 ## 2.0.3 — 2026-08-14
 

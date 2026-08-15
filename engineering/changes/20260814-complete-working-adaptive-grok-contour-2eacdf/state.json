@@ -1,0 +1,53 @@
+{
+  "change_id": "20260814-complete-working-adaptive-grok-contour-2eacdf",
+  "created_at": "2026-08-14T23:44:07+00:00",
+  "history": [
+    {
+      "at": "2026-08-14T23:44:07+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-14T23:54:56+00:00",
+      "from": "draft",
+      "reason": "scope and acceptance criteria written",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-14T23:54:56+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; bounded design recorded",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-14T23:54:56+00:00",
+      "from": "approved",
+      "reason": "single writer starts tests then hollow-verify fix",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-15T00:00:32+00:00",
+      "from": "implementing",
+      "reason": "implementation and unit tests complete",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-15T00:00:32+00:00",
+      "from": "verifying",
+      "reason": "independent code and test reviews starting",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-15T00:06:38+00:00",
+      "from": "reviewing",
+      "reason": "verification and independent reviews pass; hollow verify closed",
+      "to": "ready"
+    }
+  ],
+  "route_id": "2eacdf08f448",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Complete working Adaptive Grok contour",
+  "updated_at": "2026-08-15T00:06:38+00:00"
+}

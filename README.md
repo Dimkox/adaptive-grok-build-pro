@@ -1,6 +1,6 @@
-# Adaptive Grok Build Pro v2.0.3
+# Adaptive Grok Build Pro v2.0.4
 
-Enterprise-style adaptive workflow for **Grok Build** (xAI CLI coding agent).
+A commercial-grade product for **Grok Build** — free of charge, public, and MIT-licensed.
 
 ## What this is
 
@@ -90,6 +90,8 @@ or just describe a development task — Grok should pick up skills from `.grok/s
 
 ## Scripts
 
+Loop: route → change → verify → independent reviews → `ready` → `python3 scripts/grok_deploy.py` (prepare-only) → humans run the printed tag / push / GitHub Release commands.
+
 | Script | Role |
 |--------|------|
 | `scripts/grok_route.py` | Classify / show route |
@@ -97,6 +99,8 @@ or just describe a development task — Grok should pick up skills from `.grok/s
 | `scripts/grok_status.py` | Runtime status |
 | `scripts/grok_verify.py` | Verification gate |
 | `scripts/grok_review.py` | Record review receipt |
+| `scripts/grok_approve.py` | Short-lived explicit approval (production / external-write / protected-path) |
+| `scripts/grok_deploy.py` | Prepare-only last mile: check evidence, print human publish commands |
 | `scripts/grok_doctor.py` | Health check |
 | `scripts/install_into.py` | Install stack into target repo |
 
@@ -107,7 +111,7 @@ Lifecycle adapters live in `.grok/hooks/` and are registered in both:
 - `.grok/hooks.json` — doctor/structure contract (`command` + `commandWindows`)
 - `.grok/hooks/adaptive.json` — Grok project-hook discovery
 
-Trust the folder once (`/hooks-trust` or `grok --trust`). Hooks classify prompts, enforce policy (secrets, Bitrix core, destructive/production commands), and block Stop until required receipts exist.
+Trust the folder once (`/hooks-trust` or `grok --trust`). Hooks classify prompts and enforce policy (secrets, Bitrix core, destructive commands, and real side-effect invocations such as `git push`). Missing evidence is a Stop warning, not a hard block. Production policy matches command invocations, not words inside paths or arguments.
 
 ## Package
 
@@ -124,4 +128,4 @@ See skills under `.grok/skills/bitrix-development/` and example module in `examp
 
 ## License
 
-**MIT.** Local checks: `make doctor` / `make verify`.
+**MIT.** A commercial product that is free of charge: use, copy, modify, and ship it. The repository is public. No EULA, no paid tier. Local checks: `make doctor` / `make verify`.

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-from _lib import emit, prompt_text, read_payload, root_from, session_id
-from adaptive_grok.repo import detect_repo
-from adaptive_grok.router import build_route, is_development_prompt, route_context
+from _lib import emit, is_child_payload, prompt_text, read_payload, root_from, session_id
+from adaptive_grok.router import build_route, can_reuse_active_route, route_context
 from adaptive_grok.state import get_active_route, set_active_route
 
 
@@ -12,7 +11,7 @@ def main() -> None:
     root = root_from(payload)
     prompt = prompt_text(payload)
     existing = get_active_route(root)
-    if existing and prompt and not is_development_prompt(prompt, detect_repo(root)):
+    if existing and (is_child_payload(payload) or can_reuse_active_route(prompt, existing, session_id(payload))):
         context = route_context(existing)
     else:
         route = build_route(root, prompt or 'development task', session_id(payload))

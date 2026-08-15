@@ -8,7 +8,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.repo import detect_repo
-from adaptive_grok.router import build_route, is_development_prompt
+from adaptive_grok.router import (
+    build_route,
+    can_reuse_active_route,
+    is_development_prompt,
+    should_reuse_active_route,
+)
 from tests._support import project_copy
 
 
@@ -112,6 +117,28 @@ class RouterTests(unittest.TestCase):
         with project_copy() as root:
             self.assertFalse(is_development_prompt('делай', detect_repo(root)))
 
+    def test_repair_yourself_is_bugfix_with_generic_write_owner(self) -> None:
+        with project_copy() as root:
+            route = build_route(root, 'repair yourself', 's-repair')
+            self.assertEqual(route.intent, 'bugfix')
+            self.assertEqual(route.write_agent, 'general_implementer')
+            self.assertTrue(is_development_prompt('repair yourself', detect_repo(root)))
+
+    def test_reuse_active_route_only_for_followups(self) -> None:
+        self.assertFalse(should_reuse_active_route('repair yourself'))
+        self.assertFalse(should_reuse_active_route('please inspect hook policy matching'))
+        self.assertTrue(should_reuse_active_route('делай'))
+        self.assertTrue(should_reuse_active_route('continue'))
+
+    def test_can_reuse_requires_same_session_and_open_status(self) -> None:
+        self.assertFalse(can_reuse_active_route('делай', None, 'session-1'))
+        existing = {'session_id': 'session-1', 'status': 'routed'}
+        self.assertTrue(can_reuse_active_route('делай', existing, 'session-1'))
+        self.assertFalse(can_reuse_active_route('делай', existing, 'session-2'))
+        ready = {'session_id': 'session-1', 'status': 'ready'}
+        self.assertFalse(can_reuse_active_route('делай', ready, 'session-1'))
+        self.assertTrue(should_reuse_active_route('делай'))
+
     def test_bug_with_regression_test_keeps_bugfix_intent(self) -> None:
         with project_copy() as root:
             route = build_route(root, 'Исправь ошибку Битрикс D7 и добавь регрессионный PHPUnit тест', 'x')
@@ -130,6 +157,22 @@ class RouterTests(unittest.TestCase):
             self.assertEqual(route.risk, 'high')
             self.assertIn('security_reviewer', route.review_agents)
             self.assertIn('scope_and_design_approval', route.human_gates)
+
+    def test_produkt_is_not_a_production_risk_signal(self) -> None:
+        with project_copy() as root:
+            route = build_route(
+                root,
+                'веди это как коммерческий продукт но фришный и под мит лицензией',
+                's-product',
+            )
+            self.assertNotEqual(route.risk, 'high')
+            self.assertNotIn('production_action_approval', route.human_gates)
+
+    def test_prod_outage_phrase_is_still_high_risk(self) -> None:
+        with project_copy() as root:
+            route = build_route(root, 'прод упал почини срочно', 's-prod')
+            self.assertEqual(route.risk, 'high')
+            self.assertIn('production_action_approval', route.human_gates)
 
     def test_primary_test_request_uses_test_intent(self) -> None:
         with project_copy() as root:

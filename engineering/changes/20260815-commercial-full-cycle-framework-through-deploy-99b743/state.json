@@ -1,0 +1,53 @@
+{
+  "change_id": "20260815-commercial-full-cycle-framework-through-deploy-99b743",
+  "created_at": "2026-08-15T00:42:47+00:00",
+  "history": [
+    {
+      "at": "2026-08-15T00:42:47+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-15T00:47:25+00:00",
+      "from": "draft",
+      "reason": "scope and acceptance criteria written; waiting on scope_and_design_approval",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-15T00:56:03+00:00",
+      "from": "scoped",
+      "reason": "scope_and_design_approval granted; production_action_approval not granted",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-15T00:56:03+00:00",
+      "from": "approved",
+      "reason": "single writer implements prepare-only deploy vertical",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-15T01:05:50+00:00",
+      "from": "implementing",
+      "reason": "125 tests OK; prepare-only deploy landed",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-15T01:05:50+00:00",
+      "from": "verifying",
+      "reason": "independent reviews starting",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-15T01:08:28+00:00",
+      "from": "reviewing",
+      "reason": "prepare-only deploy verified; four independent reviews pass; no publish",
+      "to": "ready"
+    }
+  ],
+  "route_id": "99b743830b0e",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Commercial full-cycle framework through deploy",
+  "updated_at": "2026-08-15T01:08:28+00:00"
+}

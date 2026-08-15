@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -109,3 +110,16 @@ def agent_type(payload: dict[str, Any]) -> str:
 
 def stop_hook_active(payload: dict[str, Any]) -> bool:
     return bool(first(payload.get('stop_hook_active'), payload.get('stopHookActive'), False))
+
+
+_CHILD_KEYS = (
+    'agent_id', 'agentId', 'subagent_id', 'subagentId',
+    'agent_type', 'agentType', 'subagent_type', 'subagentType',
+)
+_CHILD_BRIEF = re.compile(r'^\s*You are \w+', re.IGNORECASE)
+
+
+def is_child_payload(payload: dict[str, Any]) -> bool:
+    if any(payload.get(key) not in (None, '') for key in _CHILD_KEYS):
+        return True
+    return bool(_CHILD_BRIEF.match(prompt_text(payload)))

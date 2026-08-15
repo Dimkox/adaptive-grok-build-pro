@@ -23,6 +23,7 @@
 6. Verify before finish:
    ```bash
    python3 scripts/grok_verify.py --mode pr
+   ```
+   Then `/release-readiness` and `python3 scripts/grok_deploy.py` to prepare human-owned publish commands (`--record` only with production approval).
 
 7. Trust project hooks in the TUI: `/hooks-trust`
-   ```

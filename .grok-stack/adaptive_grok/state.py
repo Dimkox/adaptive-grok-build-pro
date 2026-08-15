@@ -111,13 +111,23 @@ def record_agent_start(root: Path, agent_id: str, agent_type: str) -> None:
         dump_json(agent_state_path(root), state)
 
 
-def record_agent_stop(root: Path, agent_id: str, agent_type: str) -> None:
+def record_agent_stop(root: Path, agent_id: str, agent_type: str) -> bool:
+    """Record a stop once. Returns True on the first stop, False if already stopped."""
     with runtime_lock(root, 'agents'):
         state = get_agent_state(root)
-        state.setdefault('active', {}).pop(agent_id, None)
-        state.setdefault('history', []).append({'event': 'stop', 'agent_id': agent_id, 'agent_type': agent_type, 'at': now_utc()})
-        state['history'] = state['history'][-200:]
-        dump_json(agent_state_path(root), state)
+        active = state.setdefault('active', {})
+        first = agent_id in active
+        active.pop(agent_id, None)
+        if first:
+            state.setdefault('history', []).append({
+                'event': 'stop',
+                'agent_id': agent_id,
+                'agent_type': agent_type,
+                'at': now_utc(),
+            })
+            state['history'] = state['history'][-200:]
+            dump_json(agent_state_path(root), state)
+        return first
 
 
 def active_write_agents(root: Path, write_roles: set[str]) -> list[str]:

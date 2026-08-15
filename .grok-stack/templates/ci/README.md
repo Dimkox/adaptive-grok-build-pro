@@ -1,6 +1,8 @@
 # CI templates
 
-No GitHub Actions.
+Optional GitHub Actions workflow: `github-actions.yml`. This repository copies it to `.github/workflows/adaptive-grok.yml` (verify + conditional package; no publish).
+
+Local `make verify` is the source of truth. Hosted CI is optional and does not publish.
 
 This project is MIT open source and does not depend on paid hosted CI.
 

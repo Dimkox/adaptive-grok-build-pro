@@ -12,7 +12,7 @@ from .util import git_default_base, now_utc, tree_fingerprint, unique_ordered
 
 INTENT_KEYWORDS: dict[str, tuple[str, ...]] = {
     'incident': ('incident', 'outage', 'авар', 'прод упал', 'production down', 'срочно почин', 'hotfix'),
-    'bugfix': ('bug', 'fix', 'ошиб', 'баг', 'сломал', 'не работает', 'исправ', 'regression', 'exception', 'fatal'),
+    'bugfix': ('bug', 'fix', 'repair', 'ошиб', 'баг', 'сломал', 'не работает', 'исправ', 'regression', 'exception', 'fatal'),
     'review': ('review', 'ревью', 'проверь код', 'аудит кода', 'code review', 'pull request', ' pr '),
     'release': ('release', 'релиз', 'deploy', 'деплой', 'publish', 'выкат', 'rollback', 'canary'),
     'test': ('test', 'тест', 'coverage', 'покрытие', 'phpunit', 'cypress', 'playwright'),
@@ -51,6 +51,7 @@ FOLLOW_UP_RE = re.compile(
     r'^\s*(да|нет|ок|окей|делай|продолжай|согласен|согласна|go|continue|yes|no|вариант\s+[abcабв123]|[abcабв123])\s*[.!]?\s*$',
     re.IGNORECASE,
 )
+CLOSED_ROUTE_STATUSES = frozenset({'ready', 'released', 'completed', 'cancelled', 'archived'})
 
 
 @dataclass
@@ -137,11 +138,24 @@ def _domains(text: str, repo: RepoProfile) -> tuple[list[str], list[str]]:
     return combined, task_domains
 
 
+def _has_term(text: str, term: str) -> bool:
+    """Match risk/domain terms as words, not as substrings of larger words.
+
+    `'прод' in 'продукт'` is True and was classifying ordinary product work as production.
+    """
+    haystack = f' {text.lower()} '
+    needle = term.lower().strip()
+    if not needle:
+        return False
+    if ' ' in needle:
+        return needle in haystack
+    return re.search(r'(?<![\w])' + re.escape(needle) + r'(?![\w])', haystack, re.UNICODE) is not None
+
+
 def _risk(text: str, intent: str, domains: list[str]) -> tuple[str, list[str]]:
-    lowered = text.lower()
     rationale: list[str] = []
-    high = [word for word in HIGH_RISK if word in lowered]
-    medium = [word for word in MEDIUM_RISK if word in lowered]
+    high = [word for word in HIGH_RISK if _has_term(text, word)]
+    medium = [word for word in MEDIUM_RISK if _has_term(text, word)]
     if high or intent in {'incident', 'release'} or 'security' in domains:
         rationale.append('high-risk signal: ' + ', '.join(high[:5]) if high else f'high-risk intent/domain: {intent}')
         return 'high', rationale
@@ -160,8 +174,22 @@ def _complexity(intent: str, risk: str, domains: list[str], text: str) -> str:
     return 'standard'
 
 
+def should_reuse_active_route(prompt: str) -> bool:
+    return bool(FOLLOW_UP_RE.match(prompt or ''))
+
+
+def can_reuse_active_route(prompt: str, existing: dict | None, session_id: str | None) -> bool:
+    if not existing or not should_reuse_active_route(prompt):
+        return False
+    if existing.get('session_id') != session_id:
+        return False
+    if existing.get('status') in CLOSED_ROUTE_STATUSES:
+        return False
+    return True
+
+
 def is_development_prompt(prompt: str, repo: RepoProfile) -> bool:
-    if FOLLOW_UP_RE.match(prompt):
+    if should_reuse_active_route(prompt):
         return False
     scores = _score(prompt, INTENT_KEYWORDS)
     if scores:
@@ -290,7 +318,7 @@ def build_route(root: Path, prompt: str, session_id: str = 'manual') -> Route:
         human_gates.append('scope_and_design_approval')
     if any(d in domains for d in ('integration', 'data')) and risk == 'high':
         human_gates.append('migration_or_external_write_approval')
-    if intent == 'release' or any(word in prompt.lower() for word in ('production', 'прод', 'deploy', 'деплой')):
+    if intent == 'release' or any(_has_term(prompt, word) for word in ('production', 'прод', 'deploy', 'деплой')):
         human_gates.append('production_action_approval')
 
     delivery_expected = intent != 'research'

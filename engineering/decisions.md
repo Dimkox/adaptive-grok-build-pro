@@ -1,0 +1,35 @@
+# Decisions
+
+Patterns that paid for themselves. Each entry is at most three sentences.
+
+## 2026-08-15 — Commercial product, free, MIT
+
+Treat Adaptive Grok Build Pro as a commercial-grade product that is free of charge and MIT-licensed. No EULA, no paid tier. Do not read «коммерческий продукт» as a production deploy: `_risk` matches `прод` as a word, not as a substring of `продукт`.
+
+## 2026-08-15 — MIT public, not a paid SKU
+
+The repo is MIT, free, and public. Commercial means product bar, not billing. `grok_deploy.py` is public release tooling.
+
+## 2026-08-15 — SubagentStop must emit empty JSON
+
+Grok re-fires SubagentStop when the hook returns `additionalContext`, eight times per agent. Emit `{}` and record the stop only while the id is still in `active`. Do not resume a finished reviewer to recover a truncated report — that is a second loop.
+
+## 2026-08-15 — Unwrap one `-c` layer; reuse follow-ups only if open and same session
+
+`bash -lc 'git push'` is one argv prefix miss, not a reason to write a shell parser: strip a matching quoted `-c`/`-lc` payload and run the existing invocation matcher on the inner chunks. Follow-up tokens stay a prompt-shape test (`should_reuse_active_route`); the hook uses `can_reuse_active_route` so `делай` does not revive a ready route or a leftover from another session.
+
+## 2026-08-14 — Match production side-effects as argv prefixes
+
+Split Bash on `&&` / `||` / `;` / `|` / newlines, strip comments, `NAME=value`, and wrappers, then compare leading tokens to `git push`, `gh pr merge`, `docker push`, `npm publish`, `gh release create`. Bare-word `\brelease\b` / `\bpublish\b` / `\bprod(?:uction)?\b` on the whole string locked `ls`/`cat` of change-package paths and `scripts/grok_approve.py production`. Invocation prefixes unstuck ordinary tools while the real commands stayed gated.
+
+## 2026-08-14 — Rematch every non-follow-up; skip child briefs
+
+Reuse the active route only when `FOLLOW_UP_RE` matches the whole prompt, or the UserPromptSubmit payload is a child (`agent_id` / `You are …`). `is_development_prompt` is the inverse of “has intent keywords”, so leftover high-risk routes stuck on `repair yourself` and architect briefs overwrote the parent `route_id`. Follow-up-only reuse plus child-skip let a repair prompt get a write owner and let reviews run without replacing the route.
+
+## 2026-08-14 — Run unittest from verify without a packaging marker
+
+`verification._python` used `pyproject.toml` / `requirements.txt` / `setup.py` as the only trigger, so this repo’s `tests/` never ran under `grok_verify`. Detect `tests/test*.py` and run `python -m unittest discover -s tests`. Do not add a packaging marker just to light the check — that flips `detect_repo` and, when pytest is present, skips unittest.
+
+## 2026-08-14 — Bind receipts after the last change-package write
+
+`tree_fingerprint` hashes every non-runtime changed file, including `engineering/changes/**/state.json`. Transition the durable package to `ready` first, then run `grok_verify` and `grok_review`. Recording evidence before that last write guarantees stale receipts and a second verification loop.
