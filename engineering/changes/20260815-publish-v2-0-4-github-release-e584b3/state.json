@@ -1,0 +1,59 @@
+{
+  "change_id": "20260815-publish-v2-0-4-github-release-e584b3",
+  "created_at": "2026-08-15T01:27:37+00:00",
+  "history": [
+    {
+      "at": "2026-08-15T01:27:37+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-15T01:27:46+00:00",
+      "from": "draft",
+      "reason": "user authorized pull and release",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-15T01:27:46+00:00",
+      "from": "scoped",
+      "reason": "production_action_approval granted by user",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-15T01:27:46+00:00",
+      "from": "approved",
+      "reason": "push and gh release executed",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-15T01:27:46+00:00",
+      "from": "implementing",
+      "reason": "release exists",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-15T01:27:46+00:00",
+      "from": "verifying",
+      "reason": "human-owned publish",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-15T01:27:46+00:00",
+      "from": "reviewing",
+      "reason": "v2.0.4 live",
+      "to": "ready"
+    },
+    {
+      "at": "2026-08-15T01:27:46+00:00",
+      "from": "ready",
+      "reason": "GitHub Release v2.0.4 published",
+      "to": "released"
+    }
+  ],
+  "route_id": "e584b3b09be8",
+  "schema_version": 1,
+  "status": "released",
+  "title": "Publish v2.0.4 GitHub Release",
+  "updated_at": "2026-08-15T01:27:46+00:00"
+}

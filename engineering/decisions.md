@@ -2,6 +2,14 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-15 — Ten is a read-only ceiling
+
+Launch every listed analysis agent in one wave. Ten is `max_parallel_analysis`, not a staffing target and not ten writers. `routing.json` names floors; domain specialists join only on match; `docs_researcher` is on every non-micro wave.
+
+## 2026-08-15 — Root hook shims fail-open after pull
+
+Grok `project/adaptive` may still run `python3 pre_tool_use.py` from the project root. Missing that file is python exit 2 and a full tool lockout. Keep thin root dispatchers into `.grok/hooks/` and `||` allow fallbacks. Never put `_lib.py` at the repo root.
+
 ## 2026-08-15 — Commercial product, free, MIT
 
 Treat Adaptive Grok Build Pro as a commercial-grade product that is free of charge and MIT-licensed. No EULA, no paid tier. Do not read «коммерческий продукт» as a production deploy: `_risk` matches `прод` as a word, not as a substring of `продукт`.

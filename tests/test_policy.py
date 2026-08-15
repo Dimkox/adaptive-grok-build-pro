@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
-from adaptive_grok.policy import evaluate_pre_tool
+from adaptive_grok.policy import WRITE_ROLES, evaluate_pre_tool, write_roles
 from adaptive_grok.router import build_route
 from adaptive_grok.state import add_approval, record_agent_start, set_active_route
 from tests._support import project_copy
@@ -206,6 +206,14 @@ class PolicyTests(unittest.TestCase):
             set_active_route(root, route)
             allowed, _ = evaluate_pre_tool(root, {'tool_name': 'Agent', 'tool_input': {'agent_type': route['write_agent']}})
             self.assertTrue(allowed)
+
+    def test_routing_write_roles_match_constant_and_fallback(self) -> None:
+        with project_copy() as root:
+            self.assertEqual(write_roles(root), set(WRITE_ROLES))
+            (root / '.grok-stack/config/routing.json').unlink()
+            self.assertEqual(write_roles(root), set(WRITE_ROLES))
+            (root / '.grok-stack/config/routing.json').write_text('{', encoding='utf-8')
+            self.assertEqual(write_roles(root), set(WRITE_ROLES))
 
     def test_blocks_second_different_write_agent(self) -> None:
         with project_copy() as root:

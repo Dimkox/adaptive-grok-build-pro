@@ -13,6 +13,17 @@ WRITE_ROLES = {
     'integration_implementer', 'data_implementer', 'ai_implementer',
 }
 
+
+def write_roles(root: Path) -> set[str]:
+    data = load_json(root / '.grok-stack/config/routing.json', None)
+    if isinstance(data, dict):
+        roles = data.get('write_roles')
+        if isinstance(roles, list):
+            names = {str(item).strip() for item in roles if isinstance(item, str) and item.strip()}
+            if names:
+                return names
+    return set(WRITE_ROLES)
+
 DEFAULT_PROTECTED = [
     '.git/**', '.env', '.env.*', '**/.env', '**/.env.*', '**/*.pem', '**/*.key', '**/*.p12', '**/*.pfx',
     'bitrix/**',
@@ -193,11 +204,12 @@ def evaluate_pre_tool(root: Path, event: dict[str, Any]) -> tuple[bool, str | No
             allowed = set(route.get('allowed_agents', []))
             if agent_type not in allowed:
                 return False, f'Agent {agent_type} is outside active route {route.get("route_id")}; allowed: {sorted(allowed)}'
-            if agent_type in WRITE_ROLES:
+            roles = write_roles(root)
+            if agent_type in roles:
                 expected = route.get('write_agent')
                 if expected != agent_type:
                     return False, f'Route permits only write owner {expected}, not {agent_type}'
-                active = active_write_agents(root, WRITE_ROLES)
+                active = active_write_agents(root, roles)
                 if active and agent_type not in active:
                     return False, f'Another write agent is already active: {active}'
 

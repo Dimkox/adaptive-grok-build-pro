@@ -1,4 +1,4 @@
-# Adaptive Grok Build Pro v2.0.4
+# Adaptive Grok Build Pro v2.0.5
 
 A commercial-grade product for **Grok Build** — free of charge, public, and MIT-licensed.
 
@@ -50,15 +50,32 @@ graph TD
 
 ## Requirements
 
-- [Grok Build CLI](https://x.ai/build) (`grok`) installed and authenticated (SuperGrok / X Premium+)
-- Python 3.10+
-- Git
+Pins are **minimum or newer**. `built` is the version this tree was verified on. If a tool is missing or older than minimum, `python3 scripts/grok_doctor.py` prints an **install offer** for the fallback (or install a newer version).
+
+| Tool | Minimum | Built | Fallback | Required |
+| --- | --- | --- | --- | --- |
+| Python 3 | 3.10 | 3.12.3 | 3.12 | yes |
+| Git | 2.34 | 2.43.0 | 2.43 | yes |
+| Grok Build CLI | 1.0.0 | 1.0.4 | 1.0.4 | for the TUI |
+| GitHub CLI (`gh`) | 2.40 | 2.86.0 | 2.86 | for GitHub Release |
+| Node.js | 18 | 24.19.0 | 20 LTS | frontend profiles |
+| npm | 9 | 11.17.0 | 10 | frontend profiles |
+| PHP | 8.1 | 8.2 | 8.2 | PHP/Bitrix profiles |
+| Composer | 2.2 | 2.7 | 2.7 | PHP/Bitrix profiles |
+
+```bash
+python3 scripts/grok_doctor.py --offer-install
+```
+
+Machine-readable pins: `.grok-stack/config/toolchain.json`.
 
 ## Install into a project
 
 ```bash
-# from this package root
+# from this package root — copies the stack and installs missing required tools
 python3 scripts/install_into.py /path/to/your/repo
+# skip host installs: --no-deps
+# also PHP/Node/gh: --all-deps
 ```
 
 Or copy manually:

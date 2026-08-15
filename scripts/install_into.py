@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.repo import detect_repo
+from adaptive_grok.toolchain import pull_dependencies
 
 MANAGED_DIRS = ('.grok', '.agents', '.grok-stack')
 MANAGED_FILES = (
@@ -21,6 +22,15 @@ MANAGED_FILES = (
     'scripts/grok_doctor.py',
     'scripts/grok_status.py',
     'scripts/grok_deploy.py',
+    'session_start.py',
+    'user_prompt_submit.py',
+    'pre_tool_use.py',
+    'post_tool_use.py',
+    'pre_compact.py',
+    'subagent_start.py',
+    'subagent_stop.py',
+    'stop_gate.py',
+    'session_end.py',
 )
 SKIP_PREFIXES = ('.grok-stack/runtime/',)
 MANAGED_START = '<!-- ADAPTIVE-GROK-PRO:START -->'
@@ -72,7 +82,17 @@ def merge_agents(source: Path, target: Path, dry_run: bool) -> None:
         agent_file.write_text(merged, encoding='utf-8')
 
 
-def install(source: Path, target: Path, *, force: bool, dry_run: bool, with_ci: bool = False) -> None:
+def install(
+    source: Path,
+    target: Path,
+    *,
+    force: bool,
+    dry_run: bool,
+    with_ci: bool = False,
+    install_deps: bool = True,
+    all_deps: bool = False,
+    runner=None,
+) -> None:
     target.mkdir(parents=True, exist_ok=True)
     source_files = iter_source_files(source)
     conflicts = [rel for rel, src in source_files if different(src, target / rel)]
@@ -132,6 +152,31 @@ def install(source: Path, target: Path, *, force: bool, dry_run: bool, with_ci: 
 
     print(f'Detected target profile: {profile.kind}; domains={profile.domains}; modules={profile.bitrix_modules}')
 
+    pin_root = target if (target / '.grok-stack/config/toolchain.json').is_file() else source
+    dep_results = pull_dependencies(
+        pin_root,
+        apply=install_deps,
+        include_optional=all_deps,
+        dry_run=dry_run,
+        runner=runner,
+    )
+    for item in dep_results:
+        action = item.get('action')
+        tool_id = item.get('id')
+        command = item.get('command') or ''
+        if action == 'skip-optional':
+            print(f'SKIP optional {tool_id}')
+        elif action == 'skip-disabled':
+            print(f'SKIP deps {tool_id}: {command}')
+        elif action == 'would-install':
+            print(f'WOULD INSTALL {tool_id}: {command}')
+        elif action == 'manual-url':
+            print(f'MANUAL {tool_id}: {command}')
+        elif action == 'install':
+            print(f'{"INSTALLED" if item.get("ok") else "INSTALL FAILED"} {tool_id}: {command}')
+        else:
+            print(f'DEPS {tool_id}: {action}')
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -141,8 +186,18 @@ def main() -> None:
     parser.add_argument('--force', action='store_true', help='Overwrite conflicting Adaptive Grok managed files only.')
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--with-ci', action='store_true', help='Install a generic GitHub Actions verification workflow.')
+    parser.add_argument('--no-deps', action='store_true', help='Do not install missing required toolchain tools.')
+    parser.add_argument('--all-deps', action='store_true', help='Also install optional profile tools (php, node, gh, …).')
     args = parser.parse_args()
-    install(ROOT, Path(args.target).resolve(), force=args.force, dry_run=args.dry_run, with_ci=args.with_ci)
+    install(
+        ROOT,
+        Path(args.target).resolve(),
+        force=args.force,
+        dry_run=args.dry_run,
+        with_ci=args.with_ci,
+        install_deps=not args.no_deps,
+        all_deps=args.all_deps,
+    )
 
 
 if __name__ == '__main__':

@@ -44,6 +44,8 @@ Dispatch all `analysis_agents` whose work is independent. Give each agent:
 
 Wait for all reports. Synthesize facts, conflicts, and unresolved decisions. Do not ask the user for facts recoverable from the repository.
 
+Dispatch every `analysis_agents` entry in one wave. The route already caps that list (default 10); do not spawn extra names to fill the cap. Keep exactly one write owner.
+
 ## 3. Scope and design gate
 
 Write or update the change brief, acceptance criteria, architecture, risk, and test plan.

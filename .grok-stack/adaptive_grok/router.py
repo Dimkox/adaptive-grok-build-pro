@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 from .repo import RepoProfile, detect_repo
-from .util import git_default_base, now_utc, tree_fingerprint, unique_ordered
+from .util import git_default_base, load_json, now_utc, tree_fingerprint, unique_ordered
 
 
 INTENT_KEYWORDS: dict[str, tuple[str, ...]] = {
@@ -52,6 +53,95 @@ FOLLOW_UP_RE = re.compile(
     re.IGNORECASE,
 )
 CLOSED_ROUTE_STATUSES = frozenset({'ready', 'released', 'completed', 'cancelled', 'archived'})
+FEATURE_LIKE_INTENTS = frozenset({'feature', 'architecture', 'refactor', 'research'})
+DEFAULT_ANALYSIS_CAP = 10
+
+DEFAULT_ROUTING: dict[str, Any] = {
+    'schema_version': 1,
+    'max_parallel_analysis': DEFAULT_ANALYSIS_CAP,
+    'write_roles': [
+        'ai_implementer',
+        'bitrix_implementer',
+        'data_implementer',
+        'frontend_implementer',
+        'general_implementer',
+        'integration_implementer',
+        'php_implementer',
+    ],
+    'analysis_floors': {
+        'always': ['repo_explorer'],
+        'feature_like': ['task_analyst'],
+        'standard': ['architect', 'docs_researcher'],
+    },
+    'analysis_domain_agents': {
+        'bitrix': ['bitrix_architect'],
+        'api': ['integration_architect'],
+        'event': ['integration_architect'],
+        'integration': ['integration_architect'],
+        'data': ['data_architect'],
+        'ai': ['ai_architect'],
+    },
+    'review_floors': {
+        'delivery': ['code_reviewer', 'test_reviewer'],
+        'docs': ['code_reviewer'],
+        'review_intent': ['code_reviewer', 'test_reviewer'],
+        'release': ['release_reviewer'],
+    },
+    'review_domain_agents': {
+        'bitrix': ['bitrix_reviewer'],
+        'data': ['data_reviewer'],
+        'security': ['security_reviewer'],
+        'ai': ['security_reviewer'],
+        'integration': ['security_reviewer'],
+    },
+    'review_risk_agents': {
+        'high': ['security_reviewer', 'release_reviewer'],
+    },
+}
+
+
+def _string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if isinstance(item, str) and item.strip()]
+
+
+def _analysis_cap(config: dict[str, Any]) -> int:
+    raw = config.get('max_parallel_analysis', DEFAULT_ANALYSIS_CAP)
+    if isinstance(raw, bool) or not isinstance(raw, int) or raw < 1:
+        return DEFAULT_ANALYSIS_CAP
+    return raw
+
+
+def load_routing_config(root: Path) -> dict[str, Any]:
+    data = load_json(root / '.grok-stack/config/routing.json', None)
+    merged = copy.deepcopy(DEFAULT_ROUTING)
+    if not isinstance(data, dict):
+        return merged
+    cap = data.get('max_parallel_analysis')
+    if isinstance(cap, int) and not isinstance(cap, bool) and cap >= 1:
+        merged['max_parallel_analysis'] = cap
+    roles = _string_list(data.get('write_roles'))
+    if roles:
+        merged['write_roles'] = roles
+    for key in (
+        'analysis_floors',
+        'analysis_domain_agents',
+        'review_floors',
+        'review_domain_agents',
+        'review_risk_agents',
+    ):
+        value = data.get(key)
+        if not isinstance(value, dict):
+            continue
+        base = merged.setdefault(key, {})
+        if not isinstance(base, dict):
+            merged[key] = value
+            continue
+        for sub, items in value.items():
+            if isinstance(items, list):
+                base[str(sub)] = _string_list(items)
+    return merged
 
 
 @dataclass
@@ -206,21 +296,21 @@ def build_route(root: Path, prompt: str, session_id: str = 'manual') -> Route:
     risk, rationale = _risk(prompt, intent, domains)
     complexity = _complexity(intent, risk, domains, prompt)
 
-    analysis: list[str] = ['repo_explorer']
-    if intent in {'feature', 'architecture', 'refactor', 'research'}:
-        analysis.append('task_analyst')
-    if complexity != 'micro' or intent in {'feature', 'architecture', 'refactor'}:
+    cfg = load_routing_config(root)
+    floors = cfg.get('analysis_floors') if isinstance(cfg.get('analysis_floors'), dict) else {}
+    analysis: list[str] = list(_string_list(floors.get('always')))
+    feature_like = intent in FEATURE_LIKE_INTENTS
+    if feature_like:
+        analysis.extend(_string_list(floors.get('feature_like')))
+    if complexity != 'micro':
+        analysis.extend(_string_list(floors.get('standard')))
+    elif feature_like:
         analysis.append('architect')
-    if 'bitrix' in domains:
-        analysis.append('bitrix_architect')
-    if any(d in domains for d in ('api', 'event', 'integration')):
-        analysis.append('integration_architect')
-    if 'data' in domains:
-        analysis.append('data_architect')
-    if 'ai' in domains:
-        analysis.append('ai_architect')
-    if intent in {'research', 'architecture'} or 'bitrix' in domains:
-        analysis.append('docs_researcher')
+    domain_agents = cfg.get('analysis_domain_agents') if isinstance(cfg.get('analysis_domain_agents'), dict) else {}
+    for domain in domains:
+        analysis.extend(_string_list(domain_agents.get(domain)))
+    cap = _analysis_cap(cfg)
+    analysis = unique_ordered(analysis)[:cap]
 
     no_write_intents = {'review', 'research', 'release'}
     write_agent: str | None = None
@@ -245,21 +335,26 @@ def build_route(root: Path, prompt: str, session_id: str = 'manual') -> Route:
         else:
             write_agent = 'general_implementer'
 
+    review_floors = cfg.get('review_floors') if isinstance(cfg.get('review_floors'), dict) else {}
+    review_domain = cfg.get('review_domain_agents') if isinstance(cfg.get('review_domain_agents'), dict) else {}
+    review_risk = cfg.get('review_risk_agents') if isinstance(cfg.get('review_risk_agents'), dict) else {}
     review: list[str] = []
     if write_agent:
-        review.append('code_reviewer')
-        if intent != 'docs':
-            review.append('test_reviewer')
+        review.extend(_string_list(review_floors.get('docs' if intent == 'docs' else 'delivery')))
     elif intent == 'review':
-        review.extend(['code_reviewer', 'test_reviewer'])
+        review.extend(_string_list(review_floors.get('review_intent')))
     if 'bitrix' in domains:
-        review.append('bitrix_reviewer')
-    if risk == 'high' or any(d in domains for d in ('security', 'ai', 'integration')):
-        review.append('security_reviewer')
+        review.extend(_string_list(review_domain.get('bitrix')))
+    if risk == 'high':
+        review.extend(_string_list(review_risk.get('high')))
+    elif any(d in domains for d in ('security', 'ai', 'integration')):
+        for key in ('security', 'ai', 'integration'):
+            if key in domains:
+                review.extend(_string_list(review_domain.get(key)))
     if 'data' in domains:
-        review.append('data_reviewer')
+        review.extend(_string_list(review_domain.get('data')))
     if intent == 'release' or risk == 'high':
-        review.append('release_reviewer')
+        review.extend(_string_list(review_floors.get('release')))
 
     workflow_skills = ['adaptive-delivery']
     intent_skill = {
@@ -331,6 +426,7 @@ def build_route(root: Path, prompt: str, session_id: str = 'manual') -> Route:
         f'domains={",".join(domains)}',
         f'repository={repo.kind}',
         f'write-owner={write_agent or "none"}',
+        f'analysis-wave={len(analysis)}/{cap}',
     ])
 
     return Route(
@@ -379,5 +475,6 @@ def route_context(route: Route | dict[str, object]) -> str:
         f"Quality profiles: {', '.join(data.get('quality_profiles', []))}\n"
         f"Human gates: {gates}\n"
         'Use /adaptive-delivery. Do not spawn agents outside the route. '
-        'Run read-only analysis in parallel, but keep exactly one write owner.'
+        'Run every listed read-only analysis agent in parallel (cap is a ceiling, not a quota). '
+        'Keep exactly one write owner.'
     )

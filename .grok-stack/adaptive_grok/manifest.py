@@ -6,7 +6,7 @@ from pathlib import Path
 EXCLUDED_PARTS = {
     '.git', '__pycache__', '.pytest_cache', 'node_modules', 'vendor', '.venv', 'dist', '.idea', '.vscode',
 }
-EXCLUDED_FILES = {'MANIFEST.sha256', '.coverage', '.env'}
+EXCLUDED_FILES = {'MANIFEST.sha256', '.coverage', '.env', 'err.log'}
 SECRET_SUFFIXES = ('.pem', '.key', '.p12', '.pfx')
 
 

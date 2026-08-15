@@ -11,10 +11,45 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 from adaptive_grok.receipts import write_receipt
 from adaptive_grok.router import build_route
 from adaptive_grok.state import get_active_route, set_active_route
+import subprocess
+
 from tests._support import project_copy, run_hook
 
 
 class HookTests(unittest.TestCase):
+    def test_root_shim_dispatches_pre_tool_use(self) -> None:
+        with project_copy() as root:
+            shim = (ROOT / 'pre_tool_use.py').read_text(encoding='utf-8')
+            (root / 'pre_tool_use.py').write_text(shim, encoding='utf-8')
+            proc = subprocess.run(
+                ['python3', 'pre_tool_use.py'],
+                cwd=root,
+                input='{"tool_name":"Read","tool_input":{"path":"AGENTS.md"}}',
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            data = json.loads(proc.stdout.strip() or '{}')
+            decision = data.get('decision') or data.get('hookSpecificOutput', {}).get('permissionDecision')
+            self.assertEqual(decision, 'allow')
+
+    def test_root_shim_fail_open_when_canonical_missing(self) -> None:
+        with project_copy() as root:
+            shim = (ROOT / 'pre_tool_use.py').read_text(encoding='utf-8')
+            (root / 'pre_tool_use.py').write_text(shim, encoding='utf-8')
+            (root / '.grok/hooks/pre_tool_use.py').unlink()
+            proc = subprocess.run(
+                ['python3', 'pre_tool_use.py'],
+                cwd=root,
+                input='{}',
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertIn('allow', proc.stdout)
+
     def test_user_prompt_submit_creates_route(self) -> None:
         with project_copy(git=True) as root:
             (root / 'bitrix').mkdir()

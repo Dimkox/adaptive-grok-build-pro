@@ -11,6 +11,9 @@
 *.p12
 *.pfx
 
+# Local crash / hook dumps
+err.log
+
 # Scratch builds. Versioned release zips live in packages/ and are tracked.
 # Dependencies and build output
 vendor/

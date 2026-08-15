@@ -8,6 +8,7 @@ Project hooks need `/hooks-trust` in the Grok TUI.
 - **Stop**: evidence gaps are **warnings only**, never block the agent
 
 Hard lockouts (exit 2 / infinite stop loops) are intentional bugs — fixed in 2.0.4.
+Older `adaptive.json` files call `python3 pre_tool_use.py` from the project root. Root shims dispatch into `.grok/hooks/` or fail-open so a `git pull` cannot freeze the agent.
 
 ## Disable all hooks
 

@@ -1,0 +1,53 @@
+{
+  "change_id": "20260815-user-query-а-че-бы-и-не-десять-агентов-в-паралле-661035",
+  "created_at": "2026-08-15T02:03:07+00:00",
+  "history": [
+    {
+      "at": "2026-08-15T02:03:07+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-15T02:09:42+00:00",
+      "from": "draft",
+      "reason": "scope and acceptance criteria written",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-15T02:09:42+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; bounded design recorded",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-15T02:09:42+00:00",
+      "from": "approved",
+      "reason": "general_implementer owns router/routing.json/policy",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-15T02:12:18+00:00",
+      "from": "implementing",
+      "reason": "router/policy tests green",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-15T02:12:55+00:00",
+      "from": "verifying",
+      "reason": "verify pass; independent reviews",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-15T02:16:32+00:00",
+      "from": "reviewing",
+      "reason": "code and test reviews pass",
+      "to": "ready"
+    }
+  ],
+  "route_id": "661035fd084d",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "<user_query>\nа че бы и не десять агентов в параллель пускать М?\n</user_query>",
+  "updated_at": "2026-08-15T02:16:32+00:00"
+}

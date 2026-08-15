@@ -1,5 +1,10 @@
 # Quickstart — Adaptive Grok Build Pro
 
+0. Check tools (minimum or newer; doctor offers a fallback install if something is missing):
+   ```bash
+   python3 scripts/grok_doctor.py --offer-install
+   ```
+
 1. Install Grok Build:
    - Windows: `irm https://x.ai/cli/install.ps1 | iex`
    - macOS/Linux: `curl -fsSL https://x.ai/cli/install.sh | bash`
@@ -9,6 +14,7 @@
 3. Install this stack into your repo:
    ```bash
    python3 scripts/install_into.py /path/to/repo
+   # installs the stack and missing required tools (use --no-deps to copy only)
    ```
 
 4. Work:

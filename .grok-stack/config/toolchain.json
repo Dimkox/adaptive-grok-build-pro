@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "policy": "minimum_or_newer; built is the tested pin",
+  "tools": [
+    {
+      "id": "python3",
+      "name": "Python 3",
+      "required": true,
+      "commands": ["python3", "python"],
+      "version_args": ["--version"],
+      "built": "3.12.3",
+      "minimum": "3.10",
+      "fallback": "3.12",
+      "install": {
+        "linux": "sudo apt-get update && sudo apt-get install -y python3 python3-venv python3-pip",
+        "darwin": "brew install python@3.12",
+        "windows": "winget install -e --id Python.Python.3.12",
+        "generic": "https://www.python.org/downloads/"
+      }
+    },
+    {
+      "id": "git",
+      "name": "Git",
+      "required": true,
+      "commands": ["git"],
+      "version_args": ["--version"],
+      "built": "2.43.0",
+      "minimum": "2.34",
+      "fallback": "2.43",
+      "install": {
+        "linux": "sudo apt-get update && sudo apt-get install -y git",
+        "darwin": "brew install git",
+        "windows": "winget install -e --id Git.Git",
+        "generic": "https://git-scm.com/downloads"
+      }
+    },
+    {
+      "id": "grok",
+      "name": "Grok Build CLI",
+      "required": true,
+      "profile": "tui",
+      "commands": ["grok"],
+      "version_args": ["--version"],
+      "built": "1.0.4",
+      "minimum": "1.0.0",
+      "fallback": "1.0.4",
+      "install": {
+        "linux": "curl -fsSL https://x.ai/cli/install.sh | bash",
+        "darwin": "curl -fsSL https://x.ai/cli/install.sh | bash",
+        "windows": "irm https://x.ai/cli/install.ps1 | iex",
+        "generic": "https://x.ai/build"
+      }
+    },
+    {
+      "id": "gh",
+      "name": "GitHub CLI",
+      "required": false,
+      "profile": "release",
+      "commands": ["gh"],
+      "version_args": ["--version"],
+      "built": "2.86.0",
+      "minimum": "2.40",
+      "fallback": "2.86",
+      "install": {
+        "linux": "sudo apt-get update && sudo apt-get install -y gh",
+        "darwin": "brew install gh",
+        "windows": "winget install -e --id GitHub.cli",
+        "generic": "https://cli.github.com/"
+      }
+    },
+    {
+      "id": "node",
+      "name": "Node.js",
+      "required": false,
+      "profile": "frontend",
+      "commands": ["node"],
+      "version_args": ["--version"],
+      "built": "24.19.0",
+      "minimum": "18.0",
+      "fallback": "20",
+      "install": {
+        "linux": "curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs",
+        "darwin": "brew install node@20",
+        "windows": "winget install -e --id OpenJS.NodeJS.LTS",
+        "generic": "https://nodejs.org/"
+      }
+    },
+    {
+      "id": "npm",
+      "name": "npm",
+      "required": false,
+      "profile": "frontend",
+      "commands": ["npm"],
+      "version_args": ["--version"],
+      "built": "11.17.0",
+      "minimum": "9.0",
+      "fallback": "10",
+      "install": {
+        "linux": "sudo apt-get update && sudo apt-get install -y npm",
+        "darwin": "brew install node@20",
+        "windows": "winget install -e --id OpenJS.NodeJS.LTS",
+        "generic": "https://www.npmjs.com/get-npm"
+      }
+    },
+    {
+      "id": "php",
+      "name": "PHP",
+      "required": false,
+      "profile": "php",
+      "commands": ["php"],
+      "version_args": ["-v"],
+      "built": "8.2",
+      "minimum": "8.1",
+      "fallback": "8.2",
+      "install": {
+        "linux": "sudo apt-get update && sudo apt-get install -y php-cli php-xml php-mbstring",
+        "darwin": "brew install php@8.2",
+        "windows": "winget install -e --id PHP.PHP.8.2",
+        "generic": "https://www.php.net/downloads"
+      }
+    },
+    {
+      "id": "composer",
+      "name": "Composer",
+      "required": false,
+      "profile": "php",
+      "commands": ["composer"],
+      "version_args": ["--version"],
+      "built": "2.7",
+      "minimum": "2.2",
+      "fallback": "2.7",
+      "install": {
+        "linux": "curl -sS https://getcomposer.org/installer | php && sudo mv composer.phar /usr/local/bin/composer",
+        "darwin": "brew install composer",
+        "windows": "winget install -e --id Composer.Composer",
+        "generic": "https://getcomposer.org/download/"
+      }
+    }
+  ]
+}

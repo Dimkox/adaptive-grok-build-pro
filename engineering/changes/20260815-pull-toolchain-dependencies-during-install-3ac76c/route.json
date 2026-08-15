@@ -1,0 +1,65 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect"
+  ],
+  "base_commit": "33a02f1128ab0a865bfb1c853248f997dcf9e39b",
+  "base_fingerprint": "eeabcd7f20f0dabe3a5962be942555581688fcd6f9d4d839e6de6978b17c9cc6",
+  "complexity": "standard",
+  "created_at": "2026-08-15T01:48:17+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "generic"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base"
+  ],
+  "rationale": [
+    "bounded change without high-risk signals",
+    "intent=feature",
+    "domains=generic",
+    "repository=generic",
+    "write-owner=general_implementer"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "low",
+  "route_id": "3ac76ce611c2",
+  "schema_version": 1,
+  "session_id": "01a002a7-a23b-7c02-9aee-0cc00c35e3d9",
+  "status": "routed",
+  "task": "<user_query>\nзависимости все подтянуть в инсталл надо, да?\n</user_query>",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow"
+  ],
+  "write_agent": "general_implementer"
+}

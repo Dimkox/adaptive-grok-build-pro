@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.5 — 2026-08-15
+
+After `git pull` on a consumer project, missing or cwd-relative hook scripts no longer lock Grok.
+
+- Root hook files are thin dispatchers into `.grok/hooks/` (no root `_lib.py`)
+- `adaptive.json` commands try `.grok/hooks/…` then the cwd shim, then print `{}` / allow
+- Installer copies those shims so older `python3 pre_tool_use.py` configs keep working
+- Toolchain pins (built / minimum / fallback) in `.grok-stack/config/toolchain.json`; doctor offers install of the fallback or a newer version
+- `install_into.py` pulls missing required toolchain tools by default (`--no-deps` to skip, `--all-deps` for optional PHP/Node/gh)
+- `routing.json` is live: analysis floor is `repo_explorer` / `task_analyst` / `architect` / `docs_researcher` on non-micro work; `max_parallel_analysis` (default 10) is a ceiling, not a quota; still exactly one write owner
+
 ## 2.0.4 — 2026-08-15
 
 Soft / fail-open hooks so the agent cannot lock itself out.

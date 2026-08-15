@@ -95,6 +95,19 @@ class PackageTests(unittest.TestCase):
             self.assertIn('adaptive-grok-build-pro/keep.txt', names)
             self.assertFalse(any(name.endswith('.env') or name.endswith('.env.local') or name.endswith('.pem') for name in names))
 
+    def test_archive_excludes_err_log(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            root.mkdir()
+            (root / 'keep.txt').write_text('keep', encoding='utf-8')
+            (root / 'err.log').write_text('do not pack', encoding='utf-8')
+            archive_path = Path(tmp) / 'project.zip'
+            PACKAGE.write_archive(root, archive_path)
+            with zipfile.ZipFile(archive_path) as archive:
+                names = set(archive.namelist())
+            self.assertIn('adaptive-grok-build-pro/keep.txt', names)
+            self.assertFalse(any(name.endswith('err.log') for name in names))
+
     def test_project_archive_excludes_generated_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'project'

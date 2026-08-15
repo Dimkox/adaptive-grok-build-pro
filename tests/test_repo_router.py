@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -178,6 +179,59 @@ class RouterTests(unittest.TestCase):
         with project_copy() as root:
             route = build_route(root, 'Добавь регрессионные PHPUnit тесты для сервиса заказов', 'x')
             self.assertEqual(route.intent, 'test')
+
+    def test_generic_feature_uses_widened_analysis_floor(self) -> None:
+        with project_copy() as root:
+            route = build_route(root, 'Добавить функцию', 's-floor')
+            self.assertEqual(
+                route.analysis_agents,
+                ['repo_explorer', 'task_analyst', 'architect', 'docs_researcher'],
+            )
+            self.assertEqual(route.write_agent, 'general_implementer')
+            self.assertNotIn(route.write_agent, route.analysis_agents)
+            self.assertLessEqual(len(route.analysis_agents), 10)
+            for name in ('bitrix_architect', 'data_architect', 'ai_architect', 'integration_architect'):
+                self.assertNotIn(name, route.analysis_agents)
+
+    def test_micro_bug_skips_standard_analysis_floor(self) -> None:
+        with project_copy() as root:
+            route = build_route(root, 'Исправь баг в одной функции PHP', 's-micro')
+            self.assertEqual(route.complexity, 'micro')
+            self.assertNotIn('docs_researcher', route.analysis_agents)
+            self.assertNotIn('architect', route.analysis_agents)
+
+    def test_analysis_cap_truncates_and_does_not_pad(self) -> None:
+        with project_copy() as root:
+            path = root / '.grok-stack/config/routing.json'
+            data = json.loads(path.read_text(encoding='utf-8'))
+            data['max_parallel_analysis'] = 2
+            path.write_text(json.dumps(data), encoding='utf-8')
+            route = build_route(
+                root,
+                'Добавить REST API и событие OrderChanged через RabbitMQ для интеграции с 1С и SQL миграцию',
+                's-cap',
+            )
+            self.assertEqual(route.analysis_agents, ['repo_explorer', 'task_analyst'])
+        with project_copy() as root:
+            route = build_route(root, 'Добавить функцию', 's-cap-default')
+            self.assertEqual(len(route.analysis_agents), 4)
+            self.assertNotEqual(len(route.analysis_agents), 10)
+
+    def test_missing_or_invalid_routing_json_uses_defaults(self) -> None:
+        with project_copy() as root:
+            (root / '.grok-stack/config/routing.json').unlink()
+            route = build_route(root, 'Добавить функцию', 's-missing')
+            self.assertEqual(
+                route.analysis_agents,
+                ['repo_explorer', 'task_analyst', 'architect', 'docs_researcher'],
+            )
+        with project_copy() as root:
+            (root / '.grok-stack/config/routing.json').write_text('{', encoding='utf-8')
+            route = build_route(root, 'Добавить функцию', 's-invalid')
+            self.assertEqual(
+                route.analysis_agents,
+                ['repo_explorer', 'task_analyst', 'architect', 'docs_researcher'],
+            )
 
 
 if __name__ == '__main__':

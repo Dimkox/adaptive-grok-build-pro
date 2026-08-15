@@ -57,14 +57,21 @@ class StructureTests(unittest.TestCase):
                         command.startswith('python3 .grok/hooks/'),
                         command,
                     )
+                    self.assertIn('||', command, command)
 
-    def test_workspace_root_does_not_host_hook_scripts(self) -> None:
+    def test_workspace_root_has_dispatch_shims_not_lib(self) -> None:
+        self.assertFalse((ROOT / '_lib.py').exists())
         for name in (
-            '_lib.py', 'user_prompt_submit.py', 'pre_tool_use.py', 'post_tool_use.py',
+            'user_prompt_submit.py', 'pre_tool_use.py', 'post_tool_use.py',
             'pre_compact.py', 'session_start.py', 'session_end.py', 'stop_gate.py',
             'subagent_start.py', 'subagent_stop.py',
         ):
-            self.assertFalse((ROOT / name).exists(), name)
+            path = ROOT / name
+            self.assertTrue(path.is_file(), name)
+            text = path.read_text(encoding='utf-8')
+            self.assertIn('.grok', text)
+            self.assertNotIn('STACK =', text)
+            self.assertNotIn('parents[1]', text)
 
     def test_agents_have_required_contract(self) -> None:
         agents = list((ROOT / '.grok/agents').glob('*.toml'))

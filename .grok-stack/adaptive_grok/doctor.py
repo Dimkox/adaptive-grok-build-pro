@@ -8,7 +8,8 @@ from pathlib import Path
 from .manifest import verify_manifest
 from .repo import detect_repo
 from .router import build_route
-from .util import command_exists, load_json
+from .toolchain import check_toolchain
+from .util import load_json
 
 
 @dataclass
@@ -92,6 +93,6 @@ def run_doctor(root: Path) -> list[DoctorItem]:
     else:
         items.append(DoctorItem('info', 'manifest', 'not generated yet; packaging creates it'))
 
-    for executable in ('python3', 'git', 'php', 'composer', 'node', 'npm'):
-        items.append(DoctorItem('pass' if command_exists(executable) else 'info', f'executable:{executable}', 'available' if command_exists(executable) else 'not installed; only needed for matching project profiles'))
+    for tool in check_toolchain(root):
+        items.append(DoctorItem(tool.status, f'tool:{tool.id}', tool.message))
     return items
