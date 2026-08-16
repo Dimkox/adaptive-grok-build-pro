@@ -96,7 +96,7 @@ Then dispatch every review agent listed by the active route. Store each review r
 python scripts/grok_review.py code_review --status pass --report <path>
 ```
 
-Use the exact evidence kind requested by the route. A receipt is stale after any repository change. The Stop hook blocks completion while required evidence is missing or stale.
+Use the exact evidence kind requested by the route. A receipt is stale after any repository change. The Stop hook warns when required evidence is missing or stale.
 
 ## Prohibited routine actions
 

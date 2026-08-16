@@ -24,7 +24,7 @@ cp dist/adaptive-grok-build-pro-v2.0.6.zip* packages/
 git tag -a v2.0.6 -m "v2.0.6"
 git push origin main
 git push origin v2.0.6
-gh release create v2.0.6 packages/adaptive-grok-build-pro-v2.0.6.zip packages/adaptive-grok-build-pro-v2.0.6.zip.sha256 --notes-file dist/RELEASE-NOTES.md
+gh release create v2.0.6 packages/adaptive-grok-build-pro-v2.0.6.zip packages/adaptive-grok-build-pro-v2.0.6.zip.sha256 --title "Adaptive Grok Build Pro v2.0.6" --notes-file dist/RELEASE-NOTES.md
 ```
 
 ## Rollback

@@ -112,6 +112,16 @@ class InstallerTests(unittest.TestCase):
             ]
             self.assertEqual(copied, [])
 
+    def test_default_install_copies_quality_configs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'target'
+            install_silent(ROOT, target, force=False, dry_run=False)
+            for name in ('ruff.toml', 'bandit.yaml', '.coveragerc'):
+                copied = target / name
+                self.assertTrue(copied.is_file(), name)
+                self.assertEqual(copied.read_bytes(), (ROOT / name).read_bytes(), name)
+            self.assertFalse((target / '.github/workflows').exists())
+
     def test_managed_agents_block_is_idempotent(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / 'target'

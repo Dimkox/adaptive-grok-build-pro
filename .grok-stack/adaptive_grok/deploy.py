@@ -30,7 +30,7 @@ def _human_commands(root: Path, version: str) -> list[str]:
         f'git tag -a v{version} -m "v{version}"',
         f'git push origin {branch}',
         f'git push origin v{version}',
-        f'gh release create v{version} packages/{zip_name} packages/{zip_name}.sha256 --notes-file dist/RELEASE-NOTES.md',
+        f'gh release create v{version} packages/{zip_name} packages/{zip_name}.sha256 --title "Adaptive Grok Build Pro v{version}" --notes-file dist/RELEASE-NOTES.md',
     ]
 
 

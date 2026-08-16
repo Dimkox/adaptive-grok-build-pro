@@ -29,6 +29,8 @@ def write_archive(root: Path, output: Path) -> str:
             archive.writestr(info, path.read_bytes())
     digest = hashlib.sha256(output.read_bytes()).hexdigest()
     (output.parent / f'{output.name}.sha256').write_text(f'{digest}  {output.name}\n', encoding='utf-8')
+    leftover = root / 'MANIFEST.sha256'
+    leftover.unlink(missing_ok=True)
     return digest
 
 

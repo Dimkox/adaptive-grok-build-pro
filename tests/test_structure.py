@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import sys
 import tomllib
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 
 class StructureTests(unittest.TestCase):
@@ -116,6 +118,21 @@ class StructureTests(unittest.TestCase):
         self.assertEqual(list(workflows.glob('*.yml')) if workflows.is_dir() else [], [])
         self.assertFalse((ROOT / '.github/dependabot.yml').exists())
         self.assertFalse((ROOT / '.grok-stack/templates/ci/github-actions.yml').exists())
+
+    def test_changelog_2_0_6_does_not_claim_stale_latest(self) -> None:
+        text = (ROOT / 'CHANGELOG.md').read_text(encoding='utf-8')
+        marker = '## 2.0.6'
+        start = text.find(marker)
+        self.assertGreaterEqual(start, 0, 'missing 2.0.6 section')
+        nxt = text.find('\n## ', start + len(marker))
+        section = text[start:] if nxt == -1 else text[start:nxt]
+        self.assertNotIn('until a human last mile', section)
+        self.assertNotIn('2.0.5 remains', section)
+
+    def test_package_version_matches_version_file(self) -> None:
+        from adaptive_grok import __version__
+
+        self.assertEqual(__version__, (ROOT / 'VERSION').read_text(encoding='utf-8').strip())
 
 
 if __name__ == '__main__':

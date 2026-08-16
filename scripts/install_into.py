@@ -31,6 +31,9 @@ MANAGED_FILES = (
     'subagent_stop.py',
     'stop_gate.py',
     'session_end.py',
+    'ruff.toml',
+    'bandit.yaml',
+    '.coveragerc',
 )
 SKIP_PREFIXES = ('.grok-stack/runtime/',)
 MANAGED_START = '<!-- ADAPTIVE-GROK-PRO:START -->'

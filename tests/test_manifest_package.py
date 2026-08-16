@@ -126,6 +126,19 @@ class PackageTests(unittest.TestCase):
                 self.assertFalse(any(name.endswith('dependabot.yml') for name in names))
                 self.assertFalse(any(name.endswith('github-actions.yml') for name in names))
 
+    def test_write_archive_unlinks_root_manifest_but_embeds_it(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            root.mkdir()
+            (root / 'README.md').write_text('hello\n', encoding='utf-8')
+            archive_path = Path(tmp) / 'project.zip'
+            PACKAGE.write_archive(root, archive_path)
+            self.assertFalse((root / 'MANIFEST.sha256').exists())
+            with zipfile.ZipFile(archive_path) as archive:
+                member = 'adaptive-grok-build-pro/MANIFEST.sha256'
+                self.assertIn(member, archive.namelist())
+                self.assertTrue(archive.read(member))
+
     def test_project_archive_excludes_generated_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'project'

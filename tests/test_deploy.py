@@ -105,6 +105,7 @@ class DeployPrepareTests(unittest.TestCase):
             self.assertIn(f'git tag -a v{version}', joined)
             self.assertIn('git push origin', joined)
             self.assertIn(f'gh release create v{version}', joined)
+            self.assertIn(f'--title "Adaptive Grok Build Pro v{version}"', joined)
             self.assertIn('--notes-file dist/RELEASE-NOTES.md', joined)
             self.assertIsNone(get_receipt(root, route['route_id'], 'deploy'))
             self.assertFalse((root / '.grok-stack/runtime/receipts' / route['route_id'] / 'deploy.json').is_file())

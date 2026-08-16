@@ -2,7 +2,7 @@
 
 ## 2.0.6 — 2026-08-16
 
-Quality contour on this tree. 2.0.5 remains the previous published GitHub Latest until a human last mile.
+Quality contour: Ruff, Bandit, coverage ratchet, no GitHub Actions.
 
 - `grok_verify` runs Ruff from `ruff.toml` without a packaging marker; skip-if-missing, fail-closed when ruff/bandit/coverage are installed
 - Bandit AST next to regex `secret-scan`; excludes `tests/` and `engineering/`

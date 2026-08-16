@@ -1,0 +1,62 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer"
+  ],
+  "base_commit": "e75f3a1b92e247279fbb6210d46715a90cf7895c",
+  "base_fingerprint": "1122606f3f004dd743d80f3e5da303e5fba28cf25cba4c06edf1bac811f7b5d1",
+  "complexity": "micro",
+  "created_at": "2026-08-16T19:08:49+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "generic"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base"
+  ],
+  "rationale": [
+    "bounded change without high-risk signals",
+    "intent=bugfix",
+    "domains=generic",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=1/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "low",
+  "route_id": "3c10395cf76e",
+  "schema_version": 1,
+  "session_id": "01a00b4c-c5a4-7a92-86c9-c2e96e4a6783",
+  "status": "routed",
+  "task": "<user_query>\nисследуй сам себя и исправь вылезшие косяки все автоматичеси без моего ручного подтверждения\n</user_query>",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow"
+  ],
+  "write_agent": "general_implementer"
+}
