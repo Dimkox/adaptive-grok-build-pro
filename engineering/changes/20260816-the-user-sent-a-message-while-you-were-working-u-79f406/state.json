@@ -1,0 +1,29 @@
+{
+  "change_id": "20260816-the-user-sent-a-message-while-you-were-working-u-79f406",
+  "created_at": "2026-08-16T23:06:40+00:00",
+  "history": [
+    {
+      "at": "2026-08-16T23:06:40+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-16T23:08:21+00:00",
+      "from": "draft",
+      "reason": "scope written",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-16T23:08:21+00:00",
+      "from": "scoped",
+      "reason": "no named gate; user ordered complete onboarding README",
+      "to": "approved"
+    }
+  ],
+  "route_id": "79f406e449de",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "The user sent a message while you were working:\n<user_query>\nполный сука ридми сделай со всеми ссылками, графом и тд в продукте, чтобы любой человек или llm agent с ходу подхватил, всё прочитал и имел полнй контекст текущего состояния, хулеты тупишь\n</user_query>\nMake sure to complete any unfinished tasks from previous turns.",
+  "updated_at": "2026-08-16T23:08:21+00:00"
+}

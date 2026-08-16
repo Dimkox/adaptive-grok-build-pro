@@ -37,11 +37,35 @@
       "from": "verifying",
       "reason": "continue: notes rewrite + package + commit remaining 2.0.5 tree",
       "to": "implementing"
+    },
+    {
+      "at": "2026-08-15T02:51:12+00:00",
+      "from": "implementing",
+      "reason": "prep committed; reviews written",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-15T02:51:12+00:00",
+      "from": "verifying",
+      "reason": "code_review and test_review reports PASS",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-15T02:51:12+00:00",
+      "from": "reviewing",
+      "reason": "last state write before official verify and receipts",
+      "to": "ready"
+    },
+    {
+      "at": "2026-08-16T16:20:01+00:00",
+      "from": "ready",
+      "reason": "v2.0.5 tag pushed and GitHub Release published",
+      "to": "released"
     }
   ],
   "route_id": "ad4090c51ca6",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "released",
   "title": "<user_query>\nгит пуш пакет релиз\n</user_query>",
-  "updated_at": "2026-08-15T02:40:00+00:00"
+  "updated_at": "2026-08-16T16:20:01+00:00"
 }

@@ -5,6 +5,11 @@
 - If you make a decision that turns out to be correct and worth the effort, log it in decisions.md (pattern + why it worked, no more than 3 sentences).
 - If you make a mistake that leads to a problem, identify the root cause (not the symptom) and record it in mistakes.md.
 
+## README before push
+
+- Before `git push` or `python3 scripts/grok_deploy.py`, update `README.md` so it matches this tree: current VERSION, what exists, where it lives, and how the pieces connect.
+- The README stack graph must stay complete: every listed core node is linked to every other with a `---` edge. A missing edge means the map is stale. Do not push a README whose graph or current-state section is behind the tree.
+
 This repository uses an adaptive, task-routed Grok Build workflow. The `UserPromptSubmit` hook classifies development tasks and writes `.grok-stack/runtime/active-route.json`. That route is the authority for which skills, agents, quality profiles, human gates, and evidence are required.
 
 ## Mandatory entrypoint

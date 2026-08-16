@@ -1,0 +1,63 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "code_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher"
+  ],
+  "base_commit": "02376cc097d7640d56dd308b98efe4e026f4c253",
+  "base_fingerprint": "0d8c9229e0aa0ee632feaa1a732ce7d9ceda86e418846c5f5b0ac416dde22e4d",
+  "complexity": "standard",
+  "created_at": "2026-08-16T21:27:11+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "generic"
+  ],
+  "human_gates": [],
+  "intent": "docs",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base"
+  ],
+  "rationale": [
+    "bounded change without high-risk signals",
+    "intent=docs",
+    "domains=generic",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=3/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review"
+  ],
+  "review_agents": [
+    "code_reviewer"
+  ],
+  "risk": "low",
+  "route_id": "d55ce4cd4015",
+  "schema_version": 1,
+  "session_id": "01a00c77-c772-7bc2-86b0-0884f1aee70b",
+  "status": "routed",
+  "task": "<user_query>\nскажи мне, ебаная пидрила, где ты проебал в agents.md вот эту инструкцию самообучения агентов сука: - If you make a decision that turns out to be correct and worth the effort, log it in decisions.md (pattern + why it worked, no more than 3 sentences).\n- If you make a mistake that leads to a problem, identify the root cause (not the symptom) and record it in mistakes.md.\n</user_query>",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "task-triage"
+  ],
+  "write_agent": "general_implementer"
+}

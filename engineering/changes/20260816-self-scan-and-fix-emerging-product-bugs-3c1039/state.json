@@ -25,11 +25,29 @@
       "from": "approved",
       "reason": "dispatch general_implementer",
       "to": "implementing"
+    },
+    {
+      "at": "2026-08-16T19:20:18+00:00",
+      "from": "implementing",
+      "reason": "fixes committed 11da31a",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-16T19:20:18+00:00",
+      "from": "verifying",
+      "reason": "dispatch reviews",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-16T19:20:18+00:00",
+      "from": "reviewing",
+      "reason": "last state write before official verify",
+      "to": "ready"
     }
   ],
   "route_id": "3c10395cf76e",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "ready",
   "title": "Self-scan and fix emerging product bugs",
-  "updated_at": "2026-08-16T19:15:36+00:00"
+  "updated_at": "2026-08-16T19:20:18+00:00"
 }

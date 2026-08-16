@@ -1,0 +1,53 @@
+{
+  "change_id": "20260816-user-query-скажи-мне-ебаная-пидрила-где-ты-проеб-d55ce4",
+  "created_at": "2026-08-16T21:27:26+00:00",
+  "history": [
+    {
+      "at": "2026-08-16T21:27:26+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-16T21:34:32+00:00",
+      "from": "draft",
+      "reason": "scope and acceptance criteria written",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-16T21:34:32+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; user ordered the restore as first AGENTS.md point",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-16T21:36:46+00:00",
+      "from": "approved",
+      "reason": "write owner restored AGENTS.md self-learning as first section",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-16T21:36:46+00:00",
+      "from": "implementing",
+      "reason": "implementation complete; starting verification",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-16T21:40:18+00:00",
+      "from": "verifying",
+      "reason": "independent code review PASS",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-16T21:40:19+00:00",
+      "from": "reviewing",
+      "reason": "verification and review complete",
+      "to": "ready"
+    }
+  ],
+  "route_id": "d55ce4cd4015",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "<user_query>\nскажи мне, ебаная пидрила, где ты проебал в agents.md вот эту инструкцию самообучения агентов сука: - If you make a decision that turns out to be correct and worth the effort, log it in decisions.md (pattern + why it worked, no more than 3 sentences).\n- If you make a mistake that leads to a problem, identify the root cause (not the symptom) and record it in mistakes.md.\n</user_query>",
+  "updated_at": "2026-08-16T21:40:19+00:00"
+}

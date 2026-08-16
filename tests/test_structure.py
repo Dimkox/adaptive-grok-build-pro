@@ -70,6 +70,23 @@ class StructureTests(unittest.TestCase):
             'README must name self-learning or Agent self-learning',
         )
 
+    def test_readme_names_onboarding_docs_and_current_version(self) -> None:
+        text = (ROOT / 'README.md').read_text(encoding='utf-8')
+        self.assertIn('QUICKSTART.md', text)
+        self.assertIn('CHANGELOG.md', text)
+        self.assertIn('2.0.8', text)
+
+    def test_agents_md_requires_readme_refresh_before_push(self) -> None:
+        text = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
+        self.assertIn('## README before push', text)
+        self.assertIn('git push', text)
+        self.assertIn('grok_deploy', text)
+        self.assertIn('complete', text)
+
+    def test_decisions_md_records_readme_before_push(self) -> None:
+        text = (ROOT / 'decisions.md').read_text(encoding='utf-8')
+        self.assertIn('README is the push-time product map', text)
+
     def test_readme_stack_graph_is_complete(self) -> None:
         text = (ROOT / 'README.md').read_text(encoding='utf-8')
         fence = '```mermaid'

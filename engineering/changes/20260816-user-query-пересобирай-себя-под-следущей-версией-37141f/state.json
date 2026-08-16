@@ -31,11 +31,29 @@
       "from": "implementing",
       "reason": "identity 2.0.8 files, zip, and pin tests green; awaiting path-limited commit then controller verify/review",
       "to": "implementing"
+    },
+    {
+      "at": "2026-08-16T21:55:53+00:00",
+      "from": "implementing",
+      "reason": "2.0.8 committed locally; starting verification",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-16T22:04:08+00:00",
+      "from": "verifying",
+      "reason": "independent code review PASS on 22762a7",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-16T22:04:08+00:00",
+      "from": "reviewing",
+      "reason": "2.0.8 verified and reviewed; authorized to push if receipts bind",
+      "to": "ready"
     }
   ],
   "route_id": "37141fbe6302",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "ready",
   "title": "<user_query>\nпересобирай себя под следущей версией, проверяй сам себя по своим же инструкциям и гит пуш, если все ок\n</user_query>",
-  "updated_at": "2026-08-16T21:54:00+00:00"
+  "updated_at": "2026-08-16T22:04:08+00:00"
 }

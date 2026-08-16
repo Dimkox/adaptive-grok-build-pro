@@ -2,6 +2,10 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-16 — README is the push-time product map
+
+A cold reader (human or LLM) only gets current context if `README.md` is refreshed to the tree being shipped. Before every `git push` or `grok_deploy`, rewrite current state and keep the mermaid a complete pairwise-linked graph. Structure tests fail if that AGENTS.md rule or the complete graph disappears.
+
 ## 2026-08-16 — README stack graph is K10 with every pair written out
 
 The caption already promised every core piece is linked to every other. Once `AGENTS.md` / `decisions.md` / `mistakes.md` became core, a K7 mermaid was a lie. Enumerate all 45 `---` pairs so a structure test can fail on a missing link instead of trusting mermaid shorthand.

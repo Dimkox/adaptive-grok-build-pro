@@ -2,6 +2,51 @@
 
 A commercial-grade product for **Grok Build** — free of charge, public, and MIT-licensed.
 
+## Current state
+
+- Identity: **2.0.8** (`VERSION`, README H1). GitHub Release Latest may still be an older tag until a human last mile creates `v2.0.8`.
+- Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); next is README-before-push.
+- Quality gate: local `python3 scripts/grok_verify.py --mode pr` only. **No GitHub Actions.**
+- Do not add `pyproject.toml` / `requirements.txt` / `setup.py` (flips repo detect).
+
+## Read first
+
+1. [AGENTS.md](AGENTS.md)
+2. [decisions.md](decisions.md)
+3. [mistakes.md](mistakes.md)
+4. [CHANGELOG.md](CHANGELOG.md)
+5. [QUICKSTART.md](QUICKSTART.md)
+6. `.grok-stack/runtime/active-route.json` (live route; not product identity)
+7. This README’s stack graph and map
+
+## How work runs
+
+Source-of-truth order is in AGENTS.md. Loop: route → change package → one write owner → `grok_verify --mode pr` → independent reviews → `ready` → `python3 scripts/grok_deploy.py` prints; humans run tag/push/release. Refresh this README before that push.
+
+## Map
+
+- [AGENTS.md](AGENTS.md)
+- [decisions.md](decisions.md)
+- [mistakes.md](mistakes.md)
+- [CHANGELOG.md](CHANGELOG.md)
+- [QUICKSTART.md](QUICKSTART.md)
+- [VERSION](VERSION)
+- [`.grok/skills/`](.grok/skills/)
+- [`.grok/agents/`](.grok/agents/)
+- [`.grok/hooks/`](.grok/hooks/)
+- [`scripts/grok_route.py`](scripts/grok_route.py)
+- [`scripts/grok_change.py`](scripts/grok_change.py)
+- [`scripts/grok_verify.py`](scripts/grok_verify.py)
+- [`scripts/grok_review.py`](scripts/grok_review.py)
+- [`scripts/grok_approve.py`](scripts/grok_approve.py)
+- [`scripts/grok_deploy.py`](scripts/grok_deploy.py)
+- [`scripts/grok_doctor.py`](scripts/grok_doctor.py)
+- [`scripts/install_into.py`](scripts/install_into.py)
+- [`engineering/runbooks/`](engineering/runbooks/)
+- [`packages/`](packages/)
+- [`examples/bitrix-module/`](examples/bitrix-module/)
+- [LICENSE](LICENSE)
+
 ## What this is
 
 - Task routing + domain skills (Bitrix, API/events, data, frontend, security, incidents, …)

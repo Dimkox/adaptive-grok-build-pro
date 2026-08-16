@@ -1,0 +1,68 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher"
+  ],
+  "base_commit": "22762a77ea4133cc34398f9a70194daa427bd096",
+  "base_fingerprint": "3c1723545ee650316b0462c0fca8ee3393030b41c589d33f47ca11002ee3e3a7",
+  "complexity": "high-risk",
+  "created_at": "2026-08-16T22:42:31+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "generic"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "production_action_approval"
+  ],
+  "intent": "release",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base"
+  ],
+  "rationale": [
+    "high-risk signal: деплой",
+    "intent=release",
+    "domains=generic",
+    "repository=generic",
+    "write-owner=none",
+    "analysis-wave=3/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "2f9f5d5bc202",
+  "schema_version": 1,
+  "session_id": "01a00c77-c772-7bc2-86b0-0884f1aee70b",
+  "status": "routed",
+  "task": "The user sent a message while you were working:\n<user_query>\nложная тревога, это кодекс под виндой хуйню творил, продолжай деплой окружения для разработки\n</user_query>\nMake sure to complete any unfinished tasks from previous turns.",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "release-readiness"
+  ],
+  "write_agent": null
+}
