@@ -8,6 +8,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 - Quality profiles and change packages under `engineering/changes/`
 - Verification / review receipts via `scripts/grok_*.py`
 - Multi-agent discipline described in `AGENTS.md`
+- `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`
 
 ## Stack graph
 
@@ -15,27 +16,54 @@ Simple complete graph: every core piece is linked to every other.
 
 ```mermaid
 graph TD
+  Contract["AGENTS.md"]
+  Decisions["decisions.md"]
+  Mistakes["mistakes.md"]
   Route --- Skills
   Route --- Agents
   Route --- Hooks
   Route --- Policy
   Route --- Verify
   Route --- Packages
+  Route --- Contract
+  Route --- Decisions
+  Route --- Mistakes
   Skills --- Agents
   Skills --- Hooks
   Skills --- Policy
   Skills --- Verify
   Skills --- Packages
+  Skills --- Contract
+  Skills --- Decisions
+  Skills --- Mistakes
   Agents --- Hooks
   Agents --- Policy
   Agents --- Verify
   Agents --- Packages
+  Agents --- Contract
+  Agents --- Decisions
+  Agents --- Mistakes
   Hooks --- Policy
   Hooks --- Verify
   Hooks --- Packages
+  Hooks --- Contract
+  Hooks --- Decisions
+  Hooks --- Mistakes
   Policy --- Verify
   Policy --- Packages
+  Policy --- Contract
+  Policy --- Decisions
+  Policy --- Mistakes
   Verify --- Packages
+  Verify --- Contract
+  Verify --- Decisions
+  Verify --- Mistakes
+  Packages --- Contract
+  Packages --- Decisions
+  Packages --- Mistakes
+  Contract --- Decisions
+  Contract --- Mistakes
+  Decisions --- Mistakes
 ```
 
 | Node | Role |
@@ -47,6 +75,9 @@ graph TD
 | Policy | `.grok-stack/adaptive_grok/policy.py` |
 | Verify | `scripts/grok_verify.py` + receipts |
 | Packages | `packages/` + `scripts/package_stack.py` |
+| Contract | `AGENTS.md` first rule: log to `decisions.md` / `mistakes.md` |
+| Decisions | root `decisions.md` |
+| Mistakes | root `mistakes.md` |
 
 ## Requirements
 
@@ -86,6 +117,8 @@ Or copy manually:
 .grok-stack/      → project .grok-stack/
 scripts/          → project scripts/
 AGENTS.md         → project AGENTS.md
+decisions.md      → project decisions.md
+mistakes.md       → project mistakes.md
 engineering/      → project engineering/  (if empty scaffold needed)
 ```
 

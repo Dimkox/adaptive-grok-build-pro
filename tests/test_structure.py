@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 import tomllib
 import unittest
+from itertools import combinations
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +22,12 @@ class StructureTests(unittest.TestCase):
             self.assertTrue((ROOT / rel).is_file(), rel)
 
     def test_agents_md_starts_with_self_learning(self) -> None:
+        self.assertTrue((ROOT / 'decisions.md').is_file(), 'decisions.md')
+        self.assertTrue((ROOT / 'mistakes.md').is_file(), 'mistakes.md')
+        decisions_head = (ROOT / 'decisions.md').read_text(encoding='utf-8')[:400]
+        mistakes_head = (ROOT / 'mistakes.md').read_text(encoding='utf-8')[:400]
+        self.assertIn('Patterns that paid for themselves', decisions_head)
+        self.assertIn('Root causes, not symptoms', mistakes_head)
         text = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
         headings = [line for line in text.splitlines() if line.startswith('## ')]
         self.assertTrue(headings, 'AGENTS.md has no ## headings')
@@ -27,13 +35,79 @@ class StructureTests(unittest.TestCase):
         entrypoint = text.find('## Mandatory entrypoint')
         self.assertGreaterEqual(entrypoint, 0, 'missing ## Mandatory entrypoint')
         prefix = text[:entrypoint]
-        self.assertIn('engineering/decisions.md', prefix)
-        self.assertIn('engineering/mistakes.md', prefix)
-        self.assertIn('log it in', prefix)
-        self.assertIn('record it in', prefix)
+        self.assertIn('log it in decisions.md', prefix)
+        self.assertIn('record it in mistakes.md', prefix)
+        self.assertNotIn('engineering/decisions.md', prefix)
+        self.assertNotIn('engineering/mistakes.md', prefix)
         self.assertIn('worth the effort', prefix)
         self.assertIn('no more than 3 sentences', prefix)
         self.assertIn('root cause (not the symptom)', prefix)
+
+    def test_engineering_self_learning_stubs_are_pointers(self) -> None:
+        for rel, dest in (
+            ('engineering/decisions.md', '/decisions.md'),
+            ('engineering/mistakes.md', '/mistakes.md'),
+        ):
+            path = ROOT / rel
+            self.assertTrue(path.is_file(), rel)
+            text = path.read_text(encoding='utf-8')
+            lines = text.splitlines()
+            self.assertLessEqual(len(lines), 5, rel)
+            self.assertIn('Canonical log is /', text)
+            self.assertIn(f'Canonical log is {dest}', text)
+            self.assertIn('Do not append here', text)
+            self.assertFalse(
+                any(line.startswith('## 20') for line in lines),
+                rel,
+            )
+
+    def test_readme_names_root_self_learning_logs(self) -> None:
+        text = (ROOT / 'README.md').read_text(encoding='utf-8')
+        self.assertIn('decisions.md', text)
+        self.assertIn('mistakes.md', text)
+        self.assertTrue(
+            'self-learning' in text or 'Agent self-learning' in text,
+            'README must name self-learning or Agent self-learning',
+        )
+
+    def test_readme_stack_graph_is_complete(self) -> None:
+        text = (ROOT / 'README.md').read_text(encoding='utf-8')
+        fence = '```mermaid'
+        start = text.find(fence)
+        self.assertGreaterEqual(start, 0, 'missing mermaid fence')
+        body_start = start + len(fence)
+        end = text.find('```', body_start)
+        self.assertGreater(end, body_start, 'unclosed mermaid fence')
+        mermaid = text[body_start:end]
+        required = (
+            'Route', 'Skills', 'Agents', 'Hooks', 'Policy',
+            'Verify', 'Packages', 'Contract', 'Decisions', 'Mistakes',
+        )
+        for node_id in required:
+            self.assertIn(node_id, mermaid, node_id)
+
+        nodes: set[str] = set()
+        edges: set[frozenset[str]] = set()
+        for raw in mermaid.splitlines():
+            line = re.sub(r'\[[^\]]*\]', '', raw).strip()
+            if not line or line.startswith('graph '):
+                continue
+            match = re.fullmatch(r'(\w+)\s+---\s+(\w+)', line)
+            if match is None:
+                decl = re.fullmatch(r'(\w+)', line)
+                if decl is not None:
+                    nodes.add(decl.group(1))
+                continue
+            left, right = match.group(1), match.group(2)
+            nodes.add(left)
+            nodes.add(right)
+            edges.add(frozenset((left, right)))
+
+        self.assertEqual(nodes, set(required))
+        self.assertEqual(len(edges), 45, f'expected 45 unique undirected edges, got {len(edges)}')
+        expected = {frozenset(pair) for pair in combinations(required, 2)}
+        self.assertEqual(len(expected), 45)
+        self.assertEqual(edges, expected)
 
     def test_readme_is_free_mit_commercial_product(self) -> None:
         text = (ROOT / 'README.md').read_text(encoding='utf-8')

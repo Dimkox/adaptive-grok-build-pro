@@ -1,0 +1,68 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher"
+  ],
+  "base_commit": "22762a77ea4133cc34398f9a70194daa427bd096",
+  "base_fingerprint": "a58c39129f1cc972f8f3d7b8cca10b9fa6c5f2f5bb2494cd453a60292000ac79",
+  "complexity": "standard",
+  "created_at": "2026-08-16T22:05:50+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "generic"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base"
+  ],
+  "rationale": [
+    "bounded change without high-risk signals",
+    "intent=feature",
+    "domains=generic",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "low",
+  "route_id": "ba1615416da5",
+  "schema_version": 1,
+  "session_id": "01a00c77-c772-7bc2-86b0-0884f1aee70b",
+  "status": "routed",
+  "task": "<user_query>\nя все еще не вижу файлов из промпта для агентов в корне\n</user_query>",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow"
+  ],
+  "write_agent": "general_implementer"
+}

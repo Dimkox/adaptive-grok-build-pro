@@ -1,0 +1,35 @@
+{
+  "change_id": "20260816-the-user-sent-a-message-while-you-were-working-u-a13da8",
+  "created_at": "2026-08-16T22:29:51+00:00",
+  "history": [
+    {
+      "at": "2026-08-16T22:29:51+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-16T22:30:44+00:00",
+      "from": "draft",
+      "reason": "scope written",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-16T22:30:44+00:00",
+      "from": "scoped",
+      "reason": "no named gate; user wants complete README graph and the unfinished push",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-16T22:33:00+00:00",
+      "from": "approved",
+      "reason": "README K10 complete graph plus root log docs",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "a13da8f96b5a",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "The user sent a message while you were working:\n<user_query>\nи полный граф со всемы ссылками для полной связности ты в ридми положил, да, ска?\n</user_query>\nMake sure to complete any unfinished tasks from previous turns.",
+  "updated_at": "2026-08-16T22:33:00+00:00"
+}
