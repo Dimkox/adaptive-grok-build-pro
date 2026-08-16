@@ -1,0 +1,35 @@
+{
+  "change_id": "20260816-publish-v2-0-7-github-release-2929c0",
+  "created_at": "2026-08-16T19:39:39+00:00",
+  "history": [
+    {
+      "at": "2026-08-16T19:39:39+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-16T19:45:54+00:00",
+      "from": "draft",
+      "reason": "2.0.7 identity plus last mile",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-16T19:45:54+00:00",
+      "from": "scoped",
+      "reason": "user demanded new release and publish",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-16T19:45:54+00:00",
+      "from": "approved",
+      "reason": "controller owns identity bump; write_agent null",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "2929c09b96b5",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Publish v2.0.7 GitHub Release",
+  "updated_at": "2026-08-16T19:45:54+00:00"
+}

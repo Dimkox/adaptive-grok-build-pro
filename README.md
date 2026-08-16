@@ -1,4 +1,4 @@
-# Adaptive Grok Build Pro v2.0.6
+# Adaptive Grok Build Pro v2.0.7
 
 A commercial-grade product for **Grok Build** — free of charge, public, and MIT-licensed.
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.7 — 2026-08-16
+
+Leftover 2.0.6 product fixes, published as their own release.
+
+- `install_into` copies `ruff.toml`, `bandit.yaml`, and `.coveragerc`
+- `grok_deploy` prints `--title "Adaptive Grok Build Pro v…"`
+- `package_stack` unlinks leftover root `MANIFEST.sha256` after the zip embeds it
+- `__version__` matches `VERSION`
+- Stop hook wording is warn-only
+- Still no GitHub Actions
+
 ## 2.0.6 — 2026-08-16
 
 Quality contour: Ruff, Bandit, coverage ratchet, no GitHub Actions.
