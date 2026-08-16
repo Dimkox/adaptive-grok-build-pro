@@ -2,10 +2,12 @@
 
 ## 2.0.8 — 2026-08-16
 
-Agent self-learning is the first AGENTS.md rule.
+Agent self-learning, root memory files, and a complete-graph README.
 
-- `AGENTS.md` starts with log-to-`engineering/decisions.md` / `engineering/mistakes.md`
-- Structure test locks that placement so a rewrite cannot drop it
+- `AGENTS.md` starts with log-to-root `decisions.md` / `mistakes.md`
+- Standing rules: refresh README before every push/deploy; split large tasks; share `AGENTS.md` / `decisions.md` / `mistakes.md`
+- README is the product map: Current state, Read first, Map, K10 complete graph
+- Structure tests lock those placements
 - Still no GitHub Actions
 
 ## 2.0.7 — 2026-08-16

@@ -2,6 +2,10 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-16 — Publish unpublished 2.0.8, do not invent 2.0.9
+
+`VERSION` is already 2.0.8 and no `v2.0.8` tag exists, so the new GitHub Release is 2.0.8 of the current tree. Rebuild the zip after notes, then tag that commit. Do not retag 2.0.7.
+
 ## 2026-08-16 — Split one large task; share memory
 
 One giant prompt produces a stale README and half-finished last miles. Split into concrete subtasks that write facts into `AGENTS.md` / `decisions.md` / `mistakes.md` so the next slice can start without the chat. That is how the self-learning files stay the product map instead of session debris.
