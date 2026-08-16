@@ -21,7 +21,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## How work runs
 
-Source-of-truth order is in AGENTS.md. Loop: route → change package → one write owner → `grok_verify --mode pr` → independent reviews → `ready` → `python3 scripts/grok_deploy.py` prints; humans run tag/push/release. Refresh this README before that push.
+Source-of-truth order is in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Loop: route → change package → one write owner → `grok_verify --mode pr` → independent reviews → `ready` → `python3 scripts/grok_deploy.py` prints; humans run tag/push/release. Refresh this README before that push.
 
 ## Map
 

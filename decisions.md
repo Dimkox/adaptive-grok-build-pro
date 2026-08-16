@@ -2,6 +2,10 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-16 — Split one large task; share memory
+
+One giant prompt produces a stale README and half-finished last miles. Split into concrete subtasks that write facts into `AGENTS.md` / `decisions.md` / `mistakes.md` so the next slice can start without the chat. That is how the self-learning files stay the product map instead of session debris.
+
 ## 2026-08-16 — README is the push-time product map
 
 A cold reader (human or LLM) only gets current context if `README.md` is refreshed to the tree being shipped. Before every `git push` or `grok_deploy`, rewrite current state and keep the mermaid a complete pairwise-linked graph. Structure tests fail if that AGENTS.md rule or the complete graph disappears.

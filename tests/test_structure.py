@@ -87,6 +87,16 @@ class StructureTests(unittest.TestCase):
         text = (ROOT / 'decisions.md').read_text(encoding='utf-8')
         self.assertIn('README is the push-time product map', text)
 
+    def test_agents_md_splits_large_tasks(self) -> None:
+        text = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
+        self.assertIn('## Split large tasks', text)
+        self.assertIn('shared memory', text.lower())
+        self.assertIn('decisions.md', text)
+
+    def test_decisions_md_records_split_large_tasks(self) -> None:
+        text = (ROOT / 'decisions.md').read_text(encoding='utf-8')
+        self.assertIn('Split one large task', text)
+
     def test_readme_stack_graph_is_complete(self) -> None:
         text = (ROOT / 'README.md').read_text(encoding='utf-8')
         fence = '```mermaid'

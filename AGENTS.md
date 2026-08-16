@@ -10,6 +10,12 @@
 - Before `git push` or `python3 scripts/grok_deploy.py`, update `README.md` so it matches this tree: current VERSION, what exists, where it lives, and how the pieces connect.
 - The README stack graph must stay complete: every listed core node is linked to every other with a `---` edge. A missing edge means the map is stale. Do not push a README whose graph or current-state section is behind the tree.
 
+## Split large tasks
+
+- For reading and delivery, split one large task into several small concrete subtasks that share memory.
+- Shared memory is `AGENTS.md`, `decisions.md`, and `mistakes.md`. Each subtask must leave a fact there if it will matter to the next subtask.
+- Do not keep the whole plan only in chat.
+
 This repository uses an adaptive, task-routed Grok Build workflow. The `UserPromptSubmit` hook classifies development tasks and writes `.grok-stack/runtime/active-route.json`. That route is the authority for which skills, agents, quality profiles, human gates, and evidence are required.
 
 ## Mandatory entrypoint
