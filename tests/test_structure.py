@@ -74,7 +74,7 @@ class StructureTests(unittest.TestCase):
         text = (ROOT / 'README.md').read_text(encoding='utf-8')
         self.assertIn('QUICKSTART.md', text)
         self.assertIn('CHANGELOG.md', text)
-        self.assertIn('2.0.9', text)
+        self.assertIn('2.0.10', text)
 
     def test_agents_md_requires_readme_refresh_before_push(self) -> None:
         text = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
@@ -240,8 +240,8 @@ class StructureTests(unittest.TestCase):
         for name in ('pyproject.toml', 'requirements.txt', 'setup.py'):
             self.assertFalse((ROOT / name).exists(), name)
 
-    def test_version_is_2_0_9_and_github_actions_are_absent(self) -> None:
-        self.assertEqual((ROOT / 'VERSION').read_text(encoding='utf-8').strip(), '2.0.9')
+    def test_version_is_2_0_10_and_github_actions_are_absent(self) -> None:
+        self.assertEqual((ROOT / 'VERSION').read_text(encoding='utf-8').strip(), '2.0.10')
         workflows = ROOT / '.github/workflows'
         self.assertEqual(list(workflows.glob('*.yml')) if workflows.is_dir() else [], [])
         self.assertFalse((ROOT / '.github/dependabot.yml').exists())

@@ -2,6 +2,10 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-16 — New release after an existing tag is 2.0.10
+
+`v2.0.9` already peels to `f72c0fc`. A new «релиз сделай» therefore bumps VERSION, rebuilds the zip, and tags `v2.0.10`. Do not retag `v2.0.9`.
+
 ## 2026-08-16 — New release after an existing tag is 2.0.9
 
 `v2.0.8` already peels to `0284241`. A new «релиз сделай» therefore bumps VERSION, rebuilds the zip, and tags `v2.0.9`. Do not retag `v2.0.8`.

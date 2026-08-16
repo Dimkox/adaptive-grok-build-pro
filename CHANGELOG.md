@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.10 — 2026-08-16
+
+Published identity of current main after `v2.0.9`.
+
+- Same product surface as 2.0.9 plus this version identity
+- Standing rule still: green verify → new release
+- Still no GitHub Actions
+
 ## 2.0.9 — 2026-08-16
 
 Published identity of current main after `v2.0.8`.

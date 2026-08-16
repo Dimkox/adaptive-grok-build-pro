@@ -1,0 +1,68 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher"
+  ],
+  "base_commit": "f72c0fc2bb27de5dee67f799517f71cd678eb068",
+  "base_fingerprint": "21107dbdc25adf3dc4cf694810077fd3c1cf310233733b0fb5989e167bd0d3b1",
+  "complexity": "high-risk",
+  "created_at": "2026-08-16T23:40:13+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "generic"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "production_action_approval"
+  ],
+  "intent": "release",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base"
+  ],
+  "rationale": [
+    "high-risk intent/domain: release",
+    "intent=release",
+    "domains=generic",
+    "repository=generic",
+    "write-owner=none",
+    "analysis-wave=3/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "70b284082a16",
+  "schema_version": 1,
+  "session_id": "01a00c77-c772-7bc2-86b0-0884f1aee70b",
+  "status": "routed",
+  "task": "<system-reminder>\nBackground subagent \"01a00cea-6b8e-7b22-b115-ee121707926a\" (architect: \"Design green-verify release rule\") completed successfully.\nDuration: 381.1s | Tool calls: 92 | Turns: 1\nUse get_task_output(\"01a00cea-6b8e-7b22-b115-ee121707926a\") to see the full output.\n</system-reminder>",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "release-readiness"
+  ],
+  "write_agent": null
+}

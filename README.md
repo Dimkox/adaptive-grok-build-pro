@@ -1,10 +1,10 @@
-# Adaptive Grok Build Pro v2.0.9
+# Adaptive Grok Build Pro v2.0.10
 
 A commercial-grade product for **Grok Build** — free of charge, public, and MIT-licensed.
 
 ## Current state
 
-- Identity: **2.0.9** (`VERSION`, README H1). Published GitHub Release is `v2.0.9`.
+- Identity: **2.0.10** (`VERSION`, README H1). Published GitHub Release is `v2.0.10`.
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); then README-before-push, Split large tasks, and Release when green.
 - Quality gate: local `python3 scripts/grok_verify.py --mode pr` only. **No GitHub Actions.**
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` (flips repo detect).
