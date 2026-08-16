@@ -1,0 +1,59 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "code_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer"
+  ],
+  "base_commit": "02376cc097d7640d56dd308b98efe4e026f4c253",
+  "base_fingerprint": "1ed721c4aa8b3baefb4e6269ab139bcf847b57cd6c7e0b4eebc66a33366b23b0",
+  "complexity": "micro",
+  "created_at": "2026-08-16T21:44:18+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "generic"
+  ],
+  "human_gates": [],
+  "intent": "docs",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base"
+  ],
+  "rationale": [
+    "bounded change without high-risk signals",
+    "intent=docs",
+    "domains=generic",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=1/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review"
+  ],
+  "review_agents": [
+    "code_reviewer"
+  ],
+  "risk": "low",
+  "route_id": "37141fbe6302",
+  "schema_version": 1,
+  "session_id": "01a00c77-c772-7bc2-86b0-0884f1aee70b",
+  "status": "routed",
+  "task": "<user_query>\nпересобирай себя под следущей версией, проверяй сам себя по своим же инструкциям и гит пуш, если все ок\n</user_query>",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "task-triage"
+  ],
+  "write_agent": "general_implementer"
+}

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.8 — 2026-08-16
+
+Agent self-learning is the first AGENTS.md rule.
+
+- `AGENTS.md` starts with log-to-`engineering/decisions.md` / `engineering/mistakes.md`
+- Structure test locks that placement so a rewrite cannot drop it
+- Still no GitHub Actions
+
 ## 2.0.7 — 2026-08-16
 
 Leftover 2.0.6 product fixes, published as their own release.

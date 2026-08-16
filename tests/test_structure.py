@@ -19,6 +19,22 @@ class StructureTests(unittest.TestCase):
         ):
             self.assertTrue((ROOT / rel).is_file(), rel)
 
+    def test_agents_md_starts_with_self_learning(self) -> None:
+        text = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
+        headings = [line for line in text.splitlines() if line.startswith('## ')]
+        self.assertTrue(headings, 'AGENTS.md has no ## headings')
+        self.assertEqual(headings[0], '## Agent self-learning')
+        entrypoint = text.find('## Mandatory entrypoint')
+        self.assertGreaterEqual(entrypoint, 0, 'missing ## Mandatory entrypoint')
+        prefix = text[:entrypoint]
+        self.assertIn('engineering/decisions.md', prefix)
+        self.assertIn('engineering/mistakes.md', prefix)
+        self.assertIn('log it in', prefix)
+        self.assertIn('record it in', prefix)
+        self.assertIn('worth the effort', prefix)
+        self.assertIn('no more than 3 sentences', prefix)
+        self.assertIn('root cause (not the symptom)', prefix)
+
     def test_readme_is_free_mit_commercial_product(self) -> None:
         text = (ROOT / 'README.md').read_text(encoding='utf-8')
         license_text = (ROOT / 'LICENSE').read_text(encoding='utf-8')
@@ -112,8 +128,8 @@ class StructureTests(unittest.TestCase):
         for name in ('pyproject.toml', 'requirements.txt', 'setup.py'):
             self.assertFalse((ROOT / name).exists(), name)
 
-    def test_version_is_2_0_7_and_github_actions_are_absent(self) -> None:
-        self.assertEqual((ROOT / 'VERSION').read_text(encoding='utf-8').strip(), '2.0.7')
+    def test_version_is_2_0_8_and_github_actions_are_absent(self) -> None:
+        self.assertEqual((ROOT / 'VERSION').read_text(encoding='utf-8').strip(), '2.0.8')
         workflows = ROOT / '.github/workflows'
         self.assertEqual(list(workflows.glob('*.yml')) if workflows.is_dir() else [], [])
         self.assertFalse((ROOT / '.github/dependabot.yml').exists())

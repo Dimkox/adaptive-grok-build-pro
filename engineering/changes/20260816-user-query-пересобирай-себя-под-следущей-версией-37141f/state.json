@@ -1,0 +1,41 @@
+{
+  "change_id": "20260816-user-query-пересобирай-себя-под-следущей-версией-37141f",
+  "created_at": "2026-08-16T21:44:57+00:00",
+  "history": [
+    {
+      "at": "2026-08-16T21:44:57+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-16T21:46:37+00:00",
+      "from": "draft",
+      "reason": "scope and acceptance criteria written",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-16T21:46:37+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; user ordered 2.0.8 rebuild and push if green",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-16T21:52:04+00:00",
+      "from": "approved",
+      "reason": "identity 2.0.8 rebuild started",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-16T21:54:00+00:00",
+      "from": "implementing",
+      "reason": "identity 2.0.8 files, zip, and pin tests green; awaiting path-limited commit then controller verify/review",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "37141fbe6302",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "<user_query>\nпересобирай себя под следущей версией, проверяй сам себя по своим же инструкциям и гит пуш, если все ок\n</user_query>",
+  "updated_at": "2026-08-16T21:54:00+00:00"
+}

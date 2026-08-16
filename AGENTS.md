@@ -1,5 +1,10 @@
 # Adaptive Grok Build Pro Engineering Contract
 
+## Agent self-learning
+
+- If you make a decision that turns out to be correct and worth the effort, log it in engineering/decisions.md (pattern + why it worked, no more than 3 sentences).
+- If you make a mistake that leads to a problem, identify the root cause (not the symptom) and record it in engineering/mistakes.md.
+
 This repository uses an adaptive, task-routed Grok Build workflow. The `UserPromptSubmit` hook classifies development tasks and writes `.grok-stack/runtime/active-route.json`. That route is the authority for which skills, agents, quality profiles, human gates, and evidence are required.
 
 ## Mandatory entrypoint

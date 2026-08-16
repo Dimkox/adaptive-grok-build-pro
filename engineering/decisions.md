@@ -2,6 +2,10 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-16 — Pin tests after bump, pack after VERSION
+
+Hardcoded version asserts go red first so a skipped identity file cannot hide. Pack only after `VERSION` is `2.0.8` so the zip name and in-zip `VERSION` cannot still say `2.0.7`. The 2.0.8 ship used that sequence and the in-zip `VERSION` matched.
+
 ## 2026-08-16 — Never GitHub Actions
 
 Local `make verify` / `python3 scripts/grok_verify.py --mode pr` is the only quality gate. Do not add `.github/workflows/`, Dependabot, `--with-ci` copies, or another CI SaaS. `install_into --with-ci` is `SystemExit` / forbidden.
