@@ -5,7 +5,7 @@
 Agent self-learning, root memory files, and a complete-graph README.
 
 - `AGENTS.md` starts with log-to-root `decisions.md` / `mistakes.md`
-- Standing rules: refresh README before every push/deploy; split large tasks; share `AGENTS.md` / `decisions.md` / `mistakes.md`
+- Standing rules: refresh README before every push/deploy; split large tasks; share `AGENTS.md` / `decisions.md` / `mistakes.md`; publish a new release when verify is green
 - README is the product map: Current state, Read first, Map, K10 complete graph
 - Structure tests lock those placements
 - Still no GitHub Actions

@@ -97,6 +97,17 @@ class StructureTests(unittest.TestCase):
         text = (ROOT / 'decisions.md').read_text(encoding='utf-8')
         self.assertIn('Split one large task', text)
 
+    def test_agents_md_releases_when_green(self) -> None:
+        text = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
+        self.assertIn('## Release when green', text)
+        self.assertIn('gh release create', text)
+        headings = [line for line in text.splitlines() if line.startswith('## ')]
+        self.assertIn('## Release when green', headings)
+
+    def test_decisions_md_records_green_verify_means_release(self) -> None:
+        text = (ROOT / 'decisions.md').read_text(encoding='utf-8')
+        self.assertIn('Green verify means a new release', text)
+
     def test_readme_stack_graph_is_complete(self) -> None:
         text = (ROOT / 'README.md').read_text(encoding='utf-8')
         fence = '```mermaid'

@@ -5,7 +5,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 ## Current state
 
 - Identity: **2.0.8** (`VERSION`, README H1). Published GitHub Release is `v2.0.8`.
-- Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); next is README-before-push, then Split large tasks.
+- Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); then README-before-push, Split large tasks, and Release when green.
 - Quality gate: local `python3 scripts/grok_verify.py --mode pr` only. **No GitHub Actions.**
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` (flips repo detect).
 
@@ -21,7 +21,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## How work runs
 
-Source-of-truth order is in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Loop: route → change package → one write owner → `grok_verify --mode pr` → independent reviews → `ready` → `python3 scripts/grok_deploy.py` prints; humans run tag/push/release. Refresh this README before that push.
+Source-of-truth order is in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Loop: route → change package → one write owner → `grok_verify --mode pr` → independent reviews → `ready` → if tests are green, publish a new release (refresh this README, zip, tag, push, GitHub Release).
 
 ## Map
 

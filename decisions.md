@@ -2,6 +2,10 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-16 — Green verify means a new release
+
+If `grok_verify --mode pr` and required reviews pass, publish: refresh README, rebuild the zip, tag, push, `gh release create`. Do not sit on an untagged VERSION when the user has standing release consent.
+
 ## 2026-08-16 — Publish unpublished 2.0.8, do not invent 2.0.9
 
 `VERSION` is already 2.0.8 and no `v2.0.8` tag exists, so the new GitHub Release is 2.0.8 of the current tree. Rebuild the zip after notes, then tag that commit. Do not retag 2.0.7.
