@@ -1,19 +1,15 @@
-# CI templates
+# Local verification
 
-Optional GitHub Actions workflow: `github-actions.yml`. This repository copies it to `.github/workflows/adaptive-grok.yml` (verify + conditional package; no publish).
+This product never uses GitHub Actions.
 
-Local `make verify` is the source of truth. Hosted CI is optional and does not publish.
+Do not add `.github/workflows/` or Dependabot.
 
-This project is MIT open source and does not depend on paid hosted CI.
-
-Local checks (free, any machine):
+Source of truth:
 
 ```bash
 make doctor
 make verify
-python scripts/grok_doctor.py
-python scripts/grok_verify.py --mode pr
+python3 scripts/grok_verify.py --mode pr
 ```
 
-If you self-host CI (Woodpecker, Forgejo Actions, GitLab, Drone, Jenkins, …),
-wire the same commands. Do not require GitHub-hosted runners.
+Do not add another CI vendor. Local `python3 scripts/grok_verify.py --mode pr` is the only gate.

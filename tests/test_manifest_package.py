@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 import sys
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
-from adaptive_grok.manifest import generate_manifest, verify_manifest
+from adaptive_grok.manifest import generate_manifest, included_files, verify_manifest
 
 SPEC = importlib.util.spec_from_file_location('package_stack', ROOT / 'scripts/package_stack.py')
 PACKAGE = importlib.util.module_from_spec(SPEC)
@@ -107,6 +107,24 @@ class PackageTests(unittest.TestCase):
                 names = set(archive.namelist())
             self.assertIn('adaptive-grok-build-pro/keep.txt', names)
             self.assertFalse(any(name.endswith('err.log') for name in names))
+
+    def test_included_files_and_shipped_zip_have_no_github_actions(self) -> None:
+        version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+        self.assertEqual(version, '2.0.6')
+        rels = [path.relative_to(ROOT).as_posix() for path in included_files(ROOT)]
+        self.assertFalse(any(rel.startswith('.github/workflows/') for rel in rels))
+        self.assertNotIn('.github/dependabot.yml', rels)
+        self.assertNotIn('.grok-stack/templates/ci/github-actions.yml', rels)
+        zip_path = ROOT / 'packages' / f'adaptive-grok-build-pro-v{version}.zip'
+        if zip_path.is_file():
+            with zipfile.ZipFile(zip_path) as archive:
+                names = archive.namelist()
+                member = 'adaptive-grok-build-pro/VERSION'
+                self.assertIn(member, names)
+                self.assertEqual(archive.read(member).decode('utf-8').strip(), '2.0.6')
+                self.assertFalse(any('.github/workflows/' in name for name in names))
+                self.assertFalse(any(name.endswith('dependabot.yml') for name in names))
+                self.assertFalse(any(name.endswith('github-actions.yml') for name in names))
 
     def test_project_archive_excludes_generated_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -190,27 +190,28 @@ class DeploySourceAndCiTests(unittest.TestCase):
             self.assertNotIn('os.system', text)
             self.assertNotIn('os.popen', text)
 
-    def test_root_workflow_equals_template(self) -> None:
-        workflow = ROOT / '.github/workflows/adaptive-grok.yml'
-        template = ROOT / '.grok-stack/templates/ci/github-actions.yml'
-        self.assertTrue(workflow.is_file())
-        self.assertEqual(workflow.read_bytes(), template.read_bytes())
+    def test_repo_has_no_github_actions_workflow_or_template(self) -> None:
+        self.assertFalse((ROOT / '.github/workflows/adaptive-grok.yml').exists())
+        self.assertFalse((ROOT / '.grok-stack/templates/ci/github-actions.yml').exists())
 
-    def test_template_package_job_is_conditional_and_has_no_publish(self) -> None:
-        text = (ROOT / '.grok-stack/templates/ci/github-actions.yml').read_text(encoding='utf-8')
-        self.assertIn("hashFiles('scripts/package_stack.py')", text)
+    def test_repo_has_no_workflow_yaml_or_dependabot(self) -> None:
+        workflows = ROOT / '.github/workflows'
+        ymls = list(workflows.glob('*.yml')) if workflows.is_dir() else []
+        self.assertEqual(ymls, [])
+        self.assertFalse((ROOT / '.github/dependabot.yml').exists())
+
+    def test_ci_readme_bans_github_actions_and_is_not_a_publisher(self) -> None:
+        text = (ROOT / '.grok-stack/templates/ci/README.md').read_text(encoding='utf-8')
+        lowered = text.lower()
+        self.assertIn('never', lowered)
+        self.assertIn('github actions', lowered)
+        self.assertTrue(
+            'grok_verify.py --mode pr' in text or 'make verify' in text,
+            text,
+        )
         self.assertNotIn('gh release', text)
-        self.assertNotIn('docker push', text)
         self.assertNotIn('git push', text)
-
-    def test_workflow_installs_quality_tools(self) -> None:
-        text = (ROOT / '.grok-stack/templates/ci/github-actions.yml').read_text(encoding='utf-8')
-        self.assertIn('pip install', text)
-        self.assertIn('ruff', text)
-        self.assertIn('bandit', text)
-        self.assertIn('coverage', text)
-        self.assertIn('python -m unittest discover -s tests', text)
-        self.assertIn('grok_verify.py --mode pr', text)
+        self.assertNotIn('docker push', text)
 
 
 if __name__ == '__main__':

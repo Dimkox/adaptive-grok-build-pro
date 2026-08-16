@@ -2,6 +2,10 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-16 — Never GitHub Actions
+
+Local `make verify` / `python3 scripts/grok_verify.py --mode pr` is the only quality gate. Do not add `.github/workflows/`, Dependabot, `--with-ci` copies, or another CI SaaS. `install_into --with-ci` is `SystemExit` / forbidden.
+
 ## 2026-08-16 — Ruff lives in ruff.toml, not pyproject.toml
 
 `grok_verify` runs Ruff/Bandit without a packaging marker. Config is root `ruff.toml` (and `bandit.yaml`). Do not add `pyproject.toml` / `requirements.txt` / `setup.py` — those flip `detect_repo` and, with pytest on PATH, skip `python-unittest`.

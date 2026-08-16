@@ -110,6 +110,13 @@ class StructureTests(unittest.TestCase):
         for name in ('pyproject.toml', 'requirements.txt', 'setup.py'):
             self.assertFalse((ROOT / name).exists(), name)
 
+    def test_version_is_2_0_6_and_github_actions_are_absent(self) -> None:
+        self.assertEqual((ROOT / 'VERSION').read_text(encoding='utf-8').strip(), '2.0.6')
+        workflows = ROOT / '.github/workflows'
+        self.assertEqual(list(workflows.glob('*.yml')) if workflows.is_dir() else [], [])
+        self.assertFalse((ROOT / '.github/dependabot.yml').exists())
+        self.assertFalse((ROOT / '.grok-stack/templates/ci/github-actions.yml').exists())
+
 
 if __name__ == '__main__':
     unittest.main()

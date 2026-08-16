@@ -93,6 +93,11 @@ def install(
     all_deps: bool = False,
     runner=None,
 ) -> None:
+    if with_ci:
+        raise SystemExit(
+            'GitHub Actions is forbidden. Use local `make verify` / '
+            '`python3 scripts/grok_verify.py --mode pr`.'
+        )
     target.mkdir(parents=True, exist_ok=True)
     source_files = iter_source_files(source)
     conflicts = [rel for rel, src in source_files if different(src, target / rel)]
@@ -115,16 +120,6 @@ def install(
         shutil.copy2(src, dst)
 
     merge_agents(source, target, dry_run)
-
-    if with_ci:
-        ci_src = source / '.grok-stack/templates/ci/github-actions.yml'
-        ci_dst = target / '.github/workflows/adaptive-grok.yml'
-        if ci_dst.exists() and different(ci_src, ci_dst) and not force:
-            raise SystemExit(f'{ci_dst} already exists with different content; use --force only after review.')
-        print(f'{"OVERWRITE" if ci_dst.exists() else "COPY"} {ci_dst.relative_to(target)}')
-        if not dry_run:
-            ci_dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(ci_src, ci_dst)
 
     profile = detect_repo(target)
     if profile.kind == 'bitrix' and (target / 'local').is_dir():
@@ -185,7 +180,11 @@ def main() -> None:
     parser.add_argument('target')
     parser.add_argument('--force', action='store_true', help='Overwrite conflicting Adaptive Grok managed files only.')
     parser.add_argument('--dry-run', action='store_true')
-    parser.add_argument('--with-ci', action='store_true', help='Install a generic GitHub Actions verification workflow.')
+    parser.add_argument(
+        '--with-ci',
+        action='store_true',
+        help='Forbidden. Never GitHub Actions; use local python3 scripts/grok_verify.py --mode pr.',
+    )
     parser.add_argument('--no-deps', action='store_true', help='Do not install missing required toolchain tools.')
     parser.add_argument('--all-deps', action='store_true', help='Also install optional profile tools (php, node, gh, …).')
     args = parser.parse_args()

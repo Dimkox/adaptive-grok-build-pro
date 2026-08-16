@@ -2,6 +2,8 @@
 
 Print-only last mile. Assemble the zip first; humans own tag / push / GitHub Release.
 
+Last mile is the GitHub CLI (`gh release create`), not GitHub Actions. Do not add `.github/workflows/`.
+
 Agents must not run `git push`, `git tag`, or `gh release`; humans own those commands.
 
 ## Checks

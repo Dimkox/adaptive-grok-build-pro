@@ -4,10 +4,10 @@
 
 Quality contour on this tree. 2.0.5 remains the previous published GitHub Latest until a human last mile.
 
-- `grok_verify` runs Ruff from `ruff.toml` without a packaging marker; local skip-if-missing; CI fail-closed after `pip install`
+- `grok_verify` runs Ruff from `ruff.toml` without a packaging marker; skip-if-missing, fail-closed when ruff/bandit/coverage are installed
 - Bandit AST next to regex `secret-scan`; excludes `tests/` and `engineering/`
 - Coverage.py report in `pr`/`release` after a measured fail-under of 74 (ratchet, not a guessed 90)
-- Dependabot for GitHub Actions only
+- No GitHub Actions / Dependabot; local `python3 scripts/grok_verify.py --mode pr` is the only gate. `--with-ci` is forbidden.
 - Optional consumer Semgrep / Trivy config / npm prettier|format when those signals exist; not enabled on this tree
 
 ## 2.0.5 — 2026-08-15
