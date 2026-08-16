@@ -2,6 +2,10 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-16 — New release after an existing tag is 2.0.9
+
+`v2.0.8` already peels to `0284241`. A new «релиз сделай» therefore bumps VERSION, rebuilds the zip, and tags `v2.0.9`. Do not retag `v2.0.8`.
+
 ## 2026-08-16 — Green verify means a new release
 
 If `grok_verify --mode pr` and required reviews pass, publish: refresh README, rebuild the zip, tag, push, `gh release create`. Do not sit on an untagged VERSION when the user has standing release consent.

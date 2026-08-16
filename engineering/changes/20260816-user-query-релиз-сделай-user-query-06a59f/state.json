@@ -1,0 +1,35 @@
+{
+  "change_id": "20260816-user-query-релиз-сделай-user-query-06a59f",
+  "created_at": "2026-08-16T23:37:49+00:00",
+  "history": [
+    {
+      "at": "2026-08-16T23:37:49+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-16T23:39:00+00:00",
+      "from": "draft",
+      "reason": "2.0.9 because v2.0.8 tag exists",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-16T23:39:00+00:00",
+      "from": "scoped",
+      "reason": "user релиз сделай + standing release-when-green",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-16T23:39:00+00:00",
+      "from": "approved",
+      "reason": "controller identity 2.0.9; write_agent none",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "06a59fed6a6a",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "<user_query>\nрелиз сделай\n</user_query>",
+  "updated_at": "2026-08-16T23:39:00+00:00"
+}
