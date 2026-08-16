@@ -1,0 +1,68 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher"
+  ],
+  "base_commit": "7c0ae7573535ddd0cfe3800f81278991ced81584",
+  "base_fingerprint": "28f91dac66b1a88f6a01b4b041398aba3dfa4a741630afb3a9fb5a3c95c08893",
+  "complexity": "high-risk",
+  "created_at": "2026-08-16T16:21:52+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "generic"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "production_action_approval"
+  ],
+  "intent": "release",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base"
+  ],
+  "rationale": [
+    "high-risk signal: прод",
+    "intent=release",
+    "domains=generic",
+    "repository=generic",
+    "write-owner=none",
+    "analysis-wave=3/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "ef7b14ec854d",
+  "schema_version": 1,
+  "session_id": "01a00b4c-c5a4-7a92-86c9-c2e96e4a6783",
+  "status": "routed",
+  "task": "<user_query>\nтак, тперь идем прям к релизной части проекта, что из этого у нас уже есть и что можно интегрировать перед заливкой на прод https://www.dobryakov.com/lead-magnets/code-quality-tools.pdf\n</user_query>",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "release-readiness"
+  ],
+  "write_agent": null
+}

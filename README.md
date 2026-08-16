@@ -1,4 +1,4 @@
-# Adaptive Grok Build Pro v2.0.5
+# Adaptive Grok Build Pro v2.0.6
 
 A commercial-grade product for **Grok Build** — free of charge, public, and MIT-licensed.
 
@@ -114,7 +114,7 @@ Loop: route → change → verify → independent reviews → `ready` → `pytho
 | `scripts/grok_route.py` | Classify / show route |
 | `scripts/grok_change.py` | Start durable change package |
 | `scripts/grok_status.py` | Runtime status |
-| `scripts/grok_verify.py` | Verification gate |
+| `scripts/grok_verify.py` | Verification gate (unittest, Ruff, Bandit, measured coverage in `pr`/`release`) |
 | `scripts/grok_review.py` | Record review receipt |
 | `scripts/grok_approve.py` | Short-lived explicit approval (production / external-write / protected-path) |
 | `scripts/grok_deploy.py` | Prepare-only last mile: check evidence, print human publish commands |
@@ -145,4 +145,4 @@ See skills under `.grok/skills/bitrix-development/` and example module in `examp
 
 ## License
 
-**MIT.** A commercial product that is free of charge: use, copy, modify, and ship it. The repository is public. No EULA, no paid tier. Local checks: `make doctor` / `make verify`.
+**MIT.** A commercial product that is free of charge: use, copy, modify, and ship it. The repository is public. No EULA, no paid tier. Local checks: `make doctor` / `make verify`. `grok_verify --mode pr` also runs Ruff and Bandit when those CLIs are on PATH (skip if missing) and a Coverage.py fail-under of 74. Semgrep, Trivy config, and npm prettier/format run only on consumer trees that have those signals.

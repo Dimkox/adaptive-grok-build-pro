@@ -5,7 +5,7 @@ import hashlib
 import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from .repo import RepoProfile, detect_repo
 from .util import git_default_base, load_json, now_utc, tree_fingerprint, unique_ordered

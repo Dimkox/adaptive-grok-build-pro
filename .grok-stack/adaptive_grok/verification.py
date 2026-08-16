@@ -5,7 +5,6 @@ import re
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Callable
 
 from .bitrix_checks import check_bitrix
 from .receipts import write_receipt
@@ -153,6 +152,83 @@ def _composer(root: Path) -> list[CheckResult]:
     return results
 
 
+QUALITY_PY_PATHS = (
+    '.grok-stack/adaptive_grok',
+    'scripts',
+    'tests',
+    '.grok/hooks',
+    'user_prompt_submit.py',
+    'pre_tool_use.py',
+    'post_tool_use.py',
+    'pre_compact.py',
+    'session_start.py',
+    'session_end.py',
+    'stop_gate.py',
+    'subagent_start.py',
+    'subagent_stop.py',
+)
+
+_SEMGREP_CONFIGS = ('semgrep.yaml', '.semgrep.yml', '.semgrep.yaml')
+_TRIVY_FILES = ('Dockerfile', 'dockerfile', 'Containerfile')
+
+
+def _existing_quality_paths(root: Path) -> list[str]:
+    return [rel for rel in QUALITY_PY_PATHS if (root / rel).exists()]
+
+
+def _ruff(root: Path) -> CheckResult:
+    paths = _existing_quality_paths(root)
+    if not paths:
+        return CheckResult('ruff', 'skip', 'no python quality paths')
+    if not command_exists('ruff'):
+        return CheckResult('ruff', 'skip', 'ruff not available')
+    return _command_check(root, 'ruff', ['ruff', 'check', *paths], 300)
+
+
+def _bandit(root: Path) -> CheckResult:
+    paths = [rel for rel in _existing_quality_paths(root) if rel != 'tests' and not rel.startswith('tests/')]
+    if not paths:
+        return CheckResult('bandit', 'skip', 'no non-test python paths')
+    if not command_exists('bandit'):
+        return CheckResult('bandit', 'skip', 'bandit not available')
+    command = ['bandit', '-q', '-r', *paths]
+    if (root / 'bandit.yaml').is_file():
+        command = ['bandit', '-c', 'bandit.yaml', '-q', '-r', *paths]
+    return _command_check(root, 'bandit', command, 300)
+
+
+def _semgrep(root: Path) -> CheckResult | None:
+    config: str | None = None
+    for name in _SEMGREP_CONFIGS:
+        if (root / name).is_file():
+            config = name
+            break
+    if config is None:
+        semgrep_dir = root / '.semgrep'
+        if semgrep_dir.is_dir():
+            try:
+                next(semgrep_dir.iterdir())
+            except StopIteration:
+                pass
+            else:
+                config = '.semgrep'
+    if config is None:
+        return None
+    if not command_exists('semgrep'):
+        return CheckResult('semgrep', 'skip', 'semgrep not available')
+    return _command_check(root, 'semgrep', ['semgrep', 'scan', '--error', '--config', config], 600)
+
+
+def _trivy_config(root: Path) -> CheckResult | None:
+    has_file = any((root / name).is_file() for name in _TRIVY_FILES)
+    has_compose = bool(list(root.glob('docker-compose*.yml')) or list(root.glob('docker-compose*.yaml')))
+    if not has_file and not has_compose:
+        return None
+    if not command_exists('trivy'):
+        return CheckResult('trivy-config', 'skip', 'trivy not available')
+    return _command_check(root, 'trivy-config', ['trivy', 'config', '--exit-code', '1', '.'], 600)
+
+
 def _node(root: Path, mode: str) -> list[CheckResult]:
     package = root / 'package.json'
     if not package.is_file():
@@ -164,7 +240,7 @@ def _node(root: Path, mode: str) -> list[CheckResult]:
     runner = 'npm' if command_exists('npm') else None
     if not runner:
         return [CheckResult('node-tooling', 'skip', 'npm not available')]
-    names = ['lint', 'typecheck', 'test']
+    names = ['lint', 'typecheck', 'test', 'prettier', 'format']
     if mode in {'pr', 'release'}:
         names.append('build')
     results: list[CheckResult] = []
@@ -178,27 +254,49 @@ def _node(root: Path, mode: str) -> list[CheckResult]:
     return results
 
 
-def _python(root: Path) -> list[CheckResult]:
+def _python(root: Path, mode: str = 'fast') -> list[CheckResult]:
+    results: list[CheckResult] = [_ruff(root), _bandit(root)]
     has_project = any((root / item).exists() for item in ('pyproject.toml', 'requirements.txt', 'setup.py'))
     tests_dir = root / 'tests'
     has_unittest_files = tests_dir.is_dir() and any(tests_dir.glob('test*.py'))
-    results: list[CheckResult] = []
-    if has_project:
-        if command_exists('ruff'):
-            results.append(_command_check(root, 'ruff', ['ruff', 'check', '.'], 300))
-        if command_exists('pytest') and tests_dir.is_dir():
-            results.append(_command_check(root, 'pytest', ['pytest', '-q'], 900))
-            return results
+    if has_project and command_exists('pytest') and tests_dir.is_dir():
+        results.append(_command_check(root, 'pytest', ['pytest', '-q'], 900))
+        if mode in {'pr', 'release'}:
+            if command_exists('coverage'):
+                results.append(CheckResult('coverage', 'skip', 'pytest runner owns tests; measure unittest trees only'))
+            else:
+                results.append(CheckResult('coverage', 'skip', 'coverage not available'))
+        return results
     if has_unittest_files:
-        results.append(
-            _command_check(
-                root,
-                'python-unittest',
-                [sys.executable, '-m', 'unittest', 'discover', '-s', 'tests'],
-                900,
+        if mode in {'pr', 'release'} and command_exists('coverage'):
+            results.append(
+                _command_check(
+                    root,
+                    'python-unittest',
+                    ['coverage', 'run', '--rcfile=.coveragerc', '-m', 'unittest', 'discover', '-s', 'tests'],
+                    900,
+                )
             )
-        )
-    return results or []
+            results.append(
+                _command_check(
+                    root,
+                    'coverage',
+                    ['coverage', 'report', '--rcfile=.coveragerc'],
+                    120,
+                )
+            )
+        else:
+            results.append(
+                _command_check(
+                    root,
+                    'python-unittest',
+                    [sys.executable, '-m', 'unittest', 'discover', '-s', 'tests'],
+                    900,
+                )
+            )
+            if mode in {'pr', 'release'}:
+                results.append(CheckResult('coverage', 'skip', 'coverage not available'))
+    return results
 
 
 def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, record: bool = True) -> dict[str, object]:
@@ -220,7 +318,13 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
         results.append(_bitrix(root, files))
     if 'frontend' in active_profiles or (root / 'package.json').is_file():
         results.extend(_node(root, mode))
-    results.extend(_python(root))
+    semgrep = _semgrep(root)
+    if semgrep is not None:
+        results.append(semgrep)
+    trivy = _trivy_config(root)
+    if trivy is not None:
+        results.append(trivy)
+    results.extend(_python(root, mode))
 
     failures = [result for result in results if result.status == 'fail']
     report = {

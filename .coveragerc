@@ -1,0 +1,15 @@
+[run]
+branch = True
+source =
+    .grok-stack/adaptive_grok
+    scripts
+omit =
+    tests/*
+    */__pycache__/*
+    .grok-stack/runtime/*
+    engineering/*
+
+[report]
+skip_empty = True
+show_missing = True
+fail_under = 74

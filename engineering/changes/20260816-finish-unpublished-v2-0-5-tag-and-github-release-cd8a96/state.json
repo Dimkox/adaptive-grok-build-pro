@@ -1,0 +1,53 @@
+{
+  "change_id": "20260816-finish-unpublished-v2-0-5-tag-and-github-release-cd8a96",
+  "created_at": "2026-08-16T16:01:52+00:00",
+  "history": [
+    {
+      "at": "2026-08-16T16:01:52+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-16T16:09:03+00:00",
+      "from": "draft",
+      "reason": "scope and acceptance: push existing v2.0.5 tag and create GitHub Release",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-16T16:09:03+00:00",
+      "from": "scoped",
+      "reason": "user said делай; prior да already authorized last mile",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-16T16:09:03+00:00",
+      "from": "approved",
+      "reason": "authorized last mile: tag push + GitHub Release",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-16T16:11:57+00:00",
+      "from": "implementing",
+      "reason": "tag and GitHub Release v2.0.5 published; independent confirm Latest",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-16T16:12:40+00:00",
+      "from": "verifying",
+      "reason": "verify PASS; dispatch independent reviews",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-16T16:20:01+00:00",
+      "from": "reviewing",
+      "reason": "v2.0.5 tag and GitHub Release live; verify+reviews next on final tree",
+      "to": "ready"
+    }
+  ],
+  "route_id": "cd8a9662bc68",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Finish unpublished v2.0.5 tag and GitHub Release",
+  "updated_at": "2026-08-16T16:20:01+00:00"
+}

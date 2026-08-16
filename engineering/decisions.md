@@ -2,6 +2,10 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-16 — Ruff lives in ruff.toml, not pyproject.toml
+
+`grok_verify` runs Ruff/Bandit without a packaging marker. Config is root `ruff.toml` (and `bandit.yaml`). Do not add `pyproject.toml` / `requirements.txt` / `setup.py` — those flip `detect_repo` and, with pytest on PATH, skip `python-unittest`.
+
 ## 2026-08-15 — Ten is a read-only ceiling
 
 Launch every listed analysis agent in one wave. Ten is `max_parallel_analysis`, not a staffing target and not ten writers. `routing.json` names floors; domain specialists join only on match; `docs_researcher` is on every non-micro wave.

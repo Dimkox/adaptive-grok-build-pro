@@ -1,0 +1,12 @@
+exclude_dirs:
+  - tests
+  - engineering
+  - dist
+  - packages
+  - examples
+  - .grok-stack/runtime
+skips:
+  - B101   # assert_used (tests excluded anyway; keep for any leftover)
+  - B404   # import_subprocess — this product is a CLI runner
+  - B603   # subprocess without shell=True is the *safe* pattern
+  - B607   # start process with a PATH name (git, python, ruff, …)

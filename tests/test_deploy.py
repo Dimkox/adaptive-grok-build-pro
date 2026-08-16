@@ -203,6 +203,15 @@ class DeploySourceAndCiTests(unittest.TestCase):
         self.assertNotIn('docker push', text)
         self.assertNotIn('git push', text)
 
+    def test_workflow_installs_quality_tools(self) -> None:
+        text = (ROOT / '.grok-stack/templates/ci/github-actions.yml').read_text(encoding='utf-8')
+        self.assertIn('pip install', text)
+        self.assertIn('ruff', text)
+        self.assertIn('bandit', text)
+        self.assertIn('coverage', text)
+        self.assertIn('python -m unittest discover -s tests', text)
+        self.assertIn('grok_verify.py --mode pr', text)
+
 
 if __name__ == '__main__':
     unittest.main()

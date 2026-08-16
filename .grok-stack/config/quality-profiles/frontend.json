@@ -6,6 +6,8 @@
     "npm-lint",
     "npm-typecheck",
     "npm-test",
-    "npm-build"
+    "npm-build",
+    "npm-prettier",
+    "npm-format"
   ]
 }

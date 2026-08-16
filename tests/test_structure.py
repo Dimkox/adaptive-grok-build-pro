@@ -106,6 +106,10 @@ class StructureTests(unittest.TestCase):
             self.assertEqual(data['name'], path.stem)
             self.assertIsInstance(data['required_checks'], list)
 
+    def test_product_tree_has_no_packaging_markers(self) -> None:
+        for name in ('pyproject.toml', 'requirements.txt', 'setup.py'):
+            self.assertFalse((ROOT / name).exists(), name)
+
 
 if __name__ == '__main__':
     unittest.main()

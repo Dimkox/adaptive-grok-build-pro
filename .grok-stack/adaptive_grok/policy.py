@@ -3,7 +3,7 @@ from __future__ import annotations
 import fnmatch
 import re
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from .state import active_write_agents, get_active_route, has_valid_approval
 from .util import load_json, safe_relative_path

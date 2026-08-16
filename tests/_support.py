@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import contextlib
 import json
-import os
 import shutil
 import subprocess
 import tempfile
@@ -31,7 +30,7 @@ def project_copy(*, git: bool = False) -> Iterator[Path]:
                     shutil.rmtree(child)
                 else:
                     child.unlink()
-        for rel in ('AGENTS.md', 'VERSION'):
+        for rel in ('AGENTS.md', 'VERSION', 'ruff.toml', 'bandit.yaml', '.coveragerc'):
             src = PROJECT / rel
             if src.is_file():
                 shutil.copy2(src, root / rel)

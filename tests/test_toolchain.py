@@ -13,7 +13,6 @@ from adaptive_grok.doctor import run_doctor
 from adaptive_grok.toolchain import (
     ToolCheck,
     check_tool,
-    check_toolchain,
     install_command,
     is_manual_url,
     load_toolchain,

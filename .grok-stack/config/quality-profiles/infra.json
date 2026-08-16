@@ -4,5 +4,7 @@
   "required_checks": [
     "secret-scan"
   ],
-  "optional_checks": []
+  "optional_checks": [
+    "trivy-config"
+  ]
 }

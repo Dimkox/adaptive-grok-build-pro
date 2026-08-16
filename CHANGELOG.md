@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.6 — 2026-08-16
+
+Quality contour on this tree. 2.0.5 remains the previous published GitHub Latest until a human last mile.
+
+- `grok_verify` runs Ruff from `ruff.toml` without a packaging marker; local skip-if-missing; CI fail-closed after `pip install`
+- Bandit AST next to regex `secret-scan`; excludes `tests/` and `engineering/`
+- Coverage.py report in `pr`/`release` after a measured fail-under of 74 (ratchet, not a guessed 90)
+- Dependabot for GitHub Actions only
+- Optional consumer Semgrep / Trivy config / npm prettier|format when those signals exist; not enabled on this tree
+
 ## 2.0.5 — 2026-08-15
 
 After `git pull` on a consumer project, missing or cwd-relative hook scripts no longer lock Grok.

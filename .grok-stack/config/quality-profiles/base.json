@@ -7,6 +7,10 @@
   ],
   "optional_checks": [
     "contract-structure",
-    "sql-safety"
+    "sql-safety",
+    "ruff",
+    "bandit",
+    "coverage",
+    "semgrep"
   ]
 }

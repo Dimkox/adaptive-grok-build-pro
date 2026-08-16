@@ -1,0 +1,53 @@
+{
+  "change_id": "20260816-release-readiness-gap-vs-dobryakov-code-quality-ef7b14",
+  "created_at": "2026-08-16T16:22:06+00:00",
+  "history": [
+    {
+      "at": "2026-08-16T16:22:06+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-16T16:30:00+00:00",
+      "from": "draft",
+      "reason": "gap analysis written; waiting on scope_and_design_approval",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-16T16:31:28+00:00",
+      "from": "scoped",
+      "reason": "user approved A plus later optional consumer profiles; no write owner on this route",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-16T16:37:18+00:00",
+      "from": "approved",
+      "reason": "design-only route; no write owner; skip product edits",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-16T16:37:18+00:00",
+      "from": "implementing",
+      "reason": "no product mutation; bind verification to design tree",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-16T16:37:18+00:00",
+      "from": "verifying",
+      "reason": "security_review and release_review reports PASS",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-16T16:37:18+00:00",
+      "from": "reviewing",
+      "reason": "design approved and independently reviewed; v2.0.5 stays published",
+      "to": "ready"
+    }
+  ],
+  "route_id": "ef7b14ec854d",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Release-readiness gap vs Dobryakov code-quality toolkit",
+  "updated_at": "2026-08-16T16:37:18+00:00"
+}

@@ -26,6 +26,10 @@ __pycache__/
 coverage/
 dist/
 build/
+.coverage
+.coverage.*
+htmlcov/
+.ruff_cache/
 
 # IDE and OS
 .idea/

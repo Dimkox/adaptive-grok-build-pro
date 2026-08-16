@@ -1,0 +1,35 @@
+{
+  "change_id": "20260816-ship-working-v2-0-6-quality-contour-ec0388",
+  "created_at": "2026-08-16T16:43:19+00:00",
+  "history": [
+    {
+      "at": "2026-08-16T16:43:19+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-16T16:51:04+00:00",
+      "from": "draft",
+      "reason": "2.0.6 acceptance and architecture written from approved A+B",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-16T16:51:04+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; prior ef7b14 approval plus user собирай 2.0.6",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-16T16:51:04+00:00",
+      "from": "approved",
+      "reason": "dispatch general_implementer",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "ec0388060302",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Ship working v2.0.6 quality contour",
+  "updated_at": "2026-08-16T16:51:04+00:00"
+}

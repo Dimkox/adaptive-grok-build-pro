@@ -5,6 +5,7 @@ from pathlib import Path
 
 EXCLUDED_PARTS = {
     '.git', '__pycache__', '.pytest_cache', 'node_modules', 'vendor', '.venv', 'dist', '.idea', '.vscode',
+    'htmlcov', '.ruff_cache',
 }
 EXCLUDED_FILES = {'MANIFEST.sha256', '.coverage', '.env', 'err.log'}
 SECRET_SUFFIXES = ('.pem', '.key', '.p12', '.pfx')
@@ -25,6 +26,8 @@ def included_files(root: Path) -> list[Path]:
         if _is_secret_path(rel, path.name):
             continue
         if rel.startswith('.grok-stack/runtime/') and rel != '.grok-stack/runtime/.gitkeep':
+            continue
+        if path.name == '.coverage' or path.name.startswith('.coverage.'):
             continue
         if rel.endswith(('.pyc', '.pyo', '.zip', '.sha256')):
             continue

@@ -4,7 +4,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from .util import read_text_limited, unique_ordered
+from .util import unique_ordered
 
 
 @dataclass
