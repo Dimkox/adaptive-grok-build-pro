@@ -5,7 +5,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 ## Current state
 
 - Identity: **2.0.8** (`VERSION`, README H1). GitHub Release Latest may still be an older tag until a human last mile creates `v2.0.8`.
-- Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); next is README-before-push.
+- Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); next is README-before-push, then Split large tasks.
 - Quality gate: local `python3 scripts/grok_verify.py --mode pr` only. **No GitHub Actions.**
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` (flips repo detect).
 
