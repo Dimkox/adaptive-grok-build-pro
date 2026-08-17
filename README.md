@@ -1,11 +1,11 @@
-# Adaptive Grok Build Pro v2.0.10
+# Adaptive Grok Build Pro v2.0.11
 
 A commercial-grade product for **Grok Build** — free of charge, public, and MIT-licensed.
 
 ## Current state
 
-- Identity: **2.0.10** (`VERSION`, README H1). Published GitHub Release is `v2.0.10`.
-- Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); then README-before-push, Split large tasks, and Release when green.
+- Identity: **2.0.11** (`VERSION`, README H1). Published GitHub Release is `v2.0.11`.
+- Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); then README-before-push, Split large tasks, Skip no-op checks, and Release when green.
 - Quality gate: local `python3 scripts/grok_verify.py --mode pr` only. **No GitHub Actions.**
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` (flips repo detect).
 
@@ -21,7 +21,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## How work runs
 
-Source-of-truth order is in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Loop: route → change package → one write owner → `grok_verify --mode pr` → independent reviews → `ready` → if tests are green, publish a new release (refresh this README, zip, tag, push, GitHub Release).
+Source-of-truth order is in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Loop: route → change package → one write owner → if the product changed, `grok_verify --mode pr` and reviews; if nothing product-changed, skip that wave → `ready` → push `main` and publish a new release (refresh this README, zip, tag, GitHub Release).
 
 ## Map
 

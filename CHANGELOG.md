@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.11 — 2026-08-17
+
+Skip the analysis/review wave when nothing product-changed; always push `main` and release when green.
+
+- `AGENTS.md`: Skip no-op checks; Release when green now names `git push origin main`
+- Same product surface as 2.0.10 plus this contract
+- Still no GitHub Actions
+
 ## 2.0.10 — 2026-08-16
 
 Published identity of current main after `v2.0.9`.

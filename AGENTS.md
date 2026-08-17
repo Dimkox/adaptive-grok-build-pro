@@ -16,11 +16,16 @@
 - Shared memory is `AGENTS.md`, `decisions.md`, and `mistakes.md`. Each subtask must leave a fact there if it will matter to the next subtask.
 - Do not keep the whole plan only in chat.
 
+## Skip no-op checks
+
+- If the product tree did not change (status, already-published identity, leftover uncommitted paperwork), do not dispatch analysis or review agents and do not block on `grok_verify`.
+- If product files changed, run `python3 scripts/grok_verify.py --mode pr`. Skip the analysis/review wave for a no-op.
+
 ## Release when green
 
-- After `python3 scripts/grok_verify.py --mode pr` PASSes and the route's required reviews pass, publish this tree.
-- Refresh `README.md` first, bump `VERSION` only if the last tag already exists, rebuild the zip, tag, `git push` the branch and the tag, then `gh release create`.
-- Do not leave a green unpublished VERSION when standing release consent is in force.
+- After `python3 scripts/grok_verify.py --mode pr` PASSes and the route's required reviews pass (or were skipped as a no-op), publish this tree.
+- Refresh `README.md` first, bump `VERSION` only if the last tag already exists, rebuild the zip, tag, `git push origin main` and the tag, then `gh release create`.
+- Do not leave a green unpublished VERSION when standing release consent is in force. Always push `main` and cut the GitHub Release.
 
 This repository uses an adaptive, task-routed Grok Build workflow. The `UserPromptSubmit` hook classifies development tasks and writes `.grok-stack/runtime/active-route.json`. That route is the authority for which skills, agents, quality profiles, human gates, and evidence are required.
 

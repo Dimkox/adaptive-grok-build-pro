@@ -110,7 +110,7 @@ class PackageTests(unittest.TestCase):
 
     def test_included_files_and_shipped_zip_have_no_github_actions(self) -> None:
         version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
-        self.assertEqual(version, '2.0.10')
+        self.assertEqual(version, '2.0.11')
         rels = [path.relative_to(ROOT).as_posix() for path in included_files(ROOT)]
         self.assertFalse(any(rel.startswith('.github/workflows/') for rel in rels))
         self.assertNotIn('.github/dependabot.yml', rels)
@@ -121,7 +121,7 @@ class PackageTests(unittest.TestCase):
                 names = archive.namelist()
                 member = 'adaptive-grok-build-pro/VERSION'
                 self.assertIn(member, names)
-                self.assertEqual(archive.read(member).decode('utf-8').strip(), '2.0.10')
+                self.assertEqual(archive.read(member).decode('utf-8').strip(), '2.0.11')
                 self.assertFalse(any('.github/workflows/' in name for name in names))
                 self.assertFalse(any(name.endswith('dependabot.yml') for name in names))
                 self.assertFalse(any(name.endswith('github-actions.yml') for name in names))

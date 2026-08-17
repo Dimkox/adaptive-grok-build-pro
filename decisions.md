@@ -2,6 +2,14 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-17 — Skip no-op checks; always push main and release
+
+A dirty change-package tree is not a product change. Do not spend an analysis/review wave on status or leftover paperwork. When product files do change and verify is green, push `origin main` and publish the GitHub Release.
+
+## 2026-08-17 — New release after an existing tag is 2.0.11
+
+`v2.0.10` already peels to `975ccb2`. A new push/release therefore bumps VERSION, rebuilds the zip, and tags `v2.0.11`. Do not retag `v2.0.10`.
+
 ## 2026-08-16 — New release after an existing tag is 2.0.10
 
 `v2.0.9` already peels to `f72c0fc`. A new «релиз сделай» therefore bumps VERSION, rebuilds the zip, and tags `v2.0.10`. Do not retag `v2.0.9`.
