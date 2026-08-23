@@ -14,6 +14,7 @@ Published identity remains `2.0.11`; these changes are proposed through the prot
 - Extended immutable policy and CODEOWNERS to package builders, release artifacts, trust-boundary tests, and governance runbooks
 - Retired executable tag, push, release, and rollback commands from historical publish runbooks
 - Documented workable solo owner gates and stronger split identity gates without self-review deadlocks
+- Made `install_into --with-ci` require the target `--codeowner` and render that identity into consumer CODEOWNERS and trust documentation
 - Added CODEOWNERS and the branch-protection and Environment runbook in `docs/TRUST-BOUNDARY.md`
 - Superseded direct-push and local-only quality-gate standing rules
 
