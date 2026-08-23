@@ -77,7 +77,7 @@ def build_parser() -> argparse.ArgumentParser:
     protect.add_argument('--repository', required=True)
     protect.add_argument('--branch', default='main')
     protect.add_argument('--required-reviews', type=int, default=0)
-    protect.add_argument('--context')
+    protect.add_argument('--context', help='Exact policy-epoch check name; defaults to policy.check_name')
     protect.add_argument('--policy', type=Path)
     protect.add_argument('--app-id', type=int)
 
@@ -196,7 +196,7 @@ def main(argv: list[str] | None = None) -> int:
         if not str(policy_path) or not policy_path.is_file():
             raise SystemExit('--policy or TRUST_CI_POLICY_PATH must name the deployed policy')
         policy = Policy.load(policy_path)
-        context = args.context or policy.status_context
+        check_name = args.context or policy.check_name
         app_id = args.app_id or _required_int_env('TRUST_CI_GITHUB_APP_ID')
         admin_token = os.environ.get('TRUST_CI_GITHUB_ADMIN_TOKEN', '').strip()
         if not admin_token:
@@ -204,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
         result = GitHubClient(token=admin_token).configure_branch_protection(
             args.repository,
             args.branch,
-            status_context=context,
+            check_name=check_name,
             app_id=app_id,
             required_reviews=args.required_reviews,
         )
@@ -237,6 +237,7 @@ def _doctor() -> int:
     policy = Policy.load(common.policy_path)
     checks: list[dict[str, str]] = [
         {'name': 'policy', 'status': 'pass', 'detail': policy.digest},
+        {'name': 'required-check', 'status': 'pass', 'detail': policy.check_name},
         {'name': 'kill-switch', 'status': 'warn' if common.stopped else 'pass', 'detail': str(common.kill_switch_path)},
     ]
     try:
