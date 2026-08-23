@@ -27,26 +27,26 @@ class OperationsTests(unittest.TestCase):
             )
             argv = ContainerExecutor(policy.sandbox).build_argv(
                 workspace=workspace,
-                workspace_host_path=Path('/srv/adaptive-trust-ci/workspaces/job-1'),
+                workspace_host_path=Path('/var/lib/adaptive-trust-ci/workspaces/job-1'),
                 command=('python3', '/holdout/validate.py', '/workspace'),
                 env={'CI': 'true', 'TRUST_CI_HEAD_SHA': 'b' * 40},
                 container_name='trust-ci-test',
                 holdout_path=holdout,
-                holdout_host_path=Path('/srv/adaptive-trust-ci/holdout'),
+                holdout_host_path=Path('/etc/adaptive-trust-ci/holdout'),
             )
         joined = ' '.join(argv)
         self.assertIn('--network none', joined)
         self.assertIn('--cap-drop ALL', joined)
         self.assertIn('no-new-privileges', joined)
         self.assertIn('--read-only', joined)
-        self.assertIn('/srv/adaptive-trust-ci/workspaces/job-1:/workspace:rw', joined)
-        self.assertIn('/srv/adaptive-trust-ci/workspaces/job-1/.git:/workspace/.git:ro', joined)
-        self.assertIn('/srv/adaptive-trust-ci/holdout:/holdout:ro', joined)
+        self.assertIn('/var/lib/adaptive-trust-ci/workspaces/job-1:/workspace:rw', joined)
+        self.assertIn('/var/lib/adaptive-trust-ci/workspaces/job-1/.git:/workspace/.git:ro', joined)
+        self.assertIn('/etc/adaptive-trust-ci/holdout:/holdout:ro', joined)
         self.assertNotIn(str(workspace), joined)
         self.assertNotIn('GITHUB_TOKEN', joined)
         self.assertNotIn('TRUST_CI_GITHUB', joined)
 
-    def test_sandbox_rejects_relative_daemon_host_paths(self) -> None:
+    def test_sandbox_rejects_relative_daemon_paths(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             workspace = Path(directory) / 'workspace'
             (workspace / '.git').mkdir(parents=True)
@@ -68,26 +68,34 @@ class OperationsTests(unittest.TestCase):
         self.assertIn('lease_expires_at', sql)
         self.assertIn('attempts-exhausted-after-worker-loss', sql)
 
-    def test_packaged_schema_matches_deployment_schema(self) -> None:
-        deployment = (ROOT / 'trust-ci/sql/001_schema.sql').read_bytes()
-        packaged = (ROOT / 'trust-ci/src/adaptive_trust_ci/resources/001_schema.sql').read_bytes()
-        self.assertEqual(deployment, packaged)
+    def test_packaged_migrations_match_deployment_migrations(self) -> None:
+        deployment = ROOT / 'trust-ci/sql'
+        packaged = ROOT / 'trust-ci/src/adaptive_trust_ci/resources'
+        deployment_files = sorted(path.name for path in deployment.glob('[0-9][0-9][0-9]_*.sql'))
+        packaged_files = sorted(path.name for path in packaged.glob('[0-9][0-9][0-9]_*.sql'))
+        self.assertEqual(deployment_files, packaged_files)
+        self.assertGreaterEqual(len(deployment_files), 2)
+        for name in deployment_files:
+            self.assertEqual((deployment / name).read_bytes(), (packaged / name).read_bytes(), name)
 
-    def test_production_compose_uses_prebuilt_images_and_explicit_host_binds(self) -> None:
+    def test_production_compose_uses_prebuilt_images_and_isolated_dind(self) -> None:
         compose = (ROOT / 'trust-ci/compose.yaml').read_text(encoding='utf-8')
         self.assertNotIn('build:', compose)
         self.assertIn('TRUST_CI_POSTGRES_IMAGE:?', compose)
         self.assertIn('TRUST_CI_API_IMAGE:?', compose)
         self.assertIn('TRUST_CI_WORKER_IMAGE:?', compose)
+        self.assertIn('TRUST_CI_DIND_IMAGE:?', compose)
+        self.assertIn('  docker-engine:', compose)
+        docker_engine = compose.split('  docker-engine:', 1)[1].split('  worker:', 1)[0]
         worker = compose.split('  worker:', 1)[1]
         before_worker = compose.split('  worker:', 1)[0]
+        self.assertIn('/var/run/docker.sock', docker_engine)
+        self.assertNotIn('/var/run/docker.sock', worker)
+        self.assertIn('DOCKER_HOST: tcp://docker-engine:2375', worker)
         self.assertIn('github-app-private-key.pem:/run/secrets', worker)
-        self.assertIn('TRUST_CI_HOLDOUT_HOST_PATH:?', worker)
-        self.assertIn('TRUST_CI_WORKSPACE_HOST_ROOT:?', worker)
-        self.assertIn('docker.sock', worker)
-        self.assertNotIn('trust-ci-workspaces:', compose)
+        self.assertIn('/var/lib/adaptive-trust-ci/workspaces', docker_engine)
+        self.assertIn('/etc/adaptive-trust-ci/holdout:ro', docker_engine)
         self.assertNotIn('github-app-private-key.pem:/run/secrets', before_worker)
-        self.assertNotIn('docker.sock', before_worker)
 
     def test_build_override_requires_digest_pinned_python_base(self) -> None:
         override = (ROOT / 'trust-ci/compose.build.yaml').read_text(encoding='utf-8')
@@ -109,10 +117,7 @@ class OperationsTests(unittest.TestCase):
         import json
 
         policy = json.loads((ROOT / 'trust-ci/config/policy.example.json').read_text(encoding='utf-8'))
-        self.assertEqual(
-            policy['holdout']['digest'],
-            bundle_digest(ROOT / 'trust-ci/holdout.example'),
-        )
+        self.assertEqual(policy['holdout']['digest'], bundle_digest(ROOT / 'trust-ci/holdout.example'))
         self.assertEqual(policy['holdout']['path'], '/etc/adaptive-trust-ci/holdout')
 
     def test_branch_protection_is_app_bound_and_actions_independent(self) -> None:
@@ -122,6 +127,23 @@ class OperationsTests(unittest.TestCase):
             [{'context': 'adaptive-trust-ci/verified', 'app_id': 12345}],
         )
         self.assertNotIn('actions', str(payload).lower())
+
+    def test_backup_timer_and_restore_drill_are_explicit(self) -> None:
+        service = (ROOT / 'trust-ci/systemd/adaptive-trust-ci-backup.service').read_text(encoding='utf-8')
+        timer = (ROOT / 'trust-ci/systemd/adaptive-trust-ci-backup.timer').read_text(encoding='utf-8')
+        self.assertIn('backup-create', service)
+        self.assertIn('TRUST_CI_BACKUP_DIR', service)
+        self.assertIn('Persistent=true', timer)
+        self.assertIn('OnCalendar=', timer)
+        script = (ROOT / 'trust-ci/scripts/restore-drill.sh').read_text(encoding='utf-8')
+        self.assertIn('--confirm-disposable', script)
+        self.assertIn('backup-verify', script)
+
+    def test_postgres_integration_runner_cleans_up_after_itself(self) -> None:
+        script = (ROOT / 'trust-ci/scripts/postgres-integration.sh').read_text(encoding='utf-8')
+        self.assertIn('compose.test.yaml', script)
+        self.assertIn('down --volumes --remove-orphans', script)
+        self.assertIn('trap cleanup EXIT', script)
 
     def test_repository_contains_no_github_actions_workflow(self) -> None:
         workflows = ROOT / '.github' / 'workflows'
