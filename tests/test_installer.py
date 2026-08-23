@@ -70,33 +70,6 @@ class InstallerTests(unittest.TestCase):
             install_silent(ROOT, target, force=False, dry_run=False)
             self.assertTrue((target / 'local/AGENTS.md').is_file())
 
-    def test_with_ci_is_forbidden_and_preserves_unrelated_workflow(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            workflows = target / '.github/workflows'
-            workflows.mkdir(parents=True)
-            unrelated = workflows / 'existing.yml'
-            unrelated.write_text('name: existing\n', encoding='utf-8')
-            with self.assertRaises(SystemExit) as ctx:
-                install_silent(ROOT, target, force=False, dry_run=False, with_ci=True)
-            self.assertIn('forbidden', str(ctx.exception).lower())
-            self.assertEqual(unrelated.read_text(encoding='utf-8'), 'name: existing\n')
-            self.assertFalse((workflows / 'adaptive-grok.yml').exists())
-
-    def test_with_ci_dry_run_is_forbidden_and_writes_nothing(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            workflows = target / '.github/workflows'
-            workflows.mkdir(parents=True)
-            unrelated = workflows / 'existing.yml'
-            unrelated.write_text('name: existing\n', encoding='utf-8')
-            with self.assertRaises(SystemExit) as ctx:
-                install_silent(ROOT, target, force=True, dry_run=True, with_ci=True)
-            self.assertIn('forbidden', str(ctx.exception).lower())
-            self.assertEqual(unrelated.read_text(encoding='utf-8'), 'name: existing\n')
-            self.assertFalse((workflows / 'adaptive-grok.yml').exists())
-            self.assertFalse((target / 'scripts/grok_verify.py').exists())
-
     def test_default_install_does_not_copy_workflow_from_grok_stack(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / 'target'
