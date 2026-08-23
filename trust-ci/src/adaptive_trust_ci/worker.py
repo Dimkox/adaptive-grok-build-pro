@@ -9,7 +9,7 @@ from .github_app import GitHubAppAuth
 from .models import utc_now
 from .policy import Policy
 from .runner import JobRunner
-from .settings import WorkerSettings
+from .settings import SettingsError, WorkerSettings
 from .signing import Signer
 from .store import PostgresStore
 
@@ -24,6 +24,11 @@ class Worker:
     @classmethod
     def build(cls, settings: WorkerSettings) -> 'Worker':
         policy = Policy.load(settings.common.policy_path)
+        if policy.sandbox.image != settings.runner_image:
+            raise SettingsError(
+                'TRUST_CI_RUNNER_IMAGE must exactly match policy.sandbox.image: '
+                f'env={settings.runner_image} policy={policy.sandbox.image}'
+            )
         store = PostgresStore(settings.common.database_url)
         signer = Signer.from_private_file(settings.ci_signing_key_path)
         github_auth = GitHubAppAuth(
