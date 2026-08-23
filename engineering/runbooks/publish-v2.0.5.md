@@ -1,24 +1,17 @@
-# Publish v2.0.5
+# Publish v2.0.5 — Historical record
 
-User-authorized publish. Rollback if the tag or GitHub Release must be withdrawn.
+This file is a **Historical record** of a release completed before the protected trust boundary was introduced. The former local tag, push, release, and rollback commands are retired and must not be reused.
 
-Agents must not run `git push`, `git tag`, or `gh release`; humans own those commands.
+Current delivery and publication are defined in [`docs/TRUST-BOUNDARY.md`](../../docs/TRUST-BOUNDARY.md):
 
-## Commands
-
-```bash
-python3 scripts/package_stack.py
-cp dist/adaptive-grok-build-pro-v2.0.5.zip* packages/
-git tag -a v2.0.5 -m "v2.0.5"
-git push origin main
-git push origin v2.0.5
-gh release create v2.0.5 packages/adaptive-grok-build-pro-v2.0.5.zip packages/adaptive-grok-build-pro-v2.0.5.zip.sha256 --notes-file dist/RELEASE-NOTES.md
+```text
+feature branch
+→ pull request
+→ exact-SHA trusted CI
+→ CODEOWNER approval
+→ protected merge
+→ production Environment approval
+→ exact-SHA release workflow
 ```
 
-## Rollback
-
-```bash
-gh release delete v2.0.5 --yes
-git push origin :refs/tags/v2.0.5
-git tag -d v2.0.5
-```
+For release facts about v2.0.5, use the Git tag, GitHub Release metadata, and `CHANGELOG.md`. Do not recover operational commands from older commits.

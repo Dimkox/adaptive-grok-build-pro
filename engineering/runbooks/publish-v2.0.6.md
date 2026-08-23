@@ -1,36 +1,17 @@
-# Publish v2.0.6
+# Publish v2.0.6 — Historical record
 
-Print-only last mile. Assemble the zip first; humans own tag / push / GitHub Release.
+This file is a **Historical record** of a release completed before the protected trust boundary was introduced. The former local tag, push, release, and rollback commands are retired and must not be reused.
 
-Last mile is the GitHub CLI (`gh release create`), not GitHub Actions. Do not add `.github/workflows/`.
+Current delivery and publication are defined in [`docs/TRUST-BOUNDARY.md`](../../docs/TRUST-BOUNDARY.md):
 
-Agents must not run `git push`, `git tag`, or `gh release`; humans own those commands.
-
-## Checks
-
-```bash
-python3 scripts/grok_status.py
-python3 scripts/grok_verify.py --mode pr
-python3 scripts/grok_deploy.py
+```text
+feature branch
+→ pull request
+→ exact-SHA trusted CI
+→ CODEOWNER approval
+→ protected merge
+→ production Environment approval
+→ exact-SHA release workflow
 ```
 
-Only when a human is ready to publish: `python3 scripts/grok_approve.py production --reason "publish v2.0.6"`
-
-## Commands
-
-```bash
-python3 scripts/package_stack.py
-cp dist/adaptive-grok-build-pro-v2.0.6.zip* packages/
-git tag -a v2.0.6 -m "v2.0.6"
-git push origin main
-git push origin v2.0.6
-gh release create v2.0.6 packages/adaptive-grok-build-pro-v2.0.6.zip packages/adaptive-grok-build-pro-v2.0.6.zip.sha256 --title "Adaptive Grok Build Pro v2.0.6" --notes-file dist/RELEASE-NOTES.md
-```
-
-## Rollback
-
-```bash
-gh release delete v2.0.6 --yes
-git push origin :refs/tags/v2.0.6
-git tag -d v2.0.6
-```
+For release facts about v2.0.6, use the Git tag, GitHub Release metadata, and `CHANGELOG.md`. Do not recover operational commands from older commits.

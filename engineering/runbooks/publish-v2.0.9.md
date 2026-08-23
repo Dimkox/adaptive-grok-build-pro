@@ -1,20 +1,17 @@
-# Publish v2.0.9
+# Publish v2.0.9 — Historical record
 
-Last mile is GitHub CLI, not GitHub Actions.
+This file is a **Historical record** of a release completed before the protected trust boundary was introduced. The former local tag, push, release, and rollback commands are retired and must not be reused.
 
-```bash
-python3 scripts/package_stack.py
-cp dist/adaptive-grok-build-pro-v2.0.9.zip* packages/
-git tag -a v2.0.9 -m "v2.0.9"
-git push origin main
-git push origin v2.0.9
-gh release create v2.0.9 packages/adaptive-grok-build-pro-v2.0.9.zip packages/adaptive-grok-build-pro-v2.0.9.zip.sha256 --title "Adaptive Grok Build Pro v2.0.9" --notes-file dist/RELEASE-NOTES.md
+Current delivery and publication are defined in [`docs/TRUST-BOUNDARY.md`](../../docs/TRUST-BOUNDARY.md):
+
+```text
+feature branch
+→ pull request
+→ exact-SHA trusted CI
+→ CODEOWNER approval
+→ protected merge
+→ production Environment approval
+→ exact-SHA release workflow
 ```
 
-Rollback:
-
-```bash
-gh release delete v2.0.9 --yes
-git push origin :refs/tags/v2.0.9
-git tag -d v2.0.9
-```
+For release facts about v2.0.9, use the Git tag, GitHub Release metadata, and `CHANGELOG.md`. Do not recover operational commands from older commits.
