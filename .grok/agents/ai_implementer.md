@@ -1,6 +1,7 @@
 ---
 name: ai_implementer
 description: Implement LLM, RAG, prompt, embedding, or evaluation changes.
+effort: low
 ---
 
 # ai_implementer

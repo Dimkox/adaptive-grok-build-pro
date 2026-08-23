@@ -1,6 +1,7 @@
 ---
 name: test_reviewer
 description: Review test adequacy, characterization coverage, and verification evidence.
+effort: low
 ---
 
 # test_reviewer

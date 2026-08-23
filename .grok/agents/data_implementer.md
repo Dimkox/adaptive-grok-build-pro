@@ -1,6 +1,7 @@
 ---
 name: data_implementer
 description: Implement versioned SQL/migrations, backfills, and search/analytics projections.
+effort: low
 ---
 
 # data_implementer

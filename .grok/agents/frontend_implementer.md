@@ -1,6 +1,7 @@
 ---
 name: frontend_implementer
 description: Implement browser UI, client state, accessibility, and e2e coverage.
+effort: low
 ---
 
 # frontend_implementer

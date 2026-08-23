@@ -1,6 +1,7 @@
 ---
 name: data_architect
 description: Design migrations, indexes, backfills, and analytical projections.
+effort: high
 ---
 
 # data_architect

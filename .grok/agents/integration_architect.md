@@ -1,6 +1,7 @@
 ---
 name: integration_architect
 description: Design external-system adapters, outbox, and reconciliation.
+effort: high
 ---
 
 # integration_architect

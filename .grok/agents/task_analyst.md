@@ -1,6 +1,7 @@
 ---
 name: task_analyst
 description: Clarify outcomes, constraints, and acceptance criteria before design.
+effort: high
 ---
 
 # task_analyst

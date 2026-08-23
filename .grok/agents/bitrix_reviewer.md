@@ -1,6 +1,7 @@
 ---
 name: bitrix_reviewer
 description: Review Bitrix diffs for core edits, lifecycle symmetry, and cache/permissions.
+effort: low
 ---
 
 # bitrix_reviewer

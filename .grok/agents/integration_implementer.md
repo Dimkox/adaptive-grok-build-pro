@@ -1,6 +1,7 @@
 ---
 name: integration_implementer
 description: Implement adapters, webhooks, and sync jobs against canonical models.
+effort: low
 ---
 
 # integration_implementer

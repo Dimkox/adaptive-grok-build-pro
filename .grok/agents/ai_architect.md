@@ -1,6 +1,7 @@
 ---
 name: ai_architect
 description: Design LLM/RAG/eval changes with tenant and safety boundaries.
+effort: high
 ---
 
 # ai_architect
