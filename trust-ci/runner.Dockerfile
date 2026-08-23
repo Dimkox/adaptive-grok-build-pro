@@ -1,4 +1,5 @@
-FROM python:3.12-slim-bookworm
+ARG PYTHON_BASE_IMAGE
+FROM ${PYTHON_BASE_IMAGE}
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -15,7 +16,11 @@ RUN apt-get update \
 WORKDIR /opt/adaptive-trust-ci
 COPY pyproject.toml README.md ./
 COPY src ./src
-RUN python -m pip install --no-cache-dir ".[test]" coverage ruff bandit
+RUN python -m pip install --no-cache-dir ".[test]" \
+        coverage==7.15.4 \
+        ruff==0.16.2 \
+        bandit==1.9.4 \
+        tomli==2.4.1
 
 USER 10001:10001
 WORKDIR /workspace
