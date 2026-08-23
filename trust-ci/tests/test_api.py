@@ -210,16 +210,10 @@ class ApiTests(unittest.TestCase):
         )
         job, _ = self.store.enqueue(request, self.policy.digest, self.policy.max_attempts, now=now())
         self.assertEqual(self.client.get(f'/jobs/{job.job_id}').status_code, 401)
-        self.assertEqual(
-            self.client.get(f'/jobs/{job.job_id}', headers={'Authorization': 'Bearer wrong'}).status_code,
-            401,
-        )
+        self.assertEqual(self.client.get(f'/jobs/{job.job_id}', headers={'Authorization': 'Bearer wrong'}).status_code, 401)
         self.assertEqual(self.client.get(f'/jobs/{job.job_id}', headers=self.read_headers).status_code, 200)
         self.assertEqual(self.client.get(f'/attestations/{job.job_id}').status_code, 401)
-        self.assertEqual(
-            self.client.get(f'/attestations/{job.job_id}', headers=self.read_headers).status_code,
-            404,
-        )
+        self.assertEqual(self.client.get(f'/attestations/{job.job_id}', headers=self.read_headers).status_code, 404)
 
     def test_authorized_job_endpoint_does_not_return_command_output(self) -> None:
         request = JobRequest(
@@ -244,6 +238,25 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotIn('stdout_tail', response.text)
         self.assertNotIn('secret output', response.text)
+
+    def test_metrics_require_bearer_and_expose_no_high_cardinality_data(self) -> None:
+        body = self.webhook_body()
+        queued = self.client.post('/webhooks/github', content=body, headers=self.headers(body)).json()
+        self.assertEqual(self.client.get('/metrics').status_code, 401)
+        response = self.client.get('/metrics', headers=self.read_headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.headers['content-type'].startswith('text/plain'))
+        self.assertIn('adaptive_trust_ci_jobs{status="queued"} 1', response.text)
+        self.assertIn(self.policy.check_name, response.text)
+        self.assertNotIn('Dimkox', response.text)
+        self.assertNotIn(sha('b'), response.text)
+        self.assertNotIn(queued['job_id'], response.text)
+
+    def test_metrics_reflect_kill_switch(self) -> None:
+        self.common.kill_switch_path.write_text('stop')
+        response = self.client.get('/metrics', headers=self.read_headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('adaptive_trust_ci_kill_switch 1', response.text)
 
 
 if __name__ == '__main__':
