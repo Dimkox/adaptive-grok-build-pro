@@ -35,12 +35,22 @@ MANAGED_FILES = (
     'bandit.yaml',
     '.coveragerc',
 )
+TRUST_BOUNDARY_FILES = (
+    '.github/workflows/trusted-ci.yml',
+    '.github/workflows/release.yml',
+    '.github/CODEOWNERS',
+    'docs/TRUST-BOUNDARY.md',
+)
 SKIP_PREFIXES = ('.grok-stack/runtime/',)
 MANAGED_START = '<!-- ADAPTIVE-GROK-PRO:START -->'
 MANAGED_END = '<!-- ADAPTIVE-GROK-PRO:END -->'
 
 
-def iter_source_files(source: Path) -> list[tuple[str, Path]]:
+def iter_source_files(
+    source: Path,
+    *,
+    with_ci: bool = False,
+) -> list[tuple[str, Path]]:
     files: list[tuple[str, Path]] = []
     for dirname in MANAGED_DIRS:
         base = source / dirname
@@ -50,12 +60,22 @@ def iter_source_files(source: Path) -> list[tuple[str, Path]]:
             if not path.is_file():
                 continue
             rel = path.relative_to(source).as_posix()
-            if rel.endswith('/__pycache__') or '/__pycache__/' in rel or rel.endswith('.pyc'):
+            if (
+                rel.endswith('/__pycache__')
+                or '/__pycache__/' in rel
+                or rel.endswith('.pyc')
+            ):
                 continue
-            if any(rel.startswith(prefix) and not rel.endswith('.gitkeep') for prefix in SKIP_PREFIXES):
+            if any(
+                rel.startswith(prefix) and not rel.endswith('.gitkeep')
+                for prefix in SKIP_PREFIXES
+            ):
                 continue
             files.append((rel, path))
-    files.extend((rel, source / rel) for rel in MANAGED_FILES)
+    selected = [*MANAGED_FILES]
+    if with_ci:
+        selected.extend(TRUST_BOUNDARY_FILES)
+    files.extend((rel, source / rel) for rel in selected)
     return sorted(files)
 
 
@@ -72,7 +92,9 @@ def managed_agents_text(source: Path) -> str:
 
 def merge_agents(source: Path, target: Path, dry_run: bool) -> None:
     agent_file = target / 'AGENTS.md'
-    existing = agent_file.read_text(encoding='utf-8') if agent_file.exists() else ''
+    existing = (
+        agent_file.read_text(encoding='utf-8') if agent_file.exists() else ''
+    )
     block = managed_agents_text(source)
     if MANAGED_START in existing and MANAGED_END in existing:
         before, rest = existing.split(MANAGED_START, 1)
@@ -96,26 +118,33 @@ def install(
     all_deps: bool = False,
     runner=None,
 ) -> None:
-    if with_ci:
-        raise SystemExit(
-            'GitHub Actions is forbidden. Use local `make verify` / '
-            '`python3 scripts/grok_verify.py --mode pr`.'
-        )
     target.mkdir(parents=True, exist_ok=True)
-    source_files = iter_source_files(source)
-    conflicts = [rel for rel, src in source_files if different(src, target / rel)]
+    source_files = iter_source_files(source, with_ci=with_ci)
+    conflicts = [
+        rel for rel, src in source_files if different(src, target / rel)
+    ]
     if conflicts and not force:
         formatted = '\n'.join(f'  - {item}' for item in conflicts[:50])
-        extra = '' if len(conflicts) <= 50 else f'\n  ... and {len(conflicts) - 50} more'
+        extra = (
+            ''
+            if len(conflicts) <= 50
+            else f'\n  ... and {len(conflicts) - 50} more'
+        )
         raise SystemExit(
             'Adaptive Grok managed files already exist with different content. '
-            'Review them, back up the repository, then rerun with --force to overwrite only these files.\n'
-            + formatted + extra
+            'Review them, back up the repository, then rerun with --force to '
+            'overwrite only these files.\n'
+            + formatted
+            + extra
         )
 
     for rel, src in source_files:
         dst = target / rel
-        action = 'OVERWRITE' if dst.exists() and different(src, dst) else ('KEEP' if dst.exists() else 'COPY')
+        action = (
+            'OVERWRITE'
+            if dst.exists() and different(src, dst)
+            else ('KEEP' if dst.exists() else 'COPY')
+        )
         print(f'{action} {rel}')
         if dry_run or action == 'KEEP':
             continue
@@ -127,13 +156,18 @@ def install(
     profile = detect_repo(target)
     if profile.kind == 'bitrix' and (target / 'local').is_dir():
         local_agents = target / 'local/AGENTS.md'
-        bitrix_block = (source / 'docs/bitrix-local-AGENTS.md').read_text(encoding='utf-8')
+        bitrix_block = (source / 'docs/bitrix-local-AGENTS.md').read_text(
+            encoding='utf-8'
+        )
         if not local_agents.exists():
             print(f'CREATE {local_agents.relative_to(target)}')
             if not dry_run:
                 local_agents.write_text(bitrix_block, encoding='utf-8')
         elif bitrix_block not in local_agents.read_text(encoding='utf-8'):
-            print(f'NOTICE {local_agents.relative_to(target)} exists; Bitrix-local guidance was not overwritten.')
+            print(
+                f'NOTICE {local_agents.relative_to(target)} exists; '
+                'Bitrix-local guidance was not overwritten.'
+            )
 
     for rel in (
         'engineering/changes',
@@ -148,9 +182,22 @@ def install(
         if not dry_run:
             (target / rel).mkdir(parents=True, exist_ok=True)
 
-    print(f'Detected target profile: {profile.kind}; domains={profile.domains}; modules={profile.bitrix_modules}')
+    print(
+        f'Detected target profile: {profile.kind}; '
+        f'domains={profile.domains}; modules={profile.bitrix_modules}'
+    )
+    if with_ci:
+        print(
+            'NOTICE trusted CI files copied. Configure branch protection, '
+            'CODEOWNERS, and the production Environment as documented in '
+            'docs/TRUST-BOUNDARY.md.'
+        )
 
-    pin_root = target if (target / '.grok-stack/config/toolchain.json').is_file() else source
+    pin_root = (
+        target
+        if (target / '.grok-stack/config/toolchain.json').is_file()
+        else source
+    )
     dep_results = pull_dependencies(
         pin_root,
         apply=install_deps,
@@ -171,25 +218,44 @@ def install(
         elif action == 'manual-url':
             print(f'MANUAL {tool_id}: {command}')
         elif action == 'install':
-            print(f'{"INSTALLED" if item.get("ok") else "INSTALL FAILED"} {tool_id}: {command}')
+            outcome = 'INSTALLED' if item.get('ok') else 'INSTALL FAILED'
+            print(f'{outcome} {tool_id}: {command}')
         else:
             print(f'DEPS {tool_id}: {action}')
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description='Install Adaptive Grok Build Pro into an existing repository without deleting unrelated agent configuration.'
+        description=(
+            'Install Adaptive Grok Build Pro into an existing repository '
+            'without deleting unrelated agent configuration.'
+        )
     )
     parser.add_argument('target')
-    parser.add_argument('--force', action='store_true', help='Overwrite conflicting Adaptive Grok managed files only.')
+    parser.add_argument(
+        '--force',
+        action='store_true',
+        help='Overwrite conflicting Adaptive Grok managed files only.',
+    )
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument(
         '--with-ci',
         action='store_true',
-        help='Forbidden. Never GitHub Actions; use local python3 scripts/grok_verify.py --mode pr.',
+        help=(
+            'Also copy trusted CI, protected release, CODEOWNERS, and the '
+            'trust-boundary runbook. GitHub settings still require a human.'
+        ),
     )
-    parser.add_argument('--no-deps', action='store_true', help='Do not install missing required toolchain tools.')
-    parser.add_argument('--all-deps', action='store_true', help='Also install optional profile tools (php, node, gh, …).')
+    parser.add_argument(
+        '--no-deps',
+        action='store_true',
+        help='Do not install missing required toolchain tools.',
+    )
+    parser.add_argument(
+        '--all-deps',
+        action='store_true',
+        help='Also install optional profile tools (php, node, gh, …).',
+    )
     args = parser.parse_args()
     install(
         ROOT,
