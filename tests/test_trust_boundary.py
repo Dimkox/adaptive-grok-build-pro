@@ -139,6 +139,38 @@ class StrictVerificationTests(unittest.TestCase):
             self.assertEqual(_check(report, 'bandit')['status'], 'skip')
             self.assertEqual(_check(report, 'coverage')['status'], 'skip')
 
+    def test_explicit_base_drives_change_sensitive_checks(self) -> None:
+        with project_copy(git=True) as root, patch(
+            'adaptive_grok.verification.changed_files',
+            return_value=['contracts/example.schema.json'],
+        ) as changed, patch(
+            'adaptive_grok.verification.command_exists',
+            return_value=False,
+        ):
+            report = verify(
+                root,
+                mode='fast',
+                profiles=['base'],
+                record=False,
+                strict=False,
+                base='base-sha',
+            )
+
+        changed.assert_called_once_with(root, 'base-sha')
+        self.assertEqual(report['base'], 'base-sha')
+        self.assertEqual(
+            report['changed_files'],
+            ['contracts/example.schema.json'],
+        )
+
+    def test_trusted_ci_fetches_history_and_passes_event_base(self) -> None:
+        text = (ROOT / '.github/workflows/trusted-ci.yml').read_text(
+            encoding='utf-8',
+        )
+        self.assertIn('fetch-depth: 0', text)
+        self.assertIn('VERIFY_BASE:', text)
+        self.assertIn('--base "$VERIFY_BASE"', text)
+
 
 if __name__ == '__main__':
     unittest.main()
