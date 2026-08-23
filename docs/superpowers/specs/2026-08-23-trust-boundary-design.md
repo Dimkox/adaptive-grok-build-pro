@@ -1,7 +1,7 @@
 # Trust Boundary and Trusted CI Design
 
-**Date:** 2026-08-23  
-**Status:** Approved for implementation  
+**Date:** 2026-08-23
+**Status:** Approved for implementation
 **Repository:** `Dimkox/adaptive-grok-build-pro`
 
 ## Goal
