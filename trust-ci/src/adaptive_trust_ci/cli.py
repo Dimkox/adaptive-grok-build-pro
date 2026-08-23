@@ -9,7 +9,7 @@ import urllib.request
 from pathlib import Path
 
 from .api import create_app
-from .backup import create_backup, restore_drill, verify_backup
+from .backup import create_backup, prune_backups, restore_drill, verify_backup
 from .github import GitHubClient
 from .github_app import generate_app_jwt
 from .holdout import bundle_digest, verify_bundle
@@ -93,6 +93,11 @@ def build_parser() -> argparse.ArgumentParser:
     backup_verify = sub.add_parser('backup-verify', help='Verify backup size and SHA-256 manifest')
     backup_verify.add_argument('--dump', required=True, type=Path)
     backup_verify.add_argument('--manifest', required=True, type=Path)
+
+    backup_prune = sub.add_parser('backup-prune', help='Delete only verified backups outside retention policy')
+    backup_prune.add_argument('--directory', type=Path)
+    backup_prune.add_argument('--keep-last', type=int, default=14)
+    backup_prune.add_argument('--max-age-days', type=int, default=30)
 
     restore = sub.add_parser('restore-drill', help='Restore a backup into an explicitly disposable database')
     restore.add_argument('--dump', required=True, type=Path)
@@ -220,8 +225,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == 'branch-protect':
-        policy_path = args.policy or Path(os.environ.get('TRUST_CI_POLICY_PATH', '')).resolve()
-        if not str(policy_path) or not policy_path.is_file():
+        policy_path = args.policy or _required_path_env('TRUST_CI_POLICY_PATH')
+        if not policy_path.is_file():
             raise SystemExit('--policy or TRUST_CI_POLICY_PATH must name the deployed policy')
         policy = Policy.load(policy_path)
         check_name = args.context or policy.check_name
@@ -241,9 +246,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == 'backup-create':
         settings = CommonSettings.load()
-        output_dir = args.output_dir or Path(os.environ.get('TRUST_CI_BACKUP_DIR', '')).resolve()
-        if not str(output_dir) or str(output_dir) == '.':
-            raise SystemExit('--output-dir or TRUST_CI_BACKUP_DIR is required')
+        output_dir = args.output_dir.resolve() if args.output_dir else _required_path_env('TRUST_CI_BACKUP_DIR')
         result = create_backup(
             settings.database_url,
             output_dir,
@@ -265,6 +268,16 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == 'backup-verify':
         print(json.dumps(verify_backup(args.dump, args.manifest), ensure_ascii=False, indent=2))
+        return 0
+
+    if args.command == 'backup-prune':
+        directory = args.directory.resolve() if args.directory else _required_path_env('TRUST_CI_BACKUP_DIR')
+        report = prune_backups(
+            directory,
+            keep_last=args.keep_last,
+            max_age_days=args.max_age_days,
+        )
+        print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0
 
     if args.command == 'restore-drill':
@@ -343,6 +356,13 @@ def _doctor() -> int:
         worker = WorkerSettings.load()
         signer = Signer.from_private_file(worker.ci_signing_key_path)
         checks.append({'name': 'ci-signer', 'status': 'pass', 'detail': signer.key_id})
+        checks.append(
+            {
+                'name': 'runner-image',
+                'status': 'pass' if worker.runner_image == policy.sandbox.image else 'fail',
+                'detail': worker.runner_image,
+            }
+        )
         try:
             generate_app_jwt(worker.github_app_id, worker.github_app_private_key_path.read_bytes(), now=utc_now())
             checks.append({'name': 'github-app-key', 'status': 'pass', 'detail': str(worker.github_app_id)})
@@ -364,6 +384,13 @@ def _required_int_env(name: str) -> int:
     if value <= 0:
         raise SystemExit(f'{name} must be a positive integer')
     return value
+
+
+def _required_path_env(name: str) -> Path:
+    raw = os.environ.get(name, '').strip()
+    if not raw:
+        raise SystemExit(f'{name} is required')
+    return Path(raw).expanduser().resolve()
 
 
 def _read_json(path: Path) -> dict:
