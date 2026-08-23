@@ -137,6 +137,40 @@ _UNWRAP_SHELL = re.compile(
     ''',
     re.IGNORECASE | re.VERBOSE | re.DOTALL,
 )
+_SHELL_REDIRECTION = re.compile(
+    r'''(?:^|[\s;&|])(?:\d*>>?|&>>?)\s*
+        (?P<target>"[^"]+"|'[^']+'|[^\s;&|]+)''',
+    re.IGNORECASE | re.VERBOSE,
+)
+_SHELL_MUTATION_SIGNAL = re.compile(
+    r'''
+    (?:^|[;&|]\s*|\s)
+    (?:
+        rm|mv|cp|install|touch|truncate|mkdir|rmdir|ln|chmod|chown|
+        chgrp|tee|patch|rsync
+    )\b
+    |
+    \bsed\b[^\n]*\s-i(?:\b|[A-Za-z])
+    |
+    \bperl\b[^\n]*\s-[^\s\n]*i[^\s\n]*\b
+    |
+    \b(?:python(?:3(?:\.\d+)?)?|node|ruby|php)\b[^\n]*\s(?:-c|-e|-r)\b
+    |
+    \bgit\b[^\n]*\s(?:apply|checkout|restore|rm|mv|clean)\b
+    |
+    \bruff\b[^\n]*--fix\b
+    |
+    \bcurl\b[^\n]*\s(?:-o|--output)(?:\s|=)
+    |
+    \bwget\b[^\n]*\s(?:-O|--output-document)(?:\s|=)
+    |
+    \bdd\b[^\n]*\bof=
+    |
+    \b(?:tar|unzip)\b[^\n]*(?:\s-(?:x|[^\s\n]*x[^\s\n]*)|\bextract\b)
+    ''',
+    re.IGNORECASE | re.VERBOSE | re.DOTALL,
+)
+_GLOB_META = re.compile(r'[*?[]')
 SIDE_EFFECT_TOOL = re.compile(
     r'(?:^|__)(?:create|update|delete|remove|send|write|publish|deploy|merge|close|execute|apply|archive|trash|move)(?:_|$)',
     re.IGNORECASE,
@@ -158,6 +192,23 @@ def write_roles(root: Path) -> set[str]:
     return set(WRITE_ROLES)
 
 
+def _configured_patterns(
+    config: dict[str, Any],
+    key: str,
+    defaults: list[str],
+) -> list[str]:
+    value = config.get(key)
+    if isinstance(value, list):
+        patterns = [
+            str(item).strip()
+            for item in value
+            if isinstance(item, str) and item.strip()
+        ]
+        if patterns:
+            return patterns
+    return list(defaults)
+
+
 def _glob_match(path: str, pattern: str) -> bool:
     normalized = path.replace('\\', '/').lstrip('./')
     candidate = pattern.replace('\\', '/').lstrip('./')
@@ -166,6 +217,43 @@ def _glob_match(path: str, pattern: str) -> bool:
 
 def _matches_any(path: str, patterns: list[str]) -> bool:
     return any(_glob_match(path, pattern) for pattern in patterns)
+
+
+def _literal_pattern_prefix(pattern: str) -> str:
+    normalized = pattern.replace('\\', '/').lstrip('./')
+    match = _GLOB_META.search(normalized)
+    if match:
+        normalized = normalized[: match.start()]
+    return normalized.rstrip('/')
+
+
+def _mentions_control_plane(command: str, patterns: list[str]) -> bool:
+    normalized = command.replace('\\', '/').casefold()
+    for pattern in patterns:
+        prefix = _literal_pattern_prefix(pattern)
+        if prefix and prefix.casefold() in normalized:
+            return True
+    return False
+
+
+def _redirects_to_control_plane(command: str, patterns: list[str]) -> bool:
+    for match in _SHELL_REDIRECTION.finditer(command):
+        target = match.group('target').strip('"\'')
+        if _mentions_control_plane(target, patterns):
+            return True
+    return False
+
+
+def _is_control_plane_shell_mutation(
+    command: str,
+    patterns: list[str],
+) -> bool:
+    if _redirects_to_control_plane(command, patterns):
+        return True
+    return (
+        _mentions_control_plane(command, patterns)
+        and _SHELL_MUTATION_SIGNAL.search(command) is not None
+    )
 
 
 def _extract_paths(value: Any) -> list[str]:
@@ -262,9 +350,23 @@ def evaluate_pre_tool(
     tool_input = event.get('tool_input') or {}
     route = get_active_route(root)
     config = load_json(root / '.grok-stack/config/policy.json', {}) or {}
-    control_plane = config.get('control_plane_paths', DEFAULT_CONTROL_PLANE)
-    protected = config.get('protected_paths', DEFAULT_PROTECTED)
-    secret_read = config.get('secret_read_paths', DEFAULT_SECRET_READ)
+    if not isinstance(config, dict):
+        config = {}
+    control_plane = _configured_patterns(
+        config,
+        'control_plane_paths',
+        DEFAULT_CONTROL_PLANE,
+    )
+    protected = _configured_patterns(
+        config,
+        'protected_paths',
+        DEFAULT_PROTECTED,
+    )
+    secret_read = _configured_patterns(
+        config,
+        'secret_read_paths',
+        DEFAULT_SECRET_READ,
+    )
 
     if tool == 'Bash':
         command = (
@@ -272,7 +374,12 @@ def evaluate_pre_tool(
             if isinstance(tool_input, dict)
             else str(tool_input)
         )
-        for pattern in config.get(
+        if _is_control_plane_shell_mutation(command, control_plane):
+            return False, (
+                'Blocked control-plane shell mutation by repository policy.'
+            )
+        for pattern in _configured_patterns(
+            config,
             'destructive_command_patterns',
             DESTRUCTIVE_COMMANDS,
         ):
@@ -324,7 +431,7 @@ def evaluate_pre_tool(
             if _matches_any(rel, control_plane):
                 return False, (
                     f'Control-plane path edit blocked: {rel}. '
-                    'Use a protected pull request reviewed by CODEOWNERS.'
+                    'Use the configured human-owned pull-request path.'
                 )
             if _matches_any(rel, protected):
                 return False, (
