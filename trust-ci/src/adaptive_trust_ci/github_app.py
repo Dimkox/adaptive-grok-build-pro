@@ -46,7 +46,7 @@ class GitHubAppAuth:
     private_key_path: Path
     transport: Transport | None = None
     api_url: str = 'https://api.github.com'
-    api_version: str = '2022-11-28'
+    api_version: str = '2026-03-10'
     now_fn: Callable[[], datetime] = utc_now
     _cached_token: str | None = field(init=False, default=None)
     _cached_expiry: datetime | None = field(init=False, default=None)
@@ -82,7 +82,13 @@ class GitHubAppAuth:
                     'User-Agent': 'adaptive-trust-ci/2.1.0',
                     'X-GitHub-Api-Version': self.api_version,
                 },
-                None,
+                {
+                    'permissions': {
+                        'checks': 'write',
+                        'contents': 'read',
+                        'pull_requests': 'read',
+                    }
+                },
             )
             if status != 201 or not isinstance(response, dict):
                 raise GitHubError(f'GitHub App token request returned {status}: {response}')
