@@ -1,0 +1,153 @@
+services:
+  postgres:
+    image: ${TRUST_CI_POSTGRES_IMAGE:?set immutable postgres image name@sha256 digest}
+    restart: unless-stopped
+    env_file:
+      - ./env/postgres.env
+    volumes:
+      - trust-ci-postgres:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - trust-ci
+
+  migrate:
+    image: ${TRUST_CI_API_IMAGE:?set immutable API image name@sha256 digest}
+    env_file:
+      - ./env/common.env
+      - ./env/migration.env
+    volumes:
+      - ./runtime/policy.json:/etc/adaptive-trust-ci/policy.json:ro
+    command: ["migrate"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - trust-ci
+    restart: "no"
+
+  api:
+    image: ${TRUST_CI_API_IMAGE:?set immutable API image name@sha256 digest}
+    restart: unless-stopped
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=128m
+      - /home/trustci:rw,noexec,nosuid,nodev,size=32m
+    env_file:
+      - ./env/common.env
+      - ./env/api.env
+    volumes:
+      - ./runtime/policy.json:/etc/adaptive-trust-ci/policy.json:ro
+      - ./runtime/trust-store.json:/etc/adaptive-trust-ci/trust-store.json:ro
+      - ./runtime/control:/run/adaptive-trust-ci
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health/ready', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - trust-ci
+
+  docker-engine:
+    image: ${TRUST_CI_DIND_IMAGE:?set immutable rootless dind image name@sha256 digest}
+    restart: unless-stopped
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+    command:
+      - dockerd-entrypoint.sh
+      - --host=tcp://0.0.0.0:2375
+      - --host=unix:///run/user/1000/docker.sock
+      - --storage-driver=overlay2
+    volumes:
+      - trust-ci-docker-data:/home/rootless/.local/share/docker
+      - trust-ci-workspaces:/var/lib/adaptive-trust-ci/workspaces
+      - ${TRUST_CI_HOLDOUT_SOURCE_PATH:?set absolute reviewed holdout source path}:/etc/adaptive-trust-ci/holdout:ro
+    expose:
+      - "2375"
+    healthcheck:
+      test: ["CMD", "docker", "-H", "tcp://127.0.0.1:2375", "info"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      - executor
+
+  runner-loader:
+    image: ${TRUST_CI_WORKER_IMAGE:?set immutable worker image name@sha256 digest}
+    restart: "no"
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      DOCKER_HOST: tcp://docker-engine:2375
+      TRUST_CI_RUNNER_IMAGE: ${TRUST_CI_RUNNER_IMAGE:?set immutable runner image name@sha256 digest}
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+      - /home/trustci:rw,noexec,nosuid,nodev,size=32m
+    command:
+      - sh
+      - -ec
+      - |
+        docker pull "$TRUST_CI_RUNNER_IMAGE"
+        resolved="$(docker image inspect "$TRUST_CI_RUNNER_IMAGE" --format '{{index .RepoDigests 0}}')"
+        test "$resolved" = "$TRUST_CI_RUNNER_IMAGE"
+    depends_on:
+      docker-engine:
+        condition: service_healthy
+    networks:
+      - executor
+
+  worker:
+    image: ${TRUST_CI_WORKER_IMAGE:?set immutable worker image name@sha256 digest}
+    restart: unless-stopped
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    user: "10001:10001"
+    environment:
+      DOCKER_HOST: tcp://docker-engine:2375
+      TRUST_CI_RUNNER_IMAGE: ${TRUST_CI_RUNNER_IMAGE:?set immutable runner image name@sha256 digest}
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=256m
+      - /home/trustci:rw,noexec,nosuid,nodev,size=32m
+    env_file:
+      - ./env/common.env
+      - ./env/worker.env
+    volumes:
+      - ./runtime/policy.json:/etc/adaptive-trust-ci/policy.json:ro
+      - ${TRUST_CI_HOLDOUT_SOURCE_PATH:?set absolute reviewed holdout source path}:/etc/adaptive-trust-ci/holdout:ro
+      - ./runtime/trust-ci-signing-key.pem:/run/secrets/trust-ci-signing-key.pem:ro
+      - ./runtime/github-app-private-key.pem:/run/secrets/github-app-private-key.pem:ro
+      - ./runtime/control:/run/adaptive-trust-ci
+      - trust-ci-workspaces:/var/lib/adaptive-trust-ci/workspaces
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      runner-loader:
+        condition: service_completed_successfully
+    networks:
+      - trust-ci
+      - executor
+
+volumes:
+  trust-ci-postgres:
+  trust-ci-docker-data:
+  trust-ci-workspaces:
+
+networks:
+  trust-ci:
+    driver: bridge
+  executor:
+    driver: bridge

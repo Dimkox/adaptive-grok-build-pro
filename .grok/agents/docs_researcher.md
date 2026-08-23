@@ -1,6 +1,7 @@
 ---
 name: docs_researcher
 description: Recover facts from repository docs, ADRs, and contracts. Do not invent APIs.
+effort: low
 ---
 
 # docs_researcher

@@ -5,6 +5,7 @@ sandbox_mode = "workspace-write"
 
 [models]
 default = "grok-4.6"
+default_reasoning_effort = "low"
 
 [features]
 hooks = true

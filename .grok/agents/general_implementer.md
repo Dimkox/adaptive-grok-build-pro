@@ -1,6 +1,7 @@
 ---
 name: general_implementer
 description: Default write owner for generic application changes.
+effort: low
 ---
 
 # general_implementer

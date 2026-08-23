@@ -2,6 +2,26 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-23 — New release after an existing tag is 2.0.12
+
+`v2.0.11` already peels to `c54fd01`. A new ship therefore bumps VERSION, rebuilds the zip, and tags `v2.0.12`. Do not retag `v2.0.11`.
+
+## 2026-08-23 — Bootstrap merge of PR #2 without a live App-owned check
+
+The user ordered commit, push, merge, and release while the Trust CI GitHub App check does not exist yet. `main` is unprotected, so rebase-merge of PR #2 is the named bootstrap exception; do not forge `adaptive-trust-ci/verified@*` or protect `main` in this slice.
+
+## 2026-08-23 — README stack graph is K16 including Trust CI
+
+Trust CI API, worker, PostgreSQL, runner, holdout and GitHub App are now listed core nodes, so the first mermaid is one K16 clique of 120 undirected `---` edges generated from `itertools.combinations`. A missing pair is a stale map; Trust CI is no longer outside the graph. Prompts and local receipts remain not merge authority.
+
+## 2026-08-23 — Draft pull requests must still enqueue Trust CI jobs
+
+Handoff keeps PR #2 draft until the App-owned check exists, so ignoring `draft=true` webhooks makes that check unreachable. Enqueue opened/synchronize/reopened draft events; keep closed-draft cancellation.
+
+## 2026-08-23 — PostgreSQL restart drills need a named volume
+
+`compose restart` stops the container and discards tmpfs. A named test volume plus `down --volumes` in the trap proves catalog recovery without leaving data behind.
+
 ## 2026-08-17 — Skip no-op checks; always push main and release
 
 A dirty change-package tree is not a product change. Do not spend an analysis/review wave on status or leftover paperwork. When product files do change and verify is green, push `origin main` and publish the GitHub Release.

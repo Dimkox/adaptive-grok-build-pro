@@ -1,0 +1,12 @@
+runtime/
+env/*.env
+*.approval.json
+*.attestation.json
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+.git/

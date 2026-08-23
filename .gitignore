@@ -11,6 +11,14 @@
 *.p12
 *.pfx
 
+# Independent Trust CI deployment state
+trust-ci/env/*.env
+!trust-ci/env/*.example
+trust-ci/runtime/*
+!trust-ci/runtime/.gitkeep
+trust-ci/*.approval.json
+trust-ci/*.attestation.json
+
 # Local crash / hook dumps
 err.log
 

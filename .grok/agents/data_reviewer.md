@@ -1,6 +1,7 @@
 ---
 name: data_reviewer
 description: Review schema, query, backfill, and recovery evidence.
+effort: low
 ---
 
 # data_reviewer

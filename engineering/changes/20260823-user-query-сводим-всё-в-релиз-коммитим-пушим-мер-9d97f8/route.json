@@ -1,0 +1,68 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher"
+  ],
+  "base_commit": "8a2f95c4893e89297fbce39a9b0c0c78610f14ed",
+  "base_fingerprint": "d2116b0fab46ebbc342e3c09d5ec830fc51af36a465c1819c5706eb037dc4b7c",
+  "complexity": "high-risk",
+  "created_at": "2026-08-23T21:28:46+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "generic"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "production_action_approval"
+  ],
+  "intent": "release",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base"
+  ],
+  "rationale": [
+    "high-risk intent/domain: release",
+    "intent=release",
+    "domains=generic",
+    "repository=generic",
+    "write-owner=none",
+    "analysis-wave=3/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "9d97f8dcae59",
+  "schema_version": 1,
+  "session_id": "01a03045-c530-7700-a547-b59f6cf10a2f",
+  "status": "routed",
+  "task": "<user_query>\nсводим всё в релиз, коммитим, пушим мерджим мое прямое указание\n</user_query>",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "release-readiness"
+  ],
+  "write_agent": null
+}

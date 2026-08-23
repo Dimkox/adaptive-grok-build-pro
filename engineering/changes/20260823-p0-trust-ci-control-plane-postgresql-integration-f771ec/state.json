@@ -1,0 +1,95 @@
+{
+  "change_id": "20260823-p0-trust-ci-control-plane-postgresql-integration-f771ec",
+  "created_at": "2026-08-23T17:39:00+00:00",
+  "history": [
+    {
+      "at": "2026-08-23T17:39:00+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-23T17:46:06+00:00",
+      "from": "draft",
+      "reason": "handoff is user-approved scope; baseline reproduced on 04348db; remaining work is activation plus baseline repairs",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-23T17:46:06+00:00",
+      "from": "scoped",
+      "reason": "GROK_BUILD_HANDOFF.md is explicit user order to continue implementation; no new product design",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-23T19:55:33+00:00",
+      "from": "approved",
+      "reason": "docs resume implementation complete",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-23T19:55:37+00:00",
+      "from": "implementing",
+      "reason": "docs resume ready for grok_verify",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-23T19:55:44+00:00",
+      "from": "verifying",
+      "reason": "independent code_review and test_review reports exist",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-23T19:55:52+00:00",
+      "from": "reviewing",
+      "reason": "docs/graph resume verified; K16 README, two-file compose docs, optional toolchain scanners; independent code and test reviews pass",
+      "to": "ready"
+    },
+    {
+      "at": "2026-08-23T20:30:37+00:00",
+      "from": "ready",
+      "reason": "docs slice isolated; next vertical is local compose build-without-push with no digest in git",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-23T20:42:51+00:00",
+      "from": "implementing",
+      "reason": "local compose build-without-push smoke recorded; product files frozen; grok_verify for dirty docs+toolchain tree",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-23T20:44:06+00:00",
+      "from": "verifying",
+      "reason": "grok_verify --mode pr PASS on dirty docs+toolchain+change-package tree",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-23T20:51:28+00:00",
+      "from": "reviewing",
+      "reason": "local build-without-push smoke PASS; grok_verify PASS; independent code and test reviews PASS; HANDOFF pin/App/deploy remain blocked on grants",
+      "to": "ready"
+    },
+    {
+      "at": "2026-08-23T21:10:27+00:00",
+      "from": "ready",
+      "reason": "user named ghcr.io/dimkox for docker-push of already-built api/worker/runner:2.1.0",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-23T21:14:22+00:00",
+      "from": "implementing",
+      "reason": "docker push ghcr.io/dimkox denied; operator must docker login ghcr.io with write:packages; grant 505dcbeb77d6e91e must not be reused after evidence write",
+      "to": "blocked"
+    },
+    {
+      "at": "2026-08-23T21:19:56+00:00",
+      "from": "blocked",
+      "reason": "operator logged in to ghcr.io with write:packages; retry docker-push of already-tagged api/worker/runner:2.1.0",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "f771ecaf458d",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "P0 Trust CI control plane: PostgreSQL integration, GitHub App, deploy, branch protection",
+  "updated_at": "2026-08-23T21:19:56+00:00"
+}

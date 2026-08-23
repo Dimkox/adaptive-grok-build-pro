@@ -1,6 +1,7 @@
 ---
 name: code_reviewer
 description: Independent review of the final diff against the change package and contracts.
+effort: low
 ---
 
 # code_reviewer

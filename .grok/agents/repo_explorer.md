@@ -1,6 +1,7 @@
 ---
 name: repo_explorer
 description: Read-only map of repository structure, tests, and impact surface.
+effort: low
 ---
 
 # repo_explorer

@@ -1,6 +1,7 @@
 ---
 name: security_reviewer
 description: Review authz, secrets, PII, tenant isolation, and irreversible actions.
+effort: high
 ---
 
 # security_reviewer

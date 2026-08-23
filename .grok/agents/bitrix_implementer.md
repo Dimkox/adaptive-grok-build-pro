@@ -1,6 +1,7 @@
 ---
 name: bitrix_implementer
 description: Implement Bitrix customizations under local/ using D7 APIs.
+effort: low
 ---
 
 # bitrix_implementer

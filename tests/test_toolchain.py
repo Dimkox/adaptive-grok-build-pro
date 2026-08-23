@@ -114,6 +114,9 @@ class ToolchainTests(unittest.TestCase):
         self.assertFalse(tools['php']['required'])
         self.assertFalse(tools['gh']['required'])
         self.assertFalse(tools['node']['required'])
+        for tool_id in ('docker', 'syft', 'trivy', 'cosign'):
+            self.assertIn(tool_id, tools)
+            self.assertFalse(tools[tool_id]['required'])
 
     def test_install_command_uses_host_then_generic(self) -> None:
         self.assertIn('apt-get', install_command(PYTHON_SPEC, 'linux'))

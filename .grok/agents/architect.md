@@ -1,6 +1,7 @@
 ---
 name: architect
 description: Produce a bounded design for standard or high-risk delivery work.
+effort: high
 ---
 
 # architect

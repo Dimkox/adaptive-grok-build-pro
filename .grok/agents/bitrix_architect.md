@@ -1,6 +1,7 @@
 ---
 name: bitrix_architect
 description: Design Bitrix/D7 module, event, cache, and install-path changes.
+effort: high
 ---
 
 # bitrix_architect

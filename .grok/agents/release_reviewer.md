@@ -1,6 +1,7 @@
 ---
 name: release_reviewer
 description: Release/go-no-go review of rollback, observability, and remaining risk.
+effort: high
 ---
 
 # release_reviewer

@@ -41,9 +41,9 @@
       "profile": "tui",
       "commands": ["grok"],
       "version_args": ["--version"],
-      "built": "1.0.4",
+      "built": "1.0.5",
       "minimum": "1.0.0",
-      "fallback": "1.0.4",
+      "fallback": "1.0.5",
       "install": {
         "linux": "curl -fsSL https://x.ai/cli/install.sh | bash",
         "darwin": "curl -fsSL https://x.ai/cli/install.sh | bash",
@@ -134,6 +134,73 @@
         "darwin": "brew install composer",
         "windows": "winget install -e --id Composer.Composer",
         "generic": "https://getcomposer.org/download/"
+      }
+    },
+    {
+      "id": "docker",
+      "name": "Docker Engine",
+      "required": false,
+      "profile": "trust-ci",
+      "commands": ["docker"],
+      "version_args": ["--version"],
+      "built": "29.7.2",
+      "minimum": "24.0",
+      "fallback": "29",
+      "install": {
+        "linux": "sudo apt-get update && sudo apt-get install -y docker.io docker-compose-v2",
+        "darwin": "brew install --cask docker",
+        "windows": "winget install -e --id Docker.DockerDesktop",
+        "generic": "https://docs.docker.com/engine/install/"
+      }
+    },
+    {
+      "id": "syft",
+      "name": "Syft",
+      "required": false,
+      "profile": "supply-chain",
+      "commands": ["syft"],
+      "version_args": ["version"],
+      "built": "1.51.0",
+      "minimum": "1.0",
+      "fallback": "1.51",
+      "install": {
+        "linux": "curl -sSfL https://get.anchore.io/syft | sudo sh -s -- -b /usr/local/bin",
+        "darwin": "curl -sSfL https://get.anchore.io/syft | sudo sh -s -- -b /usr/local/bin",
+        "windows": "winget install -e --id Anchore.Syft",
+        "generic": "https://github.com/anchore/syft/releases"
+      }
+    },
+    {
+      "id": "trivy",
+      "name": "Trivy",
+      "required": false,
+      "profile": "supply-chain",
+      "commands": ["trivy"],
+      "version_args": ["--version"],
+      "built": "0.74.0",
+      "minimum": "0.50",
+      "fallback": "0.74",
+      "install": {
+        "linux": "curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin v0.74.0",
+        "darwin": "brew install trivy",
+        "windows": "winget install -e --id AquaSecurity.Trivy",
+        "generic": "https://trivy.dev/docs/latest/getting-started/installation/"
+      }
+    },
+    {
+      "id": "cosign",
+      "name": "Cosign",
+      "required": false,
+      "profile": "supply-chain",
+      "commands": ["cosign"],
+      "version_args": ["version"],
+      "minimum": "2.0",
+      "fallback": "2.4",
+      "install": {
+        "linux": "curl -sSfL https://github.com/sigstore/cosign/releases/download/v2.4.3/cosign-linux-amd64 -o /tmp/cosign && sudo install -m 0755 /tmp/cosign /usr/local/bin/cosign",
+        "darwin": "brew install cosign",
+        "windows": "winget install -e --id sigstore.cosign",
+        "generic": "https://github.com/sigstore/cosign/releases"
       }
     }
   ]

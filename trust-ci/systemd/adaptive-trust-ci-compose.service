@@ -1,0 +1,20 @@
+[Unit]
+Description=Adaptive Trust CI self-hosted control plane
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/adaptive-grok-build-pro/trust-ci
+EnvironmentFile=/etc/adaptive-trust-ci/supply-chain.env
+ExecStartPre=/usr/bin/bash /opt/adaptive-grok-build-pro/trust-ci/scripts/verify-supply-chain.sh
+ExecStart=/usr/bin/docker compose up -d --wait --wait-timeout 300 postgres migrate api docker-engine runner-loader worker
+ExecReload=/usr/bin/bash -ec '/opt/adaptive-grok-build-pro/trust-ci/scripts/verify-supply-chain.sh && exec /usr/bin/docker compose up -d --wait --wait-timeout 300 postgres migrate api docker-engine runner-loader worker'
+ExecStop=/usr/bin/docker compose down --remove-orphans
+TimeoutStartSec=600
+TimeoutStopSec=180
+
+[Install]
+WantedBy=multi-user.target

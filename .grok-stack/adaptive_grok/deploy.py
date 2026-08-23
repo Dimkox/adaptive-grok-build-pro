@@ -21,17 +21,20 @@ def _fail(error: str) -> dict[str, Any]:
     return {'ok': False, 'error': error}
 
 
-def _human_commands(root: Path, version: str) -> list[str]:
-    branch = git_output(root, 'rev-parse', '--abbrev-ref', 'HEAD') or 'HEAD'
+def _human_commands(root: Path, version: str) -> tuple[list[str], str | None]:
+    head_sha = git_output(root, 'rev-parse', 'HEAD')
+    if not head_sha:
+        return [], None
     zip_name = f'adaptive-grok-build-pro-v{version}.zip'
     return [
         'python3 scripts/package_stack.py',
         f'cp dist/{zip_name}* packages/',
-        f'git tag -a v{version} -m "v{version}"',
-        f'git push origin {branch}',
+        'git fetch origin main',
+        'test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"',
+        f'git tag -a v{version} {head_sha} -m "v{version}"',
         f'git push origin v{version}',
         f'gh release create v{version} packages/{zip_name} packages/{zip_name}.sha256 --title "Adaptive Grok Build Pro v{version}" --notes-file dist/RELEASE-NOTES.md',
-    ]
+    ], head_sha
 
 
 def _change_state(root: Path) -> tuple[dict[str, Any] | None, str | None]:
@@ -54,7 +57,7 @@ def prepare_deploy(root: Path, *, record: bool) -> dict[str, Any]:
         return _fail('no active route')
     gaps = validate_evidence(root, route)
     if gaps:
-        return _fail('missing or stale evidence: ' + '; '.join(gaps))
+        return _fail('missing or stale local evidence: ' + '; '.join(gaps))
     state, change_id = _change_state(root)
     if not state or not change_id:
         return _fail('no active change')
@@ -62,27 +65,36 @@ def prepare_deploy(root: Path, *, record: bool) -> dict[str, Any]:
     if status not in ALLOWED_STATUSES:
         return _fail(f'change status is {status}, expected ready or released')
     version = _version(root)
-    commands = _human_commands(root, version)
+    commands, head_sha = _human_commands(root, version)
+    if not commands or not head_sha:
+        return _fail('cannot resolve exact release commit')
+    result = {
+        'ok': True,
+        'recorded': False,
+        'commands': commands,
+        'change_id': change_id,
+        'version': version,
+        'head_sha': head_sha,
+        'notice': (
+            'Prepare-only local evidence. Merge must already have occurred through the protected PR path '
+            'with adaptive-trust-ci/verified on the exact PR SHA.'
+        ),
+    }
     if not record:
-        return {
-            'ok': True,
-            'recorded': False,
-            'commands': commands,
-            'change_id': change_id,
-            'version': version,
-        }
-    if not has_valid_approval(root, 'production'):
-        return _fail('production approval required to record deploy preparation')
+        return result
+    if not has_valid_approval(root, 'production', action='github-release'):
+        return _fail('exact delegated github-release grant required to record deploy preparation')
     write_receipt(
         root,
         'deploy',
         'prepared',
-        details={'commands': commands, 'version': version, 'change_id': change_id},
+        details={
+            'commands': commands,
+            'version': version,
+            'change_id': change_id,
+            'head_sha': head_sha,
+            'external_status_required': 'adaptive-trust-ci/verified',
+        },
     )
-    return {
-        'ok': True,
-        'recorded': True,
-        'commands': commands,
-        'change_id': change_id,
-        'version': version,
-    }
+    result['recorded'] = True
+    return result

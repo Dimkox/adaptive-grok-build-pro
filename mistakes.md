@@ -2,13 +2,10 @@
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
-## 2026-08-23 - Hook denied: Blocked control-plane shell mutation; use a structured write with an exact protected-path grant.
-Example: $ python3 scripts/grok_status.py 2>/dev/null |
-  python3 -c
-  "import sys,json; d=json.load(sys.stdin); print('route', d.get('route',{}).get('route_id'), d.get('route',{}).get('write_agent')); print('change', d.get('change')); print('g
-**Symptom:** need to determine
-**Root Cause:** Hook denied: Blocked control-plane shell mutation; use a structured write with an exact protected-path grant.
+## 2026-08-23 — First protected write invalidated the rest of the grant
 
+**Symptom:** README.md, trust-ci/README.md and decisions.md were denied after tests/toolchain landed, then the session shut down mid-docs pass.
+**Root cause:** A fingerprint-bound protected-path grant is consumed by the first successful mutation of the working tree. Remaining listed resources are not a multi-file session; they need a fresh grant or one parallel batch against the then-current fingerprint.
 
 ## 2026-08-16 — Hid the prompt files under engineering/
 
