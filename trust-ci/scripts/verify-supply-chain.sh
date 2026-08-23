@@ -33,7 +33,6 @@ done
 (
   cd "$bundle"
   sha256sum --check supply-chain.manifest.json.sha256
-  sha256sum --check artifacts.sha256
   cosign verify-blob \
     --key "$COSIGN_PUBLIC_KEY" \
     --signature supply-chain.manifest.json.sig \
@@ -41,7 +40,12 @@ done
 )
 
 mapfile -t images < <(
-  python3 - "$bundle/supply-chain.manifest.json" "$bundle/policy.json" "$deployed_policy" "$compose_env" <<'PY'
+  python3 - \
+    "$bundle/supply-chain.manifest.json" \
+    "$bundle/policy.json" \
+    "$bundle/artifacts.sha256" \
+    "$deployed_policy" \
+    "$compose_env" <<'PY'
 import hashlib
 import json
 import re
@@ -50,8 +54,9 @@ from pathlib import Path
 
 manifest_path = Path(sys.argv[1])
 bundle_policy_path = Path(sys.argv[2])
-deployed_policy_path = Path(sys.argv[3])
-compose_env_path = Path(sys.argv[4])
+artifacts_path = Path(sys.argv[3])
+deployed_policy_path = Path(sys.argv[4])
+compose_env_path = Path(sys.argv[5])
 manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
 bundle_policy = json.loads(bundle_policy_path.read_text(encoding='utf-8'))
 deployed_policy = json.loads(deployed_policy_path.read_text(encoding='utf-8'))
@@ -62,7 +67,11 @@ def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 if manifest.get('policy_sha256') != sha(bundle_policy_path):
-    raise SystemExit('bundle policy hash does not match manifest')
+    raise SystemExit('bundle policy hash does not match signed manifest')
+if manifest.get('artifacts_file') != artifacts_path.name:
+    raise SystemExit('artifact checksum filename does not match signed manifest')
+if manifest.get('artifacts_sha256') != sha(artifacts_path):
+    raise SystemExit('artifact checksum file does not match signed manifest')
 if sha(bundle_policy_path) != sha(deployed_policy_path):
     raise SystemExit('deployed policy is not the signed bundle policy')
 images = manifest.get('images')
@@ -103,6 +112,11 @@ if [[ ${#images[@]} -ne 3 ]]; then
   printf 'supply-chain verifier did not receive exactly three image references\n' >&2
   exit 65
 fi
+
+(
+  cd "$bundle"
+  sha256sum --check artifacts.sha256
+)
 
 for image in "${images[@]}"; do
   cosign verify --key "$COSIGN_PUBLIC_KEY" "$image" >/dev/null
