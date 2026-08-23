@@ -68,6 +68,7 @@ class ApiSettings:
     common: CommonSettings
     webhook_secret: str
     trust_store_path: Path
+    read_token: str
 
     @classmethod
     def load(cls) -> 'ApiSettings':
@@ -75,6 +76,7 @@ class ApiSettings:
             common=CommonSettings.load(),
             webhook_secret=_required('TRUST_CI_WEBHOOK_SECRET'),
             trust_store_path=Path(_required('TRUST_CI_TRUST_STORE_PATH')).resolve(),
+            read_token=_required('TRUST_CI_READ_TOKEN'),
         )
 
 
