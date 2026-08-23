@@ -55,10 +55,13 @@ def _missing_tool(name: str, summary: str, strict: bool) -> CheckResult:
     return CheckResult(name, 'fail' if strict else 'skip', summary)
 
 
-def _git_diff_check(root: Path) -> CheckResult:
+def _git_diff_check(root: Path, base: str | None = None) -> CheckResult:
     if not command_exists('git'):
         return CheckResult('git-diff-check', 'skip', 'git not available')
-    return _command_check(root, 'git-diff-check', ['git', 'diff', '--check'], 60)
+    command = ['git', 'diff', '--check']
+    if base:
+        command.append(f'{base}...HEAD')
+    return _command_check(root, 'git-diff-check', command, 60)
 
 
 def _secret_scan(root: Path, files: list[str]) -> CheckResult:
@@ -517,7 +520,7 @@ def verify(
     files = changed_files(root, comparison_base)
 
     results: list[CheckResult] = [
-        _git_diff_check(root),
+        _git_diff_check(root, comparison_base),
         _secret_scan(root, files),
         _contracts(root, files),
         _sql_safety(root, files),
