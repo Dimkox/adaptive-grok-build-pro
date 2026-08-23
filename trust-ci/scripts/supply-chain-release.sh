@@ -22,10 +22,10 @@ done
 : "${TRUST_CI_SUPPLY_CHAIN_DIR:?set output directory}"
 : "${COSIGN_PRIVATE_KEY:?set human-controlled cosign private key path}"
 
-case "$TRUST_CI_PYTHON_BASE_IMAGE" in
-  *@sha256:????????????????????????????????????????????????????????????????) ;;
-  *) printf 'TRUST_CI_PYTHON_BASE_IMAGE must be name@sha256 digest\n' >&2; exit 65 ;;
-esac
+if [[ ! "$TRUST_CI_PYTHON_BASE_IMAGE" =~ @sha256:[0-9a-f]{64}$ ]]; then
+  printf 'TRUST_CI_PYTHON_BASE_IMAGE must be name@sha256 digest\n' >&2
+  exit 65
+fi
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 output="$(realpath -m "$TRUST_CI_SUPPLY_CHAIN_DIR")"
@@ -106,8 +106,13 @@ with os.fdopen(fd, 'w', encoding='utf-8') as handle:
     os.fsync(handle.fileno())
 PY
 
+(
+  cd "$output"
+  sha256sum policy.json sbom/*.json scan/*.json > artifacts.sha256
+)
+
 manifest="$output/supply-chain.manifest.json"
-python3 - "$manifest" "$policy_output" "$api_image" "$worker_image" "$runner_image" "$root" <<'PY'
+python3 - "$manifest" "$policy_output" "$output/artifacts.sha256" "$api_image" "$worker_image" "$runner_image" "$root" <<'PY'
 import hashlib
 import json
 import os
@@ -118,10 +123,11 @@ from pathlib import Path
 
 manifest = Path(sys.argv[1])
 policy = Path(sys.argv[2])
-api = sys.argv[3]
-worker = sys.argv[4]
-runner = sys.argv[5]
-root = Path(sys.argv[6])
+artifacts = Path(sys.argv[3])
+api = sys.argv[4]
+worker = sys.argv[5]
+runner = sys.argv[6]
+root = Path(sys.argv[7])
 
 def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -139,6 +145,8 @@ data = {
     'git_head': head,
     'policy_file': policy.name,
     'policy_sha256': sha(policy),
+    'artifacts_file': artifacts.name,
+    'artifacts_sha256': sha(artifacts),
     'images': {'api': api, 'worker': worker, 'runner': runner},
     'sbom_directory': 'sbom',
     'scan_directory': 'scan',
@@ -157,7 +165,6 @@ PY
   cosign sign-blob --yes --key "$COSIGN_PRIVATE_KEY" \
     --output-signature supply-chain.manifest.json.sig \
     supply-chain.manifest.json >&2
-  sha256sum policy.json sbom/*.json scan/*.json > artifacts.sha256
 )
 
 printf 'supply-chain release created: %s\n' "$output"
