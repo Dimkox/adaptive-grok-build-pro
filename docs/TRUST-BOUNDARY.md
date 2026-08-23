@@ -2,6 +2,27 @@
 
 The repository files define the checks, but GitHub repository settings make them authoritative. Until the settings below are enabled, the workflows are useful evidence rather than an enforceable merge or release boundary.
 
+## Install this contour into another repository
+
+The local stack installs without GitHub workflows by default:
+
+```bash
+python3 scripts/install_into.py /path/to/repo
+```
+
+Trusted CI and protected release files are opt-in. Name the actual human owner or organization team for the target repository:
+
+```bash
+python3 scripts/install_into.py /path/to/repo \
+  --with-ci \
+  --codeowner @user
+
+# organization team:
+# --codeowner @org/team
+```
+
+`--with-ci` without `--codeowner` fails before writing files. The installer renders the supplied identity into `.github/CODEOWNERS` and this runbook, and conflict detection uses that rendered content. It never assigns `@Dimkox` as owner of an unrelated consumer repository.
+
 ## Choose the identity model first
 
 GitHub pull-request authors cannot approve their own pull requests. GitHub Environment self-review prevention likewise blocks the user who initiated a deployment from approving that deployment. A personal repository therefore needs an explicit identity model instead of blindly enabling every separation-of-duties switch.
