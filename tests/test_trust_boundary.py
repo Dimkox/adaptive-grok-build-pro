@@ -6,6 +6,7 @@ import subprocess
 import sys
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,7 +19,7 @@ from adaptive_grok.state import (
     set_active_route,
 )
 from adaptive_grok.util import git_head, tree_fingerprint
-from adaptive_grok.verification import verify
+from adaptive_grok.verification import _git_diff_check, verify
 from tests._support import project_copy
 
 
@@ -161,6 +162,27 @@ class StrictVerificationTests(unittest.TestCase):
         self.assertEqual(
             report['changed_files'],
             ['contracts/example.schema.json'],
+        )
+
+    def test_git_diff_check_uses_comparison_base(self) -> None:
+        with project_copy(git=True) as root, patch(
+            'adaptive_grok.verification.command_exists',
+            return_value=True,
+        ), patch(
+            'adaptive_grok.verification.run',
+            return_value=SimpleNamespace(
+                returncode=0,
+                stdout='',
+                stderr='',
+            ),
+        ) as runner:
+            result = _git_diff_check(root, 'base-sha')
+
+        self.assertEqual(result.status, 'pass')
+        runner.assert_called_once_with(
+            ['git', 'diff', '--check', 'base-sha...HEAD'],
+            cwd=root,
+            timeout=60,
         )
 
     def test_trusted_ci_fetches_history_and_passes_event_base(self) -> None:
