@@ -24,16 +24,18 @@
 ## Protected delivery when green
 
 - Work on a feature branch and open a pull request. Never deliver through a direct push to `main`.
-- Merge only after the exact pull-request SHA passes both `trusted-ci` Python jobs and the package job, required reviews pass, and a human CODEOWNER approves.
-- A human merges the pull request. Release publication runs only from merged `main` through `.github/workflows/release.yml` and the protected `production` Environment.
+- Merge only after the exact pull-request SHA passes both `trusted-ci` Python jobs and the package job, required route reviews pass, and the configured human gate in `docs/TRUST-BOUNDARY.md` is satisfied.
+- In solo owner mode, the human owner inspects the final diff and manually merges after green checks; GitHub cannot count an author's approval of their own pull request.
+- In split identity mode, a separate bot or collaborator authors the pull request and a human CODEOWNER approves it.
+- Release publication runs only from merged `main` through `.github/workflows/release.yml` and the protected `production` Environment configured for the same identity mode.
 - Grok does not execute push, merge, workflow dispatch, tag, release, deployment, or external-write actions.
 
 ## Control-plane boundary
 
-- `.grok/`, `.agents/`, `.grok-stack/`, `.github/`, governance documents, `scripts/grok_*.py`, quality configuration, and trust-boundary tests are human-owned control-plane paths.
-- Grok tools must not edit those paths. Changes to the control plane use a protected pull request and CODEOWNER review.
+- `.grok/`, `.agents/`, `.grok-stack/`, `.github/`, governance documents, package builders, release artifacts, and trust-boundary tests are human-owned control-plane paths.
+- Grok tools must not edit those paths. Changes to the control plane use a protected pull request and the configured human owner gate; CODEOWNER review is mandatory when the pull-request author is a separate identity.
 - `scripts/grok_approve.py` records a non-authorizing request. Runtime JSON never grants production, external-write, or protected-path permission.
-- See `docs/TRUST-BOUNDARY.md` for required branch rules and Environment settings.
+- See `docs/TRUST-BOUNDARY.md` for the solo owner and split identity branch and Environment settings.
 
 This repository uses an adaptive, task-routed Grok Build workflow. The `UserPromptSubmit` hook classifies development tasks and writes `.grok-stack/runtime/active-route.json`. That route selects skills, agents, quality profiles, human gates, and evidence; GitHub protection remains the authority for merge and release.
 
@@ -54,7 +56,7 @@ Do not bypass the route by using a generic worker when a domain-specific write a
 ## Source-of-truth order
 
 1. User-approved scope and decisions.
-2. Protected GitHub branch, required checks, CODEOWNERS, and Environment decisions.
+2. Protected GitHub branch, required checks, CODEOWNERS, configured identity mode, and Environment decisions.
 3. Active route and durable change package under `engineering/changes/`.
 4. Machine-readable API, event, and data contracts.
 5. ADRs and repository-local instructions.
@@ -132,7 +134,7 @@ Run the strict equivalent when the authoritative tools are installed:
 python3 scripts/grok_verify.py --mode pr --strict --json
 ```
 
-Then dispatch every review agent selected by the active route. Store reports under the active change package or `engineering/reviews/` and record them with `scripts/grok_review.py`. A receipt becomes stale after any repository change. Local receipts do not replace required GitHub checks or human review.
+Then dispatch every review agent selected by the active route. Store reports under the active change package or `engineering/reviews/` and record them with `scripts/grok_review.py`. A receipt becomes stale after any repository change. Local receipts do not replace required GitHub checks or the configured human owner gate.
 
 ## Prohibited routine actions
 
