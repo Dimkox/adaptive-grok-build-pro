@@ -82,6 +82,31 @@ services:
     networks:
       - executor
 
+  runner-loader:
+    image: ${TRUST_CI_WORKER_IMAGE:?set immutable worker image name@sha256 digest}
+    restart: "no"
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      DOCKER_HOST: tcp://docker-engine:2375
+      TRUST_CI_RUNNER_IMAGE: ${TRUST_CI_RUNNER_IMAGE:?set immutable runner image name@sha256 digest}
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+      - /home/trustci:rw,noexec,nosuid,nodev,size=32m
+    command:
+      - sh
+      - -ec
+      - |
+        docker pull "$TRUST_CI_RUNNER_IMAGE"
+        resolved="$(docker image inspect "$TRUST_CI_RUNNER_IMAGE" --format '{{index .RepoDigests 0}}')"
+        test "$resolved" = "$TRUST_CI_RUNNER_IMAGE"
+    depends_on:
+      docker-engine:
+        condition: service_healthy
+    networks:
+      - executor
+
   worker:
     image: ${TRUST_CI_WORKER_IMAGE:?set immutable worker image name@sha256 digest}
     restart: unless-stopped
@@ -91,6 +116,7 @@ services:
     user: "10001:10001"
     environment:
       DOCKER_HOST: tcp://docker-engine:2375
+      TRUST_CI_RUNNER_IMAGE: ${TRUST_CI_RUNNER_IMAGE:?set immutable runner image name@sha256 digest}
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=256m
       - /home/trustci:rw,noexec,nosuid,nodev,size=32m
@@ -107,8 +133,8 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-      docker-engine:
-        condition: service_healthy
+      runner-loader:
+        condition: service_completed_successfully
     networks:
       - trust-ci
       - executor
