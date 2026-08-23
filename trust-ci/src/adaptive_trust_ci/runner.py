@@ -39,6 +39,8 @@ class JobRunner:
     github_token_provider: Callable[[], str]
     public_base_url: str
     workspace_root: Path
+    workspace_host_root: Path
+    holdout_host_path: Path
     now_fn: Callable[[], datetime] = utc_now
     workspace_factory: Callable[..., Workspace] = GitWorkspace
     executor_factory: Callable[..., ContainerExecutor] = ContainerExecutor
@@ -147,6 +149,12 @@ class JobRunner:
                     )
                     return RunOutcome(finished.job_id, finished.status, finished.result)
 
+                try:
+                    workspace_relative = checkout.path.resolve().relative_to(self.workspace_root.resolve())
+                except ValueError as exc:
+                    raise RuntimeError('checkout escaped configured workspace root') from exc
+                workspace_host_path = self.workspace_host_root / workspace_relative
+
                 command_results: list[CommandResult] = []
                 environment = self._command_environment(job)
                 try:
@@ -184,7 +192,9 @@ class JobRunner:
                             command,
                             environment,
                             command_results,
+                            workspace_host_path=workspace_host_path,
                             holdout_path=None,
+                            holdout_host_path=None,
                         ):
                             break
 
@@ -196,7 +206,9 @@ class JobRunner:
                             command,
                             environment,
                             command_results,
+                            workspace_host_path=workspace_host_path,
                             holdout_path=self.policy.holdout.path,
+                            holdout_host_path=self.holdout_host_path,
                         ):
                             break
 
@@ -258,7 +270,9 @@ class JobRunner:
         environment: dict[str, str],
         command_results: list[CommandResult],
         *,
+        workspace_host_path: Path,
         holdout_path: Path | None,
+        holdout_host_path: Path | None,
     ) -> bool:
         workspace.reset()
         result = self.executor_factory(self.policy.sandbox).run(
@@ -266,7 +280,9 @@ class JobRunner:
             workspace.path,
             {**environment, **dict(command.env)},
             self.policy.max_output_bytes,
+            workspace_host_path=workspace_host_path,
             holdout_path=holdout_path,
+            holdout_host_path=holdout_host_path,
         )
         command_results.append(result)
         try:
