@@ -1,0 +1,110 @@
+services:
+  postgres:
+    image: postgres:17.6-bookworm
+    restart: unless-stopped
+    env_file:
+      - ./env/postgres.env
+    volumes:
+      - trust-ci-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - trust-ci
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: adaptive-trust-ci-api:2.1.0
+    env_file:
+      - ./env/common.env
+    volumes:
+      - ./runtime/policy.json:/etc/adaptive-trust-ci/policy.json:ro
+    command: ["migrate"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - trust-ci
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: adaptive-trust-ci-api:2.1.0
+    restart: unless-stopped
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=128m
+      - /home/trustci:rw,noexec,nosuid,nodev,size=32m
+    env_file:
+      - ./env/common.env
+      - ./env/api.env
+    volumes:
+      - ./runtime/policy.json:/etc/adaptive-trust-ci/policy.json:ro
+      - ./runtime/trust-store.json:/etc/adaptive-trust-ci/trust-store.json:ro
+      - ./runtime/control:/run/adaptive-trust-ci
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health/ready', timeout=3).read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - trust-ci
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: adaptive-trust-ci-worker:2.1.0
+    restart: unless-stopped
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    user: "10001:10001"
+    group_add:
+      - "${DOCKER_GID:-999}"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=256m
+      - /home/trustci:rw,noexec,nosuid,nodev,size=32m
+    env_file:
+      - ./env/common.env
+      - ./env/worker.env
+    volumes:
+      - ./runtime/policy.json:/etc/adaptive-trust-ci/policy.json:ro
+      - ./runtime/trust-ci-signing-key.pem:/run/secrets/trust-ci-signing-key.pem:ro
+      - ./runtime/control:/run/adaptive-trust-ci
+      - trust-ci-workspaces:/var/lib/adaptive-trust-ci/workspaces
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - trust-ci
+
+  runner-image:
+    profiles: ["build"]
+    build:
+      context: .
+      dockerfile: runner.Dockerfile
+    image: adaptive-trust-ci-runner:2.1.0
+    command: ["python3", "--version"]
+
+volumes:
+  trust-ci-postgres:
+  trust-ci-workspaces:
+
+networks:
+  trust-ci:
+    driver: bridge
