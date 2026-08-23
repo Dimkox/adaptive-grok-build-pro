@@ -14,11 +14,26 @@ class PolicyTests(unittest.TestCase):
         second['allowed_repositories'] = list(reversed(second['allowed_repositories']))
         self.assertEqual(Policy.from_dict(first).digest, Policy.from_dict(second).digest)
 
-    def test_policy_change_changes_digest(self) -> None:
+    def test_policy_change_changes_digest_and_required_check_name(self) -> None:
         first = Policy.from_dict(policy_data())
         changed = policy_data()
         changed['max_attempts'] = 4
-        self.assertNotEqual(first.digest, Policy.from_dict(changed).digest)
+        second = Policy.from_dict(changed)
+        self.assertNotEqual(first.digest, second.digest)
+        self.assertNotEqual(first.check_name, second.check_name)
+
+    def test_required_check_name_is_bound_to_policy_epoch(self) -> None:
+        policy = Policy.from_dict(policy_data())
+        self.assertEqual(
+            policy.check_name,
+            f'adaptive-trust-ci/verified@{policy.digest[:12]}',
+        )
+
+    def test_status_context_must_be_an_unversioned_prefix(self) -> None:
+        data = policy_data()
+        data['status_context'] = 'adaptive-trust-ci/verified@manual'
+        with self.assertRaisesRegex(PolicyError, 'epoch'):
+            Policy.from_dict(data)
 
     def test_holdout_digest_changes_policy_digest(self) -> None:
         first = Policy.from_dict(policy_data(holdout_digest='d' * 64))
