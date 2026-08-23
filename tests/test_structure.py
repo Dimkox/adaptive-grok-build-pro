@@ -326,11 +326,14 @@ class StructureTests(unittest.TestCase):
         )
 
         self.assertIn('workflow_dispatch:', release)
-        self.assertIn('permissions:\n  contents: write', release)
+        self.assertIn('permissions:\n  contents: read', release)
+        self.assertIn('    permissions:\n      contents: write', release)
         self.assertIn('environment: production', release)
         self.assertIn('--mode release --strict --json', release)
-        self.assertIn('git tag -a', release)
+        self.assertIn('/git/tags', release)
+        self.assertIn('/git/refs', release)
         self.assertIn('gh release create', release)
+        self.assertIn('--verify-tag', release)
         self.assertIn('$GITHUB_SHA', release)
 
         self.assertIn('/.grok-stack/ @Dimkox', codeowners)
