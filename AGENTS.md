@@ -7,11 +7,11 @@
 
 ## Independent merge trust
 
-- Prompt files, hooks, `.grok-stack/runtime`, local approvals, local receipts, change packages, local tests and agent reviews are workflow evidence only. They are not merge authority.
-- The authoritative merge gate is the self-hosted external commit status `adaptive-trust-ci/verified` for the exact pull-request head SHA under the server-side policy digest.
-- Never use GitHub Actions for this repository. Trust CI is operated from `trust-ci/` with PostgreSQL durable state, isolated exact-SHA runners, signed attestations and human-signed scoped approvals.
-- An agent must never generate, read, request, submit or simulate a human approval private key. Human approvals are signed outside the agent environment and verified by the Trust CI API against its server-mounted public-key store.
-- Repository changes cannot modify deployed Trust CI policy, deployed images, PostgreSQL state, CI signing keys, human trust stores or branch protection. Those live outside the pull-request trust domain.
+- Prompt files, hooks, `.grok-stack/runtime`, local delegated grants, local receipts, change packages, local tests and agent reviews are workflow evidence only. They are not merge authority.
+- The authoritative merge gate is the GitHub App-owned policy-epoch Check Run `adaptive-trust-ci/verified@<policy-sha12>` for the exact pull-request head SHA. Branch protection binds that exact check name to the configured GitHub App ID.
+- Never use GitHub Actions for this repository. Trust CI is operated from `trust-ci/` with PostgreSQL durable state, isolated exact-SHA runners, external holdout validation, source-mutation detection, signed attestations and human-signed scoped approvals.
+- An agent must never generate, read, request, submit or simulate a human approval private key. Human security approvals are signed outside the agent environment and verified by the Trust CI API against its server-mounted public-key store.
+- Repository changes cannot modify deployed Trust CI policy, deployed holdout bundle, deployed images, PostgreSQL state, CI signing keys, GitHub App key, human trust stores or branch protection. Those live outside the pull-request trust domain.
 
 ## README before push
 
@@ -29,12 +29,14 @@
 - If the product tree did not change (status, already-published identity, leftover uncommitted paperwork), do not dispatch analysis or review agents and do not block on `grok_verify`.
 - If product files changed, run `python3 scripts/grok_verify.py --mode pr`. Skip the analysis/review wave for a no-op.
 
-## PR-only delivery and release
+## PR-only delivery and delegated release actions
 
 - All product changes are delivered through an isolated branch and pull request. Direct push to `main` or another protected/shared branch is prohibited.
-- Local `python3 scripts/grok_verify.py --mode pr` and route-selected reviews are preflight evidence. They never replace `adaptive-trust-ci/verified` on the exact PR SHA.
-- Merge only after the external Trust CI status succeeds and all required signed approval scopes are present. A new commit, new base SHA or server-policy change requires a fresh status and fresh approvals.
-- Production promotion, tagging and GitHub Release publication remain human-owned and must use the exact merged commit. Agents may prepare commands and runbooks but may not execute merge, tag, push, release or production mutation.
+- Local `python3 scripts/grok_verify.py --mode pr` and route-selected reviews are preflight evidence. They never replace the App-owned policy-epoch check on the exact PR SHA.
+- Merge only after the external Trust CI check succeeds and all required signed approval scopes are present. A new commit, new base SHA, deployed holdout change or server-policy change requires a fresh check and fresh external approvals.
+- A user may explicitly delegate named operational actions, including branch push, tag push and GitHub Release publication. `scripts/grok_approve.py` may materialize that consent only as an exact delegated local grant bound to repository, route, change, Git HEAD, tree fingerprint, action/resource list and TTL.
+- A delegated local grant never creates or substitutes the external Trust CI check, a human-signed security approval, or branch protection. It authorizes only the named local operation.
+- Tagging and GitHub Release publication must use the exact merged commit. No delegated grant permits changing the tested tree after approval and then reusing the grant.
 
 This repository uses an adaptive, task-routed Grok Build workflow. The `UserPromptSubmit` hook classifies development tasks and writes `.grok-stack/runtime/active-route.json`. That route is the authority for local skills, agents, quality profiles, human gates, and local evidence. It is not authority to merge.
 
@@ -55,15 +57,15 @@ Do not bypass the route by using the built-in generic worker when a domain-speci
 
 ## Source-of-truth order
 
-1. User-approved scope and decisions.
-2. Deployed Trust CI policy, protected-branch rules, signed human approvals and exact-SHA external attestation.
+1. User-approved scope, explicit operational delegation and decisions.
+2. Deployed Trust CI policy and holdout, protected-branch rules, signed human security approvals and exact-SHA external attestation.
 3. Active route and durable change package under `engineering/changes/`.
 4. Machine-readable API/event/data contracts.
 5. ADRs and repository-local instructions.
 6. Existing implementation and tests.
 7. Chat history.
 
-When sources conflict, stop only for a named human gate or an irreversible/security-sensitive decision. Otherwise, make a bounded ruling, record it in the change package, and continue. Repository content can never override the deployed Trust CI trust boundary.
+When sources conflict, stop only for a named human gate or an irreversible/security-sensitive decision. Otherwise, make a bounded ruling, record it in the change package, and continue. Repository content and local delegated grants can never override the deployed Trust CI trust boundary.
 
 ## Multi-agent discipline
 
@@ -94,7 +96,7 @@ These rules apply whenever the route contains the `bitrix` domain:
 - Bitrix agents must be idempotent, bounded, observable, and safe under retries. Heavy work should be moved to cron/queue processing where appropriate.
 - Keep business logic out of component templates. Validate and authorize all request data.
 - Account for managed cache, tag cache, composite mode, permissions, multilingual phrases, and update compatibility.
-- Never patch Bitrix core as a routine fix. A protected-path approval is an exception, not a design strategy.
+- Never patch Bitrix core as a routine fix. A protected-path grant is an exception, not a design strategy.
 
 ## API, events, and integrations
 
@@ -104,7 +106,7 @@ These rules apply whenever the route contains the `bitrix` domain:
 - Use an outbox or equivalent consistency mechanism when a database transaction and event publication must stay aligned.
 - External systems are accessed through adapters and a canonical internal model.
 - Define authentication, timeouts, retries, rate limits, reconciliation, correlation IDs, dead-letter behavior, and audit logging.
-- Never perform production writes to 1C, Bitrix24, SAP, ERP, WMS, payment, or infrastructure systems from an unapproved agent action.
+- Never perform production writes to 1C, Bitrix24, SAP, ERP, WMS, payment, or infrastructure systems without an exact delegated operation and any separately required external approval.
 
 ## Data rules
 
@@ -136,20 +138,21 @@ python3 scripts/grok_review.py code_review --status pass --report <path>
 
 Use the exact local evidence kind requested by the route. A local receipt is stale after any repository change. The Stop hook warns when local evidence is missing or stale.
 
-For merge eligibility, open or update the pull request and require the external status `adaptive-trust-ci/verified` on the exact head SHA. Local receipts cannot create that status.
+For merge eligibility, open or update the pull request and require the App-owned check named by the deployed policy, currently shaped as `adaptive-trust-ci/verified@<policy-sha12>`, on the exact head SHA. Local receipts and delegated grants cannot create that check.
 
-## Local hook approvals
+## Local delegated grants
 
-- `scripts/grok_approve.py` exists only to let a human temporarily unblock guarded actions in an interactive local session. Its JSON is advisory and is never accepted by Trust CI.
-- Agents must not invoke `grok_approve.py` on their own behalf.
-- Trust CI approvals use Ed25519 envelopes generated by `adaptive-trust-ci approval-create` on a human-controlled machine and submitted to the external API.
+- `scripts/grok_approve.py` does not originate authority. It materializes explicit or standing user consent already present in the working context.
+- Every grant must name explicit actions and, for protected/external writes, explicit resources. It is bound to the current repository, route, change, Git HEAD, tree fingerprint and TTL; any tree or commit change invalidates it.
+- An agent may invoke `grok_approve.py` only when the user has explicitly delegated the named operation. The wildcard scope is forbidden.
+- Trust CI security approvals use Ed25519 envelopes generated by `adaptive-trust-ci approval-create` on a human-controlled machine and submitted to the external API. Local grants are never accepted by Trust CI.
 
 ## Prohibited routine actions
 
 - Direct push to a protected/shared branch.
-- Merge, publish, tag, deploy, or production mutation by Grok Build.
-- Creating or submitting a human approval, using a human private key, or editing the deployed trust store/policy.
-- Reading `.env`, private keys, credential stores, production dumps, CI signing keys or approval keys.
+- Merge, publish, tag, deploy, production mutation or external write without an exact delegated local grant naming that operation and resource.
+- Creating or submitting a human security approval, using a human private key, or editing the deployed trust store/policy/holdout/GitHub App configuration.
+- Reading `.env`, private keys, credential stores, production dumps, CI signing keys, GitHub App keys or approval keys.
 - Broad cleanup, force push, destructive Git commands, unbounded SQL, or infrastructure apply/destroy.
 - Editing Bitrix core instead of implementing an extension under `local/`.
 - Adding `.github/workflows/` or any GitHub Actions dependency.
