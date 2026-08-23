@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -69,6 +70,20 @@ class ShellTrustBoundaryTests(unittest.TestCase):
                     )
                     self.assertFalse(allowed)
                     self.assertIn('repository policy', reason or '')
+
+    def test_shell_boundary_tests_are_human_owned_and_protected(self) -> None:
+        policy = json.loads(
+            (ROOT / '.grok-stack/config/policy.json').read_text(encoding='utf-8'),
+        )
+        self.assertIn(
+            'tests/test_shell_trust_boundary.py',
+            policy['control_plane_paths'],
+        )
+        codeowners = (ROOT / '.github/CODEOWNERS').read_text(encoding='utf-8')
+        self.assertIn(
+            '/tests/test_shell_trust_boundary.py @Dimkox',
+            codeowners,
+        )
 
 
 if __name__ == '__main__':
