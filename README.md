@@ -5,9 +5,9 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 ## Current state
 
 - Identity: **2.0.11** (`VERSION`, README H1). Published GitHub Release is `v2.0.11`.
-- Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the exact-SHA external status `adaptive-trust-ci/verified`.
+- Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
-- Independent CI candidate: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, isolated no-network runner containers, branch-protection configurator. **No GitHub Actions.**
+- Independent CI candidate: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
 
 ## Read first
@@ -23,7 +23,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## How work runs
 
-Source-of-truth order is in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Local loop: route → change package → one write owner → if the product changed, `grok_verify --mode pr` and independent local reviews → `ready` → branch and pull request. The deployed Trust CI service verifies the exact PR SHA under server-side policy, checks signed human approval scopes, and publishes `adaptive-trust-ci/verified`. A human owns merge, tag and production promotion.
+Source-of-truth order is in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Local loop: route → change package → one write owner → if the product changed, `grok_verify --mode pr` and independent local reviews → `ready` → branch and pull request. The deployed Trust CI service verifies the exact PR SHA under server-side policy, executes an external holdout bundle before repository checks, rejects source mutation, checks signed human approval scopes, signs the attestation, and publishes `adaptive-trust-ci/verified@<policy-sha12>` through its GitHub App. A human owns merge, tag and production promotion.
 
 ## Map
 
@@ -40,7 +40,7 @@ Source-of-truth order is in AGENTS.md. Large work is split into small subtasks t
 - [`scripts/grok_change.py`](scripts/grok_change.py)
 - [`scripts/grok_verify.py`](scripts/grok_verify.py)
 - [`scripts/grok_review.py`](scripts/grok_review.py)
-- [`scripts/grok_approve.py`](scripts/grok_approve.py) — local advisory approval only
+- [`scripts/grok_approve.py`](scripts/grok_approve.py) — exact action/resource delegated local grant only
 - [`scripts/grok_deploy.py`](scripts/grok_deploy.py)
 - [`scripts/grok_doctor.py`](scripts/grok_doctor.py)
 - [`scripts/install_into.py`](scripts/install_into.py)
@@ -58,6 +58,7 @@ Source-of-truth order is in AGENTS.md. Large work is split into small subtasks t
 - Multi-agent discipline described in `AGENTS.md`
 - `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`
 - Optional independently deployed Trust CI that removes merge trust from prompts, agents and local runtime
+- GitHub App-owned policy-epoch Checks, external holdout validation and signed exact-SHA attestations
 
 ## Stack graph
 
@@ -147,7 +148,7 @@ Pins are **minimum or newer**. `built` is the version this local stack was verif
 python3 scripts/grok_doctor.py --offer-install
 ```
 
-Machine-readable local pins: `.grok-stack/config/toolchain.json`. Trust CI uses a separately built runner image pinned by immutable SHA-256 digest in the deployed server policy.
+Machine-readable local pins: `.grok-stack/config/toolchain.json`. Trust CI uses separately built API, worker and runner images pinned by immutable SHA-256 digest in deployment and server policy.
 
 ## Install into a project
 
@@ -187,7 +188,7 @@ Invoke the main controller skill:
 
 or just describe a development task — Grok should pick up skills from `.grok/skills/`.
 
-The independent `trust-ci/` service is deployed once as infrastructure; it is not copied into every consumer unless that repository will use the same external status protocol.
+The independent `trust-ci/` service is deployed once as infrastructure; it is not copied into every consumer unless that repository will use the same external check protocol.
 
 ## Scripts
 
@@ -200,11 +201,11 @@ Local loop: route → change → verify → independent reviews → `ready` → 
 | `scripts/grok_status.py` | Local runtime status |
 | `scripts/grok_verify.py` | Local verification preflight (unittest, Ruff, Bandit, measured coverage in `pr`/`release`) |
 | `scripts/grok_review.py` | Record local review receipt |
-| `scripts/grok_approve.py` | Short-lived local interactive approval; not accepted by Trust CI |
+| `scripts/grok_approve.py` | Delegated local action/resource grant bound to repository, route, change, exact HEAD and tree fingerprint; not accepted by Trust CI |
 | `scripts/grok_deploy.py` | Prepare-only human last mile |
 | `scripts/grok_doctor.py` | Local health check |
 | `scripts/install_into.py` | Install local stack into target repo |
-| `adaptive-trust-ci` | External API, worker, migration, signed approvals, attestation verification and branch protection |
+| `adaptive-trust-ci` | External API, worker, migration, signed approvals, holdout verification, attestation verification and app-bound branch protection |
 
 ## Hooks
 
@@ -213,7 +214,7 @@ Lifecycle adapters live in `.grok/hooks/` and are registered in both:
 - `.grok/hooks.json` — doctor/structure contract (`command` + `commandWindows`)
 - `.grok/hooks/adaptive.json` — Grok project-hook discovery
 
-Trust the folder once (`/hooks-trust` or `grok --trust`). Hooks classify prompts and enforce local policy (secrets, Bitrix core, destructive commands, and real side-effect invocations such as `git push`). Hook failure remains fail-open to avoid locking an interactive agent; this is why hooks are not merge authority. External Trust CI remains fail-closed for the required GitHub status.
+Trust the folder once (`/hooks-trust` or `grok --trust`). Hooks classify prompts and enforce local policy (secrets, Bitrix core, destructive commands, control-plane mutations, and exact delegated side-effect grants). Hook failure remains fail-open to avoid locking an interactive agent; this is why hooks are not merge authority. External Trust CI remains fail-closed for the App-owned required Check Run.
 
 ## Package
 
@@ -229,4 +230,4 @@ See skills under `.grok/skills/bitrix-development/` and example module in `examp
 
 ## License
 
-**MIT.** A commercial product that is free of charge: use, copy, modify, and ship it. The repository is public. No EULA, no paid tier. Local checks: `make doctor` / `make verify` / `make trust-ci-test`. Merge trust, when deployed, is the external exact-SHA status described in [`trust-ci/README.md`](trust-ci/README.md).
+**MIT.** A commercial product that is free of charge: use, copy, modify, and ship it. The repository is public. No EULA, no paid tier. Local checks: `make doctor` / `make verify` / `make trust-ci-test`. Merge trust, when deployed, is the App-owned policy-epoch exact-SHA check described in [`trust-ci/README.md`](trust-ci/README.md).
