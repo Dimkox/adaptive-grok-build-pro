@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
+import hmac
+from typing import Any, Callable
 
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 
 from .models import ApprovalEnvelope, utc_now
 from .policy import Policy
@@ -22,6 +23,7 @@ def create_app(
     active_policy = policy or Policy.load(settings.common.policy_path)
     trusted_keys = trust_store or TrustStore.load(settings.trust_store_path)
     active_store = store or PostgresStore(settings.common.database_url)
+    authorize_read = _bearer_authorizer(settings.read_token)
 
     app = FastAPI(
         title='Adaptive Trust CI',
@@ -131,7 +133,7 @@ def create_app(
             'status_publisher': 'worker-github-app',
         }
 
-    @app.get('/jobs/{job_id}')
+    @app.get('/jobs/{job_id}', dependencies=[Depends(authorize_read)])
     def get_job(job_id: str) -> dict[str, Any]:
         try:
             job = active_store.get_job(job_id)
@@ -141,7 +143,7 @@ def create_app(
         data['result'] = _public_result(data.get('result'))
         return data
 
-    @app.get('/attestations/{job_id}')
+    @app.get('/attestations/{job_id}', dependencies=[Depends(authorize_read)])
     def get_attestation(job_id: str) -> dict[str, Any]:
         envelope = active_store.get_attestation(job_id)
         if envelope is None:
@@ -149,6 +151,21 @@ def create_app(
         return envelope.to_dict()
 
     return app
+
+
+def _bearer_authorizer(expected_token: str) -> Callable[..., None]:
+    expected = f'Bearer {expected_token}'
+
+    def authorize(authorization: str | None = Header(default=None)) -> None:
+        supplied = authorization or ''
+        if not hmac.compare_digest(supplied, expected):
+            raise HTTPException(
+                status_code=401,
+                detail='valid read bearer token required',
+                headers={'WWW-Authenticate': 'Bearer'},
+            )
+
+    return authorize
 
 
 def _public_result(value: Any) -> dict[str, Any]:
