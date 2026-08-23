@@ -18,24 +18,30 @@ from adaptive_trust_ci.workspace import WorkspaceMutationError
 
 class FakeGitHub:
     def __init__(self, *, fail_success_once: bool = False) -> None:
-        self.statuses = []
+        self.ensured = []
+        self.completed = []
         self.fail_success_once = fail_success_once
 
-    def post_status(self, repository, sha_value, **kwargs):
-        self.statuses.append((repository, sha_value, kwargs))
-        if kwargs['state'] == 'success' and self.fail_success_once:
+    def ensure_check_run(self, repository, sha_value, **kwargs):
+        self.ensured.append((repository, sha_value, kwargs))
+        return 55
+
+    def complete_check_run(self, repository, check_run_id, **kwargs):
+        self.completed.append((repository, check_run_id, kwargs))
+        if kwargs['conclusion'] == 'success' and self.fail_success_once:
             self.fail_success_once = False
             raise RuntimeError('GitHub unavailable')
 
 
 class FakeWorkspace:
     def __init__(self, job, *, changed_files, **kwargs) -> None:
-        del kwargs
+        self.kwargs = kwargs
         self.job = job
         self.changed_files = tuple(changed_files)
         self.path = Path(tempfile.mkdtemp())
         (self.path / '.git').mkdir()
         self.reset_calls = 0
+        self.assert_calls = 0
         self.cleaned = False
 
     def checkout(self, job):
@@ -47,6 +53,7 @@ class FakeWorkspace:
             raise AssertionError('job mismatch')
 
     def assert_unmodified(self):
+        self.assert_calls += 1
         mutated = self.path / 'production.py'
         if mutated.exists():
             raise WorkspaceMutationError(('production.py',))
@@ -116,22 +123,27 @@ class RunnerTests(unittest.TestCase):
 
     def build_runner(self, *, changed_files=(), results=None, github=None, mutate_on=()):
         executor = FakeExecutor(
-            results or [result('unit'), result('compile'), result('external-holdout')],
+            results or [result('external-holdout'), result('unit'), result('compile')],
             mutate_on=mutate_on,
         )
         workspaces = []
+        tokens = []
 
         def workspace_factory(job, **kwargs):
             workspace = FakeWorkspace(job, changed_files=changed_files, **kwargs)
             workspaces.append(workspace)
             return workspace
 
+        def token_provider():
+            tokens.append('called')
+            return 'installation-token'
+
         runner = JobRunner(
             store=self.store,
             policy=self.policy,
             github=github or FakeGitHub(),
             signer=self.signer,
-            github_token_provider=lambda: 'installation-token',
+            github_token_provider=token_provider,
             public_base_url='https://ci.example.com',
             workspace_root=Path(tempfile.gettempdir()),
             workspace_host_root=Path('/host/trust-ci-workspaces'),
@@ -140,20 +152,26 @@ class RunnerTests(unittest.TestCase):
             workspace_factory=workspace_factory,
             executor_factory=lambda _sandbox: executor,
         )
-        return runner, executor, workspaces
+        return runner, executor, workspaces, tokens
 
-    def test_passing_job_runs_repository_and_external_holdout_and_signs_attestation(self) -> None:
+    def test_passing_job_uses_epoch_check_runs_holdout_and_signed_attestation(self) -> None:
         github = FakeGitHub()
-        runner, executor, workspaces = self.build_runner(changed_files=['docs/x.md'], github=github)
+        runner, executor, workspaces, tokens = self.build_runner(changed_files=['docs/x.md'], github=github)
         outcome = runner.process(self.job, 'worker-1')
         self.assertEqual(outcome.status, 'passed')
-        self.assertEqual([call[0] for call in executor.calls], ['unit', 'compile', 'external-holdout'])
+        self.assertEqual([call[0] for call in executor.calls], ['external-holdout', 'unit', 'compile'])
         self.assertTrue(str(executor.calls[0][4]).startswith('/host/trust-ci-workspaces/'))
-        self.assertIsNone(executor.calls[0][5])
-        self.assertIsNone(executor.calls[0][6])
-        self.assertEqual(executor.calls[-1][5], self.holdout)
-        self.assertEqual(executor.calls[-1][6], Path('/host/trust-ci-holdout'))
-        self.assertEqual([item[2]['state'] for item in github.statuses], ['pending', 'success'])
+        self.assertEqual(executor.calls[0][5], self.holdout)
+        self.assertEqual(executor.calls[0][6], Path('/host/trust-ci-holdout'))
+        self.assertIsNone(executor.calls[-1][5])
+        self.assertIsNone(executor.calls[-1][6])
+        self.assertEqual(github.ensured[0][2]['name'], self.policy.check_name)
+        self.assertEqual(github.ensured[0][2]['external_id'], self.job.job_id)
+        self.assertEqual(github.completed[-1][1], 55)
+        self.assertEqual(github.completed[-1][2]['conclusion'], 'success')
+        self.assertEqual(tokens, ['called'])
+        self.assertEqual(workspaces[0].kwargs['github_token'], 'installation-token')
+        self.assertGreaterEqual(workspaces[0].assert_calls, 3)
         envelope = self.store.get_attestation(self.job.job_id)
         self.assertIsNotNone(envelope)
         assert envelope is not None
@@ -164,12 +182,14 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(payload.command_results[0]['output_sha256'], self.holdout_digest)
         self.assertTrue(workspaces[0].cleaned)
 
-    def test_protected_path_waits_for_signed_approval(self) -> None:
-        runner, executor, _ = self.build_runner(changed_files=['trust-ci/src/x.py'])
+    def test_protected_path_waits_for_signed_approval_and_completes_action_required(self) -> None:
+        github = FakeGitHub()
+        runner, executor, _, _ = self.build_runner(changed_files=['trust-ci/src/x.py'], github=github)
         outcome = runner.process(self.job, 'worker-1')
         self.assertEqual(outcome.status, 'needs_approval')
         self.assertEqual(executor.calls, [])
         self.assertEqual(outcome.details['missing_scopes'], ['governance'])
+        self.assertEqual(github.completed[-1][2]['conclusion'], 'action_required')
 
     def test_valid_exact_approval_allows_execution(self) -> None:
         human = Signer.generate()
@@ -186,48 +206,49 @@ class RunnerTests(unittest.TestCase):
             now=now(),
         )
         self.store.record_approval(payload, sign_approval(payload, human), now=now())
-        runner, executor, _ = self.build_runner(changed_files=['trust-ci/src/x.py'])
+        runner, executor, _, _ = self.build_runner(changed_files=['trust-ci/src/x.py'])
         outcome = runner.process(self.job, 'worker-1')
         self.assertEqual(outcome.status, 'passed')
         self.assertEqual(len(executor.calls), 3)
 
-    def test_first_failed_command_stops_pipeline(self) -> None:
+    def test_first_failed_command_stops_pipeline_and_completes_failure(self) -> None:
         github = FakeGitHub()
-        runner, executor, _ = self.build_runner(
+        runner, executor, _, _ = self.build_runner(
             changed_files=['docs/x.md'],
-            results=[result('unit', 'fail'), result('compile'), result('external-holdout')],
+            results=[result('external-holdout', 'fail'), result('unit'), result('compile')],
             github=github,
         )
         outcome = runner.process(self.job, 'worker-1')
         self.assertEqual(outcome.status, 'failed')
         self.assertEqual(len(executor.calls), 1)
-        self.assertEqual(github.statuses[-1][2]['state'], 'failure')
+        self.assertEqual(github.completed[-1][2]['conclusion'], 'failure')
 
     def test_successful_command_that_mutates_checkout_fails_pipeline(self) -> None:
-        runner, executor, _ = self.build_runner(
+        runner, executor, _, _ = self.build_runner(
             changed_files=['docs/x.md'],
-            mutate_on=['unit'],
+            mutate_on=['external-holdout'],
         )
         outcome = runner.process(self.job, 'worker-1')
         self.assertEqual(outcome.status, 'failed')
-        self.assertEqual([call[0] for call in executor.calls], ['unit'])
+        self.assertEqual([call[0] for call in executor.calls], ['external-holdout'])
         names = [item['name'] for item in outcome.details['commands']]
-        self.assertIn('unit:source-integrity', names)
+        self.assertIn('external-holdout:source-integrity', names)
         self.assertIn('production.py', str(outcome.details['commands']))
 
-    def test_holdout_digest_mismatch_fails_without_running_commands(self) -> None:
+    def test_holdout_digest_mismatch_fails_without_checkout_or_commands(self) -> None:
         (self.holdout / 'validate.py').write_text('print("tampered")\n', encoding='utf-8')
         github = FakeGitHub()
-        runner, executor, _ = self.build_runner(changed_files=['docs/x.md'], github=github)
+        runner, executor, workspaces, tokens = self.build_runner(changed_files=['docs/x.md'], github=github)
         outcome = runner.process(self.job, 'worker-1')
         self.assertEqual(outcome.status, 'failed')
         self.assertEqual(executor.calls, [])
-        self.assertEqual(outcome.details['commands'][0]['name'], 'holdout-bundle-integrity')
-        self.assertEqual(github.statuses[-1][2]['state'], 'failure')
+        self.assertEqual(workspaces, [])
+        self.assertEqual(tokens, [])
+        self.assertEqual(github.completed[-1][2]['conclusion'], 'failure')
 
-    def test_signed_attestation_is_replayed_after_status_publication_failure(self) -> None:
+    def test_signed_attestation_is_replayed_after_check_publication_failure(self) -> None:
         first_github = FakeGitHub(fail_success_once=True)
-        runner, _, _ = self.build_runner(changed_files=['docs/x.md'], github=first_github)
+        runner, _, _, _ = self.build_runner(changed_files=['docs/x.md'], github=first_github)
         with self.assertRaisesRegex(RuntimeError, 'GitHub unavailable'):
             runner.process(self.job, 'worker-1')
         self.assertIsNotNone(self.store.get_attestation(self.job.job_id))
@@ -235,7 +256,7 @@ class RunnerTests(unittest.TestCase):
         reclaimed = self.store.claim('worker-2', self.policy.lease_seconds, now=now())
         assert reclaimed is not None
         second_github = FakeGitHub()
-        replay_runner, replay_executor, _ = self.build_runner(
+        replay_runner, replay_executor, workspaces, tokens = self.build_runner(
             changed_files=['should-not-checkout'],
             results=[],
             github=second_github,
@@ -243,18 +264,29 @@ class RunnerTests(unittest.TestCase):
         outcome = replay_runner.process(reclaimed, 'worker-2')
         self.assertEqual(outcome.status, 'passed')
         self.assertEqual(replay_executor.calls, [])
-        self.assertEqual(second_github.statuses[-1][2]['state'], 'success')
-        self.assertIn('replayed', second_github.statuses[-1][2]['description'])
+        self.assertEqual(workspaces, [])
+        self.assertEqual(tokens, [])
+        self.assertEqual(second_github.completed[-1][2]['conclusion'], 'success')
+        self.assertIn('replayed', second_github.completed[-1][2]['summary'])
 
     def test_policy_digest_mismatch_fails_without_checkout(self) -> None:
         self.job.policy_digest = 'd' * 64
         github = FakeGitHub()
-        runner, executor, workspaces = self.build_runner(github=github)
+        runner, executor, workspaces, tokens = self.build_runner(github=github)
         outcome = runner.process(self.job, 'worker-1')
         self.assertEqual(outcome.status, 'failed')
         self.assertEqual(executor.calls, [])
         self.assertEqual(workspaces, [])
-        self.assertEqual(github.statuses[-1][2]['state'], 'failure')
+        self.assertEqual(tokens, [])
+        self.assertEqual(github.completed[-1][2]['conclusion'], 'failure')
+
+    def test_dead_job_publication_is_app_owned_epoch_check(self) -> None:
+        github = FakeGitHub()
+        runner, _, _, _ = self.build_runner(github=github)
+        runner.publish_dead_job(self.job, 'network unavailable')
+        self.assertEqual(github.ensured[-1][2]['name'], self.policy.check_name)
+        self.assertEqual(github.completed[-1][2]['conclusion'], 'failure')
+        self.assertIn('network unavailable', github.completed[-1][2]['summary'])
 
 
 if __name__ == '__main__':
