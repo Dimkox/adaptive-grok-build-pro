@@ -15,5 +15,4 @@ IOSchedulingPriority=7
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
-ProtectSystem=strict
-ReadWritePaths=${TRUST_CI_BACKUP_DIR} /run /var/run
+ProtectSystem=full
