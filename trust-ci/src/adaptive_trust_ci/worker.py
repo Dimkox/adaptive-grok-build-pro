@@ -74,14 +74,7 @@ class Worker:
                         now=utc_now(),
                     )
                     if result.status == 'dead':
-                        self.runner.github.post_status(
-                            result.repository,
-                            result.head_sha,
-                            state='error',
-                            description='Adaptive Trust CI infrastructure retries exhausted',
-                            target_url=f'{self.settings.common.public_base_url}/jobs/{result.job_id}',
-                            context=self.runner.policy.status_context,
-                        )
+                        self.runner.publish_dead_job(result, str(exc))
                 except Exception:
                     # Lease expiry and the PostgreSQL claim function provide reconciliation.
                     pass
