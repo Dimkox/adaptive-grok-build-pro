@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import filecmp
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -41,9 +42,19 @@ TRUST_BOUNDARY_FILES = (
     '.github/CODEOWNERS',
     'docs/TRUST-BOUNDARY.md',
 )
+RENDERED_TRUST_FILES = frozenset(
+    {
+        '.github/CODEOWNERS',
+        'docs/TRUST-BOUNDARY.md',
+    }
+)
+SOURCE_CODEOWNER = '@Dimkox'
 SKIP_PREFIXES = ('.grok-stack/runtime/',)
 MANAGED_START = '<!-- ADAPTIVE-GROK-PRO:START -->'
 MANAGED_END = '<!-- ADAPTIVE-GROK-PRO:END -->'
+_ACCOUNT = r'[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?'
+_TEAM = r'[A-Za-z0-9](?:[A-Za-z0-9._-]{0,98}[A-Za-z0-9])?'
+_CODEOWNER_RE = re.compile(rf'^@{_ACCOUNT}(?:/{_TEAM})?$')
 
 
 def iter_source_files(
@@ -79,10 +90,62 @@ def iter_source_files(
     return sorted(files)
 
 
+def validate_codeowner(
+    codeowner: str | None,
+    *,
+    with_ci: bool,
+) -> str | None:
+    candidate = codeowner.strip() if isinstance(codeowner, str) else None
+    if not with_ci:
+        if candidate:
+            raise SystemExit('--codeowner requires --with-ci.')
+        return None
+    if not candidate or _CODEOWNER_RE.fullmatch(candidate) is None:
+        raise SystemExit(
+            '--with-ci requires --codeowner @user or @org/team for the '
+            'target repository.'
+        )
+    return candidate
+
+
+def rendered_source(
+    rel: str,
+    source: Path,
+    codeowner: str | None,
+) -> bytes | None:
+    if rel not in RENDERED_TRUST_FILES:
+        return None
+    if codeowner is None:
+        raise RuntimeError(f'missing target CODEOWNER while rendering {rel}')
+    data = source.read_bytes()
+    marker = SOURCE_CODEOWNER.encode('utf-8')
+    if marker not in data:
+        raise RuntimeError(
+            f'{rel} no longer contains the source CODEOWNER {SOURCE_CODEOWNER}'
+        )
+    return data.replace(marker, codeowner.encode('utf-8'))
+
+
 def different(left: Path, right: Path) -> bool:
-    if not right.is_file():
+    if not right.exists():
         return False
+    if not right.is_file():
+        return True
     return not filecmp.cmp(left, right, shallow=False)
+
+
+def different_content(
+    source: Path,
+    target: Path,
+    rendered: bytes | None,
+) -> bool:
+    if rendered is None:
+        return different(source, target)
+    if not target.exists():
+        return False
+    if not target.is_file():
+        return True
+    return target.read_bytes() != rendered
 
 
 def managed_agents_text(source: Path) -> str:
@@ -114,14 +177,22 @@ def install(
     force: bool,
     dry_run: bool,
     with_ci: bool = False,
+    codeowner: str | None = None,
     install_deps: bool = True,
     all_deps: bool = False,
     runner=None,
 ) -> None:
+    target_codeowner = validate_codeowner(codeowner, with_ci=with_ci)
     target.mkdir(parents=True, exist_ok=True)
     source_files = iter_source_files(source, with_ci=with_ci)
+    entries = [
+        (rel, src, rendered_source(rel, src, target_codeowner))
+        for rel, src in source_files
+    ]
     conflicts = [
-        rel for rel, src in source_files if different(src, target / rel)
+        rel
+        for rel, src, rendered in entries
+        if different_content(src, target / rel, rendered)
     ]
     if conflicts and not force:
         formatted = '\n'.join(f'  - {item}' for item in conflicts[:50])
@@ -138,18 +209,22 @@ def install(
             + extra
         )
 
-    for rel, src in source_files:
+    for rel, src, rendered in entries:
         dst = target / rel
+        changed = different_content(src, dst, rendered)
         action = (
             'OVERWRITE'
-            if dst.exists() and different(src, dst)
+            if dst.exists() and changed
             else ('KEEP' if dst.exists() else 'COPY')
         )
         print(f'{action} {rel}')
         if dry_run or action == 'KEEP':
             continue
         dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dst)
+        if rendered is None:
+            shutil.copy2(src, dst)
+        else:
+            dst.write_bytes(rendered)
 
     merge_agents(source, target, dry_run)
 
@@ -188,9 +263,9 @@ def install(
     )
     if with_ci:
         print(
-            'NOTICE trusted CI files copied. Configure branch protection, '
-            'CODEOWNERS, and the production Environment as documented in '
-            'docs/TRUST-BOUNDARY.md.'
+            f'NOTICE trusted CI files copied for {target_codeowner}. Configure '
+            'branch protection and the production Environment as documented '
+            'in docs/TRUST-BOUNDARY.md.'
         )
 
     pin_root = (
@@ -247,6 +322,13 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        '--codeowner',
+        help=(
+            'Required with --with-ci. Target repository owner in @user or '
+            '@org/team form; rendered into CODEOWNERS and the runbook.'
+        ),
+    )
+    parser.add_argument(
         '--no-deps',
         action='store_true',
         help='Do not install missing required toolchain tools.',
@@ -263,6 +345,7 @@ def main() -> None:
         force=args.force,
         dry_run=args.dry_run,
         with_ci=args.with_ci,
+        codeowner=args.codeowner,
         install_deps=not args.no_deps,
         all_deps=args.all_deps,
     )
