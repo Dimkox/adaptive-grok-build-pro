@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -22,9 +21,12 @@ DATABASE_URL = 'postgresql://trust_ci:secret%20password@postgres:5432/trust_ci?s
 class RecordingRunner:
     def __init__(self) -> None:
         self.calls: list[tuple[list[str], dict[str, str]]] = []
+        self.service_files: list[str] = []
 
     def __call__(self, argv: list[str], env: dict[str, str]):
         self.calls.append((list(argv), dict(env)))
+        service_file = Path(env['PGSERVICEFILE'])
+        self.service_files.append(service_file.read_text(encoding='utf-8'))
         if argv[0] == 'pg_dump':
             output = Path(argv[argv.index('--file') + 1])
             output.write_bytes(b'postgres custom dump')
@@ -53,8 +55,7 @@ class BackupTests(unittest.TestCase):
             self.assertFalse(any('secret password' in item or 'secret%20password' in item for item in runner.calls[0][0]))
             self.assertIn('PGSERVICEFILE', runner.calls[0][1])
             self.assertEqual(runner.calls[0][1]['PGSERVICE'], 'adaptive_trust_ci')
-            service_text = Path(runner.calls[0][1]['PGSERVICEFILE']).read_text(encoding='utf-8')
-            self.assertIn('password=secret password', service_text)
+            self.assertIn('password=secret password', runner.service_files[0])
             self.assertNotIn(DATABASE_URL, ' '.join(runner.calls[0][0]))
 
     def test_verify_backup_rejects_tampering(self) -> None:
@@ -105,7 +106,8 @@ class BackupTests(unittest.TestCase):
 
     def test_failed_pg_dump_leaves_no_partial_backup(self) -> None:
         def failed_runner(argv: list[str], env: dict[str, str]):
-            del argv, env
+            del argv
+            Path(env['PGSERVICEFILE']).read_text(encoding='utf-8')
             return SimpleNamespace(returncode=2, stdout='', stderr='pg_dump failed')
 
         with tempfile.TemporaryDirectory() as directory:
