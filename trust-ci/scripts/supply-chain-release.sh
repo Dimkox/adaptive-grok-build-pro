@@ -46,6 +46,7 @@ build_image() {
   fi
 
   docker buildx build \
+    --progress=plain \
     --file "$root/trust-ci/$dockerfile" \
     --build-arg "PYTHON_BASE_IMAGE=$TRUST_CI_PYTHON_BASE_IMAGE" \
     --tag "$tagged" \
@@ -53,7 +54,7 @@ build_image() {
     --sbom=true \
     --provenance=mode=max \
     --metadata-file "$metadata" \
-    "$root/trust-ci"
+    "$root/trust-ci" >&2
 
   local digest
   digest="$(python3 - "$metadata" <<'PY'
@@ -73,9 +74,9 @@ PY
   local immutable="$repository@$digest"
 
   trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed \
-    --format json --output "$output/scan/$name.trivy.json" "$immutable"
-  syft "$immutable" -o cyclonedx-json="$output/sbom/$name.cdx.json"
-  cosign sign --yes --key "$COSIGN_PRIVATE_KEY" "$immutable"
+    --format json --output "$output/scan/$name.trivy.json" "$immutable" >&2
+  syft "$immutable" -o cyclonedx-json="$output/sbom/$name.cdx.json" >&2
+  cosign sign --yes --key "$COSIGN_PRIVATE_KEY" "$immutable" >&2
   printf '%s\n' "$immutable"
 }
 
@@ -90,7 +91,9 @@ import os
 import sys
 from pathlib import Path
 
-source, target, runner = map(Path, sys.argv[1:3]) + [sys.argv[3]] if False else (Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3])
+source = Path(sys.argv[1])
+target = Path(sys.argv[2])
+runner = sys.argv[3]
 data = json.loads(source.read_text(encoding='utf-8'))
 if not isinstance(data, dict) or not isinstance(data.get('sandbox'), dict):
     raise SystemExit('policy template has no sandbox object')
@@ -113,10 +116,23 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-manifest, policy, api, worker, runner, root = Path(sys.argv[1]), Path(sys.argv[2]), *sys.argv[3:6], Path(sys.argv[6])
+manifest = Path(sys.argv[1])
+policy = Path(sys.argv[2])
+api = sys.argv[3]
+worker = sys.argv[4]
+runner = sys.argv[5]
+root = Path(sys.argv[6])
+
 def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
-head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, text=True, capture_output=True, check=True).stdout.strip()
+
+head = subprocess.run(
+    ['git', 'rev-parse', 'HEAD'],
+    cwd=root,
+    text=True,
+    capture_output=True,
+    check=True,
+).stdout.strip()
 data = {
     'schema_version': 1,
     'created_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
@@ -140,7 +156,7 @@ PY
   sha256sum supply-chain.manifest.json > supply-chain.manifest.json.sha256
   cosign sign-blob --yes --key "$COSIGN_PRIVATE_KEY" \
     --output-signature supply-chain.manifest.json.sig \
-    supply-chain.manifest.json
+    supply-chain.manifest.json >&2
   sha256sum policy.json sbom/*.json scan/*.json > artifacts.sha256
 )
 
