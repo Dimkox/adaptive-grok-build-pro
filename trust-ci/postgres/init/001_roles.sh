@@ -16,28 +16,28 @@ psql \
   --set=ON_ERROR_STOP=1 \
   --username "$POSTGRES_USER" \
   --dbname "$POSTGRES_DB" <<'SQL'
-\getenv api_password TRUST_CI_API_DB_PASSWORD
-\getenv worker_password TRUST_CI_WORKER_DB_PASSWORD
-\getenv migrator_password TRUST_CI_MIGRATOR_DB_PASSWORD
-\getenv backup_password TRUST_CI_BACKUP_DB_PASSWORD
+\getenv api_pw TRUST_CI_API_DB_PASSWORD
+\getenv worker_pw TRUST_CI_WORKER_DB_PASSWORD
+\getenv migrator_pw TRUST_CI_MIGRATOR_DB_PASSWORD
+\getenv backup_pw TRUST_CI_BACKUP_DB_PASSWORD
 
-SELECT format('CREATE ROLE trust_ci_api LOGIN PASSWORD %L', :'api_password')
+SELECT format('CREATE ROLE trust_ci_api LOGIN PASSWORD %L', :'api_pw')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'trust_ci_api')
 \gexec
-SELECT format('CREATE ROLE trust_ci_worker LOGIN PASSWORD %L', :'worker_password')
+SELECT format('CREATE ROLE trust_ci_worker LOGIN PASSWORD %L', :'worker_pw')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'trust_ci_worker')
 \gexec
-SELECT format('CREATE ROLE trust_ci_migrator LOGIN PASSWORD %L', :'migrator_password')
+SELECT format('CREATE ROLE trust_ci_migrator LOGIN PASSWORD %L', :'migrator_pw')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'trust_ci_migrator')
 \gexec
-SELECT format('CREATE ROLE trust_ci_backup LOGIN PASSWORD %L', :'backup_password')
+SELECT format('CREATE ROLE trust_ci_backup LOGIN PASSWORD %L', :'backup_pw')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'trust_ci_backup')
 \gexec
 
-ALTER ROLE trust_ci_api PASSWORD :'api_password';
-ALTER ROLE trust_ci_worker PASSWORD :'worker_password';
-ALTER ROLE trust_ci_migrator PASSWORD :'migrator_password';
-ALTER ROLE trust_ci_backup PASSWORD :'backup_password';
+ALTER ROLE trust_ci_api PASSWORD :'api_pw';
+ALTER ROLE trust_ci_worker PASSWORD :'worker_pw';
+ALTER ROLE trust_ci_migrator PASSWORD :'migrator_pw';
+ALTER ROLE trust_ci_backup PASSWORD :'backup_pw';
 
 ALTER ROLE trust_ci_api NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOINHERIT CONNECTION LIMIT 20;
 ALTER ROLE trust_ci_worker NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOINHERIT CONNECTION LIMIT 50;
