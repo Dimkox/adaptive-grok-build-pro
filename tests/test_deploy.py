@@ -17,7 +17,7 @@ from adaptive_grok.change import start_change, transition
 from adaptive_grok.policy import evaluate_pre_tool
 from adaptive_grok.receipts import get_receipt, write_receipt
 from adaptive_grok.router import build_route
-from adaptive_grok.state import add_approval, get_active_route, set_active_route
+from adaptive_grok.state import get_active_route, set_active_route
 from tests._support import project_copy
 
 REQUIRED = ['verification', 'code_review']
@@ -25,10 +25,14 @@ REQUIRED = ['verification', 'code_review']
 
 def prepare_deploy(root, *, record: bool):
     from adaptive_grok.deploy import prepare_deploy as impl
+
     return impl(root, record=record)
 
 
-INSTALL_SPEC = importlib.util.spec_from_file_location('install_into', ROOT / 'scripts/install_into.py')
+INSTALL_SPEC = importlib.util.spec_from_file_location(
+    'install_into',
+    ROOT / 'scripts/install_into.py',
+)
 INSTALL = importlib.util.module_from_spec(INSTALL_SPEC)
 assert INSTALL_SPEC and INSTALL_SPEC.loader
 INSTALL_SPEC.loader.exec_module(INSTALL)
@@ -42,7 +46,12 @@ def _advance(root: Path, change_id: str, target: str) -> None:
     raise AssertionError(f'could not reach {target}')
 
 
-def _ready_change(root: Path, *, status: str = 'ready', evidence: bool = True) -> tuple[dict, str]:
+def _ready_change(
+    root: Path,
+    *,
+    status: str = 'ready',
+    evidence: bool = True,
+) -> tuple[dict, str]:
     route = build_route(root, 'Добавить функцию', 'deploy-test').to_dict()
     route['required_evidence'] = list(REQUIRED)
     set_active_route(root, route)
@@ -89,7 +98,7 @@ class DeployPrepareTests(unittest.TestCase):
             self.assertFalse(result.get('ok'))
             self.assertTrue(result.get('error'))
 
-    def test_dry_run_ready_is_ok_without_receipt(self) -> None:
+    def test_dry_run_prepares_protected_release_dispatch(self) -> None:
         with project_copy(git=True) as root:
             route, change_id = _ready_change(root)
             result = prepare_deploy(root, record=False)
@@ -100,28 +109,22 @@ class DeployPrepareTests(unittest.TestCase):
             self.assertEqual(result.get('version'), version)
             commands = result.get('commands') or []
             joined = '\n'.join(commands)
-            self.assertIn('python3 scripts/package_stack.py', joined)
-            self.assertIn(f'cp dist/adaptive-grok-build-pro-v{version}.zip* packages/', joined)
-            self.assertIn(f'git tag -a v{version}', joined)
-            self.assertIn('git push origin', joined)
-            self.assertIn(f'gh release create v{version}', joined)
-            self.assertIn(f'--title "Adaptive Grok Build Pro v{version}"', joined)
-            self.assertIn('--notes-file dist/RELEASE-NOTES.md', joined)
-            self.assertIsNone(get_receipt(root, route['route_id'], 'deploy'))
-            self.assertFalse((root / '.grok-stack/runtime/receipts' / route['route_id'] / 'deploy.json').is_file())
-
-    def test_record_without_approval_is_not_ok(self) -> None:
-        with project_copy(git=True) as root:
-            route, _change_id = _ready_change(root)
-            result = prepare_deploy(root, record=True)
-            self.assertFalse(result.get('ok'))
-            self.assertTrue(result.get('error'))
+            self.assertIn(
+                'python3 scripts/grok_verify.py --mode release --strict',
+                joined,
+            )
+            self.assertIn(
+                f'gh workflow run release.yml --ref main -f version={version}',
+                joined,
+            )
+            self.assertNotIn('git push origin', joined)
+            self.assertNotIn('git tag -a', joined)
+            self.assertNotIn('gh release create', joined)
             self.assertIsNone(get_receipt(root, route['route_id'], 'deploy'))
 
-    def test_record_with_production_approval_writes_prepared_receipt(self) -> None:
+    def test_record_writes_prepared_receipt_without_granting_authorization(self) -> None:
         with project_copy(git=True) as root:
             route, change_id = _ready_change(root)
-            add_approval(root, 'production', 'prepare deploy', 15)
             result = prepare_deploy(root, record=True)
             self.assertTrue(result.get('ok'))
             self.assertTrue(result.get('recorded'))
@@ -131,8 +134,14 @@ class DeployPrepareTests(unittest.TestCase):
             self.assertEqual(receipt.get('kind'), 'deploy')
             self.assertEqual(receipt.get('status'), 'prepared')
             self.assertEqual(receipt.get('details', {}).get('change_id'), change_id)
-            self.assertEqual(receipt.get('details', {}).get('version'), result.get('version'))
-            self.assertEqual(receipt.get('details', {}).get('commands'), result.get('commands'))
+            self.assertEqual(
+                receipt.get('details', {}).get('version'),
+                result.get('version'),
+            )
+            self.assertEqual(
+                receipt.get('details', {}).get('commands'),
+                result.get('commands'),
+            )
 
 
 class DeployCliTests(unittest.TestCase):
@@ -146,30 +155,53 @@ class DeployCliTests(unittest.TestCase):
             self.assertFalse(payload.get('recorded'))
             self.assertIsNone(get_receipt(root, route['route_id'], 'deploy'))
 
-    def test_cli_record_without_approval_fails(self) -> None:
+    def test_cli_record_writes_prepared_receipt(self) -> None:
         with project_copy(git=True) as root:
-            _ready_change(root)
+            route, _change_id = _ready_change(root)
             proc = _run_cli(root, '--record', '--json')
-            self.assertEqual(proc.returncode, 1)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
             payload = json.loads(proc.stdout)
-            self.assertFalse(payload.get('ok'))
+            self.assertTrue(payload.get('ok'))
+            self.assertTrue(payload.get('recorded'))
+            self.assertIsNotNone(get_receipt(root, route['route_id'], 'deploy'))
 
-    def test_cli_prints_commands_on_success(self) -> None:
+    def test_cli_prints_workflow_dispatch_on_success(self) -> None:
         with project_copy(git=True) as root:
             _ready_change(root)
             proc = _run_cli(root)
             self.assertEqual(proc.returncode, 0, proc.stderr)
-            self.assertIn('python3 scripts/package_stack.py', proc.stdout)
+            self.assertIn('gh workflow run release.yml', proc.stdout)
+            self.assertNotIn('git push origin', proc.stdout)
 
 
 class DeployPolicyTests(unittest.TestCase):
-    def test_grok_deploy_cli_is_allowed_without_production_approval(self) -> None:
+    def test_grok_deploy_cli_is_allowed_because_it_only_prepares(self) -> None:
         with project_copy(git=True) as root:
-            allowed, reason = evaluate_pre_tool(root, {
-                'tool_name': 'Bash',
-                'tool_input': {'command': 'python3 scripts/grok_deploy.py'},
-            })
+            allowed, reason = evaluate_pre_tool(
+                root,
+                {
+                    'tool_name': 'Bash',
+                    'tool_input': {'command': 'python3 scripts/grok_deploy.py'},
+                },
+            )
             self.assertTrue(allowed, reason)
+
+    def test_release_workflow_dispatch_is_blocked_inside_grok(self) -> None:
+        with project_copy(git=True) as root:
+            allowed, reason = evaluate_pre_tool(
+                root,
+                {
+                    'tool_name': 'Bash',
+                    'tool_input': {
+                        'command': (
+                            'gh workflow run release.yml --ref main '
+                            '-f version=2.0.11'
+                        ),
+                    },
+                },
+            )
+            self.assertFalse(allowed)
+            self.assertIn('not executable from Grok', reason or '')
 
 
 class DeployInstallerTests(unittest.TestCase):
@@ -185,32 +217,29 @@ class DeploySourceAndCiTests(unittest.TestCase):
     def test_prepare_sources_do_not_execute_publish_commands(self) -> None:
         for rel in ('.grok-stack/adaptive_grok/deploy.py', 'scripts/grok_deploy.py'):
             text = (ROOT / rel).read_text(encoding='utf-8')
-            self.assertNotRegex(text, r'(?m)^\s*(import subprocess|from subprocess import)')
+            self.assertNotRegex(
+                text,
+                r'(?m)^\s*(import subprocess|from subprocess import)',
+            )
             self.assertNotIn('subprocess.run', text)
             self.assertNotIn('subprocess.call', text)
             self.assertNotIn('os.system', text)
             self.assertNotIn('os.popen', text)
 
-    def test_repo_has_no_github_actions_workflow_or_template(self) -> None:
-        self.assertFalse((ROOT / '.github/workflows/adaptive-grok.yml').exists())
-        self.assertFalse((ROOT / '.grok-stack/templates/ci/github-actions.yml').exists())
+    def test_repo_has_trusted_ci_and_protected_release_workflows(self) -> None:
+        self.assertTrue((ROOT / '.github/workflows/trusted-ci.yml').is_file())
+        self.assertTrue((ROOT / '.github/workflows/release.yml').is_file())
+        self.assertTrue((ROOT / '.github/CODEOWNERS').is_file())
 
-    def test_repo_has_no_workflow_yaml_or_dependabot(self) -> None:
-        workflows = ROOT / '.github/workflows'
-        ymls = list(workflows.glob('*.yml')) if workflows.is_dir() else []
-        self.assertEqual(ymls, [])
-        self.assertFalse((ROOT / '.github/dependabot.yml').exists())
-
-    def test_ci_readme_bans_github_actions_and_is_not_a_publisher(self) -> None:
-        text = (ROOT / '.grok-stack/templates/ci/README.md').read_text(encoding='utf-8')
-        lowered = text.lower()
-        self.assertIn('never', lowered)
-        self.assertIn('github actions', lowered)
-        self.assertTrue(
-            'grok_verify.py --mode pr' in text or 'make verify' in text,
-            text,
+    def test_ci_template_readme_points_to_authoritative_workflow(self) -> None:
+        text = (ROOT / '.grok-stack/templates/ci/README.md').read_text(
+            encoding='utf-8',
         )
-        self.assertNotIn('gh release', text)
+        lowered = text.lower()
+        self.assertIn('github actions', lowered)
+        self.assertIn('trusted-ci', lowered)
+        self.assertIn('grok_verify.py --mode pr --strict', text)
+        self.assertNotIn('gh release create', text)
         self.assertNotIn('git push', text)
         self.assertNotIn('docker push', text)
 
