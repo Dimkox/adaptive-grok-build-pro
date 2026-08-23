@@ -27,7 +27,7 @@ class Workspace(Protocol):
 
     def checkout(self, job: Job): ...
     def reset(self) -> None: ...
-    def assert_unmodified(self) -> None: ...
+    def assert_unchanged(self) -> None: ...
     def cleanup(self) -> None: ...
 
 
@@ -320,7 +320,7 @@ class JobRunner:
         )
         command_results.append(result)
         try:
-            workspace.assert_unmodified()
+            workspace.assert_unchanged()
         except WorkspaceMutationError as exc:
             message = str(exc)
             command_results.append(
