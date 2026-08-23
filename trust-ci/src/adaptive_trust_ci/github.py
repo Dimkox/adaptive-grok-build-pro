@@ -92,7 +92,7 @@ class GitHubClient:
     token_provider: Callable[[], str] | None = None
     transport: Transport | None = None
     api_url: str = 'https://api.github.com'
-    api_version: str = '2026-03-10'
+    api_version: str = '2022-11-28'
 
     def __post_init__(self) -> None:
         if bool(self.token and self.token.strip()) == bool(self.token_provider):
