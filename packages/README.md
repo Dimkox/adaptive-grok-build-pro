@@ -16,6 +16,7 @@ Tracked copies of published artifacts. Scratch rebuilds go to `dist/` (gitignore
 | `adaptive-grok-build-pro-v2.0.9.zip` | 2.0.9 |
 | `adaptive-grok-build-pro-v2.0.10.zip` | 2.0.10 |
 | `adaptive-grok-build-pro-v2.0.11.zip` | 2.0.11 |
+| `adaptive-grok-build-pro-v2.0.12.zip` | 2.0.12 |
 
 Each zip has a sibling `.sha256`. Rebuild:
 

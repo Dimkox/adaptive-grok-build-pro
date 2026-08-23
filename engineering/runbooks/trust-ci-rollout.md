@@ -34,10 +34,10 @@ cp config/trust-store.example.json runtime/trust-store.json
 Replace placeholders, install the external holdout bundle, generate the CI and human keys, configure the GitHub App, then build and pin every image:
 
 ```bash
-docker compose --profile build build api worker runner-image
-docker image inspect adaptive-trust-ci-api:2.1.0 --format '{{.Id}}'
-docker image inspect adaptive-trust-ci-worker:2.1.0 --format '{{.Id}}'
-docker image inspect adaptive-trust-ci-runner:2.1.0 --format '{{.Id}}'
+docker compose -f compose.yaml -f compose.build.yaml --profile build build api worker runner-image
+docker image inspect "$TRUST_CI_API_IMAGE" --format '{{.Id}} {{index .RepoDigests 0}}'
+docker image inspect "$TRUST_CI_WORKER_IMAGE" --format '{{.Id}} {{index .RepoDigests 0}}'
+docker image inspect "$TRUST_CI_RUNNER_IMAGE" --format '{{.Id}} {{index .RepoDigests 0}}'
 
 adaptive-trust-ci holdout-digest --path /opt/adaptive-trust-ci-holdout
 # Put exact image and holdout sha256 values into deployment env and runtime/policy.json.
@@ -91,8 +91,10 @@ The command writes `required_status_checks.checks` with both the exact policy-ep
 Before production, run the real PostgreSQL harness, not only `MemoryStore` tests:
 
 ```bash
-docker compose -f trust-ci/compose.test.yaml up \
-  --build --abort-on-container-exit --exit-code-from tests
+make trust-ci-postgres-test
+# or, from repository root:
+# docker compose -f trust-ci/compose.test.yaml up \
+#   --build --abort-on-container-exit --exit-code-from postgres-integration
 ```
 
 The harness must prove duplicate-webhook idempotency, `FOR UPDATE SKIP LOCKED` exclusivity with concurrent workers, heartbeat and lease expiry, worker-death reclaim, bounded attempts to `dead`, nonce replay rejection, PostgreSQL restart recovery, and signed-attestation replay after GitHub publication failure.

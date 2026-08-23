@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.12 — 2026-08-23
+
+Self-hosted Trust CI control plane in-tree, K16 README graph, optional docker/syft/trivy/cosign toolchain pins.
+
+- Product identity **2.0.12**; Trust CI service identity stays **2.1.0**
+- PR-only delivery; rebase-merge of draft PR #2 is a bootstrap exception because the App-owned check is not live yet
+- Example image pins stay placeholders; live registry pins stay untracked
+- Still no GitHub Actions
+
 ## 2.0.11 — 2026-08-17
 
 Skip the analysis/review wave when nothing product-changed; always push `main` and release when green.

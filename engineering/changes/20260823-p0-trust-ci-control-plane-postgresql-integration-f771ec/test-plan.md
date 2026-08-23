@@ -11,6 +11,7 @@
 | P0 | No `.github/workflows/` | structure test |
 | P1 | Source mutation still fails after command exit 0 | runner unit test |
 | P1 | Holdout example digest matches example bundle | ops unit test |
+| P1 | Local two-file compose build-without-push of api/worker/runner-image; inspect `.Id` and JSON RepoDigests; no digest written to tracked examples | `evidence/implementation-images.md` plus `git diff --exit-code` on example policy/env |
 | P1 | Branch-protection payload includes `app_id` | github unit test |
 | P2 | App-owned check on PR #2 exact SHA | GitHub Checks API |
 | P2 | Offline attestation verify with CI public key | `adaptive-trust-ci attestation-verify` |

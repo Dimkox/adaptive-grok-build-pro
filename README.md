@@ -1,13 +1,14 @@
-# Adaptive Grok Build Pro v2.0.11
+# Adaptive Grok Build Pro v2.0.12
 
 A commercial-grade product for **Grok Build** — free of charge, public, and MIT-licensed.
 
 ## Current state
 
-- Identity: **2.0.11** (`VERSION`, README H1). Published GitHub Release is `v2.0.11`.
+- Identity: **2.0.12** (`VERSION`, README H1). Published GitHub Release is `v2.0.12`.
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
 - Independent CI candidate: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
+- Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is not live in this release; merge of PR #2 is a bootstrap exception (see decisions.md).
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
 
 ## Read first
@@ -62,13 +63,19 @@ Source-of-truth order is in AGENTS.md. Large work is split into small subtasks t
 
 ## Stack graph
 
-Simple complete graph: every core local-workflow piece is linked to every other. The external Trust CI boundary is deliberately outside this prompt-controlled graph.
+Simple complete graph: every listed core node is linked to every other with a `---` edge. The listed set is the local Grok workflow plus the independently deployed Trust CI applications and PostgreSQL. Prompts, local receipts and delegated grants are not merge authority.
 
 ```mermaid
 graph TD
   Contract["AGENTS.md"]
   Decisions["decisions.md"]
   Mistakes["mistakes.md"]
+  TrustAPI["trust-ci API"]
+  TrustWorker["trust-ci worker"]
+  Postgres["PostgreSQL 17"]
+  Runner["isolated runner"]
+  Holdout["external holdout"]
+  GitHubApp["GitHub App Checks"]
   Route --- Skills
   Route --- Agents
   Route --- Hooks
@@ -78,6 +85,12 @@ graph TD
   Route --- Contract
   Route --- Decisions
   Route --- Mistakes
+  Route --- TrustAPI
+  Route --- TrustWorker
+  Route --- Postgres
+  Route --- Runner
+  Route --- Holdout
+  Route --- GitHubApp
   Skills --- Agents
   Skills --- Hooks
   Skills --- Policy
@@ -86,6 +99,12 @@ graph TD
   Skills --- Contract
   Skills --- Decisions
   Skills --- Mistakes
+  Skills --- TrustAPI
+  Skills --- TrustWorker
+  Skills --- Postgres
+  Skills --- Runner
+  Skills --- Holdout
+  Skills --- GitHubApp
   Agents --- Hooks
   Agents --- Policy
   Agents --- Verify
@@ -93,27 +112,90 @@ graph TD
   Agents --- Contract
   Agents --- Decisions
   Agents --- Mistakes
+  Agents --- TrustAPI
+  Agents --- TrustWorker
+  Agents --- Postgres
+  Agents --- Runner
+  Agents --- Holdout
+  Agents --- GitHubApp
   Hooks --- Policy
   Hooks --- Verify
   Hooks --- Packages
   Hooks --- Contract
   Hooks --- Decisions
   Hooks --- Mistakes
+  Hooks --- TrustAPI
+  Hooks --- TrustWorker
+  Hooks --- Postgres
+  Hooks --- Runner
+  Hooks --- Holdout
+  Hooks --- GitHubApp
   Policy --- Verify
   Policy --- Packages
   Policy --- Contract
   Policy --- Decisions
   Policy --- Mistakes
+  Policy --- TrustAPI
+  Policy --- TrustWorker
+  Policy --- Postgres
+  Policy --- Runner
+  Policy --- Holdout
+  Policy --- GitHubApp
   Verify --- Packages
   Verify --- Contract
   Verify --- Decisions
   Verify --- Mistakes
+  Verify --- TrustAPI
+  Verify --- TrustWorker
+  Verify --- Postgres
+  Verify --- Runner
+  Verify --- Holdout
+  Verify --- GitHubApp
   Packages --- Contract
   Packages --- Decisions
   Packages --- Mistakes
+  Packages --- TrustAPI
+  Packages --- TrustWorker
+  Packages --- Postgres
+  Packages --- Runner
+  Packages --- Holdout
+  Packages --- GitHubApp
   Contract --- Decisions
   Contract --- Mistakes
+  Contract --- TrustAPI
+  Contract --- TrustWorker
+  Contract --- Postgres
+  Contract --- Runner
+  Contract --- Holdout
+  Contract --- GitHubApp
   Decisions --- Mistakes
+  Decisions --- TrustAPI
+  Decisions --- TrustWorker
+  Decisions --- Postgres
+  Decisions --- Runner
+  Decisions --- Holdout
+  Decisions --- GitHubApp
+  Mistakes --- TrustAPI
+  Mistakes --- TrustWorker
+  Mistakes --- Postgres
+  Mistakes --- Runner
+  Mistakes --- Holdout
+  Mistakes --- GitHubApp
+  TrustAPI --- TrustWorker
+  TrustAPI --- Postgres
+  TrustAPI --- Runner
+  TrustAPI --- Holdout
+  TrustAPI --- GitHubApp
+  TrustWorker --- Postgres
+  TrustWorker --- Runner
+  TrustWorker --- Holdout
+  TrustWorker --- GitHubApp
+  Postgres --- Runner
+  Postgres --- Holdout
+  Postgres --- GitHubApp
+  Runner --- Holdout
+  Runner --- GitHubApp
+  Holdout --- GitHubApp
 ```
 
 | Node | Role |
@@ -128,6 +210,14 @@ graph TD
 | Contract | `AGENTS.md` first rule: log to `decisions.md` / `mistakes.md` |
 | Decisions | root `decisions.md` |
 | Mistakes | root `mistakes.md` |
+| TrustAPI | `trust-ci/` FastAPI image; HMAC webhook intake; no GitHub App key |
+| TrustWorker | `trust-ci/` worker; claims PostgreSQL leases; publishes the Check Run |
+| Postgres | Durable PostgreSQL 17 (`TRUST_CI_POSTGRES_IMAGE`); jobs, leases, approvals, attestations |
+| Runner | Isolated no-network runner container; `policy.sandbox.image` must equal `TRUST_CI_RUNNER_IMAGE` |
+| Holdout | External digest-pinned bundle, outside the PR checkout |
+| GitHubApp | App-owned Checks `adaptive-trust-ci/verified@<policy-sha12>` bound to the App ID |
+
+oneshots `migrate` / `runner-loader` reuse API/worker images; privileged rootless DinD is an execution edge of Runner.
 
 ## Requirements
 
@@ -137,12 +227,16 @@ Pins are **minimum or newer**. `built` is the version this local stack was verif
 | --- | --- | --- | --- | --- |
 | Python 3 | 3.10 | 3.12.3 | 3.12 | yes |
 | Git | 2.34 | 2.43.0 | 2.43 | yes |
-| Grok Build CLI | 1.0.0 | 1.0.4 | 1.0.4 | for the TUI |
+| Grok Build CLI | 1.0.0 | 1.0.5 | 1.0.5 | for the TUI |
 | GitHub CLI (`gh`) | 2.40 | 2.86.0 | 2.86 | for human-owned GitHub Release |
 | Node.js | 18 | 24.19.0 | 20 LTS | frontend profiles |
 | npm | 9 | 11.17.0 | 10 | frontend profiles |
 | PHP | 8.1 | 8.2 | 8.2 | PHP/Bitrix profiles |
 | Composer | 2.2 | 2.7 | 2.7 | PHP/Bitrix profiles |
+| Docker Engine | 24.0 | 29.7.2 | 29 | Trust CI host (optional) |
+| Syft | 1.0 | 1.51.0 | 1.51 | supply-chain SBOM (optional) |
+| Trivy | 0.50 | 0.74.0 | 0.74 | supply-chain vuln scan (optional) |
+| Cosign | 2.0 | — | 2.4 | supply-chain sign/verify (optional) |
 
 ```bash
 python3 scripts/grok_doctor.py --offer-install

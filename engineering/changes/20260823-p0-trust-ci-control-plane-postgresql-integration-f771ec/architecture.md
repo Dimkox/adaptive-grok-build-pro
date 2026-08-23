@@ -23,9 +23,15 @@ GitHub PR webhook → API HMAC + allowlist + idempotent enqueue → PostgreSQL j
 ## Decisions
 
 - User-approved source is `GROK_BUILD_HANDOFF.md`; this change does not reopen design.
-- Route `write_agent` is null; the parent performs bounded product repairs and operational activation without spawning an unlisted writer.
+- Route `d2ba49e0570d` write owner is `general_implementer`. Reviews are `code_reviewer` and `test_reviewer` only if product files change.
 - Example policy may keep an explicit runner-digest placeholder; deployed policy must use a real digest.
 - Branch protection runs only after the App-owned check is observed on the exact SHA.
+- This turn is a daemon compile, not HANDOFF §3 pin: two-file compose `build` with no push and no `up`. Freeze the reviewed docs/toolchain tree. Do not add Makefile/script/test product edits.
+- Smoke env-file lives at `/tmp/adaptive-trust-ci-build.env`, not `trust-ci/.env` (protected path). API/worker/runner values are mutable local `:2.1.0` tags. Measure `python:3.12-slim-bookworm` after `docker pull`; do not invent hex.
+- On Docker Engine 29 a non-empty `RepoDigests` that equals `.Id` is still not a registry pin. Inspect `.Id` plus JSON `RepoTags`/`RepoDigests`. Never copy that string into `policy.example.json` or `.env.example`.
+- Example holdout digest stays test-locked to `trust-ci/holdout.example`. Production holdout waits: `/srv` and `/opt` bundles are absent.
+- Do not commit leftover `engineering/changes/20260817-вычисти*`. Do not read `trust-ci/runtime/*.pem`. GitHub App, TLS, `compose up`, and `branch-protect` stay out of slice until separately named.
+- User named registry `ghcr.io/dimkox` for docker-push (option 1). Pin path is retag already-built `adaptive-trust-ci-{api,worker,runner}:2.1.0` and `docker push` those three names. Do not run `supply-chain-release.sh` (cosign absent). Keep only inspect RepoDigests that start with `ghcr.io/dimkox`. Write `name@sha256:` only to untracked `/tmp` env. Tracked examples stay `REPLACE_WITH_*`. Fail-closed on 401/403 or hostless digests. Do not `compose up`.
 
 ## Risks and mitigations
 

@@ -71,13 +71,16 @@ Copy the environment templates. Do not commit the resulting files:
 ```bash
 cd trust-ci
 mkdir -p runtime/control runtime/holdout
+cp .env.example .env
 cp env/common.env.example env/common.env
 cp env/api.env.example env/api.env
 cp env/worker.env.example env/worker.env
+cp env/migration.env.example env/migration.env
 cp env/postgres.env.example env/postgres.env
+cp env/backup.env.example env/backup.env
 cp config/policy.example.json runtime/policy.json
 cp config/trust-store.example.json runtime/trust-store.json
-chmod 600 env/*.env runtime/* 2>/dev/null || true
+chmod 600 env/*.env .env 2>/dev/null || true
 ```
 
 Replace every placeholder. `runtime/trust-store.json` remains invalid until a real human public key is inserted.
@@ -87,13 +90,13 @@ Replace every placeholder. `runtime/trust-store.json` remains invalid until a re
 The deployment and policy refuse mutable runner tags. Build API, worker and runner images, obtain immutable digests, and place those digests into the deployment environment and `runtime/policy.json`:
 
 ```bash
-docker compose --profile build build api worker runner-image
-docker image inspect adaptive-trust-ci-api:2.1.0 --format '{{.Id}}'
-docker image inspect adaptive-trust-ci-worker:2.1.0 --format '{{.Id}}'
-docker image inspect adaptive-trust-ci-runner:2.1.0 --format '{{.Id}}'
+docker compose -f compose.yaml -f compose.build.yaml --profile build build api worker runner-image
+docker image inspect "$TRUST_CI_API_IMAGE" --format '{{.Id}} {{index .RepoDigests 0}}'
+docker image inspect "$TRUST_CI_WORKER_IMAGE" --format '{{.Id}} {{index .RepoDigests 0}}'
+docker image inspect "$TRUST_CI_RUNNER_IMAGE" --format '{{.Id}} {{index .RepoDigests 0}}'
 ```
 
-Rebuilding the runner or changing any policy or holdout input changes the policy digest, changes the required check name, and intentionally invalidates old jobs and approvals.
+Inspect `$TRUST_CI_*_IMAGE`; do not inspect `adaptive-trust-ci-api:2.1.0`. Put measured `name@sha256:` values into untracked deploy env and host `runtime/policy.json`. Rebuilding the runner or changing any policy or holdout input changes the policy digest, changes the required check name, and intentionally invalidates old jobs and approvals.
 
 ### Install the external holdout bundle
 
@@ -260,10 +263,10 @@ python3 -m compileall -q trust-ci/src
 PostgreSQL integration and Compose validation:
 
 ```bash
-docker compose -f trust-ci/compose.test.yaml up --build --abort-on-container-exit --exit-code-from tests
+make trust-ci-postgres-test
+# or: docker compose -f trust-ci/compose.test.yaml up --build --abort-on-container-exit --exit-code-from postgres-integration
+docker compose -f trust-ci/compose.yaml -f trust-ci/compose.build.yaml --profile build build api worker runner-image
 docker compose -f trust-ci/compose.yaml config
-docker compose -f trust-ci/compose.yaml build api worker
-docker compose -f trust-ci/compose.yaml --profile build build runner-image
 ```
 
 The authoritative production gate is the App-owned, policy-epoch, signed exact-SHA Check Run produced by the deployed service. Local test output is development evidence only.

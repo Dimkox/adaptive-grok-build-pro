@@ -12,7 +12,7 @@ from typing import Iterator
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
-from adaptive_grok.protected_write import ProtectedWriteError, apply_manifest
+from adaptive_grok.protected_write import ProtectedWriteError, apply_manifest, load_manifest
 from adaptive_grok.router import build_route
 from adaptive_grok.state import add_approval, set_active_route
 from adaptive_grok.util import file_sha256
@@ -181,6 +181,59 @@ class ProtectedWriteTests(unittest.TestCase):
             result = apply_manifest(root, manifest, dry_run=True)
             self.assertTrue(result['dry_run'])
             self.assertEqual(target.read_bytes(), original)
+
+    def test_load_manifest_rejects_missing_invalid_and_duplicate_operations(self) -> None:
+        with github_project() as root:
+            missing = root.parent / 'does-not-exist.json'
+            with self.assertRaisesRegex(ProtectedWriteError, 'does not exist'):
+                load_manifest(missing)
+            broken = root.parent / 'broken.json'
+            broken.write_text('{', encoding='utf-8')
+            with self.assertRaisesRegex(ProtectedWriteError, 'cannot read'):
+                load_manifest(broken)
+            wrong_schema = root.parent / 'schema.json'
+            wrong_schema.write_text(json.dumps({'schema_version': 2, 'operations': [{}]}), encoding='utf-8')
+            with self.assertRaisesRegex(ProtectedWriteError, 'schema_version'):
+                load_manifest(wrong_schema)
+            empty = root.parent / 'empty.json'
+            empty.write_text(json.dumps({'schema_version': 1, 'operations': []}), encoding='utf-8')
+            with self.assertRaisesRegex(ProtectedWriteError, 'non-empty'):
+                load_manifest(empty)
+            not_object = root.parent / 'not-object.json'
+            not_object.write_text(json.dumps({'schema_version': 1, 'operations': ['nope']}), encoding='utf-8')
+            with self.assertRaisesRegex(ProtectedWriteError, 'must be an object'):
+                load_manifest(not_object)
+            no_path = root.parent / 'no-path.json'
+            no_path.write_text(json.dumps({'schema_version': 1, 'operations': [{'expected_sha256': 'MISSING'}]}), encoding='utf-8')
+            with self.assertRaisesRegex(ProtectedWriteError, 'non-empty path'):
+                load_manifest(no_path)
+            bad_hash = root.parent / 'bad-hash.json'
+            bad_hash.write_text(
+                json.dumps(
+                    {
+                        'schema_version': 1,
+                        'operations': [{'path': 'AGENTS.md', 'expected_sha256': 'not-a-hash', 'content': 'x\n'}],
+                    }
+                ),
+                encoding='utf-8',
+            )
+            with self.assertRaisesRegex(ProtectedWriteError, 'expected_sha256'):
+                load_manifest(bad_hash)
+            duplicate = root.parent / 'duplicate.json'
+            duplicate.write_text(
+                json.dumps(
+                    {
+                        'schema_version': 1,
+                        'operations': [
+                            {'path': 'AGENTS.md', 'expected_sha256': 'MISSING', 'content': 'a\n'},
+                            {'path': 'AGENTS.md', 'expected_sha256': 'MISSING', 'content': 'b\n'},
+                        ],
+                    }
+                ),
+                encoding='utf-8',
+            )
+            with self.assertRaisesRegex(ProtectedWriteError, 'duplicate operation path'):
+                load_manifest(duplicate)
 
 
 if __name__ == '__main__':

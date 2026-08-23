@@ -53,7 +53,7 @@ class StructureTests(unittest.TestCase):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertTrue(readme.startswith(f"# Adaptive Grok Build Pro v{version}\n"))
 
-    def test_readme_local_stack_graph_is_complete_k10(self) -> None:
+    def test_readme_stack_graph_is_complete(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         nodes = [
             "Route",
@@ -66,6 +66,12 @@ class StructureTests(unittest.TestCase):
             "Contract",
             "Decisions",
             "Mistakes",
+            "TrustAPI",
+            "TrustWorker",
+            "Postgres",
+            "Runner",
+            "Holdout",
+            "GitHubApp",
         ]
         missing = []
         for left, right in itertools.combinations(nodes, 2):
@@ -77,7 +83,7 @@ class StructureTests(unittest.TestCase):
         mermaid = re.search(r"```mermaid\n(.*?)```", readme, re.S)
         self.assertIsNotNone(mermaid)
         edge_lines = [line for line in mermaid.group(1).splitlines() if re.search(r"\S+ --- \S+", line)]
-        self.assertEqual(len(edge_lines), 45)
+        self.assertEqual(len(edge_lines), len(list(itertools.combinations(nodes, 2))))
 
     def test_no_github_actions_workflow_exists(self) -> None:
         self.assertFalse((ROOT / ".github/workflows").exists())

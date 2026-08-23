@@ -108,9 +108,26 @@ class PackageTests(unittest.TestCase):
             self.assertIn('adaptive-grok-build-pro/keep.txt', names)
             self.assertFalse(any(name.endswith('err.log') for name in names))
 
+
+    def test_scratch_build_pin_env_and_leftover_change_are_not_packaged(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            root.mkdir()
+            (root / 'README.md').write_text('ok\n', encoding='utf-8')
+            scratch = root / 'build'
+            scratch.mkdir()
+            (scratch / 'adaptive-trust-ci-pin.env').write_text('SECRET=1\n', encoding='utf-8')
+            leftover = root / 'engineering/changes/20260817-user-query-leave-old'
+            leftover.mkdir(parents=True)
+            (leftover / 'brief.md').write_text('nope\n', encoding='utf-8')
+            rels = [path.relative_to(root).as_posix() for path in included_files(root)]
+            self.assertIn('README.md', rels)
+            self.assertNotIn('build/adaptive-trust-ci-pin.env', rels)
+            self.assertFalse(any('20260817-' in rel for rel in rels))
+
     def test_included_files_and_shipped_zip_have_no_github_actions(self) -> None:
         version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
-        self.assertEqual(version, '2.0.11')
+        self.assertEqual(version, '2.0.12')
         rels = [path.relative_to(ROOT).as_posix() for path in included_files(ROOT)]
         self.assertFalse(any(rel.startswith('.github/workflows/') for rel in rels))
         self.assertNotIn('.github/dependabot.yml', rels)
@@ -121,7 +138,7 @@ class PackageTests(unittest.TestCase):
                 names = archive.namelist()
                 member = 'adaptive-grok-build-pro/VERSION'
                 self.assertIn(member, names)
-                self.assertEqual(archive.read(member).decode('utf-8').strip(), '2.0.11')
+                self.assertEqual(archive.read(member).decode('utf-8').strip(), '2.0.12')
                 self.assertFalse(any('.github/workflows/' in name for name in names))
                 self.assertFalse(any(name.endswith('dependabot.yml') for name in names))
                 self.assertFalse(any(name.endswith('github-actions.yml') for name in names))
