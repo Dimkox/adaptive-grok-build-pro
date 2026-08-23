@@ -9,7 +9,8 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 - Local feedback: `python3 scripts/grok_verify.py --mode pr`.
 - Independent gate: [`.github/workflows/trusted-ci.yml`](.github/workflows/trusted-ci.yml) runs strict verification on the exact pull-request SHA with Python 3.10 and 3.12, then builds the package.
 - Release gate: [`.github/workflows/release.yml`](.github/workflows/release.yml) targets the protected `production` Environment and publishes only the exact verified `main` SHA.
-- The workflows become authoritative only after the settings in [docs/TRUST-BOUNDARY.md](docs/TRUST-BOUNDARY.md) are enabled.
+- [docs/TRUST-BOUNDARY.md](docs/TRUST-BOUNDARY.md) defines a workable solo owner mode and a stronger split identity mode; GitHub's review settings differ because an author cannot approve their own pull request or an Environment run when self-review prevention applies.
+- The workflows become authoritative only after the selected settings in [docs/TRUST-BOUNDARY.md](docs/TRUST-BOUNDARY.md) are enabled.
 - Do not add `pyproject.toml`, `requirements.txt`, or `setup.py`; those files change repository detection and test-runner selection.
 
 ## Read first
@@ -25,7 +26,9 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## How work runs
 
-The local loop is route → durable change package → one write owner → verification → independent reviews → `ready`. Delivery then leaves the agent trust domain: feature branch → pull request → exact-SHA `trusted-ci` → human CODEOWNER approval → protected merge into `main`. A human dispatches the release workflow, and the required reviewer approves the `production` Environment before tagging or publication.
+The local loop is route → durable change package → one write owner → verification → independent reviews → `ready`. Delivery then leaves the agent trust domain: feature branch → pull request → exact-SHA `trusted-ci` → configured human gate → protected merge into `main`.
+
+In solo owner mode, the owner inspects and manually merges after green checks; required approving reviews remain zero because the same GitHub account authored the pull request. In split identity mode, a separate bot or collaborator authors the pull request and a human CODEOWNER approves it. Release follows the matching Environment mode: owner dispatch and owner approval with self-review prevention disabled for solo operation, or separate dispatch plus owner approval with self-review prevention enabled for stronger separation.
 
 `scripts/grok_approve.py` records a request only. It never grants permission to push, merge, dispatch workflows, edit the control plane, mutate external systems, or publish.
 
@@ -207,7 +210,7 @@ Local loop: route → change → verify → independent reviews → `ready`. `gr
 
 Lifecycle adapters live in `.grok/hooks/` and are registered in `.grok/hooks.json` and `.grok/hooks/adaptive.json`. Hooks classify prompts, protect secrets and Bitrix core, deny control-plane writes, and block real side-effect invocations while policy is healthy.
 
-Hooks retain fail-open recovery behavior so a broken local import cannot freeze Grok. They are not the independent security boundary. Required GitHub checks, CODEOWNERS, protected `main`, and the `production` Environment provide that boundary. See [docs/TRUST-BOUNDARY.md](docs/TRUST-BOUNDARY.md).
+Hooks retain fail-open recovery behavior so a broken local import cannot freeze Grok. They are not the independent security boundary. Required GitHub checks, the configured human merge gate, CODEOWNERS in split identity mode, protected `main`, and the `production` Environment provide that boundary. See [docs/TRUST-BOUNDARY.md](docs/TRUST-BOUNDARY.md).
 
 ## Package
 
