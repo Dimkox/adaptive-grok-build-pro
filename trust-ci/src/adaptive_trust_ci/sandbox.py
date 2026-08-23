@@ -28,11 +28,16 @@ class ContainerExecutor:
         command: tuple[str, ...],
         env: dict[str, str],
         container_name: str,
+        workspace_host_path: Path,
         holdout_path: Path | None = None,
+        holdout_host_path: Path | None = None,
     ) -> list[str]:
         resolved = workspace.resolve()
         if not resolved.is_dir() or not (resolved / '.git').is_dir():
             raise ValueError(f'sandbox workspace is not an exact git checkout: {resolved}')
+        host_workspace = Path(workspace_host_path)
+        if not host_workspace.is_absolute():
+            raise ValueError('workspace_host_path must be absolute on the Docker daemon host')
         argv = [
             self.sandbox.runtime,
             'run',
@@ -61,19 +66,24 @@ class ContainerExecutor:
             '--user',
             self.sandbox.user,
             '--volume',
-            f'{resolved}:/workspace:rw',
+            f'{host_workspace}:/workspace:rw',
             '--volume',
-            f'{resolved / ".git"}:/workspace/.git:ro',
+            f'{host_workspace / ".git"}:/workspace/.git:ro',
             '--workdir',
             '/workspace',
         ]
-        if holdout_path is not None:
+        if (holdout_path is None) != (holdout_host_path is None):
+            raise ValueError('holdout local and host paths must be supplied together')
+        if holdout_path is not None and holdout_host_path is not None:
             trusted = holdout_path.resolve()
             if not trusted.is_dir():
                 raise ValueError(f'holdout directory does not exist: {trusted}')
             if trusted == resolved or resolved in trusted.parents or trusted in resolved.parents:
                 raise ValueError('holdout must live outside the pull-request checkout')
-            argv.extend(('--volume', f'{trusted}:/holdout:ro'))
+            host_holdout = Path(holdout_host_path)
+            if not host_holdout.is_absolute():
+                raise ValueError('holdout_host_path must be absolute on the Docker daemon host')
+            argv.extend(('--volume', f'{host_holdout}:/holdout:ro'))
         for key, value in sorted(env.items()):
             argv.extend(('--env', f'{key}={value}'))
         argv.append(self.sandbox.image)
@@ -87,7 +97,9 @@ class ContainerExecutor:
         env: dict[str, str],
         max_output_bytes: int,
         *,
+        workspace_host_path: Path,
         holdout_path: Path | None = None,
+        holdout_host_path: Path | None = None,
     ) -> CommandResult:
         started = time.monotonic()
         if shutil.which(self.sandbox.runtime, path=os.environ.get('PATH')) is None:
@@ -108,7 +120,9 @@ class ContainerExecutor:
             command=spec.argv,
             env=env,
             container_name=container_name,
+            workspace_host_path=workspace_host_path,
             holdout_path=holdout_path,
+            holdout_host_path=holdout_host_path,
         )
         with tempfile.TemporaryFile() as stdout_file, tempfile.TemporaryFile() as stderr_file:
             try:
