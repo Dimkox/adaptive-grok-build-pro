@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:17.6-bookworm
+    image: ${TRUST_CI_POSTGRES_IMAGE:?set immutable postgres image name@sha256 digest}
     restart: unless-stopped
     env_file:
       - ./env/postgres.env
@@ -15,10 +15,7 @@ services:
       - trust-ci
 
   migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    image: adaptive-trust-ci-api:2.1.0
+    image: ${TRUST_CI_API_IMAGE:?set immutable API image name@sha256 digest}
     env_file:
       - ./env/common.env
     volumes:
@@ -32,10 +29,7 @@ services:
     restart: "no"
 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    image: adaptive-trust-ci-api:2.1.0
+    image: ${TRUST_CI_API_IMAGE:?set immutable API image name@sha256 digest}
     restart: unless-stopped
     read_only: true
     cap_drop: ["ALL"]
@@ -64,10 +58,7 @@ services:
       - trust-ci
 
   worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    image: adaptive-trust-ci-worker:2.1.0
+    image: ${TRUST_CI_WORKER_IMAGE:?set immutable worker image name@sha256 digest}
     restart: unless-stopped
     read_only: true
     cap_drop: ["ALL"]
@@ -83,7 +74,9 @@ services:
       - ./env/worker.env
     volumes:
       - ./runtime/policy.json:/etc/adaptive-trust-ci/policy.json:ro
+      - ./runtime/holdout:/etc/adaptive-trust-ci/holdout:ro
       - ./runtime/trust-ci-signing-key.pem:/run/secrets/trust-ci-signing-key.pem:ro
+      - ./runtime/github-app-private-key.pem:/run/secrets/github-app-private-key.pem:ro
       - ./runtime/control:/run/adaptive-trust-ci
       - trust-ci-workspaces:/var/lib/adaptive-trust-ci/workspaces
       - /var/run/docker.sock:/var/run/docker.sock
@@ -92,14 +85,6 @@ services:
         condition: service_completed_successfully
     networks:
       - trust-ci
-
-  runner-image:
-    profiles: ["build"]
-    build:
-      context: .
-      dockerfile: runner.Dockerfile
-    image: adaptive-trust-ci-runner:2.1.0
-    command: ["python3", "--version"]
 
 volumes:
   trust-ci-postgres:
