@@ -18,11 +18,13 @@ class SupplyChainTests(unittest.TestCase):
         self.assertIn('cosign sign', script)
         self.assertIn('supply-chain.manifest.json', script)
         self.assertIn('supply-chain.manifest.json.sha256', script)
+        self.assertIn('artifacts_sha256', script)
         self.assertIn('confirm-push', script)
 
-    def test_deployment_verifier_checks_manifest_digest_and_cosign(self) -> None:
+    def test_deployment_verifier_checks_manifest_digest_artifacts_and_cosign(self) -> None:
         script = (ROOT / 'trust-ci/scripts/verify-supply-chain.sh').read_text(encoding='utf-8')
         self.assertIn('sha256sum --check', script)
+        self.assertIn('artifacts_sha256', script)
         self.assertIn('cosign verify', script)
         self.assertIn('docker pull', script)
         self.assertIn('policy.json', script)
