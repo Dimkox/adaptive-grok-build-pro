@@ -9,6 +9,9 @@ Published identity remains `2.0.11`; these changes are proposed through the prot
 - Added a `production` Environment release workflow that verifies, packages, tags, and publishes the exact merged `main` SHA
 - Converted `grok_approve.py` from a local grant into a non-authorizing request bound to route, Git HEAD, and tree fingerprint
 - Made production commands, workflow dispatch, MCP writes, and control-plane edits non-bypassable from Grok policy
+- Closed common shell bypasses for control-plane mutation, wrapped Git/GitHub commands, and direct HTTP writes
+- Extended immutable policy and CODEOWNERS to package builders, release artifacts, trust-boundary tests, and governance runbooks
+- Retired executable tag, push, release, and rollback commands from historical publish runbooks
 - Added CODEOWNERS and the branch-protection and Environment runbook in `docs/TRUST-BOUNDARY.md`
 - Superseded direct-push and local-only quality-gate standing rules
 
