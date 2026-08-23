@@ -1,0 +1,19 @@
+[Unit]
+Description=Adaptive Trust CI PostgreSQL backup
+Requires=docker.service
+After=docker.service adaptive-trust-ci-compose.service
+
+[Service]
+Type=oneshot
+UMask=0077
+EnvironmentFile=/etc/adaptive-trust-ci/backup.env
+ExecStartPre=/usr/bin/install -d -m 0700 ${TRUST_CI_BACKUP_DIR}
+ExecStart=/bin/sh -ec 'cd "$TRUST_CI_COMPOSE_DIRECTORY"; exec /usr/bin/docker compose run --rm --no-deps --volume "$TRUST_CI_BACKUP_DIR:/var/backups/adaptive-trust-ci" api backup-create --output-dir /var/backups/adaptive-trust-ci --database-label "$TRUST_CI_BACKUP_DATABASE_LABEL"'
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=${TRUST_CI_BACKUP_DIR} /run /var/run
