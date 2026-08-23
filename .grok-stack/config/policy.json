@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "protected_paths": [
     ".git/**",
     ".env",
@@ -10,7 +10,24 @@
     "**/*.key",
     "**/*.p12",
     "**/*.pfx",
-    "bitrix/**"
+    "bitrix/**",
+    ".grok/**",
+    ".grok-stack/**",
+    ".github/**",
+    "AGENTS.md",
+    "scripts/grok_ci.py",
+    "scripts/grok_ci_verify.py",
+    "scripts/grok_approve.py",
+    "scripts/grok_verify.py",
+    "scripts/install_self_hosted_ci.py",
+    "scripts/install_into.py",
+    "scripts/package_stack.py",
+    "ops/self-hosted-ci/**",
+    "tests/test_ci_*.py",
+    ".coveragerc",
+    "ruff.toml",
+    "bandit.yaml",
+    "VERSION"
   ],
   "secret_read_paths": [
     ".env",
@@ -24,11 +41,14 @@
     "**/id_rsa",
     "**/id_ed25519",
     "**/credentials*",
-    "**/secrets/**"
+    "**/secrets/**",
+    "/etc/adaptive-grok-ci/**",
+    "/var/lib/adaptive-grok-ci/**"
   ],
   "notes": [
-    "Bitrix core is protected by default. Put custom code in local/.",
-    "Use scripts/grok_approve.py for short-lived exceptional approvals.",
-    "Hooks are guardrails, not a complete OS security boundary."
+    "Local hooks are advisory and fail-open for agent availability; they are not merge authority.",
+    "The root-owned self-hosted CI is the authoritative exact-SHA gate.",
+    "Prompt memory files are not trusted policy. Trusted control-plane changes require an external signed approval.",
+    "Bitrix core is protected by default. Put custom code in local/."
   ]
 }
