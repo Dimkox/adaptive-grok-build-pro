@@ -225,8 +225,8 @@ class Policy:
         normalized_repositories = tuple(sorted({str(item).strip() for item in repositories if str(item).strip()}))
         status_context = str(data.get('status_context', '')).strip()
         pipeline = str(data.get('pipeline', '')).strip()
-        if not status_context or not pipeline:
-            raise PolicyError('status_context and pipeline are required')
+        if not status_context or '@' in status_context or not pipeline:
+            raise PolicyError('status_context prefix and pipeline are required; policy epoch is appended automatically')
         normalized = {
             'schema_version': 1,
             'allowed_repositories': list(normalized_repositories),
@@ -261,6 +261,11 @@ class Policy:
             approval_rules=parsed_rules,
             digest=digest,
         )
+
+    @property
+    def check_name(self) -> str:
+        """Policy epoch: a green check from an old policy cannot satisfy the new gate."""
+        return f'{self.status_context}@{self.digest[:12]}'
 
     @property
     def approval_scopes(self) -> frozenset[str]:
