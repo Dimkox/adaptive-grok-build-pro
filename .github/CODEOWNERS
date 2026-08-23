@@ -1,7 +1,11 @@
 # The trust boundary is human-owned.
+/.github/ @Dimkox
 /.github/** @Dimkox
+/.agents/ @Dimkox
 /.agents/** @Dimkox
+/.grok/ @Dimkox
 /.grok/** @Dimkox
+/.grok-stack/ @Dimkox
 /.grok-stack/** @Dimkox
 /.gitignore @Dimkox
 /packages/** @Dimkox
