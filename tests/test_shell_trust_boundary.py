@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
-from adaptive_grok.policy import evaluate_pre_tool
+from adaptive_grok.policy import DEFAULT_CONTROL_PLANE, evaluate_pre_tool
 from tests._support import project_copy
 
 
@@ -108,12 +108,14 @@ class ShellTrustBoundaryTests(unittest.TestCase):
             (ROOT / '.grok-stack/config/policy.json').read_text(encoding='utf-8'),
         )
         protected = set(policy['control_plane_paths'])
+        defaults = set(DEFAULT_CONTROL_PLANE)
         codeowners = (ROOT / '.github/CODEOWNERS').read_text(encoding='utf-8')
 
         expected = (*BOUNDARY_PATHS, 'tests/test_shell_trust_boundary.py')
         for path in expected:
             with self.subTest(path=path):
                 self.assertIn(path, protected)
+                self.assertIn(path, defaults)
                 self.assertIn(f'/{path} @Dimkox', codeowners)
 
     def test_historical_publish_runbooks_have_no_executable_release_path(self) -> None:
