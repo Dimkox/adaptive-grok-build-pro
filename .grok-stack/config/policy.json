@@ -1,5 +1,37 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "control_plane_paths": [
+    ".agents/**",
+    ".grok/**",
+    ".grok-stack/**",
+    ".github/**",
+    "AGENTS.md",
+    "README.md",
+    "CHANGELOG.md",
+    "VERSION",
+    "decisions.md",
+    "mistakes.md",
+    "Makefile",
+    "ruff.toml",
+    "bandit.yaml",
+    ".coveragerc",
+    "scripts/grok_*.py",
+    "user_prompt_submit.py",
+    "pre_tool_use.py",
+    "post_tool_use.py",
+    "pre_compact.py",
+    "session_start.py",
+    "session_end.py",
+    "stop_gate.py",
+    "subagent_start.py",
+    "subagent_stop.py",
+    "docs/TRUST-BOUNDARY.md",
+    "tests/test_policy.py",
+    "tests/test_deploy.py",
+    "tests/test_manifest_package.py",
+    "tests/test_structure.py",
+    "tests/test_trust_boundary.py"
+  ],
   "protected_paths": [
     ".git/**",
     ".env",
@@ -27,8 +59,10 @@
     "**/secrets/**"
   ],
   "notes": [
+    "Control-plane files are immutable from Grok tools.",
+    "Production and external side effects use protected PR or Environment workflows.",
+    "scripts/grok_approve.py records a request and grants no authorization.",
     "Bitrix core is protected by default. Put custom code in local/.",
-    "Use scripts/grok_approve.py for short-lived exceptional approvals.",
-    "Hooks are guardrails, not a complete OS security boundary."
+    "Hooks are guardrails, not an operating-system security boundary."
   ]
 }

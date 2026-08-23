@@ -5,32 +5,76 @@ import re
 from pathlib import Path
 from typing import Any
 
-from .state import active_write_agents, get_active_route, has_valid_approval
+from .state import active_write_agents, get_active_route
 from .util import load_json, safe_relative_path
 
 WRITE_ROLES = {
-    'general_implementer', 'php_implementer', 'bitrix_implementer', 'frontend_implementer',
-    'integration_implementer', 'data_implementer', 'ai_implementer',
+    'general_implementer',
+    'php_implementer',
+    'bitrix_implementer',
+    'frontend_implementer',
+    'integration_implementer',
+    'data_implementer',
+    'ai_implementer',
 }
 
-
-def write_roles(root: Path) -> set[str]:
-    data = load_json(root / '.grok-stack/config/routing.json', None)
-    if isinstance(data, dict):
-        roles = data.get('write_roles')
-        if isinstance(roles, list):
-            names = {str(item).strip() for item in roles if isinstance(item, str) and item.strip()}
-            if names:
-                return names
-    return set(WRITE_ROLES)
-
+DEFAULT_CONTROL_PLANE = [
+    '.agents/**',
+    '.grok/**',
+    '.grok-stack/**',
+    '.github/**',
+    'AGENTS.md',
+    'README.md',
+    'CHANGELOG.md',
+    'VERSION',
+    'decisions.md',
+    'mistakes.md',
+    'Makefile',
+    'ruff.toml',
+    'bandit.yaml',
+    '.coveragerc',
+    'scripts/grok_*.py',
+    'user_prompt_submit.py',
+    'pre_tool_use.py',
+    'post_tool_use.py',
+    'pre_compact.py',
+    'session_start.py',
+    'session_end.py',
+    'stop_gate.py',
+    'subagent_start.py',
+    'subagent_stop.py',
+    'docs/TRUST-BOUNDARY.md',
+    'tests/test_policy.py',
+    'tests/test_deploy.py',
+    'tests/test_manifest_package.py',
+    'tests/test_structure.py',
+    'tests/test_trust_boundary.py',
+]
 DEFAULT_PROTECTED = [
-    '.git/**', '.env', '.env.*', '**/.env', '**/.env.*', '**/*.pem', '**/*.key', '**/*.p12', '**/*.pfx',
+    '.git/**',
+    '.env',
+    '.env.*',
+    '**/.env',
+    '**/.env.*',
+    '**/*.pem',
+    '**/*.key',
+    '**/*.p12',
+    '**/*.pfx',
     'bitrix/**',
 ]
 DEFAULT_SECRET_READ = [
-    '.env', '.env.*', '**/.env', '**/.env.*', '**/*.pem', '**/*.key', '**/*.p12', '**/*.pfx',
-    '**/id_rsa', '**/id_ed25519', '**/credentials*', '**/secrets/**',
+    '.env',
+    '.env.*',
+    '**/.env',
+    '**/.env.*',
+    '**/*.pem',
+    '**/*.key',
+    '**/*.p12',
+    '**/*.pfx',
+    '**/id_rsa',
+    '**/id_ed25519',
+    '**/credentials*',
+    '**/secrets/**',
 ]
 DESTRUCTIVE_COMMANDS = [
     r'\bgit\s+reset\s+--hard\b',
@@ -48,6 +92,7 @@ DESTRUCTIVE_COMMANDS = [
 PRODUCTION_INVOCATIONS = (
     ('git', 'push'),
     ('gh', 'pr', 'merge'),
+    ('gh', 'workflow', 'run'),
     ('docker', 'push'),
     ('npm', 'publish'),
     ('gh', 'release', 'create'),
@@ -74,17 +119,48 @@ SIDE_EFFECT_TOOL = re.compile(
 )
 
 
+def write_roles(root: Path) -> set[str]:
+    data = load_json(root / '.grok-stack/config/routing.json', None)
+    if isinstance(data, dict):
+        roles = data.get('write_roles')
+        if isinstance(roles, list):
+            names = {
+                str(item).strip()
+                for item in roles
+                if isinstance(item, str) and item.strip()
+            }
+            if names:
+                return names
+    return set(WRITE_ROLES)
+
+
 def _glob_match(path: str, pattern: str) -> bool:
     normalized = path.replace('\\', '/').lstrip('./')
     candidate = pattern.replace('\\', '/').lstrip('./')
     return fnmatch.fnmatchcase(normalized, candidate)
 
 
+def _matches_any(path: str, patterns: list[str]) -> bool:
+    return any(_glob_match(path, pattern) for pattern in patterns)
+
+
 def _extract_paths(value: Any) -> list[str]:
     paths: list[str] = []
     if isinstance(value, dict):
         for key, item in value.items():
-            if key.lower() in {'path', 'file', 'filename', 'file_path', 'filepath', 'directory', 'target'} and isinstance(item, str):
+            if (
+                key.lower()
+                in {
+                    'path',
+                    'file',
+                    'filename',
+                    'file_path',
+                    'filepath',
+                    'directory',
+                    'target',
+                }
+                and isinstance(item, str)
+            ):
                 paths.append(item)
             else:
                 paths.extend(_extract_paths(item))
@@ -139,7 +215,7 @@ def is_production_invocation(command: str) -> bool:
         for piece in _command_chunks(inner):
             argv = _leading_argv(piece)
             for prefix in PRODUCTION_INVOCATIONS:
-                if argv[:len(prefix)] == list(prefix):
+                if argv[: len(prefix)] == list(prefix):
                     return True
     return False
 
@@ -154,29 +230,56 @@ def _agent_type(tool_input: Any) -> str | None:
     return None
 
 
-def evaluate_pre_tool(root: Path, event: dict[str, Any]) -> tuple[bool, str | None]:
+def evaluate_pre_tool(
+    root: Path,
+    event: dict[str, Any],
+) -> tuple[bool, str | None]:
     tool = str(event.get('tool_name', ''))
     tool_input = event.get('tool_input') or {}
     route = get_active_route(root)
     config = load_json(root / '.grok-stack/config/policy.json', {}) or {}
+    control_plane = config.get('control_plane_paths', DEFAULT_CONTROL_PLANE)
     protected = config.get('protected_paths', DEFAULT_PROTECTED)
     secret_read = config.get('secret_read_paths', DEFAULT_SECRET_READ)
 
     if tool == 'Bash':
-        command = str(tool_input.get('command', '')) if isinstance(tool_input, dict) else str(tool_input)
-        for pattern in config.get('destructive_command_patterns', DESTRUCTIVE_COMMANDS):
+        command = (
+            str(tool_input.get('command', ''))
+            if isinstance(tool_input, dict)
+            else str(tool_input)
+        )
+        for pattern in config.get(
+            'destructive_command_patterns',
+            DESTRUCTIVE_COMMANDS,
+        ):
             if re.search(pattern, command, flags=re.IGNORECASE):
-                return False, f'Blocked destructive command by repository policy: {pattern}'
+                return False, (
+                    'Blocked destructive command by repository policy: '
+                    f'{pattern}'
+                )
         if is_production_invocation(command):
-            if not has_valid_approval(root, 'production'):
-                return False, 'Production/publish side effect requires explicit approval: python scripts/grok_approve.py production --reason "..."'
+            return False, (
+                'Production/publish side effects are not executable from Grok. '
+                'Use a protected pull request or GitHub Environment workflow.'
+            )
 
     candidate_paths = _extract_paths(tool_input)
     if tool == 'apply_patch' and isinstance(tool_input, dict):
-        candidate_paths.extend(_extract_patch_paths(str(tool_input.get('command', ''))))
+        candidate_paths.extend(
+            _extract_patch_paths(str(tool_input.get('command', '')))
+        )
 
-    is_read = tool.lower() in {'read', 'read_file', 'open_file', 'fs_read'} or ('read' in tool.lower() and tool.startswith('mcp__'))
-    is_write = tool in {'apply_patch', 'Edit', 'Write'} or any(word in tool.lower() for word in ('write_file', 'edit_file', 'delete_file'))
+    lowered_tool = tool.lower()
+    is_read = lowered_tool in {
+        'read',
+        'read_file',
+        'open_file',
+        'fs_read',
+    } or ('read' in lowered_tool and tool.startswith('mcp__'))
+    is_write = tool in {'apply_patch', 'Edit', 'Write'} or any(
+        word in lowered_tool
+        for word in ('write_file', 'edit_file', 'delete_file')
+    )
 
     normalized: list[str] = []
     for raw in candidate_paths:
@@ -189,32 +292,49 @@ def evaluate_pre_tool(root: Path, event: dict[str, Any]) -> tuple[bool, str | No
 
     if is_read:
         for rel in normalized:
-            if any(_glob_match(rel, pattern) for pattern in secret_read):
+            if _matches_any(rel, secret_read):
                 return False, f'Reading secret material is blocked: {rel}'
 
     if is_write:
         for rel in normalized:
-            if any(_glob_match(rel, pattern) for pattern in protected):
-                if not has_valid_approval(root, 'protected-path'):
-                    return False, f'Protected path edit blocked: {rel}. Prefer local/ for Bitrix customizations.'
+            if _matches_any(rel, control_plane):
+                return False, (
+                    f'Control-plane path edit blocked: {rel}. '
+                    'Use a protected pull request reviewed by CODEOWNERS.'
+                )
+            if _matches_any(rel, protected):
+                return False, (
+                    f'Protected path edit blocked: {rel}. '
+                    'Prefer local/ for Bitrix customizations.'
+                )
 
-    if tool == 'Agent' or tool.lower() in {'spawn_agent', 'agent'}:
+    if tool == 'Agent' or lowered_tool in {'spawn_agent', 'agent'}:
         agent_type = _agent_type(tool_input)
         if route and agent_type:
             allowed = set(route.get('allowed_agents', []))
             if agent_type not in allowed:
-                return False, f'Agent {agent_type} is outside active route {route.get("route_id")}; allowed: {sorted(allowed)}'
+                return False, (
+                    f'Agent {agent_type} is outside active route '
+                    f'{route.get("route_id")}; allowed: {sorted(allowed)}'
+                )
             roles = write_roles(root)
             if agent_type in roles:
                 expected = route.get('write_agent')
                 if expected != agent_type:
-                    return False, f'Route permits only write owner {expected}, not {agent_type}'
+                    return False, (
+                        f'Route permits only write owner {expected}, '
+                        f'not {agent_type}'
+                    )
                 active = active_write_agents(root, roles)
                 if active and agent_type not in active:
-                    return False, f'Another write agent is already active: {active}'
+                    return False, (
+                        f'Another write agent is already active: {active}'
+                    )
 
     if tool.startswith('mcp__') and SIDE_EFFECT_TOOL.search(tool):
-        if not has_valid_approval(root, 'external-write'):
-            return False, f'MCP side-effect tool {tool} requires explicit external-write approval.'
+        return False, (
+            f'MCP side-effect tool {tool} is not executable from Grok. '
+            'Use a human-owned integration path.'
+        )
 
     return True, None
