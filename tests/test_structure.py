@@ -15,8 +15,16 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 class StructureTests(unittest.TestCase):
     def test_required_files_exist(self) -> None:
         for rel in (
-            'AGENTS.md', 'README.md', '.grok/config.toml', '.grok/hooks.json',
-            '.agents/skills/adaptive-delivery/SKILL.md', 'scripts/grok_route.py',
+            'AGENTS.md',
+            'README.md',
+            '.grok/config.toml',
+            '.grok/hooks.json',
+            '.agents/skills/adaptive-delivery/SKILL.md',
+            'scripts/grok_route.py',
+            '.github/workflows/trusted-ci.yml',
+            '.github/workflows/release.yml',
+            '.github/CODEOWNERS',
+            'docs/TRUST-BOUNDARY.md',
             'LICENSE',
         ):
             self.assertTrue((ROOT / rel).is_file(), rel)
@@ -74,18 +82,19 @@ class StructureTests(unittest.TestCase):
         text = (ROOT / 'README.md').read_text(encoding='utf-8')
         self.assertIn('QUICKSTART.md', text)
         self.assertIn('CHANGELOG.md', text)
+        self.assertIn('docs/TRUST-BOUNDARY.md', text)
         self.assertIn('2.0.11', text)
 
-    def test_agents_md_requires_readme_refresh_before_push(self) -> None:
+    def test_agents_md_requires_readme_refresh_before_delivery(self) -> None:
         text = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
-        self.assertIn('## README before push', text)
-        self.assertIn('git push', text)
+        self.assertIn('## README before delivery', text)
+        self.assertIn('pull request', text)
         self.assertIn('grok_deploy', text)
         self.assertIn('complete', text)
 
-    def test_decisions_md_records_readme_before_push(self) -> None:
+    def test_decisions_md_records_readme_before_delivery(self) -> None:
         text = (ROOT / 'decisions.md').read_text(encoding='utf-8')
-        self.assertIn('README is the push-time product map', text)
+        self.assertIn('README is the delivery-time product map', text)
 
     def test_agents_md_splits_large_tasks(self) -> None:
         text = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
@@ -97,22 +106,26 @@ class StructureTests(unittest.TestCase):
         text = (ROOT / 'decisions.md').read_text(encoding='utf-8')
         self.assertIn('Split one large task', text)
 
-    def test_agents_md_releases_when_green(self) -> None:
+    def test_agents_md_uses_protected_delivery_when_green(self) -> None:
         text = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
-        self.assertIn('## Release when green', text)
-        self.assertIn('gh release create', text)
-        self.assertIn('git push origin main', text)
-        headings = [line for line in text.splitlines() if line.startswith('## ')]
-        self.assertIn('## Release when green', headings)
+        self.assertIn('## Protected delivery when green', text)
+        self.assertIn('trusted-ci', text)
+        self.assertIn('CODEOWNER', text)
+        self.assertIn('production', text)
+        self.assertNotIn('git push origin main', text)
+        self.assertNotIn('gh release create', text)
 
     def test_agents_md_skips_noop_checks(self) -> None:
         text = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
         self.assertIn('## Skip no-op checks', text)
         self.assertIn('did not change', text)
 
-    def test_decisions_md_records_green_verify_means_release(self) -> None:
+    def test_decisions_md_records_protected_delivery(self) -> None:
         text = (ROOT / 'decisions.md').read_text(encoding='utf-8')
-        self.assertIn('Green verify means a new release', text)
+        self.assertIn('Green verify means protected delivery', text)
+        self.assertIn('Protected PR and Environment are the authority', text)
+        self.assertIn('Approval files are requests, never grants', text)
+        self.assertIn('Superseded: local-only quality gate', text)
 
     def test_readme_stack_graph_is_complete(self) -> None:
         text = (ROOT / 'README.md').read_text(encoding='utf-8')
@@ -124,8 +137,16 @@ class StructureTests(unittest.TestCase):
         self.assertGreater(end, body_start, 'unclosed mermaid fence')
         mermaid = text[body_start:end]
         required = (
-            'Route', 'Skills', 'Agents', 'Hooks', 'Policy',
-            'Verify', 'Packages', 'Contract', 'Decisions', 'Mistakes',
+            'Route',
+            'Skills',
+            'Agents',
+            'Hooks',
+            'Policy',
+            'Verify',
+            'Packages',
+            'Contract',
+            'Decisions',
+            'Mistakes',
         )
         for node_id in required:
             self.assertIn(node_id, mermaid, node_id)
@@ -148,7 +169,11 @@ class StructureTests(unittest.TestCase):
             edges.add(frozenset((left, right)))
 
         self.assertEqual(nodes, set(required))
-        self.assertEqual(len(edges), 45, f'expected 45 unique undirected edges, got {len(edges)}')
+        self.assertEqual(
+            len(edges),
+            45,
+            f'expected 45 unique undirected edges, got {len(edges)}',
+        )
         expected = {frozenset(pair) for pair in combinations(required, 2)}
         self.assertEqual(len(expected), 45)
         self.assertEqual(edges, expected)
@@ -167,15 +192,24 @@ class StructureTests(unittest.TestCase):
         self.assertIn('no paid tier', lowered)
 
     def test_grok_config_is_valid_toml(self) -> None:
-        data = tomllib.loads((ROOT / '.grok/config.toml').read_text(encoding='utf-8'))
+        data = tomllib.loads(
+            (ROOT / '.grok/config.toml').read_text(encoding='utf-8')
+        )
         self.assertEqual(data['sandbox_mode'], 'workspace-write')
         self.assertTrue(data['features']['hooks'])
 
     def test_hooks_are_valid_and_cover_lifecycle(self) -> None:
         data = json.loads((ROOT / '.grok/hooks.json').read_text(encoding='utf-8'))
         expected = {
-            'SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse',
-            'PreCompact', 'SubagentStart', 'SubagentStop', 'Stop', 'SessionEnd',
+            'SessionStart',
+            'UserPromptSubmit',
+            'PreToolUse',
+            'PostToolUse',
+            'PreCompact',
+            'SubagentStart',
+            'SubagentStop',
+            'Stop',
+            'SessionEnd',
         }
         self.assertTrue(expected.issubset(data['hooks']))
         for entries in data['hooks'].values():
@@ -184,7 +218,9 @@ class StructureTests(unittest.TestCase):
                     self.assertIn('commandWindows', hook)
 
     def test_adaptive_hooks_are_path_qualified(self) -> None:
-        data = json.loads((ROOT / '.grok/hooks/adaptive.json').read_text(encoding='utf-8'))
+        data = json.loads(
+            (ROOT / '.grok/hooks/adaptive.json').read_text(encoding='utf-8')
+        )
         for entries in data['hooks'].values():
             for entry in entries:
                 for hook in entry.get('hooks', []):
@@ -198,9 +234,15 @@ class StructureTests(unittest.TestCase):
     def test_workspace_root_has_dispatch_shims_not_lib(self) -> None:
         self.assertFalse((ROOT / '_lib.py').exists())
         for name in (
-            'user_prompt_submit.py', 'pre_tool_use.py', 'post_tool_use.py',
-            'pre_compact.py', 'session_start.py', 'session_end.py', 'stop_gate.py',
-            'subagent_start.py', 'subagent_stop.py',
+            'user_prompt_submit.py',
+            'pre_tool_use.py',
+            'post_tool_use.py',
+            'pre_compact.py',
+            'session_start.py',
+            'session_end.py',
+            'stop_gate.py',
+            'subagent_start.py',
+            'subagent_stop.py',
         ):
             path = ROOT / name
             self.assertTrue(path.is_file(), name)
@@ -218,7 +260,10 @@ class StructureTests(unittest.TestCase):
             self.assertTrue(data.get('name'), path)
             self.assertTrue(data.get('description'), path)
             self.assertTrue(data.get('developer_instructions'), path)
-            self.assertIn(data.get('sandbox_mode'), {'read-only', 'workspace-write'})
+            self.assertIn(
+                data.get('sandbox_mode'),
+                {'read-only', 'workspace-write'},
+            )
             self.assertNotIn(data['name'], names)
             names.add(data['name'])
         self.assertIn('bitrix_implementer', names)
@@ -234,7 +279,9 @@ class StructureTests(unittest.TestCase):
             self.assertIn('\ndescription:', text[:1200])
 
     def test_quality_profiles_are_valid(self) -> None:
-        profiles = list((ROOT / '.grok-stack/config/quality-profiles').glob('*.json'))
+        profiles = list(
+            (ROOT / '.grok-stack/config/quality-profiles').glob('*.json')
+        )
         self.assertGreaterEqual(len(profiles), 9)
         for path in profiles:
             data = json.loads(path.read_text(encoding='utf-8'))
@@ -246,12 +293,76 @@ class StructureTests(unittest.TestCase):
         for name in ('pyproject.toml', 'requirements.txt', 'setup.py'):
             self.assertFalse((ROOT / name).exists(), name)
 
-    def test_version_is_2_0_11_and_github_actions_are_absent(self) -> None:
-        self.assertEqual((ROOT / 'VERSION').read_text(encoding='utf-8').strip(), '2.0.11')
-        workflows = ROOT / '.github/workflows'
-        self.assertEqual(list(workflows.glob('*.yml')) if workflows.is_dir() else [], [])
+    def test_version_and_trusted_github_boundary(self) -> None:
+        self.assertEqual(
+            (ROOT / 'VERSION').read_text(encoding='utf-8').strip(),
+            '2.0.11',
+        )
+        trusted = (ROOT / '.github/workflows/trusted-ci.yml').read_text(
+            encoding='utf-8'
+        )
+        release = (ROOT / '.github/workflows/release.yml').read_text(
+            encoding='utf-8'
+        )
+        codeowners = (ROOT / '.github/CODEOWNERS').read_text(encoding='utf-8')
+        runbook = (ROOT / 'docs/TRUST-BOUNDARY.md').read_text(
+            encoding='utf-8'
+        )
+
+        self.assertIn('permissions:\n  contents: read', trusted)
+        self.assertIn('--mode pr --strict --json', trusted)
+        self.assertIn('python-version:', trusted)
+        self.assertIn('"3.10"', trusted)
+        self.assertIn('"3.12"', trusted)
+        self.assertIn(
+            'actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803',
+            trusted,
+        )
+        self.assertIn(
+            'actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1',
+            trusted,
+        )
+
+        self.assertIn('workflow_dispatch:', release)
+        self.assertIn('permissions:\n  contents: write', release)
+        self.assertIn('environment: production', release)
+        self.assertIn('--mode release --strict --json', release)
+        self.assertIn('git tag -a', release)
+        self.assertIn('gh release create', release)
+        self.assertIn('$GITHUB_SHA', release)
+
+        self.assertIn('/.grok-stack/ @Dimkox', codeowners)
+        self.assertIn('/.github/ @Dimkox', codeowners)
+        self.assertIn('/scripts/grok_*.py @Dimkox', codeowners)
+        self.assertIn('Require review from Code Owners', runbook)
+        self.assertIn('production', runbook)
+        self.assertIn('trusted-ci / verify-py3.10', runbook)
+        self.assertIn('trusted-ci / verify-py3.12', runbook)
+        self.assertIn('trusted-ci / package', runbook)
+
         self.assertFalse((ROOT / '.github/dependabot.yml').exists())
-        self.assertFalse((ROOT / '.grok-stack/templates/ci/github-actions.yml').exists())
+        self.assertFalse(
+            (ROOT / '.grok-stack/templates/ci/github-actions.yml').exists()
+        )
+
+    def test_control_plane_policy_has_no_local_bypass(self) -> None:
+        data = json.loads(
+            (ROOT / '.grok-stack/config/policy.json').read_text(
+                encoding='utf-8'
+            )
+        )
+        protected = set(data['control_plane_paths'])
+        for expected in (
+            '.grok/**',
+            '.grok-stack/**',
+            '.github/**',
+            'AGENTS.md',
+            'scripts/grok_*.py',
+            'tests/test_trust_boundary.py',
+        ):
+            self.assertIn(expected, protected)
+        notes = ' '.join(data.get('notes', [])).lower()
+        self.assertIn('grants no authorization', notes)
 
     def test_changelog_2_0_6_does_not_claim_stale_latest(self) -> None:
         text = (ROOT / 'CHANGELOG.md').read_text(encoding='utf-8')
@@ -266,7 +377,10 @@ class StructureTests(unittest.TestCase):
     def test_package_version_matches_version_file(self) -> None:
         from adaptive_grok import __version__
 
-        self.assertEqual(__version__, (ROOT / 'VERSION').read_text(encoding='utf-8').strip())
+        self.assertEqual(
+            __version__,
+            (ROOT / 'VERSION').read_text(encoding='utf-8').strip(),
+        )
 
 
 if __name__ == '__main__':

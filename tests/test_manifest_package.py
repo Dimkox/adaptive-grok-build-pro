@@ -2,19 +2,21 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import sys
 import tempfile
 import unittest
 import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-
-import sys
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.manifest import generate_manifest, included_files, verify_manifest
 
-SPEC = importlib.util.spec_from_file_location('package_stack', ROOT / 'scripts/package_stack.py')
+SPEC = importlib.util.spec_from_file_location(
+    'package_stack',
+    ROOT / 'scripts/package_stack.py',
+)
 PACKAGE = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
 SPEC.loader.exec_module(PACKAGE)
@@ -52,7 +54,8 @@ class PackageTests(unittest.TestCase):
     def test_default_output_follows_version_file(self) -> None:
         self.assertEqual(
             PACKAGE._default_output(ROOT),
-            f"dist/adaptive-grok-build-pro-v{(ROOT / 'VERSION').read_text(encoding='utf-8').strip()}.zip",
+            'dist/adaptive-grok-build-pro-v'
+            f"{(ROOT / 'VERSION').read_text(encoding='utf-8').strip()}.zip",
         )
 
     def test_archive_is_deterministic_and_self_verifying(self) -> None:
@@ -75,9 +78,20 @@ class PackageTests(unittest.TestCase):
             with zipfile.ZipFile(first) as archive:
                 self.assertIsNone(archive.testzip())
                 names = set(archive.namelist())
-                self.assertIn('adaptive-grok-build-pro/MANIFEST.sha256', names)
-                self.assertIn('adaptive-grok-build-pro/scripts/run.sh', names)
-                mode = archive.getinfo('adaptive-grok-build-pro/scripts/run.sh').external_attr >> 16
+                self.assertIn(
+                    'adaptive-grok-build-pro/MANIFEST.sha256',
+                    names,
+                )
+                self.assertIn(
+                    'adaptive-grok-build-pro/scripts/run.sh',
+                    names,
+                )
+                mode = (
+                    archive.getinfo(
+                        'adaptive-grok-build-pro/scripts/run.sh'
+                    ).external_attr
+                    >> 16
+                )
                 self.assertTrue(mode & 0o100)
 
     def test_archive_excludes_dotenv_and_keys(self) -> None:
@@ -85,7 +99,10 @@ class PackageTests(unittest.TestCase):
             root = Path(tmp) / 'project'
             root.mkdir()
             (root / 'keep.txt').write_text('keep', encoding='utf-8')
-            (root / '.env').write_text('GIT_FINE_GRAIN_TOKEN=should-not-pack', encoding='utf-8')
+            (root / '.env').write_text(
+                'GIT_FINE_GRAIN_TOKEN=should-not-pack',
+                encoding='utf-8',
+            )
             (root / '.env.local').write_text('SECRET=x', encoding='utf-8')
             (root / 'dev.pem').write_text('nope', encoding='utf-8')
             archive_path = Path(tmp) / 'project.zip'
@@ -93,7 +110,14 @@ class PackageTests(unittest.TestCase):
             with zipfile.ZipFile(archive_path) as archive:
                 names = set(archive.namelist())
             self.assertIn('adaptive-grok-build-pro/keep.txt', names)
-            self.assertFalse(any(name.endswith('.env') or name.endswith('.env.local') or name.endswith('.pem') for name in names))
+            self.assertFalse(
+                any(
+                    name.endswith('.env')
+                    or name.endswith('.env.local')
+                    or name.endswith('.pem')
+                    for name in names
+                )
+            )
 
     def test_archive_excludes_err_log(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -108,23 +132,54 @@ class PackageTests(unittest.TestCase):
             self.assertIn('adaptive-grok-build-pro/keep.txt', names)
             self.assertFalse(any(name.endswith('err.log') for name in names))
 
-    def test_included_files_and_shipped_zip_have_no_github_actions(self) -> None:
+    def test_included_files_and_fresh_zip_include_trust_boundary(self) -> None:
         version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
         self.assertEqual(version, '2.0.11')
-        rels = [path.relative_to(ROOT).as_posix() for path in included_files(ROOT)]
-        self.assertFalse(any(rel.startswith('.github/workflows/') for rel in rels))
+        required = {
+            '.github/workflows/trusted-ci.yml',
+            '.github/workflows/release.yml',
+            '.github/CODEOWNERS',
+            'docs/TRUST-BOUNDARY.md',
+        }
+        rels = {
+            path.relative_to(ROOT).as_posix()
+            for path in included_files(ROOT)
+        }
+        self.assertTrue(required.issubset(rels))
         self.assertNotIn('.github/dependabot.yml', rels)
-        self.assertNotIn('.grok-stack/templates/ci/github-actions.yml', rels)
-        zip_path = ROOT / 'packages' / f'adaptive-grok-build-pro-v{version}.zip'
-        if zip_path.is_file():
-            with zipfile.ZipFile(zip_path) as archive:
-                names = archive.namelist()
+        self.assertNotIn(
+            '.grok-stack/templates/ci/github-actions.yml',
+            rels,
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            archive_path = Path(tmp) / 'current.zip'
+            PACKAGE.write_archive(ROOT, archive_path)
+            with zipfile.ZipFile(archive_path) as archive:
+                names = set(archive.namelist())
+                for rel in required:
+                    self.assertIn(
+                        f'adaptive-grok-build-pro/{rel}',
+                        names,
+                    )
+                self.assertIn(
+                    'adaptive-grok-build-pro/MANIFEST.sha256',
+                    names,
+                )
+
+        published = (
+            ROOT
+            / 'packages'
+            / f'adaptive-grok-build-pro-v{version}.zip'
+        )
+        if published.is_file():
+            with zipfile.ZipFile(published) as archive:
                 member = 'adaptive-grok-build-pro/VERSION'
-                self.assertIn(member, names)
-                self.assertEqual(archive.read(member).decode('utf-8').strip(), '2.0.11')
-                self.assertFalse(any('.github/workflows/' in name for name in names))
-                self.assertFalse(any(name.endswith('dependabot.yml') for name in names))
-                self.assertFalse(any(name.endswith('github-actions.yml') for name in names))
+                self.assertIn(member, archive.namelist())
+                self.assertEqual(
+                    archive.read(member).decode('utf-8').strip(),
+                    '2.0.11',
+                )
 
     def test_write_archive_unlinks_root_manifest_but_embeds_it(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

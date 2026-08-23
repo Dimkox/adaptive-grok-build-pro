@@ -40,7 +40,7 @@ A green local verify opens the delivery path but cannot authorize merge or relea
 
 ## 2026-08-16 — Split one large task; share memory
 
-One giant prompt produces a stale README and half-finished last miles. Split into concrete subtasks that write durable facts into `AGENTS.md`, `decisions.md`, and `mistakes.md.
+One giant prompt produces a stale README and half-finished last miles. Split into concrete subtasks that write durable facts into `AGENTS.md`, `decisions.md`, and `mistakes.md`.
 
 ## 2026-08-16 — README is the delivery-time product map
 
