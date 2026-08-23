@@ -23,8 +23,18 @@ def create_app(
     trust_store: TrustStore | None = None,
 ) -> FastAPI:
     active_policy = policy or Policy.load(settings.common.policy_path)
-    trusted_keys = trust_store or TrustStore.load(settings.trust_store_path)
     active_store = store or PostgresStore(settings.common.database_url)
+    if trust_store is None:
+        TrustStore.load(settings.trust_store_path)
+
+        def current_trust_store() -> TrustStore:
+            return TrustStore.load(settings.trust_store_path)
+    else:
+        fixed_trust_store = trust_store
+
+        def current_trust_store() -> TrustStore:
+            return fixed_trust_store
+
     authorize_read = _bearer_authorizer(settings.read_token)
 
     app = FastAPI(
@@ -37,7 +47,6 @@ def create_app(
     app.state.settings = settings
     app.state.policy = active_policy
     app.state.store = active_store
-    app.state.trust_store = trusted_keys
 
     @app.get('/health/live')
     def live() -> dict[str, Any]:
@@ -49,12 +58,17 @@ def create_app(
             raise HTTPException(status_code=503, detail='global kill switch is active')
         try:
             active_store.ping()
+            report = current_trust_store().report(utc_now())
+            active_keys = sum(1 for item in report['keys'] if item['status'] == 'active')
+            if active_keys == 0:
+                raise RuntimeError('trust store has no active approval keys')
         except Exception as exc:
-            raise HTTPException(status_code=503, detail='durable state is unavailable') from exc
+            raise HTTPException(status_code=503, detail='durable state or trust store is unavailable') from exc
         return {
             'status': 'ready',
             'policy_digest': active_policy.digest,
             'status_context': active_policy.status_context,
+            'active_approval_keys': active_keys,
             'status_publisher': 'worker-github-app',
         }
 
@@ -112,7 +126,7 @@ def create_app(
         try:
             verified = verify_approval(
                 envelope,
-                trusted_keys,
+                current_trust_store(),
                 expected_repository=job.repository,
                 expected_pr_number=job.pr_number,
                 expected_base_sha=job.base_sha,
