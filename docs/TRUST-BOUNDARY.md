@@ -21,7 +21,7 @@ python3 scripts/install_into.py /path/to/repo \
 # --codeowner @org/team
 ```
 
-`--with-ci` without `--codeowner` fails before writing files. The installer renders the supplied identity into `.github/CODEOWNERS` and this runbook, and conflict detection uses that rendered content. It never assigns `@Dimkox` as owner of an unrelated consumer repository.
+`--with-ci` without `--codeowner` fails before writing files. The installer renders the supplied identity into `.github/CODEOWNERS` and this runbook, and conflict detection uses that rendered content. It never copies the source repository's owner into a consumer repository unchanged.
 
 ## Choose the identity model first
 
