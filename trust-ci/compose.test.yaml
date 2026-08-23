@@ -30,6 +30,9 @@ services:
     image: ${TRUST_CI_TEST_BUILD_TAG:-adaptive-trust-ci-test:2.1.0}
     environment:
       TRUST_CI_TEST_DATABASE_URL: postgresql://trust_ci_migrator:trust_ci_migrator_test_password@postgres-test:5432/trust_ci_test
+      TRUST_CI_TEST_API_DATABASE_URL: postgresql://trust_ci_api:trust_ci_api_test_password@postgres-test:5432/trust_ci_test
+      TRUST_CI_TEST_WORKER_DATABASE_URL: postgresql://trust_ci_worker:trust_ci_worker_test_password@postgres-test:5432/trust_ci_test
+      TRUST_CI_TEST_BACKUP_DATABASE_URL: postgresql://trust_ci_backup:trust_ci_backup_test_password@postgres-test:5432/trust_ci_test
     depends_on:
       postgres-test:
         condition: service_healthy
