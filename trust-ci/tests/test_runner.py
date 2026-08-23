@@ -66,8 +66,8 @@ class FakeExecutor:
         self.calls = []
         self.mutate_on = set(mutate_on)
 
-    def run(self, spec, workspace, env, max_output_bytes, *, holdout_path=None):
-        self.calls.append((spec.name, workspace, dict(env), max_output_bytes, holdout_path))
+    def run(self, spec, workspace, env, max_output_bytes, *, workspace_host_path, holdout_path=None, holdout_host_path=None):
+        self.calls.append((spec.name, workspace, dict(env), max_output_bytes, workspace_host_path, holdout_path, holdout_host_path))
         if spec.name in self.mutate_on:
             (workspace / 'production.py').write_text('mutated\n', encoding='utf-8')
         return self.results.pop(0)
@@ -134,6 +134,8 @@ class RunnerTests(unittest.TestCase):
             github_token_provider=lambda: 'installation-token',
             public_base_url='https://ci.example.com',
             workspace_root=Path(tempfile.gettempdir()),
+            workspace_host_root=Path('/host/trust-ci-workspaces'),
+            holdout_host_path=Path('/host/trust-ci-holdout'),
             now_fn=now,
             workspace_factory=workspace_factory,
             executor_factory=lambda _sandbox: executor,
@@ -146,8 +148,11 @@ class RunnerTests(unittest.TestCase):
         outcome = runner.process(self.job, 'worker-1')
         self.assertEqual(outcome.status, 'passed')
         self.assertEqual([call[0] for call in executor.calls], ['unit', 'compile', 'external-holdout'])
-        self.assertIsNone(executor.calls[0][4])
-        self.assertEqual(executor.calls[-1][4], self.holdout)
+        self.assertTrue(str(executor.calls[0][4]).startswith('/host/trust-ci-workspaces/'))
+        self.assertIsNone(executor.calls[0][5])
+        self.assertIsNone(executor.calls[0][6])
+        self.assertEqual(executor.calls[-1][5], self.holdout)
+        self.assertEqual(executor.calls[-1][6], Path('/host/trust-ci-holdout'))
         self.assertEqual([item[2]['state'] for item in github.statuses], ['pending', 'success'])
         envelope = self.store.get_attestation(self.job.job_id)
         self.assertIsNotNone(envelope)
