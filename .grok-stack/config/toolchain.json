@@ -1,6 +1,24 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "policy": "minimum_or_newer; built is the tested pin",
+  "python_modules": [
+    {
+      "id": "tomli",
+      "module": "tomli",
+      "name": "Tomli TOML parser",
+      "required": true,
+      "required_below_python": "3.11",
+      "built": "2.4.1",
+      "minimum": "2.4.1",
+      "fallback": "2.4.1",
+      "install": {
+        "linux": "{python} -m pip install --disable-pip-version-check tomli==2.4.1",
+        "darwin": "{python} -m pip install --disable-pip-version-check tomli==2.4.1",
+        "windows": "{python} -m pip install --disable-pip-version-check tomli==2.4.1",
+        "generic": "{python} -m pip install --disable-pip-version-check tomli==2.4.1"
+      }
+    }
+  ],
   "tools": [
     {
       "id": "python3",
@@ -116,7 +134,7 @@
         "linux": "sudo apt-get update && sudo apt-get install -y php-cli php-xml php-mbstring",
         "darwin": "brew install php@8.2",
         "windows": "winget install -e --id PHP.PHP.8.2",
-        "generic": "https://www.php.net/downloads"
+        "generic": "https://www.php.net/downloads/"
       }
     },
     {

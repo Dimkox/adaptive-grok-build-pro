@@ -3,13 +3,14 @@ from __future__ import annotations
 import json
 import re
 import sys
-import tomllib
 import unittest
 from itertools import combinations
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
+
+from adaptive_grok.toml_compat import loads as load_toml
 
 
 class StructureTests(unittest.TestCase):
@@ -192,7 +193,7 @@ class StructureTests(unittest.TestCase):
         self.assertIn('no paid tier', lowered)
 
     def test_grok_config_is_valid_toml(self) -> None:
-        data = tomllib.loads(
+        data = load_toml(
             (ROOT / '.grok/config.toml').read_text(encoding='utf-8')
         )
         self.assertEqual(data['sandbox_mode'], 'workspace-write')
@@ -256,7 +257,7 @@ class StructureTests(unittest.TestCase):
         self.assertGreaterEqual(len(agents), 20)
         names = set()
         for path in agents:
-            data = tomllib.loads(path.read_text(encoding='utf-8'))
+            data = load_toml(path.read_text(encoding='utf-8'))
             self.assertTrue(data.get('name'), path)
             self.assertTrue(data.get('description'), path)
             self.assertTrue(data.get('developer_instructions'), path)
@@ -314,6 +315,7 @@ class StructureTests(unittest.TestCase):
         self.assertIn('python-version:', trusted)
         self.assertIn('"3.10"', trusted)
         self.assertIn('"3.12"', trusted)
+        self.assertIn('tomli==2.4.1', trusted)
         self.assertIn(
             'actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803',
             trusted,

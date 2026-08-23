@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 from adaptive_grok.doctor import run_doctor
 from adaptive_grok.toolchain import (
     ToolCheck,
+    check_python_module,
     check_tool,
     install_command,
     is_manual_url,
@@ -33,7 +34,25 @@ PYTHON_SPEC = {
     'built': '3.12.3',
     'minimum': '3.10',
     'fallback': '3.12',
-    'install': {'linux': 'sudo apt-get install -y python3', 'generic': 'https://www.python.org/downloads/'},
+    'install': {
+        'linux': 'sudo apt-get install -y python3',
+        'generic': 'https://www.python.org/downloads/',
+    },
+}
+
+TOMLI_SPEC = {
+    'id': 'tomli',
+    'module': 'tomli',
+    'name': 'Tomli TOML parser',
+    'required': True,
+    'required_below_python': '3.11',
+    'built': '2.4.1',
+    'minimum': '2.4.1',
+    'fallback': '2.4.1',
+    'install': {
+        'linux': '{python} -m pip install tomli==2.4.1',
+        'generic': '{python} -m pip install tomli==2.4.1',
+    },
 }
 
 
@@ -106,14 +125,56 @@ class ToolchainTests(unittest.TestCase):
         self.assertEqual(result.status, 'info')
         self.assertIn('fallback', (result.offer or '').lower())
 
+    def test_tomli_is_required_for_python_310(self) -> None:
+        result = check_python_module(
+            TOMLI_SPEC,
+            host='linux',
+            version_info=(3, 10, 14),
+            module_available=False,
+        )
+        self.assertIsNotNone(result)
+        assert result is not None
+        self.assertEqual(result.status, 'fail')
+        self.assertTrue(result.required)
+        self.assertIn('Python < 3.11', result.message)
+        self.assertIn('tomli==2.4.1', result.install or '')
+        self.assertIn(sys.executable, result.install or '')
+
+    def test_tomli_passes_for_python_310_when_installed(self) -> None:
+        result = check_python_module(
+            TOMLI_SPEC,
+            host='linux',
+            version_info=(3, 10, 14),
+            module_available=True,
+            found_version='2.4.1',
+        )
+        self.assertIsNotNone(result)
+        assert result is not None
+        self.assertEqual(result.status, 'pass')
+        self.assertEqual(result.found, '2.4.1')
+
+    def test_tomli_is_not_required_on_python_311_or_newer(self) -> None:
+        self.assertIsNone(
+            check_python_module(
+                TOMLI_SPEC,
+                host='linux',
+                version_info=(3, 11, 0),
+                module_available=False,
+            )
+        )
+
     def test_real_toolchain_json_required_and_optional_sets(self) -> None:
         data = load_toolchain(ROOT)
         tools = {item['id']: item for item in data['tools']}
+        modules = {item['id']: item for item in data['python_modules']}
         self.assertTrue(tools['python3']['required'])
         self.assertTrue(tools['git']['required'])
         self.assertFalse(tools['php']['required'])
         self.assertFalse(tools['gh']['required'])
         self.assertFalse(tools['node']['required'])
+        self.assertTrue(modules['tomli']['required'])
+        self.assertEqual(modules['tomli']['required_below_python'], '3.11')
+        self.assertEqual(modules['tomli']['built'], '2.4.1')
 
     def test_install_command_uses_host_then_generic(self) -> None:
         self.assertIn('apt-get', install_command(PYTHON_SPEC, 'linux'))
@@ -132,7 +193,11 @@ class ToolchainTests(unittest.TestCase):
         with project_copy() as root:
             items = run_doctor(root)
             php = [item for item in items if item.name == 'tool:php']
-            failures = [item for item in items if item.status == 'fail' and item.name.startswith('tool:')]
+            failures = [
+                item
+                for item in items
+                if item.status == 'fail' and item.name.startswith('tool:')
+            ]
             self.assertTrue(php)
             if php[0].status != 'pass':
                 self.assertEqual(php[0].status, 'info')
@@ -164,16 +229,25 @@ class ToolchainTests(unittest.TestCase):
             install='HTTP://example.com/legacy',
         )
         calls: list[str] = []
-        with patch('adaptive_grok.toolchain.check_toolchain', return_value=[missing, uppercase]):
+        with patch(
+            'adaptive_grok.toolchain.check_toolchain',
+            return_value=[missing, uppercase],
+        ):
             results = pull_dependencies(
                 ROOT,
                 apply=True,
                 include_optional=True,
                 dry_run=False,
-                runner=lambda command: calls.append(command) or SimpleNamespace(returncode=0),
+                runner=(
+                    lambda command: calls.append(command)
+                    or SimpleNamespace(returncode=0)
+                ),
             )
         self.assertEqual(calls, [])
-        self.assertEqual([item['action'] for item in results], ['manual-url', 'manual-url'])
+        self.assertEqual(
+            [item['action'] for item in results],
+            ['manual-url', 'manual-url'],
+        )
         self.assertEqual([item['ok'] for item in results], [False, False])
 
     def test_pull_dependencies_dry_run_does_not_execute(self) -> None:
@@ -186,13 +260,19 @@ class ToolchainTests(unittest.TestCase):
             install='sudo apt-get install -y python3',
         )
         calls: list[str] = []
-        with patch('adaptive_grok.toolchain.check_toolchain', return_value=[missing]):
+        with patch(
+            'adaptive_grok.toolchain.check_toolchain',
+            return_value=[missing],
+        ):
             results = pull_dependencies(
                 ROOT,
                 apply=True,
                 include_optional=False,
                 dry_run=True,
-                runner=lambda command: calls.append(command) or SimpleNamespace(returncode=0),
+                runner=(
+                    lambda command: calls.append(command)
+                    or SimpleNamespace(returncode=0)
+                ),
             )
         self.assertEqual(calls, [])
         self.assertEqual(results[0]['action'], 'would-install')
