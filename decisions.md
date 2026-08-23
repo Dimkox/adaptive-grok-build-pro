@@ -2,6 +2,10 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-23 — Installer never exports the source repository owner
+
+Trusted CI installation is opt-in and requires `--codeowner @user` or `@org/team` for the target repository. Render CODEOWNERS and the operational runbook before conflict detection so a consumer cannot silently inherit `@Dimkox` or compare against the wrong expected files.
+
 ## 2026-08-23 — Human gates must match the GitHub identity model
 
 A pull-request author cannot approve their own pull request, and Environment self-review prevention blocks the deployment initiator. Use owner inspection and manual merge for the current solo identity, then enable required CODEOWNER review and self-review prevention after a separate bot, App, or collaborator owns authorship and dispatch.
