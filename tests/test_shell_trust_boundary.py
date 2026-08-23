@@ -12,6 +12,33 @@ from adaptive_grok.policy import evaluate_pre_tool
 from tests._support import project_copy
 
 
+BOUNDARY_PATHS = (
+    '.gitignore',
+    'packages/**',
+    'engineering/decisions.md',
+    'engineering/mistakes.md',
+    'engineering/runbooks/publish-v*.md',
+    'scripts/bootstrap.ps1',
+    'scripts/bootstrap.sh',
+    'scripts/generate_manifest.py',
+    'scripts/install_into.py',
+    'scripts/package_stack.py',
+    'scripts/verify_manifest.py',
+    'docs/superpowers/specs/2026-08-23-trust-boundary-design.md',
+    'docs/superpowers/plans/2026-08-23-trust-boundary.md',
+    'tests/_support.py',
+    'tests/test_change_receipts.py',
+    'tests/test_hooks.py',
+    'tests/test_installer.py',
+    'tests/test_installer_trust_boundary.py',
+    'tests/test_release_boundary.py',
+    'tests/test_repo_router.py',
+    'tests/test_runtime_state.py',
+    'tests/test_toolchain.py',
+    'tests/test_verification_doctor.py',
+)
+
+
 class ShellTrustBoundaryTests(unittest.TestCase):
     def test_blocks_shell_mutations_of_control_plane_paths(self) -> None:
         commands = (
@@ -23,6 +50,10 @@ class ShellTrustBoundaryTests(unittest.TestCase):
             'git restore -- scripts/grok_verify.py',
             'ruff check --fix .grok-stack/adaptive_grok/policy.py',
             'chmod 777 .github/workflows/release.yml',
+            'echo x > scripts/package_stack.py',
+            "sed -i 's/historical/publish/' engineering/runbooks/publish-v2.0.11.md",
+            'cp /tmp/test.py tests/test_release_boundary.py',
+            'truncate -s 0 packages/adaptive-grok-build-pro-v2.0.11.zip',
         )
         with project_copy() as root:
             for command in commands:
@@ -41,6 +72,7 @@ class ShellTrustBoundaryTests(unittest.TestCase):
             'python3 scripts/grok_verify.py --help',
             'git diff -- .grok-stack/adaptive_grok/policy.py',
             'grep x .grok-stack/adaptive_grok/policy.py 2>/dev/null',
+            'sha256sum packages/adaptive-grok-build-pro-v2.0.11.zip',
         )
         with project_copy() as root:
             for command in commands:
@@ -71,19 +103,30 @@ class ShellTrustBoundaryTests(unittest.TestCase):
                     self.assertFalse(allowed)
                     self.assertIn('repository policy', reason or '')
 
-    def test_shell_boundary_tests_are_human_owned_and_protected(self) -> None:
+    def test_complete_boundary_is_human_owned_and_protected(self) -> None:
         policy = json.loads(
             (ROOT / '.grok-stack/config/policy.json').read_text(encoding='utf-8'),
         )
-        self.assertIn(
-            'tests/test_shell_trust_boundary.py',
-            policy['control_plane_paths'],
-        )
+        protected = set(policy['control_plane_paths'])
         codeowners = (ROOT / '.github/CODEOWNERS').read_text(encoding='utf-8')
-        self.assertIn(
-            '/tests/test_shell_trust_boundary.py @Dimkox',
-            codeowners,
-        )
+
+        expected = (*BOUNDARY_PATHS, 'tests/test_shell_trust_boundary.py')
+        for path in expected:
+            with self.subTest(path=path):
+                self.assertIn(path, protected)
+                self.assertIn(f'/{path} @Dimkox', codeowners)
+
+    def test_historical_publish_runbooks_have_no_executable_release_path(self) -> None:
+        runbooks = sorted((ROOT / 'engineering/runbooks').glob('publish-v*.md'))
+        self.assertGreaterEqual(len(runbooks), 8)
+        for path in runbooks:
+            with self.subTest(path=path.name):
+                text = path.read_text(encoding='utf-8')
+                self.assertIn('Historical record', text)
+                self.assertIn('docs/TRUST-BOUNDARY.md', text)
+                self.assertNotIn('git push', text)
+                self.assertNotIn('gh release create', text)
+                self.assertNotIn('git tag', text)
 
 
 if __name__ == '__main__':
