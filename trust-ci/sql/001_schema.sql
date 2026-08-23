@@ -1,5 +1,3 @@
-BEGIN;
-
 CREATE TABLE IF NOT EXISTS trust_ci_jobs (
     job_id uuid PRIMARY KEY,
     repository text NOT NULL,
@@ -153,5 +151,3 @@ BEGIN
     SELECT * FROM claimed;
 END;
 $$;
-
-COMMIT;
