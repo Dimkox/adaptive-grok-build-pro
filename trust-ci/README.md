@@ -2,13 +2,15 @@
 
 Self-hosted, independent merge-trust boundary for Adaptive Grok Build Pro. It does **not** use GitHub Actions.
 
-The service consumes signed GitHub pull-request webhooks, stores jobs and leases in PostgreSQL, checks out the exact webhook SHA on a trusted worker, executes repository commands in a separate no-network container, signs the result with Ed25519, and publishes the required commit status:
+The service consumes HMAC-verified GitHub pull-request webhooks, stores jobs and leases in PostgreSQL, checks out the exact webhook SHA on a trusted worker, verifies an external holdout bundle, executes mandatory checks in a separate no-network container, rejects source mutation, signs the result with Ed25519, and publishes a GitHub App-owned Check Run:
 
 ```text
-adaptive-trust-ci/verified
+adaptive-trust-ci/verified@<first-12-hex-of-policy-sha256>
 ```
 
-Local Grok hooks, prompt files, change packages and `.grok-stack/runtime` remain useful workflow inputs. They are not merge authority.
+The suffix is a policy epoch. A green check produced under an older policy or holdout digest cannot satisfy the current protected-branch requirement.
+
+Local Grok hooks, prompt files, change packages, delegated local grants and `.grok-stack/runtime` remain useful workflow inputs. They are not merge authority.
 
 ## Trust boundary
 
@@ -16,44 +18,51 @@ Trusted:
 
 - deployed API and worker images;
 - server-mounted `policy.json`;
+- server-mounted external holdout bundle and its policy-bound digest;
 - PostgreSQL state;
 - CI Ed25519 private key mounted only into the worker;
+- GitHub App RSA private key mounted only into the worker;
 - human public-key trust store mounted only into the API;
-- branch protection requiring the exact external status context.
+- branch protection requiring the exact policy-epoch check from the configured GitHub App ID.
 
 Untrusted:
 
-- every file from the pull request, including tests, prompts, hooks and CI source code;
-- local receipts and approvals created inside the repository;
+- every file from the pull request, including tests, prompts, hooks and the repository copy of CI source code;
+- local receipts and delegated grants created inside the repository;
 - agent output;
 - command stdout/stderr.
 
-The worker has Docker-socket access and is therefore a privileged component. Pull-request code never receives the socket, GitHub token, webhook secret, signing key, human trust store or network access.
+The worker has Docker-socket access and is therefore a privileged component. Pull-request code never receives the socket, GitHub App token, GitHub App key, webhook secret, attestation key, human trust store or network access. Run the worker on a dedicated CI host without production workloads.
 
 ## Components
 
 ```text
-GitHub webhook
-    -> API: HMAC validation, allowlist, idempotent enqueue
+GitHub pull-request webhook
+    -> API: HMAC validation, repository allowlist, idempotent enqueue
     -> PostgreSQL: jobs, leases, attempts, approvals, attestations
-    -> trusted worker: exact-SHA checkout only
+    -> trusted worker: GitHub App installation token + exact-SHA checkout
+    -> external holdout digest verification
     -> isolated runner container: network=none, cap-drop=ALL, read-only .git
+    -> tracked-source mutation check
     -> Ed25519 attestation
-    -> GitHub commit status adaptive-trust-ci/verified
-    -> protected main branch
+    -> GitHub App Check Run adaptive-trust-ci/verified@<policy-sha12>
+    -> app-bound protected main branch
 ```
 
-The API image has no Docker client or CI private key. The worker has no webhook secret or human trust store. Human approval private keys must remain on a separate human-controlled machine.
+The API image has no Docker client, GitHub credentials or CI private key. It can enqueue work and accept signed approvals, but it cannot publish a successful GitHub check. The worker has no webhook secret or human trust store. Human approval private keys remain on a separate human-controlled machine.
 
 ## Prerequisites
 
-- Linux host with Docker Engine and Compose v2;
-- PostgreSQL 17 through the included Compose topology or an external managed PostgreSQL;
+- dedicated Linux CI host with Docker Engine and Compose v2;
+- PostgreSQL through the included Compose topology or an external managed PostgreSQL;
 - HTTPS reverse proxy for the API;
-- fine-grained GitHub token for repository contents read, pull requests read and commit statuses read/write;
-- a separate temporary administration token when branch protection is configured;
-- outbound GitHub access from API/worker;
+- GitHub App installed on the repository with `Checks: read/write`, `Contents: read`, and `Pull requests: read`;
+- GitHub App ID, installation ID and RSA private key mounted only into the worker;
+- a separate temporary human administration token when branch protection is configured;
+- outbound GitHub access from the API for webhook delivery responses and from the worker for checkout/Checks API;
 - no outbound network from runner containers.
+
+The worker requests a short-lived installation token with the reduced permissions `checks:write`, `contents:read`, and `pull_requests:read`, even if the installed App has broader permissions.
 
 ## Bootstrap
 
@@ -61,7 +70,7 @@ Copy the environment templates. Do not commit the resulting files:
 
 ```bash
 cd trust-ci
-mkdir -p runtime/control
+mkdir -p runtime/control runtime/holdout
 cp env/common.env.example env/common.env
 cp env/api.env.example env/api.env
 cp env/worker.env.example env/worker.env
@@ -71,33 +80,55 @@ cp config/trust-store.example.json runtime/trust-store.json
 chmod 600 env/*.env runtime/* 2>/dev/null || true
 ```
 
-Replace every placeholder. `runtime/trust-store.json` is a template until a real public key is inserted.
+Replace every placeholder. `runtime/trust-store.json` remains invalid until a real human public key is inserted.
 
-### Build and pin the runner
+### Build and pin the images
 
-The policy refuses mutable image tags. Build the runner, obtain its immutable image ID, and put that exact `sha256:...` value into `runtime/policy.json`:
+The deployment and policy refuse mutable runner tags. Build API, worker and runner images, obtain immutable digests, and place those digests into the deployment environment and `runtime/policy.json`:
 
 ```bash
-docker compose --profile build build runner-image
+docker compose --profile build build api worker runner-image
+docker image inspect adaptive-trust-ci-api:2.1.0 --format '{{.Id}}'
+docker image inspect adaptive-trust-ci-worker:2.1.0 --format '{{.Id}}'
 docker image inspect adaptive-trust-ci-runner:2.1.0 --format '{{.Id}}'
 ```
 
-Rebuilding the image changes the policy digest and intentionally invalidates approvals and existing jobs.
+Rebuilding the runner or changing any policy or holdout input changes the policy digest, changes the required check name, and intentionally invalidates old jobs and approvals.
+
+### Install the external holdout bundle
+
+The holdout lives outside the repository checkout and cannot be modified by a pull request. Populate the host directory mounted read-only into the worker, then calculate its deterministic digest:
+
+```bash
+adaptive-trust-ci holdout-digest --path /opt/adaptive-trust-ci-holdout
+```
+
+Set the absolute in-worker holdout path, host mount path and exact digest in the deployed policy and worker environment. The worker fails closed before checkout if the bundle digest does not match.
 
 ### Generate the CI attestation key
 
-Run this on the CI server. The private key is mounted only into the worker:
+Generate on the CI server or in a secret manager. The private key is mounted only into the worker:
 
 ```bash
-docker compose build api
-mkdir -p runtime
-docker compose run --rm --no-deps api \
-  keygen \
-  --private /tmp/trust-ci-signing-key.pem \
-  --public /tmp/trust-ci-signing-key.pub.pem
+adaptive-trust-ci keygen \
+  --private runtime/trust-ci-signing-key.pem \
+  --public runtime/trust-ci-signing-key.pub.pem
+chmod 600 runtime/trust-ci-signing-key.pem
 ```
 
-For an actual deployment, generate into a host directory or secret manager mount rather than the disposable container filesystem. Final permissions for the private key must be `0600`. Place the private key at `runtime/trust-ci-signing-key.pem`; publish the public key alongside release documentation for offline attestation verification.
+Publish the public key with release documentation for offline attestation verification.
+
+### Configure the GitHub App
+
+Create and install a GitHub App dedicated to Trust CI. Grant only:
+
+```text
+Checks: Read and write
+Contents: Read-only
+Pull requests: Read-only
+```
+
+Store its RSA private key at the worker-only path configured by `TRUST_CI_GITHUB_APP_PRIVATE_KEY_PATH`. Configure `TRUST_CI_GITHUB_APP_ID` and `TRUST_CI_GITHUB_INSTALLATION_ID`. The API service must not receive these values or the private key.
 
 ### Generate a human approval key
 
@@ -109,17 +140,17 @@ adaptive-trust-ci keygen \
   --public ~/.config/adaptive-trust-ci/dmitry.pub.pem
 ```
 
-Copy only the public key and the printed `key_id` into the server-side `runtime/trust-store.json`. The private key must never be readable by API, worker, Grok, Codex or repository hooks.
+Copy only the public key and printed `key_id` into the server-side `runtime/trust-store.json`. The private key must never be readable by API, worker, Grok, Codex or repository hooks.
 
 ### Start the service
 
 ```bash
-docker compose up -d --build postgres migrate api worker
+docker compose up -d postgres migrate api worker
 docker compose ps
 curl -fsS http://127.0.0.1:8080/health/ready
 ```
 
-Terminate TLS in a reverse proxy and expose only `/webhooks/github`, `/approvals`, `/health/*`, `/jobs/*` and `/attestations/*` as needed. Command output tails are stored in PostgreSQL but are deliberately omitted from the public job endpoint.
+Terminate TLS in a reverse proxy. Expose `/webhooks/github` and `/approvals`; expose `/jobs/*` and `/attestations/*` only according to the repository privacy model. Command output tails are stored in PostgreSQL but omitted from the public job endpoint.
 
 ## GitHub configuration
 
@@ -136,30 +167,30 @@ Use rollout order strictly:
 
 1. deploy API, PostgreSQL and worker;
 2. install the webhook;
-3. open or update a test pull request;
-4. confirm `adaptive-trust-ci/verified` appears on the exact head SHA;
-5. only then configure branch protection.
+3. open or update a disposable pull request;
+4. confirm the exact policy-epoch Check Run appears on the exact head SHA and is owned by the Trust CI GitHub App;
+5. verify its signed attestation offline;
+6. only then configure branch protection.
 
-Applying branch protection before the external status has been observed can lock the repository.
+Applying branch protection before observing the App-owned check can lock the repository.
 
-Use a temporary human administration token for this one command; do not grant administration permission to the long-lived service token:
+Use a temporary human administration token for this one command. Do not grant repository administration to the long-lived Trust CI GitHub App:
 
 ```bash
-TRUST_CI_GITHUB_TOKEN='<temporary-admin-token>' \
-TRUST_CI_DATABASE_URL='<same-dsn>' \
-TRUST_CI_POLICY_PATH="$PWD/runtime/policy.json" \
-TRUST_CI_PUBLIC_BASE_URL='https://ci.example.com' \
+TRUST_CI_GITHUB_ADMIN_TOKEN='<temporary-admin-token>' \
+TRUST_CI_GITHUB_APP_ID='<app-id>' \
 adaptive-trust-ci branch-protect \
+  --policy "$PWD/runtime/policy.json" \
   --repository Dimkox/adaptive-grok-build-pro \
   --branch main \
   --required-reviews 0
 ```
 
-This requires pull requests, strict up-to-date external status checks, conversation resolution, linear history, administrator enforcement, and blocks force pushes/deletion. Zero GitHub review approvals avoids a solo-maintainer deadlock; signed scoped approvals remain separate.
+The configurator uses `required_status_checks.checks` with both the exact policy-epoch check name and the GitHub App ID. A status or check with the same text from another actor does not satisfy the requirement. Protection also requires a pull request, strict up-to-date checks, conversation resolution and linear history, enforces administrators, and blocks force pushes and branch deletion.
 
-## Human approvals
+## Human security approvals
 
-The runner derives approval scopes from the actual base/head diff. An approval binds:
+The runner derives external approval scopes from the actual base/head diff. An approval binds:
 
 ```text
 repository
@@ -176,7 +207,7 @@ expires_at
 signature
 ```
 
-Any new commit or policy change invalidates it.
+Any new commit, base change, holdout change or policy change invalidates it.
 
 Create and submit an approval from the human workstation:
 
@@ -190,7 +221,7 @@ adaptive-trust-ci approval-create \
   --base-sha '<40-hex-base-sha>' \
   --head-sha '<40-hex-head-sha>' \
   --scope governance \
-  --reason 'Reviewed the exact governance diff and runner policy' \
+  --reason 'Reviewed the exact governance diff and deployed policy epoch' \
   --ttl 900 \
   --output approval.json
 
@@ -199,7 +230,11 @@ adaptive-trust-ci approval-submit \
   --url https://ci.example.com
 ```
 
-The API verifies the signature against its server-mounted public-key store, rejects ID/nonce replay, and requeues only the matching exact SHA.
+The API verifies the signature against its server-mounted public-key store, rejects ID/nonce replay, and requeues only the matching exact SHA. The worker restarts the same durable App-owned Check Run rather than creating a duplicate.
+
+## Delegated local operational consent
+
+`scripts/grok_approve.py` is separate from Trust CI security approvals. It may materialize explicit or standing user consent for a named local action such as branch push, tag push or GitHub Release publication. The grant is bound to repository, route, change, exact HEAD, tree fingerprint, action/resource list and TTL. It cannot create the external Check Run or satisfy a signed Trust CI approval.
 
 ## Emergency stop
 
@@ -211,38 +246,40 @@ adaptive-trust-ci kill-switch status
 adaptive-trust-ci kill-switch off
 ```
 
-The default file is `/run/adaptive-trust-ci/STOP` and is shared by API and worker. Disabling hooks is not an emergency stop; it removes local protection and has no authority over this service.
+The default file is `/run/adaptive-trust-ci/STOP` and is shared by API and worker. Disabling local hooks is not an emergency stop; it removes local protection and has no authority over this service.
 
 ## Verification
 
 From the repository root:
 
 ```bash
-PYTHONPATH=trust-ci/src python3 -m unittest discover -s trust-ci/tests
+PYTHONPATH=trust-ci/src:trust-ci/tests python3 -m unittest discover -s trust-ci/tests
 python3 -m compileall -q trust-ci/src
 ```
 
-Container and Compose validation:
+PostgreSQL integration and Compose validation:
 
 ```bash
+docker compose -f trust-ci/compose.test.yaml up --build --abort-on-container-exit --exit-code-from tests
 docker compose -f trust-ci/compose.yaml config
 docker compose -f trust-ci/compose.yaml build api worker
 docker compose -f trust-ci/compose.yaml --profile build build runner-image
 ```
 
-The authoritative production gate is the signed status produced by the deployed service for the exact PR SHA. Local test output is development evidence only.
+The authoritative production gate is the App-owned, policy-epoch, signed exact-SHA Check Run produced by the deployed service. Local test output is development evidence only.
 
 ## Backup and recovery
 
-Back up PostgreSQL and the two key classes separately:
+Back up PostgreSQL and each key class separately:
 
 - database: jobs, leases, approvals and attestations;
-- CI signing private key: worker-only secret backup;
+- CI attestation private key: worker-only secret backup;
+- GitHub App private key: worker-only secret backup or managed secret;
 - human private keys: offline, never server-side;
-- trust store and policy: reviewed server configuration.
+- trust store, holdout and policy: reviewed server configuration and artifacts.
 
-After database recovery, expired leases are reclaimed with `FOR UPDATE SKIP LOCKED`. Jobs at their attempt limit become `dead`. Existing signed attestations are replayed to GitHub instead of rerunning untrusted code after a status-publication outage.
+After database recovery, expired leases are reclaimed with `FOR UPDATE SKIP LOCKED`. Jobs at their attempt limit become `dead`. Existing signed attestations are replayed into the same durable App-owned Check Run instead of rerunning untrusted code after a publication outage.
 
 ## Deliberate non-features
 
-The first production contour does not auto-merge, auto-deploy or mutate production. A human owns merge and release promotion. GitHub Actions are not installed or required.
+The first production contour does not auto-merge, auto-deploy or mutate production. Merge remains human-owned. Release operations may be explicitly delegated by the user through exact local grants, but they never alter merge trust. GitHub Actions are not installed or required.
