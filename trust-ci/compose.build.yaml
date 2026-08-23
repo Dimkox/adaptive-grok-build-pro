@@ -1,0 +1,31 @@
+services:
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      args:
+        PYTHON_BASE_IMAGE: ${TRUST_CI_PYTHON_BASE_IMAGE:?set immutable Python base image name@sha256 digest}
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+      args:
+        PYTHON_BASE_IMAGE: ${TRUST_CI_PYTHON_BASE_IMAGE:?set immutable Python base image name@sha256 digest}
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+      args:
+        PYTHON_BASE_IMAGE: ${TRUST_CI_PYTHON_BASE_IMAGE:?set immutable Python base image name@sha256 digest}
+
+  runner-image:
+    profiles: ["build"]
+    build:
+      context: .
+      dockerfile: runner.Dockerfile
+      args:
+        PYTHON_BASE_IMAGE: ${TRUST_CI_PYTHON_BASE_IMAGE:?set immutable Python base image name@sha256 digest}
+    image: ${TRUST_CI_RUNNER_BUILD_TAG:-adaptive-trust-ci-runner:2.1.0}
+    command: ["python3", "--version"]
