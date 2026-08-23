@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -10,6 +11,7 @@ from _support import now
 from adaptive_trust_ci.backup import (
     BackupError,
     create_backup,
+    prune_backups,
     restore_drill,
     verify_backup,
 )
@@ -115,6 +117,63 @@ class BackupTests(unittest.TestCase):
             with self.assertRaisesRegex(BackupError, 'pg_dump failed'):
                 create_backup(DATABASE_URL, root, database_label='primary', now=now(), runner=failed_runner)
             self.assertEqual(list(root.iterdir()), [])
+
+    def test_retention_keeps_recent_and_minimum_count_then_removes_verified_old_pairs(self) -> None:
+        runner = RecordingRunner()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            old = create_backup(
+                DATABASE_URL,
+                root,
+                database_label='primary',
+                now=now() - timedelta(days=45),
+                runner=runner,
+            )
+            recent = create_backup(
+                DATABASE_URL,
+                root,
+                database_label='primary',
+                now=now() - timedelta(days=5),
+                runner=runner,
+            )
+            newest = create_backup(
+                DATABASE_URL,
+                root,
+                database_label='primary',
+                now=now(),
+                runner=runner,
+            )
+            report = prune_backups(root, keep_last=1, max_age_days=30, now=now())
+            self.assertEqual(report['removed'], [old.dump_path.name])
+            self.assertTrue(recent.dump_path.exists())
+            self.assertTrue(newest.dump_path.exists())
+            self.assertFalse(old.dump_path.exists())
+            self.assertFalse(old.manifest_path.exists())
+
+    def test_retention_fails_closed_before_deleting_any_pair_when_old_backup_is_tampered(self) -> None:
+        runner = RecordingRunner()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            old = create_backup(
+                DATABASE_URL,
+                root,
+                database_label='primary',
+                now=now() - timedelta(days=45),
+                runner=runner,
+            )
+            newest = create_backup(
+                DATABASE_URL,
+                root,
+                database_label='primary',
+                now=now(),
+                runner=runner,
+            )
+            old.dump_path.write_bytes(b'tampered')
+            with self.assertRaisesRegex(BackupError, 'retention verification failed'):
+                prune_backups(root, keep_last=1, max_age_days=30, now=now())
+            self.assertTrue(old.dump_path.exists())
+            self.assertTrue(old.manifest_path.exists())
+            self.assertTrue(newest.dump_path.exists())
 
 
 if __name__ == '__main__':
