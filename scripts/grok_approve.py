@@ -1,20 +1,22 @@
+"""Offline human approval interface; this script cannot mint a local authority token."""
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / '.grok-stack'))
+sys.path.insert(0, str(ROOT / ".grok-stack"))
 
-import argparse
-import json
+from adaptive_grok.ci_cli import main
 
-from adaptive_grok.state import add_approval
-from adaptive_grok.util import find_root
-
-parser = argparse.ArgumentParser(description='Create a short-lived explicit approval for guarded side effects.')
-parser.add_argument('scope', choices=['production', 'external-write', 'protected-path', '*'])
-parser.add_argument('--reason', required=True)
-parser.add_argument('--ttl', type=int, default=15, help='Minutes')
-args = parser.parse_args()
-print(json.dumps(add_approval(find_root(), args.scope, args.reason, args.ttl), ensure_ascii=False, indent=2))
+if __name__ == "__main__":
+    mapping = {
+        "request": "approval-request",
+        "sign": "approval-sign",
+        "import": "approval-import",
+        "keygen": "keygen",
+    }
+    argv = sys.argv[1:]
+    if not argv or argv[0] not in mapping:
+        raise SystemExit("usage: grok_approve.py {request|sign|import|keygen} ...")
+    raise SystemExit(main([mapping[argv[0]], *argv[1:]]))
