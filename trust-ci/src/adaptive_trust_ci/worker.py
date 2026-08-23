@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import signal
 import threading
-import time
 from dataclasses import dataclass
 
 from .github import GitHubClient
+from .github_app import GitHubAppAuth
 from .models import utc_now
 from .policy import Policy
 from .runner import JobRunner
@@ -22,17 +22,22 @@ class Worker:
     stop_event: threading.Event
 
     @classmethod
-    def build(cls, settings: WorkerSettings) -> "Worker":
+    def build(cls, settings: WorkerSettings) -> 'Worker':
         policy = Policy.load(settings.common.policy_path)
         store = PostgresStore(settings.common.database_url)
         signer = Signer.from_private_file(settings.ci_signing_key_path)
-        github = GitHubClient(settings.common.github_token)
+        github_auth = GitHubAppAuth(
+            app_id=settings.github_app_id,
+            installation_id=settings.github_installation_id,
+            private_key_path=settings.github_app_private_key_path,
+        )
+        github = GitHubClient(token_provider=github_auth.installation_token)
         runner = JobRunner(
             store=store,
             policy=policy,
             github=github,
             signer=signer,
-            github_token=settings.common.github_token,
+            github_token_provider=github_auth.installation_token,
             public_base_url=settings.common.public_base_url,
             workspace_root=settings.workspace_root,
         )
@@ -66,13 +71,13 @@ class Worker:
                         str(exc),
                         now=utc_now(),
                     )
-                    if result.status == "dead":
+                    if result.status == 'dead':
                         self.runner.github.post_status(
                             result.repository,
                             result.head_sha,
-                            state="error",
-                            description="Adaptive Trust CI infrastructure retries exhausted",
-                            target_url=f"{self.settings.common.public_base_url}/jobs/{result.job_id}",
+                            state='error',
+                            description='Adaptive Trust CI infrastructure retries exhausted',
+                            target_url=f'{self.settings.common.public_base_url}/jobs/{result.job_id}',
                             context=self.runner.policy.status_context,
                         )
                 except Exception:
