@@ -67,7 +67,7 @@ class DeployTests(unittest.TestCase):
         self.assertEqual(result['head_sha'], 'a' * 40)
         self.assertIn('adaptive-trust-ci/verified', result['notice'])
 
-    def test_recording_prepare_still_requires_local_interactive_approval(self) -> None:
+    def test_recording_prepare_requires_exact_github_release_grant(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             with (
@@ -76,11 +76,12 @@ class DeployTests(unittest.TestCase):
                 patch('adaptive_grok.deploy._change_state', return_value=({'status': 'ready'}, 'c1')),
                 patch('adaptive_grok.deploy._version', return_value='2.1.0'),
                 patch('adaptive_grok.deploy._human_commands', return_value=(['tag'], 'a' * 40)),
-                patch('adaptive_grok.deploy.has_valid_approval', return_value=False),
+                patch('adaptive_grok.deploy.has_valid_approval', return_value=False) as approval,
             ):
                 result = prepare_deploy(root, record=True)
         self.assertFalse(result['ok'])
-        self.assertIn('local production approval', result['error'])
+        self.assertIn('github-release grant', result['error'])
+        approval.assert_called_once_with(root, 'production', action='github-release')
 
     def test_recorded_receipt_binds_exact_head_and_external_context(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -91,11 +92,12 @@ class DeployTests(unittest.TestCase):
                 patch('adaptive_grok.deploy._change_state', return_value=({'status': 'ready'}, 'c1')),
                 patch('adaptive_grok.deploy._version', return_value='2.1.0'),
                 patch('adaptive_grok.deploy._human_commands', return_value=(['tag'], 'a' * 40)),
-                patch('adaptive_grok.deploy.has_valid_approval', return_value=True),
+                patch('adaptive_grok.deploy.has_valid_approval', return_value=True) as approval,
                 patch('adaptive_grok.deploy.write_receipt') as write_receipt,
             ):
                 result = prepare_deploy(root, record=True)
         self.assertTrue(result['recorded'])
+        approval.assert_called_once_with(root, 'production', action='github-release')
         details = write_receipt.call_args.kwargs['details']
         self.assertEqual(details['head_sha'], 'a' * 40)
         self.assertEqual(details['external_status_required'], 'adaptive-trust-ci/verified')
