@@ -2,9 +2,17 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-23 — Human gates must match the GitHub identity model
+
+A pull-request author cannot approve their own pull request, and Environment self-review prevention blocks the deployment initiator. Use owner inspection and manual merge for the current solo identity, then enable required CODEOWNER review and self-review prevention after a separate bot, App, or collaborator owns authorship and dispatch.
+
+## 2026-08-23 — Shell protection has a code fallback
+
+`policy.json` improves and configures shell matching, but a missing or malformed policy file must not reopen control-plane writes. Common shell mutations are denied from `policy.py` defaults before configurable command patterns run.
+
 ## 2026-08-23 — Protected PR and Environment are the authority
 
-Local hooks and receipts are feedback, not authorization. Delivery is branch → exact-SHA `trusted-ci` → CODEOWNER approval → protected merge; release is the verified `main` SHA behind the `production` Environment. Grok never executes the side effect.
+Local hooks and receipts are feedback, not authorization. Delivery is branch → exact-SHA `trusted-ci` → configured human gate → protected merge; release is the verified `main` SHA behind the `production` Environment. Grok never executes the side effect.
 
 ## 2026-08-23 — Approval files are requests, never grants
 
@@ -32,7 +40,7 @@ A dirty change-package tree is not a product change, so do not spend an analysis
 
 ## 2026-08-16 — Green verify means protected delivery
 
-A green local verify opens the delivery path but cannot authorize merge or release. Required GitHub checks and human review decide merge; the protected Environment decides release.
+A green local verify opens the delivery path but cannot authorize merge or release. Required GitHub checks and the configured human gate decide merge; the protected Environment decides release.
 
 ## 2026-08-16 — Publish unpublished 2.0.8, do not invent 2.0.9
 
