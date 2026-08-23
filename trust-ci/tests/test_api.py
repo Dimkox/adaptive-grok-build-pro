@@ -31,9 +31,9 @@ class ApiTests(unittest.TestCase):
         )
         self.settings = ApiSettings(
             common=self.common,
-            webhook_secret='webhook-secret',
+            webhook_secret='wh-secret',
             trust_store_path=base / 'trust-store.json',
-            read_token='read-token-value',
+            read_token='read-token',
         )
         self.policy = Policy.from_dict(policy_data())
         self.human = Signer.generate()
@@ -65,7 +65,7 @@ class ApiTests(unittest.TestCase):
 
     @property
     def read_headers(self) -> dict[str, str]:
-        return {'Authorization': 'Bearer read-token-value'}
+        return {'Authorization': 'Bearer read-token'}
 
     def webhook_body(self, action='opened', *, repository='Dimkox/adaptive-grok-build-pro') -> bytes:
         return json.dumps(
@@ -165,7 +165,7 @@ class ApiTests(unittest.TestCase):
             policy_digest=job.policy_digest,
             scope='governance',
             reason='reviewed exact SHA',
-            now=now(),
+            now=utc_now(),
         )
         response = self.client.post('/approvals', json=sign_approval(payload, self.human).to_dict())
         self.assertEqual(response.status_code, 200)

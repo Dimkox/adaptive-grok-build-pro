@@ -177,7 +177,7 @@ Applying branch protection before observing the App-owned check can lock the rep
 Use a temporary human administration token for this one command. Do not grant repository administration to the long-lived Trust CI GitHub App:
 
 ```bash
-TRUST_CI_GITHUB_ADMIN_TOKEN='<temporary-admin-token>' \
+TRUST_CI_GITHUB_ADMIN_TOKEN=<temporary-admin-token> \
 TRUST_CI_GITHUB_APP_ID='<app-id>' \
 adaptive-trust-ci branch-protect \
   --policy "$PWD/runtime/policy.json" \

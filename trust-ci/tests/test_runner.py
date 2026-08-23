@@ -56,10 +56,7 @@ class FakeWorkspace:
         self.assert_calls += 1
         mutated = self.path / 'production.py'
         if mutated.exists():
-            raise WorkspaceMutationError(
-                'verification command modified tracked source: production.py',
-                ('production.py',),
-            )
+            raise WorkspaceMutationError(('production.py',))
 
     def reset(self):
         self.reset_calls += 1

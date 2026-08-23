@@ -69,7 +69,7 @@ Do not continue if any step is ambiguous.
 Use a temporary human administration token. Do not grant repository administration to the long-lived Trust CI GitHub App.
 
 ```bash
-TRUST_CI_GITHUB_ADMIN_TOKEN='<temporary-admin-token>' \
+TRUST_CI_GITHUB_ADMIN_TOKEN=<temporary-admin-token> \
 TRUST_CI_GITHUB_APP_ID='<app-id>' \
 adaptive-trust-ci branch-protect \
   --policy "$PWD/runtime/policy.json" \

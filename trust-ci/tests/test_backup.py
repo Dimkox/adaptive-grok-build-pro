@@ -65,7 +65,8 @@ class BackupTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             result = create_backup(DATABASE_URL, root, database_label='primary', now=now(), runner=runner)
-            result.dump_path.write_bytes(b'tampered')
+            original = result.dump_path.read_bytes()
+            result.dump_path.write_bytes(b'X' * len(original))
             with self.assertRaisesRegex(BackupError, 'digest mismatch'):
                 verify_backup(result.dump_path, result.manifest_path)
 

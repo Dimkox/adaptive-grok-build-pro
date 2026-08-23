@@ -51,8 +51,6 @@ def parse_pull_request_event(event_name: str | None, body: bytes) -> PullRequest
     pull_request = data.get("pull_request")
     if not isinstance(repository, dict) or not isinstance(pull_request, dict):
         raise WebhookError("pull_request webhook is missing repository or pull_request")
-    if pull_request.get("draft") and action != "closed":
-        return None
     try:
         request = JobRequest(
             repository=str(repository["full_name"]),

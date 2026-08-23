@@ -60,8 +60,12 @@ class WebhookTests(unittest.TestCase):
         assert event is not None
         self.assertEqual(event.request.head_sha, sha('c'))
 
-    def test_draft_pull_request_is_ignored(self) -> None:
-        self.assertIsNone(parse_pull_request_event('pull_request', pull_request_payload(draft=True)))
+    def test_draft_pull_request_is_enqueued(self) -> None:
+        event = parse_pull_request_event('pull_request', pull_request_payload(draft=True))
+        assert event is not None
+        self.assertFalse(event.closed)
+        self.assertEqual(event.request.pr_number, 12)
+        self.assertEqual(event.request.head_sha, sha('b'))
 
     def test_closed_pull_request_is_parsed_for_cancellation(self) -> None:
         event = parse_pull_request_event('pull_request', pull_request_payload('closed', draft=True))

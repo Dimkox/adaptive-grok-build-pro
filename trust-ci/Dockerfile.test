@@ -12,4 +12,4 @@ COPY tests ./tests
 COPY sql ./sql
 RUN python -m pip install --no-cache-dir ".[test]"
 
-CMD ["python3", "-m", "unittest", "-v", "tests.test_postgres_integration"]
+CMD ["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_postgres_integration.py", "-v"]

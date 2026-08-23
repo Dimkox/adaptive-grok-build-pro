@@ -48,7 +48,7 @@
   ],
   "holdout": {
     "path": "/etc/adaptive-trust-ci/holdout",
-    "digest": "28ee9c803043a482de50e2a9757fb5236e56a8c899b2ae97d4faf3f082333f30",
+    "digest": "b78d17006e270cec373aa130d7b0d11de357ffa236297b41075234e6ad7d5db8",
     "commands": [
       {
         "name": "external-holdout",

@@ -2,6 +2,14 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-23 — Draft pull requests must still enqueue Trust CI jobs
+
+Handoff keeps PR #2 draft until the App-owned check exists, so ignoring `draft=true` webhooks makes that check unreachable. Enqueue opened/synchronize/reopened draft events; keep closed-draft cancellation.
+
+## 2026-08-23 — PostgreSQL restart drills need a named volume
+
+`compose restart` stops the container and discards tmpfs. A named test volume plus `down --volumes` in the trap proves catalog recovery without leaving data behind.
+
 ## 2026-08-17 — Skip no-op checks; always push main and release
 
 A dirty change-package tree is not a product change. Do not spend an analysis/review wave on status or leftover paperwork. When product files do change and verify is green, push `origin main` and publish the GitHub Release.

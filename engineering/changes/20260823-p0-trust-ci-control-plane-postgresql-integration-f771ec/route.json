@@ -1,0 +1,92 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "data_reviewer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect"
+  ],
+  "base_commit": "c54fd01588eb343eeecde7302fee514bf3e6090d",
+  "base_fingerprint": "2fe19b45a48e81d47d8326f3f22f53707b5eb943a08f397537e50019d2d0cd2c",
+  "complexity": "high-risk",
+  "created_at": "2026-08-23T17:37:57+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "data",
+    "infra",
+    "frontend",
+    "integration"
+  ],
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "intent": "review",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "frontend",
+    "data",
+    "integration",
+    "infra"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=review",
+    "domains=data,infra,frontend,integration",
+    "repository=generic",
+    "write-owner=none",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "data_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "f771ecaf458d",
+  "schema_version": 1,
+  "session_id": "01a02fb3-44ee-73f2-9a2a-9daf856c17ae",
+  "status": "routed",
+  "task": "<user_query>\nПрочитай AGENTS.md и GROK_BUILD_HANDOFF.md. Продолжай реализацию строго по handoff, не добавляй GitHub Actions. Сначала воспроизведи baseline, затем выполни PostgreSQL integration, GitHub App activation, deployment и app-bound branch protection. Все изменения коммить в feat/trust-ci-control-plane и обновляй draft PR №2.\n</user_query>",
+  "task_domains": [
+    "data",
+    "infra",
+    "frontend",
+    "integration"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "verification-evidence",
+    "data-change",
+    "enterprise-integration",
+    "frontend-change"
+  ],
+  "write_agent": null
+}

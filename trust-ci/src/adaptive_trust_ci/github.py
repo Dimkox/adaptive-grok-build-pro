@@ -58,8 +58,8 @@ def branch_protection_payload(
     app_id: int,
     required_reviews: int = 0,
 ) -> dict[str, Any]:
-    normalized_name = check_name.strip()
-    if not normalized_name:
+    status_context = check_name.strip()
+    if not status_context:
         raise ValueError('check_name is required')
     if isinstance(app_id, bool) or app_id <= 0:
         raise ValueError('app_id must be positive')
@@ -68,7 +68,7 @@ def branch_protection_payload(
     return {
         'required_status_checks': {
             'strict': True,
-            'checks': [{'context': normalized_name, 'app_id': app_id}],
+            'checks': [{'context': status_context, 'app_id': app_id}],
         },
         'enforce_admins': True,
         'required_pull_request_reviews': {

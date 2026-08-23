@@ -146,6 +146,15 @@ class OperationsTests(unittest.TestCase):
         self.assertIn('down --volumes --remove-orphans', script)
         self.assertIn('trap cleanup EXIT', script)
 
+    def test_postgres_restart_drill_uses_named_volume_and_container_restart(self) -> None:
+        compose = (ROOT / 'trust-ci/compose.test.yaml').read_text(encoding='utf-8')
+        script = (ROOT / 'trust-ci/scripts/postgres-restart-drill.sh').read_text(encoding='utf-8')
+        self.assertIn('trust-ci-pgtest-data:/var/lib/postgresql/data', compose)
+        self.assertNotIn('tmpfs:', compose)
+        self.assertIn('compose restart postgres-test', script)
+        self.assertIn('postgres_restart_probe seed', script)
+        self.assertIn('postgres_restart_probe verify', script)
+
     def test_repository_contains_no_github_actions_workflow(self) -> None:
         workflows = ROOT / '.github' / 'workflows'
         self.assertFalse(workflows.exists(), 'GitHub Actions are forbidden for this project')
