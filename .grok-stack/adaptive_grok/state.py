@@ -1,12 +1,27 @@
 from __future__ import annotations
 
 import os
+import secrets
 import time
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
 
-from .util import dump_json, load_json, now_utc, runtime_dir
+from .util import (
+    dump_json,
+    git_head,
+    load_json,
+    now_utc,
+    runtime_dir,
+    tree_fingerprint,
+)
+
+APPROVAL_REQUEST_SCOPES = {
+    'production',
+    'external-write',
+    'protected-path',
+    '*',
+}
 
 
 def _process_alive(pid: int) -> bool:
@@ -33,7 +48,11 @@ def _stale_lock(lock: Path) -> bool:
 
 
 @contextmanager
-def runtime_lock(root: Path, name: str = 'state', timeout: float = 5.0) -> Iterator[None]:
+def runtime_lock(
+    root: Path,
+    name: str = 'state',
+    timeout: float = 5.0,
+) -> Iterator[None]:
     lock = runtime_dir(root) / f'.{name}.lock'
     deadline = time.monotonic() + timeout
     fd: int | None = None
@@ -88,7 +107,10 @@ def update_route(root: Path, **updates: Any) -> dict[str, Any] | None:
         route.update(updates)
         route['updated_at'] = now_utc()
         dump_json(active_route_path(root), route)
-        dump_json(runtime_dir(root) / 'routes' / f"{route['route_id']}.json", route)
+        dump_json(
+            runtime_dir(root) / 'routes' / f"{route['route_id']}.json",
+            route,
+        )
         return route
 
 
@@ -105,26 +127,38 @@ def record_agent_start(root: Path, agent_id: str, agent_type: str) -> None:
     with runtime_lock(root, 'agents'):
         state = get_agent_state(root)
         active = state.setdefault('active', {})
-        active[agent_id] = {'agent_type': agent_type, 'started_at': now_utc()}
-        state.setdefault('history', []).append({'event': 'start', 'agent_id': agent_id, 'agent_type': agent_type, 'at': now_utc()})
+        active[agent_id] = {
+            'agent_type': agent_type,
+            'started_at': now_utc(),
+        }
+        state.setdefault('history', []).append(
+            {
+                'event': 'start',
+                'agent_id': agent_id,
+                'agent_type': agent_type,
+                'at': now_utc(),
+            }
+        )
         state['history'] = state['history'][-200:]
         dump_json(agent_state_path(root), state)
 
 
 def record_agent_stop(root: Path, agent_id: str, agent_type: str) -> bool:
-    """Record a stop once. Returns True on the first stop, False if already stopped."""
+    """Record a stop once. Returns True on the first stop."""
     with runtime_lock(root, 'agents'):
         state = get_agent_state(root)
         active = state.setdefault('active', {})
         first = agent_id in active
         active.pop(agent_id, None)
         if first:
-            state.setdefault('history', []).append({
-                'event': 'stop',
-                'agent_id': agent_id,
-                'agent_type': agent_type,
-                'at': now_utc(),
-            })
+            state.setdefault('history', []).append(
+                {
+                    'event': 'stop',
+                    'agent_id': agent_id,
+                    'agent_type': agent_type,
+                    'at': now_utc(),
+                }
+            )
             state['history'] = state['history'][-200:]
             dump_json(agent_state_path(root), state)
         return first
@@ -139,52 +173,59 @@ def active_write_agents(root: Path, write_roles: set[str]) -> list[str]:
     ]
 
 
+def approval_requests_path(root: Path) -> Path:
+    return runtime_dir(root) / 'approval-requests.json'
+
+
+def request_approval(root: Path, scope: str, reason: str) -> dict[str, Any]:
+    """Record a non-authorizing request for a human-owned action."""
+    normalized_scope = scope.strip()
+    normalized_reason = reason.strip()
+    if normalized_scope not in APPROVAL_REQUEST_SCOPES:
+        raise ValueError(f'unsupported approval request scope: {scope}')
+    if not normalized_reason:
+        raise ValueError('approval request reason must not be empty')
+
+    with runtime_lock(root, 'approval-requests'):
+        requests = load_json(approval_requests_path(root), [])
+        if not isinstance(requests, list):
+            requests = []
+        route = get_active_route(root) or {}
+        request = {
+            'id': secrets.token_hex(6),
+            'status': 'requested',
+            'scope': normalized_scope,
+            'reason': normalized_reason,
+            'route_id': route.get('route_id'),
+            'git_head': git_head(root),
+            'tree_fingerprint': tree_fingerprint(root),
+            'created_at': now_utc(),
+        }
+        requests.append(request)
+        dump_json(approval_requests_path(root), requests[-200:])
+        return request
+
+
 def approvals_path(root: Path) -> Path:
+    """Legacy path retained for compatibility; it is never authoritative."""
     return runtime_dir(root) / 'approvals.json'
 
 
-def add_approval(root: Path, scope: str, reason: str, ttl_minutes: int) -> dict[str, Any]:
-    import secrets
-    from datetime import datetime, timedelta, timezone
-
-    with runtime_lock(root, 'approvals'):
-        approvals = load_json(approvals_path(root), [])
-        if not isinstance(approvals, list):
-            approvals = []
-        now = datetime.now(timezone.utc)
-        approval = {
-            'id': secrets.token_hex(6),
-            'scope': scope,
-            'reason': reason,
-            'created_at': now.isoformat(timespec='seconds'),
-            'expires_at': (now + timedelta(minutes=ttl_minutes)).isoformat(timespec='seconds'),
-        }
-        approvals.append(approval)
-        dump_json(approvals_path(root), approvals[-100:])
-        return approval
+def add_approval(
+    root: Path,
+    scope: str,
+    reason: str,
+    ttl_minutes: int = 15,
+) -> dict[str, Any]:
+    """Compatibility alias that records a request and grants nothing."""
+    _ = ttl_minutes
+    return request_approval(root, scope, reason)
 
 
 def has_valid_approval(root: Path, scope: str) -> bool:
-    from datetime import datetime, timezone
-
-    approvals = load_json(approvals_path(root), [])
-    if not isinstance(approvals, list):
-        return False
-    now = datetime.now(timezone.utc)
-    valid: list[dict[str, Any]] = []
-    matched = False
-    for approval in approvals:
-        try:
-            expires = datetime.fromisoformat(approval['expires_at'])
-        except (KeyError, TypeError, ValueError):
-            continue
-        if expires >= now:
-            valid.append(approval)
-            if approval.get('scope') in {scope, '*'}:
-                matched = True
-    if len(valid) != len(approvals):
-        dump_json(approvals_path(root), valid)
-    return matched
+    """Local runtime files never authorize guarded actions."""
+    _ = (root, scope)
+    return False
 
 
 def active_change_path(root: Path) -> Path:

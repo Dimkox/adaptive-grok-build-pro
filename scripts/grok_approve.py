@@ -9,12 +9,34 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 import argparse
 import json
 
-from adaptive_grok.state import add_approval
+from adaptive_grok.state import request_approval
 from adaptive_grok.util import find_root
 
-parser = argparse.ArgumentParser(description='Create a short-lived explicit approval for guarded side effects.')
-parser.add_argument('scope', choices=['production', 'external-write', 'protected-path', '*'])
+parser = argparse.ArgumentParser(
+    description=(
+        'Record a non-authorizing request for a human-owned protected action.'
+    )
+)
+parser.add_argument(
+    'scope',
+    choices=['production', 'external-write', 'protected-path', '*'],
+)
 parser.add_argument('--reason', required=True)
-parser.add_argument('--ttl', type=int, default=15, help='Minutes')
+parser.add_argument(
+    '--ttl',
+    type=int,
+    default=15,
+    help='Deprecated compatibility argument; requests do not grant access.',
+)
 args = parser.parse_args()
-print(json.dumps(add_approval(find_root(), args.scope, args.reason, args.ttl), ensure_ascii=False, indent=2))
+_ = args.ttl
+result = request_approval(find_root(), args.scope, args.reason)
+result.update(
+    {
+        'authorization': 'not-granted',
+        'next_step': (
+            'Use the protected pull-request or production Environment path.'
+        ),
+    }
+)
+print(json.dumps(result, ensure_ascii=False, indent=2))
