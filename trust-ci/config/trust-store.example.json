@@ -13,19 +13,6 @@
       "not_after": "2027-08-23T00:00:00+00:00",
       "revoked_at": null,
       "public_key_pem": "REPLACE_WITH_MULTILINE_ED25519_PUBLIC_KEY_PEM"
-    },
-    {
-      "key_id": "OPTIONAL_OVERLAPPING_ROTATION_KEY_ID",
-      "actor": "REPLACE_WITH_HUMAN_IDENTITY",
-      "scopes": [
-        "governance",
-        "database",
-        "production"
-      ],
-      "not_before": "2027-08-01T00:00:00+00:00",
-      "not_after": "2028-08-01T00:00:00+00:00",
-      "revoked_at": null,
-      "public_key_pem": "OPTIONAL_OVERLAPPING_ED25519_PUBLIC_KEY_PEM"
     }
   ]
 }
