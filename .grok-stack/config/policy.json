@@ -2,6 +2,9 @@
   "schema_version": 1,
   "protected_paths": [
     ".git/**",
+    ".github/**",
+    ".grok/**",
+    ".grok-stack/**",
     ".env",
     "**/.env.*",
     "**/.env",
@@ -10,6 +13,21 @@
     "**/*.key",
     "**/*.p12",
     "**/*.pfx",
+    "AGENTS.md",
+    "decisions.md",
+    "mistakes.md",
+    "Makefile",
+    ".coveragerc",
+    "ruff.toml",
+    "bandit.yaml",
+    "scripts/grok_approve.py",
+    "scripts/grok_review.py",
+    "scripts/grok_verify.py",
+    "tests/test_hooks.py",
+    "tests/test_policy.py",
+    "tests/test_structure.py",
+    "tests/test_verification_doctor.py",
+    "trust-ci/**",
     "bitrix/**"
   ],
   "secret_read_paths": [
@@ -24,11 +42,15 @@
     "**/id_rsa",
     "**/id_ed25519",
     "**/credentials*",
-    "**/secrets/**"
+    "**/secrets/**",
+    "trust-ci/env/*.env",
+    "trust-ci/runtime/**"
   ],
   "notes": [
     "Bitrix core is protected by default. Put custom code in local/.",
-    "Use scripts/grok_approve.py for short-lived exceptional approvals.",
-    "Hooks are guardrails, not a complete OS security boundary."
+    "The local hook policy is a guardrail, not the merge trust boundary.",
+    "Local scripts/grok_approve.py approvals are advisory and must never be accepted by external Trust CI.",
+    "The authoritative exact-SHA gate is adaptive-trust-ci/verified from the self-hosted service.",
+    "GitHub Actions are forbidden; .github is protected to prevent workflow injection."
   ]
 }
