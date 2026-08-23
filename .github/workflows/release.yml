@@ -9,25 +9,30 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: protected-release
   cancel-in-progress: false
 
 jobs:
-  release:
+  verify-release:
     if: github.ref == 'refs/heads/main'
-    environment: production
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      version: ${{ steps.identity.outputs.version }}
+      sha: ${{ steps.identity.outputs.sha }}
 
     steps:
-      - name: Check out exact main SHA
+      - name: Check out exact main SHA with release history
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -43,45 +48,108 @@ jobs:
           tomli==2.4.1
 
       - name: Validate release identity
+        id: identity
         env:
           REQUESTED_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           actual_version="$(tr -d '\r\n' < VERSION)"
           test -n "$actual_version"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           if [[ "$REQUESTED_VERSION" != "$actual_version" ]]; then
             echo "Requested $REQUESTED_VERSION but VERSION is $actual_version" >&2
             exit 1
           fi
-          git fetch --tags --force
           if git rev-parse --verify --quiet "refs/tags/v${actual_version}"; then
             echo "Tag v${actual_version} already exists" >&2
             exit 1
           fi
+          verify_base="$(git describe --tags --abbrev=0 --match 'v*' "${GITHUB_SHA}^" 2>/dev/null || git rev-parse "${GITHUB_SHA}^")"
+          echo "version=${actual_version}" >> "$GITHUB_OUTPUT"
+          echo "sha=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "base=${verify_base}" >> "$GITHUB_OUTPUT"
 
       - name: Run strict release verification
-        run: python3 scripts/grok_verify.py --mode release --strict --json
+        env:
+          VERIFY_BASE: ${{ steps.identity.outputs.base }}
+        run: python3 scripts/grok_verify.py --mode release --strict --json --base "$VERIFY_BASE"
 
       - name: Build deterministic release package
         run: python3 scripts/package_stack.py
 
-      - name: Tag and publish the verified SHA
+      - name: Verify package checksum
         env:
-          GH_TOKEN: ${{ github.token }}
-          REQUESTED_VERSION: ${{ inputs.version }}
+          RELEASE_VERSION: ${{ steps.identity.outputs.version }}
         run: |
           set -euo pipefail
-          archive="dist/adaptive-grok-build-pro-v${REQUESTED_VERSION}.zip"
+          cd dist
+          sha256sum -c "adaptive-grok-build-pro-v${RELEASE_VERSION}.zip.sha256"
+
+      - name: Upload verified release package
+        uses: actions/upload-artifact@043fb46d1ee9ced90f49c74e91a2616c800a1189 # v7.0.1
+        with:
+          name: release-package-${{ github.sha }}
+          path: |
+            dist/adaptive-grok-build-pro-v${{ steps.identity.outputs.version }}.zip
+            dist/adaptive-grok-build-pro-v${{ steps.identity.outputs.version }}.zip.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-release:
+    needs: verify-release
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Download the verified package
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-package-${{ needs.verify-release.outputs.sha }}
+          path: dist
+
+      - name: Verify, tag, and publish the exact checked artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_VERSION: ${{ needs.verify-release.outputs.version }}
+          EXPECTED_SHA: ${{ needs.verify-release.outputs.sha }}
+        run: |
+          set -euo pipefail
+          test "$EXPECTED_SHA" = "$GITHUB_SHA"
+          archive="adaptive-grok-build-pro-v${REQUESTED_VERSION}.zip"
           checksum="${archive}.sha256"
-          test -f "$archive"
-          test -f "$checksum"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "v${REQUESTED_VERSION}" "$GITHUB_SHA" -m "v${REQUESTED_VERSION}"
-          git push origin "v${REQUESTED_VERSION}"
+          test -f "dist/${archive}"
+          test -f "dist/${checksum}"
+          (
+            cd dist
+            sha256sum -c "$checksum"
+          )
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/v${REQUESTED_VERSION}" >/dev/null 2>&1; then
+            echo "Tag v${REQUESTED_VERSION} already exists" >&2
+            exit 1
+          fi
+          tag_date="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          tag_sha="$(
+            jq -n \
+              --arg tag "v${REQUESTED_VERSION}" \
+              --arg message "v${REQUESTED_VERSION}" \
+              --arg object "$EXPECTED_SHA" \
+              --arg date "$tag_date" \
+              '{tag:$tag,message:$message,object:$object,type:"commit",tagger:{name:"github-actions[bot]",email:"41898282+github-actions[bot]@users.noreply.github.com",date:$date}}' \
+            | gh api --method POST "repos/${GITHUB_REPOSITORY}/git/tags" --input - --jq .sha
+          )"
+          jq -n \
+            --arg ref "refs/tags/v${REQUESTED_VERSION}" \
+            --arg sha "$tag_sha" \
+            '{ref:$ref,sha:$sha}' \
+          | gh api --method POST "repos/${GITHUB_REPOSITORY}/git/refs" --input -
           gh release create "v${REQUESTED_VERSION}" \
-            "$archive" \
-            "$checksum" \
+            "dist/${archive}" \
+            "dist/${checksum}" \
+            --repo "$GITHUB_REPOSITORY" \
             --verify-tag \
             --title "Adaptive Grok Build Pro v${REQUESTED_VERSION}" \
             --generate-notes
