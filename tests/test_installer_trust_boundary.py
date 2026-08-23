@@ -31,8 +31,47 @@ def install_silent(*args, **kwargs) -> None:
         MODULE.install(*args, **kwargs)
 
 
+def rendered_source(rel: str, codeowner: str) -> bytes:
+    data = (ROOT / rel).read_bytes()
+    if rel in {'.github/CODEOWNERS', 'docs/TRUST-BOUNDARY.md'}:
+        return data.replace(b'@Dimkox', codeowner.encode('utf-8'))
+    return data
+
+
 class InstallerTrustBoundaryTests(unittest.TestCase):
-    def test_with_ci_copies_trust_files_and_preserves_unrelated_workflow(self) -> None:
+    def test_with_ci_requires_explicit_target_codeowner(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'target'
+            with self.assertRaisesRegex(SystemExit, 'codeowner'):
+                install_silent(
+                    ROOT,
+                    target,
+                    force=False,
+                    dry_run=False,
+                    with_ci=True,
+                )
+            for rel in TRUST_FILES:
+                self.assertFalse((target / rel).exists(), rel)
+
+    def test_with_ci_rejects_invalid_codeowner(self) -> None:
+        invalid = ('Dimkox', '@bad owner', '@org/', '@')
+        with tempfile.TemporaryDirectory() as tmp:
+            for codeowner in invalid:
+                with self.subTest(codeowner=codeowner), self.assertRaisesRegex(
+                    SystemExit,
+                    'codeowner',
+                ):
+                    install_silent(
+                        ROOT,
+                        Path(tmp) / codeowner.replace('/', '_').replace(' ', '_'),
+                        force=False,
+                        dry_run=False,
+                        with_ci=True,
+                        codeowner=codeowner,
+                    )
+
+    def test_with_ci_renders_target_owner_and_preserves_unrelated_workflow(self) -> None:
+        codeowner = '@acme/platform'
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / 'target'
             unrelated = target / '.github/workflows/existing.yml'
@@ -45,6 +84,7 @@ class InstallerTrustBoundaryTests(unittest.TestCase):
                 force=False,
                 dry_run=False,
                 with_ci=True,
+                codeowner=codeowner,
             )
 
             self.assertEqual(
@@ -54,9 +94,17 @@ class InstallerTrustBoundaryTests(unittest.TestCase):
             for rel in TRUST_FILES:
                 self.assertEqual(
                     (target / rel).read_bytes(),
-                    (ROOT / rel).read_bytes(),
+                    rendered_source(rel, codeowner),
                     rel,
                 )
+            self.assertNotIn(
+                '@Dimkox',
+                (target / '.github/CODEOWNERS').read_text(encoding='utf-8'),
+            )
+            self.assertNotIn(
+                '@Dimkox',
+                (target / 'docs/TRUST-BOUNDARY.md').read_text(encoding='utf-8'),
+            )
 
     def test_with_ci_managed_conflict_requires_force(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -72,6 +120,7 @@ class InstallerTrustBoundaryTests(unittest.TestCase):
                     force=False,
                     dry_run=False,
                     with_ci=True,
+                    codeowner='@Dimkox',
                 )
 
             self.assertEqual(path.read_text(encoding='utf-8'), 'name: local\n')
@@ -81,6 +130,7 @@ class InstallerTrustBoundaryTests(unittest.TestCase):
                 force=True,
                 dry_run=False,
                 with_ci=True,
+                codeowner='@Dimkox',
             )
             self.assertEqual(path.read_bytes(), (ROOT / path.relative_to(target)).read_bytes())
 
@@ -93,6 +143,7 @@ class InstallerTrustBoundaryTests(unittest.TestCase):
                 force=True,
                 dry_run=True,
                 with_ci=True,
+                codeowner='@Dimkox',
             )
             for rel in TRUST_FILES:
                 self.assertFalse((target / rel).exists(), rel)
