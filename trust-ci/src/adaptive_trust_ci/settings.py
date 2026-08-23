@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import os
+import re
 import socket
 from dataclasses import dataclass
 from pathlib import Path
+
+
+_IMAGE_DIGEST_RE = re.compile(r'^(?:sha256:[0-9a-f]{64}|.+@sha256:[0-9a-f]{64})$')
 
 
 class SettingsError(ValueError):
@@ -36,6 +40,13 @@ def _int(name: str, minimum: int = 1) -> int:
         raise SettingsError(f'{name} must be an integer') from exc
     if value < minimum:
         raise SettingsError(f'{name} must be >= {minimum}')
+    return value
+
+
+def _immutable_image(name: str) -> str:
+    value = _required(name)
+    if not _IMAGE_DIGEST_RE.fullmatch(value):
+        raise SettingsError(f'{name} must be an immutable image reference with sha256 digest')
     return value
 
 
@@ -87,6 +98,7 @@ class WorkerSettings:
     github_app_id: int
     github_installation_id: int
     github_app_private_key_path: Path
+    runner_image: str
     workspace_root: Path
     workspace_host_root: Path
     holdout_host_path: Path
@@ -99,7 +111,7 @@ class WorkerSettings:
         workspace_host_root = Path(_required('TRUST_CI_WORKSPACE_HOST_ROOT'))
         holdout_host_path = Path(_required('TRUST_CI_HOLDOUT_HOST_PATH'))
         if not workspace_host_root.is_absolute() or not holdout_host_path.is_absolute():
-            raise SettingsError('Docker daemon host paths must be absolute')
+            raise SettingsError('Docker daemon paths must be absolute')
         worker_id = os.environ.get('TRUST_CI_WORKER_ID', f'{socket.gethostname()}-{os.getpid()}').strip()
         if not worker_id:
             raise SettingsError('TRUST_CI_WORKER_ID cannot be empty')
@@ -109,6 +121,7 @@ class WorkerSettings:
             github_app_id=_int('TRUST_CI_GITHUB_APP_ID'),
             github_installation_id=_int('TRUST_CI_GITHUB_INSTALLATION_ID'),
             github_app_private_key_path=Path(_required('TRUST_CI_GITHUB_APP_PRIVATE_KEY_PATH')).resolve(),
+            runner_image=_immutable_image('TRUST_CI_RUNNER_IMAGE'),
             workspace_root=workspace_root,
             workspace_host_root=workspace_host_root,
             holdout_host_path=holdout_host_path,
