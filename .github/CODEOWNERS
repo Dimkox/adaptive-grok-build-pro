@@ -1,0 +1,22 @@
+# The trust boundary is human-owned.
+/.github/ @Dimkox
+/.agents/ @Dimkox
+/.grok/ @Dimkox
+/.grok-stack/ @Dimkox
+/AGENTS.md @Dimkox
+/README.md @Dimkox
+/CHANGELOG.md @Dimkox
+/VERSION @Dimkox
+/decisions.md @Dimkox
+/mistakes.md @Dimkox
+/Makefile @Dimkox
+/ruff.toml @Dimkox
+/bandit.yaml @Dimkox
+/.coveragerc @Dimkox
+/scripts/grok_*.py @Dimkox
+/docs/TRUST-BOUNDARY.md @Dimkox
+/tests/test_policy.py @Dimkox
+/tests/test_deploy.py @Dimkox
+/tests/test_manifest_package.py @Dimkox
+/tests/test_structure.py @Dimkox
+/tests/test_trust_boundary.py @Dimkox

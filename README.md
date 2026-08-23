@@ -4,28 +4,38 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## Current state
 
-- Identity: **2.0.11** (`VERSION`, README H1). Published GitHub Release is `v2.0.11`.
-- Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); then README-before-push, Split large tasks, Skip no-op checks, and Release when green.
-- Quality gate: local `python3 scripts/grok_verify.py --mode pr` only. **No GitHub Actions.**
-- Do not add `pyproject.toml` / `requirements.txt` / `setup.py` (flips repo detect).
+- Published identity remains **2.0.11** (`VERSION`, README H1, GitHub Release `v2.0.11`). This branch contains unreleased trust-boundary hardening.
+- Standing contract: [AGENTS.md](AGENTS.md) — agent self-learning, bounded task splitting, one write owner, immutable control plane, protected pull-request delivery, and human-owned release.
+- Local feedback: `python3 scripts/grok_verify.py --mode pr`.
+- Independent gate: [`.github/workflows/trusted-ci.yml`](.github/workflows/trusted-ci.yml) runs strict verification on the exact pull-request SHA with Python 3.10 and 3.12, then builds the package.
+- Release gate: [`.github/workflows/release.yml`](.github/workflows/release.yml) targets the protected `production` Environment and publishes only the exact verified `main` SHA.
+- The workflows become authoritative only after the settings in [docs/TRUST-BOUNDARY.md](docs/TRUST-BOUNDARY.md) are enabled.
+- Do not add `pyproject.toml`, `requirements.txt`, or `setup.py`; those files change repository detection and test-runner selection.
 
 ## Read first
 
 1. [AGENTS.md](AGENTS.md)
-2. [decisions.md](decisions.md)
-3. [mistakes.md](mistakes.md)
-4. [CHANGELOG.md](CHANGELOG.md)
-5. [QUICKSTART.md](QUICKSTART.md)
-6. `.grok-stack/runtime/active-route.json` (live route; not product identity)
-7. This README’s stack graph and map
+2. [docs/TRUST-BOUNDARY.md](docs/TRUST-BOUNDARY.md)
+3. [decisions.md](decisions.md)
+4. [mistakes.md](mistakes.md)
+5. [CHANGELOG.md](CHANGELOG.md)
+6. [QUICKSTART.md](QUICKSTART.md)
+7. `.grok-stack/runtime/active-route.json` for the live local route
+8. This README's stack graph and map
 
 ## How work runs
 
-Source-of-truth order is in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Loop: route → change package → one write owner → if the product changed, `grok_verify --mode pr` and reviews; if nothing product-changed, skip that wave → `ready` → push `main` and publish a new release (refresh this README, zip, tag, GitHub Release).
+The local loop is route → durable change package → one write owner → verification → independent reviews → `ready`. Delivery then leaves the agent trust domain: feature branch → pull request → exact-SHA `trusted-ci` → human CODEOWNER approval → protected merge into `main`. A human dispatches the release workflow, and the required reviewer approves the `production` Environment before tagging or publication.
+
+`scripts/grok_approve.py` records a request only. It never grants permission to push, merge, dispatch workflows, edit the control plane, mutate external systems, or publish.
 
 ## Map
 
 - [AGENTS.md](AGENTS.md)
+- [docs/TRUST-BOUNDARY.md](docs/TRUST-BOUNDARY.md)
+- [.github/CODEOWNERS](.github/CODEOWNERS)
+- [.github/workflows/trusted-ci.yml](.github/workflows/trusted-ci.yml)
+- [.github/workflows/release.yml](.github/workflows/release.yml)
 - [decisions.md](decisions.md)
 - [mistakes.md](mistakes.md)
 - [CHANGELOG.md](CHANGELOG.md)
@@ -49,11 +59,12 @@ Source-of-truth order is in AGENTS.md. Large work is split into small subtasks t
 
 ## What this is
 
-- Task routing + domain skills (Bitrix, API/events, data, frontend, security, incidents, …)
-- Quality profiles and change packages under `engineering/changes/`
-- Verification / review receipts via `scripts/grok_*.py`
-- Multi-agent discipline described in `AGENTS.md`
-- `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`
+- Deterministic task routing and domain skills for Bitrix, API and events, data, frontend, security, incidents, AI, and integrations
+- Quality profiles and durable change packages under `engineering/changes/`
+- Fingerprint-bound verification and review receipts via `scripts/grok_*.py`
+- One write owner with read-only analysis and review agents
+- A local fail-open hook layer for recoverability, backed by an external pull-request and Environment trust boundary
+- Self-learning through root `decisions.md` and `mistakes.md`
 
 ## Stack graph
 
@@ -113,31 +124,31 @@ graph TD
 
 | Node | Role |
 | --- | --- |
-| Route | `scripts/grok_route.py` / active-route |
+| Route | `scripts/grok_route.py` and the active route |
 | Skills | `.grok/skills/` and `.agents/skills/` |
 | Agents | `.grok/agents/` |
 | Hooks | `.grok/hooks/` |
 | Policy | `.grok-stack/adaptive_grok/policy.py` |
-| Verify | `scripts/grok_verify.py` + receipts |
-| Packages | `packages/` + `scripts/package_stack.py` |
-| Contract | `AGENTS.md` first rule: log to `decisions.md` / `mistakes.md` |
+| Verify | `scripts/grok_verify.py`, strict CI, and receipts |
+| Packages | `packages/` and `scripts/package_stack.py` |
+| Contract | `AGENTS.md` |
 | Decisions | root `decisions.md` |
 | Mistakes | root `mistakes.md` |
 
 ## Requirements
 
-Pins are **minimum or newer**. `built` is the version this tree was verified on. If a tool is missing or older than minimum, `python3 scripts/grok_doctor.py` prints an **install offer** for the fallback (or install a newer version).
+Local toolchain policy is minimum-or-newer. `built` is the version used for the published 2.0.11 tree; authoritative CI installs its own exact Ruff, Bandit, and Coverage.py versions.
 
 | Tool | Minimum | Built | Fallback | Required |
 | --- | --- | --- | --- | --- |
 | Python 3 | 3.10 | 3.12.3 | 3.12 | yes |
 | Git | 2.34 | 2.43.0 | 2.43 | yes |
 | Grok Build CLI | 1.0.0 | 1.0.4 | 1.0.4 | for the TUI |
-| GitHub CLI (`gh`) | 2.40 | 2.86.0 | 2.86 | for GitHub Release |
+| GitHub CLI (`gh`) | 2.40 | 2.86.0 | 2.86 | for human workflow dispatch and release inspection |
 | Node.js | 18 | 24.19.0 | 20 LTS | frontend profiles |
 | npm | 9 | 11.17.0 | 10 | frontend profiles |
-| PHP | 8.1 | 8.2 | 8.2 | PHP/Bitrix profiles |
-| Composer | 2.2 | 2.7 | 2.7 | PHP/Bitrix profiles |
+| PHP | 8.1 | 8.2 | 8.2 | PHP and Bitrix profiles |
+| Composer | 2.2 | 2.7 | 2.7 | PHP and Bitrix profiles |
 
 ```bash
 python3 scripts/grok_doctor.py --offer-install
@@ -148,65 +159,55 @@ Machine-readable pins: `.grok-stack/config/toolchain.json`.
 ## Install into a project
 
 ```bash
-# from this package root — copies the stack and installs missing required tools
 python3 scripts/install_into.py /path/to/your/repo
 # skip host installs: --no-deps
-# also PHP/Node/gh: --all-deps
+# also install optional PHP, Node, and gh tools: --all-deps
 ```
 
-Or copy manually:
+Manual copy layout:
 
 ```text
-.grok/            → project .grok/          (config, hooks, agents, skills)
+.grok/            → project .grok/
 .agents/skills/   → project .agents/skills/
 .grok-stack/      → project .grok-stack/
 scripts/          → project scripts/
 AGENTS.md         → project AGENTS.md
 decisions.md      → project decisions.md
 mistakes.md       → project mistakes.md
-engineering/      → project engineering/  (if empty scaffold needed)
+engineering/      → project engineering/
 ```
 
-Then in the project:
+Then:
 
 ```bash
 cd /path/to/your/repo
-grok inspect    # should see skills + AGENTS.md
-grok            # start TUI
+grok inspect
+grok
 ```
 
-Invoke the main controller skill:
-
-```text
-/adaptive-delivery
-```
-
-or just describe a development task — Grok should pick up skills from `.grok/skills/`.
+Invoke `/adaptive-delivery` or describe a development task; the router selects the relevant skills and agents.
 
 ## Scripts
 
-Loop: route → change → verify → independent reviews → `ready` → `python3 scripts/grok_deploy.py` (prepare-only) → humans run the printed tag / push / GitHub Release commands.
+Local loop: route → change → verify → independent reviews → `ready`. `grok_deploy` validates local evidence and prints the strict verification plus protected release-workflow dispatch for a human operator.
 
 | Script | Role |
-|--------|------|
-| `scripts/grok_route.py` | Classify / show route |
-| `scripts/grok_change.py` | Start durable change package |
-| `scripts/grok_status.py` | Runtime status |
-| `scripts/grok_verify.py` | Verification gate (unittest, Ruff, Bandit, measured coverage in `pr`/`release`) |
-| `scripts/grok_review.py` | Record review receipt |
-| `scripts/grok_approve.py` | Short-lived explicit approval (production / external-write / protected-path) |
-| `scripts/grok_deploy.py` | Prepare-only last mile: check evidence, print human publish commands |
-| `scripts/grok_doctor.py` | Health check |
-| `scripts/install_into.py` | Install stack into target repo |
+| --- | --- |
+| `scripts/grok_route.py` | Classify and show the route |
+| `scripts/grok_change.py` | Manage durable change packages |
+| `scripts/grok_status.py` | Show runtime status |
+| `scripts/grok_verify.py` | Run verification; `--strict` fails if authoritative Python tools are unavailable |
+| `scripts/grok_review.py` | Record a fingerprint-bound independent review receipt |
+| `scripts/grok_approve.py` | Record a non-authorizing human-action request |
+| `scripts/grok_deploy.py` | Validate evidence and print the protected release workflow dispatch |
+| `scripts/grok_doctor.py` | Check toolchain and structure health |
+| `scripts/install_into.py` | Install the stack into a target repository |
 
-## Hooks
+## Hooks and trust boundary
 
-Lifecycle adapters live in `.grok/hooks/` and are registered in both:
+Lifecycle adapters live in `.grok/hooks/` and are registered in `.grok/hooks.json` and `.grok/hooks/adaptive.json`. Hooks classify prompts, protect secrets and Bitrix core, deny control-plane writes, and block real side-effect invocations while policy is healthy.
 
-- `.grok/hooks.json` — doctor/structure contract (`command` + `commandWindows`)
-- `.grok/hooks/adaptive.json` — Grok project-hook discovery
-
-Trust the folder once (`/hooks-trust` or `grok --trust`). Hooks classify prompts and enforce policy (secrets, Bitrix core, destructive commands, and real side-effect invocations such as `git push`). Missing evidence is a Stop warning, not a hard block. Production policy matches command invocations, not words inside paths or arguments.
+Hooks retain fail-open recovery behavior so a broken local import cannot freeze Grok. They are not the independent security boundary. Required GitHub checks, CODEOWNERS, protected `main`, and the `production` Environment provide that boundary. See [docs/TRUST-BOUNDARY.md](docs/TRUST-BOUNDARY.md).
 
 ## Package
 
@@ -214,13 +215,12 @@ Trust the folder once (`/hooks-trust` or `grok --trust`). Hooks classify prompts
 python3 scripts/package_stack.py
 ```
 
-Default output is `dist/adaptive-grok-build-pro-v<VERSION>.zip` (gitignored scratch).
-Published copies live in `packages/` and on the GitHub Release. Zip members use the prefix `adaptive-grok-build-pro/`.
+Default output is `dist/adaptive-grok-build-pro-v<VERSION>.zip` plus its SHA-256 file. Published copies live under `packages/` and on GitHub Releases. Runtime state, `.env` files, and private-key material are excluded.
 
 ## Bitrix
 
-See skills under `.grok/skills/bitrix-development/` and example module in `examples/bitrix-module/`.
+See `.grok/skills/bitrix-development/` and `examples/bitrix-module/`.
 
 ## License
 
-**MIT.** A commercial product that is free of charge: use, copy, modify, and ship it. The repository is public. No EULA, no paid tier. Local checks: `make doctor` / `make verify`. `grok_verify --mode pr` also runs Ruff and Bandit when those CLIs are on PATH (skip if missing) and a Coverage.py fail-under of 74. Semgrep, Trivy config, and npm prettier/format run only on consumer trees that have those signals.
+**MIT.** A commercial product that is free of charge: use, copy, modify, and ship it. The repository is public. No EULA, no paid tier. Local checks are `make doctor`, `make verify`, and non-strict `grok_verify`. Authoritative CI runs `python3 scripts/grok_verify.py --mode pr --strict --json`; Semgrep, Trivy, and npm format checks remain signal-driven for consumer repositories.

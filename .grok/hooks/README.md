@@ -2,15 +2,15 @@
 
 Project hooks need `/hooks-trust` in the Grok TUI.
 
-## Soft mode (default since v2.0.4)
+## Soft local guardrails
 
-- **PreToolUse**: real policy when import works; on any error → **allow**
-- **Stop**: evidence gaps are **warnings only**, never block the agent
+- **PreToolUse** runs repository policy when imports succeed; an infrastructure error still fails open so a broken hook cannot freeze the session.
+- **Stop** reports missing or stale evidence as a warning and never creates a retry loop.
+- Production commands, workflow dispatch, MCP writes, and control-plane edits are denied whenever policy is healthy. A local approval request never lifts those denials.
 
-Hard lockouts (exit 2 / infinite stop loops) are intentional bugs — fixed in 2.0.4.
-Older `adaptive.json` files call `python3 pre_tool_use.py` from the project root. Root shims dispatch into `.grok/hooks/` or fail-open so a `git pull` cannot freeze the agent.
+Root shims dispatch into `.grok/hooks/` and retain fail-open fallbacks for recovery after an incomplete pull.
 
-## Disable all hooks
+## Disable local hooks
 
 ```bash
 mv .grok/hooks .grok/hooks.disabled
@@ -19,8 +19,10 @@ mv .grok/hooks .grok/hooks.disabled
 # hooks = false
 ```
 
-Then restart `grok`.
+Then restart `grok`. Disabling hooks removes local convenience guardrails; it does not bypass protected branches, required GitHub checks, CODEOWNERS, or the `production` Environment.
 
-## Policy still enforced when healthy
+## External authority
 
-Secrets (`.env`, keys), destructive shell (`rm -rf /`, `git push --force`), Bitrix core paths, and real side-effect invocations (`git push`, `gh pr merge`, `docker push`, `npm publish`, `gh release create`) remain blocked by `policy.py` when the stack imports cleanly. Bare words in file paths or `echo`/`cat` arguments are not side-effects.
+Hooks are not an operating-system security boundary. `.github/workflows/trusted-ci.yml`, branch protection, CODEOWNERS, and `.github/workflows/release.yml` provide the independent merge and release boundary described in `docs/TRUST-BOUNDARY.md`.
+
+When healthy, policy blocks secrets, destructive shell commands, Bitrix core paths, the control plane, and real side-effect invocations such as `git push`, `gh pr merge`, `gh workflow run`, `docker push`, `npm publish`, and `gh release create`. Bare words in file paths or `echo` and `cat` arguments are not side effects.

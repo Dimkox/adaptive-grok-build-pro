@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased — trust boundary
+
+Published identity remains `2.0.11`; these changes are proposed through the protected pull-request path.
+
+- Added exact-SHA GitHub `trusted-ci` for Python 3.10 and 3.12 plus deterministic package construction
+- Added strict verification: missing Ruff, Bandit, or Coverage.py fails authoritative checks
+- Added a `production` Environment release workflow that verifies, packages, tags, and publishes the exact merged `main` SHA
+- Converted `grok_approve.py` from a local grant into a non-authorizing request bound to route, Git HEAD, and tree fingerprint
+- Made production commands, workflow dispatch, MCP writes, and control-plane edits non-bypassable from Grok policy
+- Added CODEOWNERS and the branch-protection and Environment runbook in `docs/TRUST-BOUNDARY.md`
+- Superseded direct-push and local-only quality-gate standing rules
+
 ## 2.0.11 — 2026-08-17
 
 Skip the analysis/review wave when nothing product-changed; always push `main` and release when green.
@@ -51,60 +63,48 @@ Quality contour: Ruff, Bandit, coverage ratchet, no GitHub Actions.
 
 - `grok_verify` runs Ruff from `ruff.toml` without a packaging marker; skip-if-missing, fail-closed when ruff/bandit/coverage are installed
 - Bandit AST next to regex `secret-scan`; excludes `tests/` and `engineering/`
-- Coverage.py report in `pr`/`release` after a measured fail-under of 74 (ratchet, not a guessed 90)
-- No GitHub Actions / Dependabot; local `python3 scripts/grok_verify.py --mode pr` is the only gate. `--with-ci` is forbidden.
-- Optional consumer Semgrep / Trivy config / npm prettier|format when those signals exist; not enabled on this tree
+- Coverage.py report in `pr`/`release` after a measured fail-under of 74
+- Local `python3 scripts/grok_verify.py --mode pr` was the only gate in this published version
+- Optional consumer Semgrep, Trivy config, and npm prettier or format run only when those signals exist
 
 ## 2.0.5 — 2026-08-15
 
 After `git pull` on a consumer project, missing or cwd-relative hook scripts no longer lock Grok.
 
-- Root hook files are thin dispatchers into `.grok/hooks/` (no root `_lib.py`)
-- `adaptive.json` commands try `.grok/hooks/…` then the cwd shim, then print `{}` / allow
-- Installer copies those shims so older `python3 pre_tool_use.py` configs keep working
-- Toolchain pins (built / minimum / fallback) in `.grok-stack/config/toolchain.json`; doctor offers install of the fallback or a newer version
-- `install_into.py` pulls missing required toolchain tools by default (`--no-deps` to skip, `--all-deps` for optional PHP/Node/gh)
-- `routing.json` is live: analysis floor is `repo_explorer` / `task_analyst` / `architect` / `docs_researcher` on non-micro work; `max_parallel_analysis` (default 10) is a ceiling, not a quota; still exactly one write owner
+- Root hook files are thin dispatchers into `.grok/hooks/`
+- `adaptive.json` commands try `.grok/hooks/`, then the cwd shim, then a fail-open response
+- Installer copies those shims so older hook configs keep working
+- Toolchain pins live in `.grok-stack/config/toolchain.json`
+- `routing.json` is live and still permits exactly one write owner
 
 ## 2.0.4 — 2026-08-15
 
-Soft / fail-open hooks so the agent cannot lock itself out.
+Soft and fail-open hooks so the agent cannot lock itself out.
 
-- `grok_verify` runs `python-unittest` when `tests/test*.py` exist, even without `pyproject.toml` / `requirements.txt` / `setup.py`
-- `pre_tool_use.py`: on any exception or import failure → **allow** (was hard deny via exit 2)
-- `stop_gate.py`: missing/stale evidence → **warn only**, never block stop; missing route → allow
-- Policy still blocks truly destructive/secret paths when it runs successfully
-- Docs: how to disable hooks entirely if needed
-- Production policy matches command invocations (`git push`, `gh pr merge`, `docker push`, `npm publish`, `gh release create`), not bare words in paths or arguments
-- One-layer `bash`/`sh`/`zsh`/`dash`/`ksh -c`/`-lc` payloads are unwrapped before production-invocation matching
-- Follow-up reuse (`делай`, `continue`) requires the leftover route to be the same session and not closed
-- `_python` unittest discovery matches top-level `tests/test*.py` (not nested rglob); pytest-wins is characterized
-- `SubagentStop` emits `{}` and records a stop once; extra host retries no longer append history or feed `additionalContext`
-- UserPromptSubmit rematches any non-follow-up request (including `repair yourself`) and ignores child-agent briefs
-- `.grok/hooks/adaptive.json` commands are path-qualified so Grok does not load stray root hook copies
-- Prepare-only `scripts/grok_deploy.py`: dry-run prints human publish commands; `--record` requires production approval and writes receipt `deploy`/`prepared`
-- This-repo GitHub Actions: verify plus a conditional package job (no publish)
-- README: commercial-grade product that is free, public, and MIT (no EULA, no paid tier)
-- Risk classifier matches `прод` as a word, not as a substring of `продукт`
+- `grok_verify` runs unittest when `tests/test*.py` exists without a packaging marker
+- `pre_tool_use.py` allows on infrastructure exceptions
+- `stop_gate.py` warns about evidence and never blocks stop
+- Production policy matches command invocations rather than words inside paths
+- One shell `-c` layer is unwrapped before matching
+- Follow-up reuse requires the same open session
+- `SubagentStop` emits empty JSON and records a stop once
+- Prepare-only deploy tooling prints human commands without executing them
+- Risk classification matches `прод` as a word, not as part of `продукт`
 
 ## 2.0.3 — 2026-08-14
 
-- Rename remaining Codex branding to Grok (`ADAPTIVE GROK ROUTE`, zip prefix, installer markers)
-- README complete-graph of the stack
+- Renamed remaining Codex branding to Grok
+- Added the README complete graph
 
 ## 2.0.2 — 2026-08-14
 
-Full git + release artifacts.
-
-- Versioned zips and checksums are tracked under `packages/`
-- GitHub Release `v2.0.2` ships zip, sha256, and source tar.gz
+- Versioned ZIPs and checksums are tracked under `packages/`
+- GitHub Release `v2.0.2` ships ZIP, SHA-256, and source archive
 
 ## 2.0.1 — 2026-08-14
 
-Patch after 2.0.0 for a clean human-owned tag.
-
-- Version source of truth is `VERSION`; packager default output follows it
-- Ready-to-publish zip: `dist/adaptive-grok-build-pro-v2.0.1.zip`
+- `VERSION` is the package-name source of truth
+- Prepared `dist/adaptive-grok-build-pro-v2.0.1.zip`
 
 ## 2.0.0 — 2026-08-14
 
@@ -112,8 +112,8 @@ First working Adaptive Grok Build Pro release.
 
 - Task routing, quality profiles, change packages, and fingerprint-bound receipts
 - Domain skills under `.grok/skills/` with a mirror in `.agents/skills/`
-- 21 managed agents under `.grok/agents/`
-- Grok lifecycle hooks (route, policy, stop gate, evidence invalidation)
-- Installer copies `.grok`, `.agents`, and `.grok-stack` without deleting unrelated agent files
-- Local verification: `make doctor` / `make verify` / `python3 -m unittest discover -s tests`
-- Packaging excludes `.env`, `.env.*`, and private-key files from the zip/manifest
+- Managed agents under `.grok/agents/`
+- Grok lifecycle hooks for route, policy, stop, and evidence invalidation
+- Installer copies the stack without deleting unrelated agent files
+- Local verification through Make and unittest
+- Packaging excludes `.env`, `.env.*`, and private-key files
