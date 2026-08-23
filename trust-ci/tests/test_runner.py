@@ -52,11 +52,14 @@ class FakeWorkspace:
         if job.job_id != self.job.job_id:
             raise AssertionError('job mismatch')
 
-    def assert_unmodified(self):
+    def assert_unchanged(self):
         self.assert_calls += 1
         mutated = self.path / 'production.py'
         if mutated.exists():
-            raise WorkspaceMutationError(('production.py',))
+            raise WorkspaceMutationError(
+                'verification command modified tracked source: production.py',
+                ('production.py',),
+            )
 
     def reset(self):
         self.reset_calls += 1
