@@ -23,6 +23,18 @@ except Exception:
     raise SystemExit(0)
 
 
+_CONTROL_PLANE_DENIAL = 'Blocked control-plane shell mutation; use a structured write with an exact protected-path grant.'
+_CONTROL_PLANE_GUIDANCE = (
+    'Blocked opaque control-plane shell mutation. Create one exact protected-path grant covering every target, '
+    'then use Edit/Write/apply_patch. For an atomic multi-file batch, put the manifest outside the repository '
+    'and run `python3 scripts/grok_protected_write.py --manifest <path>`.'
+)
+
+
+def actionable_reason(reason: str) -> str:
+    return _CONTROL_PLANE_GUIDANCE if reason == _CONTROL_PLANE_DENIAL else reason
+
+
 def main() -> None:
     try:
         payload = read_payload()
@@ -54,7 +66,7 @@ def main() -> None:
             })
             return
 
-        message = reason or 'Blocked by Adaptive Grok policy'
+        message = actionable_reason(reason or 'Blocked by Adaptive Grok policy')
         emit({
             'decision': 'deny',
             'reason': message,
