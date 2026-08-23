@@ -65,20 +65,30 @@ class ShellTrustBoundaryTests(unittest.TestCase):
                     self.assertFalse(allowed)
                     self.assertIn('repository policy', reason or '')
 
-    def test_shell_guard_falls_back_when_policy_config_is_missing(self) -> None:
-        with project_copy() as root:
-            (root / '.grok-stack/config/policy.json').unlink()
-            allowed, reason = evaluate_pre_tool(
-                root,
-                {
-                    'tool_name': 'Bash',
-                    'tool_input': {
-                        'command': 'echo x > .grok-stack/adaptive_grok/policy.py',
-                    },
-                },
-            )
-            self.assertFalse(allowed)
-            self.assertIn('repository policy', reason or '')
+    def test_shell_guard_falls_back_without_valid_policy_config(self) -> None:
+        commands = (
+            'echo x > .grok-stack/adaptive_grok/policy.py',
+            "sed -i 's/x/y/' AGENTS.md",
+            'cp /tmp/test.py tests/test_release_boundary.py',
+        )
+        for config_content in (None, '{'):
+            with self.subTest(config_content=config_content), project_copy() as root:
+                config_path = root / '.grok-stack/config/policy.json'
+                if config_content is None:
+                    config_path.unlink()
+                else:
+                    config_path.write_text(config_content, encoding='utf-8')
+                for command in commands:
+                    with self.subTest(command=command):
+                        allowed, reason = evaluate_pre_tool(
+                            root,
+                            {
+                                'tool_name': 'Bash',
+                                'tool_input': {'command': command},
+                            },
+                        )
+                        self.assertFalse(allowed)
+                        self.assertIn('repository policy', reason or '')
 
     def test_allows_read_only_shell_access_to_control_plane_paths(self) -> None:
         commands = (
@@ -132,6 +142,22 @@ class ShellTrustBoundaryTests(unittest.TestCase):
                 self.assertIn(path, protected)
                 self.assertIn(path, defaults)
                 self.assertIn(f'/{path} @Dimkox', codeowners)
+
+    def test_identity_modes_do_not_deadlock_solo_delivery(self) -> None:
+        runbook = (ROOT / 'docs/TRUST-BOUNDARY.md').read_text(encoding='utf-8')
+        agents = (ROOT / 'AGENTS.md').read_text(encoding='utf-8')
+        readme = (ROOT / 'README.md').read_text(encoding='utf-8')
+
+        self.assertIn('Solo owner mode', runbook)
+        self.assertIn('required approving reviews to **0**', runbook)
+        self.assertIn('leave **Prevent self-review** disabled', runbook)
+        self.assertIn('Split identity mode', runbook)
+        self.assertIn('Require review from Code Owners', runbook)
+        self.assertIn('enable **Prevent self-review**', runbook)
+        self.assertIn('solo owner mode', agents)
+        self.assertIn('split identity mode', agents)
+        self.assertIn('solo owner mode', readme)
+        self.assertIn('split identity mode', readme)
 
     def test_historical_publish_runbooks_have_no_executable_release_path(self) -> None:
         runbooks = sorted((ROOT / 'engineering/runbooks').glob('publish-v*.md'))
