@@ -65,6 +65,21 @@ class ShellTrustBoundaryTests(unittest.TestCase):
                     self.assertFalse(allowed)
                     self.assertIn('repository policy', reason or '')
 
+    def test_shell_guard_falls_back_when_policy_config_is_missing(self) -> None:
+        with project_copy() as root:
+            (root / '.grok-stack/config/policy.json').unlink()
+            allowed, reason = evaluate_pre_tool(
+                root,
+                {
+                    'tool_name': 'Bash',
+                    'tool_input': {
+                        'command': 'echo x > .grok-stack/adaptive_grok/policy.py',
+                    },
+                },
+            )
+            self.assertFalse(allowed)
+            self.assertIn('repository policy', reason or '')
+
     def test_allows_read_only_shell_access_to_control_plane_paths(self) -> None:
         commands = (
             'cat .grok-stack/adaptive_grok/policy.py',
