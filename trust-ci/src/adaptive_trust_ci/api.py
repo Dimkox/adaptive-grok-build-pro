@@ -4,7 +4,9 @@ import hmac
 from typing import Any, Callable
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import PlainTextResponse
 
+from .metrics import collect_metrics, render_prometheus
 from .models import ApprovalEnvelope, utc_now
 from .policy import Policy
 from .settings import ApiSettings
@@ -149,6 +151,20 @@ def create_app(
         if envelope is None:
             raise HTTPException(status_code=404, detail='attestation not found')
         return envelope.to_dict()
+
+    @app.get('/metrics', dependencies=[Depends(authorize_read)], response_class=PlainTextResponse)
+    def metrics() -> PlainTextResponse:
+        snapshot = collect_metrics(
+            active_store,
+            now=utc_now(),
+            stopped=settings.common.stopped,
+            policy_digest=active_policy.digest,
+            check_name=active_policy.check_name,
+        )
+        return PlainTextResponse(
+            render_prometheus(snapshot),
+            media_type='text/plain; version=0.0.4; charset=utf-8',
+        )
 
     return app
 
