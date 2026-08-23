@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Callable, Iterator
 from urllib.parse import parse_qsl, unquote, urlsplit
@@ -39,6 +39,13 @@ class BackupResult:
     manifest_path: Path
     sha256: str
     size_bytes: int
+
+
+@dataclass(frozen=True)
+class BackupRecord:
+    dump_path: Path
+    manifest_path: Path
+    created_at: datetime
 
 
 def create_backup(
@@ -141,6 +148,54 @@ def verify_backup(dump_path: Path, manifest_path: Path) -> dict[str, object]:
     }
 
 
+def prune_backups(
+    directory: Path,
+    *,
+    keep_last: int,
+    max_age_days: int,
+    now: datetime | None = None,
+) -> dict[str, object]:
+    if isinstance(keep_last, bool) or keep_last < 1:
+        raise BackupError('keep_last must be at least 1')
+    if isinstance(max_age_days, bool) or max_age_days < 1:
+        raise BackupError('max_age_days must be at least 1')
+    root = directory.resolve()
+    if not root.is_dir():
+        raise BackupError(f'backup directory does not exist: {root}')
+    records = _backup_records(root)
+    current = (now or utc_now()).astimezone(timezone.utc)
+    cutoff = current - timedelta(days=max_age_days)
+    protected = set(record.manifest_path for record in records[:keep_last])
+    candidates = [
+        record
+        for record in records
+        if record.manifest_path not in protected and record.created_at < cutoff
+    ]
+    failures: list[str] = []
+    for record in candidates:
+        try:
+            verify_backup(record.dump_path, record.manifest_path)
+        except BackupError as exc:
+            failures.append(f'{record.manifest_path.name}: {exc}')
+    if failures:
+        raise BackupError('retention verification failed; no files deleted: ' + '; '.join(failures))
+    removed: list[str] = []
+    for record in candidates:
+        record.dump_path.unlink()
+        record.manifest_path.unlink()
+        removed.append(record.dump_path.name)
+    if removed:
+        _fsync_directory(root)
+    retained = [record.dump_path.name for record in records if record not in candidates]
+    return {
+        'status': 'pruned',
+        'removed': removed,
+        'retained': retained,
+        'keep_last': keep_last,
+        'max_age_days': max_age_days,
+    }
+
+
 def restore_drill(
     target_database_url: str,
     dump_path: Path,
@@ -193,6 +248,29 @@ def restore_drill(
     }
 
 
+def _backup_records(root: Path) -> list[BackupRecord]:
+    manifests = sorted(root.glob('adaptive-trust-ci-*.manifest.json'))
+    records: list[BackupRecord] = []
+    referenced_dumps: set[Path] = set()
+    for manifest_path in manifests:
+        try:
+            data = json.loads(manifest_path.read_text(encoding='utf-8'))
+            created = parse_datetime(str(data['created_at']))
+            dump_name = str(data['dump_file'])
+        except (OSError, json.JSONDecodeError, KeyError, ValueError) as exc:
+            raise BackupError(f'invalid backup manifest {manifest_path.name}: {exc}') from exc
+        if Path(dump_name).name != dump_name:
+            raise BackupError(f'backup manifest references a non-local dump: {manifest_path.name}')
+        dump_path = root / dump_name
+        referenced_dumps.add(dump_path)
+        records.append(BackupRecord(dump_path=dump_path, manifest_path=manifest_path, created_at=created))
+    orphan_dumps = sorted(set(root.glob('adaptive-trust-ci-*.dump')) - referenced_dumps)
+    if orphan_dumps:
+        raise BackupError('orphan backup dumps require investigation: ' + ', '.join(path.name for path in orphan_dumps))
+    records.sort(key=lambda item: (item.created_at, item.dump_path.name), reverse=True)
+    return records
+
+
 @contextmanager
 def _service_environment(database_url: str) -> Iterator[dict[str, str]]:
     parameters = _parse_database_url(database_url)
@@ -220,9 +298,13 @@ def _parse_database_url(database_url: str) -> list[tuple[str, str]]:
         raise BackupError('database URL must use postgresql:// or postgres://')
     if not parsed.hostname or not parsed.path or parsed.path == '/':
         raise BackupError('database URL must include host and database name')
+    try:
+        port = parsed.port or 5432
+    except ValueError as exc:
+        raise BackupError('database URL contains an invalid port') from exc
     parameters: list[tuple[str, str]] = [
         ('host', parsed.hostname),
-        ('port', str(parsed.port or 5432)),
+        ('port', str(port)),
         ('dbname', unquote(parsed.path.lstrip('/'))),
     ]
     if parsed.username is not None:
