@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "keys": [
+    {
+      "key_id": "REPLACE_WITH_KEY_ID_FROM_KEYGEN",
+      "actor": "REPLACE_WITH_HUMAN_IDENTITY",
+      "scopes": [
+        "governance",
+        "database",
+        "production"
+      ],
+      "public_key_pem": "REPLACE_WITH_MULTILINE_ED25519_PUBLIC_KEY_PEM"
+    }
+  ]
+}
