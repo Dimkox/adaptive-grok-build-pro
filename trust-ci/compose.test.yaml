@@ -1,0 +1,36 @@
+services:
+  postgres-test:
+    image: ${TRUST_CI_POSTGRES_IMAGE:?set immutable postgres image name@sha256 digest}
+    environment:
+      POSTGRES_DB: trust_ci_test
+      POSTGRES_USER: trust_ci_test
+      POSTGRES_PASSWORD: trust_ci_test_password
+    tmpfs:
+      - /var/lib/postgresql/data:rw,nosuid,nodev,size=512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trust_ci_test -d trust_ci_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks:
+      - trust-ci-test
+
+  postgres-integration:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        PYTHON_BASE_IMAGE: ${TRUST_CI_PYTHON_BASE_IMAGE:?set immutable Python base image name@sha256 digest}
+    image: ${TRUST_CI_TEST_BUILD_TAG:-adaptive-trust-ci-test:2.1.0}
+    environment:
+      TRUST_CI_TEST_DATABASE_URL: postgresql://trust_ci_test:trust_ci_test_password@postgres-test:5432/trust_ci_test
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    command: ["python3", "-m", "unittest", "-v", "tests.test_postgres_integration"]
+    networks:
+      - trust-ci-test
+
+networks:
+  trust-ci-test:
+    driver: bridge
