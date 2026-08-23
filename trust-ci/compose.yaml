@@ -74,11 +74,11 @@ services:
       - ./env/worker.env
     volumes:
       - ./runtime/policy.json:/etc/adaptive-trust-ci/policy.json:ro
-      - ./runtime/holdout:/etc/adaptive-trust-ci/holdout:ro
+      - ${TRUST_CI_HOLDOUT_HOST_PATH:?set absolute holdout host path}:/etc/adaptive-trust-ci/holdout:ro
       - ./runtime/trust-ci-signing-key.pem:/run/secrets/trust-ci-signing-key.pem:ro
       - ./runtime/github-app-private-key.pem:/run/secrets/github-app-private-key.pem:ro
       - ./runtime/control:/run/adaptive-trust-ci
-      - trust-ci-workspaces:/var/lib/adaptive-trust-ci/workspaces
+      - ${TRUST_CI_WORKSPACE_HOST_ROOT:?set absolute workspace host path}:/var/lib/adaptive-trust-ci/workspaces
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       migrate:
@@ -88,7 +88,6 @@ services:
 
 volumes:
   trust-ci-postgres:
-  trust-ci-workspaces:
 
 networks:
   trust-ci:
