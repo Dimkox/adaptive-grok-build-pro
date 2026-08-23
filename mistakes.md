@@ -2,6 +2,14 @@
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-08-23 - Hook denied: Blocked control-plane shell mutation; use a structured write with an exact protected-path grant.
+Example: $ python3 scripts/grok_status.py 2>/dev/null |
+  python3 -c
+  "import sys,json; d=json.load(sys.stdin); print('route', d.get('route',{}).get('route_id'), d.get('route',{}).get('write_agent')); print('change', d.get('change')); print('g
+**Symptom:** need to determine
+**Root Cause:** Hook denied: Blocked control-plane shell mutation; use a structured write with an exact protected-path grant.
+
+
 ## 2026-08-16 — Hid the prompt files under engineering/
 
 **Symptom:** A user listing the repo root next to `AGENTS.md` still could not see `decisions.md` or `mistakes.md`.
