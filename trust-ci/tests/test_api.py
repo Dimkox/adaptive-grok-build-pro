@@ -32,6 +32,7 @@ class ApiTests(unittest.TestCase):
             common=self.common,
             webhook_secret='webhook-secret',
             trust_store_path=base / 'trust-store.json',
+            read_token='read-token-value',
         )
         self.policy = Policy.from_dict(policy_data())
         self.human = Signer.generate()
@@ -60,6 +61,10 @@ class ApiTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.temp.cleanup()
+
+    @property
+    def read_headers(self) -> dict[str, str]:
+        return {'Authorization': 'Bearer read-token-value'}
 
     def webhook_body(self, action='opened', *, repository='Dimkox/adaptive-grok-build-pro') -> bytes:
         return json.dumps(
@@ -194,7 +199,29 @@ class ApiTests(unittest.TestCase):
         response = self.client.post('/approvals', json=envelope)
         self.assertEqual(response.status_code, 403)
 
-    def test_public_job_endpoint_does_not_return_command_output(self) -> None:
+    def test_job_and_attestation_reads_require_bearer_token(self) -> None:
+        request = JobRequest(
+            repository='Dimkox/adaptive-grok-build-pro',
+            pr_number=15,
+            base_sha=sha('a'),
+            head_sha=sha('b'),
+            head_ref='feat/x',
+            base_ref='main',
+        )
+        job, _ = self.store.enqueue(request, self.policy.digest, self.policy.max_attempts, now=now())
+        self.assertEqual(self.client.get(f'/jobs/{job.job_id}').status_code, 401)
+        self.assertEqual(
+            self.client.get(f'/jobs/{job.job_id}', headers={'Authorization': 'Bearer wrong'}).status_code,
+            401,
+        )
+        self.assertEqual(self.client.get(f'/jobs/{job.job_id}', headers=self.read_headers).status_code, 200)
+        self.assertEqual(self.client.get(f'/attestations/{job.job_id}').status_code, 401)
+        self.assertEqual(
+            self.client.get(f'/attestations/{job.job_id}', headers=self.read_headers).status_code,
+            404,
+        )
+
+    def test_authorized_job_endpoint_does_not_return_command_output(self) -> None:
         request = JobRequest(
             repository='Dimkox/adaptive-grok-build-pro',
             pr_number=15,
@@ -213,7 +240,7 @@ class ApiTests(unittest.TestCase):
             {'commands': [{'name': 'unit', 'status': 'fail', 'stdout_tail': 'secret output'}]},
             now=now(),
         )
-        response = self.client.get(f'/jobs/{job.job_id}')
+        response = self.client.get(f'/jobs/{job.job_id}', headers=self.read_headers)
         self.assertEqual(response.status_code, 200)
         self.assertNotIn('stdout_tail', response.text)
         self.assertNotIn('secret output', response.text)
