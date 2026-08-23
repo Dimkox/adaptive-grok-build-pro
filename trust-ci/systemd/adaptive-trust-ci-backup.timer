@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily Adaptive Trust CI PostgreSQL backup
+
+[Timer]
+OnCalendar=*-*-* 02:17:00 UTC
+RandomizedDelaySec=15m
+Persistent=true
+AccuracySec=1m
+Unit=adaptive-trust-ci-backup.service
+
+[Install]
+WantedBy=timers.target
