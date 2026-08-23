@@ -5,6 +5,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Callable, Protocol
 
 
@@ -52,21 +53,22 @@ def _decode_response(payload: bytes) -> dict[str, Any] | str:
 
 
 def branch_protection_payload(
-    status_context: str,
+    check_name: str,
     *,
     app_id: int,
     required_reviews: int = 0,
 ) -> dict[str, Any]:
-    if not status_context.strip():
-        raise ValueError('status_context is required')
+    normalized_name = check_name.strip()
+    if not normalized_name:
+        raise ValueError('check_name is required')
     if isinstance(app_id, bool) or app_id <= 0:
         raise ValueError('app_id must be positive')
-    if required_reviews < 0 or required_reviews > 6:
+    if isinstance(required_reviews, bool) or not 0 <= required_reviews <= 6:
         raise ValueError('required_reviews must be between 0 and 6')
     return {
         'required_status_checks': {
             'strict': True,
-            'checks': [{'context': status_context, 'app_id': app_id}],
+            'checks': [{'context': normalized_name, 'app_id': app_id}],
         },
         'enforce_admins': True,
         'required_pull_request_reviews': {
@@ -92,10 +94,12 @@ class GitHubClient:
     token_provider: Callable[[], str] | None = None
     transport: Transport | None = None
     api_url: str = 'https://api.github.com'
-    api_version: str = '2022-11-28'
+    api_version: str = '2026-03-10'
 
     def __post_init__(self) -> None:
-        if bool(self.token and self.token.strip()) == bool(self.token_provider):
+        has_token = bool(self.token and self.token.strip())
+        has_provider = self.token_provider is not None
+        if has_token == has_provider:
             raise ValueError('provide exactly one of token or token_provider')
         self.api_url = self.api_url.rstrip('/')
         self.transport = self.transport or UrllibTransport()
@@ -123,26 +127,85 @@ class GitHubClient:
             raise GitHubError(f'GitHub API {method} {path} returned {status}: {payload}')
         return payload
 
-    def post_status(
+    def ensure_check_run(
         self,
         repository: str,
         sha: str,
         *,
-        state: str,
-        description: str,
-        target_url: str,
-        context: str,
-    ) -> None:
-        if state not in {'error', 'failure', 'pending', 'success'}:
-            raise ValueError(f'unsupported GitHub status state: {state}')
-        self._request(
+        name: str,
+        external_id: str,
+        details_url: str,
+        started_at: datetime,
+    ) -> int:
+        """Create one App-owned Check Run per durable job, or reuse it after retry."""
+        encoded_name = urllib.parse.quote(name, safe='')
+        existing = self._request(
+            'GET',
+            f'/repos/{repository}/commits/{sha}/check-runs?check_name={encoded_name}&filter=latest&per_page=100',
+        )
+        if isinstance(existing, dict):
+            runs = existing.get('check_runs')
+            if isinstance(runs, list):
+                for run in runs:
+                    if (
+                        isinstance(run, dict)
+                        and run.get('external_id') == external_id
+                        and isinstance(run.get('id'), int)
+                    ):
+                        check_run_id = int(run['id'])
+                        self._request(
+                            'PATCH',
+                            f'/repos/{repository}/check-runs/{check_run_id}',
+                            {
+                                'status': 'in_progress',
+                                'details_url': details_url,
+                                'started_at': started_at.astimezone(timezone.utc).isoformat(),
+                                'output': {
+                                    'title': 'Adaptive Trust CI verification in progress',
+                                    'summary': f'durable_job={external_id}',
+                                },
+                            },
+                        )
+                        return check_run_id
+        created = self._request(
             'POST',
-            f'/repos/{repository}/statuses/{sha}',
+            f'/repos/{repository}/check-runs',
             {
-                'state': state,
-                'target_url': target_url,
-                'description': description[:140],
-                'context': context,
+                'name': name,
+                'head_sha': sha,
+                'status': 'in_progress',
+                'external_id': external_id,
+                'details_url': details_url,
+                'started_at': started_at.astimezone(timezone.utc).isoformat(),
+            },
+        )
+        if not isinstance(created, dict) or not isinstance(created.get('id'), int):
+            raise GitHubError('check-run creation response has no numeric id')
+        return int(created['id'])
+
+    def complete_check_run(
+        self,
+        repository: str,
+        check_run_id: int,
+        *,
+        conclusion: str,
+        title: str,
+        summary: str,
+        completed_at: datetime,
+    ) -> None:
+        if conclusion not in {'success', 'failure', 'cancelled', 'timed_out', 'action_required', 'neutral'}:
+            raise ValueError(f'unsupported check conclusion: {conclusion}')
+        self._request(
+            'PATCH',
+            f'/repos/{repository}/check-runs/{check_run_id}',
+            {
+                'status': 'completed',
+                'conclusion': conclusion,
+                'completed_at': completed_at.astimezone(timezone.utc).isoformat(),
+                'output': {
+                    'title': title[:255],
+                    'summary': summary[:65535],
+                },
             },
         )
 
@@ -151,7 +214,7 @@ class GitHubClient:
         repository: str,
         branch: str,
         *,
-        status_context: str,
+        check_name: str,
         app_id: int,
         required_reviews: int = 0,
     ) -> dict[str, Any] | str:
@@ -159,5 +222,5 @@ class GitHubClient:
         return self._request(
             'PUT',
             f'/repos/{repository}/branches/{encoded_branch}/protection',
-            branch_protection_payload(status_context, app_id=app_id, required_reviews=required_reviews),
+            branch_protection_payload(check_name, app_id=app_id, required_reviews=required_reviews),
         )
