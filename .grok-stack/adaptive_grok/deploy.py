@@ -82,8 +82,8 @@ def prepare_deploy(root: Path, *, record: bool) -> dict[str, Any]:
     }
     if not record:
         return result
-    if not has_valid_approval(root, 'production'):
-        return _fail('local production approval required to record deploy preparation')
+    if not has_valid_approval(root, 'production', action='github-release'):
+        return _fail('exact delegated github-release grant required to record deploy preparation')
     write_receipt(
         root,
         'deploy',
