@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument('--mode', choices=['fast', 'pr', 'release'], default='pr')
 parser.add_argument('--profile', action='append', dest='profiles')
+parser.add_argument('--base', help='Git ref or SHA used for changed-file checks.')
 parser.add_argument('--no-record', action='store_true')
 parser.add_argument(
     '--strict',
@@ -34,6 +35,7 @@ report = verify(
     args.profiles,
     record=not args.no_record,
     strict=args.strict,
+    base=args.base,
 )
 if args.json:
     print(json.dumps(report, ensure_ascii=False, indent=2))
@@ -51,6 +53,7 @@ else:
     print(
         f"RESULT: {report['status'].upper()} | "
         f"strict={report['strict']} | "
+        f"base={report['base'] or 'working-tree'} | "
         f"profiles={','.join(report['profiles'])} | "
         f"changed={len(report['changed_files'])}"
     )

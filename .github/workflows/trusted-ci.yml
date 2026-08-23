@@ -26,10 +26,11 @@ jobs:
           - "3.12"
 
     steps:
-      - name: Check out exact event SHA
+      - name: Check out exact event SHA with comparison history
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Python
@@ -45,8 +46,19 @@ jobs:
           coverage==7.15.4
           tomli==2.4.1
 
-      - name: Run strict verification
-        run: python3 scripts/grok_verify.py --mode pr --strict --json
+      - name: Run strict verification against the event base
+        env:
+          VERIFY_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$VERIFY_BASE" || "$VERIFY_BASE" =~ ^0+$ ]]; then
+            VERIFY_BASE="$(git rev-parse "$GITHUB_SHA^")"
+          fi
+          python3 scripts/grok_verify.py \
+            --mode pr \
+            --strict \
+            --base "$VERIFY_BASE" \
+            --json
 
   package:
     name: package

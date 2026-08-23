@@ -506,13 +506,15 @@ def verify(
     profiles: list[str] | None = None,
     record: bool = True,
     strict: bool = False,
+    base: str | None = None,
 ) -> dict[str, object]:
     route = get_active_route(root)
     active_profiles = profiles or (
         route.get('quality_profiles', ['base']) if route else ['base']
     )
-    base = route.get('base_commit') if route else None
-    files = changed_files(root, base)
+    route_base = route.get('base_commit') if route else None
+    comparison_base = base or route_base
+    files = changed_files(root, comparison_base)
 
     results: list[CheckResult] = [
         _git_diff_check(root),
@@ -545,6 +547,7 @@ def verify(
         'created_at': now_utc(),
         'mode': mode,
         'strict': strict,
+        'base': comparison_base,
         'profiles': active_profiles,
         'route_id': route.get('route_id') if route else None,
         'tree_fingerprint': tree_fingerprint(root),
