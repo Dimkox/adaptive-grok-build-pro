@@ -10,8 +10,10 @@ Published identity remains `2.0.11`; these changes are proposed through the prot
 - Converted `grok_approve.py` from a local grant into a non-authorizing request bound to route, Git HEAD, and tree fingerprint
 - Made production commands, workflow dispatch, MCP writes, and control-plane edits non-bypassable from Grok policy
 - Closed common shell bypasses for control-plane mutation, wrapped Git/GitHub commands, and direct HTTP writes
+- Kept a code-level shell and path fallback active when `policy.json` is missing or malformed
 - Extended immutable policy and CODEOWNERS to package builders, release artifacts, trust-boundary tests, and governance runbooks
 - Retired executable tag, push, release, and rollback commands from historical publish runbooks
+- Documented workable solo owner gates and stronger split identity gates without self-review deadlocks
 - Added CODEOWNERS and the branch-protection and Environment runbook in `docs/TRUST-BOUNDARY.md`
 - Superseded direct-push and local-only quality-gate standing rules
 
