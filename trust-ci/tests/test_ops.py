@@ -89,8 +89,9 @@ class OperationsTests(unittest.TestCase):
         docker_engine = compose.split('  docker-engine:', 1)[1].split('  worker:', 1)[0]
         worker = compose.split('  worker:', 1)[1]
         before_worker = compose.split('  worker:', 1)[0]
-        self.assertIn('/var/run/docker.sock', docker_engine)
-        self.assertNotIn('/var/run/docker.sock', worker)
+        self.assertNotIn('/var/run/docker.sock', compose)
+        self.assertIn('privileged: true', docker_engine)
+        self.assertIn('trust-ci-docker-data:/home/rootless/.local/share/docker', docker_engine)
         self.assertIn('DOCKER_HOST: tcp://docker-engine:2375', worker)
         self.assertIn('github-app-private-key.pem:/run/secrets', worker)
         self.assertIn('/var/lib/adaptive-trust-ci/workspaces', docker_engine)
