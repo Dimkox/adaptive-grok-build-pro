@@ -161,11 +161,26 @@ Machine-readable pins: `.grok-stack/config/toolchain.json`.
 
 ## Install into a project
 
+Install the local routing, agents, hooks, verification, and governance stack:
+
 ```bash
 python3 scripts/install_into.py /path/to/your/repo
 # skip host installs: --no-deps
 # also install optional PHP, Node, and gh tools: --all-deps
 ```
+
+Trusted GitHub CI and protected release files are opt-in and require the actual target repository owner:
+
+```bash
+python3 scripts/install_into.py /path/to/your/repo \
+  --with-ci \
+  --codeowner @user
+
+# organization team:
+# --codeowner @org/team
+```
+
+The installer renders the supplied identity into the target `.github/CODEOWNERS` and `docs/TRUST-BOUNDARY.md`, performs conflict detection against the rendered content, and never exports `@Dimkox` as the owner of another repository. GitHub branch rules and the `production` Environment still require manual configuration after installation.
 
 Manual copy layout:
 
@@ -204,7 +219,7 @@ Local loop: route → change → verify → independent reviews → `ready`. `gr
 | `scripts/grok_approve.py` | Record a non-authorizing human-action request |
 | `scripts/grok_deploy.py` | Validate evidence and print the protected release workflow dispatch |
 | `scripts/grok_doctor.py` | Check toolchain and structure health |
-| `scripts/install_into.py` | Install the stack into a target repository |
+| `scripts/install_into.py` | Install the stack; `--with-ci` requires a target-specific `--codeowner` |
 
 ## Hooks and trust boundary
 
