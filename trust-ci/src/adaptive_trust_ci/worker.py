@@ -40,6 +40,8 @@ class Worker:
             github_token_provider=github_auth.installation_token,
             public_base_url=settings.common.public_base_url,
             workspace_root=settings.workspace_root,
+            workspace_host_root=settings.workspace_host_root,
+            holdout_host_path=settings.holdout_host_path,
         )
         return cls(settings=settings, store=store, runner=runner, stop_event=threading.Event())
 
