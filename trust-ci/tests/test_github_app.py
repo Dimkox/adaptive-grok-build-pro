@@ -50,7 +50,7 @@ class GitHubAppTests(unittest.TestCase):
         signature = base64.urlsafe_b64decode(signature_segment + '=' * (-len(signature_segment) % 4))
         self.private_key.public_key().verify(signature, signing_input, padding.PKCS1v15(), hashes.SHA256())
 
-    def test_installation_token_is_cached_until_near_expiry(self) -> None:
+    def test_installation_token_is_permission_reduced_and_cached(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             key_path = Path(directory) / 'app.pem'
             key_path.write_bytes(self.private_pem)
@@ -79,7 +79,16 @@ class GitHubAppTests(unittest.TestCase):
             self.assertEqual(method, 'POST')
             self.assertTrue(url.endswith('/app/installations/67890/access_tokens'))
             self.assertTrue(headers['Authorization'].startswith('Bearer ey'))
-            self.assertIsNone(body)
+            self.assertEqual(
+                body,
+                {
+                    'permissions': {
+                        'checks': 'write',
+                        'contents': 'read',
+                        'pull_requests': 'read',
+                    }
+                },
+            )
 
     def test_failed_installation_token_response_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
