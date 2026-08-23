@@ -6,13 +6,14 @@ import os
 import sys
 import urllib.error
 import urllib.request
-from importlib.resources import files
 from pathlib import Path
 
 from .api import create_app
+from .backup import create_backup, restore_drill, verify_backup
 from .github import GitHubClient
 from .github_app import generate_app_jwt
 from .holdout import bundle_digest, verify_bundle
+from .migrations import PostgresMigrator
 from .models import ApprovalEnvelope, ApprovalPayload, AttestationEnvelope, utc_now
 from .policy import Policy
 from .settings import ApiSettings, CommonSettings, WorkerSettings
@@ -32,7 +33,8 @@ def build_parser() -> argparse.ArgumentParser:
     worker = sub.add_parser('worker', help='Run a durable Trust CI worker')
     worker.add_argument('--once', action='store_true')
 
-    sub.add_parser('migrate', help='Apply the packaged PostgreSQL schema')
+    sub.add_parser('migrate', help='Apply pending checksum-locked PostgreSQL migrations')
+    sub.add_parser('migration-status', help='Report applied and pending migrations')
     sub.add_parser('policy-digest', help='Print the authoritative policy digest')
     sub.add_parser('doctor', help='Validate policy, database and role-specific files')
 
@@ -42,6 +44,9 @@ def build_parser() -> argparse.ArgumentParser:
     keygen = sub.add_parser('keygen', help='Generate an Ed25519 key pair')
     keygen.add_argument('--private', required=True, type=Path)
     keygen.add_argument('--public', required=True, type=Path)
+
+    trust_store = sub.add_parser('trust-store-validate', help='Validate key lifecycle, revocation and scopes')
+    trust_store.add_argument('--trust-store', required=True, type=Path)
 
     approval = sub.add_parser('approval-create', help='Create a human-signed exact-SHA approval')
     approval.add_argument('--private-key', required=True, type=Path)
@@ -81,6 +86,19 @@ def build_parser() -> argparse.ArgumentParser:
     protect.add_argument('--policy', type=Path)
     protect.add_argument('--app-id', type=int)
 
+    backup = sub.add_parser('backup-create', help='Create an integrity-checked custom-format PostgreSQL backup')
+    backup.add_argument('--output-dir', type=Path)
+    backup.add_argument('--database-label', required=True)
+
+    backup_verify = sub.add_parser('backup-verify', help='Verify backup size and SHA-256 manifest')
+    backup_verify.add_argument('--dump', required=True, type=Path)
+    backup_verify.add_argument('--manifest', required=True, type=Path)
+
+    restore = sub.add_parser('restore-drill', help='Restore a backup into an explicitly disposable database')
+    restore.add_argument('--dump', required=True, type=Path)
+    restore.add_argument('--manifest', required=True, type=Path)
+    restore.add_argument('--confirm-disposable', action='store_true')
+
     kill = sub.add_parser('kill-switch', help='Manage the server-side emergency stop')
     kill.add_argument('action', choices=['on', 'off', 'status'])
 
@@ -104,10 +122,15 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == 'migrate':
         settings = CommonSettings.load()
-        sql = files('adaptive_trust_ci.resources').joinpath('001_schema.sql').read_text(encoding='utf-8')
-        PostgresStore(settings.database_url).migrate(sql)
-        print('schema applied')
+        plan = PostgresMigrator(settings.database_url).apply()
+        print(json.dumps({'status': 'schema-applied', **plan.to_dict()}, ensure_ascii=False, indent=2))
         return 0
+
+    if args.command == 'migration-status':
+        settings = CommonSettings.load()
+        plan = PostgresMigrator(settings.database_url).status()
+        print(json.dumps(plan.to_dict(), ensure_ascii=False, indent=2))
+        return 1 if plan.pending else 0
 
     if args.command == 'policy-digest':
         settings = CommonSettings.load()
@@ -126,6 +149,11 @@ def main(argv: list[str] | None = None) -> int:
         signer.write_keypair(args.private, args.public)
         print(json.dumps({'key_id': signer.key_id, 'private': str(args.private), 'public': str(args.public)}))
         return 0
+
+    if args.command == 'trust-store-validate':
+        report = TrustStore.load(args.trust_store).report(utc_now())
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 1 if not any(item['status'] == 'active' for item in report['keys']) else 0
 
     if args.command == 'approval-create':
         policy = Policy.load(args.policy)
@@ -211,6 +239,47 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
 
+    if args.command == 'backup-create':
+        settings = CommonSettings.load()
+        output_dir = args.output_dir or Path(os.environ.get('TRUST_CI_BACKUP_DIR', '')).resolve()
+        if not str(output_dir) or str(output_dir) == '.':
+            raise SystemExit('--output-dir or TRUST_CI_BACKUP_DIR is required')
+        result = create_backup(
+            settings.database_url,
+            output_dir,
+            database_label=args.database_label,
+        )
+        print(
+            json.dumps(
+                {
+                    'dump_path': str(result.dump_path),
+                    'manifest_path': str(result.manifest_path),
+                    'sha256': result.sha256,
+                    'size_bytes': result.size_bytes,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return 0
+
+    if args.command == 'backup-verify':
+        print(json.dumps(verify_backup(args.dump, args.manifest), ensure_ascii=False, indent=2))
+        return 0
+
+    if args.command == 'restore-drill':
+        target = os.environ.get('TRUST_CI_RESTORE_DATABASE_URL', '').strip()
+        if not target:
+            raise SystemExit('TRUST_CI_RESTORE_DATABASE_URL is required for a disposable restore target')
+        report = restore_drill(
+            target,
+            args.dump,
+            args.manifest,
+            confirm_disposable=args.confirm_disposable,
+        )
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+
     if args.command == 'kill-switch':
         settings = CommonSettings.load()
         path = settings.kill_switch_path
@@ -248,12 +317,28 @@ def _doctor() -> int:
     try:
         PostgresStore(common.database_url).ping()
         checks.append({'name': 'postgres', 'status': 'pass', 'detail': 'reachable'})
+        migrations = PostgresMigrator(common.database_url).status()
+        checks.append(
+            {
+                'name': 'migrations',
+                'status': 'fail' if migrations.pending else 'pass',
+                'detail': f'applied={len(migrations.applied)} pending={len(migrations.pending)}',
+            }
+        )
     except Exception as exc:
         checks.append({'name': 'postgres', 'status': 'fail', 'detail': str(exc)})
     if role in {'all', 'api'}:
         api = ApiSettings.load()
-        TrustStore.load(api.trust_store_path)
-        checks.append({'name': 'trust-store', 'status': 'pass', 'detail': str(api.trust_store_path)})
+        trust_store = TrustStore.load(api.trust_store_path)
+        report = trust_store.report(utc_now())
+        active_keys = sum(1 for item in report['keys'] if item['status'] == 'active')
+        checks.append(
+            {
+                'name': 'trust-store',
+                'status': 'pass' if active_keys else 'fail',
+                'detail': f'{api.trust_store_path}; active_keys={active_keys}',
+            }
+        )
     if role in {'all', 'worker'}:
         worker = WorkerSettings.load()
         signer = Signer.from_private_file(worker.ci_signing_key_path)
