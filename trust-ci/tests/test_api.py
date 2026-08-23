@@ -5,13 +5,14 @@ import hmac
 import json
 import tempfile
 import unittest
+from datetime import timedelta
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 from _support import now, policy_data, sha
 from adaptive_trust_ci.api import create_app
-from adaptive_trust_ci.models import ApprovalPayload, JobRequest
+from adaptive_trust_ci.models import ApprovalPayload, JobRequest, utc_now
 from adaptive_trust_ci.policy import Policy
 from adaptive_trust_ci.settings import ApiSettings, CommonSettings
 from adaptive_trust_ci.signing import Signer, TrustStore, sign_approval
@@ -198,6 +199,60 @@ class ApiTests(unittest.TestCase):
         envelope['payload']['reason'] = 'tampered'
         response = self.client.post('/approvals', json=envelope)
         self.assertEqual(response.status_code, 403)
+
+    def test_server_trust_store_revocation_is_reloaded_without_api_restart(self) -> None:
+        issued = utc_now()
+        trust_data = {
+            'schema_version': 2,
+            'keys': [
+                {
+                    'key_id': self.human.key_id,
+                    'actor': 'dmitry',
+                    'scopes': ['governance'],
+                    'not_before': (issued - timedelta(days=1)).isoformat(),
+                    'not_after': (issued + timedelta(days=1)).isoformat(),
+                    'revoked_at': None,
+                    'public_key_pem': self.human.public_key_pem().decode(),
+                }
+            ],
+        }
+        self.settings.trust_store_path.write_text(json.dumps(trust_data), encoding='utf-8')
+        dynamic_store = MemoryStore()
+        client = TestClient(
+            create_app(
+                self.settings,
+                store=dynamic_store,
+                policy=self.policy,
+                trust_store=None,
+            )
+        )
+        request = JobRequest(
+            repository='Dimkox/adaptive-grok-build-pro',
+            pr_number=15,
+            base_sha=sha('a'),
+            head_sha=sha('b'),
+            head_ref='feat/x',
+            base_ref='main',
+        )
+        job, _ = dynamic_store.enqueue(request, self.policy.digest, self.policy.max_attempts, now=issued)
+        payload = ApprovalPayload.new(
+            actor='dmitry',
+            key_id=self.human.key_id,
+            repository=job.repository,
+            pr_number=job.pr_number,
+            base_sha=job.base_sha,
+            head_sha=job.head_sha,
+            policy_digest=job.policy_digest,
+            scope='governance',
+            reason='reviewed',
+            now=issued,
+        )
+        envelope = sign_approval(payload, self.human).to_dict()
+        trust_data['keys'][0]['revoked_at'] = (utc_now() - timedelta(seconds=1)).isoformat()
+        self.settings.trust_store_path.write_text(json.dumps(trust_data), encoding='utf-8')
+        response = client.post('/approvals', json=envelope)
+        self.assertEqual(response.status_code, 403)
+        self.assertIn('revoked', response.text)
 
     def test_job_and_attestation_reads_require_bearer_token(self) -> None:
         request = JobRequest(
