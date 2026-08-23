@@ -57,6 +57,31 @@ services:
     networks:
       - trust-ci
 
+  docker-engine:
+    image: ${TRUST_CI_DIND_IMAGE:?set immutable rootless dind image name@sha256 digest}
+    restart: unless-stopped
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+    command:
+      - dockerd-entrypoint.sh
+      - --host=tcp://0.0.0.0:2375
+      - --host=unix:///run/user/1000/docker.sock
+      - --storage-driver=overlay2
+    volumes:
+      - trust-ci-docker-data:/home/rootless/.local/share/docker
+      - trust-ci-workspaces:/var/lib/adaptive-trust-ci/workspaces
+      - ${TRUST_CI_HOLDOUT_SOURCE_PATH:?set absolute reviewed holdout source path}:/etc/adaptive-trust-ci/holdout:ro
+    expose:
+      - "2375"
+    healthcheck:
+      test: ["CMD", "docker", "-H", "tcp://127.0.0.1:2375", "info"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      - executor
+
   worker:
     image: ${TRUST_CI_WORKER_IMAGE:?set immutable worker image name@sha256 digest}
     restart: unless-stopped
@@ -64,8 +89,8 @@ services:
     cap_drop: ["ALL"]
     security_opt: ["no-new-privileges:true"]
     user: "10001:10001"
-    group_add:
-      - "${DOCKER_GID:-999}"
+    environment:
+      DOCKER_HOST: tcp://docker-engine:2375
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=256m
       - /home/trustci:rw,noexec,nosuid,nodev,size=32m
@@ -74,21 +99,27 @@ services:
       - ./env/worker.env
     volumes:
       - ./runtime/policy.json:/etc/adaptive-trust-ci/policy.json:ro
-      - ${TRUST_CI_HOLDOUT_HOST_PATH:?set absolute holdout host path}:/etc/adaptive-trust-ci/holdout:ro
+      - ${TRUST_CI_HOLDOUT_SOURCE_PATH:?set absolute reviewed holdout source path}:/etc/adaptive-trust-ci/holdout:ro
       - ./runtime/trust-ci-signing-key.pem:/run/secrets/trust-ci-signing-key.pem:ro
       - ./runtime/github-app-private-key.pem:/run/secrets/github-app-private-key.pem:ro
       - ./runtime/control:/run/adaptive-trust-ci
-      - ${TRUST_CI_WORKSPACE_HOST_ROOT:?set absolute workspace host path}:/var/lib/adaptive-trust-ci/workspaces
-      - /var/run/docker.sock:/var/run/docker.sock
+      - trust-ci-workspaces:/var/lib/adaptive-trust-ci/workspaces
     depends_on:
       migrate:
         condition: service_completed_successfully
+      docker-engine:
+        condition: service_healthy
     networks:
       - trust-ci
+      - executor
 
 volumes:
   trust-ci-postgres:
+  trust-ci-docker-data:
+  trust-ci-workspaces:
 
 networks:
   trust-ci:
+    driver: bridge
+  executor:
     driver: bridge
