@@ -28,6 +28,25 @@ class ShellTargetPolicyTest(unittest.TestCase):
             self.assertFalse(allowed)
             self.assertIn('AGENTS.md', reason or '')
 
+    def test_argv_mutation_commands_name_control_plane_targets(self):
+        with project_copy() as root:
+            cases = (
+                "sed -i 's/a/b/' AGENTS.md",
+                'rm AGENTS.md',
+                'touch AGENTS.md',
+                'tee AGENTS.md',
+                'curl -o README.md http://example.invalid/x',
+                'bash -c "printf x >> AGENTS.md"',
+                'cp README.md AGENTS.md',
+                'install README.md AGENTS.md',
+                'rsync README.md AGENTS.md',
+                'wget -O AGENTS.md http://example.invalid/x',
+                'perl -i -pe s/a/b/ AGENTS.md',
+            )
+            for command in cases:
+                allowed, reason = self.check(root, command)
+                self.assertFalse(allowed, f'{command}: {reason}')
+
 
 if __name__ == '__main__':
     unittest.main()

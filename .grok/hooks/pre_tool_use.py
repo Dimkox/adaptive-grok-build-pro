@@ -38,6 +38,19 @@ _OBJECTIVE_CIRCUIT_BREAKER_GUIDANCE = (
     'again or create a speculative grant. Stop dependent subagents, mark this objective BLOCKED, '
     'and report the blocker.'
 )
+_CONTROL_PLANE_BATCH_GUIDANCE = (
+    'Create one exact protected-path grant covering every target, then use Edit/Write/apply_patch. '
+    'For an atomic multi-file batch, put the manifest outside the repository '
+    'and run `python3 scripts/grok_protected_write.py --manifest <path>`.'
+)
+
+
+def _actionable_reason(reason: str) -> str:
+    if 'control-plane shell mutation' not in reason:
+        return reason
+    if 'grok_protected_write.py' in reason:
+        return reason
+    return f'{reason} {_CONTROL_PLANE_BATCH_GUIDANCE}'
 
 
 def _fingerprint(material: dict[str, Any]) -> str:
@@ -194,7 +207,7 @@ def main() -> None:
             })
             return
 
-        message = reason or 'Blocked by Adaptive Grok policy'
+        message = _actionable_reason(reason or 'Blocked by Adaptive Grok policy')
         try:
             exact_count, objective_count = _record_denial(
                 root,

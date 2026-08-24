@@ -88,7 +88,7 @@ def _has_option(argv: list[str], names: set[str]) -> bool:
                 return True
             if name.startswith('--') and token.startswith(name + '='):
                 return True
-            if name.startswith('-') and not name.startswith('--') and token.startswith(name) and token != '-':
+            if name.startswith('-') and not name.startswith('--') and token.startswith(name) and token != '-':  # nosec B105
                 return True
     return False
 
@@ -100,7 +100,7 @@ def _operands(argv: list[str], value_options: set[str] | None = None) -> list[st
     index = 1
     while index < len(argv):
         token = argv[index]
-        if token == '--':
+        if token == '--':  # nosec B105
             after_separator = True
             index += 1
             continue
@@ -232,7 +232,7 @@ def _argv_mutation_targets(root: Path, argv: list[str]) -> list[str] | None:
     if command == 'rsync':
         operands = _operands(argv)
         return operands[-1:] if operands else []
-    if command == 'sed' and any(token == '-i' or token.startswith('-i') for token in argv[1:]):
+    if command == 'sed' and any(token == '-i' or token.startswith('-i') for token in argv[1:]):  # nosec B105
         return _script_file_targets(
             argv,
             script_options={'-e', '--expression', '-f', '--file'},
