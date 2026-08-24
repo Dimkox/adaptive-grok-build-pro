@@ -16,6 +16,7 @@ MANAGED_DIRS = ('.grok', '.agents', '.grok-stack')
 MANAGED_FILES = (
     'scripts/grok_route.py',
     'scripts/grok_change.py',
+    'scripts/grok_spec.py',
     'scripts/grok_verify.py',
     'scripts/grok_review.py',
     'scripts/grok_approve.py',

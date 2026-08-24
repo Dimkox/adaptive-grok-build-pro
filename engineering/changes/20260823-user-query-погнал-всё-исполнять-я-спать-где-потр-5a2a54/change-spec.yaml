@@ -1,0 +1,58 @@
+schema_version: 1
+change_id: 20260823-user-query-погнал-всё-исполнять-я-спать-где-потр-5a2a54
+objective:
+  id: OBJ-001
+  statement: Local typed specs validate and map evidence without invented route facts
+  success_metric: change_spec_gate_pass
+  target: generated_unknown_rejected
+risk:
+  tier: green
+  domains:
+    - generic
+acceptance_criteria:
+  - id: AC-001
+    statement: Schema-valid spec with mapped AC passes validate and map
+    evidence:
+      - kind: test
+        ref: tests/test_change_spec.py::ChangeSpecTests.test_valid_spec_passes
+  - id: AC-002
+    statement: Extra key, bad tier, unmapped AC, red-risk without forbidden/approvals, and UNKNOWN fail closed
+    evidence:
+      - kind: test
+        ref: tests/test_change_spec.py
+  - id: AC-003
+    statement: Generate from route does not invent metrics
+    evidence:
+      - kind: test
+        ref: tests/test_change_spec.py::ChangeSpecTests.test_generate_leaves_unknown_metrics
+invariants:
+  - id: INV-001
+    statement: No GitHub Actions, no root packaging marker, no third-party spec deps
+    evidence:
+      - kind: test
+        ref: tests/test_change_spec.py
+  - id: INV-002
+    statement: trust-ci and factory stay separate; no factory tree in this slice
+    evidence:
+      - kind: test
+        ref: tests/test_change_spec.py::ChangeSpecTests.test_no_factory_tree
+forbidden_outcomes:
+  - id: FORBID-001
+    statement: Auto-merge, GitHub Actions workflows, M0 deploy, M4 PostgreSQL, K16 mutation
+    evidence:
+      - kind: review
+        ref: engineering/reviews
+contracts:
+  openapi: []
+  json_schema:
+    - schemas/change-spec.schema.json
+  events: []
+observability:
+  - metric: change_spec_validate_exit_0
+    proves:
+      - OBJ-001
+rollback:
+  strategy: forward_fix
+  maximum_steps: 1
+approvals:
+  required_scopes: []

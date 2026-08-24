@@ -1,0 +1,53 @@
+{
+  "change_id": "20260823-user-query-погнал-всё-исполнять-я-спать-где-потр-5a2a54",
+  "created_at": "2026-08-23T23:25:14+00:00",
+  "history": [
+    {
+      "at": "2026-08-23T23:25:14+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-23T23:35:28+00:00",
+      "from": "draft",
+      "reason": "M1 typed spec slice; M0 bootstrap exception recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-23T23:35:29+00:00",
+      "from": "scoped",
+      "reason": "user unattended auto-approve; no named human gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-23T23:35:29+00:00",
+      "from": "approved",
+      "reason": "dispatch general_implementer for M1 spec vertical",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-23T23:47:29+00:00",
+      "from": "implementing",
+      "reason": "M1 spec tests 11/11 and grok_spec validate exit 0",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-24T00:26:19+00:00",
+      "from": "verifying",
+      "reason": "independent code_review and test_review pass",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-24T00:26:19+00:00",
+      "from": "reviewing",
+      "reason": "local evidence complete; not merge authority",
+      "to": "ready"
+    }
+  ],
+  "route_id": "5a2a54f045d1",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "<user_query>\nпогнал всё исполнять, я спать, где потребуется мое вмешательство - я автоматически одобряю, что ты делаешь\n</user_query>",
+  "updated_at": "2026-08-24T00:26:19+00:00"
+}

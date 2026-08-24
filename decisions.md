@@ -2,6 +2,11 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-23 — M0 live Trust Authority bootstrap exception for M1 start
+
+User approved unattended execution. M0 exit criteria are not met on this host.
+M1 may proceed. Exception does not create adaptive-trust-ci/verified, protect main, or authorize merge. Revoke the exception when a live App-owned check exists on an exact PR SHA.
+
 ## 2026-08-23 — New release after an existing tag is 2.0.12
 
 `v2.0.11` already peels to `c54fd01`. A new ship therefore bumps VERSION, rebuilds the zip, and tags `v2.0.12`. Do not retag `v2.0.11`.
