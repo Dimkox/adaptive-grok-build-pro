@@ -2,6 +2,10 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-24 — M0.1 claw listener trust-store public key, worker deferred
+
+Bootstrap generated one Ed25519 pair only to insert the public key into untracked `runtime/trust-store.json`, then unlinked the private file so no approval private key remains on `claw`. Worker stays off until GitHub App ID and installation ID exist without reading PEM or minting JWT. The live listener is loopback HTTP on `127.0.0.1:18080` (`postgres` + `migrate` + `api` only).
+
 ## 2026-08-23 — M0 live Trust Authority bootstrap exception for M1 start
 
 User approved unattended execution. M0 exit criteria are not met on this host.
