@@ -25,11 +25,29 @@
       "from": "approved",
       "reason": "controller slice: unify git locally and host-local M0.2 kill-switch/attestation",
       "to": "implementing"
+    },
+    {
+      "at": "2026-08-24T10:28:03+00:00",
+      "from": "implementing",
+      "reason": "implementation committed locally; host-local kill-switch and attestation 404 recorded",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-24T10:31:33+00:00",
+      "from": "verifying",
+      "reason": "independent code_review and test_review PASS",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-24T10:31:33+00:00",
+      "from": "reviewing",
+      "reason": "local unify committed; verify and reviews pass; no push",
+      "to": "ready"
     }
   ],
   "route_id": "85a17ed2e935",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "ready",
   "title": "M0 consolidate git and continue live authority proof",
-  "updated_at": "2026-08-24T10:21:11+00:00"
+  "updated_at": "2026-08-24T10:31:33+00:00"
 }

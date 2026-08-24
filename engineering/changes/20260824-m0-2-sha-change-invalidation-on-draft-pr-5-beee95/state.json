@@ -1,0 +1,35 @@
+{
+  "change_id": "20260824-m0-2-sha-change-invalidation-on-draft-pr-5-beee95",
+  "created_at": "2026-08-24T10:42:04+00:00",
+  "history": [
+    {
+      "at": "2026-08-24T10:42:04+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-24T10:51:22+00:00",
+      "from": "draft",
+      "reason": "scope written from analysis wave including extra allowed readers",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-24T10:51:26+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; далее delegates git-push-branch on milestone only",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-24T10:52:03+00:00",
+      "from": "approved",
+      "reason": "M0.2 SHA-change slice: commit evidence, push milestone, loopback HMAC",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "beee95e0b3c6",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "M0.2 SHA-change invalidation on draft PR 5",
+  "updated_at": "2026-08-24T10:52:03+00:00"
+}
