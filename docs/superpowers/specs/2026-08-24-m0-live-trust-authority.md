@@ -28,7 +28,7 @@ This spec **does not replace** `docs/superpowers/specs/2026-08-23-trust-ci-contr
 | `.github/` on `main` | absent |
 | GitHub Actions registry | leftover workflow `trusted-ci` **id 340420982**, path `.github/workflows/trusted-ci.yml`, **state=active**, 0 runs on `main` |
 | Docker | no Trust CI containers; leftover `adaptive-trust-ci-{api,worker,runner}:2.1.0` images not running |
-| `127.0.0.1:8080` | SearXNG, not Trust CI `/health/ready` |
+| `127.0.0.1:8080` | SearXNG, not Trust CI `/health/ready`. Trust CI **must not** publish host 8080; published default is `127.0.0.1:18080` (`TRUST_CI_API_HOST_PORT`) |
 | App installation ID | not queryable with the agent `gh` user token (401/403) |
 | `trust-ci/runtime/github-app-private-key.pem` | filename present, gitignored; **not opened in this spec** |
 | `runtime/policy.json`, operator `env/*.env` | absent (examples only) |
@@ -39,7 +39,7 @@ M0 is **source-complete and live-absent**.
 
 **Trusted:** dedicated-host images pinned by digest, server policy, holdout digest, PostgreSQL, worker-only CI Ed25519 key, worker-only GitHub App RSA, API-only webhook HMAC secret, API-only human public-key store, branch protection bound to App ID.
 
-**Untrusted:** pull-request tree, `AGENTS.md`, `.grok/**`, local receipts, delegated grants, agent output, this laptop, GitGuardian, leftover Actions catalog entries.
+**Untrusted:** pull-request tree, `AGENTS.md`, `.grok/**`, local receipts, delegated grants, agent output, GitGuardian, leftover Actions catalog entries. The agent workspace on `claw` is untrusted even though `claw` is the CI host. Trusted runtime is the deployed compose project `adaptive-trust-ci` (images, policy, holdout, PostgreSQL, keys), not the checkout.
 
 ## Role split
 
@@ -59,9 +59,11 @@ M0 is **source-complete and live-absent**.
 
 ## Host
 
-This laptop is **forbidden** as the Trust CI host: port 8080 is SearXNG; n8n/Caddy and app databases share the Docker engine; privileged DinD must not sit next to those workloads; `TRUST_CI_PUBLIC_BASE_URL` must be HTTPS.
+**Host is `claw`** (Xeon E5-2680 v4, ~16 GiB ECC, Ubuntu 24.04). The user named it. Port 8080 is SearXNG; n8n/Caddy and app databases share the Docker engine; privileged DinD remains residual risk the user accepted; `TRUST_CI_PUBLIC_BASE_URL` must still be HTTPS. The hostname gate for M0.1 is **satisfied**. Compose-up still needs `migration_or_external_write_approval`.
 
-Required: a dedicated Linux CI host with Docker Engine + Compose v2, TLS reverse proxy to `/webhooks/github` and `/approvals`, named PostgreSQL volume and backup destination, host-owned policy/holdout/keys. User approved host-activation **intent**; M0.1 still requires the **hostname** and `migration_or_external_write_approval`.
+Required: Docker Engine + Compose v2 on `claw`, TLS reverse proxy to `/webhooks/github` and `/approvals`, named PostgreSQL volume and backup destination, host-owned policy/holdout/keys. Published API mapping is `127.0.0.1:${TRUST_CI_API_HOST_PORT:-18080}:8080` with compose project `adaptive-trust-ci`.
+
+- Outbound GitHub traffic from this host must use the existing `/home/pall/app-stack` `proxy-gateway` on `127.0.0.1:1080` (HTTP and SOCKS5). The operator sets `HTTP_PROXY`/`HTTPS_PROXY` in the **host-owned** worker environment. Never commit proxy secrets or read `glider.conf` / `secrets/`.
 
 ## Rollout order (binding)
 
@@ -106,4 +108,7 @@ Also: leftover Actions workflow `340420982` disabled or deleted; bootstrap-excep
 - Root `pyproject.toml` / `requirements.txt` / `setup.py`
 - Auto-merge
 - Protecting `main` before the live App-owned check
-- Using this laptop as the CI host
+- Misnaming hostname `claw` (it is the named CI host, not a portable workstation)
+- Publishing Trust CI on host 8080
+- Stealing existing containers, volumes, or networks
+- `compose-up` / webhook / `branch-protect` in this host-name slice

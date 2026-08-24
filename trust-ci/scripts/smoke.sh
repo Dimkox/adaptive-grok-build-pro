@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-base_url="${TRUST_CI_PUBLIC_BASE_URL:-http://127.0.0.1:8080}"
+base_url="${TRUST_CI_PUBLIC_BASE_URL:-http://127.0.0.1:${TRUST_CI_API_HOST_PORT:-18080}}"
 compose_file="${TRUST_CI_COMPOSE_FILE:-trust-ci/compose.yaml}"
 : "${TRUST_CI_READ_TOKEN:?export TRUST_CI_READ_TOKEN for the authenticated metrics probe}"
 

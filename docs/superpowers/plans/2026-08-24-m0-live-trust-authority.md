@@ -11,7 +11,7 @@ TDD: add characterization tests before docs land; keep them green after each sli
 - [ ] Spec `docs/superpowers/specs/2026-08-24-m0-live-trust-authority.md`
 - [ ] Plan (this file)
 - [ ] Operator-safe activation-report template `engineering/runbooks/trust-ci-activation-report.md` (fields `UNKNOWN` until live)
-- [ ] Invariant tests: no `.github/workflows/**`; API has no `GitHubClient`/`GitHubAppAuth`; worker has `GitHubAppAuth`; compose publishes `127.0.0.1:8080:8080`; holdout forbids Actions; spec/plan exist and contain no PEM material
+- [ ] Invariant tests: no `.github/workflows/**`; API has no `GitHubClient`/`GitHubAppAuth`; worker has `GitHubAppAuth`; compose publishes `127.0.0.1:${TRUST_CI_API_HOST_PORT:-18080}:8080` with project `name: adaptive-trust-ci` (not `127.0.0.1:8080:8080`); holdout forbids Actions; spec/plan exist and contain no PEM material
 - [ ] `python3 -m unittest trust-ci.tests.test_m0_invariants` and `python3 scripts/grok_verify.py --mode pr`
 - [ ] Draft PR from this branch; do not mark ready
 
@@ -19,7 +19,7 @@ TDD: add characterization tests before docs land; keep them green after each sli
 
 ## M0.1 — Dedicated-host listener
 
-Requires `migration_or_external_write_approval` and a **named** dedicated CI host (not this laptop). User approved activation intent; host name is still required before this slice.
+Requires `migration_or_external_write_approval`. The named host **is `claw`**. This host-name correction lands on the existing M0.0 PR; it is not M0.1 execution (no compose-up). Publish `127.0.0.1:18080` and compose project `adaptive-trust-ci`.
 
 - [ ] Operator copies example env/policy/trust-store on that host; pins `name@sha256:` images and holdout digest
 - [ ] `docker compose up -d postgres migrate api worker` (and runner-loader as in compose)

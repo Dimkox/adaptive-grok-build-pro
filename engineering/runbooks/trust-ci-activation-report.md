@@ -5,7 +5,7 @@ Fill after live M0.2/M0.3. Empty fields stay `UNKNOWN`. Never paste PEM, JWT, we
 | Field | Value |
 | --- | --- |
 | Report date | UNKNOWN |
-| Dedicated CI host (hostname only) | UNKNOWN |
+| Dedicated CI host (hostname only) | `claw` |
 | `TRUST_CI_PUBLIC_BASE_URL` | UNKNOWN |
 | Product base SHA | `48cb9737fac7f26fb70b425957a3ed64d4c1eb55` |
 | GitHub App slug | `adaptive-trust-ci` |

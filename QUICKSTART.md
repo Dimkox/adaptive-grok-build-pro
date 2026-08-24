@@ -133,7 +133,7 @@ Copy only the public key and printed `key_id` into server-side `runtime/trust-st
 
 ```bash
 docker compose -f compose.yaml up -d postgres migrate api worker
-curl -fsS http://127.0.0.1:8080/health/ready
+curl -fsS http://127.0.0.1:18080/health/ready
 ```
 
 `/health/ready` stays **503** until PostgreSQL is up **and** the trust store has an active human public key. The systemd unit `trust-ci/systemd/adaptive-trust-ci-compose.service` also starts `docker-engine` + `runner-loader` after `verify-supply-chain.sh`. Manual `up` of `postgres migrate api worker` is enough to exercise API readiness; jobs that need a runner require the systemd set (or `docker-engine` and `runner-loader` as well).

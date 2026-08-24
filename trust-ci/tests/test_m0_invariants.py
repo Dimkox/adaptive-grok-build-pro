@@ -38,8 +38,18 @@ class M0InvariantTests(unittest.TestCase):
 
     def test_compose_publishes_loopback_not_all_interfaces(self) -> None:
         text = COMPOSE.read_text(encoding="utf-8")
-        self.assertIn("127.0.0.1:8080:8080", text)
-        self.assertNotIn("0.0.0.0:8080:8080", text)
+        self.assertIn("name: adaptive-trust-ci", text)
+        self.assertIn("127.0.0.1:${TRUST_CI_API_HOST_PORT:-18080}:8080", text)
+        self.assertNotIn("127.0.0.1:8080:8080", text)
+        self.assertNotIn("0.0.0.0:8080", text)
+        self.assertIn("http://127.0.0.1:8080/health/ready", text)
+
+    def test_m0_docs_name_claw_not_laptop(self) -> None:
+        spec = SPEC.read_text(encoding="utf-8")
+        plan = PLAN.read_text(encoding="utf-8")
+        self.assertIn("claw", spec)
+        self.assertNotIn("laptop", spec)
+        self.assertIn("claw", plan)
 
     def test_holdout_example_forbids_github_actions(self) -> None:
         holdout = (ROOT / "trust-ci/holdout.example/validate.py").read_text(encoding="utf-8")
