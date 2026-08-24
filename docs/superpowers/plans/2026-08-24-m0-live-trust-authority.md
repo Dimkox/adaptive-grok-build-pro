@@ -19,13 +19,13 @@ TDD: add characterization tests before docs land; keep them green after each sli
 
 ## M0.1 — Dedicated-host listener
 
-Requires `migration_or_external_write_approval`. The named host **is `claw`**. This turn executed compose-up of `postgres` + `migrate` + `api` only on project `adaptive-trust-ci`, published at `127.0.0.1:18080`. Worker, DinD, and runner-loader stay off until App ID and installation ID exist without reading PEM/JWT.
+Requires `migration_or_external_write_approval`. The named host **is `claw`**. `postgres` + `migrate` + `api` remain healthy on `127.0.0.1:18080`. This turn patched gitignored worker App ID `4694114` and installation ID `156003193` (PEM unread) and ran `docker compose --project-name adaptive-trust-ci up -d docker-engine runner-loader worker`. `docker-engine` is restarting unhealthy (`rootlesskit` `fork/exec /proc/self/exe: operation not permitted`); `runner-loader` and `worker` stayed `Created`. Do not skip loader. Webhook is M0.2 (blocked: no public HTTPS).
 
 - [x] Operator copies example env/policy/trust-store on that host; pins `name@sha256:` images and holdout digest
-- [ ] `docker compose up -d postgres migrate api worker` (and runner-loader as in compose) — **deferred**; this slice started `postgres migrate api` only
+- [ ] `docker compose --project-name adaptive-trust-ci up -d docker-engine runner-loader worker` — **attempted**; DinD unhealthy so worker did not reach running
 - [x] `curl -fsS http://127.0.0.1:18080/health/ready` returned 200 (`status=ready`); TLS proxy not this slice
-- [x] Confirm API has webhook secret + trust store and **no** App key; worker env is on disk with App IDs `UNKNOWN` and is **not** started
-- [x] Webhook still absent; `main` still unprotected
+- [x] Confirm API has webhook secret + trust store and **no** App key; worker env IDs set; worker container not running
+- [x] Webhook still absent (no public HTTPS); `main` still unprotected
 
 ## M0.2 — Live authority proof
 

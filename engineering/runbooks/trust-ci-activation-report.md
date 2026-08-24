@@ -2,7 +2,7 @@
 
 Fill after live M0.2/M0.3. Empty fields stay `UNKNOWN`. Never paste PEM, JWT, webhook secret, admin token, or human approval private keys.
 
-Listener facts below are operator-safe M0.1 evidence from `claw` (`127.0.0.1:18080` → container 8080). Worker and DinD were not started; webhook is absent.
+Listener facts below are operator-safe M0.1 evidence from `claw` (`127.0.0.1:18080` → container 8080). Worker env App ID `4694114` and Installation ID `156003193` are set (gitignored). Compose-up of `docker-engine` + `runner-loader` + `worker` was issued; `docker-engine` is restarting unhealthy (`rootlesskit: fork/exec /proc/self/exe: operation not permitted`), so `runner-loader` and `worker` stayed `Created`. Webhook stays blocked (no public HTTPS). Host `:8080` remains SearXNG.
 
 | Field | Value |
 | --- | --- |
@@ -11,8 +11,8 @@ Listener facts below are operator-safe M0.1 evidence from `claw` (`127.0.0.1:180
 | `TRUST_CI_PUBLIC_BASE_URL` | `http://127.0.0.1:18080` |
 | Product base SHA | `48cb9737fac7f26fb70b425957a3ed64d4c1eb55` |
 | GitHub App slug | `adaptive-trust-ci` |
-| App ID | UNKNOWN |
-| Installation ID | UNKNOWN |
+| App ID | 4694114 |
+| Installation ID | 156003193 |
 | Policy digest (full hex) | `6737355947c21eb561073cb506ebc5698afd170088a34f8eaace50007c57d1a5` |
 | Required check name | `adaptive-trust-ci/verified@6737355947c2` |
 | Disposable PR number | UNKNOWN |
