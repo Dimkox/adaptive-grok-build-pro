@@ -24,6 +24,7 @@ class StructureTests(unittest.TestCase):
             ".grok-stack/config/policy.json",
             "scripts/grok_route.py",
             "scripts/grok_change.py",
+            "scripts/grok_spec.py",
             "scripts/grok_verify.py",
             "scripts/grok_review.py",
             "scripts/grok_approve.py",

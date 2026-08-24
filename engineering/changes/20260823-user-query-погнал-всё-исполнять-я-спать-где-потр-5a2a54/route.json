@@ -1,0 +1,68 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher"
+  ],
+  "base_commit": "3e140079c94e22a204b0805ac2e3b7774426f739",
+  "base_fingerprint": "ea4f90264b382da3941f4b4455be11a68d323d739bfdfd3f0025850e08b8290b",
+  "complexity": "standard",
+  "created_at": "2026-08-23T23:24:42+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "generic"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base"
+  ],
+  "rationale": [
+    "bounded change without high-risk signals",
+    "intent=feature",
+    "domains=generic",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "low",
+  "route_id": "5a2a54f045d1",
+  "schema_version": 1,
+  "session_id": "01a03045-c530-7700-a547-b59f6cf10a2f",
+  "status": "routed",
+  "task": "<user_query>\nпогнал всё исполнять, я спать, где потребуется мое вмешательство - я автоматически одобряю, что ты делаешь\n</user_query>",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow"
+  ],
+  "write_agent": "general_implementer"
+}
