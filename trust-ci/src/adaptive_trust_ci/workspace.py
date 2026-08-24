@@ -86,10 +86,10 @@ class GitWorkspace:
             )
         )
         self.reset()
-        self.assert_unmodified()
+        self.assert_unchanged()
         return Checkout(path=self.path, changed_files=changed)
 
-    def assert_unmodified(self) -> None:
+    def assert_unchanged(self) -> None:
         if self._git_output('rev-parse', 'HEAD') != self.job.head_sha:
             raise WorkspaceMutationError(('HEAD',))
         status = self._git_output('status', '--porcelain=v1', '--untracked-files=all')
@@ -108,7 +108,7 @@ class GitWorkspace:
             return
         self._git('reset', '--hard', '--quiet', self.job.head_sha)
         self._git('clean', '-ffdqx')
-        self.assert_unmodified()
+        self.assert_unchanged()
 
     def cleanup(self) -> None:
         shutil.rmtree(self.path, ignore_errors=True)

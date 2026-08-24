@@ -13,7 +13,7 @@ from adaptive_trust_ci.policy import Policy
 from adaptive_trust_ci.runner import JobRunner
 from adaptive_trust_ci.signing import Signer, sign_approval, verify_attestation
 from adaptive_trust_ci.store import MemoryStore
-from adaptive_trust_ci.workspace import WorkspaceMutationError
+from adaptive_trust_ci.workspace import GitWorkspace, WorkspaceMutationError
 
 
 class FakeGitHub:
@@ -153,6 +153,9 @@ class RunnerTests(unittest.TestCase):
             executor_factory=lambda _sandbox: executor,
         )
         return runner, executor, workspaces, tokens
+
+    def test_git_workspace_matches_runner_integrity_contract(self):
+        self.assertTrue(hasattr(GitWorkspace, 'assert_unchanged'))
 
     def test_passing_job_uses_epoch_check_runs_holdout_and_signed_attestation(self) -> None:
         github = FakeGitHub()
