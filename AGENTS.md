@@ -75,6 +75,14 @@ When sources conflict, stop only for a named human gate or an irreversible/secur
 - Do not let an implementer approve its own work.
 - Do not spawn an agent that the active route did not select; the hook may block it.
 
+## Tool-denial circuit breaker
+
+- Never repeat an identical denied invocation.
+- One semantic rewrite is allowed: split a compound command, remove unnecessary temporary output, use a structured tool, or follow the exact denial guidance.
+- If the rewritten invocation is denied for the same objective, mark that objective `BLOCKED`, stop dependent subagents, skip its verification and review work, and report the blocker.
+- Request a protected-path grant only when the hook names at least one exact repository-relative protected target. An opaque denial requires explicit targets, not a speculative grant.
+- Treat the hook's exact-repeat and same-objective fingerprints as authoritative within their active denial window; cosmetic command changes do not reset the objective.
+
 ## Development discipline
 
 - Inspect the relevant code, contracts, migrations, tests, configuration, and recent patterns before editing.
