@@ -1,0 +1,35 @@
+{
+  "change_id": "20260824-m0-consolidate-git-and-continue-live-authority-p-85a17e",
+  "created_at": "2026-08-24T10:11:49+00:00",
+  "history": [
+    {
+      "at": "2026-08-24T10:11:49+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-24T10:20:09+00:00",
+      "from": "draft",
+      "reason": "scope and acceptance criteria written from analysis wave",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-24T10:20:09+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; controller ruling recorded: no push this slice",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-24T10:21:11+00:00",
+      "from": "approved",
+      "reason": "controller slice: unify git locally and host-local M0.2 kill-switch/attestation",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "85a17ed2e935",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "M0 consolidate git and continue live authority proof",
+  "updated_at": "2026-08-24T10:21:11+00:00"
+}

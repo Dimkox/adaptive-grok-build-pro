@@ -8,33 +8,33 @@ TDD: add characterization tests before docs land; keep them green after each sli
 
 - [x] Inspect live GitHub/host (no secrets).
 - [x] Analysis + `scope_and_design_approval`.
-- [ ] Spec `docs/superpowers/specs/2026-08-24-m0-live-trust-authority.md`
-- [ ] Plan (this file)
-- [ ] Operator-safe activation-report template `engineering/runbooks/trust-ci-activation-report.md` (fields `UNKNOWN` until live)
-- [ ] Invariant tests: no `.github/workflows/**`; API has no `GitHubClient`/`GitHubAppAuth`; worker has `GitHubAppAuth`; compose publishes `127.0.0.1:${TRUST_CI_API_HOST_PORT:-18080}:8080` with project `name: adaptive-trust-ci` (not `127.0.0.1:8080:8080`); holdout forbids Actions; spec/plan exist and contain no PEM material
-- [ ] `python3 -m unittest trust-ci.tests.test_m0_invariants` and `python3 scripts/grok_verify.py --mode pr`
-- [ ] Draft PR from this branch; do not mark ready
+- [x] Spec `docs/superpowers/specs/2026-08-24-m0-live-trust-authority.md`
+- [x] Plan (this file)
+- [x] Operator-safe activation-report template `engineering/runbooks/trust-ci-activation-report.md` (live Check Run ids filled; leftover fields may stay `UNKNOWN`)
+- [x] Invariant tests: no `.github/workflows/**`; API has no `GitHubClient`/`GitHubAppAuth`; worker has `GitHubAppAuth`; compose publishes `127.0.0.1:${TRUST_CI_API_HOST_PORT:-18080}:8080` with project `name: adaptive-trust-ci` (not `127.0.0.1:8080:8080`); holdout forbids Actions; spec/plan exist and contain no PEM material
+- [x] `python3 -m unittest trust-ci.tests.test_m0_invariants` and `python3 scripts/grok_verify.py --mode pr`
+- [x] Draft PR from this branch; do not mark ready
 
-**STOP:** no `compose.yaml up`, no webhook, no `branch-protect`, no PEM read.
+**STOP (historical M0.0 gate):** no `compose.yaml up`, no webhook, no `branch-protect`, no PEM read. Later slices already brought up the listener and published a local-HMAC Check Run; those remain host-local and incomplete for M0.2.
 
 ## M0.1 — Dedicated-host listener
 
-Requires `migration_or_external_write_approval`. The named host **is `claw`**. `postgres` + `migrate` + `api` remain healthy on `127.0.0.1:18080`. This turn patched gitignored worker App ID `4694114` and installation ID `156003193` (PEM unread) and ran `docker compose --project-name adaptive-trust-ci up -d docker-engine runner-loader worker`. `docker-engine` is restarting unhealthy (`rootlesskit` `fork/exec /proc/self/exe: operation not permitted`); `runner-loader` and `worker` stayed `Created`. Do not skip loader. Webhook is M0.2 (blocked: no public HTTPS).
+Requires `migration_or_external_write_approval`. The named host **is `claw`**. `postgres` + `migrate` + `api` remain healthy on `127.0.0.1:18080`. Nested rootless DinD previously failed (`rootlesskit` `fork/exec /proc/self/exe: operation not permitted`); that is historical. The worker now runs via an untracked host-socket overlay (`runner-loader` completed, `docker-engine` stopped unused). Tracked compose still documents isolated DinD. Gitignored worker App ID `4694114` and installation ID `156003193` are set (PEM unread). Public GitHub webhook is still absent (M0.2).
 
 - [x] Operator copies example env/policy/trust-store on that host; pins `name@sha256:` images and holdout digest
-- [ ] `docker compose --project-name adaptive-trust-ci up -d docker-engine runner-loader worker` — **attempted**; DinD unhealthy so worker did not reach running
+- [x] Worker running on `claw` via untracked host-socket overlay (`runner-loader` exit 0, `docker-engine` stopped unused). Tracked compose still documents isolated DinD.
 - [x] `curl -fsS http://127.0.0.1:18080/health/ready` returned 200 (`status=ready`); TLS proxy not this slice
-- [x] Confirm API has webhook secret + trust store and **no** App key; worker env IDs set; worker container not running
-- [x] Webhook still absent (no public HTTPS); `main` still unprotected
+- [x] Confirm API has webhook secret + trust store and **no** App key; worker env IDs set; worker container running
+- [x] Public GitHub webhook still absent; `main` still unprotected
 
 ## M0.2 — Live authority proof
 
-- [ ] Register repo webhook `POST https://<ci>/webhooks/github`
-- [ ] Disposable docs PR; job for exact head SHA; worker Check Run `adaptive-trust-ci/verified@<policy-sha12>` with `external_id=job_id`, App-owned
+- [ ] Register repo webhook `POST https://<ci>/webhooks/github` — **not done** (no public HTTPS)
+- [ ] Disposable docs PR; job for exact head SHA; worker Check Run `adaptive-trust-ci/verified@<policy-sha12>` with `external_id=job_id`, App-owned — **partial:** PR #5 SHA `1fc942065a124ce75659bd082519d8ebc37774e8` Check Run `97390635614` App `4694114` via **local HMAC**, `conclusion=action_required` (`needs_approval`). Not M0.2 complete.
 - [ ] Offline attestation verify
 - [ ] SHA change invalidates old check; policy/holdout retitles epoch
 - [ ] `trust-ci/**` → `needs_approval` → human Ed25519 requeue of the **same** Check Run
-- [ ] Source-mutation fail-closed; kill switch; backup/restore/restart
+- [ ] Source-mutation fail-closed; backup/restore/restart. Kill switch **host-local drill 2026-08-24 pass** (STOP on → ready 503, off → 200). Public webhook / SHA-change / human requeue still open.
 - [ ] **Do not protect `main`**
 
 ## M0.3 — Bind `main`

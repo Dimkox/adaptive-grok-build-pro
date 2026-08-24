@@ -17,7 +17,9 @@ This spec **does not replace** `docs/superpowers/specs/2026-08-23-trust-ci-contr
 | M1 typed spec | already on `main`; do not re-implement |
 | M2–M9 | out of this branch |
 
-## Live gap (probed 2026-08-24, no secrets)
+## Live gap (freeze snapshot probed 2026-08-24, no secrets)
+
+The table below is the **design-freeze** probe (listener not yet up; no Check Run). It is not the current claw state. Operator-safe live facts (PR #5, Check Run `97390635614`, job `needs_approval`, loopback HMAC, kill-switch drill) live in `engineering/runbooks/trust-ci-activation-report.md`.
 
 | Probe | Result |
 | --- | --- |
@@ -33,7 +35,7 @@ This spec **does not replace** `docs/superpowers/specs/2026-08-23-trust-ci-contr
 | `trust-ci/runtime/github-app-private-key.pem` | filename present, gitignored; **not opened in this spec** |
 | `runtime/policy.json`, operator `env/*.env` | absent (examples only) |
 
-M0 is **source-complete and live-absent**.
+M0 was **source-complete and live-absent** at that freeze snapshot. The freeze table is retained. Live claw is documented in the activation report; M0.2 is still incomplete (no public HTTPS webhook).
 
 ## Trust boundary
 

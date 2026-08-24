@@ -2,6 +2,18 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-24 — Unify git for live M0 facts; continue host-local M0.2
+
+User «своди все воедино и продолжай» unifies already-proven M0 live facts into git on milestone/m0-live-trust-authority and continues host-local M0.2 (kill-switch, attestation 404). It does not name git-push-branch; SHA-change invalidation waits for an explicit push of draft PR #5. Policy/holdout retitle and human Ed25519 requeue remain blocked by the trust boundary.
+
+## 2026-08-24 — Host-socket overlay produced the first App-owned Check Run
+
+Nested rootless DinD cannot start on this Engine, so `claw` used an untracked overlay mounting the host docker socket on `worker` and `runner-loader` only, plus `host.docker.internal:1080` via a host socat to glider. A loopback HMAC POST for draft PR #5 published Check Run `adaptive-trust-ci/verified@6737355947c2` (id `97390635614`, App `4694114`, `external_id` = job id) with `conclusion=action_required`; public webhook registration and `main` protection remain out of scope.
+
+## 2026-08-24 — M0.1-complete worker IDs without PEM; webhook still blocked
+
+User-supplied GitHub App ID `4694114` and installation ID `156003193` were patched in-place into gitignored worker env without reading PEM or minting JWT. Compose-up of `docker-engine`/`runner-loader`/`worker` was issued; DinD stayed unhealthy (`rootlesskit` `operation not permitted`), so the worker never reached running. GitHub webhook registration stays blocked until a public HTTPS URL exists.
+
 ## 2026-08-24 — M0.1 claw listener trust-store public key, worker deferred
 
 Bootstrap generated one Ed25519 pair only to insert the public key into untracked `runtime/trust-store.json`, then unlinked the private file so no approval private key remains on `claw`. Worker stays off until GitHub App ID and installation ID exist without reading PEM or minting JWT. The live listener is loopback HTTP on `127.0.0.1:18080` (`postgres` + `migrate` + `api` only).
