@@ -2,6 +2,50 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-24 — M0.3 bind main; revoke bootstrap exceptions
+
+Live App-owned check `adaptive-trust-ci/verified@6737355947c2` is bound to GitHub App ID `4694114` on protected `main`. Revoke the 2026-08-23 M1-start / PR #2 / PR #4 bootstrap exceptions because that live App-owned check exists (never by forging one). PR #5 stays unmerged while Check Run `97529209576` is `action_required`.
+
+## 2026-08-24 — Close M0.2 after live GitHub webhook; residual human/runner/policy
+
+User ordered M0.2 closed once Funnel + App `pull_request` + App-owned Check Run `action_required` were live (`9d56734`/`97524725228`, later `56f5462`/`97527445754`). Human Ed25519, offline attestation, source-mutation, and policy/holdout retitle stay **not done**; they are not merge authority. Do not protect `main` until M0.3.
+
+## 2026-08-24 — GitHub App pull_request webhook is live
+
+GitHub POSTed `pull_request`/`synchronize` to `https://claw.taild9f611.ts.net/webhooks/github` (HTTP 200) for PR #5 SHA `9d56734`; Check Run `97524725228` App `adaptive-trust-ci` `external_id=0e147461-6de8-415f-b712-d06b2034c735` `conclusion=action_required`. Do not add a repository webhook.
+
+## 2026-08-24 — «Приложуха» is GitHub App adaptive-trust-ci
+
+Operator «приложуха» is GitHub App `adaptive-trust-ci` at `https://github.com/apps/adaptive-trust-ci`. Webhook configuration lives on that App registration, not on a public website and not as a substitute repository webhook. Do not treat a public website as the app; live intake is Funnel `https://claw.taild9f611.ts.net/webhooks/github` plus loopback HMAC characterization.
+
+## 2026-08-24 — ChatGPT-invented public webhook hostname is void
+
+User voided a ChatGPT-invented public webhook hostname: do not configure GitHub App or repository webhook to it, do not probe it, and do not complete certbot for it. Host Apache HTTP leftovers from that slice stay untouched. Leave `TRUST_CI_PUBLIC_BASE_URL` on loopback until a named public HTTPS path actually reaches FastAPI HMAC.
+
+## 2026-08-24 — Apache HTTP leftover exists; public A is not this NAT host
+
+Host Apache plus an HTTP ACME vhost were installed because 80/443 were free (n8n Caddy is 3001/5678). Certbot HTTP-01 cannot run while public A `157.22.187.237` is not this NAT host (`192.168.0.229`, egress `45.85.105.28`). That leftover is not a live Trust CI edge; leave `TRUST_CI_PUBLIC_BASE_URL` on loopback.
+
+## 2026-08-24 — Live named volume is backup source and restart subject only
+
+The M0.2 claw drill restored only into a throwaway tmpfs Postgres (`trust_ci_restore`, hostname not `postgres`) on `adaptive-trust-ci_trust-ci`. Volume `adaptive-trust-ci_trust-ci-postgres` was the dump source and `compose restart postgres` subject, never a restore TARGET. Live project was not `down` or `down -v`.
+
+## 2026-08-24 — Unify git for live M0 facts; continue host-local M0.2
+
+User «своди все воедино и продолжай» unifies already-proven M0 live facts into git on milestone/m0-live-trust-authority and continues host-local M0.2 (kill-switch, attestation 404). It does not name git-push-branch; SHA-change invalidation waits for an explicit push of draft PR #5. Policy/holdout retitle and human Ed25519 requeue remain blocked by the trust boundary.
+
+## 2026-08-24 — Host-socket overlay produced the first App-owned Check Run
+
+Nested rootless DinD cannot start on this Engine, so `claw` used an untracked overlay mounting the host docker socket on `worker` and `runner-loader` only, plus `host.docker.internal:1080` via a host socat to glider. A loopback HMAC POST for draft PR #5 published Check Run `adaptive-trust-ci/verified@6737355947c2` (id `97390635614`, App `4694114`, `external_id` = job id) with `conclusion=action_required`; public webhook registration and `main` protection remain out of scope.
+
+## 2026-08-24 — M0.1-complete worker IDs without PEM; webhook still blocked
+
+User-supplied GitHub App ID `4694114` and installation ID `156003193` were patched in-place into gitignored worker env without reading PEM or minting JWT. Compose-up of `docker-engine`/`runner-loader`/`worker` was issued; DinD stayed unhealthy (`rootlesskit` `operation not permitted`), so the worker never reached running. GitHub webhook registration stays blocked until a public HTTPS URL exists.
+
+## 2026-08-24 — M0.1 claw listener trust-store public key, worker deferred
+
+Bootstrap generated one Ed25519 pair only to insert the public key into untracked `runtime/trust-store.json`, then unlinked the private file so no approval private key remains on `claw`. Worker stays off until GitHub App ID and installation ID exist without reading PEM or minting JWT. The live listener is loopback HTTP on `127.0.0.1:18080` (`postgres` + `migrate` + `api` only).
+
 ## 2026-08-23 — M0 live Trust Authority bootstrap exception for M1 start
 
 User approved unattended execution. M0 exit criteria are not met on this host.
@@ -118,3 +162,7 @@ Reuse the active route only when `FOLLOW_UP_RE` matches the whole prompt, or the
 ## 2026-08-14 — Bind receipts after the last change-package write
 
 `tree_fingerprint` hashes every non-runtime changed file, including `engineering/changes/**/state.json`. Transition the durable package to `ready` first, then run `grok_verify` and `grok_review`. Recording evidence before that last write guarantees stale receipts and a second verification loop.
+
+## 2026-08-24 — M0 CI host is claw, not a laptop
+
+The M0 Trust CI host is hostname `claw` (Xeon E5-2680 v4, ~16 GiB ECC, Ubuntu 24.04). Never call it a laptop; SearXNG already owns `127.0.0.1:8080` and co-located n8n/app databases remain residual risk the user accepted. Trust CI therefore publishes another loopback port (`127.0.0.1:18080` by default) with compose project `adaptive-trust-ci`.

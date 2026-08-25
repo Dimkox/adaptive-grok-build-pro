@@ -1,0 +1,17 @@
+{
+  "change_id": "20260824-user-query-закрывать-давай-user-query-a19847",
+  "created_at": "2026-08-24T17:36:46+00:00",
+  "history": [
+    {
+      "at": "2026-08-24T17:36:46+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    }
+  ],
+  "route_id": "a19847c77d55",
+  "schema_version": 1,
+  "status": "draft",
+  "title": "<user_query>\nзакрывать давай\n</user_query>",
+  "updated_at": "2026-08-24T17:36:46+00:00"
+}

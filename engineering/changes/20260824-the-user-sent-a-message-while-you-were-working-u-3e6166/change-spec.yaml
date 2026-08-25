@@ -1,0 +1,38 @@
+schema_version: 1
+change_id: "20260824-the-user-sent-a-message-while-you-were-working-u-3e6166"
+objective:
+  id: OBJ-001
+  statement: "On claw, start Trust CI worker via host Docker socket overlay and publish an App-owned Check Run adaptive-trust-ci/verified@6737355947c2 on the exact PR #5 SHA."
+  success_metric: "Check Run app.id=4694114 external_id=job_id on exact head SHA"
+  target: "draft PR #5; compose project adaptive-trust-ci"
+risk:
+  tier: "low"
+  domains: ["generic"]
+acceptance_criteria:
+  - "worker running against host docker.sock overlay"
+  - "HMAC POST /webhooks/github 200 with job_id"
+  - "App-owned Check Run on exact SHA; publication not conclusion=success"
+invariants:
+  - "tracked trust-ci/compose.yaml still isolated DinD"
+  - "API has no App key or docker.sock"
+  - "runner has no socket, no token, network=none"
+  - "main unprotected; no forged checks; no PEM in git or chat"
+forbidden_outcomes:
+  - "edit tracked compose.yaml this slice"
+  - "branch-protect or merge PR #5"
+  - "read or print PEM / webhook secret"
+  - "GitHub Actions"
+  - "compose down -v"
+contracts:
+  openapi: []
+  json_schema: []
+  events: []
+observability:
+  - "GET /health/ready"
+  - "compose ps worker running"
+  - "gh check-runs filtered by name and app.id"
+rollback:
+  strategy: "stop worker and runner-loader; drop overlay; leave postgres+api"
+  maximum_steps: 3
+approvals:
+  required_scopes: []

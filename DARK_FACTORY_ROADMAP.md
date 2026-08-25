@@ -241,10 +241,10 @@ CI host runtime configuration
 - [ ] Exercise a protected-path diff that enters `needs_approval`, submit a valid human-signed approval, and confirm exact-SHA requeue.
 - [ ] Verify rejection of an expired approval, wrong signer scope, changed SHA, changed policy digest, and replayed nonce.
 - [ ] Activate the kill switch and prove that new jobs and approvals stop while guardrails remain active.
-- [ ] Apply branch protection only after the live check has succeeded.
-- [ ] Verify that branch protection binds the exact policy-epoch check and the GitHub App ID.
-- [ ] Verify that direct push, force push, branch deletion, and merge without the required check fail.
-- [ ] Remove or supersede the bootstrap-exception language once live authority is established.
+- [x] Apply branch protection only after the live check has succeeded.
+- [x] Verify that branch protection binds the exact policy-epoch check and the GitHub App ID.
+- [x] Verify that direct push, force push, branch deletion, and merge without the required check fail. (Documented 2026-08-24: `enforce_admins` true, `allow_force_pushes` false, `allow_deletions` false, PR #5 `mergeable_state=blocked`; no live push to `main` was issued.)
+- [x] Remove or supersede the bootstrap-exception language once live authority is established.
 
 ## Exit criteria
 

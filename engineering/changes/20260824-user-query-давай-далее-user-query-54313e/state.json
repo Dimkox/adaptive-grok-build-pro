@@ -1,0 +1,53 @@
+{
+  "change_id": "20260824-user-query-давай-далее-user-query-54313e",
+  "created_at": "2026-08-24T17:40:04+00:00",
+  "history": [
+    {
+      "at": "2026-08-24T17:40:04+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-24T17:49:25+00:00",
+      "from": "draft",
+      "reason": "M0.3 live GET/actor-mismatch proofs recorded; docs/tests remain",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-24T17:49:25+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; analysis complete; PUT already live",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-24T17:56:25+00:00",
+      "from": "approved",
+      "reason": "write owner finished M0.3 docs/tests",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-24T17:56:27+00:00",
+      "from": "implementing",
+      "reason": "grok_verify --mode pr PASS after M0.3 docs",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-24T17:56:30+00:00",
+      "from": "verifying",
+      "reason": "independent code_reviewer and test_reviewer PASS",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-24T17:56:35+00:00",
+      "from": "reviewing",
+      "reason": "M0.3 docs/tests + live proofs; PR #5 not merged",
+      "to": "ready"
+    }
+  ],
+  "route_id": "54313e326a39",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "<user_query>\nдавай далее\n</user_query>",
+  "updated_at": "2026-08-24T17:56:35+00:00"
+}

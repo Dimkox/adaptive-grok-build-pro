@@ -1,0 +1,90 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "48cb9737fac7f26fb70b425957a3ed64d4c1eb55",
+  "base_fingerprint": "a2a685401e8455358ad1aadf4cce2166e33ac14b50fe4bd16841a2c1d3dae997",
+  "complexity": "high-risk",
+  "created_at": "2026-08-24T07:50:48+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "security",
+    "infra",
+    "api",
+    "integration"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval"
+  ],
+  "intent": "review",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "integration",
+    "infra"
+  ],
+  "rationale": [
+    "high-risk intent/domain: review",
+    "intent=review",
+    "domains=security,infra,api,integration",
+    "repository=generic",
+    "write-owner=none",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "3722694830f7",
+  "schema_version": 1,
+  "session_id": "01a03045-c530-7700-a547-b59f6cf10a2f",
+  "status": "routed",
+  "task": "<user_query>\nRead AGENTS.md, decisions.md, mistakes.md, README.md, trust-ci/README.md,\nengineering/runbooks/trust-ci-rollout.md, and DARK_FACTORY_ROADMAP.md.\n\nTreat main as the product source of truth and DARK_FACTORY_ROADMAP.md as the\nprogram backlog. Do not add GitHub Actions. Do not implement multiple milestones\nin one branch. Start with M0 only.\n\nFirst inspect the current repository and live GitHub state. Verify what parts of\nM0 are already operational, especially the adaptive-trust-ci App installation,\ninstallation ID, live Check Runs, deployed worker, webhook deliveries, and main\nbranch protection. Never print or commit private keys or secrets.\n\nCreate milestone/m0-live-trust-authority from the current main. Write or update\nthe M0 design spec and implementation plan before changing runtime behavior.\nUse TDD and real integration drills. Keep reasoning low for ordinary workers and\nhigh only for task analysis, architecture, security, release, and adjudication.\nOpen a draft PR early and update it with exact-SHA evidence. Stop at M0 exit\ncriteria; do not begin M1 in the same branch.\n\n</user_query>",
+  "task_domains": [
+    "security",
+    "infra",
+    "api",
+    "integration"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "verification-evidence",
+    "api-event-change",
+    "enterprise-integration",
+    "security-sensitive-change"
+  ],
+  "write_agent": null
+}

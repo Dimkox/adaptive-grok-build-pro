@@ -44,7 +44,7 @@ adaptive-trust-ci holdout-digest --path /opt/adaptive-trust-ci-holdout
 
 docker compose up -d postgres migrate api worker
 docker compose ps
-curl -fsS http://127.0.0.1:8080/health/ready
+curl -fsS http://127.0.0.1:18080/health/ready
 ```
 
 Configure an HTTPS GitHub pull-request webhook at `/webhooks/github` with the API-only HMAC secret.
