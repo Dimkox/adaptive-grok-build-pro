@@ -73,6 +73,14 @@ The write agent must:
 
 Do not spawn a second write agent for the same route. Review fixes return to the same write owner.
 
+## Tool-denial circuit breaker
+
+1. Never repeat an identical denied invocation.
+2. One semantic rewrite is allowed: split a compound command, remove unnecessary temporary output, use a structured tool, or follow the exact denial guidance.
+3. If the rewritten invocation is denied for the same objective, mark that objective `BLOCKED`, stop dependent subagents, skip its verification and review work, and report the blocker.
+4. Request a protected-path grant only when the hook names at least one exact repository-relative protected target. An opaque denial requires explicit targets, not a speculative grant.
+5. Treat the hook's exact-repeat and same-objective fingerprints as authoritative within their active denial window; cosmetic command changes do not reset the objective.
+
 ## 5. Verification
 
 Run the route-selected profiles:

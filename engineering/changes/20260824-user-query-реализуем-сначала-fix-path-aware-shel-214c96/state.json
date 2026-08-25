@@ -1,0 +1,17 @@
+{
+  "change_id": "20260824-user-query-реализуем-сначала-fix-path-aware-shel-214c96",
+  "created_at": "2026-08-24T19:40:55+00:00",
+  "history": [
+    {
+      "at": "2026-08-24T19:40:55+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    }
+  ],
+  "route_id": "214c96b43d3f",
+  "schema_version": 1,
+  "status": "draft",
+  "title": "<user_query>\nреализуем сначала fix/path-aware-shell-policy-circuit-breaker — PR #6\n</user_query>",
+  "updated_at": "2026-08-24T19:40:55+00:00"
+}
