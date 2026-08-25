@@ -41,6 +41,7 @@ class OperationsTests(unittest.TestCase):
         self.assertIn('--read-only', joined)
         self.assertIn('/run/trust-ci-tmp:rw,exec,nosuid,nodev,size=128m', joined)
         self.assertIn('TMPDIR=/run/trust-ci-tmp', argv)
+        self.assertIn('PYTHONPYCACHEPREFIX=/run/trust-ci-tmp/pycache', argv)
         self.assertIn('TMPDIR=/run/trust-ci-tmp', argv)
         self.assertIn('/var/lib/adaptive-trust-ci/workspaces/job-1:/workspace:rw', joined)
         self.assertIn('/var/lib/adaptive-trust-ci/workspaces/job-1/.git:/workspace/.git:ro', joined)
