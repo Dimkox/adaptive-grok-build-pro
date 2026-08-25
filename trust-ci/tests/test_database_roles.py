@@ -30,9 +30,9 @@ class DatabaseRoleTests(unittest.TestCase):
 
     def test_grant_migration_separates_api_worker_migrator_and_backup_capabilities(self) -> None:
         sql = (ROOT / 'trust-ci/sql/003_database_roles.sql').read_text(encoding='utf-8')
-        self.assertIn('GRANT INSERT ON trust_ci_approvals TO trust_ci_api', sql)
+        self.assertIn('GRANT SELECT, INSERT ON trust_ci_approvals TO trust_ci_api', sql)
         self.assertNotIn('GRANT INSERT ON trust_ci_attestations TO trust_ci_api', sql)
-        self.assertIn('GRANT INSERT ON trust_ci_attestations TO trust_ci_worker', sql)
+        self.assertIn('GRANT SELECT, INSERT ON trust_ci_attestations TO trust_ci_worker', sql)
         self.assertIn('GRANT EXECUTE ON FUNCTION trust_ci_claim_job', sql)
         self.assertIn('GRANT SELECT ON ALL TABLES IN SCHEMA public TO trust_ci_backup', sql)
         self.assertNotIn('GRANT INSERT ON ALL TABLES IN SCHEMA public TO trust_ci_backup', sql)

@@ -39,12 +39,35 @@ class OperationsTests(unittest.TestCase):
         self.assertIn('--cap-drop ALL', joined)
         self.assertIn('no-new-privileges', joined)
         self.assertIn('--read-only', joined)
-        self.assertIn('/var/lib/adaptive-trust-ci/workspaces/job-1:/workspace:rw', joined)
+        self.assertIn('/run/trust-ci-tmp:rw,exec,nosuid,nodev,size=128m', joined)
+        self.assertIn('TMPDIR=/run/trust-ci-tmp', argv)
+        self.assertIn('PYTHONPYCACHEPREFIX=/run/trust-ci-tmp/pycache', argv)
+        self.assertIn('COVERAGE_FILE=/run/trust-ci-tmp/.coverage', argv)
+        self.assertIn('RUFF_CACHE_DIR=/run/trust-ci-tmp/ruff-cache', argv)
+        self.assertIn('GIT_CONFIG_COUNT=1', argv)
+        self.assertIn('GIT_CONFIG_KEY_0=safe.directory', argv)
+        self.assertIn('GIT_CONFIG_VALUE_0=/workspace', argv)
+        self.assertIn('TMPDIR=/run/trust-ci-tmp', argv)
+        self.assertIn('/var/lib/adaptive-trust-ci/workspaces/job-1:/workspace:ro', joined)
         self.assertIn('/var/lib/adaptive-trust-ci/workspaces/job-1/.git:/workspace/.git:ro', joined)
         self.assertIn('/etc/adaptive-trust-ci/holdout:/holdout:ro', joined)
         self.assertNotIn(str(workspace), joined)
         self.assertNotIn('GITHUB_TOKEN', joined)
         self.assertNotIn('TRUST_CI_GITHUB', joined)
+
+    def test_sandbox_exposes_workspace_as_python_package_root(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory) / 'workspace'
+            (workspace / '.git').mkdir(parents=True)
+            policy = Policy.from_dict(policy_data())
+            argv = ContainerExecutor(policy.sandbox).build_argv(
+                workspace=workspace,
+                workspace_host_path=Path('/var/lib/adaptive-trust-ci/workspaces/job-1'),
+                command=('python3', '-m', 'unittest', 'discover', '-s', 'tests'),
+                env={},
+                container_name='trust-ci-test',
+            )
+        self.assertIn('PYTHONPATH=/workspace', argv)
 
     def test_sandbox_rejects_relative_daemon_paths(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

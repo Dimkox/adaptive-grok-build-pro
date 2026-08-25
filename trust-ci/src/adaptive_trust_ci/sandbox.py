@@ -62,11 +62,13 @@ class ContainerExecutor:
             '--tmpfs',
             f'/tmp:rw,noexec,nosuid,nodev,size={self.sandbox.tmpfs_mb}m',
             '--tmpfs',
+            '/run/trust-ci-tmp:rw,exec,nosuid,nodev,size=128m',
+            '--tmpfs',
             '/home/ci:rw,noexec,nosuid,nodev,size=128m',
             '--user',
             self.sandbox.user,
             '--volume',
-            f'{host_workspace}:/workspace:rw',
+            f'{host_workspace}:/workspace:ro',
             '--volume',
             f'{host_workspace / ".git"}:/workspace/.git:ro',
             '--workdir',
@@ -84,7 +86,18 @@ class ContainerExecutor:
             if not host_holdout.is_absolute():
                 raise ValueError('holdout_host_path must be absolute on the Docker daemon host')
             argv.extend(('--volume', f'{host_holdout}:/holdout:ro'))
-        for key, value in sorted(env.items()):
+        container_env = {
+            **env,
+            'PYTHONPATH': '/workspace',
+            'TMPDIR': '/run/trust-ci-tmp',
+            'PYTHONPYCACHEPREFIX': '/run/trust-ci-tmp/pycache',
+            'COVERAGE_FILE': '/run/trust-ci-tmp/.coverage',
+            'RUFF_CACHE_DIR': '/run/trust-ci-tmp/ruff-cache',
+            'GIT_CONFIG_COUNT': '1',
+            'GIT_CONFIG_KEY_0': 'safe.directory',
+            'GIT_CONFIG_VALUE_0': '/workspace',
+        }
+        for key, value in sorted(container_env.items()):
             argv.extend(('--env', f'{key}={value}'))
         argv.append(self.sandbox.image)
         argv.extend(command)

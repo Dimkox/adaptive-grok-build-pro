@@ -111,6 +111,7 @@ class ToolchainTests(unittest.TestCase):
         tools = {item['id']: item for item in data['tools']}
         self.assertTrue(tools['python3']['required'])
         self.assertTrue(tools['git']['required'])
+        self.assertFalse(tools['grok']['required'])
         self.assertFalse(tools['php']['required'])
         self.assertFalse(tools['gh']['required'])
         self.assertFalse(tools['node']['required'])
