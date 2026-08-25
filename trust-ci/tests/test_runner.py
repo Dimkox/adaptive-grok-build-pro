@@ -166,7 +166,7 @@ class RunnerTests(unittest.TestCase):
             base_directory=base,
         )
         try:
-            self.assertEqual(workspace.path.stat().st_mode & 0o777, 0o711)
+            self.assertEqual(workspace.path.stat().st_mode & 0o777, 0o755)
         finally:
             workspace.cleanup()
 
