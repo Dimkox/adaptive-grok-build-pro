@@ -9,6 +9,7 @@ from ._policy_legacy import *  # noqa: F401,F403
 from .shell_targets import control_plane_shell_mutation
 
 _LEGACY_SHELL_GUARD = threading.Lock()
+WORKFLOW_DISPATCH_POLICY = 'workflow-dispatch is forbidden'
 
 
 def evaluate_pre_tool(root: Path, event: dict[str, Any]) -> tuple[bool, str | None]:
