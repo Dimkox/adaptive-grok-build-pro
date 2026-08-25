@@ -47,6 +47,11 @@ class ShellTargetPolicyTest(unittest.TestCase):
                 allowed, reason = self.check(root, command)
                 self.assertFalse(allowed, f'{command}: {reason}')
 
+    def test_wrapper_retains_workflow_dispatch_forbidden_invariant(self):
+        source = (ROOT / '.grok-stack/adaptive_grok/policy.py').read_text(encoding='utf-8')
+        self.assertIn('workflow-dispatch', source)
+        self.assertIn('forbidden', source.lower())
+
 
 if __name__ == '__main__':
     unittest.main()
