@@ -46,6 +46,20 @@ class OperationsTests(unittest.TestCase):
         self.assertNotIn('GITHUB_TOKEN', joined)
         self.assertNotIn('TRUST_CI_GITHUB', joined)
 
+    def test_sandbox_exposes_workspace_as_python_package_root(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            workspace = Path(directory) / 'workspace'
+            (workspace / '.git').mkdir(parents=True)
+            policy = Policy.from_dict(policy_data())
+            argv = ContainerExecutor(policy.sandbox).build_argv(
+                workspace=workspace,
+                workspace_host_path=Path('/var/lib/adaptive-trust-ci/workspaces/job-1'),
+                command=('python3', '-m', 'unittest', 'discover', '-s', 'tests'),
+                env={},
+                container_name='trust-ci-test',
+            )
+        self.assertIn('PYTHONPATH=/workspace', argv)
+
     def test_sandbox_rejects_relative_daemon_paths(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             workspace = Path(directory) / 'workspace'

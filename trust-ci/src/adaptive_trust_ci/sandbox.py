@@ -84,7 +84,8 @@ class ContainerExecutor:
             if not host_holdout.is_absolute():
                 raise ValueError('holdout_host_path must be absolute on the Docker daemon host')
             argv.extend(('--volume', f'{host_holdout}:/holdout:ro'))
-        for key, value in sorted(env.items()):
+        container_env = {'PYTHONPATH': '/workspace', **env}
+        for key, value in sorted(container_env.items()):
             argv.extend(('--env', f'{key}={value}'))
         argv.append(self.sandbox.image)
         argv.extend(command)

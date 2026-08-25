@@ -37,7 +37,7 @@
     {
       "id": "grok",
       "name": "Grok Build CLI",
-      "required": true,
+      "required": false,
       "profile": "tui",
       "commands": ["grok"],
       "version_args": ["--version"],
