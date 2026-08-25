@@ -157,6 +157,19 @@ class RunnerTests(unittest.TestCase):
     def test_git_workspace_matches_runner_integrity_contract(self):
         self.assertTrue(hasattr(GitWorkspace, 'assert_unchanged'))
 
+    def test_git_workspace_allows_rootless_daemon_traversal(self):
+        base = Path(self.temp.name) / 'workspaces'
+        workspace = GitWorkspace(
+            self.job,
+            github_token='token',
+            checkout_depth=1,
+            base_directory=base,
+        )
+        try:
+            self.assertEqual(workspace.path.stat().st_mode & 0o777, 0o711)
+        finally:
+            workspace.cleanup()
+
     def test_passing_job_uses_epoch_check_runs_holdout_and_signed_attestation(self) -> None:
         github = FakeGitHub()
         runner, executor, workspaces, tokens = self.build_runner(changed_files=['docs/x.md'], github=github)

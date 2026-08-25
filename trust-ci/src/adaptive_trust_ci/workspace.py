@@ -36,6 +36,7 @@ class GitWorkspace:
         self.github_token = github_token
         self.checkout_depth = checkout_depth
         self.path = Path(tempfile.mkdtemp(prefix=f'trust-ci-{job.job_id[:8]}-', dir=base_directory))
+        os.chmod(self.path, 0o711)
 
     def checkout(self, job: Job) -> Checkout:
         if job.job_id != self.job.job_id:
