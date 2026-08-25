@@ -68,7 +68,7 @@ class ContainerExecutor:
             '--user',
             self.sandbox.user,
             '--volume',
-            f'{host_workspace}:/workspace:rw',
+            f'{host_workspace}:/workspace:ro',
             '--volume',
             f'{host_workspace / ".git"}:/workspace/.git:ro',
             '--workdir',
@@ -91,6 +91,11 @@ class ContainerExecutor:
             'PYTHONPATH': '/workspace',
             'TMPDIR': '/run/trust-ci-tmp',
             'PYTHONPYCACHEPREFIX': '/run/trust-ci-tmp/pycache',
+            'COVERAGE_FILE': '/run/trust-ci-tmp/.coverage',
+            'RUFF_CACHE_DIR': '/run/trust-ci-tmp/ruff-cache',
+            'GIT_CONFIG_COUNT': '1',
+            'GIT_CONFIG_KEY_0': 'safe.directory',
+            'GIT_CONFIG_VALUE_0': '/workspace',
         }
         for key, value in sorted(container_env.items()):
             argv.extend(('--env', f'{key}={value}'))
