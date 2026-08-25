@@ -1,0 +1,53 @@
+{
+  "change_id": "20260824-user-query-на-чем-застрял-продолжай-user-query-47da9e",
+  "created_at": "2026-08-24T08:40:25+00:00",
+  "history": [
+    {
+      "at": "2026-08-24T08:40:25+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-24T08:42:54+00:00",
+      "from": "draft",
+      "reason": "continuation close-out of claw-host slice",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-24T08:42:54+00:00",
+      "from": "scoped",
+      "reason": "no named gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-24T08:42:54+00:00",
+      "from": "approved",
+      "reason": "implementation already on disk",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-24T08:42:54+00:00",
+      "from": "implementing",
+      "reason": "grok_verify --mode pr PASS",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-24T08:43:34+00:00",
+      "from": "verifying",
+      "reason": "code_review and test_review pass",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-24T08:43:34+00:00",
+      "from": "reviewing",
+      "reason": "close-out ready for commit and draft PR update",
+      "to": "ready"
+    }
+  ],
+  "route_id": "47da9efaec38",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "<user_query>\nна чем застрял продолжай\n</user_query>",
+  "updated_at": "2026-08-24T08:43:34+00:00"
+}

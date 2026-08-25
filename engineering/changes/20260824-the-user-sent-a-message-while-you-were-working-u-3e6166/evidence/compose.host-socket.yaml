@@ -1,0 +1,52 @@
+# claw-only. Never merge into tracked compose this slice.
+services:
+  docker-engine:
+    profiles: ["isolated-dind"]
+    restart: "no"
+
+  runner-loader:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      DOCKER_HOST: unix:///var/run/docker.sock
+    group_add:
+      - "${DOCKER_GID:?set host docker.sock GID}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        img="$$TRUST_CI_RUNNER_IMAGE"
+        found=0
+        for d in $$(docker image inspect "$$img" --format '{{range .RepoDigests}}{{.}} {{end}}' 2>/dev/null || true); do
+          if [ "$$d" = "$$img" ]; then found=1; fi
+        done
+        if [ "$$found" != 1 ]; then
+          docker pull "$$img"
+          found=0
+          for d in $$(docker image inspect "$$img" --format '{{range .RepoDigests}}{{.}} {{end}}'); do
+            if [ "$$d" = "$$img" ]; then found=1; fi
+          done
+        fi
+        test "$$found" = 1
+    depends_on: !override {}
+
+  worker:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    group_add:
+      - "${DOCKER_GID:?set host docker.sock GID}"
+    environment:
+      DOCKER_HOST: unix:///var/run/docker.sock
+      HTTP_PROXY: http://host.docker.internal:1080
+      HTTPS_PROXY: http://host.docker.internal:1080
+      NO_PROXY: postgres,api,127.0.0.1,localhost
+      TRUST_CI_WORKSPACE_HOST_ROOT: ${TRUST_CI_WORKSPACE_HOST_ROOT:?set host workspace directory}
+      TRUST_CI_HOLDOUT_HOST_PATH: ${TRUST_CI_HOLDOUT_SOURCE_PATH:?holdout host path must equal compose bind source}
+    volumes: !override
+      - ./runtime/policy.json:/etc/adaptive-trust-ci/policy.json:ro
+      - ${TRUST_CI_HOLDOUT_SOURCE_PATH:?set absolute reviewed holdout source path}:/etc/adaptive-trust-ci/holdout:ro
+      - ./runtime/trust-ci-signing-key.pem:/run/secrets/trust-ci-signing-key.pem:ro
+      - ./runtime/github-app-private-key.pem:/run/secrets/github-app-private-key.pem:ro
+      - ./runtime/control:/run/adaptive-trust-ci
+      - ${TRUST_CI_WORKSPACE_HOST_ROOT:?set host workspace directory}:/var/lib/adaptive-trust-ci/workspaces

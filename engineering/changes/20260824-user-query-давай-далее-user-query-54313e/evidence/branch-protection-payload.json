@@ -1,0 +1,26 @@
+{
+  "required_status_checks": {
+    "strict": true,
+    "checks": [
+      {
+        "context": "adaptive-trust-ci/verified@6737355947c2",
+        "app_id": 4694114
+      }
+    ]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": true,
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 0,
+    "require_last_push_approval": false
+  },
+  "restrictions": null,
+  "required_linear_history": true,
+  "allow_force_pushes": false,
+  "allow_deletions": false,
+  "block_creations": false,
+  "required_conversation_resolution": true,
+  "lock_branch": false,
+  "allow_fork_syncing": false
+}

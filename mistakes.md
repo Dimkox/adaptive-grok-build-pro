@@ -2,6 +2,16 @@
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-08-24 — Misread «приложуха» as a public website
+
+**Symptom:** Agents treated «приложуха» as a public website instead of GitHub App `https://github.com/apps/adaptive-trust-ci`.
+**Root cause:** Overloaded Russian «приложение» means both a GitHub App and a public website, so the two were collapsed into one live target. Operator truth is `https://github.com/apps/adaptive-trust-ci`.
+
+## 2026-08-24 — Treated a ChatGPT hostname as the live webhook URL
+
+**Symptom:** Operator packages and `decisions.md` pointed GitHub App webhook and Apache TLS at `https://trust-ci.ii-tonya.ru/webhooks/github`.
+**Root cause:** A ChatGPT-invented hostname was copied as operator truth. That hostname is a ChatGPT invention, not the GitHub App and not Trust CI on claw; do not configure, probe, or complete TLS for it.
+
 ## 2026-08-23 — First protected write invalidated the rest of the grant
 
 **Symptom:** README.md, trust-ci/README.md and decisions.md were denied after tests/toolchain landed, then the session shut down mid-docs pass.

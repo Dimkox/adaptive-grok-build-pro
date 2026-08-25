@@ -1,0 +1,53 @@
+{
+  "change_id": "20260824-user-query-продолжаем-автоматом-все-роадмап-утве-6346a3",
+  "created_at": "2026-08-24T08:50:48+00:00",
+  "history": [
+    {
+      "at": "2026-08-24T08:50:48+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-24T08:59:52+00:00",
+      "from": "draft",
+      "reason": "M0.1 API+postgres listener on claw",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-24T08:59:52+00:00",
+      "from": "scoped",
+      "reason": "user approved roadmap auto-continue; compose-up on claw",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-24T08:59:52+00:00",
+      "from": "approved",
+      "reason": "dispatch general_implementer for M0.1 listener",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-24T09:09:58+00:00",
+      "from": "implementing",
+      "reason": "health/ready 200; grok_verify PASS",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-24T09:09:58+00:00",
+      "from": "verifying",
+      "reason": "code_review test_review pass",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-24T09:09:58+00:00",
+      "from": "reviewing",
+      "reason": "M0.1 listener on claw; not merge",
+      "to": "ready"
+    }
+  ],
+  "route_id": "6346a398114f",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "<user_query>\nпродолжаем автоматом все, роадмап утвержден сука\n</user_query>",
+  "updated_at": "2026-08-24T09:09:58+00:00"
+}

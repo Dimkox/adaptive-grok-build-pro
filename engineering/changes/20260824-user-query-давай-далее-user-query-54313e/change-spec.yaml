@@ -1,0 +1,23 @@
+schema_version: 1
+change_id: "20260824-user-query-давай-далее-user-query-54313e"
+objective:
+  id: OBJ-001
+  statement: "{{OBJECTIVE_STATEMENT}}"
+  success_metric: UNKNOWN
+  target: UNKNOWN
+risk:
+  tier: "{{RISK_TIER}}"
+  domains: []
+acceptance_criteria: []
+invariants: []
+forbidden_outcomes: []
+contracts:
+  openapi: []
+  json_schema: []
+  events: []
+observability: []
+rollback:
+  strategy: "{{ROLLBACK_STRATEGY}}"
+  maximum_steps: 1
+approvals:
+  required_scopes: []
