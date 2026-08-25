@@ -36,6 +36,7 @@ class GitWorkspace:
         self.github_token = github_token
         self.checkout_depth = checkout_depth
         self.path = Path(tempfile.mkdtemp(prefix=f'trust-ci-{job.job_id[:8]}-', dir=base_directory))
+        os.chmod(self.path, 0o755)
 
     def checkout(self, job: Job) -> Checkout:
         if job.job_id != self.job.job_id:
@@ -86,10 +87,10 @@ class GitWorkspace:
             )
         )
         self.reset()
-        self.assert_unmodified()
+        self.assert_unchanged()
         return Checkout(path=self.path, changed_files=changed)
 
-    def assert_unmodified(self) -> None:
+    def assert_unchanged(self) -> None:
         if self._git_output('rev-parse', 'HEAD') != self.job.head_sha:
             raise WorkspaceMutationError(('HEAD',))
         status = self._git_output('status', '--porcelain=v1', '--untracked-files=all')
@@ -108,7 +109,7 @@ class GitWorkspace:
             return
         self._git('reset', '--hard', '--quiet', self.job.head_sha)
         self._git('clean', '-ffdqx')
-        self.assert_unmodified()
+        self.assert_unchanged()
 
     def cleanup(self) -> None:
         shutil.rmtree(self.path, ignore_errors=True)
