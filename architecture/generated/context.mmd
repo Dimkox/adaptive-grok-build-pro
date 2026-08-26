@@ -1,0 +1,15 @@
+flowchart LR
+  domain_96fb748595c57dce["TD-EXTERNAL-PLATFORM | external_platform | GitHub"]
+  domain_ece8d94ff661d9fb["TD-EXTERNAL-POLICY | external_policy | external Trust CI policy operators"]
+  domain_fa5ae843eb45e375["TD-LOCAL-PREFLIGHT | local_preflight | local engineering workflow"]
+  domain_93c532f149d3e2d5["TD-PRODUCTION-TRUST | production_trust | human security approvers"]
+  domain_734c10023f9857a2["TD-REPOSITORY | repository_untrusted | repository contributors"]
+  domain_7f80d82d053144ab["TD-TRUST-CI-CONTROL | trust_ci_control | Trust CI operators"]
+  domain_65e7aeb3bb37c460["TD-TRUST-CI-EXECUTION | trust_ci_execution | Trust CI operators"]
+  domain_734c10023f9857a2 -->|"data_flow"| domain_fa5ae843eb45e375
+  domain_96fb748595c57dce -->|"data_flow"| domain_7f80d82d053144ab
+  domain_93c532f149d3e2d5 -->|"data_flow"| domain_7f80d82d053144ab
+  domain_fa5ae843eb45e375 -->|"control"| domain_734c10023f9857a2
+  domain_65e7aeb3bb37c460 -->|"data_flow"| domain_ece8d94ff661d9fb
+  domain_65e7aeb3bb37c460 -->|"publication"| domain_96fb748595c57dce
+  domain_65e7aeb3bb37c460 -->|"data_flow"| domain_7f80d82d053144ab

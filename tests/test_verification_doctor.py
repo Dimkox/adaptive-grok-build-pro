@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import stat
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -184,6 +185,15 @@ class _PathTools:
 
 
 class VerificationTests(unittest.TestCase):
+    @staticmethod
+    def _adopt_architecture(root: Path) -> None:
+        for rel in ('architecture', 'schemas', 'engineering/contracts'):
+            source = ROOT / rel
+            target = root / rel
+            if target.exists():
+                shutil.rmtree(target)
+            shutil.copytree(source, target)
+
     def test_invalid_json_contract_fails(self) -> None:
         with project_copy() as root:
             path = root / 'engineering/contracts/schemas/bad.schema.json'
@@ -226,6 +236,36 @@ class VerificationTests(unittest.TestCase):
             self.assertEqual(report['status'], 'pass')
             receipt = root / f".grok-stack/runtime/receipts/{route['route_id']}/verification.json"
             self.assertTrue(receipt.is_file())
+
+    def test_verify_reports_architecture_metadata_without_exact_worktree_sha(self) -> None:
+        with project_copy(git=True) as root:
+            self._adopt_architecture(root)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=root, check=True)
+            route = build_route(root, 'Review current architecture', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            report = verify(root, mode='fast', record=False)
+            metadata = report['architecture']
+            self.assertEqual(metadata['head_kind'], 'worktree')
+            self.assertNotIn('exact_head_sha', metadata)
+            for key in ('schema_digest', 'system_digest', 'rules_digest', 'architecture_digest', 'architecture_evidence_digest'):
+                self.assertRegex(metadata[key], r'^[0-9a-f]{64}$')
+            self.assertEqual(len(metadata['generated_artifact_digests']), 5)
+
+    def test_verify_unconfigured_is_compatible_but_adopted_deletion_fails(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current code', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            self.assertEqual(verify(root, mode='fast', record=False)['architecture']['status'], 'not_configured')
+            self._adopt_architecture(root)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=root, check=True)
+            (root / 'architecture/system.yaml').unlink()
+            report = verify(root, mode='fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertEqual(_check(report, 'architecture')['status'], 'fail')
 
     def test_python_runs_unittest_without_project_marker(self) -> None:
         with project_copy(git=True) as root:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import json
 import subprocess
+import shutil
 import unittest
 from pathlib import Path
 
@@ -62,6 +63,15 @@ class ChangeTests(unittest.TestCase):
 
 
 class ReceiptTests(unittest.TestCase):
+    @staticmethod
+    def _adopt_architecture(root: Path) -> None:
+        for rel in ("architecture", "schemas", "engineering/contracts"):
+            source = ROOT / rel
+            target = root / rel
+            if target.exists():
+                shutil.rmtree(target)
+            shutil.copytree(source, target)
+
     def _install_spec(self, root: Path, active: dict, evidence_by_id: dict[str, dict], *, contracts=None) -> Path:
         path = root / str(active['path']) / 'change-spec.yaml'
         spec = {
@@ -111,6 +121,38 @@ class ReceiptTests(unittest.TestCase):
             spec['objective']['target'] = 'changed'
             path.write_text(dump_canonical_spec(spec), encoding='utf-8')
             self.assertTrue(any('spec' in item and 'stale' in item for item in validate_evidence(root, get_active_route(root) or route)))
+
+    def test_adopted_receipt_binds_architecture_and_preserves_spec_criteria(self) -> None:
+        with project_copy(git=True) as root:
+            self._adopt_architecture(root)
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            route['required_evidence'] = ['verification']
+            set_active_route(root, route)
+            start_change(root)
+            active = get_active_change(root) or {}
+            self._install_spec(root, active, {'AC-001': {'receipt': 'verification'}})
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=root, check=True)
+            receipt_path = write_receipt(root, 'verification', 'pass')
+            receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
+            self.assertRegex(receipt['architecture_digest'], r'^[0-9a-f]{64}$')
+            self.assertRegex(receipt['architecture_fingerprint'], r'^[0-9a-f]{64}$')
+            self.assertEqual(receipt['criterion_ids'], ['AC-001'])
+            self.assertEqual(validate_evidence(root, get_active_route(root) or route), [])
+            receipt.pop('architecture_digest')
+            receipt.pop('architecture_fingerprint')
+            receipt_path.write_text(json.dumps(receipt), encoding='utf-8')
+            self.assertTrue(any('architecture binding stale' in gap for gap in validate_evidence(root, route)))
+
+    def test_unconfigured_consumer_keeps_legacy_receipt_compatibility(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current code', 's1').to_dict()
+            route['required_evidence'] = ['verification']
+            set_active_route(root, route)
+            path = write_receipt(root, 'verification', 'pass')
+            receipt = json.loads(path.read_text(encoding='utf-8'))
+            self.assertNotIn('architecture_digest', receipt)
+            self.assertEqual(validate_evidence(root, route), [])
 
     def test_every_receipt_kind_selects_only_its_declared_criteria(self) -> None:
         kinds = ['verification', 'code_review', 'test_review', 'security_review', 'release_review']

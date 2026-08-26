@@ -1026,6 +1026,84 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertRegex(first["architecture_evidence_digest"], r"^[0-9a-f]{64}$")
         self.assertNotIn("timestamp", first)
 
+    def test_architecture_cli_is_deterministic_and_labels_worktree_evidence(self) -> None:
+        repo, base = self._repo()
+        script = ROOT / "scripts/grok_architecture.py"
+
+        def invoke(*args: str):
+            return subprocess.run(
+                [sys.executable, str(script), "--root", str(repo.root), *args],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+        first = invoke("summary", "--json")
+        second = invoke("summary", "--json")
+        self.assertEqual(first.returncode, 0, first.stderr)
+        self.assertEqual(first.stdout, second.stdout)
+        self.assertEqual(json.loads(first.stdout)["architecture_id"], "ARCH-TEST")
+
+        repo.write_text("src/app.py", "VALUE = 1\n")
+        worktree = invoke("fitness", "--base", base, "--worktree", "--json")
+        self.assertEqual(worktree.returncode, 0, worktree.stderr)
+        payload = json.loads(worktree.stdout)
+        self.assertEqual(payload["head_kind"], "worktree")
+        self.assertNotIn("exact_head_sha", payload)
+
+    def test_architecture_cli_exact_diff_and_diagram_check(self) -> None:
+        repo, base = self._repo()
+        repo.write_text("src/app.py", "VALUE = 1\n")
+        head = repo.commit("head")
+        script = ROOT / "scripts/grok_architecture.py"
+        repo.write_text(
+            ".grok-stack/runtime/active-route.json",
+            json.dumps({"base_commit": "0" * 40, "head_commit": "f" * 40}),
+        )
+        exact = subprocess.run(
+            [sys.executable, str(script), "--root", str(repo.root), "diff", "--base", base, "--head", head, "--json"],
+            cwd=ROOT, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(exact.returncode, 0, exact.stderr)
+        self.assertEqual(json.loads(exact.stdout)["exact_head_sha"], head)
+        generated = subprocess.run(
+            [sys.executable, str(script), "--root", str(repo.root), "diagram", "--json"],
+            cwd=ROOT, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(generated.returncode, 0, generated.stderr)
+        checked = subprocess.run(
+            [sys.executable, str(script), "--root", str(repo.root), "diagram", "--check", "--json"],
+            cwd=ROOT, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(checked.returncode, 0, checked.stderr)
+        (repo.root / "architecture/generated/context.mmd").write_text("stale\n", encoding="utf-8")
+        stale = subprocess.run(
+            [sys.executable, str(script), "--root", str(repo.root), "diagram", "--check", "--json"],
+            cwd=ROOT, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(stale.returncode, 1)
+
+    def test_architecture_cli_invalid_model_is_nonzero_and_bootstrap_is_explicit(self) -> None:
+        repo, _base = self._repo()
+        repo.write_text("architecture/system.yaml", "{}\n")
+        invalid = subprocess.run(
+            [sys.executable, str(ROOT / "scripts/grok_architecture.py"), "--root", str(repo.root), "validate", "--json"],
+            cwd=ROOT, text=True, capture_output=True, check=False,
+        )
+        self.assertNotEqual(invalid.returncode, 0)
+        self.assertFalse(json.loads(invalid.stdout)["ok"])
+
+        head = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, encoding="utf-8"
+        ).strip()
+        bootstrap = subprocess.run(
+            [sys.executable, str(ROOT / "scripts/grok_architecture.py"), "--root", str(ROOT), "diff", "--base", ADOPTION_BASE, "--head", head, "--json"],
+            cwd=ROOT, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(bootstrap.returncode, 0, bootstrap.stderr)
+        self.assertTrue(json.loads(bootstrap.stdout)["baseline_introduced"])
+
 
 if __name__ == "__main__":
     unittest.main()

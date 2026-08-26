@@ -29,6 +29,26 @@ def install_silent(*args, **kwargs) -> None:
 
 
 class InstallerTests(unittest.TestCase):
+    def test_clean_install_delivers_architecture_tooling_without_adopting_a_model(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'target'
+            install_silent(ROOT, target, force=False, dry_run=False)
+            self.assertTrue((target / 'scripts/grok_architecture.py').is_file())
+            self.assertTrue((target / 'schemas/architecture-system.schema.json').is_file())
+            self.assertTrue((target / 'schemas/architecture-rules.schema.json').is_file())
+            self.assertFalse((target / 'architecture/system.yaml').exists())
+            self.assertFalse((target / 'architecture/rules.yaml').exists())
+            subprocess.run(['git', 'init', '-q'], cwd=target, check=True)
+            result = subprocess.run(
+                ['python3', 'scripts/grok_verify.py', '--mode', 'fast', '--no-record', '--json'],
+                cwd=target,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(json.loads(result.stdout)['architecture']['status'], 'not_configured')
+
     def test_clean_install_delivers_schema_and_runnable_spec_cli(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / 'target'

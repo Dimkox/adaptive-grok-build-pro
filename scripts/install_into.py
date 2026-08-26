@@ -14,6 +14,7 @@ from adaptive_grok.toolchain import pull_dependencies
 
 MANAGED_DIRS = ('.grok', '.agents', '.grok-stack')
 MANAGED_FILES = (
+    'scripts/grok_architecture.py',
     'scripts/grok_route.py',
     'scripts/grok_change.py',
     'scripts/grok_spec.py',
@@ -37,6 +38,8 @@ MANAGED_FILES = (
     '.coveragerc',
     'schemas/change-spec.schema.json',
     'schemas/change-spec-v1.schema.json',
+    'schemas/architecture-system.schema.json',
+    'schemas/architecture-rules.schema.json',
 )
 SKIP_PREFIXES = ('.grok-stack/runtime/',)
 MANAGED_START = '<!-- ADAPTIVE-GROK-PRO:START -->'

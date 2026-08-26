@@ -1,0 +1,19 @@
+flowchart LR
+  node_8938bd3db1932751["NODE-CHANGE-SPEC-EVIDENCE | repository | repository engineering"]
+  node_2e8a7072de3f3743["NODE-EXACT-SHA-WORKSPACE | repository | Trust CI operators"]
+  node_0a0fe2f046a648e9["NODE-EXTERNAL-HOLDOUT | policy_bundle | external Trust CI policy operators"]
+  node_8b8a8cd21b180532["NODE-GITHUB | external_system | GitHub"]
+  node_e4e37173e410ad23["NODE-HUMAN-APPROVAL | actor | human security approvers"]
+  node_1c3a10ba26a8e80d["NODE-ISOLATED-RUNNER | runner | Trust CI operators"]
+  node_23bed8fcbfc79861["NODE-LOCAL-VERIFIER | local_component | repository engineering"]
+  node_d0e570b2fbe52f98["NODE-TRUST-CI-API | service | Trust CI operators"]
+  node_1a6c7efb2d08591b["NODE-TRUST-CI-POSTGRES | datastore | Trust CI operators"]
+  node_070dda93443dcc1f["NODE-TRUST-CI-WORKER | worker | Trust CI operators"]
+  node_d0e570b2fbe52f98 -->|"EDGE-API-POSTGRES | data_flow | postgresql | DATA-APPROVAL | DATA-JOB-STATE"| node_1a6c7efb2d08591b
+  node_8938bd3db1932751 -->|"EDGE-CHANGE-LOCAL-VERIFIER | data_flow | filesystem | DATA-CHANGE-EVIDENCE | DATA-REPOSITORY-SOURCE"| node_23bed8fcbfc79861
+  node_8b8a8cd21b180532 -->|"EDGE-GITHUB-TRUST-CI-API | data_flow | https | DATA-PR-PROJECTION"| node_d0e570b2fbe52f98
+  node_e4e37173e410ad23 -->|"EDGE-HUMAN-TRUST-CI-API | data_flow | https | DATA-APPROVAL"| node_d0e570b2fbe52f98
+  node_1c3a10ba26a8e80d -->|"EDGE-RUNNER-EXTERNAL-HOLDOUT | data_flow | filesystem | DATA-HOLDOUT"| node_0a0fe2f046a648e9
+  node_1c3a10ba26a8e80d -->|"EDGE-RUNNER-WORKSPACE | data_flow | filesystem | DATA-REPOSITORY-SOURCE"| node_2e8a7072de3f3743
+  node_070dda93443dcc1f -->|"EDGE-WORKER-GITHUB-PUBLICATION | publication | https | DATA-CHECK-STATUS"| node_8b8a8cd21b180532
+  node_070dda93443dcc1f -->|"EDGE-WORKER-POSTGRES | data_flow | postgresql | DATA-ATTESTATION | DATA-JOB-STATE"| node_1a6c7efb2d08591b

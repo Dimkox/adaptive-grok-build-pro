@@ -24,6 +24,10 @@ def _architecture_module():
 
 
 ARCH = _architecture_module()
+try:
+    DIAGRAMS = importlib.import_module("adaptive_grok.architecture_diagrams")
+except ModuleNotFoundError:
+    DIAGRAMS = None
 
 
 def _system() -> dict:
@@ -191,6 +195,25 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertEqual(snapshot.system["architecture_id"], "ARCH-TEST")
         self.assertEqual(snapshot.rules["architecture_id"], "ARCH-TEST")
         self.assertEqual(ARCH.validate_architecture(snapshot, root), ())
+
+    def test_five_mermaid_projections_are_deterministic_sorted_and_escaped(self) -> None:
+        self.assertIsNotNone(DIAGRAMS, "architecture_diagrams is not implemented")
+        system = _system()
+        system["trust_domains"][0]["owner"] = 'engineering"]\nsubgraph injected'
+        root = self._repo(system, _rules())
+        first = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
+        second = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
+        self.assertEqual(first, second)
+        self.assertEqual(
+            tuple(first),
+            ("context", "container", "deployment", "data-flow", "trust-boundary"),
+        )
+        for content in first.values():
+            self.assertTrue(content.startswith("flowchart "))
+            self.assertTrue(content.endswith("\n"))
+            self.assertNotIn("timestamp", content.lower())
+            self.assertNotIn("\nsubgraph injected", content)
+        self.assertIn("&quot;", first["context"])
 
     def test_every_authoritative_object_is_closed_and_required(self) -> None:
         system = _system()
