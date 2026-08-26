@@ -94,6 +94,13 @@ class PolicyTests(unittest.TestCase):
             {'governance', 'database'},
         )
 
+    def test_required_scopes_preserve_exact_unusual_git_paths(self) -> None:
+        policy = Policy.from_dict(policy_data())
+        for path in ('trust-ci/файл.txt', 'trust-ci/line\nbreak.txt', 'trust-ci/tab\tname.txt', 'trust-ci/back\\slash.txt'):
+            with self.subTest(path=path):
+                self.assertEqual(policy.required_scopes((path,)), {'governance'})
+        self.assertEqual(policy.required_scopes(('trust-ci/данные.sql',)), {'governance', 'database'})
+
     def test_directory_glob_matches_directory_itself(self) -> None:
         policy = Policy.from_dict(policy_data())
         self.assertEqual(policy.required_scopes(['trust-ci']), {'governance'})

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
+import subprocess
 import tempfile
 import unittest
 from dataclasses import replace
@@ -10,10 +12,10 @@ from pathlib import Path
 
 from _support import now, policy_data, sha
 from adaptive_trust_ci.holdout import bundle_digest
-from adaptive_trust_ci.models import ApprovalPayload, AttestationEnvelope, Checkout, CommandResult, JobRequest
+from adaptive_trust_ci.models import ApprovalPayload, AttestationEnvelope, AttestationPayload, Checkout, CommandResult, JobRequest
 from adaptive_trust_ci.policy import Policy
 from adaptive_trust_ci.runner import JobRunner, SpecMetadataError, extract_spec_metadata
-from adaptive_trust_ci.signing import Signer, sign_approval, verify_attestation
+from adaptive_trust_ci.signing import Signer, sign_approval, sign_attestation, verify_attestation
 from adaptive_trust_ci.store import MemoryStore
 from adaptive_trust_ci.workspace import GitWorkspace, WorkspaceMutationError
 
@@ -273,6 +275,93 @@ class RunnerTests(unittest.TestCase):
         finally:
             workspace.cleanup()
 
+    def test_real_git_paths_preserve_scope_and_signed_spec_provenance(self) -> None:
+        workspace = GitWorkspace(
+            self.job,
+            github_token='token',
+            checkout_depth=1,
+            base_directory=Path(self.temp.name) / 'real-workspace',
+        )
+        try:
+            subprocess.run(['git', 'init', '-q'], cwd=workspace.path, check=True)
+            subprocess.run(['git', 'config', 'user.name', 'Test'], cwd=workspace.path, check=True)
+            subprocess.run(['git', 'config', 'user.email', 'test@example.com'], cwd=workspace.path, check=True)
+            (workspace.path / 'README.md').write_text('base\n', encoding='utf-8')
+            subprocess.run(['git', 'add', '.'], cwd=workspace.path, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'base'], cwd=workspace.path, check=True)
+            base = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=workspace.path, text=True).strip()
+
+            protected = (
+                'trust-ci/файл.txt',
+                'trust-ci/line\nbreak.txt',
+                'trust-ci/tab\tname.txt',
+                'trust-ci/back\\slash.txt',
+            )
+            spec_paths = tuple(
+                f'engineering/changes/20260826-{name}/change-spec.yaml'
+                for name in ('юникод', 'line\nbreak', 'tab\tname', 'back\\slash')
+            )
+            document = json.dumps({
+                'schema_version': 2,
+                'acceptance_criteria': [
+                    {'id': 'AC-001', 'statement': 'exact path', 'evidence': [{'receipt': 'verification'}]},
+                ],
+            })
+            for rel in protected:
+                target = workspace.path / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text('protected\n', encoding='utf-8')
+            for rel in spec_paths:
+                target = workspace.path / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(document, encoding='utf-8')
+            subprocess.run(['git', 'add', '.'], cwd=workspace.path, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'unusual paths'], cwd=workspace.path, check=True)
+            head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=workspace.path, text=True).strip()
+
+            changed = workspace._changed_files(base, head)
+            self.assertEqual(changed, tuple(sorted((*protected, *spec_paths))))
+            with self.assertRaisesRegex(RuntimeError, 'exact base/head SHA'):
+                workspace._changed_files('a' * 40, head)
+            for rel in protected:
+                self.assertEqual(self.policy.required_scopes((rel,)), {'governance'})
+            digest_value, coverage = extract_spec_metadata(workspace.path, changed)
+            self.assertEqual(coverage, {'spec_count': 4, 'criterion_total': 4, 'criterion_mapped': 4, 'unmapped_ids': []})
+            payload = AttestationPayload(
+                schema_version=1,
+                attestation_id='real-path-attestation',
+                job_id=self.job.job_id,
+                repository=self.job.repository,
+                pr_number=self.job.pr_number,
+                base_sha=base,
+                head_sha=head,
+                policy_digest=self.job.policy_digest,
+                status='passed',
+                command_results=(),
+                changed_files=changed,
+                approved_scopes=('governance',),
+                started_at=now().isoformat(),
+                completed_at=now().isoformat(),
+                key_id=self.signer.key_id,
+                spec_digest=digest_value,
+                criterion_coverage=coverage,
+            )
+            verified = verify_attestation(sign_attestation(payload, self.signer), self.signer.public_key_pem())
+            self.assertEqual(verified.changed_files, changed)
+            self.assertEqual(verified.spec_digest, digest_value)
+
+            invalid_path = os.fsencode(workspace.path) + b'/trust-ci/invalid-\xff.txt'
+            descriptor = os.open(invalid_path, os.O_WRONLY | os.O_CREAT, 0o600)
+            os.write(descriptor, b'invalid utf-8 path\n')
+            os.close(descriptor)
+            subprocess.run(['git', 'add', '.'], cwd=workspace.path, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'invalid utf8 path'], cwd=workspace.path, check=True)
+            invalid_head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=workspace.path, text=True).strip()
+            with self.assertRaisesRegex(RuntimeError, 'strict UTF-8'):
+                workspace._changed_files(head, invalid_head)
+        finally:
+            workspace.cleanup()
+
     def test_passing_job_uses_epoch_check_runs_holdout_and_signed_attestation(self) -> None:
         github = FakeGitHub()
         runner, executor, workspaces, tokens = self.build_runner(changed_files=['docs/x.md'], github=github)
@@ -326,6 +415,28 @@ class RunnerTests(unittest.TestCase):
         payload = verify_attestation(envelope, self.signer.public_key_pem())
         self.assertEqual(payload.status, 'failed')
         entries = [{'path': rel, 'raw_digest': hashlib.sha256(malformed.encode()).hexdigest(), 'semantic_digest': None}]
+        expected = hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+        self.assertEqual(payload.spec_digest, expected)
+        self.assertEqual(payload.criterion_coverage, {'spec_count': 0, 'criterion_total': 0, 'criterion_mapped': 0, 'unmapped_ids': []})
+        self.assertEqual(payload.command_results[-1]['name'], 'typed-spec-metadata')
+
+    def test_unpaired_surrogate_produces_signed_failure_with_raw_provenance(self) -> None:
+        rel = 'engineering/changes/20260826-surrogate/change-spec.yaml'
+        document = {
+            'schema_version': 2,
+            'acceptance_criteria': [
+                {'id': 'AC-001', 'statement': 'bad\ud800value', 'evidence': [{'receipt': 'verification'}]},
+            ],
+        }
+        raw = json.dumps(document)
+        runner, executor, _, _ = self.build_runner(changed_files=[rel], workspace_files={rel: raw})
+        outcome = runner.process(self.job, 'worker-1')
+        self.assertEqual(outcome.status, 'failed')
+        self.assertEqual(executor.calls, [])
+        envelope = self.store.get_attestation(self.job.job_id)
+        assert envelope is not None
+        payload = verify_attestation(envelope, self.signer.public_key_pem())
+        entries = [{'path': rel, 'raw_digest': hashlib.sha256(raw.encode()).hexdigest(), 'semantic_digest': None}]
         expected = hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
         self.assertEqual(payload.spec_digest, expected)
         self.assertEqual(payload.criterion_coverage, {'spec_count': 0, 'criterion_total': 0, 'criterion_mapped': 0, 'unmapped_ids': []})

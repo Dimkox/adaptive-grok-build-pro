@@ -275,7 +275,7 @@ class Policy:
         return repository in self.allowed_repositories
 
     def required_scopes(self, paths: Iterable[str]) -> set[str]:
-        normalized = [str(path).replace('\\', '/').lstrip('./') for path in paths]
+        normalized = [str(path) for path in paths]
         scopes: set[str] = set()
         for rule in self.approval_rules:
             if any(_glob_match(path, pattern) for path in normalized for pattern in rule.globs):

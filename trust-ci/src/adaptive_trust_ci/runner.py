@@ -60,8 +60,11 @@ def _metadata_walk(value: Any, depth: int = 0, count: list[int] | None = None) -
     count[0] += 1
     if depth > _MAX_SPEC_DEPTH or count[0] > _MAX_SPEC_NODES:
         raise SpecMetadataError('spec metadata structural limit exceeded')
-    if isinstance(value, str) and len(value) > 65_536:
-        raise SpecMetadataError('spec metadata string limit exceeded')
+    if isinstance(value, str):
+        if len(value) > 65_536:
+            raise SpecMetadataError('spec metadata string limit exceeded')
+        if any(0xD800 <= ord(character) <= 0xDFFF for character in value):
+            raise SpecMetadataError('spec metadata contains an unpaired Unicode surrogate')
     if isinstance(value, dict):
         for key, item in value.items():
             _metadata_walk(key, depth + 1, count)
@@ -210,7 +213,7 @@ def _metadata_criteria(spec: dict[str, Any]) -> tuple[int, int, list[str], set[s
 
 
 def extract_spec_metadata(checkout_root: Path, changed_files: tuple[str, ...]) -> tuple[str | None, dict[str, Any]]:
-    selected = sorted({str(rel).replace('\\', '/') for rel in changed_files if _SPEC_PATH_RE.fullmatch(str(rel).replace('\\', '/'))})
+    selected = sorted({str(rel) for rel in changed_files if _SPEC_PATH_RE.fullmatch(str(rel))})
     if len(selected) > _MAX_SPEC_FILES:
         raise SpecMetadataError('changed spec count limit exceeded')
     entries: list[dict[str, Any]] = []

@@ -422,8 +422,11 @@ def _bounded_walk(value: Any, depth: int = 0, counter: list[int] | None = None) 
         raise SpecError("spec node limit exceeded", code="limit")
     if depth > MAX_DEPTH:
         raise SpecError("spec nesting limit exceeded", code="limit")
-    if isinstance(value, str) and len(value) > MAX_STRING_LENGTH:
-        raise SpecError("spec string limit exceeded", code="limit")
+    if isinstance(value, str):
+        if len(value) > MAX_STRING_LENGTH:
+            raise SpecError("spec string limit exceeded", code="limit")
+        if any(0xD800 <= ord(character) <= 0xDFFF for character in value):
+            raise SpecError("unpaired Unicode surrogate is forbidden", code="parse")
     if isinstance(value, dict):
         for key, item in value.items():
             _bounded_walk(key, depth + 1, counter)
@@ -737,6 +740,7 @@ def _semantic_errors(spec: dict[str, Any], *, gate: bool, root: Path | None = No
 
 
 def _validate_document(spec: dict[str, Any], *, gate: bool, root: Path | None = None) -> dict[str, Any]:
+    _bounded_walk(spec)
     version = spec.get("schema_version")
     if version != 2:
         raise SpecError("legacy schema_version 1 is compatibility-only and cannot produce current gate evidence", code="version")

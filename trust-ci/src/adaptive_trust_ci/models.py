@@ -4,7 +4,6 @@ import hashlib
 import json
 import re
 import secrets
-import unicodedata
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -31,7 +30,8 @@ def _valid_coverage_id(value: str) -> bool:
         and len(value) <= 512
         and _COVERAGE_SPEC_RE.fullmatch(path)
         and _AC_RE.fullmatch(criterion_id)
-        and not any(unicodedata.category(character) in {"Cc", "Cf", "Cs", "Zl", "Zp"} for character in path)
+        and "\0" not in path
+        and not any(0xD800 <= ord(character) <= 0xDFFF for character in path)
     )
 
 
@@ -304,7 +304,7 @@ class AttestationPayload:
         object.__setattr__(
             self,
             "changed_files",
-            tuple(sorted({str(item).replace("\\", "/").lstrip("./") for item in self.changed_files})),
+            tuple(sorted({str(item) for item in self.changed_files})),
         )
         object.__setattr__(
             self,

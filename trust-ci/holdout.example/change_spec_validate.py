@@ -53,8 +53,11 @@ def _walk(value: Any, depth: int = 0, count: list[int] | None = None) -> None:
     count[0] += 1
     if count[0] > MAX_NODES or depth > MAX_DEPTH:
         fail("spec structural limit exceeded")
-    if isinstance(value, str) and len(value) > MAX_STRING:
-        fail("spec string limit exceeded")
+    if isinstance(value, str):
+        if len(value) > MAX_STRING:
+            fail("spec string limit exceeded")
+        if any(0xD800 <= ord(character) <= 0xDFFF for character in value):
+            fail("unpaired Unicode surrogate is forbidden")
     if isinstance(value, dict):
         for key, item in value.items():
             _walk(key, depth + 1, count)
@@ -222,6 +225,7 @@ def _items(spec: dict[str, Any], rel: str, field: str) -> list[dict[str, Any]]:
 
 
 def _validate_document(rel: str, spec: dict[str, Any]) -> None:
+    _walk(spec)
     required = {"schema_version", "change_id", "objective", "risk", "acceptance_criteria", "invariants", "forbidden_outcomes", "contracts", "observability", "rollback", "approvals"}
     if set(spec) != required or spec.get("schema_version") != 2:
         fail(f"{rel}: strict schema_version 2 top-level contract required")

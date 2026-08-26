@@ -178,3 +178,7 @@ The M0 Trust CI host is hostname `claw` (Xeon E5-2680 v4, ~16 GiB ECC, Ubuntu 24
 ## 2026-08-26 — Qualify aggregate criterion identity by spec path
 
 Acceptance-criterion IDs are local to one change spec, so multi-spec attestation coverage uses `engineering/changes/<change>/change-spec.yaml#AC-NNN` while single-spec coverage keeps the historical bare ID. This preserves deterministic, unambiguous aggregation without inventing a repository-global criterion namespace.
+
+## 2026-08-26 — Git path identity is NUL-delimited data
+
+Trusted changed-file and mutation discovery consumes byte-oriented `git ... -z` output, decodes each path as strict UTF-8, and preserves Unicode, whitespace, and backslash characters exactly. Display-oriented line output and slash rewriting are never approval or provenance inputs.

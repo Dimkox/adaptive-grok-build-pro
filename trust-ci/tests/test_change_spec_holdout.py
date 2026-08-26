@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import importlib.util
 import copy
 import json
 import os
+import shutil
 import subprocess
 import tempfile
+import types
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -14,11 +15,11 @@ ROOT = Path(__file__).resolve().parents[2]
 MODULE_PATH = ROOT / "trust-ci/holdout.example/change_spec_validate.py"
 
 
-def _load():
-    spec = importlib.util.spec_from_file_location("change_spec_validate", MODULE_PATH)
-    module = importlib.util.module_from_spec(spec)
-    assert spec and spec.loader
-    spec.loader.exec_module(module)
+def _load(module_path: Path = MODULE_PATH):
+    module = types.ModuleType("change_spec_validate")
+    module.__file__ = str(module_path)
+    code = compile(module_path.read_bytes(), str(module_path), "exec")
+    exec(code, module.__dict__)
     return module
 
 
@@ -81,6 +82,27 @@ class HoldoutChangeSpecTests(unittest.TestCase):
         head, _ = self._commit_spec(b"schema_version: 2\n")
         with self.assertRaises(SystemExit):
             self.module.validate(self.root, base_sha=self.base, head_sha=head)
+
+    def test_unpaired_surrogates_in_values_and_keys_fail_closed(self) -> None:
+        document = _valid("20260826-holdout")
+        document["objective"]["statement"] = "bad\ud800value"
+        with self.assertRaises(SystemExit):
+            self.module._parse("surrogate/change-spec.yaml", json.dumps(document).encode())
+        with self.assertRaises(SystemExit):
+            self.module._parse("surrogate/change-spec.yaml", b'{"schema_version":2,"\\udfff":1}')
+        with self.assertRaises(SystemExit):
+            self.module._validate_document("surrogate/change-spec.yaml", document)
+
+    def test_module_loader_does_not_write_bytecode_next_to_measured_source(self) -> None:
+        isolated = Path(self.temp.name) / "measured-holdout"
+        isolated.mkdir()
+        module_path = isolated / MODULE_PATH.name
+        shutil.copyfile(MODULE_PATH, module_path)
+        before = sorted(path.relative_to(isolated).as_posix() for path in isolated.rglob("*") if path.is_file())
+        self.assertEqual(before, [MODULE_PATH.name])
+        _load(module_path)
+        after = sorted(path.relative_to(isolated).as_posix() for path in isolated.rglob("*") if path.is_file())
+        self.assertEqual(after, before)
 
     def test_symlink_spec_fails_closed(self) -> None:
         outside = self.root / "outside.json"

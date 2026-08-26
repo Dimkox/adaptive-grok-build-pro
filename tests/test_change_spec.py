@@ -124,6 +124,20 @@ class ChangeSpecTests(unittest.TestCase):
             with self.assertRaises(SPEC.SpecError):
                 SPEC.load_spec(path, allow_legacy=False)
 
+    def test_canonical_v2_rejects_unpaired_surrogates_in_values_and_keys(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "change-spec.yaml"
+            document = json.loads(json.dumps(VALID_SPEC))
+            document["objective"]["statement"] = "bad\ud800value"
+            path.write_text(json.dumps(document), encoding="utf-8")
+            with self.assertRaises(SPEC.SpecError):
+                SPEC.load_spec(path, allow_legacy=False)
+            path.write_text('{"schema_version":2,"\\udfff":"bad key"}', encoding="utf-8")
+            with self.assertRaises(SPEC.SpecError):
+                SPEC.load_spec(path, allow_legacy=False)
+            with self.assertRaises(SPEC.SpecError):
+                SPEC.validate_spec(document)
+
     def test_spec_symlink_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -9,11 +9,15 @@ from pathlib import Path
 
 from .models import Checkout, Job
 
+_MAX_GIT_PATH_BYTES = 4096
+_MAX_GIT_PATHS = 100_000
+_MAX_GIT_PATH_OUTPUT_BYTES = 100_000_000
+
 
 class WorkspaceMutationError(RuntimeError):
     def __init__(self, paths: tuple[str, ...]) -> None:
         self.paths = paths
-        super().__init__('verification command mutated checkout: ' + ', '.join(paths[:20]))
+        super().__init__('verification command mutated checkout: ' + ', '.join(repr(path) for path in paths[:20]))
 
 
 class GitWorkspace:
@@ -71,21 +75,7 @@ class GitWorkspace:
         self._git('checkout', '--quiet', '--detach', job.head_sha)
         if self._git_output('rev-parse', 'HEAD') != job.head_sha:
             raise RuntimeError('checked-out HEAD does not match requested SHA')
-        changed = tuple(
-            sorted(
-                {
-                    line.strip().replace('\\', '/')
-                    for line in self._git_output(
-                        'diff',
-                        '--name-only',
-                        '--no-renames',
-                        job.base_sha,
-                        job.head_sha,
-                    ).splitlines()
-                    if line.strip()
-                }
-            )
-        )
+        changed = self._changed_files(job.base_sha, job.head_sha)
         self.reset()
         self.assert_unchanged()
         return Checkout(path=self.path, changed_files=changed)
@@ -93,16 +83,49 @@ class GitWorkspace:
     def assert_unchanged(self) -> None:
         if self._git_output('rev-parse', 'HEAD') != self.job.head_sha:
             raise WorkspaceMutationError(('HEAD',))
-        status = self._git_output('status', '--porcelain=v1', '--untracked-files=all')
+        status = self._git_bytes('status', '--porcelain=v1', '-z', '--untracked-files=all', '--no-renames')
         if not status:
             return
+        records = self._nul_records(status, context='git status')
         paths: list[str] = []
-        for line in status.splitlines():
-            value = line[3:].strip()
-            if ' -> ' in value:
-                value = value.split(' -> ', 1)[1]
-            paths.append(value.replace('\\', '/'))
+        for record in records:
+            if len(record) < 4 or record[2:3] != b' ':
+                raise WorkspaceMutationError(('unparseable-git-status',))
+            paths.append(self._decode_git_path(record[3:]))
         raise WorkspaceMutationError(tuple(sorted(set(paths))))
+
+    def _changed_files(self, base_sha: str, head_sha: str) -> tuple[str, ...]:
+        if not self._commit_exists(base_sha) or not self._commit_exists(head_sha):
+            raise RuntimeError('exact base/head SHA is unavailable for changed-path discovery')
+        raw = self._git_bytes('diff', '--name-only', '-z', '--no-renames', base_sha, head_sha, '--')
+        records = self._nul_records(raw, context='git diff')
+        return tuple(sorted({self._decode_git_path(record) for record in records}))
+
+    @staticmethod
+    def _nul_records(raw: bytes, *, context: str) -> tuple[bytes, ...]:
+        if len(raw) > _MAX_GIT_PATH_OUTPUT_BYTES:
+            raise RuntimeError(f'{context} path output exceeds the configured byte limit')
+        if not raw:
+            return ()
+        if not raw.endswith(b'\0'):
+            raise RuntimeError(f'{context} did not return NUL-delimited paths')
+        records = tuple(raw[:-1].split(b'\0'))
+        if len(records) > _MAX_GIT_PATHS or any(not record for record in records):
+            raise RuntimeError(f'{context} returned an invalid path set')
+        return records
+
+    @staticmethod
+    def _decode_git_path(raw: bytes) -> str:
+        if len(raw) > _MAX_GIT_PATH_BYTES:
+            raise RuntimeError('git path exceeds the configured byte limit')
+        try:
+            value = raw.decode('utf-8', errors='strict')
+        except UnicodeDecodeError as exc:
+            raise RuntimeError('git path is not strict UTF-8') from exc
+        path = Path(value)
+        if not value or path.is_absolute() or any(part in {'', '.', '..'} for part in path.parts):
+            raise RuntimeError('git returned an unsafe repository path')
+        return value
 
     def reset(self) -> None:
         if not (self.path / '.git').is_dir():
@@ -141,19 +164,24 @@ class GitWorkspace:
             raise RuntimeError(f"git {' '.join(args[:2])} failed: {output}")
 
     def _git_output(self, *args: str) -> str:
+        try:
+            return self._git_bytes(*args).decode('utf-8', errors='strict').strip()
+        except UnicodeDecodeError as exc:
+            raise RuntimeError(f"git {' '.join(args[:2])} returned non-UTF-8 output") from exc
+
+    def _git_bytes(self, *args: str) -> bytes:
         process = subprocess.run(
             ['git', *args],
             cwd=self.path,
-            text=True,
             capture_output=True,
             check=False,
             timeout=120,
             env=self._git_env(authenticated=False),
         )
         if process.returncode != 0:
-            output = (process.stderr or process.stdout)[-4000:]
+            output = (process.stderr or process.stdout)[-4000:].decode('utf-8', errors='replace')
             raise RuntimeError(f"git {' '.join(args[:2])} failed: {output}")
-        return process.stdout.strip()
+        return process.stdout
 
     def _git_env(self, *, authenticated: bool) -> dict[str, str]:
         env = {

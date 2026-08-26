@@ -17,6 +17,21 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 **Symptom:** Remediation 1 made Trust CI reject an ordinary two-package change where both valid specs used their local `AC-001`, contradicting the independent holdout and approved design.
 **Root cause:** A bare aggregate `unmapped_ids` representation was treated as proof that criterion IDs had to be globally unique, instead of preserving the actual spec-local identity in the aggregate representation.
 
+## 2026-08-26 — Parsed Git display output as trusted path identity
+
+**Symptom:** Quoted Unicode and control-containing paths could lose protected scopes or disappear from signed spec provenance.
+**Root cause:** `GitWorkspace` used line-oriented `git diff --name-only`, then stripped and rewrote its display form instead of consuming NUL-delimited bytes as exact repository paths.
+
+## 2026-08-26 — Imported measured holdout source in place
+
+**Symptom:** Default Trust CI test order created an ignored `.pyc` inside the measured holdout bundle and made the committed digest assertion fail.
+**Root cause:** The holdout test loader used importlib beside immutable bundle source, so Python's normal bytecode cache side effect mutated the very tree whose complete file set is hashed.
+
+## 2026-08-26 — Bounded canonical strings without excluding surrogate code points
+
+**Symptom:** Escaped unpaired surrogates passed parsing, then crashed local and trusted semantic digest encoding with raw `UnicodeEncodeError`.
+**Root cause:** Structural walkers enforced length, depth, and node counts but assumed every decoded Python string was UTF-8 encodable.
+
 ## 2026-08-24 — Misread «приложуха» as a public website
 
 **Symptom:** Agents treated «приложуха» as a public website instead of GitHub App `https://github.com/apps/adaptive-trust-ci`.
