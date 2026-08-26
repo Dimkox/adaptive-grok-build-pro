@@ -47,4 +47,3 @@ Route: `a4f88266a848` (high-risk/security; required reviews include security and
 - No new dependency on PyYAML/jsonschema, root packaging manifest, service, queue, datastore, or M2+ architecture/factory work.
 - No GitHub Actions, deployed Trust CI policy/holdout/key/branch-protection edits, direct protected-branch writes, release/tag/deploy operation, or human-key handling.
 - No broad conversion of historical `engineering/changes/**/change-spec.yaml`; validate the active/current changed specs only.
-

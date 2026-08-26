@@ -110,6 +110,29 @@ class ChangeSpecTests(unittest.TestCase):
             path.write_bytes(b"{" + b'\"x\":\"' + b"a" * (SPEC.MAX_STRING_LENGTH + 1) + b'\"}')
             with self.assertRaises(SPEC.SpecError):
                 SPEC.load_spec(path, allow_legacy=False)
+            path.write_bytes(b'{"x":' + b'[' * 2000 + b']' * 2000 + b'}')
+            with self.assertRaises(SPEC.SpecError):
+                SPEC.load_spec(path, allow_legacy=False)
+            path.write_bytes(b'{"x":"\xff"}')
+            with self.assertRaises(SPEC.SpecError):
+                SPEC.load_spec(path, allow_legacy=False)
+            path.write_bytes(b' ' * (SPEC.MAX_SPEC_BYTES + 1))
+            with self.assertRaises(SPEC.SpecError):
+                SPEC.load_spec(path, allow_legacy=False)
+            path.unlink()
+            path.mkdir()
+            with self.assertRaises(SPEC.SpecError):
+                SPEC.load_spec(path, allow_legacy=False)
+
+    def test_spec_symlink_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            outside = root / 'outside.json'
+            outside.write_text(SPEC.dump_canonical_spec(VALID_SPEC), encoding='utf-8')
+            link = root / 'change-spec.yaml'
+            link.symlink_to(outside)
+            with self.assertRaises(SPEC.SpecError):
+                SPEC.load_spec(link, allow_legacy=False)
 
     def test_changed_v1_never_falls_back_to_legacy(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -139,6 +162,47 @@ class ChangeSpecTests(unittest.TestCase):
         with self.assertRaises(SPEC.SpecError):
             SPEC.validate_spec(spec)
 
+    def test_observability_must_prove_the_existing_objective(self) -> None:
+        for proves in ([], ["OBJ-999"]):
+            spec = json.loads(json.dumps(VALID_SPEC))
+            spec["observability"][0]["proves"] = proves
+            with self.assertRaises(SPEC.SpecError):
+                SPEC.validate_spec(spec)
+
+    def test_contract_fingerprint_rejects_ancestor_symlink(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            root = base / "repo"
+            outside = base / "outside"
+            root.mkdir()
+            outside.mkdir()
+            (outside / "contract.json").write_text("{}\n", encoding="utf-8")
+            (root / "contracts").symlink_to(outside)
+            spec = json.loads(json.dumps(VALID_SPEC))
+            spec["contracts"]["json_schema"] = ["contracts/contract.json"]
+            with self.assertRaises(SPEC.SpecError):
+                SPEC.spec_fingerprint(root, root / "change-spec.yaml", spec)
+
+    def test_missing_or_unsafe_evidence_and_contract_paths_fail(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / 'change-spec.yaml'
+            for evidence, contract in (
+                ({'test': 'tests/missing.py'}, None),
+                ({'receipt': 'verification'}, 'contracts/missing.json'),
+                ({'test': '../escape.py'}, None),
+                ({'receipt': 'verification'}, '../escape.json'),
+                ({'receipt': 'verification'}, 'contracts\\escape.json'),
+            ):
+                spec = json.loads(json.dumps(VALID_SPEC))
+                spec['invariants'] = []
+                spec['forbidden_outcomes'] = []
+                spec['acceptance_criteria'][0]['evidence'] = [evidence]
+                if contract is not None:
+                    spec['contracts']['json_schema'] = [contract]
+                path.write_text(SPEC.dump_canonical_spec(spec), encoding='utf-8')
+                self.assertTrue(SPEC.validate_spec(root, path, gate=False), (evidence, contract))
+
     def test_canonical_digest_and_coverage_are_deterministic(self) -> None:
         reordered = json.loads(json.dumps(VALID_SPEC, sort_keys=True))
         self.assertEqual(SPEC.canonical_spec_digest(VALID_SPEC), SPEC.canonical_spec_digest(reordered))
@@ -152,6 +216,17 @@ class ChangeSpecTests(unittest.TestCase):
         spec["surprise"] = True
         with self.assertRaises(SPEC.SpecError):
             SPEC.validate_spec(spec)
+
+    def test_node_and_collection_limits_fail(self) -> None:
+        spec = json.loads(json.dumps(VALID_SPEC))
+        spec['acceptance_criteria'] = [
+            {'id': f'AC-{index:03d}', 'statement': 'bounded', 'evidence': []}
+            for index in range(1, 502)
+        ]
+        with self.assertRaises(SPEC.SpecError):
+            SPEC.validate_spec(spec)
+        with self.assertRaises(SPEC.SpecError):
+            SPEC._bounded_walk([None] * (SPEC.MAX_NODES + 1))
 
     def test_bad_risk_tier_fails(self) -> None:
         spec = json.loads(json.dumps(VALID_SPEC))
@@ -197,6 +272,18 @@ class ChangeSpecTests(unittest.TestCase):
         self.assertIn("success_metric: UNKNOWN", text)
         other = SPEC.generate_spec({**route, "intent": "refactor"})
         self.assertEqual(other["rollback"]["strategy"], "forward_fix")
+
+    def test_generate_serializes_hostile_route_data_and_maps_risk(self) -> None:
+        hostile = {'quoted': '"\\\nПривет', 'nested': [1, {'x': True}]}
+        for risk, expected in (('low', 'green'), ('medium', 'yellow'), ('high', 'red')):
+            generated = SPEC.generate_spec({
+                'change_id': '20260826-hostile-route', 'risk': risk,
+                'domains': ['generic'], 'task': hostile,
+            })
+            self.assertEqual(generated['risk']['tier'], expected)
+            self.assertEqual(generated['objective']['statement'], json.dumps(hostile, ensure_ascii=False, sort_keys=True, separators=(',', ':')))
+            reparsed = SPEC.load_spec_from_text(SPEC.dump_canonical_spec(generated)) if hasattr(SPEC, 'load_spec_from_text') else json.loads(SPEC.dump_canonical_spec(generated))
+            self.assertEqual(reparsed['objective']['statement'], generated['objective']['statement'])
 
     def test_yaml_tags_anchors_and_merge_fail_closed(self) -> None:
         for text in (
@@ -253,6 +340,8 @@ class ChangeSpecTests(unittest.TestCase):
     def test_schema_unsupported_keyword(self) -> None:
         with self.assertRaises(SPEC.SpecError):
             SPEC.validate_schema({"x": 1}, {"type": "object", "oneOf": []})
+        with self.assertRaises(SPEC.SpecError):
+            SPEC._schema_preflight({'type': 'object', '$defs': {'unused': {'type': 'string', 'oneOf': []}}})
 
     def test_cli_validate_summarize_map_and_generate(self) -> None:
         change_id = VALID_SPEC["change_id"]
@@ -274,6 +363,10 @@ class ChangeSpecTests(unittest.TestCase):
             self.assertEqual(json.loads(out)["criterion_mapped"], 1)
             code, out = _run_cli(["x", "validate", "--change-id", "missing-id-does-not-exist"], root=fake_root)
             self.assertEqual(code, 2)
+            self.assertEqual(json.loads(out)['ok'], False)
+            explicit = dest / 'change-spec.yaml'
+            code, out = _run_cli(['x', 'validate', explicit.relative_to(fake_root).as_posix(), '--gate'], root=fake_root)
+            self.assertEqual(code, 0, out)
             route = {
                 "change_id": "20260823-generated-route-sample",
                 "risk": "low",
@@ -291,6 +384,9 @@ class ChangeSpecTests(unittest.TestCase):
             self.assertEqual(code, 0, out)
             written = SPEC.load_spec(gen / "change-spec.yaml")
             self.assertEqual(written["objective"]["success_metric"], "UNKNOWN")
+            code, out = _run_cli(['x', 'validate'], root=fake_root)
+            self.assertEqual(code, 0, out)
+            self.assertEqual(json.loads(out)['profile'], 'draft')
 
 
 if __name__ == "__main__":

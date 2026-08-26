@@ -24,7 +24,12 @@ from .workspace import GitWorkspace, WorkspaceMutationError
 _SECRET_ENV_RE = re.compile(r'(?:TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|PRIVATE|AUTH|COOKIE|SESSION|KEY)', re.I)
 _SPEC_PATH_RE = re.compile(r'^engineering/changes/[^/]+/change-spec\.yaml$')
 _AC_RE = re.compile(r'^AC-[0-9]{3,6}$')
+_OBJ_RE = re.compile(r'^OBJ-[0-9]{3,6}$')
+_SIG_RE = re.compile(r'^SIG-[0-9]{3,6}$')
+_TEST_RE = re.compile(r'^[A-Za-z0-9_./:-]+$')
+_ATTESTATION_RE = re.compile(r'^[A-Za-z0-9_.:@/-]+$')
 _EVIDENCE_KEYS = {'test', 'receipt', 'production_signal', 'attestation'}
+_RECEIPT_KINDS = {'verification', 'code_review', 'test_review', 'security_review', 'release_review'}
 _MAX_SPEC_BYTES = 1_000_000
 _MAX_SPEC_FILES = 100
 _MAX_SPEC_DEPTH = 64
@@ -65,65 +70,141 @@ def _metadata_walk(value: Any, depth: int = 0, count: list[int] | None = None) -
 
 
 def _metadata_bytes(root: Path, rel: str) -> bytes:
-    path = root.joinpath(*Path(rel).parts)
+    parts = Path(rel).parts
+    if not parts or Path(rel).is_absolute() or any(part in {'', '.', '..'} for part in parts):
+        raise SpecMetadataError(f'{rel}: unsafe spec path')
+    descriptors: list[int] = []
     try:
-        info = path.lstat()
-        if path.is_symlink() or not stat.S_ISREG(info.st_mode):
-            raise SpecMetadataError(f'{rel}: not a regular non-symlink spec')
-        fd = os.open(path, os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0))
-        try:
-            opened = os.fstat(fd)
-            if (info.st_dev, info.st_ino) != (opened.st_dev, opened.st_ino) or opened.st_size > _MAX_SPEC_BYTES:
-                raise SpecMetadataError(f'{rel}: unsafe or oversized spec')
-            data = os.read(fd, _MAX_SPEC_BYTES + 1)
-        finally:
-            os.close(fd)
+        current = os.open(root, os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0))
+        descriptors.append(current)
+        for part in parts[:-1]:
+            current = os.open(
+                part,
+                os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0) | getattr(os, 'O_NOFOLLOW', 0),
+                dir_fd=current,
+            )
+            descriptors.append(current)
+        fd = os.open(parts[-1], os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0), dir_fd=current)
+        descriptors.append(fd)
+        opened = os.fstat(fd)
+        if not stat.S_ISREG(opened.st_mode) or opened.st_size > _MAX_SPEC_BYTES:
+            raise SpecMetadataError(f'{rel}: unsafe or oversized spec')
+        chunks: list[bytes] = []
+        remaining = _MAX_SPEC_BYTES + 1
+        while remaining:
+            chunk = os.read(fd, min(65_536, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        data = b''.join(chunks)
+        after = os.fstat(fd)
+        before_identity = (opened.st_dev, opened.st_ino, opened.st_size, opened.st_mtime_ns, opened.st_ctime_ns)
+        after_identity = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns)
+        if len(data) != opened.st_size or after_identity != before_identity:
+            raise SpecMetadataError(f'{rel}: spec changed while reading')
     except SpecMetadataError:
         raise
     except OSError as exc:
         raise SpecMetadataError(f'{rel}: cannot read spec') from exc
+    finally:
+        for descriptor in reversed(descriptors):
+            os.close(descriptor)
     if len(data) > _MAX_SPEC_BYTES:
         raise SpecMetadataError(f'{rel}: oversized spec')
     return data
 
 
-def _metadata_document(data: bytes) -> dict[str, Any] | None:
+def _metadata_document(data: bytes) -> dict[str, Any]:
     if data.startswith(b'\xef\xbb\xbf'):
-        return None
+        raise SpecMetadataError('spec metadata BOM is forbidden')
     try:
         value = json.loads(data.decode('utf-8', errors='strict'), object_pairs_hook=_metadata_pairs, parse_constant=_metadata_constant)
         _metadata_walk(value)
-    except (UnicodeDecodeError, json.JSONDecodeError, SpecMetadataError, RecursionError):
-        return None
-    return value if isinstance(value, dict) else None
+    except SpecMetadataError:
+        raise
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError, ValueError) as exc:
+        raise SpecMetadataError('invalid canonical spec metadata JSON') from exc
+    if not isinstance(value, dict):
+        raise SpecMetadataError('spec metadata root must be an object')
+    return value
 
 
-def _metadata_criteria(spec: dict[str, Any]) -> tuple[int, int, list[str]] | None:
+def _metadata_evidence(ref: Any, signals: set[str]) -> bool:
+    if not isinstance(ref, dict) or len(ref) != 1:
+        raise SpecMetadataError('evidence must contain exactly one supported key')
+    key, value = next(iter(ref.items()))
+    if key not in _EVIDENCE_KEYS:
+        raise SpecMetadataError('evidence contains an unsupported key')
+    if key == 'test':
+        valid = isinstance(value, str) and 1 <= len(value) <= 512 and bool(_TEST_RE.fullmatch(value))
+    elif key == 'receipt':
+        valid = isinstance(value, str) and value in _RECEIPT_KINDS
+    elif key == 'production_signal':
+        valid = isinstance(value, str) and bool(_SIG_RE.fullmatch(value)) and value in signals
+    else:
+        valid = isinstance(value, str) and 1 <= len(value) <= 128 and bool(_ATTESTATION_RE.fullmatch(value))
+    if not valid:
+        raise SpecMetadataError(f'invalid {key} evidence value')
+    return True
+
+
+def _metadata_criteria(spec: dict[str, Any]) -> tuple[int, int, list[str], set[str]]:
     if spec.get('schema_version') != 2 or not isinstance(spec.get('acceptance_criteria'), list):
-        return None
+        raise SpecMetadataError('strict schema_version 2 acceptance criteria are required')
     criteria = spec['acceptance_criteria']
     if len(criteria) > 500:
-        return None
+        raise SpecMetadataError('acceptance criterion count limit exceeded')
+    observability = spec.get('observability', [])
+    if not isinstance(observability, list) or len(observability) > 500:
+        raise SpecMetadataError('invalid observability metadata')
+    objective = spec.get('objective')
+    objective_id = objective.get('id') if isinstance(objective, dict) else None
+    signals: set[str] = set()
+    for signal in observability:
+        if (
+            not isinstance(signal, dict)
+            or set(signal) != {'id', 'metric', 'proves'}
+            or not isinstance(signal.get('id'), str)
+            or not _SIG_RE.fullmatch(signal['id'])
+            or signal['id'] in signals
+            or not isinstance(signal.get('metric'), str)
+            or not 1 <= len(signal['metric']) <= 512
+            or not isinstance(signal.get('proves'), list)
+            or not signal['proves']
+            or not isinstance(objective_id, str)
+            or not _OBJ_RE.fullmatch(objective_id)
+            or any(value != objective_id for value in signal['proves'])
+        ):
+            raise SpecMetadataError('invalid or duplicate production signal metadata')
+        signals.add(signal['id'])
     seen: set[str] = set()
     mapped = 0
     unmapped: list[str] = []
     for item in criteria:
-        if not isinstance(item, dict):
-            return None
+        if not isinstance(item, dict) or set(item) != {'id', 'statement', 'evidence'}:
+            raise SpecMetadataError('invalid or duplicate criterion metadata')
         criterion_id = item.get('id')
+        statement = item.get('statement')
         evidence = item.get('evidence')
-        if not isinstance(criterion_id, str) or not _AC_RE.fullmatch(criterion_id) or criterion_id in seen or not isinstance(evidence, list):
-            return None
+        if (
+            not isinstance(criterion_id, str)
+            or not _AC_RE.fullmatch(criterion_id)
+            or criterion_id in seen
+            or not isinstance(statement, str)
+            or not 1 <= len(statement) <= 4096
+            or not isinstance(evidence, list)
+        ):
+            raise SpecMetadataError('invalid or duplicate criterion metadata')
+        if len(evidence) > 50:
+            raise SpecMetadataError('criterion evidence count limit exceeded')
         seen.add(criterion_id)
-        structurally_mapped = bool(evidence) and all(
-            isinstance(ref, dict) and len(ref) == 1 and next(iter(ref)) in _EVIDENCE_KEYS
-            for ref in evidence
-        )
+        structurally_mapped = bool(evidence) and all(_metadata_evidence(ref, signals) for ref in evidence)
         if structurally_mapped:
             mapped += 1
         else:
             unmapped.append(criterion_id)
-    return len(criteria), mapped, sorted(unmapped)
+    return len(criteria), mapped, sorted(unmapped), seen
 
 
 def extract_spec_metadata(checkout_root: Path, changed_files: tuple[str, ...]) -> tuple[str | None, dict[str, Any]]:
@@ -134,21 +215,22 @@ def extract_spec_metadata(checkout_root: Path, changed_files: tuple[str, ...]) -
     total = 0
     mapped = 0
     unmapped: list[str] = []
+    global_ids: set[str] = set()
     for rel in selected:
         data = _metadata_bytes(checkout_root, rel)
         raw_digest = hashlib.sha256(data).hexdigest()
         document = _metadata_document(data)
-        semantic_digest = None
-        if document is not None:
-            semantic_digest = hashlib.sha256(
-                json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False).encode('utf-8')
-            ).hexdigest()
-            coverage = _metadata_criteria(document)
-            if coverage is not None:
-                criterion_total, criterion_mapped, criterion_unmapped = coverage
-                total += criterion_total
-                mapped += criterion_mapped
-                unmapped.extend(criterion_unmapped)
+        semantic_digest = hashlib.sha256(
+            json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False).encode('utf-8')
+        ).hexdigest()
+        criterion_total, criterion_mapped, criterion_unmapped, criterion_ids = _metadata_criteria(document)
+        duplicate = sorted(global_ids & criterion_ids)
+        if duplicate:
+            raise SpecMetadataError(f'{rel}: duplicate criterion ID across changed specs: {duplicate[0]}')
+        global_ids.update(criterion_ids)
+        total += criterion_total
+        mapped += criterion_mapped
+        unmapped.extend(criterion_unmapped)
         entries.append({'path': rel, 'raw_digest': raw_digest, 'semantic_digest': semantic_digest})
     digest = hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(',', ':')).encode()).hexdigest() if entries else None
     return digest, {'spec_count': len(entries), 'criterion_total': total, 'criterion_mapped': mapped, 'unmapped_ids': sorted(unmapped)}

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import sys
+import json
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -60,6 +62,26 @@ class ChangeTests(unittest.TestCase):
 
 
 class ReceiptTests(unittest.TestCase):
+    def _install_spec(self, root: Path, active: dict, evidence_by_id: dict[str, dict], *, contracts=None) -> Path:
+        path = root / str(active['path']) / 'change-spec.yaml'
+        spec = {
+            'schema_version': 2,
+            'change_id': active['change_id'],
+            'objective': {'id': 'OBJ-001', 'statement': 'bind evidence', 'success_metric': 'bound_receipts', 'target': 'all'},
+            'risk': {'tier': 'green', 'domains': []},
+            'acceptance_criteria': [
+                {'id': criterion_id, 'statement': f'bind {criterion_id}', 'evidence': [evidence]}
+                for criterion_id, evidence in evidence_by_id.items()
+            ],
+            'invariants': [], 'forbidden_outcomes': [],
+            'contracts': contracts or {'openapi': [], 'json_schema': [], 'events': []},
+            'observability': [],
+            'rollback': {'strategy': 'forward_fix', 'maximum_steps': 1},
+            'approvals': {'required_scopes': []},
+        }
+        path.write_text(dump_canonical_spec(spec), encoding='utf-8')
+        return path
+
     def test_receipt_binds_active_spec_and_declared_criteria(self) -> None:
         with project_copy(git=True) as root:
             route = build_route(root, 'Добавить функцию', 's1').to_dict()
@@ -89,6 +111,84 @@ class ReceiptTests(unittest.TestCase):
             spec['objective']['target'] = 'changed'
             path.write_text(dump_canonical_spec(spec), encoding='utf-8')
             self.assertTrue(any('spec' in item and 'stale' in item for item in validate_evidence(root, get_active_route(root) or route)))
+
+    def test_every_receipt_kind_selects_only_its_declared_criteria(self) -> None:
+        kinds = ['verification', 'code_review', 'test_review', 'security_review', 'release_review']
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            route['required_evidence'] = kinds
+            set_active_route(root, route)
+            start_change(root)
+            active = get_active_change(root) or {}
+            self._install_spec(root, active, {
+                f'AC-{index:03d}': {'receipt': kind}
+                for index, kind in enumerate(kinds, 1)
+            })
+            for index, kind in enumerate(kinds, 1):
+                receipt = json.loads(write_receipt(root, kind, 'pass').read_text(encoding='utf-8'))
+                self.assertEqual(receipt['criterion_ids'], [f'AC-{index:03d}'])
+            self.assertEqual(validate_evidence(root, get_active_route(root) or route), [])
+
+    def test_explicit_binding_mismatch_is_rejected(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            set_active_route(root, route)
+            start_change(root)
+            active = get_active_change(root) or {}
+            self._install_spec(root, active, {'AC-001': {'receipt': 'verification'}})
+            with self.assertRaises(ValueError):
+                write_receipt(root, 'verification', 'pass', criterion_ids=['AC-999'])
+            with self.assertRaises(ValueError):
+                write_receipt(root, 'verification', 'pass', spec_digest='0' * 64)
+
+    def test_legacy_receipt_without_spec_bindings_is_insufficient(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            route['required_evidence'] = ['verification']
+            set_active_route(root, route)
+            start_change(root)
+            active = get_active_change(root) or {}
+            self._install_spec(root, active, {'AC-001': {'receipt': 'verification'}})
+            path = write_receipt(root, 'verification', 'pass')
+            receipt = json.loads(path.read_text(encoding='utf-8'))
+            for field in ('criterion_ids', 'spec_digest', 'spec_fingerprint'):
+                receipt.pop(field)
+            path.write_text(json.dumps(receipt), encoding='utf-8')
+            gaps = validate_evidence(root, get_active_route(root) or route)
+            self.assertTrue(any('spec binding stale' in gap for gap in gaps))
+            self.assertTrue(any('criterion binding stale' in gap for gap in gaps))
+
+    def test_receipt_stales_on_contract_route_base_and_git_head_changes(self) -> None:
+        for mutation in ('contract', 'route', 'head'):
+            with self.subTest(mutation=mutation), project_copy(git=True) as root:
+                route = build_route(root, 'Добавить функцию', 's1').to_dict()
+                route['required_evidence'] = ['verification']
+                set_active_route(root, route)
+                start_change(root)
+                active = get_active_change(root) or {}
+                contract = root / 'contracts/schema.json'
+                contract.parent.mkdir(parents=True)
+                contract.write_text('{}\n', encoding='utf-8')
+                self._install_spec(
+                    root,
+                    active,
+                    {'AC-001': {'receipt': 'verification'}},
+                    contracts={'openapi': [], 'json_schema': ['contracts/schema.json'], 'events': []},
+                )
+                subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+                subprocess.run(['git', 'commit', '-qm', 'typed spec baseline'], cwd=root, check=True)
+                write_receipt(root, 'verification', 'pass')
+                if mutation == 'contract':
+                    contract.write_text('{"changed":true}\n', encoding='utf-8')
+                elif mutation == 'route':
+                    route['base_commit'] = 'f' * 40
+                    set_active_route(root, route)
+                else:
+                    (root / 'head-change.txt').write_text('changed\n', encoding='utf-8')
+                    subprocess.run(['git', 'add', 'head-change.txt'], cwd=root, check=True)
+                    subprocess.run(['git', 'commit', '-qm', 'head change'], cwd=root, check=True)
+                gaps = validate_evidence(root, get_active_route(root) or route)
+                self.assertTrue(any('stale' in gap for gap in gaps), gaps)
     def test_receipts_validate_against_current_tree(self) -> None:
         with project_copy(git=True) as root:
             route = build_route(root, 'Исправить PHP баг', 's1').to_dict()

@@ -14,9 +14,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.doctor import run_doctor
+from adaptive_grok.change import start_change
 from adaptive_grok.router import build_route
-from adaptive_grok.state import set_active_route
-from adaptive_grok.verification import CheckResult, _contracts, _node, _python, _secret_scan, _sql_safety, verify
+from adaptive_grok.spec import dump_canonical_spec
+from adaptive_grok.state import get_active_change, set_active_route
+from adaptive_grok.verification import CheckResult, _change_specs, _contracts, _node, _python, _secret_scan, _sql_safety, verify
 from tests._support import project_copy
 
 _PASSING_UNITTEST = (
@@ -45,6 +47,19 @@ def _check(report: dict, name: str) -> dict | None:
 
 def _names(items) -> list[str]:
     return [item.name if hasattr(item, 'name') else item.get('name') for item in items]
+
+
+def _valid_change_spec(change_id: str) -> dict:
+    return {
+        'schema_version': 2, 'change_id': change_id,
+        'objective': {'id': 'OBJ-001', 'statement': 'verify selection', 'success_metric': 'selected', 'target': 'all'},
+        'risk': {'tier': 'green', 'domains': []},
+        'acceptance_criteria': [{'id': 'AC-001', 'statement': 'selected', 'evidence': [{'receipt': 'verification'}]}],
+        'invariants': [], 'forbidden_outcomes': [],
+        'contracts': {'openapi': [], 'json_schema': [], 'events': []},
+        'observability': [], 'rollback': {'strategy': 'forward_fix', 'maximum_steps': 1},
+        'approvals': {'required_scopes': []},
+    }
 
 
 def _which_except(*blocked: str):
@@ -282,6 +297,73 @@ class VerificationTests(unittest.TestCase):
             names = _names(results)
             self.assertIn('pytest', names)
             self.assertNotIn('python-unittest', names)
+
+
+class TypedSpecVerificationTests(unittest.TestCase):
+    def test_pr_selects_active_and_every_changed_spec(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            set_active_route(root, route)
+            start_change(root)
+            active = get_active_change(root) or {}
+            active_rel = f"{active['path']}/change-spec.yaml"
+            (root / active_rel).write_text(dump_canonical_spec(_valid_change_spec(active['change_id'])), encoding='utf-8')
+            other_rel = 'engineering/changes/20260826-other/change-spec.yaml'
+            other = root / other_rel
+            other.parent.mkdir(parents=True)
+            other.write_text(dump_canonical_spec(_valid_change_spec('20260826-other')), encoding='utf-8')
+            check, metadata = _change_specs(root, [other_rel], route, 'pr')
+            self.assertEqual(check.status, 'pass')
+            self.assertEqual([item['path'] for item in metadata['specs']], sorted([active_rel, other_rel]))
+
+    def test_changed_v1_and_missing_selected_spec_fail(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            set_active_route(root, route)
+            start_change(root)
+            active = get_active_change(root) or {}
+            active_path = root / str(active['path']) / 'change-spec.yaml'
+            active_path.write_text(dump_canonical_spec(_valid_change_spec(active['change_id'])), encoding='utf-8')
+            legacy_rel = 'engineering/changes/20260826-legacy/change-spec.yaml'
+            legacy = root / legacy_rel
+            legacy.parent.mkdir(parents=True)
+            legacy.write_text('schema_version: 1\nchange_id: 20260826-legacy\n', encoding='utf-8')
+            check, _ = _change_specs(root, [legacy_rel], route, 'pr')
+            self.assertEqual(check.status, 'fail')
+            missing_rel = 'engineering/changes/20260826-missing/change-spec.yaml'
+            check, _ = _change_specs(root, [missing_rel], route, 'pr')
+            self.assertEqual(check.status, 'fail')
+            self.assertTrue(any(item['code'] == 'spec-missing' for item in check.details))
+
+    def test_fast_is_draft_but_pr_is_gate(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            set_active_route(root, route)
+            start_change(root)
+            active = get_active_change(root) or {}
+            rel = f"{active['path']}/change-spec.yaml"
+            draft = _valid_change_spec(active['change_id'])
+            draft['objective']['success_metric'] = 'UNKNOWN'
+            draft['objective']['target'] = 'UNKNOWN'
+            draft['acceptance_criteria'][0]['evidence'] = []
+            (root / rel).write_text(dump_canonical_spec(draft), encoding='utf-8')
+            fast, fast_metadata = _change_specs(root, [], route, 'fast')
+            gate, gate_metadata = _change_specs(root, [], route, 'pr')
+            self.assertEqual(fast.status, 'pass', fast.details)
+            self.assertEqual(fast_metadata['specs'][0]['profile'], 'draft')
+            self.assertEqual(gate.status, 'fail')
+            self.assertEqual(gate_metadata['specs'][0]['profile'], 'gate')
+
+    def test_docs_micro_exemption_is_exact(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Исправить документацию', 's1').to_dict()
+            route.update({'complexity': 'micro', 'risk': 'low', 'delivery_expected': True})
+            docs_check, docs_metadata = _change_specs(root, ['docs/x.md'], route, 'pr')
+            code_check, code_metadata = _change_specs(root, ['src/x.py'], route, 'pr')
+            self.assertEqual(docs_check.status, 'skip')
+            self.assertTrue(docs_metadata['exempt'])
+            self.assertEqual(code_check.status, 'fail')
+            self.assertFalse(code_metadata['exempt'])
 
 
 class QualityContourTests(unittest.TestCase):

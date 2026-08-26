@@ -340,7 +340,7 @@ approvals:
 - [x] Fail standard/high-risk work when a required criterion has no evidence mapping.
 - [x] Detect stale specs after a change to base/head SHA, contracts, or policy.
 
-Source implementation is complete when this branch's local verification and independent reviews pass. M1's deployed Trust CI/holdout exit criteria remain open until a separately authorized rollout proves the new reader, emitter, and holdout under a new policy-bound exact-SHA check.
+The checked work items mean their source and local regression coverage exist; they do not claim release readiness. Source implementation is complete only when this branch's local verification and fresh independent reviews pass. M1's deployed Trust CI/holdout exit criteria remain open until a separately authorized rollout proves the new reader, emitter, and holdout under a new policy-bound exact-SHA check.
 
 ## Exit criteria
 

@@ -466,7 +466,7 @@ def _parse_canonical_json(data: bytes, path: Path) -> dict[str, Any]:
         value = json.loads(text, object_pairs_hook=_pairs_object, parse_constant=_reject_constant)
     except SpecError:
         raise
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError, ValueError) as exc:
         raise SpecError(f"{path}: invalid canonical JSON: {exc}", code="parse") from exc
     if not isinstance(value, dict):
         raise SpecError(f"{path}: spec root must be an object", code="parse")
@@ -546,7 +546,7 @@ def criterion_coverage(spec: dict[str, Any]) -> dict[str, Any]:
 
 def _safe_contract_path(root: Path, raw: str) -> Path | None:
     rel = Path(raw)
-    if not raw or rel.is_absolute() or ".." in rel.parts or any(part in {"", "."} for part in rel.parts):
+    if not raw or rel.is_absolute() or "\\" in raw or ".." in rel.parts or any(part in {"", "."} for part in rel.parts):
         raise SpecError(f"unsafe contract path: {raw!r}", code="path")
     candidate = root.joinpath(*rel.parts)
     try:
@@ -562,6 +562,53 @@ def _safe_contract_path(root: Path, raw: str) -> Path | None:
     return candidate
 
 
+def _contract_digest(root: Path, raw: str) -> str | None:
+    rel = Path(raw)
+    if not raw or rel.is_absolute() or "\\" in raw or ".." in rel.parts or any(part in {"", "."} for part in rel.parts):
+        raise SpecError(f"unsafe contract path: {raw!r}", code="path")
+    descriptors: list[int] = []
+    try:
+        current = os.open(root.resolve(strict=True), os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        descriptors.append(current)
+        for part in rel.parts[:-1]:
+            current = os.open(
+                part,
+                os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
+                dir_fd=current,
+            )
+            descriptors.append(current)
+        fd = os.open(rel.parts[-1], os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=current)
+        descriptors.append(fd)
+        opened = os.fstat(fd)
+        if not stat.S_ISREG(opened.st_mode) or opened.st_size > MAX_SPEC_BYTES:
+            raise SpecError(f"contract must be a bounded regular non-symlink file: {raw}", code="path")
+        digest = hashlib.sha256()
+        total = 0
+        while True:
+            chunk = os.read(fd, 65_536)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > MAX_SPEC_BYTES:
+                raise SpecError(f"contract byte limit exceeded: {raw}", code="limit")
+            digest.update(chunk)
+        after = os.fstat(fd)
+        before_identity = (opened.st_dev, opened.st_ino, opened.st_size, opened.st_mtime_ns, opened.st_ctime_ns)
+        after_identity = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns)
+        if total != opened.st_size or after_identity != before_identity:
+            raise SpecError(f"contract changed while hashing: {raw}", code="path")
+        return digest.hexdigest()
+    except FileNotFoundError:
+        return None
+    except SpecError:
+        raise
+    except OSError as exc:
+        raise SpecError(f"unsafe contract path: {raw!r}: {exc}", code="path") from exc
+    finally:
+        for descriptor in reversed(descriptors):
+            os.close(descriptor)
+
+
 def spec_fingerprint(
     root: Path,
     path: Path,
@@ -571,9 +618,9 @@ def spec_fingerprint(
     contracts: list[dict[str, str]] = []
     for group in (spec.get("contracts") or {}).values():
         for raw in group or []:
-            target = _safe_contract_path(root, str(raw))
-            if target is not None:
-                contracts.append({"path": str(raw), "digest": hashlib.sha256(_read_regular_bytes(target)).hexdigest()})
+            contract_digest = _contract_digest(root, str(raw))
+            if contract_digest is not None:
+                contracts.append({"path": str(raw), "digest": contract_digest})
     head = None
     try:
         proc = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, text=True, capture_output=True, timeout=10, check=False)
@@ -626,13 +673,24 @@ def _semantic_errors(spec: dict[str, Any], *, gate: bool, root: Path | None = No
         errors.append("stable IDs must be unique across criterion collections")
     if len(signals) != len(spec.get("observability") or []):
         errors.append("duplicate observability signal ids")
+    objective_id = str((spec.get("objective") or {}).get("id", ""))
+    for signal in spec.get("observability") or []:
+        if not isinstance(signal, dict):
+            continue
+        proves = signal.get("proves")
+        if not isinstance(proves, list) or not proves or any(value != objective_id for value in proves):
+            errors.append(f"observability signal {signal.get('id')} must prove objective {objective_id}")
     for group in (spec.get("contracts") or {}).values():
         for raw in group or []:
             try:
                 if root is not None:
-                    _safe_contract_path(root, str(raw))
-                elif Path(str(raw)).is_absolute() or ".." in Path(str(raw)).parts:
-                    raise SpecError(f"unsafe contract path: {raw!r}")
+                    target = _safe_contract_path(root, str(raw))
+                    if target is None:
+                        errors.append(f"contract path does not exist: {raw}")
+                else:
+                    rel = Path(str(raw))
+                    if not str(raw) or rel.is_absolute() or "\\" in str(raw) or any(part in {"", ".", ".."} for part in rel.parts):
+                        raise SpecError(f"unsafe contract path: {raw!r}")
             except SpecError as exc:
                 errors.append(str(exc))
     if gate:
@@ -692,12 +750,19 @@ def validate_spec(
 
 
 def generate_spec(route: dict[str, Any]) -> dict[str, Any]:
-    risk_name = str(route.get("risk") or "low")
+    def route_text(value: Any) -> str:
+        if isinstance(value, str):
+            return value
+        if isinstance(value, (dict, list, tuple, bool, int, float)) or value is None:
+            return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        return str(value)
+
+    risk_name = route_text(route.get("risk") or "low")
     return {
         "schema_version": 2,
-        "change_id": str(route.get("change_id") or ""),
-        "objective": {"id": "OBJ-001", "statement": str(route.get("task") or ""), "success_metric": UNKNOWN_TOKEN, "target": UNKNOWN_TOKEN},
-        "risk": {"tier": RISK_MAP.get(risk_name, "green"), "domains": sorted({str(item) for item in route.get("domains") or []})},
+        "change_id": route_text(route.get("change_id") or ""),
+        "objective": {"id": "OBJ-001", "statement": route_text(route.get("task") or ""), "success_metric": UNKNOWN_TOKEN, "target": UNKNOWN_TOKEN},
+        "risk": {"tier": RISK_MAP.get(risk_name, "green"), "domains": sorted({route_text(item) for item in route.get("domains") or []})},
         "acceptance_criteria": [],
         "invariants": [],
         "forbidden_outcomes": [],

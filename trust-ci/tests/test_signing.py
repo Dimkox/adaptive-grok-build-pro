@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 import unittest
 from datetime import timedelta
+from pathlib import Path
 
 from _support import digest, now, sha
 from adaptive_trust_ci.models import ApprovalEnvelope, ApprovalPayload, AttestationEnvelope, AttestationPayload
-from adaptive_trust_ci.signing import ApprovalError, Signer, TrustStore, sign_approval, verify_approval, verify_attestation
+from adaptive_trust_ci.signing import ApprovalError, Signer, TrustStore, sign_approval, sign_attestation, verify_approval, verify_attestation
 from adaptive_trust_ci.store import MemoryStore, ReplayError
 
 
@@ -140,6 +142,19 @@ class SigningTests(unittest.TestCase):
         self.assertEqual(verify_attestation(stored, self.signer.public_key_pem()).attestation_id, 'legacy-attestation')
         self.assertNotIn('spec_digest', stored.to_dict()['payload'])
 
+    def test_committed_pre_m1_golden_verifies_and_replays_without_rewriting(self) -> None:
+        fixture = json.loads((Path(__file__).parent / 'fixtures/pre-m1-attestation.json').read_text(encoding='utf-8'))
+        envelope = AttestationEnvelope.from_dict(fixture['envelope'])
+        verified = verify_attestation(envelope, fixture['public_key_pem'].encode())
+        self.assertEqual(verified.attestation_id, 'pre-m1-golden-attestation')
+        self.assertIsNone(verified.spec_digest)
+        memory = MemoryStore()
+        memory.record_attestation(verified.job_id, envelope)
+        stored = memory.get_attestation(verified.job_id)
+        assert stored is not None
+        self.assertEqual(stored.to_dict(), fixture['envelope'])
+        self.assertEqual(verify_attestation(stored, fixture['public_key_pem'].encode()).job_id, verified.job_id)
+
     def test_attestation_coverage_is_strict_and_bounded(self) -> None:
         legacy = {
             'schema_version': 1, 'attestation_id': 'new-attestation', 'job_id': 'job-1',
@@ -155,6 +170,27 @@ class SigningTests(unittest.TestCase):
         legacy['criterion_coverage']['extra'] = 1
         with self.assertRaises(ValueError):
             AttestationPayload.from_dict(legacy)
+
+    def test_signed_spec_metadata_detects_digest_and_coverage_tampering(self) -> None:
+        data = {
+            'schema_version': 1, 'attestation_id': 'new-attestation', 'job_id': 'job-1',
+            'repository': 'Dimkox/adaptive-grok-build-pro', 'pr_number': 42,
+            'base_sha': sha('a'), 'head_sha': sha('b'), 'policy_digest': digest('c'),
+            'status': 'passed', 'command_results': [], 'changed_files': [], 'approved_scopes': [],
+            'started_at': now().isoformat(), 'completed_at': now().isoformat(), 'key_id': self.signer.key_id,
+            'spec_digest': digest('d'),
+            'criterion_coverage': {'spec_count': 1, 'criterion_total': 1, 'criterion_mapped': 1, 'unmapped_ids': []},
+        }
+        envelope = sign_attestation(AttestationPayload.from_dict(data), self.signer)
+        self.assertEqual(verify_attestation(envelope, self.signer.public_key_pem()).spec_digest, digest('d'))
+        for mutate in (
+            lambda payload: payload.update(spec_digest=digest('e')),
+            lambda payload: payload['criterion_coverage'].update(criterion_mapped=0, unmapped_ids=['AC-001']),
+        ):
+            tampered = envelope.to_dict()
+            mutate(tampered['payload'])
+            with self.assertRaisesRegex(ApprovalError, 'signature'):
+                verify_attestation(AttestationEnvelope.from_dict(tampered), self.signer.public_key_pem())
 
 
 if __name__ == "__main__":

@@ -4,6 +4,8 @@
 
 ## Acceptance criteria
 
+AC-001 through AC-005 are implemented and locally regression-tested; the package stays `verifying` and is not source-ready until AC-006 receives fresh route-selected review evidence on the final tree.
+
 - [x] AC-001: strict schema and semantic validation fail closed for malformed, ambiguous, duplicate, stale, or incomplete typed specs.
 - [x] AC-002: new packages are generated deterministically from route facts and Markdown cannot override typed authority.
 - [x] AC-003: CLI and local receipts expose deterministic digest, coverage, criterion IDs, and fingerprint staleness.

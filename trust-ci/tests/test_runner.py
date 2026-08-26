@@ -35,12 +35,16 @@ class FakeGitHub:
 
 
 class FakeWorkspace:
-    def __init__(self, job, *, changed_files, **kwargs) -> None:
+    def __init__(self, job, *, changed_files, workspace_files=None, **kwargs) -> None:
         self.kwargs = kwargs
         self.job = job
         self.changed_files = tuple(changed_files)
         self.path = Path(tempfile.mkdtemp())
         (self.path / '.git').mkdir()
+        for rel, content in (workspace_files or {}).items():
+            target = self.path / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding='utf-8')
         self.reset_calls = 0
         self.assert_calls = 0
         self.cleaned = False
@@ -122,7 +126,7 @@ class RunnerTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp.cleanup()
 
-    def build_runner(self, *, changed_files=(), results=None, github=None, mutate_on=()):
+    def build_runner(self, *, changed_files=(), workspace_files=None, results=None, github=None, mutate_on=()):
         executor = FakeExecutor(
             results or [result('external-holdout'), result('unit'), result('compile')],
             mutate_on=mutate_on,
@@ -131,7 +135,7 @@ class RunnerTests(unittest.TestCase):
         tokens = []
 
         def workspace_factory(job, **kwargs):
-            workspace = FakeWorkspace(job, changed_files=changed_files, **kwargs)
+            workspace = FakeWorkspace(job, changed_files=changed_files, workspace_files=workspace_files, **kwargs)
             workspaces.append(workspace)
             return workspace
 
@@ -164,17 +168,52 @@ class RunnerTests(unittest.TestCase):
         second = checkout / 'engineering/changes/20260826-b/change-spec.yaml'
         first.parent.mkdir(parents=True)
         second.parent.mkdir(parents=True)
-        spec = {'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-002', 'evidence': []}, {'id': 'AC-001', 'evidence': [{'receipt': 'verification'}]}]}
-        first.write_text(json.dumps(spec), encoding='utf-8')
-        second.write_text('{bad json', encoding='utf-8')
+        first.write_text(json.dumps({'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-002', 'statement': 'two', 'evidence': []}, {'id': 'AC-001', 'statement': 'one', 'evidence': [{'receipt': 'verification'}]}]}), encoding='utf-8')
+        second.write_text(json.dumps({'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-003', 'statement': 'three', 'evidence': [{'test': 'tests/x.py'}]}]}), encoding='utf-8')
         paths = (second.relative_to(checkout).as_posix(), first.relative_to(checkout).as_posix())
         digest_value, coverage = extract_spec_metadata(checkout, paths)
         reverse_digest, reverse_coverage = extract_spec_metadata(checkout, tuple(reversed(paths)))
         self.assertEqual(digest_value, reverse_digest)
         self.assertEqual(coverage, reverse_coverage)
         self.assertEqual(coverage['spec_count'], 2)
-        self.assertEqual(coverage['criterion_total'], 2)
+        self.assertEqual(coverage['criterion_total'], 3)
         self.assertEqual(coverage['unmapped_ids'], ['AC-002'])
+
+    def test_spec_metadata_rejects_malformed_evidence_and_json(self) -> None:
+        checkout = Path(self.temp.name) / 'metadata-invalid'
+        path = checkout / 'engineering/changes/20260826-a/change-spec.yaml'
+        path.parent.mkdir(parents=True)
+        rel = path.relative_to(checkout).as_posix()
+        for document in (
+            {'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-001', 'evidence': [{'test': None}]}]},
+            {'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-001', 'evidence': [{'receipt': 'bogus'}]}]},
+            {'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-001', 'evidence': [{'production_signal': 'SIG-999'}]}], 'observability': []},
+            {'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-001', 'statement': '', 'evidence': [{'receipt': 'verification'}]}]},
+            {
+                'schema_version': 2,
+                'objective': {'id': 'OBJ-001'},
+                'acceptance_criteria': [{'id': 'AC-001', 'statement': 'x', 'evidence': [{'production_signal': 'SIG-001'}]}],
+                'observability': [{'id': 'SIG-001', 'metric': 'x', 'proves': []}],
+            },
+        ):
+            with self.subTest(document=document):
+                path.write_text(json.dumps(document), encoding='utf-8')
+                with self.assertRaises(SpecMetadataError):
+                    extract_spec_metadata(checkout, (rel,))
+        path.write_text('{bad json', encoding='utf-8')
+        with self.assertRaises(SpecMetadataError):
+            extract_spec_metadata(checkout, (rel,))
+
+    def test_duplicate_criterion_ids_across_specs_fail_deterministically(self) -> None:
+        checkout = Path(self.temp.name) / 'metadata-duplicate'
+        paths = []
+        for name in ('a', 'b'):
+            path = checkout / f'engineering/changes/20260826-{name}/change-spec.yaml'
+            path.parent.mkdir(parents=True)
+            path.write_text(json.dumps({'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-001', 'statement': 'duplicate', 'evidence': []}]}), encoding='utf-8')
+            paths.append(path.relative_to(checkout).as_posix())
+        with self.assertRaisesRegex(SpecMetadataError, 'duplicate criterion ID'):
+            extract_spec_metadata(checkout, tuple(reversed(paths)))
 
     def test_spec_metadata_rejects_symlink(self) -> None:
         checkout = Path(self.temp.name) / 'metadata-symlink'
@@ -186,6 +225,17 @@ class RunnerTests(unittest.TestCase):
         path.symlink_to(outside)
         with self.assertRaises(SpecMetadataError):
             extract_spec_metadata(checkout, (path.relative_to(checkout).as_posix(),))
+
+    def test_spec_metadata_rejects_ancestor_symlink(self) -> None:
+        checkout = Path(self.temp.name) / 'metadata-ancestor-symlink'
+        outside = Path(self.temp.name) / 'metadata-outside'
+        path = outside / 'changes/20260826-a/change-spec.yaml'
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({'schema_version': 2, 'acceptance_criteria': []}), encoding='utf-8')
+        checkout.mkdir()
+        (checkout / 'engineering').symlink_to(outside)
+        with self.assertRaises(SpecMetadataError):
+            extract_spec_metadata(checkout, ('engineering/changes/20260826-a/change-spec.yaml',))
 
     def test_git_workspace_allows_rootless_daemon_traversal(self):
         base = Path(self.temp.name) / 'workspaces'
@@ -227,6 +277,49 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(payload.command_results[0]['name'], 'holdout-bundle-integrity')
         self.assertEqual(payload.command_results[0]['output_sha256'], self.holdout_digest)
         self.assertTrue(workspaces[0].cleaned)
+
+    def test_valid_spec_metadata_is_in_signed_attestation(self) -> None:
+        rel = 'engineering/changes/20260826-a/change-spec.yaml'
+        document = {'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-001', 'statement': 'signed', 'evidence': [{'receipt': 'verification'}]}]}
+        runner, executor, _, _ = self.build_runner(changed_files=[rel], workspace_files={rel: json.dumps(document)})
+        outcome = runner.process(self.job, 'worker-1')
+        self.assertEqual(outcome.status, 'passed')
+        self.assertEqual(len(executor.calls), 3)
+        envelope = self.store.get_attestation(self.job.job_id)
+        assert envelope is not None
+        payload = verify_attestation(envelope, self.signer.public_key_pem())
+        self.assertIsNotNone(payload.spec_digest)
+        self.assertEqual(payload.criterion_coverage['criterion_mapped'], 1)
+
+    def test_malformed_spec_produces_signed_failure_without_commands(self) -> None:
+        rel = 'engineering/changes/20260826-a/change-spec.yaml'
+        malformed = json.dumps({'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-001', 'evidence': [{'test': None}]}]})
+        runner, executor, _, _ = self.build_runner(changed_files=[rel], workspace_files={rel: malformed})
+        outcome = runner.process(self.job, 'worker-1')
+        self.assertEqual(outcome.status, 'failed')
+        self.assertEqual(executor.calls, [])
+        envelope = self.store.get_attestation(self.job.job_id)
+        assert envelope is not None
+        payload = verify_attestation(envelope, self.signer.public_key_pem())
+        self.assertEqual(payload.status, 'failed')
+        self.assertIsNone(payload.spec_digest)
+        self.assertEqual(payload.command_results[-1]['name'], 'typed-spec-metadata')
+
+    def test_duplicate_ids_across_specs_produce_deterministic_signed_failure(self) -> None:
+        paths = [f'engineering/changes/20260826-{name}/change-spec.yaml' for name in ('alpha', 'bravo')]
+        document = json.dumps({'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-001', 'statement': 'duplicate', 'evidence': []}]})
+        runner, executor, _, _ = self.build_runner(
+            changed_files=list(reversed(paths)),
+            workspace_files={path: document for path in paths},
+        )
+        outcome = runner.process(self.job, 'worker-1')
+        self.assertEqual(outcome.status, 'failed')
+        self.assertEqual(executor.calls, [])
+        envelope = self.store.get_attestation(self.job.job_id)
+        assert envelope is not None
+        payload = verify_attestation(envelope, self.signer.public_key_pem())
+        self.assertEqual(payload.criterion_coverage['spec_count'], 0)
+        self.assertIn('duplicate criterion ID', outcome.details['commands'][-1]['stderr_tail'])
 
     def test_protected_path_waits_for_signed_approval_and_completes_action_required(self) -> None:
         github = FakeGitHub()
@@ -294,10 +387,19 @@ class RunnerTests(unittest.TestCase):
 
     def test_signed_attestation_is_replayed_after_check_publication_failure(self) -> None:
         first_github = FakeGitHub(fail_success_once=True)
-        runner, _, _, _ = self.build_runner(changed_files=['docs/x.md'], github=first_github)
+        rel = 'engineering/changes/20260826-replay/change-spec.yaml'
+        document = {'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-001', 'statement': 'replay', 'evidence': [{'receipt': 'verification'}]}]}
+        runner, _, _, _ = self.build_runner(
+            changed_files=[rel],
+            workspace_files={rel: json.dumps(document)},
+            github=first_github,
+        )
         with self.assertRaisesRegex(RuntimeError, 'GitHub unavailable'):
             runner.process(self.job, 'worker-1')
-        self.assertIsNotNone(self.store.get_attestation(self.job.job_id))
+        stored = self.store.get_attestation(self.job.job_id)
+        self.assertIsNotNone(stored)
+        assert stored is not None
+        self.assertIsNotNone(verify_attestation(stored, self.signer.public_key_pem()).spec_digest)
         self.store.retry(self.job.job_id, 'worker-1', 'GitHub unavailable', now=now())
         reclaimed = self.store.claim('worker-2', self.policy.lease_seconds, now=now())
         assert reclaimed is not None
