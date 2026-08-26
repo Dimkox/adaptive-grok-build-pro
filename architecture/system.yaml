@@ -379,7 +379,17 @@
       "public_contracts": [],
       "repository_paths": [
         ".grok",
-        ".grok-stack/adaptive_grok"
+        ".grok-stack/adaptive_grok",
+        ".grok-stack/templates",
+        "post_tool_use.py",
+        "pre_compact.py",
+        "pre_tool_use.py",
+        "session_end.py",
+        "session_start.py",
+        "stop_gate.py",
+        "subagent_start.py",
+        "subagent_stop.py",
+        "user_prompt_submit.py"
       ],
       "runtime": {
         "evidence": "source_described",
@@ -415,7 +425,9 @@
       "owner": "repository engineering",
       "public_contracts": [],
       "repository_paths": [
-        "scripts"
+        "scripts",
+        "tests",
+        "trust-ci/tests"
       ],
       "runtime": {
         "evidence": "source_described",
@@ -461,6 +473,7 @@
       "owner": "Trust CI operators",
       "public_contracts": [],
       "repository_paths": [
+        "trust-ci/postgres",
         "trust-ci/sql",
         "trust-ci/src/adaptive_trust_ci/resources",
         "trust-ci/src/adaptive_trust_ci/backup.py",

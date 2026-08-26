@@ -3,10 +3,12 @@ from __future__ import annotations
 import copy
 import importlib
 import json
+import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / ".grok-stack"))
@@ -750,6 +752,44 @@ class ArchitectureModelTests(unittest.TestCase):
             set(documents["CONTRACT-GITHUB-PR-PROJECTION"]["required"]),
             {"action", "pull_request", "repository"},
         )
+        openapi = documents["CONTRACT-TRUST-CI-OPENAPI"]
+        for path in ("/jobs/{job_id}", "/attestations/{job_id}"):
+            parameter = openapi["paths"][path]["parameters"][0]
+            self.assertEqual(
+                (parameter["in"], parameter["name"], parameter["required"]),
+                ("path", "job_id", True),
+            )
+        webhook_parameters = openapi["paths"]["/webhooks/github"]["post"]["parameters"]
+        self.assertIn(
+            ("header", "X-GitHub-Event", True),
+            {
+                (parameter["in"], parameter["name"], parameter["required"])
+                for parameter in webhook_parameters
+            },
+        )
+        expected_statuses = {
+            "/approvals": {"200", "400", "403", "404", "409", "503"},
+            "/attestations/{job_id}": {"200", "401", "404"},
+            "/health/live": {"200"},
+            "/health/ready": {"200", "503"},
+            "/jobs/{job_id}": {"200", "401", "404"},
+            "/metrics": {"200", "401"},
+            "/webhooks/github": {"200", "401", "403", "503"},
+        }
+        for path, statuses in expected_statuses.items():
+            method = next(key for key in openapi["paths"][path] if key in {"get", "post"})
+            self.assertEqual(set(openapi["paths"][path][method]["responses"]), statuses)
+        self.assertIn(
+            "text/plain",
+            openapi["paths"]["/metrics"]["get"]["responses"]["200"]["content"],
+        )
+        openapi_record = next(
+            record for record in records if record.id == "CONTRACT-TRUST-CI-OPENAPI"
+        )
+        self.assertEqual(
+            ARCH.compare_contracts(openapi_record, openapi_record, "bidirectional").status,
+            "unsupported",
+        )
 
     def test_repository_drift_reports_undeclared_source_and_contract(self) -> None:
         self.assertTrue(
@@ -762,6 +802,9 @@ class ArchitectureModelTests(unittest.TestCase):
         (root / "src").mkdir()
         (root / "src/owned.py").write_text("VALUE = 1\n", encoding="utf-8")
         (root / "src/undeclared.py").write_text("VALUE = 2\n", encoding="utf-8")
+        (root / "lib").mkdir()
+        (root / "lib/new_component.py").write_text("VALUE = 3\n", encoding="utf-8")
+        (root / "src/native.rs").write_text("fn main() {}\n", encoding="utf-8")
         (root / "engineering/contracts").mkdir(parents=True)
         (root / "engineering/contracts/.gitkeep").write_text("", encoding="utf-8")
         (root / "engineering/contracts/undeclared.json").write_text("{}\n", encoding="utf-8")
@@ -776,8 +819,49 @@ class ArchitectureModelTests(unittest.TestCase):
             [(finding.code, finding.path) for finding in findings],
             [
                 ("undeclared_contract", "engineering/contracts/undeclared.json"),
+                ("undeclared_source", "lib/new_component.py"),
                 ("undeclared_source", "src/undeclared.py"),
+                ("unsupported_source_artifact", "src/native.rs"),
             ],
+        )
+
+    def test_repository_drift_traversal_is_bounded_by_entries_files_and_bytes(self) -> None:
+        cases = (
+            ("MAX_DRIFT_ENTRIES", 40, "entry limit"),
+            ("MAX_DRIFT_FILES", 20, "file limit"),
+            ("MAX_DRIFT_BYTES", 50_000, "byte limit"),
+        )
+        for attribute, limit, message in cases:
+            root = self._repo()
+            (root / "bulk").mkdir()
+            for index in range(64):
+                (root / f"bulk/item-{index}.txt").write_text("payload\n", encoding="utf-8")
+            (root / "bulk/large.bin").write_bytes(b"x" * 100_000)
+            snapshot = ARCH.load_architecture(root)
+            with self.subTest(limit=attribute), mock.patch.object(ARCH, attribute, limit):
+                with self.assertRaisesRegex(ARCH.ArchitectureError, message):
+                    ARCH.validate_repository_drift(root, snapshot)
+
+    def test_repository_drift_does_not_follow_directory_symlinks(self) -> None:
+        root = self._repo()
+        outside = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: outside.rmdir())
+        (outside / "outside.py").write_text("VALUE = 1\n", encoding="utf-8")
+        self.addCleanup(lambda: (outside / "outside.py").unlink())
+        (root / "linked-source").symlink_to(outside, target_is_directory=True)
+        findings = ARCH.validate_repository_drift(root, ARCH.load_architecture(root))
+        self.assertEqual(
+            [(finding.code, finding.path) for finding in findings],
+            [("unsafe_repository_artifact", "linked-source")],
+        )
+
+    def test_repository_drift_fails_closed_on_special_artifacts(self) -> None:
+        root = self._repo()
+        os.mkfifo(root / "untrusted-pipe")
+        findings = ARCH.validate_repository_drift(root, ARCH.load_architecture(root))
+        self.assertEqual(
+            [(finding.code, finding.path) for finding in findings],
+            [("unsafe_repository_artifact", "untrusted-pipe")],
         )
 
     def test_examples_and_gitkeep_cannot_be_declared_contracts(self) -> None:
@@ -889,6 +973,13 @@ class ArchitectureModelTests(unittest.TestCase):
                 "narrowed_enum",
             ),
             (
+                "narrowed mixed scalar enum",
+                "consumer_accepts_old",
+                _json_schema({"mode": {"enum": [True, 1]}}),
+                _json_schema({"mode": {"enum": [True]}}),
+                "narrowed_enum",
+            ),
+            (
                 "changed type",
                 "consumer_accepts_old",
                 _json_schema({"value": {"type": "integer"}}),
@@ -927,15 +1018,22 @@ class ArchitectureModelTests(unittest.TestCase):
             "security": [{"bearerAuth": []}],
             "responses": {"200": {"description": "ok"}},
         }
-        removed = _openapi()
+        secured_base = _openapi(secured)
+        secured_base["components"] = {
+            "securitySchemes": {
+                "bearerAuth": {"type": "http", "scheme": "bearer"},
+            }
+        }
+        removed = copy.deepcopy(secured_base)
         removed["paths"] = {}
         weakened = _openapi({"security": [], "responses": {"200": {"description": "ok"}}})
+        weakened["components"] = copy.deepcopy(secured_base["components"])
         for label, head, reason in (
             ("removed", removed, "removed_operation"),
             ("weakened", weakened, "weakened_authentication"),
         ):
             result = ARCH.compare_contracts(
-                self._record(_openapi(secured), kind="openapi"),
+                self._record(secured_base, kind="openapi"),
                 self._record(head, kind="openapi"),
                 "bidirectional",
             )
@@ -973,6 +1071,72 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertEqual(result.status, "incompatible")
         self.assertIn("widened_producer_output", result.reasons)
 
+    def test_openapi_comparison_rejects_added_status_required_parameter_and_scheme_change(
+        self,
+    ) -> None:
+        base = _openapi()
+        added_status = copy.deepcopy(base)
+        added_status["paths"]["/items"]["get"]["responses"]["201"] = {
+            "description": "created"
+        }
+
+        required_parameter = copy.deepcopy(base)
+        required_parameter["paths"]["/items"]["parameters"] = [
+            {
+                "in": "header",
+                "name": "X-Required",
+                "required": True,
+                "schema": {"type": "string"},
+            }
+        ]
+
+        secured_base = copy.deepcopy(base)
+        secured_base["components"] = {
+            "securitySchemes": {
+                "access": {"type": "http", "scheme": "bearer"},
+            }
+        }
+        secured_base["paths"]["/items"]["get"]["security"] = [{"access": []}]
+        changed_scheme = copy.deepcopy(secured_base)
+        changed_scheme["components"]["securitySchemes"]["access"] = {
+            "type": "apiKey",
+            "in": "query",
+            "name": "access_token",
+        }
+
+        for label, base_doc, head_doc, reason in (
+            ("added response", base, added_status, "added_response"),
+            ("required path-level header", base, required_parameter, "new_required_input"),
+            ("changed security scheme", secured_base, changed_scheme, "changed_authentication"),
+        ):
+            result = ARCH.compare_contracts(
+                self._record(base_doc, kind="openapi"),
+                self._record(head_doc, kind="openapi"),
+                "bidirectional",
+            )
+            with self.subTest(label=label):
+                self.assertEqual(result.status, "incompatible")
+                self.assertIn(reason, result.reasons)
+
+    def test_openapi_comparison_returns_unsupported_for_unhandled_applicable_constructs(
+        self,
+    ) -> None:
+        base = _openapi()
+        referenced_parameter = copy.deepcopy(base)
+        referenced_parameter["paths"]["/items"]["get"]["parameters"] = [
+            {"$ref": "#/components/parameters/Future"}
+        ]
+        malformed_info = copy.deepcopy(base)
+        malformed_info["info"]["title"] = ["not", "a", "string"]
+        for head in (referenced_parameter, malformed_info):
+            result = ARCH.compare_contracts(
+                self._record(base, kind="openapi"),
+                self._record(head, kind="openapi"),
+                "bidirectional",
+            )
+            with self.subTest(head=head):
+                self.assertEqual(result.status, "unsupported")
+
     def test_contract_comparison_is_unsupported_or_exact_when_required(self) -> None:
         self.assertTrue(hasattr(ARCH, "compare_contracts"), "compare_contracts is not implemented")
         base_doc = _json_schema({"name": {"type": "string"}})
@@ -992,6 +1156,49 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(result.status, "incompatible")
         self.assertIn("same_version_semantic_change", result.reasons)
+
+    def test_contract_comparison_malformed_unknown_and_event_meaning_fail_typed(self) -> None:
+        malformed_cases = (
+            {"type": ["string", "null"]},
+            {"type": "string", "minLength": "2"},
+            {"type": "string", "minLength": -1},
+            {"type": "array", "minItems": True},
+            {"type": "number", "minimum": 3, "maximum": 2},
+            {"type": "string", "pattern": "["},
+            {"type": "object", "properties": {1: {"type": "string"}}},
+        )
+        for malformed in malformed_cases:
+            result = ARCH.compare_contracts(
+                self._record({"type": "string"}),
+                self._record(malformed),
+                "consumer_accepts_old",
+            )
+            with self.subTest(malformed=malformed):
+                self.assertEqual(result.status, "unsupported")
+
+        document = _json_schema({"event_id": {"type": "string"}})
+        self.assertEqual(
+            ARCH.compare_contracts(
+                self._record(document), self._record(document), "future_mode"
+            ).status,
+            "unsupported",
+        )
+        unknown_kind = self._record(document, kind="future_contract")
+        self.assertEqual(
+            ARCH.compare_contracts(unknown_kind, unknown_kind, "exact").status,
+            "unsupported",
+        )
+
+        changed_meaning = copy.deepcopy(document)
+        document["description"] = "account approved"
+        changed_meaning["description"] = "account deleted"
+        result = ARCH.compare_contracts(
+            self._record(document, kind="event"),
+            self._record(changed_meaning, kind="event"),
+            "consumer_accepts_old",
+        )
+        self.assertEqual(result.status, "incompatible")
+        self.assertIn("event_meaning_changed", result.reasons)
 
 
 if __name__ == "__main__":
