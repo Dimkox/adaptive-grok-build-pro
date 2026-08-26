@@ -35,6 +35,8 @@ MANAGED_FILES = (
     'ruff.toml',
     'bandit.yaml',
     '.coveragerc',
+    'schemas/change-spec.schema.json',
+    'schemas/change-spec-v1.schema.json',
 )
 SKIP_PREFIXES = ('.grok-stack/runtime/',)
 MANAGED_START = '<!-- ADAPTIVE-GROK-PRO:START -->'

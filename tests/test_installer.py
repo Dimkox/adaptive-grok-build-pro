@@ -3,6 +3,8 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import io
+import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -27,6 +29,30 @@ def install_silent(*args, **kwargs) -> None:
 
 
 class InstallerTests(unittest.TestCase):
+    def test_clean_install_delivers_schema_and_runnable_spec_cli(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'target'
+            install_silent(ROOT, target, force=False, dry_run=False)
+            schema = target / 'schemas/change-spec.schema.json'
+            self.assertEqual(schema.read_bytes(), (ROOT / 'schemas/change-spec.schema.json').read_bytes())
+            change = target / 'engineering/changes/20260826-installed-cli'
+            change.mkdir(parents=True)
+            payload = {
+                'schema_version': 2, 'change_id': '20260826-installed-cli',
+                'objective': {'id': 'OBJ-001', 'statement': 'installed CLI', 'success_metric': 'exit', 'target': 'zero'},
+                'risk': {'tier': 'green', 'domains': []},
+                'acceptance_criteria': [{'id': 'AC-001', 'statement': 'validates', 'evidence': [{'receipt': 'verification'}]}],
+                'invariants': [], 'forbidden_outcomes': [],
+                'contracts': {'openapi': [], 'json_schema': [], 'events': []}, 'observability': [],
+                'rollback': {'strategy': 'forward_fix', 'maximum_steps': 1}, 'approvals': {'required_scopes': []},
+            }
+            spec_path = change / 'change-spec.yaml'
+            spec_path.write_text(json.dumps(payload), encoding='utf-8')
+            proc = subprocess.run(
+                ['python3', str(target / 'scripts/grok_spec.py'), 'validate', str(spec_path.relative_to(target)), '--gate', '--json'],
+                cwd=target, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
     def test_installs_without_deleting_unrelated_agent_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / 'target'
