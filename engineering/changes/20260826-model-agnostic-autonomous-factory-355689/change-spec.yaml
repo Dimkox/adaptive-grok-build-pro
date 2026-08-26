@@ -1,0 +1,112 @@
+schema_version: 1
+change_id: "20260826-model-agnostic-autonomous-factory-355689"
+objective:
+  id: OBJ-001
+  statement: Freeze a reviewable provider-neutral autonomous factory architecture and its security boundaries before implementation
+  success_metric: design_gate_required_artifacts_complete
+  target: 100_percent_required_design_artifacts_valid_and_consistent
+risk:
+  tier: red
+  domains:
+    - ai
+    - security
+acceptance_criteria:
+  - id: AC-001
+    statement: Canonical design defines provider-neutral planes boundaries protocol and mandatory milestone ordering
+    evidence:
+      - kind: review
+        ref: docs/superpowers/specs/2026-08-26-model-agnostic-autonomous-factory-design.md
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/analysis-architect.md
+  - id: AC-002
+    statement: Design fixes all approved concurrency retry repair wall-time and cost ceilings
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/analysis-task_analyst.md
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/design-self-review.md
+  - id: AC-003
+    statement: Codex Grok and future providers use an explicit versioned JSON and JSONL adapter boundary with no silent fallback
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/analysis-docs_researcher.md
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/analysis-ai_architect.md
+  - id: AC-004
+    statement: Package and self-review preserve untrusted-data credential network no-chain-of-thought and no-external-write boundaries
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/design-self-review.md
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/analysis-repo_explorer.md
+  - id: AC-005
+    statement: Durable package is complete schema-valid placeholder-free and stopped at the user design gate
+    evidence:
+      - kind: command
+        ref: scripts/grok_spec.py:validate
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/design-self-review.md
+invariants:
+  - id: INV-001
+    statement: M1 completes before M2 and M3 then M4 then M5 then M6 while M7 through M9 require later evidence and approval
+    evidence:
+      - kind: review
+        ref: docs/superpowers/specs/2026-08-26-model-agnostic-autonomous-factory-design.md
+  - id: INV-002
+    statement: Readers never exceed twenty globally or ten per repository and exactly one application writer holds a valid fence
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/analysis-architect.md
+  - id: INV-003
+    statement: Prompt repository notes and provider output are untrusted and repository subprocesses receive no credentials or network
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/analysis-ai_architect.md
+  - id: INV-004
+    statement: Raw chain-of-thought and unrestricted native provider streams are never stored
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/analysis-docs_researcher.md
+  - id: INV-005
+    statement: Factory state and authority remain separate from Trust CI state keys policy holdout and verdict publication
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/analysis-repo_explorer.md
+forbidden_outcomes:
+  - id: FORBID-001
+    statement: This design change creates implementation code an implementation plan runtime database migration or systemd unit
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/design-self-review.md
+  - id: FORBID-002
+    statement: Any worker or adapter silently changes provider weakens capability or treats unavailable usage as zero cost
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/analysis-ai_architect.md
+  - id: FORBID-003
+    statement: Repository subprocesses access credentials other task state shared Git control state or unauthorized network
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/analysis-architect.md
+  - id: FORBID-004
+    statement: Factory performs push PR merge release deploy systemd installation production mutation or another external write
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260826-model-agnostic-autonomous-factory-355689/evidence/design-self-review.md
+contracts:
+  openapi: []
+  json_schema:
+    - schemas/change-spec.schema.json
+  events:
+    - factory.adapter.protocol.v1.design
+observability:
+  - metric: design_gate_required_artifacts_complete
+    proves:
+      - OBJ-001
+rollback:
+  strategy: forward_fix
+  maximum_steps: 1
+approvals:
+  required_scopes:
+    - architecture
+    - security
