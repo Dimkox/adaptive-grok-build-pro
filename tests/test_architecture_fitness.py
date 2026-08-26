@@ -499,7 +499,7 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertEqual(report.status, "fail")
                 self.assertIn("new_network_client", report.triggers)
 
-    def test_network_unknown_detection_excludes_stdlib_and_project_local_calls(self) -> None:
+    def test_network_unknown_detection_excludes_non_network_calls(self) -> None:
         system = _system()
         system["nodes"][0]["type"] = "service"
         system["nodes"][0]["repository_paths"] = ["src"]
@@ -515,8 +515,8 @@ class ArchitectureFitnessTests(unittest.TestCase):
         repo.write_text("src/local_client.py", "class SSHClient:\n    pass\n")
         repo.write_text(
             "src/use.py",
-            "import pathlib\nimport local_client\n"
-            "pathlib.Path('value')\nlocal_client.SSHClient()\n",
+            "import pathlib\nimport local_client\nimport pydantic\n"
+            "pathlib.Path('value')\nlocal_client.SSHClient()\npydantic.BaseModel()\n",
         )
         head = repo.commit("local constructors")
         report = self._evaluate(repo, base, head)
@@ -768,6 +768,53 @@ class ArchitectureFitnessTests(unittest.TestCase):
         )["migration_safety"]
         self.assertEqual(bounded.status, "pass")
 
+    def test_migration_phase_identity_rejects_duplicate_artifacts(self) -> None:
+        rules = _rules()
+        rules["migration_policies"] = [{
+            "id": "FIT-MIGRATION",
+            "path_prefixes": ["migrations"],
+            "required_phases": ["expand", "migrate", "contract"],
+            "immutable_history": False,
+            "severity": "error",
+        }]
+        cases = (
+            (
+                "suffix variants",
+                {
+                    "migrations/001_expand.sql": "CREATE TABLE item(id integer);\n",
+                    "migrations/001_expand_copy.sql": "CREATE TABLE other(id integer);\n",
+                    "migrations/001_migrate.sql": (
+                        "UPDATE item SET id = id WHERE id >= 1 AND id <= 100;\n"
+                    ),
+                    "migrations/001_contract.sql": "ALTER TABLE item DROP COLUMN legacy;\n",
+                },
+            ),
+            (
+                "duplicate subdirectories",
+                {
+                    f"migrations/{directory}/001_{phase}.sql": source
+                    for directory in ("one", "two")
+                    for phase, source in (
+                        ("expand", "CREATE TABLE item(id integer);\n"),
+                        (
+                            "migrate",
+                            "UPDATE item SET id = id WHERE id >= 1 AND id <= 100;\n",
+                        ),
+                        ("contract", "ALTER TABLE item DROP COLUMN legacy;\n"),
+                    )
+                },
+            ),
+        )
+        for label, files in cases:
+            with self.subTest(label=label):
+                repo, base = self._repo(rules=rules)
+                for path, source in files.items():
+                    repo.write_text(path, source)
+                head = repo.commit(label)
+                result = self._results(self._evaluate(repo, base, head))["migration_safety"]
+                self.assertEqual(result.status, "fail")
+                self.assertIn("duplicate migration artifact", " ".join(result.findings))
+
     def test_unsupported_applicable_source_analysis_fails_the_report(self) -> None:
         rules = _rules()
         rules["path_boundaries"] = [{
@@ -884,6 +931,23 @@ class ArchitectureFitnessTests(unittest.TestCase):
         started = time.monotonic()
         self.assertEqual(DIFF._line_stats(before, after), (1, 1))
         self.assertLess(time.monotonic() - started, 0.25)
+        disjoint_before = b"first\nunchanged one\nunchanged two\nlast\n"
+        disjoint_after = b"changed first\nunchanged one\nunchanged two\nchanged last\n"
+        self.assertEqual(DIFF._line_stats(disjoint_before, disjoint_after), (2, 2))
+
+        repo, _architecture_base = self._repo()
+        repo.write_text("src/disjoint.py", disjoint_before.decode("utf-8"))
+        source_base = repo.commit("source base")
+        repo.write_text("src/disjoint.py", disjoint_after.decode("utf-8"))
+        source_head = repo.commit("disjoint changes")
+        artifact = next(
+            item
+            for item in FIT.diff_architecture(
+                repo.root, base_sha=source_base, head_sha=source_head
+            ).artifacts
+            if item.path == "src/disjoint.py"
+        )
+        self.assertEqual((artifact.added_lines, artifact.deleted_lines), (2, 2))
         oversized = b"x\n" * (DIFF.MAX_LINE_STAT_LINES + 1)
         with self.assertRaises(FIT.ArchitectureError):
             DIFF._line_stats(oversized, b"")

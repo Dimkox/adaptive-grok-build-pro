@@ -62,6 +62,26 @@ _NETWORK_IMPORTS = {
     "urllib.request": "https",
     "xmlrpc.client": "https",
 }
+_NETWORK_APPLICABILITY_TOKENS = {
+    "connect",
+    "connection",
+    "ftp",
+    "grpc",
+    "http",
+    "https",
+    "imap",
+    "network",
+    "paramiko",
+    "pop",
+    "request",
+    "smtp",
+    "socket",
+    "ssh",
+    "tls",
+    "urlopen",
+    "websocket",
+    "websockets",
+}
 _QUEUE_IMPORTS = {"celery", "confluent_kafka", "kafka", "kombu", "pika", "redis", "rq"}
 _FRAMEWORK_IMPORTS = {"django", "fastapi", "flask", "litestar", "starlette"}
 _GOVERNANCE_IMPORTS = {"adaptive_grok", "architecture", "engineering", "scripts", "tests"}
@@ -548,6 +568,7 @@ def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: Architec
         head_paths = _migration_paths(root, diff, tuple(rule["path_prefixes"]))
         phases: dict[str, set[str]] = {}
         version_groups: dict[int, set[str]] = {}
+        phase_paths: dict[tuple[int, str, str], list[str]] = {}
         for path in head_paths:
             parsed = _migration_phase(path)
             if parsed:
@@ -557,6 +578,13 @@ def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: Architec
                     unsupported.append(f"{rule['id']}: migration version cannot be derived: {path}")
                 else:
                     version_groups.setdefault(version, set()).add(parsed[0])
+                    phase_paths.setdefault((version, parsed[0], parsed[1]), []).append(path)
+        for (version, group, phase), paths in phase_paths.items():
+            if len(paths) > 1:
+                findings.append(
+                    f"{rule['id']}: duplicate migration artifact for "
+                    f"{version}/{group}/{phase}: {','.join(sorted(paths))}"
+                )
         for version, groups in version_groups.items():
             if len(groups) > 1:
                 findings.append(
@@ -701,6 +729,21 @@ def _is_external_import(imported: str, project_roots: set[str]) -> bool:
     return top not in sys.stdlib_module_names and top not in project_roots
 
 
+def _network_call_is_applicable(
+    imported: str, call: str, project_roots: set[str]
+) -> bool:
+    if not _is_external_import(imported, project_roots):
+        return False
+    tokens = {
+        token.lower()
+        for token in re.findall(
+            r"[A-Z]+(?=[A-Z][a-z]|[^A-Za-z]|$)|[A-Z]?[a-z]+|[0-9]+",
+            f"{imported}.{call}",
+        )
+    }
+    return bool(tokens & _NETWORK_APPLICABILITY_TOKENS)
+
+
 def _network_clients(
     snapshot: ArchitectureSnapshot,
     diff: ArchitectureDiff,
@@ -728,7 +771,7 @@ def _network_clients(
         for imported, call in _called_imports(tree):
             if _network_protocol(imported) is not None:
                 continue
-            if _is_external_import(imported, project_roots):
+            if _network_call_is_applicable(imported, call, project_roots):
                 unsupported.append(f"{path}: unsupported external-client semantics for {call}")
     if unsupported:
         return _result(
@@ -1099,7 +1142,7 @@ def _network_families(tree: ast.AST, project_roots: set[str]) -> set[str]:
     for imported, call in _called_imports(tree):
         if _network_protocol(imported) is not None:
             values.add(imported)
-        elif _is_external_import(imported, project_roots):
+        elif _network_call_is_applicable(imported, call, project_roots):
             values.add(f"unsupported:{call}")
     return values
 

@@ -40,6 +40,7 @@ _SCHEMA_PATHS = (
 )
 _GIT_EXECUTABLE = shutil.which("git")
 _GIT_TIMEOUT_SECONDS = 30.0
+_LINE_STAT_TIMEOUT_SECONDS = 2.0
 
 
 def _canonical_bytes(value: Any) -> bytes:
@@ -136,16 +137,10 @@ def _run_capped(
             _stop_process(process)
 
 
-def _git(
-    root: Path,
-    arguments: list[str],
-    *,
-    allow_failure: bool = False,
-    limit: int = MAX_GIT_OUTPUT_BYTES,
-) -> bytes | None:
+def _git_environment() -> dict[str, str]:
     if _GIT_EXECUTABLE is None:
         raise ArchitectureError("Git executable is unavailable", code="git")
-    environment = {
+    return {
         "PATH": str(Path(_GIT_EXECUTABLE).parent),
         "LANG": "C",
         "LC_ALL": "C",
@@ -155,24 +150,41 @@ def _git(
         "GIT_OPTIONAL_LOCKS": "0",
         "GIT_TERMINAL_PROMPT": "0",
     }
+
+
+def _git_command(arguments: list[str]) -> list[str]:
+    if _GIT_EXECUTABLE is None:
+        raise ArchitectureError("Git executable is unavailable", code="git")
+    return [
+        _GIT_EXECUTABLE,
+        "--no-replace-objects",
+        "-c",
+        "core.attributesFile=/dev/null",
+        "-c",
+        "core.excludesFile=/dev/null",
+        "-c",
+        "core.ignoreCase=false",
+        "-c",
+        "diff.algorithm=myers",
+        "-c",
+        "diff.external=",
+        "-c",
+        "diff.renames=false",
+        *arguments,
+    ]
+
+
+def _git(
+    root: Path,
+    arguments: list[str],
+    *,
+    allow_failure: bool = False,
+    limit: int = MAX_GIT_OUTPUT_BYTES,
+) -> bytes | None:
     returncode, output, error = _run_capped(
-        [
-            _GIT_EXECUTABLE,
-            "--no-replace-objects",
-            "-c",
-            "core.attributesFile=/dev/null",
-            "-c",
-            "core.excludesFile=/dev/null",
-            "-c",
-            "core.ignoreCase=false",
-            "-c",
-            "diff.external=",
-            "-c",
-            "diff.renames=false",
-            *arguments,
-        ],
+        _git_command(arguments),
         cwd=root,
-        env=environment,
+        env=_git_environment(),
         stdout_limit=limit,
         stderr_limit=65_536,
         timeout=_GIT_TIMEOUT_SECONDS,
@@ -538,24 +550,47 @@ def _line_stats(old: bytes | None, new: bytes | None) -> tuple[int | None, int |
         return None, None
     if len(before_lines) > MAX_LINE_STAT_LINES or len(after_lines) > MAX_LINE_STAT_LINES:
         raise ArchitectureError("line-stat line limit exceeded", code="limit")
-    common_prefix = 0
-    while (
-        common_prefix < len(before_lines)
-        and common_prefix < len(after_lines)
-        and before_lines[common_prefix] == after_lines[common_prefix]
-    ):
-        common_prefix += 1
-    common_suffix = 0
-    max_suffix = min(len(before_lines), len(after_lines)) - common_prefix
-    while (
-        common_suffix < max_suffix
-        and before_lines[-common_suffix - 1] == after_lines[-common_suffix - 1]
-    ):
-        common_suffix += 1
-    return (
-        len(after_lines) - common_prefix - common_suffix,
-        len(before_lines) - common_prefix - common_suffix,
-    )
+    with tempfile.TemporaryDirectory(prefix="adaptive-line-stat-") as directory:
+        root = Path(directory)
+        (root / "before").write_bytes(before)
+        (root / "after").write_bytes(after)
+        returncode, output, error = _run_capped(
+            _git_command(
+                [
+                    "diff",
+                    "--no-index",
+                    "--numstat",
+                    "--no-renames",
+                    "--no-ext-diff",
+                    "--no-textconv",
+                    "--",
+                    "before",
+                    "after",
+                ]
+            ),
+            cwd=root,
+            env=_git_environment(),
+            stdout_limit=4_096,
+            stderr_limit=65_536,
+            timeout=_LINE_STAT_TIMEOUT_SECONDS,
+        )
+    if returncode not in {0, 1}:
+        message = error.decode("utf-8", "replace").strip()
+        raise ArchitectureError(f"exact line-stat operation failed: {message}", code="git")
+    if returncode == 0:
+        if output:
+            raise ArchitectureError("unchanged line-stat operation emitted output", code="git")
+        return 0, 0
+    records = output.rstrip(b"\n").split(b"\n")
+    if len(records) != 1:
+        raise ArchitectureError("unexpected exact line-stat output", code="git")
+    fields = records[0].split(b"\t", 2)
+    if len(fields) != 3 or fields[0] == b"-" or fields[1] == b"-":
+        raise ArchitectureError("exact text line-stat output is unavailable", code="git")
+    try:
+        return int(fields[0]), int(fields[1])
+    except ValueError as exc:
+        raise ArchitectureError("invalid exact line-stat counts", code="git") from exc
 
 
 def read_diff_file(root: Path, diff: ArchitectureDiff, path: str, side: str = "head") -> bytes | None:
