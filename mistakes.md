@@ -2,6 +2,16 @@
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-08-26 — Combined mutually exclusive autonomous Codex flags
+
+**Symptom:** The first `codex-m1-rebuild` transient service exited immediately with CLI status 2 before doing any work.
+**Root cause:** The launch command combined `--sandbox workspace-write` with `--approve-for-me`, although Codex CLI 0.149.1 defines the latter as an automatic-review mode that already selects the workspace-write sandbox and rejects an explicit sandbox flag.
+
+## 2026-08-26 — Started the user service without the shell proxy environment
+
+**Symptom:** The corrected service loaded Codex but received Cloudflare HTTP 403 responses and exhausted connection retries before touching the repository.
+**Root cause:** The interactive shell had `HTTP_PROXY`/`HTTPS_PROXY`, while the persistent user-systemd manager had neither; service environment parity was not checked before launch.
+
 ## 2026-08-24 — Misread «приложуха» as a public website
 
 **Symptom:** Agents treated «приложуха» as a public website instead of GitHub App `https://github.com/apps/adaptive-trust-ci`.
