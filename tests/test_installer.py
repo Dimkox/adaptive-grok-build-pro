@@ -38,6 +38,7 @@ class InstallerTests(unittest.TestCase):
             self.assertTrue((target / 'schemas/architecture-rules.schema.json').is_file())
             self.assertFalse((target / 'architecture/system.yaml').exists())
             self.assertFalse((target / 'architecture/rules.yaml').exists())
+            self.assertFalse((target / 'architecture/adoption.json').exists())
             subprocess.run(['git', 'init', '-q'], cwd=target, check=True)
             result = subprocess.run(
                 ['python3', 'scripts/grok_verify.py', '--mode', 'fast', '--no-record', '--json'],

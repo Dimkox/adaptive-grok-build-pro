@@ -1,21 +1,31 @@
 from __future__ import annotations
 
+import hashlib
+import json
+import re
 from pathlib import Path
 from typing import Any
 
 from .architecture import (
+    ArchitectureError,
     RULES_PATH,
     SYSTEM_PATH,
+    _parse_json,
+    _read_regular_bytes,
     architecture_digests,
     architecture_fingerprint,
     contract_inventory,
     contract_inventory_digest,
     load_architecture,
 )
-from .architecture_diff import _exact_commit, _git, _git_blob
+from .architecture_diff import _exact_commit, _git
 from .spec import canonical_spec_digest, load_spec, spec_fingerprint, validate_spec
 from .state import get_active_change, get_active_route
 from .util import dump_json, load_json, now_utc, runtime_dir, tree_fingerprint
+
+ADOPTION_PATH = Path("architecture/adoption.json")
+MAX_ADOPTION_BYTES = 4_096
+_ARCHITECTURE_ID = re.compile(r"^[A-Z][A-Z0-9_-]{2,127}$")
 
 
 def _exact_head(root: Path) -> str | None:
@@ -31,61 +41,56 @@ def _exact_head(root: Path) -> str | None:
     return None
 
 
-def _tree_has_architecture(root: Path, commit: str) -> bool:
-    return any(
-        _git_blob(root, commit, path.as_posix()) is not None
-        for path in (SYSTEM_PATH, RULES_PATH)
-    )
-
-
-def _parent_had_architecture(root: Path, commit: str) -> bool:
-    raw = _git(
+def _architecture_adoption(root: Path) -> dict[str, str] | None:
+    marker = root / ADOPTION_PATH
+    try:
+        marker.lstat()
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        raise ArchitectureError(f"architecture adoption: cannot inspect marker: {exc}", code="io") from exc
+    data = _read_regular_bytes(
         root,
-        [
-            "log",
-            "-1",
-            "--format=%P",
-            commit,
-            "--",
-            SYSTEM_PATH.as_posix(),
-            RULES_PATH.as_posix(),
-        ],
-        limit=4_096,
+        ADOPTION_PATH.as_posix(),
+        label="architecture adoption",
     )
-    for parent in (raw or b"").decode("ascii", "strict").split():
-        exact = _exact_commit(root, parent, label="architecture_history_sha")
-        if _tree_has_architecture(root, exact):
-            return True
-    return False
-
-
-def _architecture_was_adopted(root: Path, route: dict[str, Any]) -> bool:
-    head = _exact_head(root)
-    if head is None:
-        return False
-    candidates = [head]
-    route_base = route.get("base_commit")
-    if isinstance(route_base, str):
-        try:
-            candidates.append(_exact_commit(root, route_base, label="architecture_base_sha"))
-        except ValueError:
-            pass
-    return any(
-        _tree_has_architecture(root, candidate)
-        or _parent_had_architecture(root, candidate)
-        for candidate in dict.fromkeys(candidates)
-    )
+    if len(data) > MAX_ADOPTION_BYTES:
+        raise ArchitectureError("architecture adoption: marker byte limit exceeded", code="limit")
+    value = _parse_json(data, label="architecture adoption")
+    if set(value) != {"architecture_id", "schema_version", "state"}:
+        raise ArchitectureError("architecture adoption: marker fields are invalid", code="schema")
+    architecture_id = value["architecture_id"]
+    if (
+        type(value["schema_version"]) is not int
+        or value["schema_version"] != 1
+        or value["state"] != "adopted"
+        or not isinstance(architecture_id, str)
+        or _ARCHITECTURE_ID.fullmatch(architecture_id) is None
+    ):
+        raise ArchitectureError("architecture adoption: marker values are invalid", code="schema")
+    canonical = (
+        json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+    ).encode("utf-8")
+    if data != canonical:
+        raise ArchitectureError("architecture adoption: marker is not canonical JSON", code="parse")
+    return {
+        "architecture_id": architecture_id,
+        "digest": hashlib.sha256(data).hexdigest(),
+    }
 
 
 def active_architecture_binding(root: Path, route: dict[str, Any]) -> dict[str, Any] | None:
+    adoption = _architecture_adoption(root)
+    if adoption is None:
+        return None
     present = tuple((root / path).is_file() for path in (SYSTEM_PATH, RULES_PATH))
     if present == (False, False):
-        if _architecture_was_adopted(root, route):
-            raise RuntimeError("adopted architecture model is missing")
-        return None
+        raise RuntimeError("adopted architecture model is missing")
     if present != (True, True):
         raise RuntimeError("adopted architecture model is partially missing")
     snapshot = load_architecture(root)
+    if snapshot.system["architecture_id"] != adoption["architecture_id"]:
+        raise RuntimeError("architecture adoption marker id does not match the model")
     records = contract_inventory(root, snapshot)
     digests = architecture_digests(snapshot)
     head = _exact_head(root)
@@ -104,6 +109,7 @@ def active_architecture_binding(root: Path, route: dict[str, Any]) -> dict[str, 
         contract_digests={record.path: record.digest for record in records},
     )
     return {
+        "architecture_adoption_digest": adoption["digest"],
         "architecture_base_sha": base,
         "architecture_contract_digests": {record.path: record.digest for record in records},
         "architecture_contract_inventory_digest": contract_inventory_digest(records),

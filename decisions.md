@@ -186,3 +186,7 @@ Acceptance-criterion IDs are local to one change spec, so multi-spec attestation
 ## 2026-08-26 — Git path identity is NUL-delimited data
 
 Trusted changed-file and mutation discovery consumes byte-oriented `git ... -z` output, decodes each path as strict UTF-8, and preserves Unicode, whitespace, and backslash characters exactly. Display-oriented line output and slash rewriting are never approval or provenance inputs.
+
+## 2026-08-26 — Architecture adoption is explicit target state
+
+Use a strict, target-owned `architecture/adoption.json` marker as the adoption switch; repository history, diagrams, and receipts are evidence rather than adoption authority. A missing marker preserves legacy `not_configured` behavior, while a valid marker makes missing or invalid authoritative model files fail closed even in shallow or simplified histories.

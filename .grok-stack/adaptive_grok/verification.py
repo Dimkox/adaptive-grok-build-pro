@@ -96,6 +96,7 @@ def _architecture_check(
         failed = fitness.status != "pass" or bool(drift) or bool(mismatches)
         core: dict[str, object] = {
             "architecture_contract_version": 1,
+            "adoption_digest": binding["architecture_adoption_digest"],
             "architecture_digest": binding["architecture_digest"],
             "architecture_fingerprint": binding["architecture_fingerprint"],
             "contract_inventory_digest": binding["architecture_contract_inventory_digest"],

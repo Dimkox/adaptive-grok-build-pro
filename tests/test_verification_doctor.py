@@ -38,6 +38,13 @@ _FAILING_UNITTEST = (
     '        self.fail("expected failure")\n'
 )
 
+_ADOPTION_MARKER = '''{
+  "architecture_id": "ARCH-ADAPTIVE-GROK-M2",
+  "schema_version": 1,
+  "state": "adopted"
+}
+'''
+
 
 def _check(report: dict, name: str) -> dict | None:
     for item in report.get('checks', []):
@@ -193,6 +200,7 @@ class VerificationTests(unittest.TestCase):
             if target.exists():
                 shutil.rmtree(target)
             shutil.copytree(source, target)
+        (root / 'architecture/adoption.json').write_text(_ADOPTION_MARKER, encoding='utf-8')
 
     def test_invalid_json_contract_fails(self) -> None:
         with project_copy() as root:
@@ -287,6 +295,68 @@ class VerificationTests(unittest.TestCase):
             self.assertIsNotNone(architecture)
             self.assertEqual(architecture['status'], 'fail')
             self.assertIn('missing', architecture['summary'])
+
+    def test_marker_backed_merge_deletion_fails_without_history_inference(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current architecture', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            legacy = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+            ).strip()
+            main_branch = subprocess.check_output(
+                ['git', 'branch', '--show-current'], cwd=root, text=True, encoding='utf-8'
+            ).strip()
+            self._adopt_architecture(root)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=root, check=True)
+            subprocess.run(['git', 'checkout', '-qb', 'legacy-side', legacy], cwd=root, check=True)
+            (root / 'side.txt').write_text('side\n', encoding='utf-8')
+            subprocess.run(['git', 'add', 'side.txt'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'legacy side'], cwd=root, check=True)
+            subprocess.run(['git', 'checkout', '-q', main_branch], cwd=root, check=True)
+            subprocess.run(['git', 'merge', '--no-commit', '--no-ff', 'legacy-side'], cwd=root, check=True)
+            (root / 'architecture/system.yaml').unlink()
+            (root / 'architecture/rules.yaml').unlink()
+            subprocess.run(['git', 'add', '-u'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'merge with architecture deletion'], cwd=root, check=True)
+
+            report = verify(root, mode='fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertIn('missing', _check(report, 'architecture')['summary'])
+
+    def test_marker_backed_shallow_deletion_fails_at_depth_one(self) -> None:
+        with project_copy(git=True) as source, tempfile.TemporaryDirectory() as tmp:
+            self._adopt_architecture(source)
+            subprocess.run(['git', 'add', '.'], cwd=source, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=source, check=True)
+            (source / 'architecture/system.yaml').unlink()
+            (source / 'architecture/rules.yaml').unlink()
+            subprocess.run(['git', 'add', '-u'], cwd=source, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'delete architecture'], cwd=source, check=True)
+            clone = Path(tmp) / 'shallow'
+            subprocess.run(
+                ['git', 'clone', '-q', '--depth=1', f'file://{source}', str(clone)],
+                check=True,
+            )
+
+            report = verify(clone, mode='fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertIn('missing', _check(report, 'architecture')['summary'])
+
+    def test_malformed_adoption_marker_fails_closed(self) -> None:
+        malformed = (
+            '{}\n',
+            '{"architecture_id":"ARCH-ADAPTIVE-GROK-M2","schema_version":1,"state":"adopted"}\n',
+        )
+        for marker in malformed:
+            with self.subTest(marker=marker), project_copy(git=True) as root:
+                path = root / 'architecture/adoption.json'
+                path.parent.mkdir(parents=True)
+                path.write_text(marker, encoding='utf-8')
+                report = verify(root, mode='fast', record=False)
+                self.assertEqual(report['status'], 'fail')
+                self.assertEqual(_check(report, 'architecture')['status'], 'fail')
 
     def test_python_runs_unittest_without_project_marker(self) -> None:
         with project_copy(git=True) as root:
