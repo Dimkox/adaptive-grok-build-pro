@@ -2,6 +2,11 @@
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-08-26 — Expanded an abbreviated commit identity by hand
+
+**Symptom:** The first final exact-SHA holdout invocation failed closed at `git cat-file -e` before validation.
+**Root cause:** I manually invented the suffix of the new short commit ID instead of obtaining the authoritative full identity with `git rev-parse HEAD`.
+
 ## 2026-08-26 — Combined mutually exclusive autonomous Codex flags
 
 **Symptom:** The first `codex-m1-rebuild` transient service exited immediately with CLI status 2 before doing any work.
