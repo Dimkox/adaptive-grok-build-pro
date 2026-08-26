@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import copy
+import tempfile
 import unittest
+from pathlib import Path
 
 from _support import policy_data
 from adaptive_trust_ci.policy import Policy, PolicyError
@@ -100,6 +102,55 @@ class PolicyTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(policy.required_scopes((path,)), {'governance'})
         self.assertEqual(policy.required_scopes(('trust-ci/данные.sql',)), {'governance', 'database'})
+
+    def test_approval_globs_preserve_exact_repo_relative_identity(self) -> None:
+        policy = Policy.from_dict(policy_data())
+        governance = next(rule for rule in policy.approval_rules if rule.scope == 'governance')
+        self.assertIn('.grok-stack/**', governance.globs)
+        self.assertIn('.grok/**', governance.globs)
+        self.assertIn('.github/**', governance.globs)
+        self.assertIn('.coveragerc', governance.globs)
+        self.assertIn('literal\\target.txt', governance.globs)
+        self.assertIn('exact/юникод.txt', governance.globs)
+        self.assertIn('exact/line\nname.txt', governance.globs)
+        self.assertIn('exact/tab\tname.txt', governance.globs)
+        for path in (
+            '.grok-stack/runtime/active-route.json',
+            '.grok/prompt\nname.md',
+            '.github/tab\tname.yml',
+            '.coveragerc',
+            'literal\\target.txt',
+            'exact/юникод.txt',
+            'exact/line\nname.txt',
+            'exact/tab\tname.txt',
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(policy.required_scopes((path,)), {'governance'})
+
+    def test_approval_globs_reject_unsafe_patterns_without_rewriting(self) -> None:
+        for pattern in (
+            '/absolute/**',
+            '../outside/**',
+            'safe/../outside',
+            './safe/**',
+            'safe//name',
+            'nul\0name',
+            'carriage\rreturn',
+            'surrogate\ud800name',
+            7,
+        ):
+            with self.subTest(pattern=repr(pattern)):
+                data = policy_data()
+                data['approval_rules'] = [{'scope': 'governance', 'globs': [pattern]}]
+                with self.assertRaises(PolicyError):
+                    Policy.from_dict(data)
+
+    def test_policy_file_with_invalid_utf8_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'policy.json'
+            path.write_bytes(b'{"approval_rules":["bad-\xff"]}')
+            with self.assertRaisesRegex(PolicyError, 'cannot load policy'):
+                Policy.load(path)
 
     def test_directory_glob_matches_directory_itself(self) -> None:
         policy = Policy.from_dict(policy_data())

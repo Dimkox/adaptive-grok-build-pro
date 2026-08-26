@@ -296,6 +296,14 @@ class RunnerTests(unittest.TestCase):
                 'trust-ci/line\nbreak.txt',
                 'trust-ci/tab\tname.txt',
                 'trust-ci/back\\slash.txt',
+                '.grok-stack/runtime/active-route.json',
+                '.grok/prompt\nname.md',
+                '.github/tab\tname.yml',
+                '.coveragerc',
+                'literal\\target.txt',
+                'exact/юникод.txt',
+                'exact/line\nname.txt',
+                'exact/tab\tname.txt',
             )
             spec_paths = tuple(
                 f'engineering/changes/20260826-{name}/change-spec.yaml'
@@ -528,7 +536,19 @@ class RunnerTests(unittest.TestCase):
 
     def test_protected_path_waits_for_signed_approval_and_completes_action_required(self) -> None:
         github = FakeGitHub()
-        runner, executor, _, _ = self.build_runner(changed_files=['trust-ci/src/x.py'], github=github)
+        runner, executor, _, _ = self.build_runner(
+            changed_files=[
+                '.grok-stack/runtime/active-route.json',
+                '.grok/prompt\nname.md',
+                '.github/tab\tname.yml',
+                '.coveragerc',
+                'literal\\target.txt',
+                'exact/юникод.txt',
+                'exact/line\nname.txt',
+                'exact/tab\tname.txt',
+            ],
+            github=github,
+        )
         outcome = runner.process(self.job, 'worker-1')
         self.assertEqual(outcome.status, 'needs_approval')
         self.assertEqual(executor.calls, [])
@@ -550,7 +570,18 @@ class RunnerTests(unittest.TestCase):
             now=now(),
         )
         self.store.record_approval(payload, sign_approval(payload, human), now=now())
-        runner, executor, _, _ = self.build_runner(changed_files=['trust-ci/src/x.py'])
+        runner, executor, _, _ = self.build_runner(
+            changed_files=[
+                '.grok-stack/runtime/active-route.json',
+                '.grok/prompt\nname.md',
+                '.github/tab\tname.yml',
+                '.coveragerc',
+                'literal\\target.txt',
+                'exact/юникод.txt',
+                'exact/line\nname.txt',
+                'exact/tab\tname.txt',
+            ]
+        )
         outcome = runner.process(self.job, 'worker-1')
         self.assertEqual(outcome.status, 'passed')
         self.assertEqual(len(executor.calls), 3)
