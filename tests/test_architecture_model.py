@@ -761,11 +761,17 @@ class ArchitectureModelTests(unittest.TestCase):
             )
         webhook_parameters = openapi["paths"]["/webhooks/github"]["post"]["parameters"]
         self.assertIn(
-            ("header", "X-GitHub-Event", True),
+            ("header", "X-GitHub-Event", False),
             {
                 (parameter["in"], parameter["name"], parameter["required"])
                 for parameter in webhook_parameters
             },
+        )
+        webhook_body = openapi["paths"]["/webhooks/github"]["post"]["requestBody"]
+        self.assertFalse(webhook_body["required"])
+        self.assertEqual(
+            set(webhook_body["content"]),
+            {"application/json", "application/octet-stream"},
         )
         expected_statuses = {
             "/approvals": {"200", "400", "403", "404", "409", "503"},
@@ -804,6 +810,8 @@ class ArchitectureModelTests(unittest.TestCase):
         (root / "src/undeclared.py").write_text("VALUE = 2\n", encoding="utf-8")
         (root / "lib").mkdir()
         (root / "lib/new_component.py").write_text("VALUE = 3\n", encoding="utf-8")
+        (root / "hidden.example").mkdir()
+        (root / "hidden.example/evil.py").write_text("VALUE = 4\n", encoding="utf-8")
         (root / "src/native.rs").write_text("fn main() {}\n", encoding="utf-8")
         (root / "engineering/contracts").mkdir(parents=True)
         (root / "engineering/contracts/.gitkeep").write_text("", encoding="utf-8")
@@ -819,6 +827,7 @@ class ArchitectureModelTests(unittest.TestCase):
             [(finding.code, finding.path) for finding in findings],
             [
                 ("undeclared_contract", "engineering/contracts/undeclared.json"),
+                ("undeclared_source", "hidden.example/evil.py"),
                 ("undeclared_source", "lib/new_component.py"),
                 ("undeclared_source", "src/undeclared.py"),
                 ("unsupported_source_artifact", "src/native.rs"),
@@ -863,6 +872,39 @@ class ArchitectureModelTests(unittest.TestCase):
             [(finding.code, finding.path) for finding in findings],
             [("unsafe_repository_artifact", "untrusted-pipe")],
         )
+
+    def test_repository_drift_rejects_directory_to_symlink_swap(self) -> None:
+        root = self._repo()
+        victim = root / "victim"
+        victim.mkdir()
+        (victim / "inside.py").write_text("VALUE = 1\n", encoding="utf-8")
+        outside_temp = tempfile.TemporaryDirectory()
+        self.addCleanup(outside_temp.cleanup)
+        outside = Path(outside_temp.name)
+        (outside / "outside.py").write_text("VALUE = 2\n", encoding="utf-8")
+        real_scandir = os.scandir
+        swapped = False
+
+        class SwapAfterRootScan:
+            def __init__(self, argument):
+                self._iterator = real_scandir(argument)
+
+            def __enter__(self):
+                return self._iterator.__enter__()
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                nonlocal swapped
+                result = self._iterator.__exit__(exc_type, exc_value, traceback)
+                if not swapped:
+                    victim.rename(root / "victim-original")
+                    victim.symlink_to(outside, target_is_directory=True)
+                    swapped = True
+                return result
+
+        with mock.patch.object(ARCH.os, "scandir", side_effect=SwapAfterRootScan):
+            with self.assertRaisesRegex(ARCH.ArchitectureError, "changed|symlink|no-follow"):
+                ARCH.validate_repository_drift(root, ARCH.load_architecture(root))
+        self.assertTrue(swapped)
 
     def test_examples_and_gitkeep_cannot_be_declared_contracts(self) -> None:
         for path in (
@@ -1117,6 +1159,44 @@ class ArchitectureModelTests(unittest.TestCase):
             with self.subTest(label=label):
                 self.assertEqual(result.status, "incompatible")
                 self.assertIn(reason, result.reasons)
+
+    def test_openapi_comparison_rejects_optional_webhook_inputs_becoming_required(
+        self,
+    ) -> None:
+        base = _openapi(
+            {
+                "parameters": [
+                    {
+                        "in": "header",
+                        "name": "X-GitHub-Event",
+                        "required": False,
+                        "schema": {"type": "string"},
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {"additionalProperties": True, "type": "object"}
+                        }
+                    },
+                    "required": False,
+                },
+                "responses": {"200": {"description": "accepted or ignored"}},
+            }
+        )
+        required_header = copy.deepcopy(base)
+        required_header["paths"]["/items"]["get"]["parameters"][0]["required"] = True
+        required_body = copy.deepcopy(base)
+        required_body["paths"]["/items"]["get"]["requestBody"]["required"] = True
+        for label, head in (("header", required_header), ("body", required_body)):
+            result = ARCH.compare_contracts(
+                self._record(base, kind="openapi"),
+                self._record(head, kind="openapi"),
+                "bidirectional",
+            )
+            with self.subTest(label=label):
+                self.assertEqual(result.status, "incompatible")
+                self.assertIn("new_required_input", result.reasons)
 
     def test_openapi_comparison_returns_unsupported_for_unhandled_applicable_constructs(
         self,

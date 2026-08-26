@@ -404,9 +404,8 @@
             "description": "GitHub event kind consumed by the webhook parser",
             "in": "header",
             "name": "X-GitHub-Event",
-            "required": true,
+            "required": false,
             "schema": {
-              "minLength": 1,
               "type": "string"
             }
           }
@@ -419,9 +418,16 @@
                 "description": "Bounded pull-request projection; the separate projection contract defines consumed fields.",
                 "type": "object"
               }
+            },
+            "application/octet-stream": {
+              "schema": {
+                "description": "Raw webhook bytes; pull_request events are conditionally decoded as JSON after signature verification.",
+                "type": "string"
+              }
             }
           },
-          "required": true
+          "description": "Optional for ignored event kinds; pull_request processing conditionally consumes a signed body.",
+          "required": false
         },
         "responses": {
           "200": {

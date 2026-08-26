@@ -619,14 +619,18 @@ _SOURCE_LIKE_SUFFIXES = _SUPPORTED_SOURCE_SUFFIXES | {
     ".scala",
     ".swift",
 }
-_DRIFT_IGNORED_DIRECTORIES = {
-    ".git",
+_DRIFT_CACHE_DIRECTORIES = {
     ".mypy_cache",
     ".pytest_cache",
     ".ruff_cache",
-    ".superpowers",
     "__pycache__",
-    "examples",
+}
+_NON_AUTHORITATIVE_REPOSITORY_DIRECTORIES = {
+    PurePosixPath(".git"),
+    PurePosixPath(".superpowers"),
+    PurePosixPath("engineering/contracts/examples"),
+    PurePosixPath("examples"),
+    PurePosixPath("trust-ci/holdout.example"),
 }
 
 
@@ -638,57 +642,137 @@ class _RepositoryArtifact:
 
 
 def _ignore_inventory_directory(relative: PurePosixPath) -> bool:
-    return relative.name in _DRIFT_IGNORED_DIRECTORIES or relative.name.endswith(".example")
+    return (
+        relative in _NON_AUTHORITATIVE_REPOSITORY_DIRECTORIES
+        or relative.name in _DRIFT_CACHE_DIRECTORIES
+    )
+
+
+def _inventory_identity(info: os.stat_result) -> tuple[int, int, int]:
+    return info.st_dev, info.st_ino, stat.S_IFMT(info.st_mode)
 
 
 def _bounded_repository_inventory(root: Path) -> tuple[_RepositoryArtifact, ...]:
     artifacts: list[_RepositoryArtifact] = []
-    directories: list[tuple[Path, PurePosixPath]] = [(root, PurePosixPath())]
     entry_count = 0
     file_count = 0
     byte_count = 0
-    try:
-        while directories:
-            absolute, relative_parent = directories.pop()
-            children: list[tuple[Path, PurePosixPath]] = []
-            with os.scandir(absolute) as iterator:
-                for entry in iterator:
-                    entry_count += 1
-                    if entry_count > MAX_DRIFT_ENTRIES:
-                        raise ArchitectureError(
-                            "repository drift entry limit exceeded", code="limit"
+    no_follow = getattr(os, "O_NOFOLLOW", None)
+    if no_follow is None:
+        raise ArchitectureError(
+            "repository drift requires descriptor-relative no-follow traversal",
+            code="io",
+        )
+
+    def walk(directory_fd: int, relative_parent: PurePosixPath, depth: int) -> None:
+        nonlocal byte_count, entry_count, file_count
+        if depth > MAX_DEPTH:
+            raise ArchitectureError("repository drift directory depth limit exceeded", code="limit")
+        children: list[tuple[str, PurePosixPath, tuple[int, int, int]]] = []
+        with os.scandir(directory_fd) as iterator:
+            for entry in iterator:
+                entry_count += 1
+                if entry_count > MAX_DRIFT_ENTRIES:
+                    raise ArchitectureError(
+                        "repository drift entry limit exceeded", code="limit"
+                    )
+                relative = relative_parent / entry.name
+                relative_text = relative.as_posix()
+                if entry.is_symlink():
+                    artifacts.append(_RepositoryArtifact(relative_text, "symlink", 0))
+                elif entry.is_dir(follow_symlinks=False):
+                    observed = entry.stat(follow_symlinks=False)
+                    if not _ignore_inventory_directory(relative):
+                        children.append(
+                            (entry.name, relative, _inventory_identity(observed))
                         )
-                    relative = relative_parent / entry.name
-                    relative_text = relative.as_posix()
-                    if entry.is_symlink():
-                        artifacts.append(_RepositoryArtifact(relative_text, "symlink", 0))
-                    elif entry.is_dir(follow_symlinks=False):
-                        if not _ignore_inventory_directory(relative):
-                            children.append((Path(entry.path), relative))
-                    elif entry.is_file(follow_symlinks=False):
-                        size = entry.stat(follow_symlinks=False).st_size
-                        file_count += 1
-                        byte_count += size
-                        if file_count > MAX_DRIFT_FILES:
-                            raise ArchitectureError(
-                                "repository drift file limit exceeded", code="limit"
-                            )
-                        if byte_count > MAX_DRIFT_BYTES:
-                            raise ArchitectureError(
-                                "repository drift byte limit exceeded", code="limit"
-                            )
-                        artifacts.append(_RepositoryArtifact(relative_text, "file", size))
-                    else:
-                        artifacts.append(_RepositoryArtifact(relative_text, "special", 0))
-            directories.extend(
-                reversed(sorted(children, key=lambda item: item[1].as_posix()))
-            )
+                elif entry.is_file(follow_symlinks=False):
+                    observed = entry.stat(follow_symlinks=False)
+                    descriptor = -1
+                    try:
+                        descriptor = os.open(
+                            entry.name,
+                            os.O_RDONLY | no_follow | getattr(os, "O_NONBLOCK", 0),
+                            dir_fd=directory_fd,
+                        )
+                        actual = os.fstat(descriptor)
+                    except OSError as exc:
+                        raise ArchitectureError(
+                            f"repository file failed no-follow identity validation: {relative_text}: {exc}",
+                            code="io",
+                        ) from exc
+                    finally:
+                        if descriptor >= 0:
+                            os.close(descriptor)
+                    if (
+                        _inventory_identity(actual) != _inventory_identity(observed)
+                        or not stat.S_ISREG(actual.st_mode)
+                    ):
+                        raise ArchitectureError(
+                            f"repository file changed during no-follow inventory: {relative_text}",
+                            code="io",
+                        )
+                    size = actual.st_size
+                    file_count += 1
+                    byte_count += size
+                    if file_count > MAX_DRIFT_FILES:
+                        raise ArchitectureError(
+                            "repository drift file limit exceeded", code="limit"
+                        )
+                    if byte_count > MAX_DRIFT_BYTES:
+                        raise ArchitectureError(
+                            "repository drift byte limit exceeded", code="limit"
+                        )
+                    artifacts.append(_RepositoryArtifact(relative_text, "file", size))
+                else:
+                    artifacts.append(_RepositoryArtifact(relative_text, "special", 0))
+        for name, relative, observed_identity in sorted(
+            children, key=lambda item: item[1].as_posix()
+        ):
+            descriptor = -1
+            try:
+                descriptor = os.open(
+                    name,
+                    os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | no_follow,
+                    dir_fd=directory_fd,
+                )
+                actual = os.fstat(descriptor)
+                if (
+                    _inventory_identity(actual) != observed_identity
+                    or not stat.S_ISDIR(actual.st_mode)
+                ):
+                    raise ArchitectureError(
+                        f"repository directory changed during no-follow inventory: {relative}",
+                        code="io",
+                    )
+                walk(descriptor, relative, depth + 1)
+            except ArchitectureError:
+                raise
+            except OSError as exc:
+                raise ArchitectureError(
+                    f"repository directory failed no-follow identity validation: {relative}: {exc}",
+                    code="io",
+                ) from exc
+            finally:
+                if descriptor >= 0:
+                    os.close(descriptor)
+
+    root_descriptor = -1
+    try:
+        root_descriptor = os.open(
+            root,
+            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | no_follow,
+        )
+        walk(root_descriptor, PurePosixPath(), 0)
     except ArchitectureError:
         raise
     except OSError as exc:
         raise ArchitectureError(
             f"repository drift inventory failed closed: {exc}", code="io"
         ) from exc
+    finally:
+        if root_descriptor >= 0:
+            os.close(root_descriptor)
     return tuple(sorted(artifacts, key=lambda item: item.path))
 
 
@@ -1240,6 +1324,15 @@ def _compare_openapi(base: dict[str, Any], head: dict[str, Any], reasons: set[st
         base_request = _media_schema(base_operation, "requestBody")
         head_request = _media_schema(head_operation, "requestBody")
         if base_request is not None and head_request is not None:
+            base_body = base_operation.get("requestBody", {})
+            head_body = head_operation.get("requestBody", {})
+            if (
+                isinstance(base_body, dict)
+                and isinstance(head_body, dict)
+                and not base_body.get("required", False)
+                and head_body.get("required", False)
+            ):
+                reasons.add("new_required_input")
             _compare_schema_direction(base_request, head_request, "consumer", reasons)
         elif base_request is not None:
             reasons.add("removed_request_schema")
