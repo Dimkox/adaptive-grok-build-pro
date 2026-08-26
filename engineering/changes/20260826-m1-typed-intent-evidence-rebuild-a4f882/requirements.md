@@ -4,14 +4,14 @@
 
 ## Acceptance criteria
 
-AC-001 through AC-005 are implemented and locally regression-tested; the package stays `verifying` and is not source-ready until AC-006 receives fresh route-selected review evidence on the final tree.
+AC-001 through AC-006 are implemented and locally source-ready. Exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a` passed the complete local verification set and all four route-selected wave-7 reviews; the later package closure changes evidence/docs/state only and does not change the reviewed product source.
 
 - [x] AC-001: strict schema and semantic validation fail closed for malformed, ambiguous, duplicate, stale, or incomplete typed specs.
 - [x] AC-002: new packages are generated deterministically from route facts and Markdown cannot override typed authority.
 - [x] AC-003: CLI and local receipts expose deterministic digest, coverage, criterion IDs, and fingerprint staleness.
 - [x] AC-004: the external holdout source independently enforces critical invariants without importing PR-controlled validator code.
 - [x] AC-005: Trust CI source signs deterministic spec digest and coverage while retaining verification compatibility for existing schema-v1 attestations.
-- [ ] AC-006: root tests, Trust CI tests, compileall, PR verification, and all route-selected reviews pass on one final fingerprint.
+- [x] AC-006: exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a` passed 223/223 root tests, 190 executed Trust CI tests with 10 conditional PostgreSQL skips, compileall, exact-SHA holdout validation, PR verification, and code/test/security/release wave-7 reviews. The PostgreSQL tests were not executed, and no local receipt or external authority is inferred from this source-readiness result.
 
 ## Failure and edge cases
 

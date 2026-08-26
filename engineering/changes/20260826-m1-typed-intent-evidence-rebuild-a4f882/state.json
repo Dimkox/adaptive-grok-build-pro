@@ -31,11 +31,23 @@
       "from": "implementing",
       "reason": "M1 implementation and focused checks complete; entering full verification and independent review",
       "to": "verifying"
+    },
+    {
+      "at": "2026-08-26T14:03:59+00:00",
+      "from": "verifying",
+      "reason": "All four route-selected wave-7 reports pass exact source HEAD 98649e4e1e6a971fb802bc934eb5680de529e18a; entering evidence-only closure without receipts or external actions",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-26T14:04:07+00:00",
+      "from": "reviewing",
+      "reason": "Exact source HEAD 98649e4e1e6a971fb802bc934eb5680de529e18a passed full local verification and all four wave-7 reviews; ready records local source readiness only, while receipts, PostgreSQL execution, PR, App check, signed approvals, merge, and deployment remain incomplete",
+      "to": "ready"
     }
   ],
   "route_id": "a4f88266a848",
   "schema_version": 1,
-  "status": "verifying",
+  "status": "ready",
   "title": "M1 Typed Intent Evidence Rebuild",
-  "updated_at": "2026-08-26T11:05:48+00:00"
+  "updated_at": "2026-08-26T14:04:07+00:00"
 }
