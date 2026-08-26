@@ -1,0 +1,35 @@
+{
+  "change_id": "20260826-m1-typed-intent-evidence-rebuild-a4f882",
+  "created_at": "2026-08-26T01:44:30+00:00",
+  "history": [
+    {
+      "at": "2026-08-26T01:44:30+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-26T10:39:55+00:00",
+      "from": "draft",
+      "reason": "Approved M1 design and acceptance criteria are recorded in PR branch and durable package",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-26T10:39:55+00:00",
+      "from": "scoped",
+      "reason": "User explicitly instructed implementation after approving the model-agnostic roadmap design; local implementation only, no external writes",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-26T10:59:21+00:00",
+      "from": "approved",
+      "reason": "Single write owner began approved M1 implementation",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "a4f88266a848",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "M1 Typed Intent Evidence Rebuild",
+  "updated_at": "2026-08-26T10:59:21+00:00"
+}

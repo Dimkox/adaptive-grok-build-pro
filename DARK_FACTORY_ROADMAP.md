@@ -327,18 +327,20 @@ approvals:
 
 ## Work items
 
-- [ ] Define a strict JSON Schema with no ambiguous free-form alternatives for identifiers, risk tiers, evidence references, and approval scopes.
-- [ ] Add `change-spec.yaml` to every durable change package.
-- [ ] Generate an initial spec from the active route without inventing unavailable facts.
-- [ ] Add CLI commands to validate, summarize, and map evidence to criterion IDs.
-- [ ] Require stable IDs for objectives, acceptance criteria, invariants, forbidden outcomes, and production signals.
-- [ ] Link Markdown `brief.md`, `requirements.md`, and `architecture.md` to the typed spec instead of duplicating authority.
-- [ ] Extend local verification receipts with criterion IDs.
-- [ ] Extend Trust CI attestations with the typed spec digest and criterion coverage summary.
-- [ ] Add external holdout checks for missing or malformed specs.
-- [ ] Define exemptions only for explicitly bounded documentation-only micro changes.
-- [ ] Fail standard/high-risk work when a required criterion has no evidence mapping.
-- [ ] Detect stale specs after a change to base/head SHA, contracts, or policy.
+- [x] Define a strict JSON Schema with no ambiguous free-form alternatives for identifiers, risk tiers, evidence references, and approval scopes.
+- [x] Add `change-spec.yaml` to every durable change package.
+- [x] Generate an initial spec from the active route without inventing unavailable facts.
+- [x] Add CLI commands to validate, summarize, and map evidence to criterion IDs.
+- [x] Require stable IDs for objectives, acceptance criteria, invariants, forbidden outcomes, and production signals.
+- [x] Link Markdown `brief.md`, `requirements.md`, and `architecture.md` to the typed spec instead of duplicating authority.
+- [x] Extend local verification receipts with criterion IDs.
+- [x] Extend Trust CI attestation source with the typed spec digest and criterion coverage summary; deployed emission remains a separate rollout.
+- [x] Add independent external holdout source checks for missing or malformed specs; deployed bundle activation remains a separate rollout.
+- [x] Define exemptions only for explicitly bounded documentation-only micro changes.
+- [x] Fail standard/high-risk work when a required criterion has no evidence mapping.
+- [x] Detect stale specs after a change to base/head SHA, contracts, or policy.
+
+Source implementation is complete when this branch's local verification and independent reviews pass. M1's deployed Trust CI/holdout exit criteria remain open until a separately authorized rollout proves the new reader, emitter, and holdout under a new policy-bound exact-SHA check.
 
 ## Exit criteria
 

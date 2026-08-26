@@ -7,6 +7,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 - Identity: **2.0.12** (`VERSION`, README H1). Published GitHub Release is `v2.0.12`.
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
+- M1 typed intent is source-ready: canonical schema-v2 specs, route-driven generation, strict bounded validation, criterion-bound receipts, and `scripts/grok_spec.py` summary/coverage commands are implemented. Historical schema-v1 YAML is explicit unchanged-history compatibility only; deployment of the new external holdout and attestation emitter is still a separate operator-controlled rollout.
 - Independent CI candidate: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
 - Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. The PR #2 bootstrap exception is revoked. PR #5 is not mergeable while that Check Run is `action_required`.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
@@ -39,6 +40,8 @@ Source-of-truth order is in AGENTS.md. Large work is split into small subtasks t
 - [`.grok/hooks/`](.grok/hooks/)
 - [`scripts/grok_route.py`](scripts/grok_route.py)
 - [`scripts/grok_change.py`](scripts/grok_change.py)
+- [`scripts/grok_spec.py`](scripts/grok_spec.py)
+- [`schemas/change-spec.schema.json`](schemas/change-spec.schema.json)
 - [`scripts/grok_verify.py`](scripts/grok_verify.py)
 - [`scripts/grok_review.py`](scripts/grok_review.py)
 - [`scripts/grok_approve.py`](scripts/grok_approve.py) — exact action/resource delegated local grant only
@@ -55,6 +58,7 @@ Source-of-truth order is in AGENTS.md. Large work is split into small subtasks t
 
 - Task routing + domain skills (Bitrix, API/events, data, frontend, security, incidents, …)
 - Quality profiles and change packages under `engineering/changes/`
+- Strict typed change intent with stable criterion/evidence IDs and deterministic spec fingerprints
 - Local verification / review receipts via `scripts/grok_*.py`
 - Multi-agent discipline described in `AGENTS.md`
 - `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`
@@ -205,8 +209,8 @@ graph TD
 | Agents | `.grok/agents/` |
 | Hooks | `.grok/hooks/` |
 | Policy | `.grok-stack/adaptive_grok/policy.py` |
-| Verify | `scripts/grok_verify.py` + local receipts |
-| Packages | `packages/` + `scripts/package_stack.py` |
+| Verify | `scripts/grok_verify.py` + typed-spec validation + criterion-bound local receipts |
+| Packages | `packages/` + `scripts/package_stack.py` + durable `engineering/changes/**/change-spec.yaml` |
 | Contract | `AGENTS.md` first rule: log to `decisions.md` / `mistakes.md` |
 | Decisions | root `decisions.md` |
 | Mistakes | root `mistakes.md` |

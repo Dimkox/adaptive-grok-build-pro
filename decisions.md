@@ -2,6 +2,14 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-26 — Version the strict typed contract as change-spec v2
+
+Freeze schema v1 and its YAML-subset reader for explicit unchanged-history compatibility only; every new or modified spec is canonical JSON using schema v2. This prevents malformed canonical input from downgrading into legacy parsing and gives the exactly-one-key evidence model a new contract identity.
+
+## 2026-08-26 — Rebuild M1 from the approved branch, not the stale baseline
+
+The user explicitly approved rebuilding from the roadmap and its M1 design; preserve merged M0 and later repairs because the roadmap forbids discarding newer work. Treat the existing M1 prototype as characterization input, use dual-read/single-write migration, and deliver trusted-runtime deployment as a separate externally approved operation.
+
 ## 2026-08-24 — M0.3 bind main; revoke bootstrap exceptions
 
 Live App-owned check `adaptive-trust-ci/verified@6737355947c2` is bound to GitHub App ID `4694114` on protected `main`. Revoke the 2026-08-23 M1-start / PR #2 / PR #4 bootstrap exceptions because that live App-owned check exists (never by forging one). PR #5 stays unmerged while Check Run `97529209576` is `action_required`.
