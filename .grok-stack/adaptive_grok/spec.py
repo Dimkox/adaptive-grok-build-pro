@@ -505,6 +505,8 @@ canonical_digest = canonical_spec_digest
 
 
 def _evidence_value(evidence: dict[str, Any]) -> str:
+    if set(evidence) == {"kind", "ref"}:
+        return str(evidence["ref"])
     if len(evidence) != 1:
         return ""
     return str(next(iter(evidence.values())))
@@ -522,7 +524,11 @@ def criterion_coverage(spec: dict[str, Any]) -> dict[str, Any]:
         if valid:
             mapped.append(criterion_id)
             for ref in evidence:
-                if isinstance(ref, dict) and len(ref) == 1:
+                if isinstance(ref, dict) and set(ref) == {"kind", "ref"}:
+                    legacy_kind = str(ref.get("kind"))
+                    if legacy_kind in counts:
+                        counts[legacy_kind] += 1
+                elif isinstance(ref, dict) and len(ref) == 1:
                     key = next(iter(ref))
                     if key in counts:
                         counts[key] += 1

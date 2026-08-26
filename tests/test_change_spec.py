@@ -119,6 +119,13 @@ class ChangeSpecTests(unittest.TestCase):
             with self.assertRaises(SPEC.SpecError):
                 SPEC.load_spec(path, allow_legacy=False)
 
+    def test_historical_v1_evidence_map_remains_readable(self) -> None:
+        historical = {
+            'schema_version': 1,
+            'acceptance_criteria': [{'id': 'AC-001', 'evidence': [{'kind': 'test', 'ref': 'tests/old.py'}]}],
+        }
+        self.assertEqual(SPEC.map_evidence(historical), {'AC-001': ['tests/old.py']})
+
     def test_evidence_has_exactly_one_supported_key(self) -> None:
         for evidence in ({}, {"test": "tests/test_change_spec.py", "receipt": "verification"}, {"review": "x"}):
             spec = json.loads(json.dumps(VALID_SPEC))
@@ -239,6 +246,8 @@ class ChangeSpecTests(unittest.TestCase):
         self.assertEqual(schema["$id"], "urn:adaptive-grok:change-spec:v2")
         self.assertIs(schema["additionalProperties"], False)
         self.assertEqual(schema["$schema"], "https://json-schema.org/draft/2020-12/schema")
+        legacy = SPEC.load_schema(ROOT / "schemas" / "change-spec-v1.schema.json")
+        self.assertEqual(legacy["$id"], "urn:adaptive-grok:change-spec:v1")
 
 
     def test_schema_unsupported_keyword(self) -> None:

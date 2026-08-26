@@ -87,7 +87,7 @@ def main() -> int:
         path = _spec_path(root, args.path, args.change_id)
         if not path.is_file():
             raise SpecError(f"missing spec: {path}", code="io")
-        spec = load_spec(path, allow_legacy=False)
+        spec = load_spec(path, allow_legacy=args.command != "validate")
         if args.command == "validate":
             gate = bool(args.gate and not args.schema_only)
             errors = validate_spec(root, path, gate=gate, route=route)
