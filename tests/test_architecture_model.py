@@ -121,6 +121,24 @@ def _rules() -> dict:
     }
 
 
+def _json_schema(properties: dict, required: list[str] | None = None) -> dict:
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": properties,
+        "required": required or [],
+        "additionalProperties": False,
+    }
+
+
+def _openapi(operation: dict | None = None) -> dict:
+    return {
+        "openapi": "3.1.0",
+        "info": {"title": "Test API", "version": "1"},
+        "paths": {"/items": {"get": operation or {"responses": {"200": {"description": "ok"}}}}},
+    }
+
+
 class ArchitectureModelTests(unittest.TestCase):
     def setUp(self) -> None:
         if ARCH is None:
@@ -137,6 +155,26 @@ class ArchitectureModelTests(unittest.TestCase):
         self._write(root / "architecture/rules.yaml", rules or _rules())
         self.addCleanup(temp.cleanup)
         return root
+
+    def _record(
+        self,
+        document: dict,
+        *,
+        kind: str = "json_schema",
+        version: str = "1",
+        compatibility: str = "consumer_accepts_old",
+    ):
+        self.assertTrue(hasattr(ARCH, "ContractRecord"), "ContractRecord is not implemented")
+        return ARCH.ContractRecord(
+            id="CONTRACT-TEST",
+            kind=kind,
+            path="engineering/contracts/test.json",
+            version=version,
+            role="consumer",
+            compatibility=compatibility,
+            digest="0" * 64,
+            document=document,
+        )
 
     @staticmethod
     def _write(path: Path, value: dict) -> None:
@@ -625,6 +663,335 @@ class ArchitectureModelTests(unittest.TestCase):
         (root / "contracts/one.json").symlink_to(root / "contract-target", target_is_directory=True)
         findings = ARCH.validate_architecture(ARCH.load_architecture(root), root)
         self.assertEqual([finding.code for finding in findings], ["unsafe_contract_path"])
+
+    def test_seed_architecture_models_current_boundaries_and_real_contracts(self) -> None:
+        self.assertTrue((ROOT / "architecture/system.yaml").is_file())
+        self.assertTrue((ROOT / "architecture/rules.yaml").is_file())
+        snapshot = ARCH.load_architecture(ROOT)
+        node_ids = {node["id"] for node in snapshot.system["nodes"]}
+        self.assertTrue(
+            {
+                "NODE-LOCAL-ROUTE-POLICY",
+                "NODE-CHANGE-SPEC-EVIDENCE",
+                "NODE-LOCAL-VERIFIER",
+                "NODE-TRUST-CI-API",
+                "NODE-TRUST-CI-POSTGRES",
+                "NODE-TRUST-CI-WORKER",
+                "NODE-EXACT-SHA-WORKSPACE",
+                "NODE-DOCKER-ENGINE",
+                "NODE-ISOLATED-RUNNER",
+                "NODE-EXTERNAL-HOLDOUT",
+                "NODE-GITHUB",
+                "NODE-HUMAN-APPROVAL",
+            }.issubset(node_ids)
+        )
+        docker_edge = next(
+            edge
+            for edge in snapshot.system["edges"]
+            if edge["from"] == "NODE-TRUST-CI-WORKER"
+            and edge["to"] == "NODE-DOCKER-ENGINE"
+        )
+        self.assertEqual(docker_edge["protocol"], "docker_api")
+        self.assertEqual(docker_edge["authentication"], "none")
+        self.assertEqual(docker_edge["network_policy"], "local_only")
+        self.assertTrue(
+            all(node["runtime"]["evidence"] == "source_described" for node in snapshot.system["nodes"])
+        )
+        self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
+        records = ARCH.contract_inventory(ROOT, snapshot)
+        self.assertEqual(len(records), 4)
+        self.assertNotIn(".gitkeep", {record.path for record in records})
+        self.assertFalse(any(record.path.startswith("examples/") for record in records))
+        documents = {record.id: record.document for record in records}
+        self.assertEqual(
+            set(documents["CONTRACT-TRUST-CI-OPENAPI"]["paths"]),
+            {
+                "/approvals",
+                "/attestations/{job_id}",
+                "/health/live",
+                "/health/ready",
+                "/jobs/{job_id}",
+                "/metrics",
+                "/webhooks/github",
+            },
+        )
+        self.assertEqual(
+            set(
+                documents["CONTRACT-APPROVAL-ENVELOPE"]["properties"]["payload"][
+                    "required"
+                ]
+            ),
+            {
+                "actor",
+                "approval_id",
+                "base_sha",
+                "expires_at",
+                "head_sha",
+                "issued_at",
+                "key_id",
+                "nonce",
+                "policy_digest",
+                "pr_number",
+                "reason",
+                "repository",
+                "schema_version",
+                "scope",
+            },
+        )
+        attestation_payload = documents["CONTRACT-ATTESTATION-ENVELOPE"]["properties"][
+            "payload"
+        ]
+        self.assertIn("command_results", attestation_payload["required"])
+        self.assertEqual(
+            set(attestation_payload["properties"]["command_results"]["items"]["required"]),
+            {"duration_seconds", "exit_code", "name", "output_sha256", "status"},
+        )
+        self.assertEqual(
+            set(documents["CONTRACT-GITHUB-PR-PROJECTION"]["required"]),
+            {"action", "pull_request", "repository"},
+        )
+
+    def test_repository_drift_reports_undeclared_source_and_contract(self) -> None:
+        self.assertTrue(
+            hasattr(ARCH, "validate_repository_drift"),
+            "validate_repository_drift is not implemented",
+        )
+        system = _system()
+        system["nodes"][0]["repository_paths"] = ["src/owned.py"]
+        root = self._repo(system, _rules())
+        (root / "src").mkdir()
+        (root / "src/owned.py").write_text("VALUE = 1\n", encoding="utf-8")
+        (root / "src/undeclared.py").write_text("VALUE = 2\n", encoding="utf-8")
+        (root / "engineering/contracts").mkdir(parents=True)
+        (root / "engineering/contracts/.gitkeep").write_text("", encoding="utf-8")
+        (root / "engineering/contracts/undeclared.json").write_text("{}\n", encoding="utf-8")
+        (root / "engineering/contracts/examples").mkdir()
+        (root / "engineering/contracts/examples/example.json").write_text(
+            "{}\n", encoding="utf-8"
+        )
+        (root / "examples/contracts").mkdir(parents=True)
+        (root / "examples/contracts/example.json").write_text("{}\n", encoding="utf-8")
+        findings = ARCH.validate_repository_drift(root, ARCH.load_architecture(root))
+        self.assertEqual(
+            [(finding.code, finding.path) for finding in findings],
+            [
+                ("undeclared_contract", "engineering/contracts/undeclared.json"),
+                ("undeclared_source", "src/undeclared.py"),
+            ],
+        )
+
+    def test_examples_and_gitkeep_cannot_be_declared_contracts(self) -> None:
+        for path in (
+            "engineering/contracts/.gitkeep",
+            "engineering/contracts/examples/example.json",
+        ):
+            system = _system()
+            system["contracts"] = [
+                {
+                    "id": "CONTRACT-NON-AUTHORITY",
+                    "kind": "json_schema",
+                    "path": path,
+                    "version": "1",
+                    "role": "consumer",
+                    "compatibility": "exact",
+                }
+            ]
+            with self.subTest(path=path), self.assertRaisesRegex(
+                ARCH.ArchitectureError, "non-authoritative"
+            ):
+                ARCH.load_architecture(self._repo(system, _rules()))
+
+    def test_contract_inventory_is_sorted_and_digest_is_deterministic(self) -> None:
+        self.assertTrue(hasattr(ARCH, "contract_inventory"), "contract_inventory is not implemented")
+        self.assertTrue(
+            hasattr(ARCH, "contract_inventory_digest"),
+            "contract_inventory_digest is not implemented",
+        )
+        system = _system()
+        contracts = []
+        for suffix in ("B", "A"):
+            contracts.append(
+                {
+                    "id": f"CONTRACT-{suffix}",
+                    "kind": "json_schema",
+                    "path": f"engineering/contracts/{suffix.lower()}.json",
+                    "version": "1",
+                    "role": "consumer",
+                    "compatibility": "exact",
+                }
+            )
+        system["contracts"] = contracts
+        system["nodes"][0]["public_contracts"] = ["CONTRACT-B", "CONTRACT-A"]
+        root = self._repo(system, _rules())
+        (root / "engineering/contracts").mkdir(parents=True)
+        for suffix in ("a", "b"):
+            self._write(root / f"engineering/contracts/{suffix}.json", _json_schema({}))
+        snapshot = ARCH.load_architecture(root)
+        first = ARCH.contract_inventory(root, snapshot)
+        second = ARCH.contract_inventory(root, snapshot)
+        self.assertEqual([record.id for record in first], ["CONTRACT-A", "CONTRACT-B"])
+        self.assertEqual(first, second)
+        self.assertEqual(
+            ARCH.contract_inventory_digest(first),
+            ARCH.contract_inventory_digest(tuple(reversed(second))),
+        )
+
+    def test_consumer_compatibility_allows_optional_addition(self) -> None:
+        self.assertTrue(hasattr(ARCH, "compare_contracts"), "compare_contracts is not implemented")
+        base = self._record(_json_schema({"name": {"type": "string"}}, ["name"]))
+        head = self._record(
+            _json_schema(
+                {"name": {"type": "string"}, "age": {"type": "integer"}}, ["name"]
+            )
+        )
+        self.assertEqual(
+            ARCH.compare_contracts(base, head, "consumer_accepts_old").status,
+            "compatible",
+        )
+
+    def test_contract_comparison_rejects_directional_breaks(self) -> None:
+        self.assertTrue(hasattr(ARCH, "compare_contracts"), "compare_contracts is not implemented")
+        cases = (
+            (
+                "removed property",
+                "consumer_accepts_old",
+                _json_schema(
+                    {"name": {"type": "string"}, "alias": {"type": "string"}}, ["name"]
+                ),
+                _json_schema({"name": {"type": "string"}}, ["name"]),
+                "removed_property",
+            ),
+            (
+                "removed event property",
+                "consumer_accepts_old",
+                _json_schema(
+                    {"event_id": {"type": "string"}, "meaning": {"type": "string"}},
+                    ["event_id"],
+                ),
+                _json_schema({"event_id": {"type": "string"}}, ["event_id"]),
+                "removed_property",
+            ),
+            (
+                "new required input",
+                "consumer_accepts_old",
+                _json_schema({"name": {"type": "string"}}, ["name"]),
+                _json_schema(
+                    {"name": {"type": "string"}, "age": {"type": "integer"}},
+                    ["name", "age"],
+                ),
+                "new_required_input",
+            ),
+            (
+                "narrowed enum",
+                "consumer_accepts_old",
+                _json_schema({"mode": {"type": "string", "enum": ["a", "b"]}}),
+                _json_schema({"mode": {"type": "string", "enum": ["a"]}}),
+                "narrowed_enum",
+            ),
+            (
+                "changed type",
+                "consumer_accepts_old",
+                _json_schema({"value": {"type": "integer"}}),
+                _json_schema({"value": {"type": "string"}}),
+                "changed_type",
+            ),
+            (
+                "widened producer output",
+                "producer_accepted_by_old",
+                _json_schema({"name": {"type": "string"}}),
+                _json_schema(
+                    {"name": {"type": "string"}, "age": {"type": "integer"}}
+                ),
+                "widened_producer_output",
+            ),
+            (
+                "producer output becomes optional",
+                "producer_accepted_by_old",
+                _json_schema({"name": {"type": "string"}}, ["name"]),
+                _json_schema({"name": {"type": "string"}}),
+                "widened_producer_output",
+            ),
+        )
+        for label, policy, base_doc, head_doc, reason in cases:
+            kind = "event" if label == "removed event property" else "json_schema"
+            result = ARCH.compare_contracts(
+                self._record(base_doc, kind=kind), self._record(head_doc, kind=kind), policy
+            )
+            with self.subTest(label=label):
+                self.assertEqual(result.status, "incompatible")
+                self.assertIn(reason, result.reasons)
+
+    def test_openapi_comparison_rejects_removed_operation_and_weakened_authentication(self) -> None:
+        self.assertTrue(hasattr(ARCH, "compare_contracts"), "compare_contracts is not implemented")
+        secured = {
+            "security": [{"bearerAuth": []}],
+            "responses": {"200": {"description": "ok"}},
+        }
+        removed = _openapi()
+        removed["paths"] = {}
+        weakened = _openapi({"security": [], "responses": {"200": {"description": "ok"}}})
+        for label, head, reason in (
+            ("removed", removed, "removed_operation"),
+            ("weakened", weakened, "weakened_authentication"),
+        ):
+            result = ARCH.compare_contracts(
+                self._record(_openapi(secured), kind="openapi"),
+                self._record(head, kind="openapi"),
+                "bidirectional",
+            )
+            with self.subTest(label=label):
+                self.assertEqual(result.status, "incompatible")
+                self.assertIn(reason, result.reasons)
+
+    def test_openapi_comparison_rejects_widened_producer_response(self) -> None:
+        def operation(properties: dict) -> dict:
+            return {
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": _json_schema(properties),
+                            }
+                        },
+                    }
+                }
+            }
+
+        base = self._record(
+            _openapi(operation({"name": {"type": "string"}})), kind="openapi"
+        )
+        head = self._record(
+            _openapi(
+                operation(
+                    {"name": {"type": "string"}, "age": {"type": "integer"}}
+                )
+            ),
+            kind="openapi",
+        )
+        result = ARCH.compare_contracts(base, head, "bidirectional")
+        self.assertEqual(result.status, "incompatible")
+        self.assertIn("widened_producer_output", result.reasons)
+
+    def test_contract_comparison_is_unsupported_or_exact_when_required(self) -> None:
+        self.assertTrue(hasattr(ARCH, "compare_contracts"), "compare_contracts is not implemented")
+        base_doc = _json_schema({"name": {"type": "string"}})
+        unsupported = copy.deepcopy(base_doc)
+        unsupported["properties"]["name"]["oneOf"] = [{"type": "string"}]
+        result = ARCH.compare_contracts(
+            self._record(base_doc), self._record(unsupported), "consumer_accepts_old"
+        )
+        self.assertEqual(result.status, "unsupported")
+        self.assertIn("unsupported_schema_keyword", result.reasons)
+
+        changed = _json_schema({"name": {"type": "integer"}})
+        result = ARCH.compare_contracts(
+            self._record(base_doc, compatibility="exact"),
+            self._record(changed, compatibility="exact"),
+            "exact",
+        )
+        self.assertEqual(result.status, "incompatible")
+        self.assertIn("same_version_semantic_change", result.reasons)
 
 
 if __name__ == "__main__":

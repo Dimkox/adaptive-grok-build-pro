@@ -1,0 +1,732 @@
+{
+  "architecture_id": "ARCH-ADAPTIVE-GROK-M2",
+  "contracts": [
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-TRUST-CI-OPENAPI",
+      "kind": "openapi",
+      "path": "engineering/contracts/openapi/trust-ci.v1.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-APPROVAL-ENVELOPE",
+      "kind": "signed_payload",
+      "path": "engineering/contracts/schemas/trust-ci-approval-envelope.v1.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-ATTESTATION-ENVELOPE",
+      "kind": "signed_payload",
+      "path": "engineering/contracts/schemas/trust-ci-attestation-envelope.v1.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-GITHUB-PR-PROJECTION",
+      "kind": "json_schema",
+      "path": "engineering/contracts/schemas/github-pull-request-projection.v1.json",
+      "role": "consumer",
+      "version": "1"
+    }
+  ],
+  "data_classifications": [
+    {
+      "classification": "internal",
+      "contains_secret": false,
+      "id": "DATA-REPOSITORY-SOURCE",
+      "tenant_scoped": false
+    },
+    {
+      "classification": "internal",
+      "contains_secret": false,
+      "id": "DATA-CHANGE-EVIDENCE",
+      "tenant_scoped": false
+    },
+    {
+      "classification": "internal",
+      "contains_secret": false,
+      "id": "DATA-PR-PROJECTION",
+      "tenant_scoped": false
+    },
+    {
+      "classification": "restricted",
+      "contains_secret": false,
+      "id": "DATA-APPROVAL",
+      "tenant_scoped": false
+    },
+    {
+      "classification": "restricted",
+      "contains_secret": false,
+      "id": "DATA-JOB-STATE",
+      "tenant_scoped": false
+    },
+    {
+      "classification": "restricted",
+      "contains_secret": false,
+      "id": "DATA-ATTESTATION",
+      "tenant_scoped": false
+    },
+    {
+      "classification": "restricted",
+      "contains_secret": false,
+      "id": "DATA-HOLDOUT",
+      "tenant_scoped": false
+    },
+    {
+      "classification": "internal",
+      "contains_secret": false,
+      "id": "DATA-CHECK-STATUS",
+      "tenant_scoped": false
+    },
+    {
+      "classification": "restricted",
+      "contains_secret": true,
+      "id": "DATA-TRUST-MATERIAL",
+      "tenant_scoped": false
+    }
+  ],
+  "edges": [
+    {
+      "allowed_data": [
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-LOCAL-ROUTE-POLICY",
+      "id": "EDGE-ROUTE-CHANGE-EVIDENCE",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "synchronous",
+      "to": "NODE-CHANGE-SPEC-EVIDENCE",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-CHANGE-EVIDENCE",
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 3600000
+      },
+      "from": "NODE-CHANGE-SPEC-EVIDENCE",
+      "id": "EDGE-CHANGE-LOCAL-VERIFIER",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "batch",
+      "to": "NODE-LOCAL-VERIFIER",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-PR-PROJECTION"
+      ],
+      "authentication": "signature",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-WEBHOOK-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-GITHUB",
+      "id": "EDGE-GITHUB-TRUST-CI-API",
+      "network_policy": "external_managed",
+      "protocol": "https",
+      "sync_or_async": "asynchronous",
+      "to": "NODE-TRUST-CI-API",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-APPROVAL"
+      ],
+      "authentication": "human_signature",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-APPROVAL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-HUMAN-APPROVAL",
+      "id": "EDGE-HUMAN-TRUST-CI-API",
+      "network_policy": "external_managed",
+      "protocol": "https",
+      "sync_or_async": "synchronous",
+      "to": "NODE-TRUST-CI-API",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-APPROVAL",
+        "DATA-JOB-STATE"
+      ],
+      "authentication": "database_role",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-DURABLE-STATE-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-TRUST-CI-API",
+      "id": "EDGE-API-POSTGRES",
+      "network_policy": "local_only",
+      "protocol": "postgresql",
+      "sync_or_async": "synchronous",
+      "to": "NODE-TRUST-CI-POSTGRES",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-ATTESTATION",
+        "DATA-JOB-STATE"
+      ],
+      "authentication": "database_role",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 3,
+        "mode": "retry_bounded",
+        "observable_signal": "SIG-WORKER-FAILURE",
+        "terminal_action": "manual_recovery",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-TRUST-CI-WORKER",
+      "id": "EDGE-WORKER-POSTGRES",
+      "network_policy": "local_only",
+      "protocol": "postgresql",
+      "sync_or_async": "asynchronous",
+      "to": "NODE-TRUST-CI-POSTGRES",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-CHECK-STATUS"
+      ],
+      "authentication": "github_app",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 3,
+        "mode": "retry_bounded",
+        "observable_signal": "SIG-PUBLICATION-FAILURE",
+        "terminal_action": "manual_recovery",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-TRUST-CI-WORKER",
+      "id": "EDGE-WORKER-GITHUB-PUBLICATION",
+      "network_policy": "allowlisted_egress",
+      "protocol": "https",
+      "sync_or_async": "asynchronous",
+      "to": "NODE-GITHUB",
+      "type": "publication"
+    },
+    {
+      "allowed_data": [
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 3,
+        "mode": "retry_bounded",
+        "observable_signal": "SIG-WORKSPACE-FAILURE",
+        "terminal_action": "manual_recovery",
+        "timeout_ms": 3600000
+      },
+      "from": "NODE-TRUST-CI-WORKER",
+      "id": "EDGE-WORKER-WORKSPACE",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "batch",
+      "to": "NODE-EXACT-SHA-WORKSPACE",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-JOB-STATE"
+      ],
+      "authentication": "none",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 3,
+        "mode": "retry_bounded",
+        "observable_signal": "SIG-DOCKER-API-FAILURE",
+        "terminal_action": "manual_recovery",
+        "timeout_ms": 3600000
+      },
+      "from": "NODE-TRUST-CI-WORKER",
+      "id": "EDGE-WORKER-DOCKER-TCP-2375",
+      "network_policy": "local_only",
+      "protocol": "docker_api",
+      "sync_or_async": "synchronous",
+      "to": "NODE-DOCKER-ENGINE",
+      "type": "deployment"
+    },
+    {
+      "allowed_data": [
+        "DATA-JOB-STATE"
+      ],
+      "authentication": "none",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 3,
+        "mode": "retry_bounded",
+        "observable_signal": "SIG-RUNNER-FAILURE",
+        "terminal_action": "manual_recovery",
+        "timeout_ms": 3600000
+      },
+      "from": "NODE-DOCKER-ENGINE",
+      "id": "EDGE-DOCKER-ISOLATED-RUNNER",
+      "network_policy": "isolated_executor",
+      "protocol": "docker_api",
+      "sync_or_async": "synchronous",
+      "to": "NODE-ISOLATED-RUNNER",
+      "type": "deployment"
+    },
+    {
+      "allowed_data": [
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-RUNNER-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 3600000
+      },
+      "from": "NODE-ISOLATED-RUNNER",
+      "id": "EDGE-RUNNER-WORKSPACE",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "batch",
+      "to": "NODE-EXACT-SHA-WORKSPACE",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-HOLDOUT"
+      ],
+      "authentication": "external_managed",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-HOLDOUT-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 3600000
+      },
+      "from": "NODE-ISOLATED-RUNNER",
+      "id": "EDGE-RUNNER-EXTERNAL-HOLDOUT",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "batch",
+      "to": "NODE-EXTERNAL-HOLDOUT",
+      "type": "data_flow"
+    }
+  ],
+  "nodes": [
+    {
+      "data_classification": "DATA-REPOSITORY-SOURCE",
+      "id": "NODE-LOCAL-ROUTE-POLICY",
+      "owner": "repository engineering",
+      "public_contracts": [],
+      "repository_paths": [
+        ".grok",
+        ".grok-stack/adaptive_grok"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-LOCAL-PREFLIGHT",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-CHANGE-EVIDENCE",
+      "id": "NODE-CHANGE-SPEC-EVIDENCE",
+      "owner": "repository engineering",
+      "public_contracts": [],
+      "repository_paths": [
+        "engineering/changes"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "none",
+        "lifecycle": "none",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-REPOSITORY",
+      "type": "repository"
+    },
+    {
+      "data_classification": "DATA-CHANGE-EVIDENCE",
+      "id": "NODE-LOCAL-VERIFIER",
+      "owner": "repository engineering",
+      "public_contracts": [],
+      "repository_paths": [
+        "scripts"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-LOCAL-PREFLIGHT",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-JOB-STATE",
+      "id": "NODE-TRUST-CI-API",
+      "owner": "Trust CI operators",
+      "public_contracts": [
+        "CONTRACT-APPROVAL-ENVELOPE",
+        "CONTRACT-GITHUB-PR-PROJECTION",
+        "CONTRACT-TRUST-CI-OPENAPI"
+      ],
+      "repository_paths": [
+        "trust-ci/src/adaptive_trust_ci/api.py",
+        "trust-ci/src/adaptive_trust_ci/metrics.py",
+        "trust-ci/src/adaptive_trust_ci/webhooks.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "container",
+        "lifecycle": "long_running",
+        "network": "declared_egress"
+      },
+      "secrets": [
+        "SECRET-DATABASE",
+        "SECRET-READ-TOKEN",
+        "SECRET-WEBHOOK"
+      ],
+      "trust_domain": "TD-TRUST-CI-CONTROL",
+      "type": "service"
+    },
+    {
+      "data_classification": "DATA-JOB-STATE",
+      "id": "NODE-TRUST-CI-POSTGRES",
+      "owner": "Trust CI operators",
+      "public_contracts": [],
+      "repository_paths": [
+        "trust-ci/sql",
+        "trust-ci/src/adaptive_trust_ci/resources",
+        "trust-ci/src/adaptive_trust_ci/backup.py",
+        "trust-ci/src/adaptive_trust_ci/lease.py",
+        "trust-ci/src/adaptive_trust_ci/migrations.py",
+        "trust-ci/src/adaptive_trust_ci/store.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "postgresql",
+        "lifecycle": "long_running",
+        "network": "local_only"
+      },
+      "secrets": [
+        "SECRET-DATABASE"
+      ],
+      "trust_domain": "TD-TRUST-CI-CONTROL",
+      "type": "datastore"
+    },
+    {
+      "data_classification": "DATA-ATTESTATION",
+      "id": "NODE-TRUST-CI-WORKER",
+      "owner": "Trust CI operators",
+      "public_contracts": [
+        "CONTRACT-ATTESTATION-ENVELOPE"
+      ],
+      "repository_paths": [
+        "trust-ci/compose.yaml",
+        "trust-ci/src/adaptive_trust_ci/__init__.py",
+        "trust-ci/src/adaptive_trust_ci/cli.py",
+        "trust-ci/src/adaptive_trust_ci/github.py",
+        "trust-ci/src/adaptive_trust_ci/github_app.py",
+        "trust-ci/src/adaptive_trust_ci/lookup.py",
+        "trust-ci/src/adaptive_trust_ci/models.py",
+        "trust-ci/src/adaptive_trust_ci/policy.py",
+        "trust-ci/src/adaptive_trust_ci/settings.py",
+        "trust-ci/src/adaptive_trust_ci/signing.py",
+        "trust-ci/src/adaptive_trust_ci/worker.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "container",
+        "lifecycle": "long_running",
+        "network": "declared_egress"
+      },
+      "secrets": [
+        "SECRET-CI-SIGNING",
+        "SECRET-DATABASE",
+        "SECRET-GITHUB-APP"
+      ],
+      "trust_domain": "TD-TRUST-CI-EXECUTION",
+      "type": "worker"
+    },
+    {
+      "data_classification": "DATA-REPOSITORY-SOURCE",
+      "id": "NODE-EXACT-SHA-WORKSPACE",
+      "owner": "Trust CI operators",
+      "public_contracts": [],
+      "repository_paths": [
+        "trust-ci/runtime"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "none",
+        "lifecycle": "job",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-TRUST-CI-EXECUTION",
+      "type": "repository"
+    },
+    {
+      "data_classification": "DATA-JOB-STATE",
+      "id": "NODE-DOCKER-ENGINE",
+      "owner": "Trust CI operators; compose-described TCP/2375 local executor",
+      "public_contracts": [],
+      "repository_paths": [
+        "trust-ci/compose.yaml"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "container",
+        "lifecycle": "long_running",
+        "network": "local_only"
+      },
+      "secrets": [],
+      "trust_domain": "TD-TRUST-CI-EXECUTION",
+      "type": "service"
+    },
+    {
+      "data_classification": "DATA-ATTESTATION",
+      "id": "NODE-ISOLATED-RUNNER",
+      "owner": "Trust CI operators",
+      "public_contracts": [],
+      "repository_paths": [
+        "trust-ci/scripts",
+        "trust-ci/src/adaptive_trust_ci/holdout.py",
+        "trust-ci/src/adaptive_trust_ci/runner.py",
+        "trust-ci/src/adaptive_trust_ci/sandbox.py",
+        "trust-ci/src/adaptive_trust_ci/workspace.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "container",
+        "lifecycle": "job",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-TRUST-CI-EXECUTION",
+      "type": "runner"
+    },
+    {
+      "data_classification": "DATA-HOLDOUT",
+      "id": "NODE-EXTERNAL-HOLDOUT",
+      "owner": "external Trust CI policy operators",
+      "public_contracts": [],
+      "repository_paths": [],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "external_managed",
+        "lifecycle": "none",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-EXTERNAL-POLICY",
+      "type": "policy_bundle"
+    },
+    {
+      "data_classification": "DATA-CHECK-STATUS",
+      "id": "NODE-GITHUB",
+      "owner": "GitHub",
+      "public_contracts": [],
+      "repository_paths": [],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "external_managed",
+        "lifecycle": "long_running",
+        "network": "external_managed"
+      },
+      "secrets": [],
+      "trust_domain": "TD-EXTERNAL-PLATFORM",
+      "type": "external_system"
+    },
+    {
+      "data_classification": "DATA-APPROVAL",
+      "id": "NODE-HUMAN-APPROVAL",
+      "owner": "human security approvers",
+      "public_contracts": [],
+      "repository_paths": [],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "external_managed",
+        "lifecycle": "on_demand",
+        "network": "external_managed"
+      },
+      "secrets": [
+        "SECRET-HUMAN-APPROVAL"
+      ],
+      "trust_domain": "TD-PRODUCTION-TRUST",
+      "type": "actor"
+    }
+  ],
+  "schema_version": 1,
+  "secret_classes": [
+    {
+      "classification": "trust_material",
+      "id": "SECRET-CI-SIGNING"
+    },
+    {
+      "classification": "trust_material",
+      "id": "SECRET-DATABASE"
+    },
+    {
+      "classification": "trust_material",
+      "id": "SECRET-GITHUB-APP"
+    },
+    {
+      "classification": "trust_material",
+      "id": "SECRET-HUMAN-APPROVAL"
+    },
+    {
+      "classification": "trust_material",
+      "id": "SECRET-READ-TOKEN"
+    },
+    {
+      "classification": "trust_material",
+      "id": "SECRET-WEBHOOK"
+    }
+  ],
+  "signals": [
+    {
+      "description": "Signed approval submission or verification failed closed.",
+      "id": "SIG-APPROVAL-FAILURE"
+    },
+    {
+      "description": "The compose-described unauthenticated Docker API on constrained TCP/2375 was unavailable or rejected execution.",
+      "id": "SIG-DOCKER-API-FAILURE"
+    },
+    {
+      "description": "Durable Trust CI state was unavailable.",
+      "id": "SIG-DURABLE-STATE-FAILURE"
+    },
+    {
+      "description": "External holdout execution failed closed.",
+      "id": "SIG-HOLDOUT-FAILURE"
+    },
+    {
+      "description": "Local route, evidence, or verification validation failed.",
+      "id": "SIG-LOCAL-VALIDATION-FAILURE"
+    },
+    {
+      "description": "GitHub Check Run publication failed after bounded retries.",
+      "id": "SIG-PUBLICATION-FAILURE"
+    },
+    {
+      "description": "An isolated exact-SHA runner failed closed.",
+      "id": "SIG-RUNNER-FAILURE"
+    },
+    {
+      "description": "A signed GitHub webhook was rejected or could not be handled.",
+      "id": "SIG-WEBHOOK-FAILURE"
+    },
+    {
+      "description": "A Trust CI worker job exhausted bounded retries.",
+      "id": "SIG-WORKER-FAILURE"
+    },
+    {
+      "description": "Exact-SHA workspace preparation or access failed closed.",
+      "id": "SIG-WORKSPACE-FAILURE"
+    }
+  ],
+  "trust_domains": [
+    {
+      "id": "TD-REPOSITORY",
+      "kind": "repository_untrusted",
+      "owner": "repository contributors"
+    },
+    {
+      "id": "TD-LOCAL-PREFLIGHT",
+      "kind": "local_preflight",
+      "owner": "local engineering workflow"
+    },
+    {
+      "id": "TD-TRUST-CI-CONTROL",
+      "kind": "trust_ci_control",
+      "owner": "Trust CI operators"
+    },
+    {
+      "id": "TD-TRUST-CI-EXECUTION",
+      "kind": "trust_ci_execution",
+      "owner": "Trust CI operators"
+    },
+    {
+      "id": "TD-EXTERNAL-POLICY",
+      "kind": "external_policy",
+      "owner": "external Trust CI policy operators"
+    },
+    {
+      "id": "TD-EXTERNAL-PLATFORM",
+      "kind": "external_platform",
+      "owner": "GitHub"
+    },
+    {
+      "id": "TD-PRODUCTION-TRUST",
+      "kind": "production_trust",
+      "owner": "human security approvers"
+    }
+  ]
+}

@@ -17,6 +17,8 @@ MAX_PARSED_NODES = 100_000
 MAX_MODEL_NODES = 128
 MAX_MODEL_EDGES = 512
 MAX_RULES = 256
+MAX_CONTRACTS = 256
+MAX_DRIFT_FINDINGS = 10_000
 
 SYSTEM_PATH = Path("architecture/system.yaml")
 RULES_PATH = Path("architecture/rules.yaml")
@@ -77,6 +79,24 @@ class ArchitectureSnapshot:
     rules_schema: dict[str, Any]
     system_path: str
     rules_path: str
+
+
+@dataclass(frozen=True)
+class ContractRecord:
+    id: str
+    kind: str
+    path: str
+    version: str
+    role: str
+    compatibility: str
+    digest: str
+    document: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class CompatibilityResult:
+    status: str
+    reasons: tuple[str, ...]
 
 
 def _unsafe_text(value: str) -> bool:
@@ -287,7 +307,12 @@ def _validate_system_semantics(system: dict[str, Any]) -> None:
     nodes = {item["id"] for item in system["nodes"]}
 
     for contract in system["contracts"]:
-        _safe_relative_path(contract["path"], label=f"contract {contract['id']}")
+        path = _safe_relative_path(contract["path"], label=f"contract {contract['id']}")
+        if Path(path).name == ".gitkeep" or "examples" in PurePosixPath(path).parts:
+            raise ArchitectureError(
+                f"contract {contract['id']}: examples and .gitkeep are non-authoritative",
+                code="contract",
+            )
     for node in system["nodes"]:
         _require_references(
             [node["trust_domain"]], trust_domains, label=f"node {node['id']} trust_domain"
@@ -520,6 +545,392 @@ def validate_architecture(
             code = "missing_contract" if result == "missing" else "unsafe_contract_path"
             findings.append(ArchitectureFinding(code, f"contract path is {result}: {path}", path))
     return tuple(sorted(findings, key=lambda item: (item.code, item.path, item.message)))
+
+
+def contract_inventory(
+    root: Path | str,
+    snapshot: ArchitectureSnapshot,
+) -> tuple[ContractRecord, ...]:
+    repository = Path(root).resolve(strict=True)
+    if len(snapshot.system["contracts"]) > MAX_CONTRACTS:
+        raise ArchitectureError("contract inventory limit exceeded", code="limit")
+    records: list[ContractRecord] = []
+    for contract in snapshot.system["contracts"]:
+        path = _safe_relative_path(contract["path"], label=f"contract {contract['id']}")
+        data = _read_regular_bytes(repository, path, label=f"contract {contract['id']}")
+        document = _parse_json(data, label=f"contract {contract['id']}")
+        records.append(
+            ContractRecord(
+                id=contract["id"],
+                kind=contract["kind"],
+                path=path,
+                version=contract["version"],
+                role=contract["role"],
+                compatibility=contract["compatibility"],
+                digest=hashlib.sha256(data).hexdigest(),
+                document=document,
+            )
+        )
+    return tuple(sorted(records, key=lambda item: item.id))
+
+
+def contract_inventory_digest(records: tuple[ContractRecord, ...]) -> str:
+    payload = [
+        {
+            "id": record.id,
+            "kind": record.kind,
+            "path": record.path,
+            "version": record.version,
+            "role": record.role,
+            "compatibility": record.compatibility,
+            "digest": record.digest,
+        }
+        for record in sorted(records, key=lambda item: item.id)
+    ]
+    return _sha256({"contract": "adaptive-grok.contract-inventory", "version": 1, "items": payload})
+
+
+_SOURCE_ROOTS = (
+    Path("src"),
+    Path("local"),
+    Path(".grok/hooks"),
+    Path(".grok-stack/adaptive_grok"),
+    Path("scripts"),
+    Path("trust-ci/src"),
+    Path("trust-ci/sql"),
+)
+_SOURCE_SUFFIXES = {".py", ".php", ".js", ".ts", ".sql"}
+
+
+def _is_declared(path: str, declarations: set[str]) -> bool:
+    return any(path == item or path.startswith(item + "/") for item in declarations)
+
+
+def validate_repository_drift(
+    root: Path | str,
+    snapshot: ArchitectureSnapshot,
+) -> tuple[ArchitectureFinding, ...]:
+    repository = Path(root).resolve(strict=True)
+    findings = list(validate_architecture(snapshot, repository))
+    declared_paths = {
+        path for node in snapshot.system["nodes"] for path in node["repository_paths"]
+    }
+    declared_contracts = {contract["path"] for contract in snapshot.system["contracts"]}
+
+    contract_root = repository / "engineering/contracts"
+    if contract_root.is_dir() and not contract_root.is_symlink():
+        for path in sorted(contract_root.rglob("*")):
+            relative = path.relative_to(repository).as_posix()
+            if (
+                not path.is_file()
+                or path.is_symlink()
+                or path.name == ".gitkeep"
+                or "examples" in PurePosixPath(relative).parts
+            ):
+                continue
+            if relative not in declared_contracts:
+                findings.append(
+                    ArchitectureFinding(
+                        "undeclared_contract",
+                        f"contract artifact is not declared: {relative}",
+                        relative,
+                    )
+                )
+                if len(findings) > MAX_DRIFT_FINDINGS:
+                    raise ArchitectureError(
+                        "repository drift finding limit exceeded", code="limit"
+                    )
+
+    for source_root in _SOURCE_ROOTS:
+        absolute = repository / source_root
+        if not absolute.is_dir() or absolute.is_symlink():
+            continue
+        for path in sorted(absolute.rglob("*")):
+            if (
+                not path.is_file()
+                or path.is_symlink()
+                or path.suffix not in _SOURCE_SUFFIXES
+                or "__pycache__" in path.parts
+            ):
+                continue
+            relative = path.relative_to(repository).as_posix()
+            if not _is_declared(relative, declared_paths):
+                findings.append(
+                    ArchitectureFinding(
+                        "undeclared_source",
+                        f"source artifact is not owned by an architecture node: {relative}",
+                        relative,
+                    )
+                )
+            if len(findings) > MAX_DRIFT_FINDINGS:
+                raise ArchitectureError("repository drift finding limit exceeded", code="limit")
+    return tuple(sorted(set(findings), key=lambda item: (item.code, item.path, item.message)))
+
+
+_SUPPORTED_SCHEMA_KEYS = {
+    "$schema",
+    "$id",
+    "description",
+    "type",
+    "properties",
+    "required",
+    "additionalProperties",
+    "enum",
+    "items",
+    "minItems",
+    "maxItems",
+    "minLength",
+    "maxLength",
+    "minimum",
+    "maximum",
+    "pattern",
+}
+_HTTP_METHODS = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
+
+
+def _unsupported_schema(schema: Any) -> bool:
+    if not isinstance(schema, dict):
+        return True
+    if set(schema) - _SUPPORTED_SCHEMA_KEYS:
+        return True
+    if "type" in schema and schema["type"] not in {
+        "array",
+        "boolean",
+        "integer",
+        "null",
+        "number",
+        "object",
+        "string",
+    }:
+        return True
+    properties = schema.get("properties", {})
+    if not isinstance(properties, dict):
+        return True
+    required = schema.get("required", [])
+    if not isinstance(required, list) or not all(isinstance(item, str) for item in required):
+        return True
+    additional = schema.get("additionalProperties", True)
+    if not isinstance(additional, bool):
+        return True
+    enum = schema.get("enum", [])
+    if not isinstance(enum, list) or any(
+        isinstance(item, (dict, list)) for item in enum
+    ):
+        return True
+    if any(_unsupported_schema(child) for child in properties.values()):
+        return True
+    if "items" in schema and _unsupported_schema(schema["items"]):
+        return True
+    return False
+
+
+def _constraint_breaks(base: dict[str, Any], head: dict[str, Any], direction: str) -> bool:
+    minimums = ("minimum", "minLength", "minItems")
+    maximums = ("maximum", "maxLength", "maxItems")
+    if direction == "consumer":
+        return any(head.get(key, float("-inf")) > base.get(key, float("-inf")) for key in minimums) or any(
+            head.get(key, float("inf")) < base.get(key, float("inf")) for key in maximums
+        )
+    return any(head.get(key, float("-inf")) < base.get(key, float("-inf")) for key in minimums) or any(
+        head.get(key, float("inf")) > base.get(key, float("inf")) for key in maximums
+    )
+
+
+def _compare_schema_direction(
+    base: dict[str, Any],
+    head: dict[str, Any],
+    direction: str,
+    reasons: set[str],
+) -> None:
+    if base.get("type") != head.get("type"):
+        reasons.add("changed_type")
+        return
+    base_enum = set(base.get("enum", []))
+    head_enum = set(head.get("enum", []))
+    if direction == "consumer":
+        if head_enum and (not base_enum or not base_enum.issubset(head_enum)):
+            reasons.add("narrowed_enum")
+    elif base_enum and (not head_enum or not head_enum.issubset(base_enum)):
+        reasons.add("widened_producer_output")
+    if _constraint_breaks(base, head, direction):
+        reasons.add("narrowed_constraint" if direction == "consumer" else "widened_producer_output")
+    if base.get("pattern") != head.get("pattern"):
+        reasons.add("changed_constraint")
+
+    base_properties = base.get("properties", {})
+    head_properties = head.get("properties", {})
+    base_required = set(base.get("required", []))
+    head_required = set(head.get("required", []))
+    removed = set(base_properties) - set(head_properties)
+    added = set(head_properties) - set(base_properties)
+    if direction == "consumer":
+        if removed:
+            reasons.add("removed_property")
+        if head_required - base_required:
+            reasons.add("new_required_input")
+        if base.get("additionalProperties", True) and not head.get("additionalProperties", True):
+            reasons.add("narrowed_additional_properties")
+    else:
+        if added:
+            reasons.add("widened_producer_output")
+        if (removed & base_required) or (base_required - head_required):
+            reasons.add("widened_producer_output")
+        if not base.get("additionalProperties", True) and head.get("additionalProperties", True):
+            reasons.add("widened_producer_output")
+    for name in sorted(set(base_properties) & set(head_properties)):
+        _compare_schema_direction(base_properties[name], head_properties[name], direction, reasons)
+    if "items" in base and "items" in head:
+        _compare_schema_direction(base["items"], head["items"], direction, reasons)
+    elif "items" in base or "items" in head:
+        reasons.add("changed_type")
+
+
+def _content_schema(container: dict[str, Any]) -> dict[str, Any] | None:
+    content = container.get("content")
+    if not isinstance(content, dict):
+        return None
+    media = content.get("application/json")
+    if not isinstance(media, dict) or not isinstance(media.get("schema"), dict):
+        return None
+    return media["schema"]
+
+
+def _media_schema(operation: dict[str, Any], key: str) -> dict[str, Any] | None:
+    container = operation.get(key)
+    if not isinstance(container, dict):
+        return None
+    return _content_schema(container)
+
+
+def _openapi_schemas(document: dict[str, Any]) -> tuple[dict[str, Any], ...]:
+    schemas: list[dict[str, Any]] = []
+    paths = document.get("paths", {})
+    if not isinstance(paths, dict):
+        return ({"unsupported": True},)
+    for path_item in paths.values():
+        if not isinstance(path_item, dict):
+            return ({"unsupported": True},)
+        for method, operation in path_item.items():
+            if method not in _HTTP_METHODS:
+                continue
+            if not isinstance(operation, dict):
+                return ({"unsupported": True},)
+            if set(operation) & {"callbacks", "parameters"}:
+                return ({"unsupported": True},)
+            request_schema = _media_schema(operation, "requestBody")
+            if request_schema is not None:
+                schemas.append(request_schema)
+            responses = operation.get("responses", {})
+            if not isinstance(responses, dict):
+                return ({"unsupported": True},)
+            for response in responses.values():
+                if not isinstance(response, dict):
+                    return ({"unsupported": True},)
+                schema = _content_schema(response)
+                if schema is not None:
+                    schemas.append(schema)
+    return tuple(schemas)
+
+
+def _operations(document: dict[str, Any]) -> dict[tuple[str, str], dict[str, Any]]:
+    result: dict[tuple[str, str], dict[str, Any]] = {}
+    for path, path_item in (document.get("paths") or {}).items():
+        if not isinstance(path_item, dict):
+            continue
+        for method, operation in path_item.items():
+            if method in _HTTP_METHODS and isinstance(operation, dict):
+                result[(str(path), method)] = operation
+    return result
+
+
+def _effective_security(document: dict[str, Any], operation: dict[str, Any]) -> Any:
+    return operation["security"] if "security" in operation else document.get("security")
+
+
+def _compare_openapi(base: dict[str, Any], head: dict[str, Any], reasons: set[str]) -> None:
+    base_operations = _operations(base)
+    head_operations = _operations(head)
+    if set(base_operations) - set(head_operations):
+        reasons.add("removed_operation")
+    for key in sorted(set(base_operations) & set(head_operations)):
+        base_operation = base_operations[key]
+        head_operation = head_operations[key]
+        base_security = _effective_security(base, base_operation)
+        head_security = _effective_security(head, head_operation)
+        if base_security != head_security:
+            reasons.add(
+                "weakened_authentication" if base_security and not head_security else "changed_authentication"
+            )
+        base_request = _media_schema(base_operation, "requestBody")
+        head_request = _media_schema(head_operation, "requestBody")
+        if base_request is not None and head_request is not None:
+            _compare_schema_direction(base_request, head_request, "consumer", reasons)
+        elif base_request is not None:
+            reasons.add("removed_request_schema")
+        elif base_request is None and head_request is not None:
+            request_body = head_operation.get("requestBody", {})
+            if isinstance(request_body, dict) and request_body.get("required"):
+                reasons.add("new_required_input")
+        base_responses = base_operation.get("responses", {})
+        head_responses = head_operation.get("responses", {})
+        for status in set(base_responses) - set(head_responses):
+            reasons.add("removed_response")
+        for status in set(base_responses) & set(head_responses):
+            base_response = base_responses[status]
+            head_response = head_responses[status]
+            if not isinstance(base_response, dict) or not isinstance(head_response, dict):
+                continue
+            base_schema = _content_schema(base_response)
+            head_schema = _content_schema(head_response)
+            if base_schema is not None and head_schema is not None:
+                _compare_schema_direction(base_schema, head_schema, "producer", reasons)
+            elif base_schema is not None:
+                reasons.add("removed_response_schema")
+
+
+def compare_contracts(
+    base: ContractRecord,
+    head: ContractRecord,
+    policy: str | Mapping[str, Any],
+) -> CompatibilityResult:
+    mode = str(policy.get("compatibility")) if isinstance(policy, Mapping) else str(policy)
+    if base.id != head.id or base.kind != head.kind:
+        return CompatibilityResult("incompatible", ("contract_identity_changed",))
+    documents = (base.document, head.document)
+    if base.kind == "openapi":
+        schemas = _openapi_schemas(base.document) + _openapi_schemas(head.document)
+    else:
+        schemas = documents
+    if any(_unsupported_schema(schema) for schema in schemas):
+        return CompatibilityResult("unsupported", ("unsupported_schema_keyword",))
+    if _canonical_bytes(base.document) == _canonical_bytes(head.document):
+        return CompatibilityResult("compatible", ())
+    if mode == "exact":
+        return CompatibilityResult("incompatible", ("same_version_semantic_change",))
+    if mode == "versioned_break":
+        reason = (
+            "same_version_semantic_change"
+            if base.version == head.version
+            else "versioned_break_requires_coexistence"
+        )
+        status = "incompatible" if base.version == head.version else "unsupported"
+        return CompatibilityResult(status, (reason,))
+    reasons: set[str] = set()
+    if base.kind == "openapi":
+        if mode != "bidirectional":
+            return CompatibilityResult("unsupported", ("unsupported_compatibility_policy",))
+        _compare_openapi(base.document, head.document, reasons)
+    else:
+        directions = {
+            "consumer_accepts_old": ("consumer",),
+            "producer_accepted_by_old": ("producer",),
+            "bidirectional": ("consumer", "producer"),
+        }.get(mode)
+        if directions is None:
+            return CompatibilityResult("unsupported", ("unsupported_compatibility_policy",))
+        for direction in directions:
+            _compare_schema_direction(base.document, head.document, direction, reasons)
+    return CompatibilityResult("incompatible" if reasons else "compatible", tuple(sorted(reasons)))
 
 
 def architecture_digests(snapshot: ArchitectureSnapshot) -> dict[str, str]:
