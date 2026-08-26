@@ -340,7 +340,7 @@ approvals:
 - [x] Fail standard/high-risk work when a required criterion has no evidence mapping.
 - [x] Detect stale specs after a change to base/head SHA, contracts, or policy.
 
-The checked work items mean their source and local regression coverage exist. M1 is locally source-ready: exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a` passed full local verification and all four route-selected wave-7 reviews, followed only by evidence/docs/state closure. Ten conditional PostgreSQL tests were skipped and are not claimed as executed; PR update, the external App-owned exact-SHA check, signed approvals, merge, and deployed worker/reader/emitter/holdout/policy exit criteria remain open until separately authorized and proven.
+The checked work items mean their source and local regression coverage exist. M1 is locally source-ready: exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a` passed full local verification and all four route-selected wave-7 reviews, followed only by evidence/docs/state closure. A later authorized isolated PostgreSQL run passed 10/10 database tests and the full Trust CI suite 200/200 with no skips, validating six Trust CI tables, migrations through version 3, and four bounded `NOLOGIN` roles; it is local evidence, not deployed qualification. PR update, the external App-owned exact-SHA check, signed approvals, merge, and deployed worker/reader/emitter/holdout/policy exit criteria remain open until separately authorized and proven.
 
 ## Exit criteria
 

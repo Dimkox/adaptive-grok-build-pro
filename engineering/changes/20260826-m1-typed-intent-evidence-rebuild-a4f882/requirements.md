@@ -11,7 +11,7 @@ AC-001 through AC-006 are implemented and locally source-ready. Exact source HEA
 - [x] AC-003: CLI and local receipts expose deterministic digest, coverage, criterion IDs, and fingerprint staleness.
 - [x] AC-004: the external holdout source independently enforces critical invariants without importing PR-controlled validator code.
 - [x] AC-005: Trust CI source signs deterministic spec digest and coverage while retaining verification compatibility for existing schema-v1 attestations.
-- [x] AC-006: exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a` passed 223/223 root tests, 190 executed Trust CI tests with 10 conditional PostgreSQL skips, compileall, exact-SHA holdout validation, PR verification, and code/test/security/release wave-7 reviews. The PostgreSQL tests were not executed, and no local receipt or external authority is inferred from this source-readiness result.
+- [x] AC-006: exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a` passed 223/223 root tests, compileall, exact-SHA holdout validation, PR verification, and code/test/security/release wave-7 reviews. A later authorized isolated run passed PostgreSQL integration 10/10 and the full Trust CI suite 200/200 with no skips; this remains local evidence, and no local receipt or external authority is inferred from it.
 
 ## Failure and edge cases
 

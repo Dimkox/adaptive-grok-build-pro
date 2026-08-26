@@ -2,6 +2,11 @@
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-08-26 — Ran PostgreSQL migrations before bootstrapping referenced roles
+
+**Symptom:** The first focused PostgreSQL invocation failed during setup, before its ten test methods ran, because migration 003 referenced absent `trust_ci_*` roles.
+**Root cause:** The dedicated database and DSN were prepared before the four roles that the role-grant migration assumes already exist.
+
 ## 2026-08-26 — Split temporary workspace initialization across cleanup boundaries
 
 **Symptom:** Failed `GitWorkspace` construction leaked a checkout on its first `chmod`, or a trusted config directory on config `chmod` and XDG creation failures.

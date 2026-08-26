@@ -2,6 +2,10 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-26 — Isolate local PostgreSQL proof in a dedicated database
+
+Use `adaptive_grok_build_pro_test` with four bounded `NOLOGIN` Trust CI roles inside the already-running local PostgreSQL service. Dedicated data and least-privilege roles prove migration/store behavior without touching application schemas or representing the run as deployment.
+
 ## 2026-08-26 — Version the strict typed contract as change-spec v2
 
 Freeze schema v1 and its YAML-subset reader for explicit unchanged-history compatibility only; every new or modified spec is canonical JSON using schema v2. This prevents malformed canonical input from downgrading into legacy parsing and gives the exactly-one-key evidence model a new contract identity.
