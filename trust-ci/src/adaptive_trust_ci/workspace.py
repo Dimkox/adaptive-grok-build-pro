@@ -32,6 +32,15 @@ class WorkspaceMutationError(WorkspaceError):
         super().__init__('verification command mutated checkout: ' + ', '.join(repr(path) for path in paths[:20]))
 
 
+def _remove_tree_quietly(path: Path | None) -> None:
+    if path is None:
+        return
+    try:
+        shutil.rmtree(path, ignore_errors=True)
+    except BaseException:
+        pass
+
+
 class _NulPathCollector:
     def __init__(self, *, context: str, record_prefix_bytes: int) -> None:
         self.context = context
@@ -223,17 +232,24 @@ class GitWorkspace:
         self.job = job
         self.github_token = github_token
         self.checkout_depth = checkout_depth
-        self.path = Path(tempfile.mkdtemp(prefix=f'trust-ci-{job.job_id[:8]}-', dir=base_directory))
-        os.chmod(self.path, 0o755)
+        checkout_path: Path | None = None
+        config_home: Path | None = None
         try:
-            self.config_home = Path(
+            checkout_path = Path(
+                tempfile.mkdtemp(prefix=f'trust-ci-{job.job_id[:8]}-', dir=base_directory)
+            )
+            os.chmod(checkout_path, 0o755)
+            config_home = Path(
                 tempfile.mkdtemp(prefix=f'trust-ci-config-{job.job_id[:8]}-', dir=base_directory)
             )
-            os.chmod(self.config_home, 0o700)
-            (self.config_home / 'xdg').mkdir(mode=0o700)
+            os.chmod(config_home, 0o700)
+            (config_home / 'xdg').mkdir(mode=0o700)
         except BaseException:
-            shutil.rmtree(self.path, ignore_errors=True)
+            _remove_tree_quietly(config_home)
+            _remove_tree_quietly(checkout_path)
             raise
+        self.path = checkout_path
+        self.config_home = config_home
 
     def checkout(self, job: Job) -> Checkout:
         if job.job_id != self.job.job_id:

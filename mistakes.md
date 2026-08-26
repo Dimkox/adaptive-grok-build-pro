@@ -2,6 +2,11 @@
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-08-26 — Split temporary workspace initialization across cleanup boundaries
+
+**Symptom:** Failed `GitWorkspace` construction leaked a checkout on its first `chmod`, or a trusted config directory on config `chmod` and XDG creation failures.
+**Root cause:** Resource allocation began before the constructor's exception guard, and its rollback tracked only the checkout rather than every independently allocated path.
+
 ## 2026-08-26 — Expanded an abbreviated commit identity by hand
 
 **Symptom:** The first final exact-SHA holdout invocation failed closed at `git cat-file -e` before validation.

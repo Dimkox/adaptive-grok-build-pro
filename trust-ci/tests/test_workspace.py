@@ -14,6 +14,87 @@ from unittest import mock
 from adaptive_trust_ci import workspace as workspace_module
 
 
+class GitWorkspaceLifecycleTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.base_directory = Path(self.temp.name) / 'workspaces'
+        self.base_directory.mkdir()
+        self.job = SimpleNamespace(job_id='lifecycle-test', head_sha='0' * 40)
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def _construct(self) -> workspace_module.GitWorkspace:
+        return workspace_module.GitWorkspace(
+            self.job,
+            github_token='token',
+            checkout_depth=1,
+            base_directory=self.base_directory,
+        )
+
+    def _assert_constructor_failure_leaves_no_workspace(
+        self,
+        failure: OSError,
+        patcher: mock._patch,
+    ) -> None:
+        with patcher:
+            with self.assertRaises(OSError) as raised:
+                self._construct()
+        self.assertIs(raised.exception, failure)
+        self.assertEqual(tuple(self.base_directory.iterdir()), ())
+
+    def test_constructor_cleans_checkout_when_checkout_chmod_fails(self) -> None:
+        failure = OSError('synthetic checkout chmod failure')
+        self._assert_constructor_failure_leaves_no_workspace(
+            failure,
+            mock.patch.object(workspace_module.os, 'chmod', side_effect=failure),
+        )
+
+    def test_constructor_cleans_checkout_when_config_mkdtemp_fails(self) -> None:
+        failure = OSError('synthetic config mkdtemp failure')
+        real_mkdtemp = tempfile.mkdtemp
+        calls = 0
+
+        def fail_second_mkdtemp(*args: object, **kwargs: object) -> str:
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise failure
+            return real_mkdtemp(*args, **kwargs)
+
+        self._assert_constructor_failure_leaves_no_workspace(
+            failure,
+            mock.patch.object(workspace_module.tempfile, 'mkdtemp', side_effect=fail_second_mkdtemp),
+        )
+
+    def test_constructor_cleans_both_paths_when_config_chmod_fails(self) -> None:
+        failure = OSError('synthetic config chmod failure')
+        self._assert_constructor_failure_leaves_no_workspace(
+            failure,
+            mock.patch.object(workspace_module.os, 'chmod', side_effect=(None, failure)),
+        )
+
+    def test_constructor_cleans_both_paths_when_xdg_mkdir_fails(self) -> None:
+        failure = OSError('synthetic XDG mkdir failure')
+        real_mkdir = Path.mkdir
+
+        def fail_xdg_mkdir(path: Path, *args: object, **kwargs: object) -> None:
+            if path.name == 'xdg':
+                raise failure
+            real_mkdir(path, *args, **kwargs)
+
+        self._assert_constructor_failure_leaves_no_workspace(
+            failure,
+            mock.patch.object(Path, 'mkdir', autospec=True, side_effect=fail_xdg_mkdir),
+        )
+
+    def test_cleanup_is_idempotent(self) -> None:
+        workspace = self._construct()
+        workspace.cleanup()
+        workspace.cleanup()
+        self.assertEqual(tuple(self.base_directory.iterdir()), ())
+
+
 class WorkspaceStreamingTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
