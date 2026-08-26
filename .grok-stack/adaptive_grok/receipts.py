@@ -31,20 +31,56 @@ def _exact_head(root: Path) -> str | None:
     return None
 
 
-def _architecture_was_adopted(root: Path) -> bool:
+def _tree_has_architecture(root: Path, commit: str) -> bool:
+    return any(
+        _git_blob(root, commit, path.as_posix()) is not None
+        for path in (SYSTEM_PATH, RULES_PATH)
+    )
+
+
+def _parent_had_architecture(root: Path, commit: str) -> bool:
+    raw = _git(
+        root,
+        [
+            "log",
+            "-1",
+            "--format=%P",
+            commit,
+            "--",
+            SYSTEM_PATH.as_posix(),
+            RULES_PATH.as_posix(),
+        ],
+        limit=4_096,
+    )
+    for parent in (raw or b"").decode("ascii", "strict").split():
+        exact = _exact_commit(root, parent, label="architecture_history_sha")
+        if _tree_has_architecture(root, exact):
+            return True
+    return False
+
+
+def _architecture_was_adopted(root: Path, route: dict[str, Any]) -> bool:
     head = _exact_head(root)
     if head is None:
         return False
+    candidates = [head]
+    route_base = route.get("base_commit")
+    if isinstance(route_base, str):
+        try:
+            candidates.append(_exact_commit(root, route_base, label="architecture_base_sha"))
+        except ValueError:
+            pass
     return any(
-        _git_blob(root, head, path.as_posix()) is not None
-        for path in (SYSTEM_PATH, RULES_PATH)
+        _tree_has_architecture(root, candidate)
+        or _parent_had_architecture(root, candidate)
+        for candidate in dict.fromkeys(candidates)
     )
 
 
 def active_architecture_binding(root: Path, route: dict[str, Any]) -> dict[str, Any] | None:
     present = tuple((root / path).is_file() for path in (SYSTEM_PATH, RULES_PATH))
     if present == (False, False):
-        if _architecture_was_adopted(root):
+        if _architecture_was_adopted(root, route):
             raise RuntimeError("adopted architecture model is missing")
         return None
     if present != (True, True):

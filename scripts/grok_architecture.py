@@ -99,6 +99,26 @@ def main() -> int:
     as_json = bool(getattr(args, "json", False))
     try:
         root = Path(args.root).resolve(strict=True)
+        if args.command in {"diff", "fitness"}:
+            diff = diff_architecture(
+                root,
+                base_sha=args.base,
+                head_sha=args.head,
+                worktree=bool(args.worktree),
+            )
+            if args.command == "diff":
+                _emit(_diff_payload(diff), as_json=as_json)
+                return 0
+            report = evaluate_fitness(
+                root,
+                diff._head_state.snapshot,
+                diff,
+                diff.changed_paths,
+                pre_risk=args.pre_risk,
+            )
+            _emit(_fitness_payload(diff, report), as_json=as_json)
+            return 0 if report.status == "pass" else 1
+
         snapshot = load_architecture(root)
         if args.command == "validate":
             findings = validate_architecture(snapshot, root)
@@ -143,24 +163,7 @@ def main() -> int:
             _emit(payload, as_json=as_json)
             return 0 if not findings else 1
 
-        diff = diff_architecture(
-            root,
-            base_sha=args.base,
-            head_sha=args.head,
-            worktree=bool(args.worktree),
-        )
-        if args.command == "diff":
-            _emit(_diff_payload(diff), as_json=as_json)
-            return 0
-        report = evaluate_fitness(
-            root,
-            diff._head_state.snapshot,
-            diff,
-            diff.changed_paths,
-            pre_risk=args.pre_risk,
-        )
-        _emit(_fitness_payload(diff, report), as_json=as_json)
-        return 0 if report.status == "pass" else 1
+        raise ArchitectureError("unsupported architecture command", code="usage")
     except (ArchitectureError, OSError, ValueError) as exc:
         payload = {"code": getattr(exc, "code", "io"), "error": str(exc), "ok": False}
         _emit(payload, as_json=True)

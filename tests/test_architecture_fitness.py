@@ -1104,6 +1104,35 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(bootstrap.returncode, 0, bootstrap.stderr)
         self.assertTrue(json.loads(bootstrap.stdout)["baseline_introduced"])
 
+    def test_exact_cli_diff_and_fitness_ignore_mutable_worktree_models(self) -> None:
+        repo, base = self._repo()
+        repo.write_text("README.md", "exact head\n")
+        head = repo.commit("exact head")
+        script = ROOT / "scripts/grok_architecture.py"
+
+        repo.write_text("architecture/system.yaml", "{}\n")
+        exact_diff = subprocess.run(
+            [sys.executable, str(script), "--root", str(repo.root), "diff", "--base", base, "--head", head, "--json"],
+            cwd=ROOT, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(exact_diff.returncode, 0, exact_diff.stdout + exact_diff.stderr)
+        self.assertEqual(json.loads(exact_diff.stdout)["exact_head_sha"], head)
+
+        (repo.root / "architecture/system.yaml").unlink()
+        (repo.root / "architecture/rules.yaml").unlink()
+        exact_fitness = subprocess.run(
+            [sys.executable, str(script), "--root", str(repo.root), "fitness", "--base", base, "--head", head, "--json"],
+            cwd=ROOT, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(
+            exact_fitness.returncode,
+            0,
+            exact_fitness.stdout + exact_fitness.stderr,
+        )
+        payload = json.loads(exact_fitness.stdout)
+        self.assertEqual(payload["head_kind"], "commit")
+        self.assertEqual(payload["fitness_status"], "pass")
+
 
 if __name__ == "__main__":
     unittest.main()

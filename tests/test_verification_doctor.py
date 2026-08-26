@@ -267,6 +267,27 @@ class VerificationTests(unittest.TestCase):
             self.assertEqual(report['status'], 'fail')
             self.assertEqual(_check(report, 'architecture')['status'], 'fail')
 
+    def test_verify_fails_after_committed_deletion_of_both_adopted_models(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current architecture', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            self._adopt_architecture(root)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=root, check=True)
+            (root / 'architecture/system.yaml').unlink()
+            (root / 'architecture/rules.yaml').unlink()
+            subprocess.run(['git', 'add', '-u'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'delete architecture'], cwd=root, check=True)
+
+            report = verify(root, mode='fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertEqual(report['architecture']['status'], 'fail')
+            architecture = _check(report, 'architecture')
+            self.assertIsNotNone(architecture)
+            self.assertEqual(architecture['status'], 'fail')
+            self.assertIn('missing', architecture['summary'])
+
     def test_python_runs_unittest_without_project_marker(self) -> None:
         with project_copy(git=True) as root:
             tests_dir = root / 'tests'
