@@ -2,6 +2,10 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-26 — Provider-neutral factory core with explicit adapter boundary
+
+Keep deterministic policy, state, leases, budgets, and capabilities in a PostgreSQL-backed provider-neutral core; make Codex, Grok, and future providers explicit versioned JSON/JSONL translators with no silent fallback. This preserves one-writer and trust boundaries across provider changes while allowing model-native streams to evolve behind conformance-tested adapters.
+
 ## 2026-08-26 — Isolate local PostgreSQL proof in a dedicated database
 
 Use `adaptive_grok_build_pro_test` with four bounded `NOLOGIN` Trust CI roles inside the already-running local PostgreSQL service. Dedicated data and least-privilege roles prove migration/store behavior without touching application schemas or representing the run as deployment.
@@ -227,3 +231,7 @@ Charge conservative schema, derived-root, matching, inventory, semantic-plan, an
 
 Treat the immutable `001_schema`, `002_operational_indexes`, and `003_database_roles` names as exact logical versions in history while reserving expand/migrate/contract semantics for new phased artifacts. This preserves the repository's established convention while making version 004 contiguous and rejecting phased reuse of versions 001–003.
 Legacy versus phased identity is tracked independently of the free-form group text, so a phased group cannot evade the reservation by copying a canonical stem.
+
+## 2026-08-28 — Authenticate authority outside agent-authored records
+
+Treat `actor_kind`, approver names, timestamps, and authority observations inside task/governance JSON as untrusted claims until an independently verifiable receipt binds the exact subject, digest, scope, action, resource, and expiry. This keeps model/provider output proposal-only and prevents evidence-shaped data from minting governance, control-plane, or delivery authority.
