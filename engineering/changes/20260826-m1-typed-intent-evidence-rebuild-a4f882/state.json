@@ -25,11 +25,17 @@
       "from": "approved",
       "reason": "Single write owner began approved M1 implementation",
       "to": "implementing"
+    },
+    {
+      "at": "2026-08-26T11:05:48+00:00",
+      "from": "implementing",
+      "reason": "M1 implementation and focused checks complete; entering full verification and independent review",
+      "to": "verifying"
     }
   ],
   "route_id": "a4f88266a848",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "verifying",
   "title": "M1 Typed Intent Evidence Rebuild",
-  "updated_at": "2026-08-26T10:59:21+00:00"
+  "updated_at": "2026-08-26T11:05:48+00:00"
 }
