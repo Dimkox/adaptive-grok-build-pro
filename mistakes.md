@@ -2,6 +2,12 @@
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-08-26 — Parallelized a bytecode-mutating holdout command with its digest test
+
+**Symptom:** Exact holdout validation ran without `PYTHONDONTWRITEBYTECODE=1` beside the Trust suite, created ignored `holdout.example/__pycache__`, and raced the measured-bundle assertion into one failure out of 200; the cache was moved recoverably to `/tmp/adaptive-grok-holdout-pycache-20260826-final`.
+**Root cause:** The shared measured bundle was assumed read-only even though direct Python execution could write bytecode, so two commands with conflicting filesystem effects were parallelized.
+**Durable rule:** Run them sequentially with bytecode disabled or validate an isolated bundle copy; the sequential rerun passed 200/200 and exact holdout validation passed with only two files and digest `e2de03333ac37e6478433ad37486f6ee904ae8ba8054c86481c04eb7d56fcd64`.
+
 ## 2026-08-26 — Ran PostgreSQL migrations before bootstrapping referenced roles
 
 **Symptom:** The first focused PostgreSQL invocation failed during setup, before its ten test methods ran, because migration 003 referenced absent `trust_ci_*` roles.
