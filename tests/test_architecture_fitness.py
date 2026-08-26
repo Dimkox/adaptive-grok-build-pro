@@ -6,6 +6,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -26,6 +27,7 @@ def _fitness_module():
 
 
 FIT = _fitness_module()
+DIFF = importlib.import_module("adaptive_grok.architecture_diff")
 
 
 class GitArchitectureRepo:
@@ -129,6 +131,35 @@ class ArchitectureFitnessTests(unittest.TestCase):
             with self.subTest(label=label), self.assertRaises(FIT.ArchitectureError):
                 FIT.diff_architecture(repo.root, base_sha=bad_base, head_sha=bad_head)
 
+    def test_exact_git_objects_ignore_replacement_refs(self) -> None:
+        system = _system()
+        repo, base = self._repo(system=system)
+        original = copy.deepcopy(system)
+        original["nodes"][0]["owner"] = "original-owner"
+        repo.model(original, _rules())
+        head = repo.commit("original head")
+
+        replacement = copy.deepcopy(original)
+        replacement["nodes"][0]["owner"] = "replacement-owner"
+        repo.model(replacement, _rules())
+        repo.write_text("src/evil.py", "VALUE = 'replacement'\n")
+        repo.git("add", "-A")
+        tree = repo.git("write-tree")
+        replacement_commit = subprocess.check_output(
+            ["git", "commit-tree", tree, "-p", base],
+            cwd=repo.root,
+            input="replacement\n",
+            text=True,
+            encoding="utf-8",
+        ).strip()
+        repo.git("replace", head, replacement_commit)
+
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        analyzed = {node["id"]: node for node in diff._head_state.snapshot.system["nodes"]}
+        self.assertEqual(diff.head_sha, head)
+        self.assertEqual(analyzed["NODE-A"]["owner"], "original-owner")
+        self.assertNotIn("src/evil.py", diff.changed_paths)
+
     def test_git_changed_paths_are_nul_safe_and_deterministic(self) -> None:
         repo, base = self._repo()
         repo.write_text("odd\nname.py", "VALUE = 1\n")
@@ -178,6 +209,58 @@ class ArchitectureFitnessTests(unittest.TestCase):
             ],
         )
         self.assertRegex(diff.digest, r"^[0-9a-f]{64}$")
+
+    def test_semantic_diff_covers_trust_signal_top_level_and_contract_metadata(self) -> None:
+        system = _system()
+        system["contracts"] = [{
+            "id": "CONTRACT-TEST",
+            "kind": "json_schema",
+            "path": "engineering/contracts/test.json",
+            "version": "1",
+            "role": "consumer",
+            "compatibility": "consumer_accepts_old",
+        }]
+        system["nodes"][0]["public_contracts"] = ["CONTRACT-TEST"]
+        rules = _rules()
+        rules["contract_policies"] = [{
+            "id": "FIT-CONTRACT",
+            "contract_kinds": ["json_schema"],
+            "compatibility": "consumer_accepts_old",
+            "severity": "error",
+        }]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_json("engineering/contracts/test.json", _json_schema({"id": {"type": "string"}}))
+        base = repo.commit("semantic base")
+
+        changed = copy.deepcopy(system)
+        changed["architecture_id"] = "ARCH-TEST-V2"
+        changed["trust_domains"][0]["owner"] = "security"
+        changed["signals"][0]["description"] = "changed observable meaning"
+        changed["contracts"][0].update(
+            version="2", role="bidirectional", compatibility="exact"
+        )
+        changed_rules = copy.deepcopy(rules)
+        changed_rules["architecture_id"] = "ARCH-TEST-V2"
+        repo.model(changed, changed_rules)
+        head = repo.commit("all authority metadata")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        changes = {(item.kind, item.id, item.change) for item in diff.changes}
+        self.assertTrue(
+            {
+                ("contract", "CONTRACT-TEST", "changed"),
+                ("signal", "SIG-EDGE-FAILURE", "changed"),
+                ("trust_domain", "TD-LOCAL", "changed"),
+                ("system", "ARCHITECTURE", "changed"),
+                ("rules", "ARCHITECTURE", "changed"),
+            }
+            <= changes
+        )
+        report = self._evaluate(repo, base, head)
+        contract_result = self._results(report)["contract_compatibility"]
+        self.assertNotEqual(contract_result.status, "not_applicable")
+        self.assertEqual(report.exemption_state, "revoked")
+        self.assertIn("architecture", report.required_scopes)
 
     def test_all_mandatory_categories_emit_typed_applicability(self) -> None:
         head = subprocess.check_output(
@@ -367,6 +450,49 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertEqual(result.status, "fail")
                 self.assertTrue(result.findings)
 
+    def test_network_analysis_handles_stdlib_unowned_and_unknown_clients(self) -> None:
+        cases = (
+            (
+                "owned http.client",
+                "src/client.py",
+                "import http.client\nhttp.client.HTTPSConnection('example.test')\n",
+                "fail",
+            ),
+            (
+                "unowned urllib",
+                "unowned/client.py",
+                "import urllib.request\nurllib.request.urlopen('https://example.test')\n",
+                "fail",
+            ),
+            (
+                "unknown external client",
+                "src/client.py",
+                "import mystery_http\nmystery_http.connect('example.test')\n",
+                "unsupported",
+            ),
+        )
+        for label, path, source, expected in cases:
+            with self.subTest(label=label):
+                system = _system()
+                system["nodes"][0]["type"] = "service"
+                system["nodes"][0]["repository_paths"] = ["src"]
+                rules = _rules()
+                rules["network_policies"] = [{
+                    "id": "FIT-NETWORK",
+                    "node_types": ["service"],
+                    "allowed_protocols": ["https"],
+                    "require_declared_edge": True,
+                    "severity": "error",
+                }]
+                repo, base = self._repo(system=system, rules=rules)
+                repo.write_text(path, source)
+                head = repo.commit(label)
+                report = self._evaluate(repo, base, head)
+                result = self._results(report)["network_client"]
+                self.assertEqual(result.status, expected)
+                self.assertEqual(report.status, "fail")
+                self.assertIn("new_network_client", report.triggers)
+
     def test_change_separation_rejects_product_and_trust_ci_mixing(self) -> None:
         rules = _rules()
         rules["change_separation_policies"] = [{
@@ -456,8 +582,11 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "fail")
         self.assertIn("missing phases", " ".join(result.findings))
 
-        repo.write_text("migrations/001_migrate.sql", "UPDATE item SET id = id;\n")
-        repo.write_text("migrations/001_contract.sql", "ALTER TABLE item ADD COLUMN done integer;\n")
+        repo.write_text(
+            "migrations/001_migrate.sql",
+            "-- adaptive-grok: bounded\n-- adaptive-grok: resumable\nUPDATE item SET id = id WHERE id IS NOT NULL;\n",
+        )
+        repo.write_text("migrations/001_contract.sql", "ALTER TABLE item DROP COLUMN legacy;\n")
         complete = repo.commit("complete migration")
         result = self._results(self._evaluate(repo, head, complete))["migration_safety"]
         self.assertEqual(result.status, "pass")
@@ -487,6 +616,86 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "fail")
         self.assertIn("mirror", " ".join(result.findings))
 
+    def test_migration_content_and_versions_are_conservative_for_every_status(self) -> None:
+        cases = (
+            (
+                "not null expand",
+                "migrations/001_expand.sql",
+                "ALTER TABLE item ADD COLUMN name text NOT NULL;\n",
+                "fail",
+            ),
+            (
+                "unbounded migrate",
+                "migrations/001_migrate.sql",
+                "DELETE FROM item;\n",
+                "fail",
+            ),
+            (
+                "unknown migrate safety",
+                "migrations/001_migrate.sql",
+                "VACUUM item;\n",
+                "unsupported",
+            ),
+            (
+                "version gap",
+                "migrations/003_expand.sql",
+                "CREATE TABLE item(id integer);\n",
+                "fail",
+            ),
+        )
+        for label, unsafe_path, unsafe_source, expected in cases:
+            with self.subTest(label=label):
+                rules = _rules()
+                rules["migration_policies"] = [{
+                    "id": "FIT-MIGRATION",
+                    "path_prefixes": ["migrations"],
+                    "required_phases": ["expand", "migrate", "contract"],
+                    "immutable_history": False,
+                    "severity": "error",
+                }]
+                repo, base = self._repo(rules=rules)
+                version = "003" if "version" in label else "001"
+                safe = {
+                    f"migrations/{version}_expand.sql": "CREATE TABLE item(id integer);\n",
+                    f"migrations/{version}_migrate.sql": (
+                        "-- adaptive-grok: bounded\n-- adaptive-grok: resumable\n"
+                        "UPDATE item SET id = id WHERE id IS NOT NULL;\n"
+                    ),
+                    f"migrations/{version}_contract.sql": "ALTER TABLE item DROP COLUMN legacy;\n",
+                }
+                safe[unsafe_path] = unsafe_source
+                for path, source in safe.items():
+                    repo.write_text(path, source)
+                head = repo.commit(label)
+                result = self._results(self._evaluate(repo, base, head))["migration_safety"]
+                self.assertEqual(result.status, expected)
+
+        rules = _rules()
+        rules["migration_policies"] = [{
+            "id": "FIT-MIGRATION",
+            "path_prefixes": ["migrations"],
+            "required_phases": ["expand", "migrate", "contract"],
+            "immutable_history": False,
+            "severity": "error",
+        }]
+        repo = GitArchitectureRepo(self)
+        repo.model(_system(), rules)
+        for phase, source in (
+            ("expand", "CREATE TABLE item(id integer);\n"),
+            (
+                "migrate",
+                "-- adaptive-grok: bounded\n-- adaptive-grok: resumable\n"
+                "UPDATE item SET id = id WHERE id IS NOT NULL;\n",
+            ),
+            ("contract", "ALTER TABLE item DROP COLUMN legacy;\n"),
+        ):
+            repo.write_text(f"migrations/001_{phase}.sql", source)
+        base = repo.commit("safe migration base")
+        repo.write_text("migrations/001_migrate.sql", "UPDATE item SET id = id;\n")
+        head = repo.commit("modified unsafe migrate")
+        result = self._results(self._evaluate(repo, base, head))["migration_safety"]
+        self.assertEqual(result.status, "fail")
+
     def test_unsupported_applicable_source_analysis_fails_the_report(self) -> None:
         rules = _rules()
         rules["path_boundaries"] = [{
@@ -515,6 +724,86 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertIsInstance(result.applicability.scanned_scope, tuple)
                 self.assertRegex(result.applicability.inventory_digest, r"^[0-9a-f]{64}$")
         self.assertEqual(report.exemption_state, "eligible")
+
+    def test_not_applicable_binds_declared_and_repository_inventory(self) -> None:
+        system = _system()
+        system["contracts"] = [{
+            "id": "CONTRACT-TEST",
+            "kind": "json_schema",
+            "path": "engineering/contracts/test.json",
+            "version": "1",
+            "role": "consumer",
+            "compatibility": "consumer_accepts_old",
+        }]
+        rules = _rules()
+        rules["contract_policies"] = [{
+            "id": "FIT-CONTRACT",
+            "contract_kinds": ["json_schema"],
+            "compatibility": "consumer_accepts_old",
+            "severity": "error",
+        }]
+        rules["migration_policies"] = [{
+            "id": "FIT-MIGRATION",
+            "path_prefixes": ["migrations"],
+            "required_phases": ["expand", "migrate", "contract"],
+            "immutable_history": True,
+            "severity": "error",
+        }]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_json("engineering/contracts/test.json", _json_schema({"id": {"type": "string"}}))
+        base = repo.commit("inventory base")
+        repo.write_text("docs/one.md", "one\n")
+        first_head = repo.commit("first docs")
+        first = self._results(self._evaluate(repo, base, first_head))
+        repo.write_text("docs/two.md", "two\n")
+        second_head = repo.commit("second docs")
+        second = self._results(self._evaluate(repo, base, second_head))
+        for category, subjects in (
+            ("contract_compatibility", {"CONTRACT-TEST", "FIT-CONTRACT"}),
+            ("migration_safety", {"migrations", "FIT-MIGRATION"}),
+        ):
+            self.assertEqual(first[category].status, "not_applicable")
+            self.assertTrue(subjects <= set(first[category].applicability.scanned_scope))
+            self.assertNotEqual(
+                first[category].applicability.inventory_digest,
+                second[category].applicability.inventory_digest,
+            )
+
+    def test_capped_process_stops_output_and_timeout_producers(self) -> None:
+        self.assertTrue(hasattr(DIFF, "_run_capped"), "incremental capped runner is absent")
+        for label, code, timeout in (
+            (
+                "output",
+                "import os, pathlib\n"
+                "[os.write(1, b'x' * 65536) for _ in range(64)]\n"
+                "pathlib.Path(os.environ['SENTINEL']).write_text('completed')\n",
+                5.0,
+            ),
+            (
+                "timeout",
+                "import os, pathlib, time\n"
+                "time.sleep(0.5)\n"
+                "pathlib.Path(os.environ['SENTINEL']).write_text('completed')\n",
+                0.05,
+            ),
+        ):
+            with self.subTest(label=label):
+                with tempfile.TemporaryDirectory() as directory:
+                    sentinel = Path(directory) / "completed"
+                    environment = {"SENTINEL": str(sentinel)}
+                    started = time.monotonic()
+                    with self.assertRaises(FIT.ArchitectureError):
+                        DIFF._run_capped(
+                            [sys.executable, "-c", code],
+                            cwd=Path(directory),
+                            env=environment,
+                            stdout_limit=1024,
+                            stderr_limit=1024,
+                            timeout=timeout,
+                        )
+                    self.assertLess(time.monotonic() - started, 0.4)
+                    self.assertFalse(sentinel.exists())
 
     def test_risk_is_monotonic_and_architecture_expansion_revokes_exemption(self) -> None:
         system = _system()

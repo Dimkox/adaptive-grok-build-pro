@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+import difflib
 import hashlib
 import json
 import os
 import re
+import selectors
 import shutil
+import signal
 import stat
 # Git is resolved once and invoked only with an argument vector and shell=False.
 import subprocess  # nosec B404
 import tempfile
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -35,6 +39,7 @@ _SCHEMA_PATHS = (
     "schemas/architecture-rules.schema.json",
 )
 _GIT_EXECUTABLE = shutil.which("git")
+_GIT_TIMEOUT_SECONDS = 30.0
 
 
 def _canonical_bytes(value: Any) -> bytes:
@@ -53,6 +58,84 @@ def _path_text(value: bytes) -> str:
     return os.fsdecode(value)
 
 
+def _stop_process(process: subprocess.Popen[bytes]) -> None:
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    process.wait()
+
+
+def _run_capped(
+    command: list[str],
+    *,
+    cwd: Path,
+    env: dict[str, str],
+    stdout_limit: int,
+    stderr_limit: int,
+    timeout: float,
+) -> tuple[int, bytes, bytes]:
+    """Run a process while enforcing limits before output is fully produced."""
+    process = subprocess.Popen(  # nosec B603
+        command,
+        cwd=cwd,
+        env=env,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=False,
+        start_new_session=True,
+    )
+    if process.stdout is None or process.stderr is None:  # pragma: no cover - Popen contract
+        _stop_process(process)
+        raise ArchitectureError("bounded process pipes are unavailable", code="io")
+    selector = selectors.DefaultSelector()
+    streams = {process.stdout: (bytearray(), stdout_limit), process.stderr: (bytearray(), stderr_limit)}
+    for stream in streams:
+        os.set_blocking(stream.fileno(), False)
+        selector.register(stream, selectors.EVENT_READ)
+    deadline = time.monotonic() + timeout
+    try:
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                _stop_process(process)
+                raise ArchitectureError("bounded process timeout exceeded", code="timeout")
+            events = selector.select(remaining)
+            if not events and time.monotonic() >= deadline:
+                _stop_process(process)
+                raise ArchitectureError("bounded process timeout exceeded", code="timeout")
+            for key, _mask in events:
+                stream = key.fileobj
+                buffer, limit = streams[stream]
+                chunk = os.read(stream.fileno(), min(65_536, limit - len(buffer) + 1))
+                if not chunk:
+                    selector.unregister(stream)
+                    stream.close()
+                    continue
+                buffer.extend(chunk)
+                if len(buffer) > limit:
+                    _stop_process(process)
+                    raise ArchitectureError("bounded process output limit exceeded", code="limit")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            _stop_process(process)
+            raise ArchitectureError("bounded process timeout exceeded", code="timeout")
+        try:
+            returncode = process.wait(timeout=remaining)
+        except subprocess.TimeoutExpired as exc:
+            _stop_process(process)
+            raise ArchitectureError("bounded process timeout exceeded", code="timeout") from exc
+        return returncode, bytes(streams[process.stdout][0]), bytes(streams[process.stderr][0])
+    finally:
+        selector.close()
+        for stream in streams:
+            if not stream.closed:
+                stream.close()
+        if process.poll() is None:
+            _stop_process(process)
+
+
 def _git(
     root: Path,
     arguments: list[str],
@@ -62,25 +145,39 @@ def _git(
 ) -> bytes | None:
     if _GIT_EXECUTABLE is None:
         raise ArchitectureError("Git executable is unavailable", code="git")
-    with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
-        # The executable is fixed and arguments never pass through a shell.
-        process = subprocess.run(  # nosec B603
-            [_GIT_EXECUTABLE, *arguments],
-            cwd=root,
-            stdin=subprocess.DEVNULL,
-            stdout=stdout,
-            stderr=stderr,
-            check=False,
-        )
-        stdout_size = stdout.tell()
-        stderr_size = stderr.tell()
-        if stdout_size > limit or stderr_size > 65_536:
-            raise ArchitectureError("bounded Git output limit exceeded", code="limit")
-        stdout.seek(0)
-        stderr.seek(0)
-        output = stdout.read(limit + 1)
-        error = stderr.read(65_537)
-    if process.returncode:
+    environment = {
+        "PATH": str(Path(_GIT_EXECUTABLE).parent),
+        "LANG": "C",
+        "LC_ALL": "C",
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_NO_REPLACE_OBJECTS": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+        "GIT_TERMINAL_PROMPT": "0",
+    }
+    returncode, output, error = _run_capped(
+        [
+            _GIT_EXECUTABLE,
+            "--no-replace-objects",
+            "-c",
+            "core.attributesFile=/dev/null",
+            "-c",
+            "core.excludesFile=/dev/null",
+            "-c",
+            "core.ignoreCase=false",
+            "-c",
+            "diff.external=",
+            "-c",
+            "diff.renames=false",
+            *arguments,
+        ],
+        cwd=root,
+        env=environment,
+        stdout_limit=limit,
+        stderr_limit=65_536,
+        timeout=_GIT_TIMEOUT_SECONDS,
+    )
+    if returncode:
         if allow_failure:
             return None
         message = error.decode("utf-8", "replace").strip()
@@ -295,7 +392,17 @@ class ArchitectureDiff:
 
 def _object_digest(value: Any) -> str:
     if isinstance(value, ContractRecord):
-        return value.digest
+        return _digest(
+            {
+                "id": value.id,
+                "kind": value.kind,
+                "path": value.path,
+                "version": value.version,
+                "role": value.role,
+                "compatibility": value.compatibility,
+                "document_digest": value.digest,
+            }
+        )
     return _digest(value)
 
 
@@ -308,6 +415,22 @@ def _change_records(
     base_system = base.snapshot.system if base else {}
     head_system = head.snapshot.system
     collections: list[tuple[str, dict[str, Any], dict[str, Any]]] = [
+        (
+            "system",
+            {"ARCHITECTURE": {key: base_system[key] for key in ("schema_version", "architecture_id")}}
+            if base else {},
+            {"ARCHITECTURE": {key: head_system[key] for key in ("schema_version", "architecture_id")}},
+        ),
+        (
+            "trust_domain",
+            indexed(base_system.get("trust_domains", [])),
+            indexed(head_system["trust_domains"]),
+        ),
+        (
+            "signal",
+            indexed(base_system.get("signals", [])),
+            indexed(head_system["signals"]),
+        ),
         ("node", indexed(base_system.get("nodes", [])), indexed(head_system["nodes"])),
         ("edge", indexed(base_system.get("edges", [])), indexed(head_system["edges"])),
         (
@@ -333,6 +456,14 @@ def _change_records(
     ]
     base_rules = base.snapshot.rules if base else {}
     head_rules = head.snapshot.rules
+    collections.append(
+        (
+            "rules",
+            {"ARCHITECTURE": {key: base_rules[key] for key in ("schema_version", "architecture_id")}}
+            if base else {},
+            {"ARCHITECTURE": {key: head_rules[key] for key in ("schema_version", "architecture_id")}},
+        )
+    )
     collections.append(
         (
             "rule",
@@ -374,7 +505,9 @@ def _change_records(
 
 
 def _changed_paths(root: Path, base: str, head: str | None, *, worktree: bool) -> tuple[str, ...]:
-    arguments = ["diff", "--name-only", "-z", "--no-renames", base]
+    arguments = [
+        "diff", "--name-only", "-z", "--no-renames", "--no-ext-diff", "--no-textconv", base
+    ]
     if not worktree:
         arguments.append(_required_head(head))
     raw = _required_output(_git(root, arguments), operation="list changed paths")
@@ -391,45 +524,25 @@ def _changed_paths(root: Path, base: str, head: str | None, *, worktree: bool) -
     return unique
 
 
-def _statuses(root: Path, base: str, head: str | None, *, worktree: bool) -> dict[str, str]:
-    arguments = ["diff", "--name-status", "-z", "--no-renames", base]
-    if not worktree:
-        arguments.append(_required_head(head))
-    raw = _required_output(_git(root, arguments), operation="read changed path status")
-    fields = [item for item in raw.split(b"\0") if item]
-    if len(fields) % 2:
-        raise ArchitectureError("unexpected NUL-delimited Git status output", code="git")
-    statuses = {
-        _path_text(fields[index + 1]): {b"A": "added", b"D": "deleted", b"M": "modified"}.get(
-            fields[index][:1], "unsupported"
-        )
-        for index in range(0, len(fields), 2)
-    }
-    if worktree:
-        untracked = _required_output(
-            _git(root, ["ls-files", "--others", "--exclude-standard", "-z"]),
-            operation="list untracked status",
-        )
-        statuses.update({_path_text(item): "added" for item in untracked.split(b"\0") if item})
-    return statuses
-
-
-def _line_stats(
-    root: Path, base: str, head: str | None, *, worktree: bool
-) -> dict[str, tuple[int | None, int | None]]:
-    arguments = ["diff", "--numstat", "-z", "--no-renames", base]
-    if not worktree:
-        arguments.append(_required_head(head))
-    raw = _required_output(_git(root, arguments), operation="read changed line counts")
-    result: dict[str, tuple[int | None, int | None]] = {}
-    for record in (item for item in raw.split(b"\0") if item):
-        fields = record.split(b"\t", 2)
-        if len(fields) != 3:
-            raise ArchitectureError("unexpected NUL-delimited Git numstat output", code="git")
-        added = None if fields[0] == b"-" else int(fields[0])
-        deleted = None if fields[1] == b"-" else int(fields[1])
-        result[_path_text(fields[2])] = (added, deleted)
-    return result
+def _line_stats(old: bytes | None, new: bytes | None) -> tuple[int | None, int | None]:
+    before = old or b""
+    after = new or b""
+    if b"\0" in before or b"\0" in after:
+        return None, None
+    try:
+        before_lines = before.decode("utf-8").splitlines()
+        after_lines = after.decode("utf-8").splitlines()
+    except UnicodeDecodeError:
+        return None, None
+    added = deleted = 0
+    for operation, start_a, end_a, start_b, end_b in difflib.SequenceMatcher(
+        None, before_lines, after_lines, autojunk=False
+    ).get_opcodes():
+        if operation in {"replace", "delete"}:
+            deleted += end_a - start_a
+        if operation in {"replace", "insert"}:
+            added += end_b - start_b
+    return added, deleted
 
 
 def read_diff_file(root: Path, diff: ArchitectureDiff, path: str, side: str = "head") -> bytes | None:
@@ -523,8 +636,6 @@ def diff_architecture(
         head_kind = "commit"
     base_state = _materialized_state(repository, base, adoption_base=True)
     paths = _changed_paths(repository, base, head, worktree=worktree)
-    statuses = _statuses(repository, base, head, worktree=worktree)
-    line_stats = _line_stats(repository, base, head, worktree=worktree)
     artifacts: list[ChangedArtifact] = []
     artifact_bytes = 0
     for path in paths:
@@ -537,14 +648,14 @@ def diff_architecture(
         artifact_bytes += len(old or b"") + len(new or b"")
         if artifact_bytes > MAX_DIFF_ARTIFACT_BYTES:
             raise ArchitectureError("aggregate changed artifact byte limit exceeded", code="limit")
-        added, deleted = line_stats.get(path, (None, None))
-        if worktree and statuses.get(path) == "added" and path not in line_stats and new is not None:
-            if b"\0" not in new:
-                added, deleted = len(new.splitlines()), 0
+        status = "added" if old is None and new is not None else (
+            "deleted" if old is not None and new is None else "modified"
+        )
+        added, deleted = _line_stats(old, new)
         artifacts.append(
             ChangedArtifact(
                 path=path,
-                status=statuses.get(path, "added" if old is None else "unsupported"),
+                status=status,
                 added_lines=added,
                 deleted_lines=deleted,
                 base_size=len(old or b""),

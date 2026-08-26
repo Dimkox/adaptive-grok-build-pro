@@ -4,7 +4,8 @@ import ast
 import hashlib
 import json
 import re
-from dataclasses import dataclass
+import sys
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -47,13 +48,21 @@ _PYTHON_SUFFIXES = {".py", ".pyi"}
 _NETWORK_IMPORTS = {
     "aiohttp": "https",
     "docker": "docker_api",
+    "ftplib": "ftp",
+    "http.client": "https",
     "httpx": "https",
+    "imaplib": "imap",
+    "poplib": "pop3",
     "psycopg": "postgresql",
     "psycopg2": "postgresql",
     "requests": "https",
+    "smtplib": "smtp",
     "socket": "tcp",
     "urllib": "https",
+    "urllib.request": "https",
+    "xmlrpc.client": "https",
 }
+_NETWORK_CALLS = {"connect", "delete", "get", "open", "post", "put", "request", "send", "urlopen"}
 _QUEUE_IMPORTS = {"celery", "confluent_kafka", "kafka", "kombu", "pika", "redis", "rq"}
 _FRAMEWORK_IMPORTS = {"django", "fastapi", "flask", "litestar", "starlette"}
 _GOVERNANCE_IMPORTS = {"adaptive_grok", "architecture", "engineering", "scripts", "tests"}
@@ -239,6 +248,50 @@ def _imports(tree: ast.AST) -> tuple[str, ...]:
     return tuple(sorted(values))
 
 
+def _network_protocol(imported: str) -> str | None:
+    matches = [
+        (len(family), protocol)
+        for family, protocol in _NETWORK_IMPORTS.items()
+        if imported == family or imported.startswith(family + ".")
+    ]
+    return None if not matches else max(matches)[1]
+
+
+def _import_targets(tree: ast.AST) -> set[str]:
+    targets: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            targets.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            targets.update(f"{node.module}.{alias.name}" for alias in node.names)
+    return targets
+
+
+def _called_imports(tree: ast.AST) -> set[str]:
+    aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                aliases[alias.asname or alias.name.split(".")[0]] = alias.name
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+    called: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        parts: list[str] = []
+        value: ast.AST = node.func
+        while isinstance(value, ast.Attribute):
+            parts.append(value.attr)
+            value = value.value
+        if isinstance(value, ast.Name) and value.id in aliases:
+            terminal = parts[0] if parts else value.id
+            if terminal.lower() in _NETWORK_CALLS:
+                called.add(aliases[value.id])
+    return called
+
+
 def _module_boundaries(
     snapshot: ArchitectureSnapshot,
     diff: ArchitectureDiff,
@@ -384,6 +437,60 @@ def _migration_mirrors(
     return tuple(sorted(roots))
 
 
+def _migration_version(group: str) -> int | None:
+    match = re.match(r"^(?:v)?(?P<version>[0-9]+)(?:[_-].*)?$", group)
+    return None if match is None else int(match.group("version"))
+
+
+def _migration_source_findings(
+    rule_id: str, path: str, phase: str, source: str
+) -> tuple[list[str], list[str]]:
+    findings: list[str] = []
+    unsupported: list[str] = []
+    statements = [
+        statement.strip()
+        for statement in re.split(r";", re.sub(r"--[^\n]*", "", source))
+        if statement.strip()
+    ]
+    if not statements:
+        unsupported.append(f"{rule_id}: migration contains no analyzable SQL: {path}")
+        return findings, unsupported
+    bounded = "-- adaptive-grok: bounded" in source.lower()
+    resumable = "-- adaptive-grok: resumable" in source.lower()
+    for statement in statements:
+        normalized = " ".join(statement.upper().split())
+        destructive = bool(
+            re.search(r"\b(DROP|TRUNCATE)\b|\bALTER TABLE\b.*\bDROP\b", normalized)
+        )
+        if destructive and phase != "contract":
+            findings.append(f"{rule_id}: destructive SQL outside contract phase: {path}")
+            continue
+        if phase == "expand":
+            if re.search(r"\bNOT NULL\b", normalized):
+                findings.append(f"{rule_id}: NOT NULL is unsafe in expand phase: {path}")
+            elif not re.match(
+                r"^(CREATE TABLE|CREATE (UNIQUE )?INDEX CONCURRENTLY|ALTER TABLE .* ADD )",
+                normalized,
+            ):
+                unsupported.append(f"{rule_id}: unsupported expand SQL semantics: {path}")
+        elif phase == "migrate":
+            if re.match(r"^(UPDATE|DELETE)\b", normalized) and not re.search(r"\bWHERE\b", normalized):
+                findings.append(f"{rule_id}: unbounded {normalized.split()[0]} in migrate phase: {path}")
+            elif re.match(r"^(UPDATE|DELETE|INSERT)\b", normalized):
+                if not (bounded and resumable):
+                    unsupported.append(f"{rule_id}: migrate bounds/resume semantics undeclared: {path}")
+            else:
+                unsupported.append(f"{rule_id}: unsupported migrate SQL semantics: {path}")
+        elif phase == "contract":
+            if re.match(r"^ALTER TABLE\b.*\bADD\b", normalized):
+                findings.append(f"{rule_id}: expansive SQL in contract phase: {path}")
+            elif not re.match(r"^(ALTER TABLE .* DROP|DROP|TRUNCATE)\b", normalized):
+                unsupported.append(f"{rule_id}: unsupported contract SQL semantics: {path}")
+        else:  # pragma: no cover - phase comes from the closed regex
+            unsupported.append(f"{rule_id}: unsupported migration phase: {path}")
+    return findings, unsupported
+
+
 def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: ArchitectureDiff) -> FitnessResult:
     rules = snapshot.rules["migration_policies"]
     predicate = "changed SQL paths match a declared migration-history prefix"
@@ -409,12 +516,21 @@ def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: Architec
                     findings.append(f"{rule['id']}: immutable migration history changed: {item.path}")
         head_paths = _migration_paths(root, diff, tuple(rule["path_prefixes"]))
         phases: dict[str, set[str]] = {}
+        versions: set[int] = set()
         for path in head_paths:
             parsed = _migration_phase(path)
             if parsed:
                 phases.setdefault(parsed[0], set()).add(parsed[1])
+                version = _migration_version(parsed[0])
+                if version is None:
+                    unsupported.append(f"{rule['id']}: migration version cannot be derived: {path}")
+                else:
+                    versions.add(version)
+        if versions and versions != set(range(1, max(versions) + 1)):
+            findings.append(f"{rule['id']}: migration version history is not contiguous")
         for item in relevant:
-            if item.status != "added":
+            if item.status == "deleted":
+                findings.append(f"{rule['id']}: migration history removed: {item.path}")
                 continue
             parsed = _migration_phase(item.path)
             if parsed is None:
@@ -434,9 +550,11 @@ def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: Architec
             except UnicodeDecodeError:
                 unsupported.append(f"{rule['id']}: migration is not UTF-8: {item.path}")
                 continue
-            destructive = re.search(r"\b(DROP|TRUNCATE)\b|\bALTER\s+TABLE\b[^;]*\bDROP\b", source, re.I)
-            if destructive and parsed[1] != "contract":
-                findings.append(f"{rule['id']}: destructive SQL outside contract phase: {item.path}")
+            source_findings, source_unsupported = _migration_source_findings(
+                rule["id"], item.path, parsed[1], source
+            )
+            findings.extend(source_findings)
+            unsupported.extend(source_unsupported)
             for prefix in rule["path_prefixes"]:
                 if not _matches(item.path, (prefix,)):
                     continue
@@ -518,25 +636,28 @@ def _network_clients(
     predicate = "changed owned Python source imports a bounded network-client family"
     if not rules:
         return _not_applicable("network_client", predicate, (), "no_declared_rules")
-    clients: list[tuple[str, str, dict[str, Any]]] = []
+    clients: list[tuple[str, str, dict[str, Any] | None]] = []
     unsupported: list[str] = []
     for path in _python_paths(diff):
         owner = _owner_for_path(snapshot, path)
-        if owner is None:
-            continue
         try:
-            imports = _imports(python.tree(path))
+            tree = python.tree(path)
+            imports = _import_targets(tree)
         except SyntaxError as exc:
             unsupported.append(f"{path}: {exc}")
             continue
         for imported in imports:
-            protocol = _NETWORK_IMPORTS.get(imported.split(".")[0])
+            protocol = _network_protocol(imported)
             if protocol:
                 clients.append((path, protocol, owner))
-    applicable = [
-        item for item in clients if any(item[2]["type"] in rule["node_types"] for rule in rules)
-    ]
-    if unsupported and any(_owner_for_path(snapshot, path) for path in _python_paths(diff)):
+        for imported in _called_imports(tree):
+            if _network_protocol(imported) is not None:
+                continue
+            top = imported.split(".")[0]
+            network_named = any(token in imported.lower() for token in ("http", "network", "socket", "client", "api"))
+            if top not in sys.stdlib_module_names or network_named:
+                unsupported.append(f"{path}: unsupported network-client semantics for {imported}")
+    if unsupported:
         return _result(
             "network_client",
             status="unsupported",
@@ -546,17 +667,22 @@ def _network_clients(
             scope=_python_paths(diff),
             reason="unparseable_source",
         )
-    if not applicable:
+    if not clients:
         return _not_applicable(
             "network_client", predicate, _python_paths(diff), "no_network_client",
             (rule["id"] for rule in rules),
         )
     findings: list[str] = []
     edges = snapshot.system["edges"]
-    for path, protocol, owner in applicable:
-        for rule in rules:
-            if owner["type"] not in rule["node_types"]:
-                continue
+    for path, protocol, owner in clients:
+        if owner is None:
+            findings.append(f"unowned network client {protocol} in {path}")
+            continue
+        matching_rules = [rule for rule in rules if owner["type"] in rule["node_types"]]
+        if not matching_rules:
+            findings.append(f"no network policy for {protocol} in {path} for {owner['id']}")
+            continue
+        for rule in matching_rules:
             declared = any(
                 edge["from"] == owner["id"] and edge["protocol"] == protocol for edge in edges
             )
@@ -570,7 +696,7 @@ def _network_clients(
         rules=(rule["id"] for rule in rules),
         findings=findings,
         predicate=predicate,
-        scope=(item[0] for item in applicable),
+        scope=(item[0] for item in clients),
     )
 
 
@@ -893,6 +1019,32 @@ def _new_import_family(
     return False
 
 
+def _network_families(tree: ast.AST) -> set[str]:
+    values = {
+        imported for imported in _import_targets(tree) if _network_protocol(imported) is not None
+    }
+    for imported in _called_imports(tree):
+        top = imported.split(".")[0]
+        if _network_protocol(imported) is not None or top not in sys.stdlib_module_names:
+            values.add(imported)
+    return values
+
+
+def _new_network_client(root: Path, diff: ArchitectureDiff, python: _PythonInventory) -> bool:
+    for path in _python_paths(diff):
+        try:
+            head = _network_families(python.tree(path))
+            base_value = read_diff_file(root, diff, path, "base")
+            base = set() if base_value is None else _network_families(
+                ast.parse(base_value.decode("utf-8"), filename=path)
+            )
+            if head - base:
+                return True
+        except (SyntaxError, UnicodeDecodeError):
+            continue
+    return False
+
+
 def _risk(
     root: Path,
     snapshot: ArchitectureSnapshot,
@@ -905,7 +1057,7 @@ def _risk(
     triggers = set(_risk_triggers(snapshot, diff))
     if _new_import_family(root, diff, python, _QUEUE_IMPORTS):
         triggers.add("new_queue")
-    if _new_import_family(root, diff, python, set(_NETWORK_IMPORTS)):
+    if _new_network_client(root, diff, python):
         triggers.add("new_network_client")
     if _new_import_family(root, diff, python, _FRAMEWORK_IMPORTS):
         triggers.add("new_framework")
@@ -932,6 +1084,86 @@ def _result_payload(result: FitnessResult) -> dict[str, Any]:
     }
 
 
+_CATEGORY_RULES = {
+    "background_job": "background_job_policies",
+    "change_separation": "change_separation_policies",
+    "code_budget": "code_budgets",
+    "contract_compatibility": "contract_policies",
+    "forbidden_edge": "forbidden_edges",
+    "migration_safety": "migration_policies",
+    "module_boundary": "path_boundaries",
+    "network_client": "network_policies",
+    "tenant_authorization": "tenant_authorization_policies",
+    "workspace_trust": "workspace_trust_policies",
+}
+
+
+def _bind_applicability_inventory(
+    root: Path,
+    snapshot: ArchitectureSnapshot,
+    diff: ArchitectureDiff,
+    result: FitnessResult,
+) -> FitnessResult:
+    collection = (
+        "secret_flow_policies"
+        if result.category == "secret_flow"
+        else _CATEGORY_RULES.get(result.category)
+    )
+    rules = [] if collection is None else snapshot.rules[collection]
+    scope = set(result.applicability.scanned_scope)
+    scope.update(rule["id"] for rule in rules)
+    for rule in rules:
+        for key, value in rule.items():
+            if key.endswith("prefixes") and isinstance(value, list):
+                scope.update(item for item in value if isinstance(item, str))
+    if result.category == "contract_compatibility":
+        scope.update(record.id for record in diff._head_state.contracts)
+    if result.category == "migration_safety":
+        prefixes = tuple(
+            sorted({prefix for rule in rules for prefix in rule["path_prefixes"]})
+        )
+        scope.update(prefixes)
+        if prefixes:
+            scope.update(_migration_paths(root, diff, prefixes))
+    model_ids = {
+        item["id"]
+        for collection_name in (
+            "trust_domains", "data_classifications", "secret_classes", "nodes", "edges", "signals"
+        )
+        for item in snapshot.system[collection_name]
+    }
+    payload = {
+        "category": result.category,
+        "predicate": result.applicability.predicate,
+        "reason_code": result.applicability.reason_code,
+        "scanned_scope": tuple(sorted(scope)),
+        "repository_inventory_digest": diff.repository_inventory_digest,
+        "architecture_digest": diff.head_architecture_digest,
+        "model_ids": tuple(sorted(model_ids)),
+        "rules": rules,
+        "contracts": [
+            {
+                "id": record.id,
+                "kind": record.kind,
+                "path": record.path,
+                "version": record.version,
+                "role": record.role,
+                "compatibility": record.compatibility,
+                "document_digest": record.digest,
+            }
+            for record in diff._head_state.contracts
+        ] if result.category == "contract_compatibility" else [],
+    }
+    return replace(
+        result,
+        applicability=replace(
+            result.applicability,
+            scanned_scope=tuple(sorted(scope)),
+            inventory_digest=_digest(payload),
+        ),
+    )
+
+
 def evaluate_fitness(
     root: Path | str,
     snapshot: ArchitectureSnapshot,
@@ -947,7 +1179,7 @@ def evaluate_fitness(
     if architecture_digests(snapshot)["architecture_digest"] != diff.head_architecture_digest:
         raise ArchitectureError("fitness snapshot does not match the diff head", code="fitness")
     python = _PythonInventory(repository, diff)
-    results = tuple(
+    raw_results = tuple(
         sorted(
             (
                 _background_jobs(snapshot, diff),
@@ -965,6 +1197,10 @@ def evaluate_fitness(
             ),
             key=lambda item: item.category,
         )
+    )
+    results = tuple(
+        _bind_applicability_inventory(repository, snapshot, diff, result)
+        for result in raw_results
     )
     if tuple(item.category for item in results) != FITNESS_CATEGORIES:
         raise ArchitectureError("mandatory fitness category coverage is incomplete", code="fitness")
