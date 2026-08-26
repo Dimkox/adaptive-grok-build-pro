@@ -82,6 +82,10 @@ _NETWORK_APPLICABILITY_TOKENS = {
     "websocket",
     "websockets",
 }
+_CLOUD_SDK_NETWORK_FACTORIES = {
+    "boto3": {"client", "resource", "session"},
+    "botocore": {"client", "create_client", "get_session", "session"},
+}
 _QUEUE_IMPORTS = {"celery", "confluent_kafka", "kafka", "kombu", "pika", "redis", "rq"}
 _FRAMEWORK_IMPORTS = {"django", "fastapi", "flask", "litestar", "starlette"}
 _GOVERNANCE_IMPORTS = {"adaptive_grok", "architecture", "engineering", "scripts", "tests"}
@@ -734,6 +738,10 @@ def _network_call_is_applicable(
 ) -> bool:
     if not _is_external_import(imported, project_roots):
         return False
+    family = imported.split(".")[0].lower()
+    factory = call.rsplit(".", 1)[-1].lower()
+    if factory in _CLOUD_SDK_NETWORK_FACTORIES.get(family, set()):
+        return True
     tokens = {
         token.lower()
         for token in re.findall(

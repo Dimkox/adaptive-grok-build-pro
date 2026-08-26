@@ -476,6 +476,31 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 "import paramiko as ssh\nclient = ssh.transport.SSHClient()\n",
                 "unsupported",
             ),
+            (
+                "cloud sdk client factory",
+                "src/client.py",
+                "import boto3\ns3 = boto3.client('s3')\n"
+                "s3.get_object(Bucket='bucket', Key='key')\n",
+                "unsupported",
+            ),
+            (
+                "cloud sdk resource factory",
+                "src/client.py",
+                "import boto3\ns3 = boto3.resource('s3')\n",
+                "unsupported",
+            ),
+            (
+                "cloud sdk session constructor",
+                "src/client.py",
+                "from boto3.session import Session\nsession = Session()\n",
+                "unsupported",
+            ),
+            (
+                "cloud core session factory",
+                "src/client.py",
+                "import botocore.session as core\nsession = core.get_session()\n",
+                "unsupported",
+            ),
         )
         for label, path, source, expected in cases:
             with self.subTest(label=label):
