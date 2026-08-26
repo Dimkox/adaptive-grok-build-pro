@@ -1,0 +1,101 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [{"test": "tests/test_architecture_model.py"}, {"receipt": "code_review"}],
+      "id": "AC-001",
+      "statement": "Architecture system and rules documents use strict bounded canonical JSON, closed versioned schemas, resolved stable identities, safe repository paths, and deterministic component/composite digests."
+    },
+    {
+      "evidence": [{"test": "tests/test_architecture_model.py"}, {"receipt": "code_review"}],
+      "id": "AC-002",
+      "statement": "The seed model truthfully records current local and Trust CI source boundaries, machine-readable public contract baselines, and repository/contract drift without treating examples, Gitkeep files, K16, or unverified live state as authority."
+    },
+    {
+      "evidence": [{"test": "tests/test_architecture_model.py"}, {"receipt": "test_review"}],
+      "id": "AC-003",
+      "statement": "The architecture CLI emits bounded deterministic validation, summary, drift, exact-state diff, fitness, and five byte-reproducible Mermaid projections derived only from the model and rules."
+    },
+    {
+      "evidence": [{"test": "tests/test_architecture_fitness.py"}, {"receipt": "security_review"}],
+      "id": "AC-004",
+      "statement": "Every mandatory roadmap fitness category produces explicit pass, fail, not-applicable, or unsupported evidence; unsupported applicable analysis fails and post-diff risk never decreases."
+    },
+    {
+      "evidence": [{"test": "tests/test_change_receipts.py"}, {"test": "tests/test_verification_doctor.py"}, {"receipt": "verification"}],
+      "id": "AC-005",
+      "statement": "Local verification and every required review receipt bind the adopted architecture digest/fingerprint and exact state without weakening M1 spec criterion bindings, and stale architecture evidence is rejected."
+    },
+    {
+      "evidence": [{"test": "tests/test_installer.py"}, {"test": "tests/test_structure.py"}, {"receipt": "release_review"}],
+      "id": "AC-006",
+      "statement": "Installed consumers receive architecture code, schemas, and non-authoritative templates without target-model overwrite, while README preserves K16 as a 120-edge decorative inventory only."
+    },
+    {
+      "evidence": [{"receipt": "verification"}, {"receipt": "code_review"}, {"receipt": "test_review"}, {"receipt": "security_review"}, {"receipt": "release_review"}, {"production_signal": "SIG-001"}],
+      "id": "AC-007",
+      "statement": "M2-A passes complete local verification and all route-selected independent reviews on one current fingerprint, contains no Trust CI source mutation, and publishes a frozen contract for the separate M2-B task."
+    }
+  ],
+  "approvals": {"required_scopes": ["architecture", "governance"]},
+  "change_id": "20260826-m2-executable-architecture-015603",
+  "contracts": {
+    "events": [],
+    "json_schema": [
+      "schemas/architecture-system.schema.json",
+      "schemas/architecture-rules.schema.json",
+      "engineering/contracts/schemas/trust-ci-approval-envelope.v1.json",
+      "engineering/contracts/schemas/trust-ci-attestation-envelope.v1.json",
+      "engineering/contracts/schemas/github-pull-request-projection.v1.json"
+    ],
+    "openapi": ["engineering/contracts/openapi/trust-ci.v1.json"]
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [{"test": "tests/test_structure.py"}, {"receipt": "code_review"}],
+      "id": "FORBID-001",
+      "statement": "README K16, generated diagrams, Markdown, or local receipts never become architecture or merge authority."
+    },
+    {
+      "evidence": [{"test": "tests/test_architecture_fitness.py"}, {"receipt": "security_review"}],
+      "id": "FORBID-002",
+      "statement": "Repository-controlled rules never lower routed risk, grant approval/capability, hide an applicable category, or expose runner/factory workspaces to production trust material."
+    },
+    {
+      "evidence": [{"test": "tests/test_architecture_fitness.py"}, {"receipt": "release_review"}],
+      "id": "FORBID-003",
+      "statement": "M2-A never combines product implementation with a trust-ci or external-holdout mutation and never claims checked-in source is deployed independent enforcement."
+    },
+    {
+      "evidence": [{"test": "tests/test_installer.py"}, {"receipt": "release_review"}],
+      "id": "FORBID-004",
+      "statement": "Installation never creates, replaces, or silently disables a consumer repository's adopted architecture model and rules."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [{"test": "tests/test_architecture_model.py"}, {"receipt": "security_review"}],
+      "id": "INV-001",
+      "statement": "Architecture inputs are bounded untrusted data and cannot select executable code, commands, network destinations, credentials, trust state, approvals, or runtime capabilities."
+    },
+    {
+      "evidence": [{"test": "tests/test_architecture_fitness.py"}, {"receipt": "test_review"}],
+      "id": "INV-002",
+      "statement": "Architecture evidence binds the completed-M1 adoption SHA, evaluated head state, schema/model/rules/contracts, complete fitness results, monotonic risk, and deterministic inventory/diff digests."
+    },
+    {
+      "evidence": [{"test": "tests/test_change_receipts.py"}, {"receipt": "code_review"}],
+      "id": "INV-003",
+      "statement": "M1 typed intent, criterion coverage, legacy compatibility, and Trust CI authority boundaries remain unchanged by M2-A."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Make the current stack architecture machine-readable, reproducible, drift-visible, and locally fitness-enforced while freezing a safe independent-enforcement contract for M2-B.",
+    "success_metric": "m2a_exact_state_architecture_gate_status",
+    "target": "all_m2a_criteria_and_route_reviews_pass_with_zero_trust_ci_path_changes"
+  },
+  "observability": [{"id": "SIG-001", "metric": "grok_verify_pr_architecture_status", "proves": ["OBJ-001"]}],
+  "risk": {"domains": ["api", "data", "event", "security"], "tier": "red"},
+  "rollback": {"maximum_steps": 1, "strategy": "forward_fix"},
+  "schema_version": 2
+}

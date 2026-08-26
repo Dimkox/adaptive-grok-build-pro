@@ -1,0 +1,35 @@
+{
+  "change_id": "20260826-m2-executable-architecture-015603",
+  "created_at": "2026-08-26T14:40:17+00:00",
+  "history": [
+    {
+      "at": "2026-08-26T14:40:17+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-26T15:02:02+00:00",
+      "from": "draft",
+      "reason": "Six route-selected analyses froze M2-A scope, completed-M1 adoption baseline, acceptance criteria, and M2-B separation.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-26T15:02:02+00:00",
+      "from": "scoped",
+      "reason": "User previously approved the model-agnostic roadmap and explicitly instructed Go ahead on 2026-08-26; no migration or external write is in M2-A.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-26T15:02:02+00:00",
+      "from": "approved",
+      "reason": "Begin approved M2-A plan with route-selected sole writer data_implementer.",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "0156034c05bd",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "m2-executable-architecture",
+  "updated_at": "2026-08-26T15:02:02+00:00"
+}
