@@ -8,7 +8,8 @@ from pathlib import Path
 
 from .bitrix_checks import check_bitrix
 from .receipts import write_receipt
-from .state import get_active_route
+from .spec import canonical_spec_digest, criterion_coverage, load_spec, spec_fingerprint, validate_spec
+from .state import get_active_change, get_active_route
 from .util import changed_files, command_exists, now_utc, read_text_limited, run, tree_fingerprint
 
 
@@ -131,6 +132,60 @@ def _sql_safety(root: Path, files: list[str]) -> CheckResult:
             if re.search(pattern, text):
                 findings.append({'severity': 'error', 'code': code, 'path': rel, 'message': 'Potentially destructive or unbounded SQL requires explicit migration approval.'})
     return CheckResult('sql-safety', 'fail' if findings else 'pass', f'{len(findings)} unsafe SQL findings', details=findings)
+
+
+def _docs_micro_exempt(route: dict[str, object] | None, files: list[str]) -> bool:
+    if not route or route.get('complexity') != 'micro' or route.get('risk') != 'low':
+        return False
+    product = [rel for rel in files if not rel.startswith('engineering/changes/')]
+    return bool(product) and all(
+        rel.startswith('docs/') or Path(rel).suffix.lower() in {'.md', '.txt', '.rst'}
+        for rel in product
+    )
+
+
+def _change_specs(root: Path, files: list[str], route: dict[str, object] | None, mode: str) -> tuple[CheckResult, dict[str, object]]:
+    gate = mode in {'pr', 'release'}
+    exempt = _docs_micro_exempt(route, files)
+    selected = {
+        rel for rel in files
+        if rel.startswith('engineering/changes/') and rel.endswith('/change-spec.yaml')
+    }
+    active = get_active_change(root) or {}
+    active_rel = None
+    if active.get('path'):
+        active_rel = f"{str(active['path']).rstrip('/')}/change-spec.yaml"
+        selected.add(active_rel)
+    findings: list[dict[str, str]] = []
+    records: list[dict[str, object]] = []
+    if gate and route and route.get('delivery_expected') and not active_rel and not exempt:
+        findings.append({'severity': 'error', 'code': 'active-spec-missing', 'path': '', 'message': 'PR/release validation requires an active typed spec.'})
+    for rel in sorted(selected):
+        path = root / rel
+        if not path.is_file():
+            findings.append({'severity': 'error', 'code': 'spec-missing', 'path': rel, 'message': 'Selected change spec is missing.'})
+            continue
+        errors = validate_spec(root, path, gate=gate and not exempt, route=route)
+        record: dict[str, object] = {'path': rel, 'profile': 'gate' if gate else 'draft', 'valid': not errors, 'errors': errors}
+        if not errors:
+            try:
+                spec = load_spec(path, allow_legacy=False)
+                record.update({
+                    'digest': canonical_spec_digest(spec),
+                    'fingerprint': spec_fingerprint(root, path, spec, route),
+                    'coverage': criterion_coverage(spec),
+                })
+            except (OSError, ValueError) as exc:
+                errors = [str(exc)]
+                record['valid'] = False
+                record['errors'] = errors
+        for error in errors:
+            findings.append({'severity': 'error', 'code': 'change-spec-invalid', 'path': rel, 'message': error})
+        records.append(record)
+    metadata: dict[str, object] = {'exempt': exempt, 'specs': records}
+    if active_rel:
+        metadata['active_path'] = active_rel
+    return CheckResult('change-spec', 'fail' if findings else ('skip' if exempt and not selected else 'pass'), f'{len(records)} specs checked; exempt={exempt}', details=findings), metadata
 
 
 def _composer(root: Path) -> list[CheckResult]:
@@ -305,8 +360,11 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
     base = route.get('base_commit') if route else None
     files = changed_files(root, base)
 
+    spec_check, spec_metadata = _change_specs(root, files, route, mode)
+
     results: list[CheckResult] = [
         _git_diff_check(root),
+        spec_check,
         _secret_scan(root, files),
         _contracts(root, files),
         _sql_safety(root, files),
@@ -335,6 +393,7 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
         'route_id': route.get('route_id') if route else None,
         'tree_fingerprint': tree_fingerprint(root),
         'changed_files': files,
+        'spec': spec_metadata,
         'status': 'pass' if not failures else 'fail',
         'checks': [item.to_dict() for item in results],
     }

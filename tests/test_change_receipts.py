@@ -12,6 +12,7 @@ from adaptive_grok.receipts import invalidate_receipts, validate_evidence, write
 from adaptive_grok.router import build_route
 from adaptive_grok.state import get_active_change, get_active_route, set_active_route
 from adaptive_grok.verification import verify
+from adaptive_grok.spec import dump_canonical_spec
 from tests._support import project_copy
 
 _PASSING_UNITTEST = (
@@ -59,6 +60,35 @@ class ChangeTests(unittest.TestCase):
 
 
 class ReceiptTests(unittest.TestCase):
+    def test_receipt_binds_active_spec_and_declared_criteria(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            route['required_evidence'] = ['verification']
+            set_active_route(root, route)
+            start_change(root)
+            active = get_active_change(root) or {}
+            path = root / str(active['path']) / 'change-spec.yaml'
+            spec = {
+                'schema_version': 2,
+                'change_id': active['change_id'],
+                'objective': {'id': 'OBJ-001', 'statement': 'bind evidence', 'success_metric': 'bound_receipts', 'target': 'all'},
+                'risk': {'tier': 'green', 'domains': []},
+                'acceptance_criteria': [{'id': 'AC-002', 'statement': 'bound', 'evidence': [{'receipt': 'verification'}]}, {'id': 'AC-001', 'statement': 'also bound', 'evidence': [{'receipt': 'verification'}]}],
+                'invariants': [], 'forbidden_outcomes': [],
+                'contracts': {'openapi': [], 'json_schema': [], 'events': []},
+                'observability': [],
+                'rollback': {'strategy': 'forward_fix', 'maximum_steps': 1},
+                'approvals': {'required_scopes': []},
+            }
+            path.write_text(dump_canonical_spec(spec), encoding='utf-8')
+            receipt_path = write_receipt(root, 'verification', 'pass')
+            receipt = __import__('json').loads(receipt_path.read_text(encoding='utf-8'))
+            self.assertEqual(receipt['criterion_ids'], ['AC-001', 'AC-002'])
+            self.assertEqual(len(receipt['spec_digest']), 64)
+            self.assertEqual(validate_evidence(root, get_active_route(root) or route), [])
+            spec['objective']['target'] = 'changed'
+            path.write_text(dump_canonical_spec(spec), encoding='utf-8')
+            self.assertTrue(any('spec' in item and 'stale' in item for item in validate_evidence(root, get_active_route(root) or route)))
     def test_receipts_validate_against_current_tree(self) -> None:
         with project_copy(git=True) as root:
             route = build_route(root, 'Исправить PHP баг', 's1').to_dict()
