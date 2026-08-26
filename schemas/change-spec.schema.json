@@ -1,181 +1,40 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:adaptive-grok:change-spec:v1",
+  "$id": "urn:adaptive-grok:change-spec:v2",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "schema_version",
-    "change_id",
-    "objective",
-    "risk",
-    "acceptance_criteria",
-    "invariants",
-    "forbidden_outcomes",
-    "contracts",
-    "observability",
-    "rollback",
-    "approvals"
-  ],
+  "required": ["schema_version", "change_id", "objective", "risk", "acceptance_criteria", "invariants", "forbidden_outcomes", "contracts", "observability", "rollback", "approvals"],
   "$defs": {
-    "obj_id": {
-      "type": "string",
-      "pattern": "^OBJ-[0-9]{3,6}$"
-    },
-    "ac_id": {
-      "type": "string",
-      "pattern": "^AC-[0-9]{3,6}$"
-    },
-    "inv_id": {
-      "type": "string",
-      "pattern": "^INV-[0-9]{3,6}$"
-    },
-    "forbid_id": {
-      "type": "string",
-      "pattern": "^FORBID-[0-9]{3,6}$"
-    },
+    "obj_id": {"type": "string", "pattern": "^OBJ-[0-9]{3,6}$"},
+    "ac_id": {"type": "string", "pattern": "^AC-[0-9]{3,6}$"},
+    "inv_id": {"type": "string", "pattern": "^INV-[0-9]{3,6}$"},
+    "forbid_id": {"type": "string", "pattern": "^FORBID-[0-9]{3,6}$"},
+    "sig_id": {"type": "string", "pattern": "^SIG-[0-9]{3,6}$"},
     "evidence": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["kind", "ref"],
+      "type": "object", "additionalProperties": false, "minProperties": 1, "maxProperties": 1,
       "properties": {
-        "kind": {
-          "type": "string",
-          "enum": ["test", "receipt", "review", "holdout", "command"]
-        },
-        "ref": {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9_./:-]+$"
-        }
+        "test": {"type": "string", "minLength": 1, "maxLength": 512, "pattern": "^[A-Za-z0-9_./:-]+$"},
+        "receipt": {"type": "string", "enum": ["verification", "code_review", "test_review", "security_review", "release_review"]},
+        "production_signal": {"$ref": "#/$defs/sig_id"},
+        "attestation": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9_.:@/-]+$"}
       }
+    },
+    "criterion": {
+      "type": "object", "additionalProperties": false, "required": ["id", "statement", "evidence"],
+      "properties": {"id": {"$ref": "#/$defs/ac_id"}, "statement": {"type": "string", "minLength": 1, "maxLength": 4096}, "evidence": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/evidence"}}}
     }
   },
   "properties": {
-    "schema_version": { "const": 1 },
-    "change_id": {
-      "type": "string",
-      "pattern": "^[0-9]{8}-[A-Za-z0-9\u0400-\u04FF][A-Za-z0-9._:\u0400-\u04FF-]{2,120}$"
-    },
-    "objective": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "statement", "success_metric", "target"],
-      "properties": {
-        "id": { "$ref": "#/$defs/obj_id" },
-        "statement": { "type": "string", "minLength": 1 },
-        "success_metric": { "type": "string", "minLength": 1 },
-        "target": { "type": "string", "minLength": 1 }
-      }
-    },
-    "risk": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["tier", "domains"],
-      "properties": {
-        "tier": { "type": "string", "enum": ["green", "yellow", "red"] },
-        "domains": {
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        }
-      }
-    },
-    "acceptance_criteria": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "statement", "evidence"],
-        "properties": {
-          "id": { "$ref": "#/$defs/ac_id" },
-          "statement": { "type": "string", "minLength": 1 },
-          "evidence": {
-            "type": "array",
-            "items": { "$ref": "#/$defs/evidence" }
-          }
-        }
-      }
-    },
-    "invariants": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "statement", "evidence"],
-        "properties": {
-          "id": { "$ref": "#/$defs/inv_id" },
-          "statement": { "type": "string", "minLength": 1 },
-          "evidence": {
-            "type": "array",
-            "items": { "$ref": "#/$defs/evidence" }
-          }
-        }
-      }
-    },
-    "forbidden_outcomes": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "statement", "evidence"],
-        "properties": {
-          "id": { "$ref": "#/$defs/forbid_id" },
-          "statement": { "type": "string", "minLength": 1 },
-          "evidence": {
-            "type": "array",
-            "items": { "$ref": "#/$defs/evidence" }
-          }
-        }
-      }
-    },
-    "contracts": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["openapi", "json_schema", "events"],
-      "properties": {
-        "openapi": { "type": "array", "items": { "type": "string" } },
-        "json_schema": { "type": "array", "items": { "type": "string" } },
-        "events": { "type": "array", "items": { "type": "string" } }
-      }
-    },
-    "observability": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["metric", "proves"],
-        "properties": {
-          "metric": { "type": "string", "minLength": 1 },
-          "proves": {
-            "type": "array",
-            "items": { "$ref": "#/$defs/obj_id" }
-          }
-        }
-      }
-    },
-    "rollback": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["strategy", "maximum_steps"],
-      "properties": {
-        "strategy": {
-          "type": "string",
-          "enum": ["feature_flag", "forward_fix", "restore", "migration_reversal"]
-        },
-        "maximum_steps": { "type": "integer", "minimum": 1, "maximum": 20 }
-      }
-    },
-    "approvals": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["required_scopes"],
-      "properties": {
-        "required_scopes": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": ["security", "data", "architecture", "release", "protected-path"]
-          }
-        }
-      }
-    }
+    "schema_version": {"const": 2},
+    "change_id": {"type": "string", "minLength": 3, "maxLength": 128, "pattern": "^[0-9]{8}-[A-Za-z0-9\u0400-\u04FF][A-Za-z0-9._:\u0400-\u04FF-]{2,120}$"},
+    "objective": {"type": "object", "additionalProperties": false, "required": ["id", "statement", "success_metric", "target"], "properties": {"id": {"$ref": "#/$defs/obj_id"}, "statement": {"type": "string", "minLength": 1, "maxLength": 4096}, "success_metric": {"type": "string", "minLength": 1, "maxLength": 512}, "target": {"type": "string", "minLength": 1, "maxLength": 512}}},
+    "risk": {"type": "object", "additionalProperties": false, "required": ["tier", "domains"], "properties": {"tier": {"type": "string", "enum": ["green", "yellow", "red"]}, "domains": {"type": "array", "maxItems": 50, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 128}}}},
+    "acceptance_criteria": {"type": "array", "maxItems": 500, "items": {"$ref": "#/$defs/criterion"}},
+    "invariants": {"type": "array", "maxItems": 500, "items": {"type": "object", "additionalProperties": false, "required": ["id", "statement", "evidence"], "properties": {"id": {"$ref": "#/$defs/inv_id"}, "statement": {"type": "string", "minLength": 1, "maxLength": 4096}, "evidence": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/evidence"}}}}},
+    "forbidden_outcomes": {"type": "array", "maxItems": 500, "items": {"type": "object", "additionalProperties": false, "required": ["id", "statement", "evidence"], "properties": {"id": {"$ref": "#/$defs/forbid_id"}, "statement": {"type": "string", "minLength": 1, "maxLength": 4096}, "evidence": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/evidence"}}}}},
+    "contracts": {"type": "object", "additionalProperties": false, "required": ["openapi", "json_schema", "events"], "properties": {"openapi": {"type": "array", "maxItems": 100, "uniqueItems": true, "items": {"type": "string", "maxLength": 512}}, "json_schema": {"type": "array", "maxItems": 100, "uniqueItems": true, "items": {"type": "string", "maxLength": 512}}, "events": {"type": "array", "maxItems": 100, "uniqueItems": true, "items": {"type": "string", "maxLength": 512}}}},
+    "observability": {"type": "array", "maxItems": 500, "items": {"type": "object", "additionalProperties": false, "required": ["id", "metric", "proves"], "properties": {"id": {"$ref": "#/$defs/sig_id"}, "metric": {"type": "string", "minLength": 1, "maxLength": 512}, "proves": {"type": "array", "maxItems": 500, "uniqueItems": true, "items": {"$ref": "#/$defs/obj_id"}}}}},
+    "rollback": {"type": "object", "additionalProperties": false, "required": ["strategy", "maximum_steps"], "properties": {"strategy": {"type": "string", "enum": ["feature_flag", "forward_fix", "restore", "migration_reversal"]}, "maximum_steps": {"type": "integer", "minimum": 1, "maximum": 20}}},
+    "approvals": {"type": "object", "additionalProperties": false, "required": ["required_scopes"], "properties": {"required_scopes": {"type": "array", "maxItems": 50, "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-z][a-z0-9_-]{0,127}$"}}}}
   }
 }

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-grok:change-spec:v1",
+  "description": "Frozen compatibility marker for explicitly requested, unchanged historical schema_version 1 change specs. New or modified specs must use v2 canonical JSON.",
+  "type": "object",
+  "required": ["schema_version", "change_id"],
+  "properties": {"schema_version": {"const": 1}, "change_id": {"type": "string"}}
+}

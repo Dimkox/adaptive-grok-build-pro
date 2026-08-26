@@ -34,7 +34,7 @@ CLI = _load("cli_mod", _cli_rel())
 
 
 VALID_SPEC = {
-    "schema_version": 1,
+    "schema_version": 2,
     "change_id": "20260823-user-query-m1-typed-intent-test",
     "objective": {
         "id": "OBJ-001",
@@ -47,25 +47,25 @@ VALID_SPEC = {
         {
             "id": "AC-001",
             "statement": "Schema-valid spec with mapped AC passes validate and map",
-            "evidence": [{"kind": "test", "ref": "tests/unit.py::ChangeSpecTests.test_valid_spec_passes"}],
+            "evidence": [{"test": "tests/test_change_spec.py::ChangeSpecTests.test_valid_spec_passes"}],
         }
     ],
     "invariants": [
         {
             "id": "INV-001",
             "statement": "No GitHub Actions, no root packaging marker, no third-party spec deps",
-            "evidence": [{"kind": "test", "ref": "tests/unit.py"}],
+            "evidence": [{"test": "tests/test_change_spec.py"}],
         }
     ],
     "forbidden_outcomes": [
         {
             "id": "FORBID-001",
             "statement": "Auto-merge, GitHub Actions, M0 deploy, M4 PostgreSQL, K16 mutation",
-            "evidence": [{"kind": "review", "ref": "engineering/reviews"}],
+            "evidence": [{"receipt": "security_review"}],
         }
     ],
     "contracts": {"openapi": [], "json_schema": [], "events": []},
-    "observability": [{"metric": "change_spec_validate_exit_0", "proves": ["OBJ-001"]}],
+    "observability": [{"id": "SIG-001", "metric": "change_spec_validate_exit_0", "proves": ["OBJ-001"]}],
     "rollback": {"strategy": "forward_fix", "maximum_steps": 1},
     "approvals": {"required_scopes": []},
 }
@@ -94,6 +94,51 @@ class ChangeSpecTests(unittest.TestCase):
         self.assertEqual(len(result["digest"]), 64)
         mapped = SPEC.map_evidence(VALID_SPEC)
         self.assertTrue(mapped["AC-001"][0].endswith("test_valid_spec_passes"))
+
+    def test_canonical_json_parser_rejects_ambiguous_or_unbounded_input(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "change-spec.yaml"
+            for raw in (
+                b'{"schema_version":2,"schema_version":2}',
+                b'{"schema_version":NaN}',
+                b'\xef\xbb\xbf{"schema_version":2}',
+                b'{"schema_version":2} trailing',
+            ):
+                path.write_bytes(raw)
+                with self.assertRaises(SPEC.SpecError):
+                    SPEC.load_spec(path, allow_legacy=False)
+            path.write_bytes(b"{" + b'\"x\":\"' + b"a" * (SPEC.MAX_STRING_LENGTH + 1) + b'\"}')
+            with self.assertRaises(SPEC.SpecError):
+                SPEC.load_spec(path, allow_legacy=False)
+
+    def test_changed_v1_never_falls_back_to_legacy(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "change-spec.yaml"
+            path.write_text("schema_version: 1\nchange_id: 20260826-legacy-example\n", encoding="utf-8")
+            self.assertEqual(SPEC.load_spec(path, allow_legacy=True)["schema_version"], 1)
+            with self.assertRaises(SPEC.SpecError):
+                SPEC.load_spec(path, allow_legacy=False)
+
+    def test_evidence_has_exactly_one_supported_key(self) -> None:
+        for evidence in ({}, {"test": "tests/test_change_spec.py", "receipt": "verification"}, {"review": "x"}):
+            spec = json.loads(json.dumps(VALID_SPEC))
+            spec["acceptance_criteria"][0]["evidence"] = [evidence]
+            with self.assertRaises(SPEC.SpecError):
+                SPEC.validate_spec(spec)
+
+    def test_production_signal_must_resolve(self) -> None:
+        spec = json.loads(json.dumps(VALID_SPEC))
+        spec["acceptance_criteria"][0]["evidence"] = [{"production_signal": "SIG-999"}]
+        with self.assertRaises(SPEC.SpecError):
+            SPEC.validate_spec(spec)
+
+    def test_canonical_digest_and_coverage_are_deterministic(self) -> None:
+        reordered = json.loads(json.dumps(VALID_SPEC, sort_keys=True))
+        self.assertEqual(SPEC.canonical_spec_digest(VALID_SPEC), SPEC.canonical_spec_digest(reordered))
+        coverage = SPEC.criterion_coverage(VALID_SPEC)
+        self.assertEqual(coverage["criterion_total"], 1)
+        self.assertEqual(coverage["criterion_mapped"], 1)
+        self.assertEqual(coverage["evidence_counts"]["test"], 1)
 
     def test_extra_key_fails(self) -> None:
         spec = json.loads(json.dumps(VALID_SPEC))
@@ -144,7 +189,7 @@ class ChangeSpecTests(unittest.TestCase):
         text = SPEC.dump_yaml_subset(generated)
         self.assertIn("success_metric: UNKNOWN", text)
         other = SPEC.generate_spec({**route, "intent": "refactor"})
-        self.assertEqual(other["rollback"]["strategy"], "UNKNOWN")
+        self.assertEqual(other["rollback"]["strategy"], "forward_fix")
 
     def test_yaml_tags_anchors_and_merge_fail_closed(self) -> None:
         for text in (
@@ -174,7 +219,7 @@ class ChangeSpecTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             change = Path(tmp) / "engineering" / "changes" / "20260823-brief-conflict-aaa"
             change.mkdir(parents=True)
-            (change / "change-spec.yaml").write_text(SPEC.dump_yaml_subset(VALID_SPEC), encoding="utf-8")
+            (change / "change-spec.yaml").write_text(SPEC.dump_canonical_spec(VALID_SPEC), encoding="utf-8")
             (change / "brief.md").write_text("risk.tier: red\n", encoding="utf-8")
             loaded = SPEC.load_spec(change / "change-spec.yaml")
             SPEC.validate_spec(loaded)
@@ -191,7 +236,7 @@ class ChangeSpecTests(unittest.TestCase):
 
     def test_schema_id_and_additional_properties(self) -> None:
         schema = json.loads((ROOT / "schemas" / "change-spec.schema.json").read_text(encoding="utf-8"))
-        self.assertEqual(schema["$id"], "urn:adaptive-grok:change-spec:v1")
+        self.assertEqual(schema["$id"], "urn:adaptive-grok:change-spec:v2")
         self.assertIs(schema["additionalProperties"], False)
         self.assertEqual(schema["$schema"], "https://json-schema.org/draft/2020-12/schema")
 
@@ -202,20 +247,22 @@ class ChangeSpecTests(unittest.TestCase):
 
     def test_cli_validate_summarize_map_and_generate(self) -> None:
         change_id = VALID_SPEC["change_id"]
-        yaml_text = SPEC.dump_yaml_subset(VALID_SPEC)
+        yaml_text = SPEC.dump_canonical_spec(VALID_SPEC)
         with project_copy() as fake_root:
+            (fake_root / "tests").mkdir()
+            (fake_root / "tests" / "test_change_spec.py").write_text("# evidence fixture\n", encoding="utf-8")
             dest = fake_root / "engineering" / "changes" / change_id
             dest.mkdir(parents=True, exist_ok=True)
             (dest / "change-spec.yaml").write_text(yaml_text, encoding="utf-8")
-            code, out = _run_cli(["x", "validate", "--change-id", change_id], root=fake_root)
+            code, out = _run_cli(["x", "validate", "--change-id", change_id, "--gate", "--json"], root=fake_root)
             self.assertEqual(code, 0, out)
             self.assertTrue(json.loads(out)["ok"])
-            code, out = _run_cli(["x", "summarize", "--change-id", change_id], root=fake_root)
+            code, out = _run_cli(["x", "summary", "--change-id", change_id, "--json"], root=fake_root)
             self.assertEqual(code, 0, out)
             self.assertEqual(json.loads(out)["acceptance_criteria"], 1)
-            code, out = _run_cli(["x", "map", "--change-id", change_id], root=fake_root)
+            code, out = _run_cli(["x", "coverage", "--change-id", change_id, "--json"], root=fake_root)
             self.assertEqual(code, 0, out)
-            self.assertIn("AC-001", json.loads(out))
+            self.assertEqual(json.loads(out)["criterion_mapped"], 1)
             code, out = _run_cli(["x", "validate", "--change-id", "missing-id-does-not-exist"], root=fake_root)
             self.assertEqual(code, 2)
             route = {
