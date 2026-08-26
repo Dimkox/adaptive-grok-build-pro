@@ -316,7 +316,7 @@ def _validate_system_semantics(system: dict[str, Any]) -> None:
             signals,
             label=f"edge {edge['id']} observable_signal",
         )
-        capability = {key: value for key, value in edge.items() if key != "id"}
+        capability = _normalize({key: value for key, value in edge.items() if key != "id"})
         encoded = _canonical_bytes(capability).decode("utf-8")
         if encoded in capability_keys:
             raise ArchitectureError(
@@ -379,6 +379,25 @@ def _canonical_bytes(value: Any) -> bytes:
     ).encode("utf-8")
 
 
+def _canonical_source_bytes(value: Any) -> bytes:
+    text = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        indent=2,
+        allow_nan=False,
+    )
+    return (text + "\n").encode("utf-8")
+
+
+def _require_canonical_source(data: bytes, value: dict[str, Any], *, label: str) -> None:
+    if data != _canonical_source_bytes(value):
+        raise ArchitectureError(
+            f"{label}: authority document is not canonical sorted two-space JSON with one newline",
+            code="canonical",
+        )
+
+
 def _sha256(value: Any) -> str:
     return hashlib.sha256(_canonical_bytes(value)).hexdigest()
 
@@ -401,16 +420,20 @@ def load_architecture(
     )
     rules_relative = _document_relative(repository, rules_path or RULES_PATH, label="architecture rules")
     counter = [0]
+    system_data = _read_regular_bytes(repository, system_relative, label="architecture system")
+    rules_data = _read_regular_bytes(repository, rules_relative, label="architecture rules")
     system = _parse_json(
-        _read_regular_bytes(repository, system_relative, label="architecture system"),
+        system_data,
         label="architecture system",
         counter=counter,
     )
     rules = _parse_json(
-        _read_regular_bytes(repository, rules_relative, label="architecture rules"),
+        rules_data,
         label="architecture rules",
         counter=counter,
     )
+    _require_canonical_source(system_data, system, label="architecture system")
+    _require_canonical_source(rules_data, rules, label="architecture rules")
     system_schema = _load_schema(repository, SYSTEM_SCHEMA_PATH)
     rules_schema = _load_schema(repository, RULES_SCHEMA_PATH)
     _validate_against_schema(system, system_schema, label="architecture system")

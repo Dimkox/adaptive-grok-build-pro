@@ -285,6 +285,105 @@ class ArchitectureModelTests(unittest.TestCase):
         with self.assertRaises(ARCH.ArchitectureError):
             ARCH.load_architecture(self._repo(system, _rules()))
 
+    def test_duplicate_capability_rejects_reordered_allowed_data(self) -> None:
+        system = _system()
+        system["data_classifications"].append(
+            {
+                "id": "DATA-PUBLIC",
+                "classification": "public",
+                "tenant_scoped": False,
+                "contains_secret": False,
+            }
+        )
+        system["edges"][0]["allowed_data"] = ["DATA-INTERNAL", "DATA-PUBLIC"]
+        duplicate = copy.deepcopy(system["edges"][0])
+        duplicate["id"] = "EDGE-A-B-OTHER"
+        duplicate["allowed_data"] = ["DATA-PUBLIC", "DATA-INTERNAL"]
+        system["edges"].append(duplicate)
+        with self.assertRaisesRegex(ARCH.ArchitectureError, "duplicate capability"):
+            ARCH.load_architecture(self._repo(system, _rules()))
+
+    def test_finite_rule_selectors_reject_typos(self) -> None:
+        cases = {
+            "forbidden edge type": (
+                "forbidden_edges",
+                {
+                    "id": "FIT-EDGE-TYPO",
+                    "from_trust_domains": ["TD-LOCAL"],
+                    "to_trust_domains": ["TD-LOCAL"],
+                    "edge_types": ["dependecny"],
+                    "severity": "error",
+                },
+            ),
+            "contract kind": (
+                "contract_policies",
+                {
+                    "id": "FIT-CONTRACT-TYPO",
+                    "contract_kinds": ["openpai"],
+                    "compatibility": "exact",
+                    "severity": "error",
+                },
+            ),
+            "migration phase": (
+                "migration_policies",
+                {
+                    "id": "FIT-MIGRATION-TYPO",
+                    "path_prefixes": ["migrations"],
+                    "required_phases": ["expnad"],
+                    "immutable_history": True,
+                    "severity": "error",
+                },
+            ),
+            "network node type": (
+                "network_policies",
+                {
+                    "id": "FIT-NETWORK-TYPO",
+                    "node_types": ["servcie"],
+                    "allowed_protocols": ["https"],
+                    "require_declared_edge": True,
+                    "severity": "error",
+                },
+            ),
+            "background node type": (
+                "background_job_policies",
+                {
+                    "id": "FIT-BACKGROUND-NODE-TYPO",
+                    "node_types": ["workre"],
+                    "max_retries": 3,
+                    "require_idempotency": True,
+                    "require_correlation_id": True,
+                    "terminal_actions": ["dead_letter"],
+                    "severity": "error",
+                },
+            ),
+            "background terminal action": (
+                "background_job_policies",
+                {
+                    "id": "FIT-BACKGROUND-TERMINAL-TYPO",
+                    "node_types": ["worker"],
+                    "max_retries": 3,
+                    "require_idempotency": True,
+                    "require_correlation_id": True,
+                    "terminal_actions": ["dead_leter"],
+                    "severity": "error",
+                },
+            ),
+            "workspace node type": (
+                "workspace_trust_policies",
+                {
+                    "id": "FIT-WORKSPACE-TYPO",
+                    "node_types": ["runer"],
+                    "forbidden_secret_classes": [],
+                    "severity": "error",
+                },
+            ),
+        }
+        for label, (collection, rule) in cases.items():
+            rules = _rules()
+            rules[collection] = [rule]
+            with self.subTest(label=label), self.assertRaises(ARCH.ArchitectureError):
+                ARCH.load_architecture(self._repo(_system(), rules))
+
     def test_model_paths_reject_absolute_backslash_parent_and_controls(self) -> None:
         for raw in (
             "/absolute",
@@ -345,6 +444,34 @@ class ArchitectureModelTests(unittest.TestCase):
             root = self._repo()
             (root / "architecture/system.yaml").write_bytes(raw)
             with self.subTest(raw=raw[:20]), self.assertRaises(ARCH.ArchitectureError):
+                ARCH.load_architecture(root)
+
+    def test_authority_documents_reject_unsorted_and_compact_json(self) -> None:
+        noncanonical = (
+            json.dumps(_system(), ensure_ascii=False, indent=2).encode("utf-8") + b"\n",
+            json.dumps(
+                _system(), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+            + b"\n",
+        )
+        for raw in noncanonical:
+            root = self._repo()
+            (root / "architecture/system.yaml").write_bytes(raw)
+            with self.subTest(raw=raw[:40]), self.assertRaisesRegex(
+                ARCH.ArchitectureError, "canonical"
+            ):
+                ARCH.load_architecture(root)
+
+    def test_authority_documents_reject_noncanonical_trailing_bytes(self) -> None:
+        canonical = json.dumps(
+            _system(), ensure_ascii=False, sort_keys=True, indent=2
+        ).encode("utf-8")
+        for raw in (canonical, canonical + b"\n\n", canonical + b"\n ", canonical + b" \n"):
+            root = self._repo()
+            (root / "architecture/system.yaml").write_bytes(raw)
+            with self.subTest(trailer=raw[-4:]), self.assertRaisesRegex(
+                ARCH.ArchitectureError, "canonical"
+            ):
                 ARCH.load_architecture(root)
 
     def test_document_byte_depth_and_total_node_limits_fail(self) -> None:

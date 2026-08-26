@@ -5,11 +5,11 @@
       "properties": {
         "id": {"$ref": "#/$defs/id"},
         "max_retries": {"maximum": 20, "minimum": 0, "type": "integer"},
-        "node_types": {"$ref": "#/$defs/string_set"},
+        "node_types": {"$ref": "#/$defs/node_type_set"},
         "require_correlation_id": {"type": "boolean"},
         "require_idempotency": {"type": "boolean"},
         "severity": {"$ref": "#/$defs/severity"},
-        "terminal_actions": {"$ref": "#/$defs/string_set"}
+        "terminal_actions": {"$ref": "#/$defs/terminal_action_set"}
       },
       "required": ["id", "node_types", "max_retries", "require_idempotency", "require_correlation_id", "terminal_actions", "severity"],
       "type": "object"
@@ -38,6 +38,15 @@
       "required": ["id", "path_prefixes", "max_changed_bytes", "max_changed_lines", "max_ast_complexity", "severity"],
       "type": "object"
     },
+    "contract_kind_set": {
+      "items": {
+        "enum": ["openapi", "asyncapi", "json_schema", "event", "signed_payload", "cli", "migration"],
+        "type": "string"
+      },
+      "maxItems": 7,
+      "type": "array",
+      "uniqueItems": true
+    },
     "contract_policy": {
       "additionalProperties": false,
       "properties": {
@@ -45,17 +54,26 @@
           "enum": ["consumer_accepts_old", "producer_accepted_by_old", "bidirectional", "exact", "versioned_break"],
           "type": "string"
         },
-        "contract_kinds": {"$ref": "#/$defs/string_set"},
+        "contract_kinds": {"$ref": "#/$defs/contract_kind_set"},
         "id": {"$ref": "#/$defs/id"},
         "severity": {"$ref": "#/$defs/severity"}
       },
       "required": ["id", "contract_kinds", "compatibility", "severity"],
       "type": "object"
     },
+    "edge_type_set": {
+      "items": {
+        "enum": ["dependency", "control", "data_flow", "secret_flow", "deployment", "publication"],
+        "type": "string"
+      },
+      "maxItems": 6,
+      "type": "array",
+      "uniqueItems": true
+    },
     "forbidden_edge": {
       "additionalProperties": false,
       "properties": {
-        "edge_types": {"$ref": "#/$defs/string_set"},
+        "edge_types": {"$ref": "#/$defs/edge_type_set"},
         "from_trust_domains": {"$ref": "#/$defs/id_set"},
         "id": {"$ref": "#/$defs/id"},
         "severity": {"$ref": "#/$defs/severity"},
@@ -82,23 +100,41 @@
         "id": {"$ref": "#/$defs/id"},
         "immutable_history": {"type": "boolean"},
         "path_prefixes": {"$ref": "#/$defs/path_set"},
-        "required_phases": {"$ref": "#/$defs/string_set"},
+        "required_phases": {"$ref": "#/$defs/migration_phase_set"},
         "severity": {"$ref": "#/$defs/severity"}
       },
       "required": ["id", "path_prefixes", "required_phases", "immutable_history", "severity"],
       "type": "object"
+    },
+    "migration_phase_set": {
+      "items": {
+        "enum": ["expand", "migrate", "contract"],
+        "type": "string"
+      },
+      "maxItems": 3,
+      "type": "array",
+      "uniqueItems": true
     },
     "network_policy": {
       "additionalProperties": false,
       "properties": {
         "allowed_protocols": {"$ref": "#/$defs/string_set"},
         "id": {"$ref": "#/$defs/id"},
-        "node_types": {"$ref": "#/$defs/string_set"},
+        "node_types": {"$ref": "#/$defs/node_type_set"},
         "require_declared_edge": {"type": "boolean"},
         "severity": {"$ref": "#/$defs/severity"}
       },
       "required": ["id", "node_types", "allowed_protocols", "require_declared_edge", "severity"],
       "type": "object"
+    },
+    "node_type_set": {
+      "items": {
+        "enum": ["actor", "local_component", "service", "worker", "runner", "datastore", "repository", "policy_bundle", "external_system"],
+        "type": "string"
+      },
+      "maxItems": 9,
+      "type": "array",
+      "uniqueItems": true
     },
     "path": {
       "maxLength": 4096,
@@ -167,6 +203,15 @@
       "type": "array",
       "uniqueItems": true
     },
+    "terminal_action_set": {
+      "items": {
+        "enum": ["reject", "degrade", "dead_letter", "manual_recovery"],
+        "type": "string"
+      },
+      "maxItems": 4,
+      "type": "array",
+      "uniqueItems": true
+    },
     "tenant_authorization_policy": {
       "additionalProperties": false,
       "properties": {
@@ -184,7 +229,7 @@
       "properties": {
         "forbidden_secret_classes": {"$ref": "#/$defs/id_set"},
         "id": {"$ref": "#/$defs/id"},
-        "node_types": {"$ref": "#/$defs/string_set"},
+        "node_types": {"$ref": "#/$defs/node_type_set"},
         "severity": {"$ref": "#/$defs/severity"}
       },
       "required": ["id", "node_types", "forbidden_secret_classes", "severity"],
