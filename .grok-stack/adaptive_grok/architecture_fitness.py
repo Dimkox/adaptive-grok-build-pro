@@ -62,7 +62,6 @@ _NETWORK_IMPORTS = {
     "urllib.request": "https",
     "xmlrpc.client": "https",
 }
-_NETWORK_CALLS = {"connect", "delete", "get", "open", "post", "put", "request", "send", "urlopen"}
 _QUEUE_IMPORTS = {"celery", "confluent_kafka", "kafka", "kombu", "pika", "redis", "rq"}
 _FRAMEWORK_IMPORTS = {"django", "fastapi", "flask", "litestar", "starlette"}
 _GOVERNANCE_IMPORTS = {"adaptive_grok", "architecture", "engineering", "scripts", "tests"}
@@ -267,7 +266,7 @@ def _import_targets(tree: ast.AST) -> set[str]:
     return targets
 
 
-def _called_imports(tree: ast.AST) -> set[str]:
+def _called_imports(tree: ast.AST) -> set[tuple[str, str]]:
     aliases: dict[str, str] = {}
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -276,7 +275,7 @@ def _called_imports(tree: ast.AST) -> set[str]:
         elif isinstance(node, ast.ImportFrom) and node.module:
             for alias in node.names:
                 aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
-    called: set[str] = set()
+    called: set[tuple[str, str]] = set()
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
@@ -286,9 +285,9 @@ def _called_imports(tree: ast.AST) -> set[str]:
             parts.append(value.attr)
             value = value.value
         if isinstance(value, ast.Name) and value.id in aliases:
-            terminal = parts[0] if parts else value.id
-            if terminal.lower() in _NETWORK_CALLS:
-                called.add(aliases[value.id])
+            imported = aliases[value.id]
+            chain = ".".join((imported, *reversed(parts)))
+            called.add((imported, chain))
     return called
 
 
@@ -442,6 +441,32 @@ def _migration_version(group: str) -> int | None:
     return None if match is None else int(match.group("version"))
 
 
+def _bounded_migrate_predicate(statement: str) -> bool:
+    where = re.search(r"\bWHERE\b(?P<predicate>.*?)(?:\bRETURNING\b|$)", statement)
+    if where is None:
+        return False
+    predicate = where.group("predicate")
+    identifier = r"[A-Z_][A-Z0-9_.]*"
+    operand = r"(?:\?|\$[0-9]+|%S|:[A-Z_][A-Z0-9_]*|[-+]?[0-9]+)"
+    if re.fullmatch(
+        rf"\s*(?P<column>{identifier})\s+BETWEEN\s+{operand}\s+AND\s+{operand}\s*",
+        predicate,
+    ):
+        return True
+    return bool(
+        re.fullmatch(
+            rf"\s*(?P<column>{identifier})\s*(?:>=|>)\s*{operand}\s+AND\s+"
+            rf"(?P=column)\s*(?:<=|<)\s*{operand}\s*",
+            predicate,
+        )
+        or re.fullmatch(
+            rf"\s*(?P<column>{identifier})\s*(?:<=|<)\s*{operand}\s+AND\s+"
+            rf"(?P=column)\s*(?:>=|>)\s*{operand}\s*",
+            predicate,
+        )
+    )
+
+
 def _migration_source_findings(
     rule_id: str, path: str, phase: str, source: str
 ) -> tuple[list[str], list[str]]:
@@ -455,8 +480,6 @@ def _migration_source_findings(
     if not statements:
         unsupported.append(f"{rule_id}: migration contains no analyzable SQL: {path}")
         return findings, unsupported
-    bounded = "-- adaptive-grok: bounded" in source.lower()
-    resumable = "-- adaptive-grok: resumable" in source.lower()
     for statement in statements:
         normalized = " ".join(statement.upper().split())
         destructive = bool(
@@ -474,11 +497,19 @@ def _migration_source_findings(
             ):
                 unsupported.append(f"{rule_id}: unsupported expand SQL semantics: {path}")
         elif phase == "migrate":
-            if re.match(r"^(UPDATE|DELETE)\b", normalized) and not re.search(r"\bWHERE\b", normalized):
-                findings.append(f"{rule_id}: unbounded {normalized.split()[0]} in migrate phase: {path}")
-            elif re.match(r"^(UPDATE|DELETE|INSERT)\b", normalized):
-                if not (bounded and resumable):
-                    unsupported.append(f"{rule_id}: migrate bounds/resume semantics undeclared: {path}")
+            if re.match(r"^(UPDATE|DELETE)\b", normalized):
+                if re.search(r"\bWHERE\b.*(?:\b1\s*=\s*1\b|\bTRUE\b)", normalized) or not re.search(
+                    r"\bWHERE\b", normalized
+                ):
+                    findings.append(
+                        f"{rule_id}: unbounded {normalized.split()[0]} in migrate phase: {path}"
+                    )
+                elif not _bounded_migrate_predicate(normalized):
+                    unsupported.append(
+                        f"{rule_id}: migrate bounded/resumable predicate is unproven: {path}"
+                    )
+            elif re.match(r"^INSERT\b", normalized):
+                unsupported.append(f"{rule_id}: unsupported bounded INSERT semantics: {path}")
             else:
                 unsupported.append(f"{rule_id}: unsupported migrate SQL semantics: {path}")
         elif phase == "contract":
@@ -516,7 +547,7 @@ def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: Architec
                     findings.append(f"{rule['id']}: immutable migration history changed: {item.path}")
         head_paths = _migration_paths(root, diff, tuple(rule["path_prefixes"]))
         phases: dict[str, set[str]] = {}
-        versions: set[int] = set()
+        version_groups: dict[int, set[str]] = {}
         for path in head_paths:
             parsed = _migration_phase(path)
             if parsed:
@@ -525,7 +556,13 @@ def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: Architec
                 if version is None:
                     unsupported.append(f"{rule['id']}: migration version cannot be derived: {path}")
                 else:
-                    versions.add(version)
+                    version_groups.setdefault(version, set()).add(parsed[0])
+        for version, groups in version_groups.items():
+            if len(groups) > 1:
+                findings.append(
+                    f"{rule['id']}: duplicate migration version {version}: {','.join(sorted(groups))}"
+                )
+        versions = set(version_groups)
         if versions and versions != set(range(1, max(versions) + 1)):
             findings.append(f"{rule['id']}: migration version history is not contiguous")
         for item in relevant:
@@ -627,6 +664,43 @@ def _owner_for_path(snapshot: ArchitectureSnapshot, path: str) -> dict[str, Any]
     return None if not matches else max(matches, key=lambda item: item[0])[1]
 
 
+def _project_import_roots(
+    snapshot: ArchitectureSnapshot, diff: ArchitectureDiff, root: Path
+) -> set[str]:
+    prefixes = tuple(
+        sorted(
+            {
+                repository_path
+                for node in snapshot.system["nodes"]
+                for repository_path in node["repository_paths"]
+            }
+        )
+    )
+    paths = _migration_paths(root, diff, prefixes) if prefixes else ()
+    roots = set(_GOVERNANCE_IMPORTS)
+    for path in paths:
+        if Path(path).suffix not in _PYTHON_SUFFIXES:
+            continue
+        matching = [prefix for prefix in prefixes if _matches(path, (prefix,))]
+        if not matching:
+            continue
+        prefix = max(matching, key=len)
+        relative = path[len(prefix) :].lstrip("/")
+        if not relative:
+            roots.add(Path(prefix).stem)
+            continue
+        if relative == "__init__.py":
+            roots.add(Path(prefix).name)
+        first = relative.split("/", 1)[0]
+        roots.add(Path(first).stem if first.endswith(tuple(_PYTHON_SUFFIXES)) else first)
+    return roots
+
+
+def _is_external_import(imported: str, project_roots: set[str]) -> bool:
+    top = imported.split(".")[0]
+    return top not in sys.stdlib_module_names and top not in project_roots
+
+
 def _network_clients(
     snapshot: ArchitectureSnapshot,
     diff: ArchitectureDiff,
@@ -638,6 +712,7 @@ def _network_clients(
         return _not_applicable("network_client", predicate, (), "no_declared_rules")
     clients: list[tuple[str, str, dict[str, Any] | None]] = []
     unsupported: list[str] = []
+    project_roots = _project_import_roots(snapshot, diff, python.root)
     for path in _python_paths(diff):
         owner = _owner_for_path(snapshot, path)
         try:
@@ -650,13 +725,11 @@ def _network_clients(
             protocol = _network_protocol(imported)
             if protocol:
                 clients.append((path, protocol, owner))
-        for imported in _called_imports(tree):
+        for imported, call in _called_imports(tree):
             if _network_protocol(imported) is not None:
                 continue
-            top = imported.split(".")[0]
-            network_named = any(token in imported.lower() for token in ("http", "network", "socket", "client", "api"))
-            if top not in sys.stdlib_module_names or network_named:
-                unsupported.append(f"{path}: unsupported network-client semantics for {imported}")
+            if _is_external_import(imported, project_roots):
+                unsupported.append(f"{path}: unsupported external-client semantics for {call}")
     if unsupported:
         return _result(
             "network_client",
@@ -1019,24 +1092,31 @@ def _new_import_family(
     return False
 
 
-def _network_families(tree: ast.AST) -> set[str]:
+def _network_families(tree: ast.AST, project_roots: set[str]) -> set[str]:
     values = {
         imported for imported in _import_targets(tree) if _network_protocol(imported) is not None
     }
-    for imported in _called_imports(tree):
-        top = imported.split(".")[0]
-        if _network_protocol(imported) is not None or top not in sys.stdlib_module_names:
+    for imported, call in _called_imports(tree):
+        if _network_protocol(imported) is not None:
             values.add(imported)
+        elif _is_external_import(imported, project_roots):
+            values.add(f"unsupported:{call}")
     return values
 
 
-def _new_network_client(root: Path, diff: ArchitectureDiff, python: _PythonInventory) -> bool:
+def _new_network_client(
+    root: Path,
+    snapshot: ArchitectureSnapshot,
+    diff: ArchitectureDiff,
+    python: _PythonInventory,
+) -> bool:
+    project_roots = _project_import_roots(snapshot, diff, root)
     for path in _python_paths(diff):
         try:
-            head = _network_families(python.tree(path))
+            head = _network_families(python.tree(path), project_roots)
             base_value = read_diff_file(root, diff, path, "base")
             base = set() if base_value is None else _network_families(
-                ast.parse(base_value.decode("utf-8"), filename=path)
+                ast.parse(base_value.decode("utf-8"), filename=path), project_roots
             )
             if head - base:
                 return True
@@ -1057,7 +1137,7 @@ def _risk(
     triggers = set(_risk_triggers(snapshot, diff))
     if _new_import_family(root, diff, python, _QUEUE_IMPORTS):
         triggers.add("new_queue")
-    if _new_network_client(root, diff, python):
+    if _new_network_client(root, snapshot, diff, python):
         triggers.add("new_network_client")
     if _new_import_family(root, diff, python, _FRAMEWORK_IMPORTS):
         triggers.add("new_framework")

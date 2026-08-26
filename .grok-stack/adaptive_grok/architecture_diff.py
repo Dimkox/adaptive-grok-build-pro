@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import difflib
 import hashlib
 import json
 import os
@@ -32,6 +31,7 @@ MAX_GIT_OUTPUT_BYTES = 20_000_000
 MAX_CHANGED_PATHS = 20_000
 MAX_ANALYZED_FILE_BYTES = 10_000_000
 MAX_DIFF_ARTIFACT_BYTES = 50_000_000
+MAX_LINE_STAT_LINES = 100_000
 _EXACT_SHA = re.compile(r"[0-9a-f]{40}")
 _MODEL_PATHS = ("architecture/system.yaml", "architecture/rules.yaml")
 _SCHEMA_PATHS = (
@@ -527,6 +527,8 @@ def _changed_paths(root: Path, base: str, head: str | None, *, worktree: bool) -
 def _line_stats(old: bytes | None, new: bytes | None) -> tuple[int | None, int | None]:
     before = old or b""
     after = new or b""
+    if len(before) > MAX_ANALYZED_FILE_BYTES or len(after) > MAX_ANALYZED_FILE_BYTES:
+        raise ArchitectureError("line-stat byte limit exceeded", code="limit")
     if b"\0" in before or b"\0" in after:
         return None, None
     try:
@@ -534,15 +536,26 @@ def _line_stats(old: bytes | None, new: bytes | None) -> tuple[int | None, int |
         after_lines = after.decode("utf-8").splitlines()
     except UnicodeDecodeError:
         return None, None
-    added = deleted = 0
-    for operation, start_a, end_a, start_b, end_b in difflib.SequenceMatcher(
-        None, before_lines, after_lines, autojunk=False
-    ).get_opcodes():
-        if operation in {"replace", "delete"}:
-            deleted += end_a - start_a
-        if operation in {"replace", "insert"}:
-            added += end_b - start_b
-    return added, deleted
+    if len(before_lines) > MAX_LINE_STAT_LINES or len(after_lines) > MAX_LINE_STAT_LINES:
+        raise ArchitectureError("line-stat line limit exceeded", code="limit")
+    common_prefix = 0
+    while (
+        common_prefix < len(before_lines)
+        and common_prefix < len(after_lines)
+        and before_lines[common_prefix] == after_lines[common_prefix]
+    ):
+        common_prefix += 1
+    common_suffix = 0
+    max_suffix = min(len(before_lines), len(after_lines)) - common_prefix
+    while (
+        common_suffix < max_suffix
+        and before_lines[-common_suffix - 1] == after_lines[-common_suffix - 1]
+    ):
+        common_suffix += 1
+    return (
+        len(after_lines) - common_prefix - common_suffix,
+        len(before_lines) - common_prefix - common_suffix,
+    )
 
 
 def read_diff_file(root: Path, diff: ArchitectureDiff, path: str, side: str = "head") -> bytes | None:

@@ -470,6 +470,12 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 "import mystery_http\nmystery_http.connect('example.test')\n",
                 "unsupported",
             ),
+            (
+                "unknown external constructor",
+                "src/client.py",
+                "import paramiko as ssh\nclient = ssh.transport.SSHClient()\n",
+                "unsupported",
+            ),
         )
         for label, path, source, expected in cases:
             with self.subTest(label=label):
@@ -492,6 +498,31 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertEqual(result.status, expected)
                 self.assertEqual(report.status, "fail")
                 self.assertIn("new_network_client", report.triggers)
+
+    def test_network_unknown_detection_excludes_stdlib_and_project_local_calls(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "service"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["network_policies"] = [{
+            "id": "FIT-NETWORK",
+            "node_types": ["service"],
+            "allowed_protocols": ["https"],
+            "require_declared_edge": True,
+            "severity": "error",
+        }]
+        repo, base = self._repo(system=system, rules=rules)
+        repo.write_text("src/local_client.py", "class SSHClient:\n    pass\n")
+        repo.write_text(
+            "src/use.py",
+            "import pathlib\nimport local_client\n"
+            "pathlib.Path('value')\nlocal_client.SSHClient()\n",
+        )
+        head = repo.commit("local constructors")
+        report = self._evaluate(repo, base, head)
+        result = self._results(report)["network_client"]
+        self.assertEqual(result.status, "not_applicable")
+        self.assertNotIn("new_network_client", report.triggers)
 
     def test_change_separation_rejects_product_and_trust_ci_mixing(self) -> None:
         rules = _rules()
@@ -584,7 +615,7 @@ class ArchitectureFitnessTests(unittest.TestCase):
 
         repo.write_text(
             "migrations/001_migrate.sql",
-            "-- adaptive-grok: bounded\n-- adaptive-grok: resumable\nUPDATE item SET id = id WHERE id IS NOT NULL;\n",
+            "UPDATE item SET id = id WHERE id >= 1 AND id <= 100;\n",
         )
         repo.write_text("migrations/001_contract.sql", "ALTER TABLE item DROP COLUMN legacy;\n")
         complete = repo.commit("complete migration")
@@ -637,6 +668,13 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 "unsupported",
             ),
             (
+                "tautological marker migrate",
+                "migrations/001_migrate.sql",
+                "-- adaptive-grok: bounded\n-- adaptive-grok: resumable\n"
+                "DELETE FROM item WHERE 1=1;\n",
+                "fail",
+            ),
+            (
                 "version gap",
                 "migrations/003_expand.sql",
                 "CREATE TABLE item(id integer);\n",
@@ -658,8 +696,7 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 safe = {
                     f"migrations/{version}_expand.sql": "CREATE TABLE item(id integer);\n",
                     f"migrations/{version}_migrate.sql": (
-                        "-- adaptive-grok: bounded\n-- adaptive-grok: resumable\n"
-                        "UPDATE item SET id = id WHERE id IS NOT NULL;\n"
+                        "UPDATE item SET id = id WHERE id >= 1 AND id <= 100;\n"
                     ),
                     f"migrations/{version}_contract.sql": "ALTER TABLE item DROP COLUMN legacy;\n",
                 }
@@ -684,8 +721,7 @@ class ArchitectureFitnessTests(unittest.TestCase):
             ("expand", "CREATE TABLE item(id integer);\n"),
             (
                 "migrate",
-                "-- adaptive-grok: bounded\n-- adaptive-grok: resumable\n"
-                "UPDATE item SET id = id WHERE id IS NOT NULL;\n",
+                "UPDATE item SET id = id WHERE id >= 1 AND id <= 100;\n",
             ),
             ("contract", "ALTER TABLE item DROP COLUMN legacy;\n"),
         ):
@@ -695,6 +731,42 @@ class ArchitectureFitnessTests(unittest.TestCase):
         head = repo.commit("modified unsafe migrate")
         result = self._results(self._evaluate(repo, base, head))["migration_safety"]
         self.assertEqual(result.status, "fail")
+
+        repo = GitArchitectureRepo(self)
+        repo.model(_system(), rules)
+        duplicate_base = repo.commit("duplicate base")
+        for group in ("001_alpha", "001_beta"):
+            for phase, source in (
+                ("expand", "CREATE TABLE item(id integer);\n"),
+                (
+                    "migrate",
+                    "UPDATE item SET id = id WHERE id >= 1 AND id <= 100;\n",
+                ),
+                ("contract", "ALTER TABLE item DROP COLUMN legacy;\n"),
+                ):
+                repo.write_text(f"migrations/{group}_{phase}.sql", source)
+        duplicate_head = repo.commit("duplicate version inventory")
+        duplicate = self._results(
+            self._evaluate(repo, duplicate_base, duplicate_head)
+        )["migration_safety"]
+        self.assertEqual(duplicate.status, "fail")
+        self.assertIn("duplicate", " ".join(duplicate.findings))
+
+        bounded_repo, bounded_base = self._repo(rules=rules)
+        for phase, source in (
+            ("expand", "CREATE TABLE item(id integer);\n"),
+            (
+                "migrate",
+                "UPDATE item SET id = id WHERE id >= 1 AND id <= 100;\n",
+            ),
+            ("contract", "ALTER TABLE item DROP COLUMN legacy;\n"),
+        ):
+            bounded_repo.write_text(f"migrations/001_{phase}.sql", source)
+        bounded_head = bounded_repo.commit("bounded range migration")
+        bounded = self._results(
+            self._evaluate(bounded_repo, bounded_base, bounded_head)
+        )["migration_safety"]
+        self.assertEqual(bounded.status, "pass")
 
     def test_unsupported_applicable_source_analysis_fails_the_report(self) -> None:
         rules = _rules()
@@ -804,6 +876,20 @@ class ArchitectureFitnessTests(unittest.TestCase):
                         )
                     self.assertLess(time.monotonic() - started, 0.4)
                     self.assertFalse(sentinel.exists())
+
+    def test_line_stats_are_linear_and_have_an_explicit_line_ceiling(self) -> None:
+        self.assertTrue(hasattr(DIFF, "MAX_LINE_STAT_LINES"), "line-stat ceiling is absent")
+        before = (b"x\n" * 6_000) + b"before\n"
+        after = (b"x\n" * 6_000) + b"after\n"
+        started = time.monotonic()
+        self.assertEqual(DIFF._line_stats(before, after), (1, 1))
+        self.assertLess(time.monotonic() - started, 0.25)
+        oversized = b"x\n" * (DIFF.MAX_LINE_STAT_LINES + 1)
+        with self.assertRaises(FIT.ArchitectureError):
+            DIFF._line_stats(oversized, b"")
+        over_bytes = b"x" * (DIFF.MAX_ANALYZED_FILE_BYTES + 1)
+        with self.assertRaises(FIT.ArchitectureError):
+            DIFF._line_stats(over_bytes, b"")
 
     def test_risk_is_monotonic_and_architecture_expansion_revokes_exemption(self) -> None:
         system = _system()
