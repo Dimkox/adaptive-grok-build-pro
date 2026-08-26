@@ -12,7 +12,7 @@ The four `review-*_reviewer-4.md` reports in this directory are preserved verbat
 ## Status
 
 - Root unit suite: 223 passed with the default invocation.
-- Trust CI suite: 192 tests passed, with 10 honest conditional PostgreSQL skips because `TRUST_CI_TEST_DATABASE_URL` was not configured.
+- Trust CI suite: 192 tests total, with 10 honest conditional PostgreSQL skips and 182 executed successfully because `TRUST_CI_TEST_DATABASE_URL` was not configured.
 - Focused policy/runner/workspace checks, Ruff, diff whitespace, and holdout identity checks passed on the remediation tree.
 
 Full exact-commit verification and fresh route-selected reviews are still required before Task 6, AC-006, or source-ready status can complete; deployed holdout/worker/policy activation remains explicitly incomplete.

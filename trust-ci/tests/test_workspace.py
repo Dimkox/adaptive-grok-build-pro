@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import os
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -43,6 +45,45 @@ class WorkspaceStreamingTests(unittest.TestCase):
         subprocess.run(['git', 'commit', '-qm', 'paths'], cwd=self.workspace.path, check=True)
         return subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=self.workspace.path, text=True).strip()
 
+    @staticmethod
+    def _pid_exists(pid: int) -> bool:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        return True
+
+    def _force_probe_cleanup(self, pid: int | None) -> None:
+        if pid is None or not self._pid_exists(pid):
+            return
+        os.kill(pid, signal.SIGKILL)
+        deadline = time.monotonic() + 2
+        while self._pid_exists(pid) and time.monotonic() < deadline:
+            time.sleep(0.01)
+
+    @staticmethod
+    def _descendant_leader_script(mode: str) -> str:
+        descendant = (
+            'import os,signal,sys,time\n'
+            'signal.signal(signal.SIGTERM, signal.SIG_IGN)\n'
+            'os.close(1); os.close(2)\n'
+            'open(sys.argv[1], "w").write(str(os.getpid()))\n'
+            'time.sleep(60)\n'
+        )
+        action = {
+            'stdout': 'while True: os.write(1, b"x" * 4096)\n',
+            'stderr': 'while True: os.write(2, b"e" * 4096)\n',
+            'timeout': 'os.close(1); os.close(2); time.sleep(60)\n',
+        }[mode]
+        return (
+            'import os,subprocess,sys,time\n'
+            f'descendant={descendant!r}\n'
+            'subprocess.Popen([sys.executable, "-c", descendant, sys.argv[1]])\n'
+            'deadline=time.monotonic()+2\n'
+            'while not os.path.exists(sys.argv[1]) and time.monotonic() < deadline: time.sleep(0.01)\n'
+            + action
+        )
+
     def test_real_git_diff_enforces_byte_count_and_path_limits(self) -> None:
         paths = ('a.txt', 'directory/long-name.txt')
         head = self._commit_paths(paths)
@@ -77,6 +118,55 @@ class WorkspaceStreamingTests(unittest.TestCase):
         with mock.patch.object(workspace_module, '_MAX_GIT_PATH_BYTES', len('tab\tname.txt') - 1):
             with self.assertRaisesRegex(workspace_module.WorkspaceError, 'path.*byte limit'):
                 self.workspace.assert_unchanged()
+
+    def test_git_commands_ignore_committed_executable_global_config(self) -> None:
+        marker = Path(self.temp.name) / 'untrusted-config-executed'
+        executable = Path(self.temp.name) / 'untrusted-git-command'
+        executable.write_text(
+            '#!/bin/sh\nprintf executed >> "$1"\nprintf token\n',
+            encoding='utf-8',
+        )
+        executable.chmod(0o755)
+        hooks = Path(self.temp.name) / 'untrusted-hooks'
+        hooks.mkdir()
+        hook = hooks / 'post-checkout'
+        hook.write_text(f'#!/bin/sh\nprintf hook >> {marker}\n', encoding='utf-8')
+        hook.chmod(0o755)
+        config = (
+            '[core]\n'
+            f'\tfsmonitor = {executable} {marker}\n'
+            f'\thooksPath = {hooks}\n'
+            '[diff]\n'
+            f'\texternal = {executable} {marker}\n'
+        )
+        (self.workspace.path / '.gitconfig').write_text(config, encoding='utf-8')
+        unusual = self.workspace.path / 'line\nbreak.txt'
+        unusual.write_text('exact\n', encoding='utf-8')
+        subprocess.run(['git', 'add', '.'], cwd=self.workspace.path, check=True)
+        subprocess.run(['git', 'commit', '-qm', 'untrusted config'], cwd=self.workspace.path, check=True)
+        head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=self.workspace.path, text=True).strip()
+        self.workspace.job.head_sha = head
+
+        changed = self.workspace._changed_files(self.base, head)
+        self.assertEqual(changed, tuple(sorted(('.gitconfig', 'line\nbreak.txt'))))
+        self.workspace.reset()
+        self.workspace.assert_unchanged()
+        self.assertFalse(marker.exists(), 'repository-controlled Git config executed on the host')
+
+        env = self.workspace._git_env(authenticated=False)
+        trusted_home = Path(env['HOME'])
+        self.assertNotEqual(trusted_home, self.workspace.path)
+        self.assertEqual(env['GIT_CONFIG_GLOBAL'], os.devnull)
+        self.assertEqual(env['GIT_CONFIG_SYSTEM'], os.devnull)
+        self.assertEqual(env['XDG_CONFIG_HOME'], str(trusted_home / 'xdg'))
+        authenticated = self.workspace._git_env(authenticated=True)
+        self.assertEqual(authenticated['GIT_CONFIG_COUNT'], '3')
+        self.assertEqual(authenticated['GIT_CONFIG_KEY_0'], 'core.hooksPath')
+        self.assertEqual(authenticated['GIT_CONFIG_KEY_1'], 'core.fsmonitor')
+        self.assertEqual(authenticated['GIT_CONFIG_KEY_2'], 'http.extraHeader')
+        self.assertTrue(authenticated['GIT_CONFIG_VALUE_2'].startswith('Authorization: Basic '))
+        self.workspace.cleanup()
+        self.assertFalse(trusted_home.exists())
 
     def test_nul_parser_enforces_limits_incrementally_across_chunks(self) -> None:
         collector = workspace_module._NulPathCollector(context='synthetic', record_prefix_bytes=0)
@@ -180,6 +270,41 @@ class WorkspaceStreamingTests(unittest.TestCase):
         pid = int(pid_file.read_text(encoding='ascii'))
         with self.assertRaises(ProcessLookupError):
             os.kill(pid, 0)
+
+    def test_bounded_process_kills_sigterm_ignoring_descendants(self) -> None:
+        for mode, error in (
+            ('stdout', 'stdout byte limit'),
+            ('stderr', 'stderr byte limit'),
+            ('timeout', 'timeout'),
+        ):
+            with self.subTest(mode=mode):
+                pid_file = Path(self.temp.name) / f'{mode}-descendant.pid'
+                descendant_pid = None
+                try:
+                    with self.assertRaisesRegex(workspace_module.WorkspaceError, error):
+                        workspace_module._run_bounded_process(
+                            [sys.executable, '-c', self._descendant_leader_script(mode), str(pid_file)],
+                            cwd=Path(self.temp.name),
+                            env=dict(os.environ),
+                            timeout=0.2 if mode == 'timeout' else 5,
+                            stdout_limit=128,
+                            stderr_limit=128,
+                            stdout_consumer=lambda _chunk: None,
+                        )
+                    descendant_pid = int(pid_file.read_text(encoding='ascii'))
+                    self.assertFalse(
+                        self._pid_exists(descendant_pid),
+                        f'{mode} cleanup left a same-group descendant alive',
+                    )
+                finally:
+                    self._force_probe_cleanup(descendant_pid)
+
+    def test_process_group_cleanup_refuses_own_group_and_tolerates_esrch(self) -> None:
+        with self.assertRaisesRegex(workspace_module.WorkspaceError, 'worker process group'):
+            workspace_module._signal_process_group(os.getpgrp(), signal.SIGTERM)
+        missing_group = 2_000_000_000
+        self.assertFalse(workspace_module._process_group_exists(missing_group))
+        workspace_module._signal_process_group(missing_group, signal.SIGKILL)
 
 
 if __name__ == '__main__':

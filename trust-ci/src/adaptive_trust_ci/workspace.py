@@ -18,6 +18,8 @@ _MAX_GIT_PATHS = 100_000
 _MAX_GIT_PATH_OUTPUT_BYTES = 100_000_000
 _MAX_GIT_COMMAND_OUTPUT_BYTES = 65_536
 _MAX_GIT_STDERR_BYTES = 1_000_000
+_PROCESS_TERM_GRACE_SECONDS = 0.25
+_PROCESS_KILL_GRACE_SECONDS = 1.0
 
 
 class WorkspaceError(RuntimeError):
@@ -67,21 +69,63 @@ class _NulPathCollector:
             raise WorkspaceError(f'{self.context} path exceeds the configured byte limit')
 
 
-def _terminate_process(process: subprocess.Popen[bytes]) -> None:
+def _process_group_exists(process_group_id: int) -> bool:
+    if process_group_id <= 0 or process_group_id == os.getpgrp():
+        raise WorkspaceError('refusing to inspect the worker process group')
     try:
-        os.killpg(process.pid, signal.SIGTERM)
+        os.killpg(process_group_id, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError as exc:
+        raise WorkspaceError('cannot inspect bounded process group') from exc
+    return True
+
+
+def _signal_process_group(process_group_id: int, sig: signal.Signals) -> None:
+    if process_group_id <= 0 or process_group_id == os.getpgrp():
+        raise WorkspaceError('refusing to signal the worker process group')
+    try:
+        os.killpg(process_group_id, sig)
     except ProcessLookupError:
         pass
-    try:
-        process.wait(timeout=1)
-        return
-    except subprocess.TimeoutExpired:
-        pass
-    try:
-        os.killpg(process.pid, signal.SIGKILL)
-    except ProcessLookupError:
-        pass
-    process.wait()
+
+
+def _wait_for_process_group(
+    process: subprocess.Popen[bytes],
+    process_group_id: int,
+    *,
+    timeout: float,
+) -> bool:
+    deadline = time.monotonic() + timeout
+    while True:
+        process.poll()
+        if not _process_group_exists(process_group_id):
+            return True
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return False
+        time.sleep(min(0.01, remaining))
+
+
+def _terminate_process(process: subprocess.Popen[bytes], process_group_id: int) -> None:
+    _signal_process_group(process_group_id, signal.SIGTERM)
+    if not _wait_for_process_group(
+        process,
+        process_group_id,
+        timeout=_PROCESS_TERM_GRACE_SECONDS,
+    ):
+        _signal_process_group(process_group_id, signal.SIGKILL)
+        if not _wait_for_process_group(
+            process,
+            process_group_id,
+            timeout=_PROCESS_KILL_GRACE_SECONDS,
+        ):
+            raise WorkspaceError('bounded process group survived SIGKILL')
+    if process.poll() is None:
+        try:
+            process.wait(timeout=_PROCESS_KILL_GRACE_SECONDS)
+        except subprocess.TimeoutExpired as exc:
+            raise WorkspaceError('bounded process leader was not reaped') from exc
 
 
 def _run_bounded_process(
@@ -106,6 +150,7 @@ def _run_bounded_process(
         )
     except OSError as exc:
         raise WorkspaceError(f'cannot start {argv[0]!r}: {exc}') from exc
+    process_group_id = process.pid
     assert process.stdout is not None
     assert process.stderr is not None
     stderr = bytearray()
@@ -147,10 +192,10 @@ def _run_bounded_process(
             raise WorkspaceError(f'{argv[0]} process exceeded its timeout')
         return process.wait(timeout=remaining), bytes(stderr)
     except subprocess.TimeoutExpired as exc:
-        _terminate_process(process)
+        _terminate_process(process, process_group_id)
         raise WorkspaceError(f'{argv[0]} process exceeded its timeout') from exc
     except BaseException:
-        _terminate_process(process)
+        _terminate_process(process, process_group_id)
         raise
     finally:
         selector.close()
@@ -180,6 +225,15 @@ class GitWorkspace:
         self.checkout_depth = checkout_depth
         self.path = Path(tempfile.mkdtemp(prefix=f'trust-ci-{job.job_id[:8]}-', dir=base_directory))
         os.chmod(self.path, 0o755)
+        try:
+            self.config_home = Path(
+                tempfile.mkdtemp(prefix=f'trust-ci-config-{job.job_id[:8]}-', dir=base_directory)
+            )
+            os.chmod(self.config_home, 0o700)
+            (self.config_home / 'xdg').mkdir(mode=0o700)
+        except BaseException:
+            shutil.rmtree(self.path, ignore_errors=True)
+            raise
 
     def checkout(self, job: Job) -> Checkout:
         if job.job_id != self.job.job_id:
@@ -289,6 +343,7 @@ class GitWorkspace:
 
     def cleanup(self) -> None:
         shutil.rmtree(self.path, ignore_errors=True)
+        shutil.rmtree(self.config_home, ignore_errors=True)
 
     def _commit_exists(self, sha: str) -> bool:
         stdout = bytearray()
@@ -341,19 +396,25 @@ class GitWorkspace:
         return bytes(stdout)
 
     def _git_env(self, *, authenticated: bool) -> dict[str, str]:
-        env = {
-            'PATH': os.environ.get('PATH', '/usr/local/bin:/usr/bin:/bin'),
-            'HOME': str(self.path),
-            'GIT_TERMINAL_PROMPT': '0',
-            'GIT_CONFIG_NOSYSTEM': '1',
-        }
+        config = [
+            ('core.hooksPath', os.devnull),
+            ('core.fsmonitor', 'false'),
+        ]
         if authenticated:
             basic = base64.b64encode(f'x-access-token:{self.github_token}'.encode()).decode('ascii')
-            env.update(
-                {
-                    'GIT_CONFIG_COUNT': '1',
-                    'GIT_CONFIG_KEY_0': 'http.extraHeader',
-                    'GIT_CONFIG_VALUE_0': f'Authorization: Basic {basic}',
-                }
-            )
+            config.append(('http.extraHeader', f'Authorization: Basic {basic}'))
+        env = {
+            'PATH': os.environ.get('PATH', '/usr/local/bin:/usr/bin:/bin'),
+            'HOME': str(self.config_home),
+            'XDG_CONFIG_HOME': str(self.config_home / 'xdg'),
+            'GIT_TERMINAL_PROMPT': '0',
+            'GIT_CONFIG_NOSYSTEM': '1',
+            'GIT_CONFIG_GLOBAL': os.devnull,
+            'GIT_CONFIG_SYSTEM': os.devnull,
+            'GIT_ATTR_NOSYSTEM': '1',
+            'GIT_CONFIG_COUNT': str(len(config)),
+        }
+        for index, (key, value) in enumerate(config):
+            env[f'GIT_CONFIG_KEY_{index}'] = key
+            env[f'GIT_CONFIG_VALUE_{index}'] = value
         return env
