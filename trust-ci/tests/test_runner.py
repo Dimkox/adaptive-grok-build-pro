@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import shutil
 import tempfile
 import unittest
@@ -10,7 +11,7 @@ from _support import now, policy_data, sha
 from adaptive_trust_ci.holdout import bundle_digest
 from adaptive_trust_ci.models import ApprovalPayload, Checkout, CommandResult, JobRequest
 from adaptive_trust_ci.policy import Policy
-from adaptive_trust_ci.runner import JobRunner
+from adaptive_trust_ci.runner import JobRunner, SpecMetadataError, extract_spec_metadata
 from adaptive_trust_ci.signing import Signer, sign_approval, verify_attestation
 from adaptive_trust_ci.store import MemoryStore
 from adaptive_trust_ci.workspace import GitWorkspace, WorkspaceMutationError
@@ -156,6 +157,35 @@ class RunnerTests(unittest.TestCase):
 
     def test_git_workspace_matches_runner_integrity_contract(self):
         self.assertTrue(hasattr(GitWorkspace, 'assert_unchanged'))
+
+    def test_spec_metadata_is_deterministic_data_only(self) -> None:
+        checkout = Path(self.temp.name) / 'metadata'
+        first = checkout / 'engineering/changes/20260826-a/change-spec.yaml'
+        second = checkout / 'engineering/changes/20260826-b/change-spec.yaml'
+        first.parent.mkdir(parents=True)
+        second.parent.mkdir(parents=True)
+        spec = {'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-002', 'evidence': []}, {'id': 'AC-001', 'evidence': [{'receipt': 'verification'}]}]}
+        first.write_text(json.dumps(spec), encoding='utf-8')
+        second.write_text('{bad json', encoding='utf-8')
+        paths = (second.relative_to(checkout).as_posix(), first.relative_to(checkout).as_posix())
+        digest_value, coverage = extract_spec_metadata(checkout, paths)
+        reverse_digest, reverse_coverage = extract_spec_metadata(checkout, tuple(reversed(paths)))
+        self.assertEqual(digest_value, reverse_digest)
+        self.assertEqual(coverage, reverse_coverage)
+        self.assertEqual(coverage['spec_count'], 2)
+        self.assertEqual(coverage['criterion_total'], 2)
+        self.assertEqual(coverage['unmapped_ids'], ['AC-002'])
+
+    def test_spec_metadata_rejects_symlink(self) -> None:
+        checkout = Path(self.temp.name) / 'metadata-symlink'
+        outside = checkout / 'outside'
+        outside.parent.mkdir(parents=True)
+        outside.write_text('{}', encoding='utf-8')
+        path = checkout / 'engineering/changes/20260826-a/change-spec.yaml'
+        path.parent.mkdir(parents=True)
+        path.symlink_to(outside)
+        with self.assertRaises(SpecMetadataError):
+            extract_spec_metadata(checkout, (path.relative_to(checkout).as_posix(),))
 
     def test_git_workspace_allows_rootless_daemon_traversal(self):
         base = Path(self.temp.name) / 'workspaces'

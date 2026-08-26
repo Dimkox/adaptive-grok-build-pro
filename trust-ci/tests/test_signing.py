@@ -4,8 +4,8 @@ import unittest
 from datetime import timedelta
 
 from _support import digest, now, sha
-from adaptive_trust_ci.models import ApprovalEnvelope, ApprovalPayload
-from adaptive_trust_ci.signing import ApprovalError, Signer, TrustStore, sign_approval, verify_approval
+from adaptive_trust_ci.models import ApprovalEnvelope, ApprovalPayload, AttestationEnvelope, AttestationPayload
+from adaptive_trust_ci.signing import ApprovalError, Signer, TrustStore, sign_approval, verify_approval, verify_attestation
 from adaptive_trust_ci.store import MemoryStore, ReplayError
 
 
@@ -119,6 +119,42 @@ class SigningTests(unittest.TestCase):
         memory.record_approval(self.payload, self.envelope, now=now())
         with self.assertRaises(ReplayError):
             memory.record_approval(self.payload, self.envelope, now=now())
+
+    def test_pre_m1_attestation_signature_and_store_replay_remain_valid(self) -> None:
+        legacy = {
+            'schema_version': 1, 'attestation_id': 'legacy-attestation', 'job_id': 'job-1',
+            'repository': 'Dimkox/adaptive-grok-build-pro', 'pr_number': 42,
+            'base_sha': sha('a'), 'head_sha': sha('b'), 'policy_digest': digest('c'),
+            'status': 'passed', 'command_results': [], 'changed_files': ['docs/x.md'],
+            'approved_scopes': [], 'started_at': now().isoformat(), 'completed_at': now().isoformat(),
+            'key_id': self.signer.key_id,
+        }
+        envelope = AttestationEnvelope.from_dict({'payload': legacy, 'signature': self.signer.sign(legacy)})
+        verified = verify_attestation(envelope, self.signer.public_key_pem())
+        self.assertIsNone(verified.spec_digest)
+        memory = MemoryStore()
+        memory.record_attestation('job-1', envelope)
+        stored = memory.get_attestation('job-1')
+        self.assertIsNotNone(stored)
+        assert stored is not None
+        self.assertEqual(verify_attestation(stored, self.signer.public_key_pem()).attestation_id, 'legacy-attestation')
+        self.assertNotIn('spec_digest', stored.to_dict()['payload'])
+
+    def test_attestation_coverage_is_strict_and_bounded(self) -> None:
+        legacy = {
+            'schema_version': 1, 'attestation_id': 'new-attestation', 'job_id': 'job-1',
+            'repository': 'Dimkox/adaptive-grok-build-pro', 'pr_number': 42,
+            'base_sha': sha('a'), 'head_sha': sha('b'), 'policy_digest': digest('c'),
+            'status': 'passed', 'command_results': [], 'changed_files': [], 'approved_scopes': [],
+            'started_at': now().isoformat(), 'completed_at': now().isoformat(), 'key_id': self.signer.key_id,
+            'spec_digest': digest('d'),
+            'criterion_coverage': {'spec_count': 1, 'criterion_total': 2, 'criterion_mapped': 1, 'unmapped_ids': ['AC-002']},
+        }
+        payload = AttestationPayload.from_dict(legacy)
+        self.assertEqual(payload.criterion_coverage['unmapped_ids'], ['AC-002'])
+        legacy['criterion_coverage']['extra'] = 1
+        with self.assertRaises(ValueError):
+            AttestationPayload.from_dict(legacy)
 
 
 if __name__ == "__main__":

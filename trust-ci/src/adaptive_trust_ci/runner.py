@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
+import stat
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Protocol
+from typing import Any, Callable, Protocol
 
 from .github import GitHubClient
 from .holdout import HoldoutError, verify_bundle
@@ -20,6 +22,136 @@ from .store import Store
 from .workspace import GitWorkspace, WorkspaceMutationError
 
 _SECRET_ENV_RE = re.compile(r'(?:TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|PRIVATE|AUTH|COOKIE|SESSION|KEY)', re.I)
+_SPEC_PATH_RE = re.compile(r'^engineering/changes/[^/]+/change-spec\.yaml$')
+_AC_RE = re.compile(r'^AC-[0-9]{3,6}$')
+_EVIDENCE_KEYS = {'test', 'receipt', 'production_signal', 'attestation'}
+_MAX_SPEC_BYTES = 1_000_000
+_MAX_SPEC_FILES = 100
+_MAX_SPEC_DEPTH = 64
+_MAX_SPEC_NODES = 20_000
+
+
+class SpecMetadataError(RuntimeError):
+    pass
+
+
+def _metadata_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise SpecMetadataError(f'duplicate JSON key: {key}')
+        result[key] = value
+    return result
+
+
+def _metadata_constant(value: str) -> None:
+    raise SpecMetadataError(f'non-finite JSON number: {value}')
+
+
+def _metadata_walk(value: Any, depth: int = 0, count: list[int] | None = None) -> None:
+    count = count or [0]
+    count[0] += 1
+    if depth > _MAX_SPEC_DEPTH or count[0] > _MAX_SPEC_NODES:
+        raise SpecMetadataError('spec metadata structural limit exceeded')
+    if isinstance(value, str) and len(value) > 65_536:
+        raise SpecMetadataError('spec metadata string limit exceeded')
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _metadata_walk(key, depth + 1, count)
+            _metadata_walk(item, depth + 1, count)
+    elif isinstance(value, list):
+        for item in value:
+            _metadata_walk(item, depth + 1, count)
+
+
+def _metadata_bytes(root: Path, rel: str) -> bytes:
+    path = root.joinpath(*Path(rel).parts)
+    try:
+        info = path.lstat()
+        if path.is_symlink() or not stat.S_ISREG(info.st_mode):
+            raise SpecMetadataError(f'{rel}: not a regular non-symlink spec')
+        fd = os.open(path, os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0))
+        try:
+            opened = os.fstat(fd)
+            if (info.st_dev, info.st_ino) != (opened.st_dev, opened.st_ino) or opened.st_size > _MAX_SPEC_BYTES:
+                raise SpecMetadataError(f'{rel}: unsafe or oversized spec')
+            data = os.read(fd, _MAX_SPEC_BYTES + 1)
+        finally:
+            os.close(fd)
+    except SpecMetadataError:
+        raise
+    except OSError as exc:
+        raise SpecMetadataError(f'{rel}: cannot read spec') from exc
+    if len(data) > _MAX_SPEC_BYTES:
+        raise SpecMetadataError(f'{rel}: oversized spec')
+    return data
+
+
+def _metadata_document(data: bytes) -> dict[str, Any] | None:
+    if data.startswith(b'\xef\xbb\xbf'):
+        return None
+    try:
+        value = json.loads(data.decode('utf-8', errors='strict'), object_pairs_hook=_metadata_pairs, parse_constant=_metadata_constant)
+        _metadata_walk(value)
+    except (UnicodeDecodeError, json.JSONDecodeError, SpecMetadataError, RecursionError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _metadata_criteria(spec: dict[str, Any]) -> tuple[int, int, list[str]] | None:
+    if spec.get('schema_version') != 2 or not isinstance(spec.get('acceptance_criteria'), list):
+        return None
+    criteria = spec['acceptance_criteria']
+    if len(criteria) > 500:
+        return None
+    seen: set[str] = set()
+    mapped = 0
+    unmapped: list[str] = []
+    for item in criteria:
+        if not isinstance(item, dict):
+            return None
+        criterion_id = item.get('id')
+        evidence = item.get('evidence')
+        if not isinstance(criterion_id, str) or not _AC_RE.fullmatch(criterion_id) or criterion_id in seen or not isinstance(evidence, list):
+            return None
+        seen.add(criterion_id)
+        structurally_mapped = bool(evidence) and all(
+            isinstance(ref, dict) and len(ref) == 1 and next(iter(ref)) in _EVIDENCE_KEYS
+            for ref in evidence
+        )
+        if structurally_mapped:
+            mapped += 1
+        else:
+            unmapped.append(criterion_id)
+    return len(criteria), mapped, sorted(unmapped)
+
+
+def extract_spec_metadata(checkout_root: Path, changed_files: tuple[str, ...]) -> tuple[str | None, dict[str, Any]]:
+    selected = sorted({str(rel).replace('\\', '/') for rel in changed_files if _SPEC_PATH_RE.fullmatch(str(rel).replace('\\', '/'))})
+    if len(selected) > _MAX_SPEC_FILES:
+        raise SpecMetadataError('changed spec count limit exceeded')
+    entries: list[dict[str, Any]] = []
+    total = 0
+    mapped = 0
+    unmapped: list[str] = []
+    for rel in selected:
+        data = _metadata_bytes(checkout_root, rel)
+        raw_digest = hashlib.sha256(data).hexdigest()
+        document = _metadata_document(data)
+        semantic_digest = None
+        if document is not None:
+            semantic_digest = hashlib.sha256(
+                json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False).encode('utf-8')
+            ).hexdigest()
+            coverage = _metadata_criteria(document)
+            if coverage is not None:
+                criterion_total, criterion_mapped, criterion_unmapped = coverage
+                total += criterion_total
+                mapped += criterion_mapped
+                unmapped.extend(criterion_unmapped)
+        entries.append({'path': rel, 'raw_digest': raw_digest, 'semantic_digest': semantic_digest})
+    digest = hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(',', ':')).encode()).hexdigest() if entries else None
+    return digest, {'spec_count': len(entries), 'criterion_total': total, 'criterion_mapped': mapped, 'unmapped_ids': sorted(unmapped)}
 
 
 class Workspace(Protocol):
@@ -193,9 +325,22 @@ class JobRunner:
                         output_sha256=verified_holdout_digest,
                     )
                 ]
+                try:
+                    spec_digest, spec_coverage = extract_spec_metadata(checkout.path, checkout.changed_files)
+                except SpecMetadataError as exc:
+                    message = str(exc)
+                    spec_digest = None
+                    spec_coverage = {'spec_count': 0, 'criterion_total': 0, 'criterion_mapped': 0, 'unmapped_ids': []}
+                    command_results.append(
+                        CommandResult(
+                            name='typed-spec-metadata', status='fail', exit_code=96, duration_seconds=0.0,
+                            stdout_tail='', stderr_tail=message,
+                            output_sha256=hashlib.sha256(message.encode()).hexdigest(),
+                        )
+                    )
                 environment = self._command_environment(job)
 
-                for command in self.policy.holdout.commands:
+                for command in self.policy.holdout.commands if all(item.status == 'pass' for item in command_results) else ():
                     lease.check()
                     if not self._run_command(
                         workspace,
@@ -244,6 +389,8 @@ class JobRunner:
                     started_at=(job.started_at or started_at).isoformat(),
                     completed_at=completed_at.isoformat(),
                     key_id=self.signer.key_id,
+                    spec_digest=spec_digest,
+                    criterion_coverage=spec_coverage,
                 )
                 envelope = sign_attestation(payload, self.signer)
                 self.store.record_attestation(job.job_id, envelope)
