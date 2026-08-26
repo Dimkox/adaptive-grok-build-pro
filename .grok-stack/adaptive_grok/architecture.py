@@ -9,9 +9,13 @@ import stat
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 from .spec import SpecError, _schema_preflight, validate_schema
+
+if TYPE_CHECKING:
+    from .architecture_diff import ArchitectureDiff
+    from .architecture_fitness import FitnessReport
 
 MAX_DOCUMENT_BYTES = 1_000_000
 MAX_DEPTH = 64
@@ -1504,3 +1508,40 @@ def architecture_fingerprint(
         "contract_digests": sorted(contracts, key=lambda item: item["path"]),
     }
     return _sha256(payload)
+
+
+def diff_architecture(
+    root: Path | str,
+    *,
+    base_sha: str,
+    head_sha: str | None = None,
+    worktree: bool = False,
+) -> ArchitectureDiff:
+    from .architecture_fitness import diff_architecture as evaluate_diff
+
+    return evaluate_diff(root, base_sha=base_sha, head_sha=head_sha, worktree=worktree)
+
+
+def evaluate_fitness(
+    root: Path | str,
+    snapshot: ArchitectureSnapshot,
+    diff: ArchitectureDiff,
+    changed_paths: Iterable[str],
+    *,
+    pre_risk: str,
+) -> FitnessReport:
+    from .architecture_fitness import evaluate_fitness as evaluate
+
+    return evaluate(root, snapshot, diff, changed_paths, pre_risk=pre_risk)
+
+
+def architecture_evidence(
+    root: Path | str,
+    *,
+    base_sha: str,
+    head_sha: str,
+    pre_risk: str,
+) -> dict[str, Any]:
+    from .architecture_fitness import architecture_evidence as build_evidence
+
+    return build_evidence(root, base_sha=base_sha, head_sha=head_sha, pre_risk=pre_risk)
