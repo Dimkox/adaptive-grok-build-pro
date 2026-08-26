@@ -183,6 +183,21 @@ class ChangeSpecTests(unittest.TestCase):
             with self.assertRaises(SPEC.SpecError):
                 SPEC.spec_fingerprint(root, root / "change-spec.yaml", spec)
 
+    def test_contract_paths_reject_control_characters_without_raw_os_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "change-spec.yaml"
+            for unsafe in ("\x00", "\n", "\r", "\t", "\x7f", "\u0085", "\u202e"):
+                with self.subTest(unsafe=ascii(unsafe)):
+                    spec = json.loads(json.dumps(VALID_SPEC))
+                    spec["contracts"]["json_schema"] = [f"contracts/{unsafe}schema.json"]
+                    path.write_text(SPEC.dump_canonical_spec(spec), encoding="utf-8")
+                    errors = SPEC.validate_spec(root, path, gate=False)
+                    self.assertTrue(errors)
+                    self.assertIn("unsafe contract path", errors[0])
+                    with self.assertRaises(SPEC.SpecError):
+                        SPEC.spec_fingerprint(root, path, spec)
+
     def test_missing_or_unsafe_evidence_and_contract_paths_fail(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

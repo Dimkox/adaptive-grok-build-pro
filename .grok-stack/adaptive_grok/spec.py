@@ -6,6 +6,7 @@ import os
 import re
 import stat
 import subprocess
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -544,15 +545,28 @@ def criterion_coverage(spec: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _unsafe_path_character(value: str) -> bool:
+    return any(unicodedata.category(character) in {"Cc", "Cf", "Cs", "Zl", "Zp"} for character in value)
+
+
 def _safe_contract_path(root: Path, raw: str) -> Path | None:
     rel = Path(raw)
-    if not raw or rel.is_absolute() or "\\" in raw or ".." in rel.parts or any(part in {"", "."} for part in rel.parts):
+    if (
+        not raw
+        or _unsafe_path_character(raw)
+        or rel.is_absolute()
+        or "\\" in raw
+        or ".." in rel.parts
+        or any(part in {"", "."} for part in rel.parts)
+    ):
         raise SpecError(f"unsafe contract path: {raw!r}", code="path")
     candidate = root.joinpath(*rel.parts)
     try:
         info = candidate.lstat()
     except FileNotFoundError:
         return None
+    except (OSError, ValueError) as exc:
+        raise SpecError(f"unsafe contract path: {raw!r}", code="path") from exc
     if candidate.is_symlink() or not stat.S_ISREG(info.st_mode):
         raise SpecError(f"contract must be a regular non-symlink file: {raw}", code="path")
     try:
@@ -564,7 +578,14 @@ def _safe_contract_path(root: Path, raw: str) -> Path | None:
 
 def _contract_digest(root: Path, raw: str) -> str | None:
     rel = Path(raw)
-    if not raw or rel.is_absolute() or "\\" in raw or ".." in rel.parts or any(part in {"", "."} for part in rel.parts):
+    if (
+        not raw
+        or _unsafe_path_character(raw)
+        or rel.is_absolute()
+        or "\\" in raw
+        or ".." in rel.parts
+        or any(part in {"", "."} for part in rel.parts)
+    ):
         raise SpecError(f"unsafe contract path: {raw!r}", code="path")
     descriptors: list[int] = []
     try:
@@ -602,7 +623,7 @@ def _contract_digest(root: Path, raw: str) -> str | None:
         return None
     except SpecError:
         raise
-    except OSError as exc:
+    except (OSError, ValueError) as exc:
         raise SpecError(f"unsafe contract path: {raw!r}: {exc}", code="path") from exc
     finally:
         for descriptor in reversed(descriptors):
@@ -689,7 +710,13 @@ def _semantic_errors(spec: dict[str, Any], *, gate: bool, root: Path | None = No
                         errors.append(f"contract path does not exist: {raw}")
                 else:
                     rel = Path(str(raw))
-                    if not str(raw) or rel.is_absolute() or "\\" in str(raw) or any(part in {"", ".", ".."} for part in rel.parts):
+                    if (
+                        not str(raw)
+                        or _unsafe_path_character(str(raw))
+                        or rel.is_absolute()
+                        or "\\" in str(raw)
+                        or any(part in {"", ".", ".."} for part in rel.parts)
+                    ):
                         raise SpecError(f"unsafe contract path: {raw!r}")
             except SpecError as exc:
                 errors.append(str(exc))

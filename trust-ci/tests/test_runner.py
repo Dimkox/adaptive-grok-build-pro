@@ -5,11 +5,12 @@ import json
 import shutil
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 from _support import now, policy_data, sha
 from adaptive_trust_ci.holdout import bundle_digest
-from adaptive_trust_ci.models import ApprovalPayload, Checkout, CommandResult, JobRequest
+from adaptive_trust_ci.models import ApprovalPayload, AttestationEnvelope, Checkout, CommandResult, JobRequest
 from adaptive_trust_ci.policy import Policy
 from adaptive_trust_ci.runner import JobRunner, SpecMetadataError, extract_spec_metadata
 from adaptive_trust_ci.signing import Signer, sign_approval, verify_attestation
@@ -177,7 +178,10 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(coverage, reverse_coverage)
         self.assertEqual(coverage['spec_count'], 2)
         self.assertEqual(coverage['criterion_total'], 3)
-        self.assertEqual(coverage['unmapped_ids'], ['AC-002'])
+        self.assertEqual(
+            coverage['unmapped_ids'],
+            ['engineering/changes/20260826-a/change-spec.yaml#AC-002'],
+        )
 
     def test_spec_metadata_rejects_malformed_evidence_and_json(self) -> None:
         checkout = Path(self.temp.name) / 'metadata-invalid'
@@ -204,16 +208,35 @@ class RunnerTests(unittest.TestCase):
         with self.assertRaises(SpecMetadataError):
             extract_spec_metadata(checkout, (rel,))
 
-    def test_duplicate_criterion_ids_across_specs_fail_deterministically(self) -> None:
+    def test_criterion_ids_are_spec_local_and_coverage_is_path_qualified(self) -> None:
         checkout = Path(self.temp.name) / 'metadata-duplicate'
         paths = []
-        for name in ('a', 'b'):
+        for name, evidence in (('a', []), ('b', [{'receipt': 'verification'}])):
             path = checkout / f'engineering/changes/20260826-{name}/change-spec.yaml'
             path.parent.mkdir(parents=True)
-            path.write_text(json.dumps({'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-001', 'statement': 'duplicate', 'evidence': []}]}), encoding='utf-8')
+            path.write_text(json.dumps({'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-001', 'statement': 'local', 'evidence': evidence}]}), encoding='utf-8')
             paths.append(path.relative_to(checkout).as_posix())
-        with self.assertRaisesRegex(SpecMetadataError, 'duplicate criterion ID'):
-            extract_spec_metadata(checkout, tuple(reversed(paths)))
+        digest_value, coverage = extract_spec_metadata(checkout, tuple(reversed(paths)))
+        reverse_digest, reverse_coverage = extract_spec_metadata(checkout, tuple(paths))
+        self.assertEqual(digest_value, reverse_digest)
+        self.assertEqual(coverage, reverse_coverage)
+        self.assertEqual(coverage['spec_count'], 2)
+        self.assertEqual(coverage['criterion_total'], 2)
+        self.assertEqual(coverage['criterion_mapped'], 1)
+        self.assertEqual(coverage['unmapped_ids'], [f'{paths[0]}#AC-001'])
+
+    def test_malformed_spec_error_retains_exact_raw_provenance_digest(self) -> None:
+        checkout = Path(self.temp.name) / 'metadata-provenance'
+        path = checkout / 'engineering/changes/20260826-a/change-spec.yaml'
+        path.parent.mkdir(parents=True)
+        raw = b'{bad json'
+        path.write_bytes(raw)
+        rel = path.relative_to(checkout).as_posix()
+        entries = [{'path': rel, 'raw_digest': hashlib.sha256(raw).hexdigest(), 'semantic_digest': None}]
+        expected = hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+        with self.assertRaises(SpecMetadataError) as raised:
+            extract_spec_metadata(checkout, (rel,))
+        self.assertEqual(raised.exception.spec_digest, expected)
 
     def test_spec_metadata_rejects_symlink(self) -> None:
         checkout = Path(self.temp.name) / 'metadata-symlink'
@@ -293,7 +316,7 @@ class RunnerTests(unittest.TestCase):
 
     def test_malformed_spec_produces_signed_failure_without_commands(self) -> None:
         rel = 'engineering/changes/20260826-a/change-spec.yaml'
-        malformed = json.dumps({'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-001', 'evidence': [{'test': None}]}]})
+        malformed = '{bad json'
         runner, executor, _, _ = self.build_runner(changed_files=[rel], workspace_files={rel: malformed})
         outcome = runner.process(self.job, 'worker-1')
         self.assertEqual(outcome.status, 'failed')
@@ -302,24 +325,95 @@ class RunnerTests(unittest.TestCase):
         assert envelope is not None
         payload = verify_attestation(envelope, self.signer.public_key_pem())
         self.assertEqual(payload.status, 'failed')
-        self.assertIsNone(payload.spec_digest)
+        entries = [{'path': rel, 'raw_digest': hashlib.sha256(malformed.encode()).hexdigest(), 'semantic_digest': None}]
+        expected = hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+        self.assertEqual(payload.spec_digest, expected)
+        self.assertEqual(payload.criterion_coverage, {'spec_count': 0, 'criterion_total': 0, 'criterion_mapped': 0, 'unmapped_ids': []})
         self.assertEqual(payload.command_results[-1]['name'], 'typed-spec-metadata')
 
-    def test_duplicate_ids_across_specs_produce_deterministic_signed_failure(self) -> None:
+    def test_duplicate_local_ids_across_specs_produce_passing_signed_metadata(self) -> None:
         paths = [f'engineering/changes/20260826-{name}/change-spec.yaml' for name in ('alpha', 'bravo')]
-        document = json.dumps({'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-001', 'statement': 'duplicate', 'evidence': []}]})
+        document = json.dumps({'schema_version': 2, 'acceptance_criteria': [{'id': 'AC-001', 'statement': 'local', 'evidence': [{'receipt': 'verification'}]}]})
         runner, executor, _, _ = self.build_runner(
             changed_files=list(reversed(paths)),
             workspace_files={path: document for path in paths},
         )
+        outcome = runner.process(self.job, 'worker-1')
+        self.assertEqual(outcome.status, 'passed')
+        self.assertEqual(len(executor.calls), 3)
+        envelope = self.store.get_attestation(self.job.job_id)
+        assert envelope is not None
+        payload = verify_attestation(envelope, self.signer.public_key_pem())
+        self.assertEqual(payload.criterion_coverage, {'spec_count': 2, 'criterion_total': 2, 'criterion_mapped': 2, 'unmapped_ids': []})
+
+    def test_aggregate_coverage_limit_produces_signed_failure_not_constructor_error(self) -> None:
+        paths = [f'engineering/changes/20260826-{name}/change-spec.yaml' for name in ('alpha', 'bravo')]
+        documents = {}
+        for path, count in zip(paths, (251, 250), strict=True):
+            documents[path] = json.dumps({
+                'schema_version': 2,
+                'acceptance_criteria': [
+                    {'id': f'AC-{index:03d}', 'statement': 'bounded', 'evidence': []}
+                    for index in range(1, count + 1)
+                ],
+            })
+        runner, executor, _, _ = self.build_runner(changed_files=paths, workspace_files=documents)
         outcome = runner.process(self.job, 'worker-1')
         self.assertEqual(outcome.status, 'failed')
         self.assertEqual(executor.calls, [])
         envelope = self.store.get_attestation(self.job.job_id)
         assert envelope is not None
         payload = verify_attestation(envelope, self.signer.public_key_pem())
-        self.assertEqual(payload.criterion_coverage['spec_count'], 0)
-        self.assertIn('duplicate criterion ID', outcome.details['commands'][-1]['stderr_tail'])
+        self.assertIsNotNone(payload.spec_digest)
+        self.assertEqual(payload.criterion_coverage, {'spec_count': 0, 'criterion_total': 0, 'criterion_mapped': 0, 'unmapped_ids': []})
+        self.assertIn('aggregate unmapped criterion limit exceeded', outcome.details['commands'][-1]['stderr_tail'])
+
+    def test_committed_pre_m1_golden_replays_through_job_runner_without_workspace(self) -> None:
+        fixture = json.loads((Path(__file__).parent / 'fixtures/pre-m1-attestation-postgres.json').read_text(encoding='utf-8'))
+        envelope = AttestationEnvelope.from_dict(fixture['envelope'])
+        payload = envelope.payload
+        store = MemoryStore()
+        request = JobRequest(
+            repository=payload.repository,
+            pr_number=payload.pr_number,
+            base_sha=payload.base_sha,
+            head_sha=payload.head_sha,
+            head_ref='feat/pre-m1',
+            base_ref='main',
+        )
+        job, _ = store.enqueue(request, payload.policy_digest, self.policy.max_attempts, now=now())
+        with store._lock:
+            stored_job = store._jobs.pop(job.job_id)
+            stored_job.job_id = payload.job_id
+            store._jobs[payload.job_id] = stored_job
+            store._idempotency[stored_job.idempotency_key] = payload.job_id
+        claimed = store.claim('golden-worker', self.policy.lease_seconds, now=now())
+        assert claimed is not None
+        store.record_attestation(payload.job_id, envelope)
+
+        class PublicVerifier:
+            def public_key_pem(self):
+                return fixture['public_key_pem'].encode()
+
+        github = FakeGitHub()
+        runner = JobRunner(
+            store=store,
+            policy=replace(self.policy, digest=payload.policy_digest),
+            github=github,
+            signer=PublicVerifier(),
+            github_token_provider=lambda: self.fail('replay requested a token'),
+            public_base_url='https://ci.example.com',
+            workspace_root=Path(tempfile.gettempdir()),
+            workspace_host_root=Path('/host/trust-ci-workspaces'),
+            holdout_host_path=Path('/host/trust-ci-holdout'),
+            now_fn=now,
+            workspace_factory=lambda *_args, **_kwargs: self.fail('replay created a workspace'),
+        )
+        outcome = runner.process(claimed, 'golden-worker')
+        self.assertEqual(outcome.status, 'passed')
+        self.assertTrue(outcome.details['replayed'])
+        self.assertEqual(store.get_attestation(payload.job_id).to_dict(), fixture['envelope'])
+        self.assertEqual(github.completed[-1][2]['conclusion'], 'success')
 
     def test_protected_path_waits_for_signed_approval_and_completes_action_required(self) -> None:
         github = FakeGitHub()

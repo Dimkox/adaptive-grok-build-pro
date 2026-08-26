@@ -125,6 +125,22 @@ class HoldoutChangeSpecTests(unittest.TestCase):
             with self.subTest(mutate=repr(mutate)):
                 self._assert_document_rejected(mutate)
 
+    def test_contract_paths_reject_control_characters_with_controlled_failure(self) -> None:
+        for unsafe in ("\x00", "\n", "\r", "\t", "\x7f", "\u0085", "\u202e"):
+            with self.subTest(unsafe=ascii(unsafe)):
+                self._assert_document_rejected(
+                    lambda document, value=unsafe: document.update(
+                        contracts={"openapi": [f"contracts/{value}api.json"], "json_schema": [], "events": []}
+                    )
+                )
+
+    def test_exact_sha_contract_path_with_nul_fails_closed(self) -> None:
+        document = _valid("20260826-holdout")
+        document["contracts"]["json_schema"] = ["contracts/\x00schema.json"]
+        head, _ = self._commit_spec(json.dumps(document, sort_keys=True).encode())
+        with self.assertRaises(SystemExit):
+            self.module.validate(self.root, base_sha=self.base, head_sha=head)
+
     def test_deep_json_fails_with_controlled_error(self) -> None:
         raw = b'{"schema_version":2,"x":' + (b"[" * 2000) + (b"]" * 2000) + b"}"
         with self.assertRaises(SystemExit):

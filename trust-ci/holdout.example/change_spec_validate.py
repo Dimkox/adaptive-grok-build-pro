@@ -5,6 +5,7 @@ import os
 import re
 import stat
 import subprocess
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -185,7 +186,11 @@ def _string_array(value: Any, rel: str, field: str, *, maximum: int, item_maximu
 
 def _safe_contract(value: str, rel: str) -> None:
     path = Path(value)
-    if path.is_absolute() or not value or "\\" in value or any(part in {"", ".", ".."} for part in path.parts):
+    unsafe_character = any(
+        unicodedata.category(character) in {"Cc", "Cf", "Cs", "Zl", "Zp"}
+        for character in value
+    )
+    if unsafe_character or path.is_absolute() or not value or "\\" in value or any(part in {"", ".", ".."} for part in path.parts):
         fail(f"{rel}: unsafe contract path")
 
 

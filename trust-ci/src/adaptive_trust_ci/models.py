@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import secrets
+import unicodedata
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -14,10 +15,24 @@ _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 _DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 _REPOSITORY_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 _AC_RE = re.compile(r"^AC-[0-9]{3,6}$")
+_COVERAGE_SPEC_RE = re.compile(r"^engineering/changes/[^/]{1,256}/change-spec\.yaml$")
 
 
 def empty_criterion_coverage() -> dict[str, Any]:
     return {"spec_count": 0, "criterion_total": 0, "criterion_mapped": 0, "unmapped_ids": []}
+
+
+def _valid_coverage_id(value: str) -> bool:
+    if _AC_RE.fullmatch(value):
+        return True
+    path, separator, criterion_id = value.rpartition("#")
+    return bool(
+        separator
+        and len(value) <= 512
+        and _COVERAGE_SPEC_RE.fullmatch(path)
+        and _AC_RE.fullmatch(criterion_id)
+        and not any(unicodedata.category(character) in {"Cc", "Cf", "Cs", "Zl", "Zp"} for character in path)
+    )
 
 
 def normalize_criterion_coverage(value: Mapping[str, Any]) -> dict[str, Any]:
@@ -33,7 +48,7 @@ def normalize_criterion_coverage(value: Mapping[str, Any]) -> dict[str, Any]:
     if numbers["spec_count"] > 100 or numbers["criterion_mapped"] > numbers["criterion_total"]:
         raise ValueError("criterion_coverage counts are inconsistent")
     raw_ids = value["unmapped_ids"]
-    if not isinstance(raw_ids, list) or len(raw_ids) > 500 or not all(isinstance(item, str) and _AC_RE.fullmatch(item) for item in raw_ids):
+    if not isinstance(raw_ids, list) or len(raw_ids) > 500 or not all(isinstance(item, str) and _valid_coverage_id(item) for item in raw_ids):
         raise ValueError("criterion_coverage.unmapped_ids must be bounded stable AC IDs")
     ids = sorted(set(raw_ids))
     if len(ids) != len(raw_ids) or len(ids) != numbers["criterion_total"] - numbers["criterion_mapped"]:

@@ -37,7 +37,9 @@ _MAX_SPEC_NODES = 20_000
 
 
 class SpecMetadataError(RuntimeError):
-    pass
+    def __init__(self, message: str, *, spec_digest: str | None = None) -> None:
+        super().__init__(message)
+        self.spec_digest = spec_digest
 
 
 def _metadata_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -215,24 +217,34 @@ def extract_spec_metadata(checkout_root: Path, changed_files: tuple[str, ...]) -
     total = 0
     mapped = 0
     unmapped: list[str] = []
-    global_ids: set[str] = set()
+    errors: list[str] = []
     for rel in selected:
         data = _metadata_bytes(checkout_root, rel)
         raw_digest = hashlib.sha256(data).hexdigest()
-        document = _metadata_document(data)
-        semantic_digest = hashlib.sha256(
-            json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False).encode('utf-8')
-        ).hexdigest()
-        criterion_total, criterion_mapped, criterion_unmapped, criterion_ids = _metadata_criteria(document)
-        duplicate = sorted(global_ids & criterion_ids)
-        if duplicate:
-            raise SpecMetadataError(f'{rel}: duplicate criterion ID across changed specs: {duplicate[0]}')
-        global_ids.update(criterion_ids)
+        entry: dict[str, Any] = {'path': rel, 'raw_digest': raw_digest, 'semantic_digest': None}
+        entries.append(entry)
+        try:
+            document = _metadata_document(data)
+            entry['semantic_digest'] = hashlib.sha256(
+                json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False).encode('utf-8')
+            ).hexdigest()
+            criterion_total, criterion_mapped, criterion_unmapped, _criterion_ids = _metadata_criteria(document)
+        except SpecMetadataError as exc:
+            errors.append(f'{rel}: {exc}')
+            continue
         total += criterion_total
         mapped += criterion_mapped
-        unmapped.extend(criterion_unmapped)
-        entries.append({'path': rel, 'raw_digest': raw_digest, 'semantic_digest': semantic_digest})
+        if len(selected) == 1:
+            unmapped.extend(criterion_unmapped)
+        else:
+            unmapped.extend(f'{rel}#{criterion_id}' for criterion_id in criterion_unmapped)
+    if total > 10_000:
+        errors.append('aggregate criterion count limit exceeded')
+    if len(unmapped) > 500:
+        errors.append('aggregate unmapped criterion limit exceeded')
     digest = hashlib.sha256(json.dumps(entries, sort_keys=True, separators=(',', ':')).encode()).hexdigest() if entries else None
+    if errors:
+        raise SpecMetadataError('; '.join(errors), spec_digest=digest)
     return digest, {'spec_count': len(entries), 'criterion_total': total, 'criterion_mapped': mapped, 'unmapped_ids': sorted(unmapped)}
 
 
@@ -411,7 +423,7 @@ class JobRunner:
                     spec_digest, spec_coverage = extract_spec_metadata(checkout.path, checkout.changed_files)
                 except SpecMetadataError as exc:
                     message = str(exc)
-                    spec_digest = None
+                    spec_digest = exc.spec_digest
                     spec_coverage = {'spec_count': 0, 'criterion_total': 0, 'criterion_mapped': 0, 'unmapped_ids': []}
                     command_results.append(
                         CommandResult(

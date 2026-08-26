@@ -143,17 +143,18 @@ class SigningTests(unittest.TestCase):
         self.assertNotIn('spec_digest', stored.to_dict()['payload'])
 
     def test_committed_pre_m1_golden_verifies_and_replays_without_rewriting(self) -> None:
-        fixture = json.loads((Path(__file__).parent / 'fixtures/pre-m1-attestation.json').read_text(encoding='utf-8'))
-        envelope = AttestationEnvelope.from_dict(fixture['envelope'])
-        verified = verify_attestation(envelope, fixture['public_key_pem'].encode())
-        self.assertEqual(verified.attestation_id, 'pre-m1-golden-attestation')
-        self.assertIsNone(verified.spec_digest)
-        memory = MemoryStore()
-        memory.record_attestation(verified.job_id, envelope)
-        stored = memory.get_attestation(verified.job_id)
-        assert stored is not None
-        self.assertEqual(stored.to_dict(), fixture['envelope'])
-        self.assertEqual(verify_attestation(stored, fixture['public_key_pem'].encode()).job_id, verified.job_id)
+        for name in ('pre-m1-attestation.json', 'pre-m1-attestation-postgres.json'):
+            with self.subTest(name=name):
+                fixture = json.loads((Path(__file__).parent / f'fixtures/{name}').read_text(encoding='utf-8'))
+                envelope = AttestationEnvelope.from_dict(fixture['envelope'])
+                verified = verify_attestation(envelope, fixture['public_key_pem'].encode())
+                self.assertIsNone(verified.spec_digest)
+                memory = MemoryStore()
+                memory.record_attestation(verified.job_id, envelope)
+                stored = memory.get_attestation(verified.job_id)
+                assert stored is not None
+                self.assertEqual(stored.to_dict(), fixture['envelope'])
+                self.assertEqual(verify_attestation(stored, fixture['public_key_pem'].encode()).job_id, verified.job_id)
 
     def test_attestation_coverage_is_strict_and_bounded(self) -> None:
         legacy = {
@@ -170,6 +171,24 @@ class SigningTests(unittest.TestCase):
         legacy['criterion_coverage']['extra'] = 1
         with self.assertRaises(ValueError):
             AttestationPayload.from_dict(legacy)
+
+    def test_attestation_coverage_accepts_stable_spec_qualified_ids(self) -> None:
+        data = {
+            'schema_version': 1, 'attestation_id': 'new-attestation', 'job_id': 'job-1',
+            'repository': 'Dimkox/adaptive-grok-build-pro', 'pr_number': 42,
+            'base_sha': sha('a'), 'head_sha': sha('b'), 'policy_digest': digest('c'),
+            'status': 'failed', 'command_results': [], 'changed_files': [], 'approved_scopes': [],
+            'started_at': now().isoformat(), 'completed_at': now().isoformat(), 'key_id': self.signer.key_id,
+            'spec_digest': digest('d'),
+            'criterion_coverage': {
+                'spec_count': 2,
+                'criterion_total': 2,
+                'criterion_mapped': 1,
+                'unmapped_ids': ['engineering/changes/20260826-alpha/change-spec.yaml#AC-001'],
+            },
+        }
+        payload = AttestationPayload.from_dict(data)
+        self.assertEqual(payload.criterion_coverage['unmapped_ids'], data['criterion_coverage']['unmapped_ids'])
 
     def test_signed_spec_metadata_detects_digest_and_coverage_tampering(self) -> None:
         data = {
