@@ -1,0 +1,16 @@
+{
+  "architecture_id": "ARCH-REPLACE-ME",
+  "background_job_policies": [],
+  "change_separation_policies": [],
+  "code_budgets": [],
+  "contract_policies": [],
+  "forbidden_edges": [],
+  "migration_policies": [],
+  "network_policies": [],
+  "path_boundaries": [],
+  "risk_escalations": [],
+  "schema_version": 1,
+  "secret_flow_policies": [],
+  "tenant_authorization_policies": [],
+  "workspace_trust_policies": []
+}

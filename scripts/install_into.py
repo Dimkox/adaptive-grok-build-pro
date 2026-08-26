@@ -42,6 +42,11 @@ MANAGED_FILES = (
     'schemas/architecture-rules.schema.json',
 )
 SKIP_PREFIXES = ('.grok-stack/runtime/',)
+TARGET_OWNED_ARCHITECTURE = frozenset({
+    'architecture/adoption.json',
+    'architecture/rules.yaml',
+    'architecture/system.yaml',
+})
 MANAGED_START = '<!-- ADAPTIVE-GROK-PRO:START -->'
 MANAGED_END = '<!-- ADAPTIVE-GROK-PRO:END -->'
 
@@ -56,12 +61,18 @@ def iter_source_files(source: Path) -> list[tuple[str, Path]]:
             if not path.is_file():
                 continue
             rel = path.relative_to(source).as_posix()
+            if rel in TARGET_OWNED_ARCHITECTURE:
+                continue
             if rel.endswith('/__pycache__') or '/__pycache__/' in rel or rel.endswith('.pyc'):
                 continue
             if any(rel.startswith(prefix) and not rel.endswith('.gitkeep') for prefix in SKIP_PREFIXES):
                 continue
             files.append((rel, path))
-    files.extend((rel, source / rel) for rel in MANAGED_FILES)
+    files.extend(
+        (rel, source / rel)
+        for rel in MANAGED_FILES
+        if rel not in TARGET_OWNED_ARCHITECTURE
+    )
     return sorted(files)
 
 

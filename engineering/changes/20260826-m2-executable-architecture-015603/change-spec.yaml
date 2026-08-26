@@ -28,7 +28,7 @@
     {
       "evidence": [{"test": "tests/test_installer.py"}, {"test": "tests/test_structure.py"}, {"receipt": "release_review"}],
       "id": "AC-006",
-      "statement": "Installed consumers receive architecture code, schemas, and non-authoritative templates without target-model overwrite, while README preserves K16 as a 120-edge decorative inventory only."
+      "statement": "Installed consumers receive architecture code, schemas, and non-authoritative templates without target marker/model/rules overwrite, while README preserves K16 as a 120-edge decorative inventory only."
     },
     {
       "evidence": [{"receipt": "verification"}, {"receipt": "code_review"}, {"receipt": "test_review"}, {"receipt": "security_review"}, {"receipt": "release_review"}, {"production_signal": "SIG-001"}],
@@ -68,7 +68,7 @@
     {
       "evidence": [{"test": "tests/test_installer.py"}, {"receipt": "release_review"}],
       "id": "FORBID-004",
-      "statement": "Installation never creates, replaces, or silently disables a consumer repository's adopted architecture model and rules."
+      "statement": "Installation never creates, replaces, or silently disables a consumer repository's adoption marker, architecture model, or rules."
     }
   ],
   "invariants": [

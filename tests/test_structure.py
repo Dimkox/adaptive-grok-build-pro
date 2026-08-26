@@ -30,6 +30,19 @@ class StructureTests(unittest.TestCase):
             "scripts/grok_approve.py",
             "scripts/grok_deploy.py",
             "scripts/install_into.py",
+            "architecture/adoption.json",
+            "architecture/system.yaml",
+            "architecture/rules.yaml",
+            "architecture/generated/context.mmd",
+            "architecture/generated/container.mmd",
+            "architecture/generated/deployment.mmd",
+            "architecture/generated/data-flow.mmd",
+            "architecture/generated/trust-boundary.mmd",
+            ".grok-stack/templates/architecture/system.example.yaml",
+            ".grok-stack/templates/architecture/rules.example.yaml",
+            "schemas/architecture-system.schema.json",
+            "schemas/architecture-rules.schema.json",
+            "scripts/grok_architecture.py",
         )
         for relative in required:
             self.assertTrue((ROOT / relative).exists(), relative)
@@ -85,6 +98,25 @@ class StructureTests(unittest.TestCase):
         self.assertIsNotNone(mermaid)
         edge_lines = [line for line in mermaid.group(1).splitlines() if re.search(r"\S+ --- \S+", line)]
         self.assertEqual(len(edge_lines), len(list(itertools.combinations(nodes, 2))))
+
+    def test_architecture_authority_and_manual_adoption_are_documented(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        quickstart = (ROOT / "QUICKSTART.md").read_text(encoding="utf-8")
+        self.assertIn("decorative inventory", readme.lower())
+        for relative in (
+            "architecture/system.yaml",
+            "architecture/rules.yaml",
+            "architecture/generated/context.mmd",
+            "schemas/architecture-system.schema.json",
+            "schemas/architecture-rules.schema.json",
+            "scripts/grok_architecture.py",
+        ):
+            self.assertIn(f"]({relative})", readme, relative)
+        self.assertIn("architecture/adoption.json", quickstart)
+        self.assertIn('"architecture_id": "ARCH-REPLACE-ME"', quickstart)
+        self.assertIn('"schema_version": 1', quickstart)
+        self.assertIn('"state": "adopted"', quickstart)
+        self.assertIn("marker last", quickstart.lower())
 
     def test_no_github_actions_workflow_exists(self) -> None:
         self.assertFalse((ROOT / ".github/workflows").exists())

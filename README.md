@@ -8,6 +8,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
 - M1 typed intent is locally source-ready: canonical schema-v2 specs, route-driven generation, strict bounded validation, criterion-bound receipts, and `scripts/grok_spec.py` summary/coverage commands passed full local verification and all four route-selected wave-7 reviews on exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a`. A later authorized local database run passed PostgreSQL integration 10/10 and the full Trust CI suite 200/200 with no skips, validating six Trust CI tables, three migrations through version 3, and four bounded `NOLOGIN` roles; this is [local test evidence](engineering/changes/20260826-m1-typed-intent-evidence-rebuild-a4f882/evidence/postgres-integration-local.md), not deployed proof. PR update, the App-owned exact-SHA check, signed approvals, merge, and deployment of the new holdout, worker reader, policy, and attestation emitter remain incomplete operator-controlled steps. Historical schema-v1 YAML is explicit unchanged-history compatibility only.
+- M2-A executable architecture is a local source candidate: strict target-owned model/rules/adoption state, bounded deterministic parsing, exact Git-object diff, repository/contract drift, mandatory fitness evidence, monotonic risk, five generated Mermaid text projections, and architecture-bound local verification/receipts are implemented. Five route-selected final reviews, fingerprint-bound receipts, PR delivery, the external exact-SHA check, M2-B independent enforcement, and deployment remain pending; local architecture output is not merge authority.
 - Independent CI candidate: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
 - Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. The PR #2 bootstrap exception is revoked. PR #5 is not mergeable while that Check Run is `action_required`.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
@@ -42,6 +43,13 @@ Source-of-truth order is in AGENTS.md. Large work is split into small subtasks t
 - [`scripts/grok_change.py`](scripts/grok_change.py)
 - [`scripts/grok_spec.py`](scripts/grok_spec.py)
 - [`schemas/change-spec.schema.json`](schemas/change-spec.schema.json)
+- [architecture model](architecture/system.yaml)
+- [architecture rules](architecture/rules.yaml)
+- [architecture adoption marker](architecture/adoption.json)
+- [architecture system schema](schemas/architecture-system.schema.json)
+- [architecture rules schema](schemas/architecture-rules.schema.json)
+- [architecture CLI](scripts/grok_architecture.py)
+- [generated architecture views](architecture/generated/context.mmd)
 - [`scripts/grok_verify.py`](scripts/grok_verify.py)
 - [`scripts/grok_review.py`](scripts/grok_review.py)
 - [`scripts/grok_approve.py`](scripts/grok_approve.py) — exact action/resource delegated local grant only
@@ -59,6 +67,7 @@ Source-of-truth order is in AGENTS.md. Large work is split into small subtasks t
 - Task routing + domain skills (Bitrix, API/events, data, frontend, security, incidents, …)
 - Quality profiles and change packages under `engineering/changes/`
 - Strict typed change intent with stable criterion/evidence IDs and deterministic spec fingerprints
+- Strict executable architecture with deterministic digests, exact-state diff, drift, fitness, and projection-only diagrams
 - Local verification / review receipts via `scripts/grok_*.py`
 - Multi-agent discipline described in `AGENTS.md`
 - `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`
@@ -67,7 +76,7 @@ Source-of-truth order is in AGENTS.md. Large work is split into small subtasks t
 
 ## Stack graph
 
-Simple complete graph: every listed core node is linked to every other with a `---` edge. The listed set is the local Grok workflow plus the independently deployed Trust CI applications and PostgreSQL. Prompts, local receipts and delegated grants are not merge authority.
+Decorative inventory graph (K16): every listed core node is linked to every other with one of 120 `---` edges. It is an inventory regression only, not architecture authority or architectural evidence. The directed, trust-aware authority is the reviewed model and rules described below; prompts, generated views, local receipts, and delegated grants are not merge authority.
 
 ```mermaid
 graph TD
@@ -222,6 +231,29 @@ graph TD
 | GitHubApp | App-owned Checks `adaptive-trust-ci/verified@<policy-sha12>` bound to the App ID |
 
 oneshots `migrate` / `runner-loader` reuse API/worker images; privileged rootless DinD is an execution edge of Runner.
+
+## Executable architecture
+
+The M1 typed change spec remains business-intent and acceptance authority. The separate architecture authority is the canonical [system model](architecture/system.yaml) plus [fitness rules](architecture/rules.yaml), validated by the [system schema](schemas/architecture-system.schema.json) and [rules schema](schemas/architecture-rules.schema.json). This repository explicitly records adoption in [architecture/adoption.json](architecture/adoption.json). Generated Mermaid files under [`architecture/generated/`](architecture/generated/context.mmd) are sorted text projections only:
+
+- [context](architecture/generated/context.mmd)
+- [container](architecture/generated/container.mmd)
+- [deployment](architecture/generated/deployment.mmd)
+- [data flow](architecture/generated/data-flow.mmd)
+- [trust boundary](architecture/generated/trust-boundary.mmd)
+
+The [architecture CLI](scripts/grok_architecture.py) is dependency-free and bounded. `validate`, `summary`, `drift`, and `diagram --check` inspect the current target-owned model. `diff` and `fitness` require an explicit base plus an exact 40-character head SHA or `--worktree`; exact inputs are read from Git objects and do not consult mutable route state. Worktree evidence is diagnostic and never claims an exact head SHA.
+
+```bash
+python3 scripts/grok_architecture.py validate --json
+python3 scripts/grok_architecture.py summary --json
+python3 scripts/grok_architecture.py drift --json
+python3 scripts/grok_architecture.py diagram --check --json
+python3 scripts/grok_architecture.py diff --base <40-char-sha> --head <40-char-sha> --json
+python3 scripts/grok_architecture.py fitness --base <40-char-sha> --head <40-char-sha> --pre-risk red --json
+```
+
+Only `diagram` without `--check` writes, and only to `architecture/generated/`. Malformed, unknown, unsafe, excessive, partially missing, or applicable-but-unsupported adopted architecture fails closed. Installer-delivered examples live under [`.grok-stack/templates/architecture/`](.grok-stack/templates/architecture/system.example.yaml), but the installer never creates or overwrites a consumer's model, rules, or adoption marker, including with `--force`; follow the manual review-and-adopt sequence in [QUICKSTART.md](QUICKSTART.md).
 
 ## Requirements
 

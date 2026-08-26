@@ -47,6 +47,21 @@ class ManifestTests(unittest.TestCase):
             self.assertIn('.grok-stack/runtime/.gitkeep', manifest)
             self.assertNotIn('active-route.json', manifest)
 
+    def test_architecture_tooling_schemas_and_templates_are_packaged(self) -> None:
+        rels = {path.relative_to(ROOT).as_posix() for path in included_files(ROOT)}
+        required = {
+            '.grok-stack/adaptive_grok/architecture.py',
+            '.grok-stack/adaptive_grok/architecture_diagrams.py',
+            '.grok-stack/adaptive_grok/architecture_diff.py',
+            '.grok-stack/adaptive_grok/architecture_fitness.py',
+            '.grok-stack/templates/architecture/system.example.yaml',
+            '.grok-stack/templates/architecture/rules.example.yaml',
+            'schemas/architecture-system.schema.json',
+            'schemas/architecture-rules.schema.json',
+            'scripts/grok_architecture.py',
+        }
+        self.assertEqual(required - rels, set())
+
 
 class PackageTests(unittest.TestCase):
     def test_default_output_follows_version_file(self) -> None:

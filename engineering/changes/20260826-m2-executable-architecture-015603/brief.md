@@ -10,18 +10,18 @@ Domains: API, data, event, security
 
 ## Problem
 
-The README K16 clique inventories pieces but cannot represent direction, trust, data, secrets, contracts, or deployment boundaries. There is no strict architecture model, deterministic drift/diff, explicit fitness applicability, or digest that later factory milestones can bind.
+Before M2-A, the README K16 clique inventoried pieces but could not represent direction, trust, data, secrets, contracts, or deployment boundaries. The repository had no strict architecture model, deterministic drift/diff, explicit fitness applicability, or digest that later factory milestones could bind.
 
 ## Outcome
 
-M2-A adds a strict target-owned architecture contract, deterministic local validator/CLI/diagrams/diff/fitness evidence, and receipt staleness. It does not change Trust CI source. M2-B consumes the frozen contract in a separate task for independent enforcement.
+M2-A implements a strict target-owned architecture contract, explicit adoption marker, deterministic local validator/CLI/diagrams/diff/fitness evidence, and receipt staleness. It does not change Trust CI source. M2-B consumes the frozen contract in a separate task for independent enforcement.
 
 ## In scope
 
 - canonical schemas, model, rules, public contract baselines, parser, digest, diff, drift and fitness;
 - five reproducible text diagrams;
 - local verification/receipt and installer integration;
-- complete red-risk M2-A package and independent route reviews.
+- complete red-risk M2-A package and source verification; independent route reviews and receipts remain coordinator-owned pending work.
 
 ## Out of scope
 
@@ -35,3 +35,4 @@ M2-A adds a strict target-owned architecture contract, deterministic local valid
 - Data/privacy: only stable secret-class metadata; never secret values, credential paths, source bodies, or raw payloads in evidence.
 - Performance: bounded documents, inventories, findings, Git output, AST analysis, and generated artifacts.
 - Operational: local source only; exact M2 evidence uses the frozen adoption base and an exact clean head.
+- Adoption: installer-delivered examples are non-authoritative; operators review target models and then manually add canonical `architecture/adoption.json`. The installer never manages those three target-owned files.

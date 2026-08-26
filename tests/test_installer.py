@@ -50,6 +50,47 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertEqual(json.loads(result.stdout)['architecture']['status'], 'not_configured')
 
+    def test_clean_install_delivers_valid_non_authoritative_architecture_templates(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'target'
+            install_silent(ROOT, target, force=False, dry_run=False)
+            template_root = target / '.grok-stack/templates/architecture'
+            system_example = template_root / 'system.example.yaml'
+            rules_example = template_root / 'rules.example.yaml'
+            self.assertTrue(system_example.is_file())
+            self.assertTrue(rules_example.is_file())
+            authority = target / 'architecture'
+            authority.mkdir()
+            (authority / 'system.yaml').write_bytes(system_example.read_bytes())
+            (authority / 'rules.yaml').write_bytes(rules_example.read_bytes())
+            result = subprocess.run(
+                ['python3', 'scripts/grok_architecture.py', '--root', '.', 'validate', '--json'],
+                cwd=target,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertTrue(json.loads(result.stdout)['ok'])
+
+    def test_force_never_manages_target_owned_architecture_authority(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'target'
+            expected = {
+                'architecture/system.yaml': b'target system\n',
+                'architecture/rules.yaml': b'target rules\n',
+                'architecture/adoption.json': b'target adoption\n',
+            }
+            for relative, content in expected.items():
+                path = target / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(content)
+            accidentally_managed = (*MODULE.MANAGED_FILES, *expected)
+            with patch.object(MODULE, 'MANAGED_FILES', accidentally_managed):
+                install_silent(ROOT, target, force=True, dry_run=False)
+            for relative, content in expected.items():
+                self.assertEqual((target / relative).read_bytes(), content, relative)
+
     def test_clean_install_delivers_schema_and_runnable_spec_cli(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / 'target'

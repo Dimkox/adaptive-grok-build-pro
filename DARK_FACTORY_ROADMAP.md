@@ -366,8 +366,14 @@ The K16 graph may remain as a decorative inventory test. It must not be treated 
 ```text
 architecture/system.yaml
 architecture/rules.yaml
-schemas/architecture.schema.json
+architecture/adoption.json
+architecture/generated/*.mmd
+schemas/architecture-system.schema.json
+schemas/architecture-rules.schema.json
 .grok-stack/adaptive_grok/architecture.py
+.grok-stack/adaptive_grok/architecture_diff.py
+.grok-stack/adaptive_grok/architecture_fitness.py
+.grok-stack/adaptive_grok/architecture_diagrams.py
 scripts/grok_architecture.py
 tests/test_architecture_model.py
 tests/test_architecture_fitness.py
@@ -407,29 +413,31 @@ failure_behavior
 
 ## Mandatory fitness functions
 
-- [ ] forbidden dependency edges;
-- [ ] module/package boundary enforcement;
-- [ ] public API compatibility;
-- [ ] event/schema backward compatibility;
-- [ ] migration expand/contract rules;
-- [ ] tenant-filter and authorization invariants;
-- [ ] no new uncontrolled network clients;
-- [ ] no production imports from test/governance packages;
-- [ ] no implementation change combined with Trust CI/holdout mutation in one factory task;
-- [ ] maximum file/module size and complexity budgets for changed code;
-- [ ] background jobs require idempotency, correlation IDs, observable failure, bounded retries, and dead-letter behavior;
-- [ ] secrets may flow only across declared trusted edges;
-- [ ] runner and factory workspaces may not access production trust material.
+The checked items below mean bounded M2-A repository source and local regression coverage exist. They do not claim independent M2-B enforcement, deployment, merge eligibility, or a live external check.
+
+- [x] forbidden dependency edges;
+- [x] module/package boundary enforcement;
+- [x] public API compatibility;
+- [x] event/schema backward compatibility;
+- [x] migration expand/contract rules;
+- [x] tenant-filter and authorization invariants;
+- [x] no new uncontrolled network clients;
+- [x] no production imports from test/governance packages;
+- [x] no implementation change combined with Trust CI/holdout mutation in one factory task;
+- [x] maximum file/module size and complexity budgets for changed code;
+- [x] background jobs require idempotency, correlation IDs, observable failure, bounded retries, and dead-letter behavior;
+- [x] secrets may flow only across declared trusted edges;
+- [x] runner and factory workspaces may not access production trust material.
 
 ## Work items
 
-- [ ] Create the schema and initial architecture model for the existing local stack and Trust CI.
-- [ ] Generate C4 context, container, deployment, data-flow, and trust-boundary diagrams from the model.
-- [ ] Validate repository paths and declared contracts against the actual tree.
-- [ ] Add architecture-diff output to pull requests.
-- [ ] Add post-diff risk escalation when changed files introduce a new edge, secret, network client, datastore, or trust-domain crossing.
+- [x] Create the schemas and initial architecture model for the existing local stack and Trust CI source boundaries.
+- [x] Generate C4 context, container, deployment, data-flow, and trust-boundary diagrams from the model.
+- [x] Validate repository paths and declared contracts against the actual tree.
+- [x] Add architecture-diff output to the deterministic CLI and local PR preflight evidence.
+- [x] Add post-diff risk escalation when changed files introduce a new edge, secret, network client, datastore, or trust-domain crossing.
 - [ ] Place critical fitness checks in external holdout or server policy, not only in pull-request-controlled tests.
-- [ ] Require explicit architecture approval for new services, databases, queues, frameworks, or external integrations.
+- [x] Emit the explicit local `architecture` approval scope for new services, databases, queues, frameworks, or external integrations; independently trusted approval enforcement remains M2-B.
 
 ## Exit criteria
 
@@ -439,6 +447,8 @@ failure_behavior
 - post-diff risk cannot be lower than pre-diff risk;
 - architecture drift is visible in PR evidence;
 - critical fitness rules are outside implementer control.
+
+M2-A locally proves schema validation, reproducible text projections, monotonic risk, and drift/diff evidence. Prohibited-edge independence and critical rules outside implementer control remain unchecked M2-B/deployed exit work.
 
 ---
 

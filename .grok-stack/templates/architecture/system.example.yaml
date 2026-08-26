@@ -1,0 +1,48 @@
+{
+  "architecture_id": "ARCH-REPLACE-ME",
+  "contracts": [],
+  "data_classifications": [
+    {
+      "classification": "internal",
+      "contains_secret": false,
+      "id": "DATA-INTERNAL",
+      "tenant_scoped": false
+    }
+  ],
+  "edges": [],
+  "nodes": [
+    {
+      "data_classification": "DATA-INTERNAL",
+      "id": "NODE-APPLICATION",
+      "owner": "replace-with-owner",
+      "public_contracts": [],
+      "repository_paths": [
+        "scripts"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "none",
+        "lifecycle": "none",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-REPOSITORY",
+      "type": "repository"
+    }
+  ],
+  "schema_version": 1,
+  "secret_classes": [],
+  "signals": [
+    {
+      "description": "Replace with a stable observable architecture failure signal.",
+      "id": "SIG-ARCHITECTURE-FAILURE"
+    }
+  ],
+  "trust_domains": [
+    {
+      "id": "TD-REPOSITORY",
+      "kind": "repository_untrusted",
+      "owner": "replace-with-owner"
+    }
+  ]
+}

@@ -17,6 +17,46 @@
    # installs the stack and missing required tools (use --no-deps to copy only)
    ```
 
+   The installer delivers the architecture CLI, parser/evaluators, strict schemas, and non-authoritative examples. It never creates or overwrites `architecture/system.yaml`, `architecture/rules.yaml`, or `architecture/adoption.json`, even with `--force`.
+
+### Optional manual executable-architecture adoption
+
+An installed repository without `architecture/adoption.json` remains backward-compatible and reports architecture as `not_configured`. Adoption is an explicit repository-owner decision: copy the examples, replace every example identity/path/policy with reviewed target truth, validate them, generate/check projections, and create the marker last. Do not use the README K16 graph or generated diagrams as model input.
+
+```bash
+cd /path/to/repo
+mkdir -p architecture
+cp .grok-stack/templates/architecture/system.example.yaml architecture/system.yaml
+cp .grok-stack/templates/architecture/rules.example.yaml architecture/rules.yaml
+
+# Review and replace ARCH-REPLACE-ME, owners, paths, contracts, trust/data/secret
+# declarations, and every applicable policy before continuing.
+python3 scripts/grok_architecture.py validate --json
+python3 scripts/grok_architecture.py summary --json
+python3 scripts/grok_architecture.py drift --json
+python3 scripts/grok_architecture.py diagram --json
+python3 scripts/grok_architecture.py diagram --check --json
+```
+
+After review succeeds, create `architecture/adoption.json` manually with exactly the same `architecture_id` as both model documents. For the unmodified examples, the strict canonical marker bytes are exactly:
+
+```json
+{
+  "architecture_id": "ARCH-REPLACE-ME",
+  "schema_version": 1,
+  "state": "adopted"
+}
+```
+
+The marker requires sorted keys, two-space JSON, and exactly one final newline. Commit the marker with both reviewed target documents; marker present plus either missing/invalid document fails closed. The marker, diagrams, Markdown, and receipts do not replace the system/rules authority, and local checks do not replace the App-owned exact-SHA Trust CI check.
+
+Exact-state evidence uses literal 40-character commit SHAs. Use `--worktree` only for diagnostics; it never claims an exact head SHA:
+
+```bash
+python3 scripts/grok_architecture.py diff --base <40-char-sha> --head <40-char-sha> --json
+python3 scripts/grok_architecture.py fitness --base <40-char-sha> --head <40-char-sha> --pre-risk red --json
+```
+
 4. Work:
    ```bash
    cd /path/to/repo
