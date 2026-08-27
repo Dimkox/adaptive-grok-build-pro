@@ -26,6 +26,7 @@ from .architecture_diff import (
     git_tree_paths,
     read_diff_file,
 )
+from .queue_provenance import QueueAnalysisLimit, analyze_queue_tree
 
 FITNESS_CATEGORIES = (
     "background_job",
@@ -171,28 +172,6 @@ class _QueueAdapterResolution:
 class _QueueAdapterNamesResult:
     names: frozenset[str]
     unsupported: bool = False
-
-
-@dataclass(frozen=True)
-class _QueueValue:
-    state: str
-    items: tuple[tuple[str, "_QueueValue"], ...] = ()
-
-    def selected(self, key: str | None) -> "_QueueValue":
-        values = dict(self.items)
-        if key is not None and key in values:
-            return values[key]
-        if not values:
-            return self
-        states = {item.aggregate().state for item in values.values()}
-        if states == {"queue"}:
-            return _QueueValue("queue")
-        if states == {"not_queue"}:
-            return _QueueValue("not_queue")
-        return _QueueValue("uncertain")
-
-    def aggregate(self) -> "_QueueValue":
-        return self.selected(None) if self.items else self
 
 
 def _applicability(predicate: str, scope: Iterable[str], reason_code: str) -> ApplicabilityEvidence:
@@ -1040,185 +1019,6 @@ def _code_budget(
     )
 
 
-def _queue_provenance(
-    tree: ast.AST,
-    adapter_names: set[str] | None = None,
-) -> tuple[set[str], set[str], bool]:
-    queue_names = set(adapter_names or ())
-    values: dict[str, _QueueValue] = {
-        name: _QueueValue("queue") for name in queue_names
-    }
-    wildcard_queue_import = False
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                local = alias.asname or alias.name.split(".")[0]
-                if alias.name.split(".")[0] in _QUEUE_IMPORTS:
-                    queue_names.add(local)
-                    values[local] = _QueueValue("queue")
-                else:
-                    values.setdefault(local, _QueueValue("not_queue"))
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            for alias in node.names:
-                local = alias.asname or alias.name
-                if node.module.split(".")[0] in _QUEUE_IMPORTS:
-                    if alias.name == "*":
-                        wildcard_queue_import = True
-                    else:
-                        queue_names.add(local)
-                        values[local] = _QueueValue("queue")
-                elif alias.name != "*":
-                    values.setdefault(local, _QueueValue("not_queue"))
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
-            values.setdefault(node.name, _QueueValue("not_queue"))
-
-    def literal_key(value: ast.AST) -> str | None:
-        if not isinstance(value, ast.Constant):
-            return None
-        key = value.value
-        if isinstance(key, (str, int)):
-            return repr(key)
-        return None
-
-    def queue_value(value: ast.AST) -> _QueueValue:
-        if isinstance(value, ast.Name):
-            known = values.get(value.id)
-            if known is not None:
-                return known
-            return _QueueValue("uncertain" if wildcard_queue_import else "not_queue")
-        if isinstance(value, ast.Attribute):
-            return queue_value(value.value).aggregate()
-        if isinstance(value, ast.Subscript):
-            return queue_value(value.value).selected(literal_key(value.slice))
-        if isinstance(value, ast.Starred):
-            return queue_value(value.value)
-        if isinstance(value, (ast.List, ast.Tuple)):
-            return _QueueValue(
-                "structured",
-                tuple((str(index), queue_value(item)) for index, item in enumerate(value.elts)),
-            )
-        if isinstance(value, ast.Set):
-            states = {queue_value(item).aggregate().state for item in value.elts}
-            if states == {"queue"}:
-                return _QueueValue("queue")
-            if states == {"not_queue"}:
-                return _QueueValue("not_queue")
-            return _QueueValue("uncertain")
-        if isinstance(value, ast.Dict):
-            items: list[tuple[str, _QueueValue]] = []
-            for index, (key, item) in enumerate(zip(value.keys, value.values)):
-                resolved = None if key is None else literal_key(key)
-                if resolved is None:
-                    resolved = f"?{index}"
-                items.append((resolved, queue_value(item)))
-            return _QueueValue("structured", tuple(items))
-        if isinstance(value, ast.Call):
-            function = queue_value(value.func).aggregate()
-            if function.state in {"queue", "uncertain"}:
-                return function
-            if (
-                isinstance(value.func, ast.Name)
-                and value.func.id == "getattr"
-                and bool(value.args)
-            ):
-                return queue_value(value.args[0]).aggregate()
-        return _QueueValue("not_queue")
-
-    def bind_target(target: ast.AST, value: _QueueValue) -> bool:
-        if isinstance(target, ast.Name):
-            if values.get(target.id) == value:
-                return False
-            values[target.id] = value
-            return True
-        if isinstance(target, ast.Starred):
-            return bind_target(target.value, value)
-        if isinstance(target, (ast.List, ast.Tuple)):
-            changed = False
-            mapping = dict(value.items)
-            positions = [
-                int(key) for key in mapping if key.isdigit()
-            ]
-            item_count = max(positions, default=-1) + 1
-            star_index = next(
-                (index for index, item in enumerate(target.elts) if isinstance(item, ast.Starred)),
-                None,
-            )
-            for index, item in enumerate(target.elts):
-                if isinstance(item, ast.Starred):
-                    suffix = len(target.elts) - index - 1
-                    selected = _QueueValue(
-                        "structured",
-                        tuple(
-                            (str(offset), mapping[str(position)])
-                            for offset, position in enumerate(range(index, item_count - suffix))
-                            if str(position) in mapping
-                        ),
-                    )
-                else:
-                    position = index
-                    if star_index is not None and index > star_index:
-                        position = item_count - (len(target.elts) - index)
-                    selected = mapping.get(str(position), value.aggregate())
-                changed = bind_target(item, selected) or changed
-            return changed
-        return False
-
-    # Resolve simple assignment/factory chains to a fixed point. The global AST
-    # node limit bounds both this loop and the values considered here.
-    assignments = [
-        node for node in ast.walk(tree)
-        if isinstance(node, (ast.Assign, ast.AnnAssign))
-    ]
-    for _ in range(min(len(assignments) + 1, 64)):
-        changed = False
-        for node in assignments:
-            value = node.value
-            if value is None:
-                continue
-            resolved = queue_value(value)
-            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            for target in targets:
-                changed = bind_target(target, resolved) or changed
-        if not changed:
-            break
-
-    queue_names.update(
-        name
-        for name, value in values.items()
-        if value.aggregate().state in {"queue", "uncertain"}
-    )
-
-    signals = {
-        f"import:{target}"
-        for target in _import_targets(tree)
-        if target.split(".")[0] in _QUEUE_IMPORTS
-    }
-    for imported, call in _called_imports(tree):
-        if imported.split(".")[0] in _QUEUE_IMPORTS:
-            signals.add(f"call:{call}")
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call):
-            provenance = queue_value(node.func).aggregate()
-            if provenance.state in {"queue", "uncertain"}:
-                signals.add(
-                    "semantic-call:" + ast.dump(node, annotate_fields=True, include_attributes=False)
-                )
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            for decorator in node.decorator_list:
-                provenance = queue_value(decorator).aggregate()
-                if provenance.state in {"queue", "uncertain"}:
-                    signals.add(
-                        f"semantic-decorator:{node.name}:"
-                        + ast.dump(decorator, annotate_fields=True, include_attributes=False)
-                    )
-
-    wildcard_uncertain = any(
-        value.aggregate().state == "uncertain" for value in values.values()
-    )
-    return signals, queue_names, wildcard_uncertain
-
-
 def _operation_dependencies(tree: ast.AST) -> set[str]:
     """Return names that can feed a changed callable/decorator expression."""
     dependencies: set[str] = set()
@@ -1232,19 +1032,39 @@ def _operation_dependencies(tree: ast.AST) -> set[str]:
             dependencies.update(
                 child.id for child in ast.walk(value) if isinstance(child, ast.Name)
             )
-    assignments: dict[str, ast.AST] = {}
+    assignments: dict[str, list[ast.AST]] = {}
+
+    def target_names(target: ast.AST) -> set[str]:
+        if isinstance(target, ast.Name):
+            return {target.id}
+        if isinstance(target, ast.Starred):
+            return target_names(target.value)
+        if isinstance(target, (ast.List, ast.Tuple)):
+            return set().union(*(target_names(item) for item in target.elts))
+        if isinstance(target, ast.Subscript) and isinstance(target.value, ast.Name):
+            return {target.value.id}
+        return set()
+
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
             for target in node.targets:
-                if isinstance(target, ast.Name):
-                    assignments[target.id] = node.value
-        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
-            assignments[node.target.id] = node.value
+                for name in target_names(target):
+                    assignments.setdefault(name, []).append(node.value)
+        elif isinstance(node, ast.AnnAssign) and node.value is not None:
+            for name in target_names(node.target):
+                assignments.setdefault(name, []).append(node.value)
+        elif (
+            isinstance(node, ast.Expr)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Attribute)
+            and isinstance(node.value.func.value, ast.Name)
+            and node.value.func.attr in {"append", "extend"}
+        ):
+            assignments.setdefault(node.value.func.value.id, []).extend(node.value.args)
     for _ in range(min(len(assignments) + 1, 64)):
         expanded = set(dependencies)
         for name in dependencies:
-            value = assignments.get(name)
-            if value is not None:
+            for value in assignments.get(name, ()):
                 expanded.update(
                     child.id for child in ast.walk(value) if isinstance(child, ast.Name)
                 )
@@ -1266,8 +1086,14 @@ def _resolve_import_module(current_package: str, module: str | None, level: int)
     return ".".join((*prefix, *suffix))
 
 
-def _module_package(path: str) -> str:
-    module = path.rsplit(".", 1)[0].replace("/", ".")
+def _module_package(path: str, source_roots: tuple[str, ...] = ()) -> str:
+    relative = path
+    matching_roots = [
+        root for root in source_roots if root and _matches(path, (root,))
+    ]
+    if matching_roots:
+        relative = path[len(max(matching_roots, key=len)) + 1:]
+    module = relative.rsplit(".", 1)[0].replace("/", ".")
     if module.endswith(".__init__"):
         return module.removesuffix(".__init__")
     return module.rsplit(".", 1)[0] if "." in module else ""
@@ -1399,15 +1225,18 @@ def _local_queue_resolution(
             current_package=current_package,
             source_roots=source_roots,
         )
-        signals, derived, wildcard_uncertain = _queue_provenance(
-            tree, set(imported.names)
-        )
-        exports = tuple(sorted(name for name in derived if not name.startswith("_")))
-        has_queue_provenance = bool(signals or exports)
+        try:
+            analysis = analyze_queue_tree(tree, imported.names)
+        except QueueAnalysisLimit as exc:
+            raise ArchitectureError(str(exc), code="limit") from exc
+        exports = tuple(sorted(
+            name for name in analysis.derived_names if not name.startswith("_")
+        ))
+        has_queue_provenance = bool(analysis.signals or exports)
         result = _QueueAdapterResolution(
             (
                 "unsupported"
-                if (imported.unsupported or wildcard_uncertain) and has_queue_provenance
+                if (imported.unsupported or analysis.uncertain) and has_queue_provenance
                 else ("resolved" if has_queue_provenance else "not_queue")
             ),
             (
@@ -1416,7 +1245,7 @@ def _local_queue_resolution(
                 else "local_module_not_queue"
             ),
             exports,
-            tuple(sorted(signals)),
+            analysis.signals,
         )
         cache[module] = result
         return result
@@ -1556,17 +1385,18 @@ def _queue_signals(
         current_package=current_package,
         source_roots=source_roots,
     )
-    local_signals, _derived, wildcard_uncertain = _queue_provenance(
-        tree, set(adapters.names)
-    )
-    signals = tuple(sorted(local_signals))
+    try:
+        analysis = analyze_queue_tree(tree, adapters.names)
+    except QueueAnalysisLimit as exc:
+        raise ArchitectureError(str(exc), code="limit") from exc
+    signals = analysis.signals
     return _QueueProvenanceResult(
-        state=("unsupported" if (adapters.unsupported or wildcard_uncertain) and signals else (
+        state=("unsupported" if (adapters.unsupported or analysis.uncertain) and signals else (
             "resolved" if signals else "not_queue"
         )),
         reason=(
             "queue_provenance_unresolved"
-            if (adapters.unsupported or wildcard_uncertain) and signals
+            if (adapters.unsupported or analysis.uncertain) and signals
             else ("queue_signals_resolved" if signals else "no_queue_signal")
         ),
         signals=signals,
@@ -1582,11 +1412,11 @@ def _new_queue_sources(
     applicable: list[str] = []
     unsupported: list[str] = []
     changed_signals: set[str] = set()
-    head_cache: dict[str, _QueueAdapterResolution] = {}
-    base_cache: dict[str, _QueueAdapterResolution] = {}
     for path in _python_paths(diff):
+        head_cache: dict[str, _QueueAdapterResolution] = {}
+        base_cache: dict[str, _QueueAdapterResolution] = {}
         try:
-            current_package = _module_package(path)
+            current_package = _module_package(path, source_roots)
             head = _queue_signals(
                 root,
                 diff,

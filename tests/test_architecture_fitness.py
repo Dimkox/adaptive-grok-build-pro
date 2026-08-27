@@ -891,6 +891,190 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
                 )
 
+    def test_queue_control_flow_and_python_equal_keys_fail_closed(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        pipeline = (
+            "class Pipeline:\n"
+            "    def task(self, function):\n"
+            "        return function\n\n"
+        )
+        cases = (
+            (
+                "queue branch first",
+                pipeline
+                + "import celery\n"
+                + "if enabled:\n"
+                + "    receiver = celery.Celery('jobs')\n"
+                + "else:\n"
+                + "    receiver = Pipeline()\n",
+            ),
+            (
+                "queue branch second",
+                pipeline
+                + "import celery\n"
+                + "if enabled:\n"
+                + "    receiver = Pipeline()\n"
+                + "else:\n"
+                + "    receiver = celery.Celery('jobs')\n",
+            ),
+            (
+                "bool key then integer key",
+                pipeline
+                + "import celery\n"
+                + "values = {True: Pipeline(), 1: celery.Celery('jobs')}\n"
+                + "receiver = values[True]\n",
+            ),
+            (
+                "integer key then bool key",
+                pipeline
+                + "import celery\n"
+                + "values = {1: Pipeline(), True: celery.Celery('jobs')}\n"
+                + "receiver = values[1]\n",
+            ),
+        )
+        addition = "@receiver.task\ndef stage():\n    return None\n"
+        for label, before in cases:
+            with self.subTest(label=label):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", before + addition)
+                head = repo.commit("queue operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "unsupported")
+                self.assertEqual(report.status, "fail")
+                self.assertIn("src/jobs.py", result.applicability.scanned_scope)
+                self.assertIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
+    def test_queue_container_mutations_and_signed_selections(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        pipeline = (
+            "class Pipeline:\n"
+            "    def task(self, function):\n"
+            "        return function\n"
+            "    def enqueue(self, function):\n"
+            "        return function\n\n"
+        )
+        operations = (
+            ("append", "values = []\nvalues.append({queue})\nreceiver = values[0]\n"),
+            (
+                "extend",
+                "values = []\nvalues.extend([Pipeline(), {queue}])\n"
+                "receiver = values[1]\n",
+            ),
+            (
+                "subscript assignment",
+                "values = [Pipeline()]\nvalues[0] = {queue}\nreceiver = values[0]\n",
+            ),
+            (
+                "list concatenation",
+                "values = [Pipeline()] + [{queue}]\nreceiver = values[1]\n",
+            ),
+            (
+                "tuple concatenation",
+                "values = (Pipeline(),) + ({queue},)\nreceiver = values[1]\n",
+            ),
+        )
+        frameworks = (
+            (
+                "celery",
+                "import celery\n",
+                "celery.Celery('jobs')",
+                "@receiver.task\ndef stage():\n    return None\n",
+            ),
+            (
+                "rq",
+                "from rq import Queue\n",
+                "Queue()",
+                "receiver.enqueue(task)\n",
+            ),
+        )
+        for framework, imported, queue_value, addition in frameworks:
+            for operation, source in operations:
+                with self.subTest(framework=framework, operation=operation):
+                    before = pipeline + imported + source.format(queue=queue_value)
+                    repo = GitArchitectureRepo(self)
+                    repo.model(system, rules)
+                    repo.write_text("src/jobs.py", before)
+                    base = repo.commit("base")
+                    repo.write_text("src/jobs.py", before + addition)
+                    head = repo.commit("queue operation")
+                    report = self._evaluate(repo, base, head, pre_risk="yellow")
+                    result = self._results(report)["background_job"]
+                    self.assertEqual(result.status, "unsupported")
+                    self.assertEqual(report.status, "fail")
+                    self.assertIn("src/jobs.py", result.applicability.scanned_scope)
+                    self.assertIn("new_queue", report.triggers)
+                    self.assertGreaterEqual(
+                        FIT.RISK_ORDER[report.post_risk],
+                        FIT.RISK_ORDER[report.pre_risk],
+                    )
+
+        controls = (
+            (
+                "negative list index",
+                "from rq import Queue\nvalues = [Queue(), Pipeline()]\n"
+                "receiver = values[-1]\n",
+            ),
+            (
+                "negative tuple index",
+                "import celery\nvalues = (celery.Celery('jobs'), Pipeline())\n"
+                "receiver = values[-1]\n",
+            ),
+            (
+                "negative integer mapping key",
+                "from rq import Queue\nvalues = {-1: Pipeline(), 0: Queue()}\n"
+                "receiver = values[-1]\n",
+            ),
+        )
+        addition = "@receiver.task\ndef stage():\n    return None\n"
+        for label, source in controls:
+            with self.subTest(label=label):
+                before = pipeline + source
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", before + addition)
+                head = repo.commit("ordinary operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "not_applicable")
+                self.assertEqual(report.status, "pass")
+                self.assertNotIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
     def test_unrelated_semantic_method_names_remain_background_not_applicable(self) -> None:
         system = _system()
         system["nodes"][0]["type"] = "worker"
