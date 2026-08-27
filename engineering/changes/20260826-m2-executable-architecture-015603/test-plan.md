@@ -34,13 +34,18 @@ ruff check .grok-stack/adaptive_grok scripts tests
 bandit -q -r .grok-stack/adaptive_grok scripts
 python3 -m compileall -q .grok-stack/adaptive_grok scripts
 python3 scripts/grok_architecture.py validate --json
+python3 scripts/grok_architecture.py summary --json
 python3 scripts/grok_architecture.py drift --json
 python3 scripts/grok_architecture.py diagram --json
 python3 scripts/grok_architecture.py diagram --check
+python3 scripts/grok_architecture.py diff --base 25bfbe59ea188d9687b20a9caad19e7db3d031f8 --head <reviewed-40-character-head-sha> --json
+python3 scripts/grok_architecture.py fitness --base 25bfbe59ea188d9687b20a9caad19e7db3d031f8 --head <reviewed-40-character-head-sha> --pre-risk red --json
 python3 scripts/grok_verify.py --mode pr --no-record --json
 git diff --name-only 25bfbe59ea188d9687b20a9caad19e7db3d031f8...HEAD -- trust-ci
 git diff --name-only 25bfbe59ea188d9687b20a9caad19e7db3d031f8...HEAD -- .github/workflows
 ```
+
+For exact diff and fitness, replace the placeholder with the literal 40-character commit SHA already selected as the immutable review head. Never use `HEAD` or `--worktree` for this reproducible release evidence; `--worktree` remains diagnostic only.
 
 ## Manual checks
 

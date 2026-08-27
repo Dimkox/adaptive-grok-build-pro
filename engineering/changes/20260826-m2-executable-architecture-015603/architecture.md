@@ -16,7 +16,7 @@ Two strict JSON-compatible YAML documents are architecture authority after expli
 - Adoption marker: strict target-owned durable state; absent means legacy `not_configured`, present means missing/invalid model files fail closed.
 - Local loader/diff/fitness/diagram modules: advisory preflight implementation; diagram operations are render/check-only and have no repository mutation capability.
 - Queue provenance: one bounded abstract-interpreter result drives both background-job fitness and `new_queue` risk; relevant uncertainty fails closed without tainting unrelated operations.
-- Installer: existing repositories are read-only planning inputs; a complete payload may be staged and published only to an absent target with no-replace semantics.
+- Installer: existing repositories are read-only planning inputs; a complete payload may be staged and published only to an absent target on Linux with descriptor-relative `O_NOFOLLOW`/`O_DIRECTORY` operations and libc/filesystem support for `renameat2(RENAME_NOREPLACE)`.
 - M1 spec/receipts: preserved intent and evidence authority, extended only with current architecture bindings.
 - M2-B: separate independently implemented Trust CI enforcement task.
 
@@ -55,7 +55,7 @@ M2-A freezes machine-readable baselines for existing Trust CI HTTP endpoints, ap
 - Repository-path ownership uses a unique longest-prefix rule; exact/equal-specificity ownership ties are invalid. Shared `trust-ci/compose.yaml` configuration has one source owner and describes runtime nodes through their explicit relationships.
 - Schemas: `schemas/architecture-system.schema.json`, `schemas/architecture-rules.schema.json`.
 - CLI: `scripts/grok_architecture.py` (`validate`, `summary`, `drift`, `diagram`, `diff`, `fitness`).
-- Installer: `scripts/install_into.py --plan TARGET` for existing/absent inspection and `scripts/install_into.py --materialize-new TARGET` only for absent-target publication; `--force` is rejected.
+- Installer: `scripts/install_into.py --plan TARGET` for existing/absent inspection and `scripts/install_into.py --materialize-new TARGET` only for absent-target publication. Materialization requires Linux descriptor-relative `O_NOFOLLOW`/`O_DIRECTORY` operations and libc/filesystem support for `renameat2(RENAME_NOREPLACE)`; an unavailable/unsupported capability fails closed without publication, with no fallback. The supported alternative is `--plan` plus a normal reviewed source-change. `--force` is rejected.
 - Generated projections: `architecture/generated/{context,container,deployment,data-flow,trust-boundary}.mmd`.
 - Local verification: `python3 scripts/grok_verify.py --mode pr --no-record --json`.
 

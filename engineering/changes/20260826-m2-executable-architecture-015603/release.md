@@ -6,7 +6,7 @@ M2-A is a local branch/change package only until separately authorized push/PR d
 
 Local verification and receipts remain preflight evidence. Merge authority remains the App-owned policy-epoch check on the exact pull-request head plus every separately required signed approval.
 
-Installer planning is read-only for existing repositories and reports managed-file metadata plus dependency advice without executing it. `--materialize-new` publishes a verified complete payload only to an absent target; `--force` is rejected. Every plan and payload excludes the target-owned marker, model, and rules.
+Installer planning is read-only for existing repositories and reports managed-file metadata plus dependency advice without executing it. `--materialize-new` publishes a verified complete payload only to an absent target and is supported only on Linux with descriptor-relative `O_NOFOLLOW`/`O_DIRECTORY` operations and libc/filesystem support for `renameat2(RENAME_NOREPLACE)`. An unavailable primitive or unsupported filesystem fails closed without publication, with no fallback to replacement, merge, or in-place copying. The supported alternative is `--plan` plus a normal reviewed source-change. `--force` is rejected. Every plan and payload excludes the target-owned marker, model, and rules.
 
 ## Go/no-go criteria
 

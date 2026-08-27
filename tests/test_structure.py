@@ -148,6 +148,9 @@ class StructureTests(unittest.TestCase):
         quickstart = (ROOT / "QUICKSTART.md").read_text(encoding="utf-8")
         roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
         package = ROOT / "engineering/changes/20260826-m2-executable-architecture-015603"
+        architecture = (package / "architecture.md").read_text(encoding="utf-8")
+        release = (package / "release.md").read_text(encoding="utf-8")
+        test_plan = (package / "test-plan.md").read_text(encoding="utf-8")
         package_text = "\n".join(
             (package / name).read_text(encoding="utf-8")
             for name in (
@@ -162,13 +165,56 @@ class StructureTests(unittest.TestCase):
 
         for text in (readme, quickstart):
             self.assertIn("scripts/install_into.py --plan /path/to/your/repo", text)
-            self.assertIn("scripts/install_into.py --materialize-new /path/to/new/repo", text)
+            materialize = "scripts/install_into.py --materialize-new /path/to/new/repo"
+            self.assertEqual(text.count(materialize), 1)
+            adjacent_contract = text[text.index(materialize):text.index(materialize) + 1400]
+            self.assertIn("Linux", adjacent_contract)
+            self.assertIn("descriptor-relative", adjacent_contract)
+            self.assertIn("renameat2(RENAME_NOREPLACE)", adjacent_contract)
+            self.assertIn("fails closed", adjacent_contract)
+            self.assertIn("no fallback", adjacent_contract)
+            self.assertIn("--plan", adjacent_contract)
+            self.assertIn("normal reviewed source-change", adjacent_contract)
             self.assertIn("`--force` is rejected", text)
             self.assertIn("existing repositories are read-only", text.lower())
             self.assertIn("dependency advice", text.lower())
             self.assertIn("architecture/adoption.json", text)
             self.assertIn("architecture/system.yaml", text)
             self.assertIn("architecture/rules.yaml", text)
+            for pattern in (
+                r"\b(?:the )?installer (?:updates?|overwrites?|modifies?|merges into) "
+                r"(?:an? )?existing (?:repository|checkout|target|consumer)",
+                r"\b(?:use|using|with) `?--force`? to "
+                r"(?:update|overwrite|modify|merge)",
+                r"`--materialize-new` (?:updates?|overwrites?|modifies?|merges) "
+                r"(?:an? )?existing (?:repository|checkout|target|consumer)",
+            ):
+                self.assertIsNone(re.search(pattern, text, re.I), pattern)
+
+        for surface in (architecture, release):
+            self.assertIn("Linux", surface)
+            self.assertIn("descriptor-relative", surface)
+            self.assertIn("renameat2(RENAME_NOREPLACE)", surface)
+            self.assertIn("fails closed", surface)
+            self.assertIn("no fallback", surface)
+            self.assertIn("--plan", surface)
+            self.assertIn("normal reviewed source-change", surface)
+
+        reviewed_head = "<reviewed-40-character-head-sha>"
+        adoption_base = "25bfbe59ea188d9687b20a9caad19e7db3d031f8"
+        self.assertIn("python3 scripts/grok_architecture.py summary --json", test_plan)
+        self.assertIn(
+            f"python3 scripts/grok_architecture.py diff --base {adoption_base} "
+            f"--head {reviewed_head} --json",
+            test_plan,
+        )
+        self.assertIn(
+            f"python3 scripts/grok_architecture.py fitness --base {adoption_base} "
+            f"--head {reviewed_head} --pre-risk red --json",
+            test_plan,
+        )
+        self.assertIn("replace the placeholder", test_plan.lower())
+        self.assertIn("never use `head` or `--worktree`", test_plan.lower())
 
         self.assertIn(
             "docs/superpowers/specs/2026-08-27-m2a-queue-installer-pivot-design.md",
