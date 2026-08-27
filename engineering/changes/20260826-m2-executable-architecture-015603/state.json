@@ -43,11 +43,17 @@
       "from": "reviewing",
       "reason": "Human gate required after four remediation cycles: repeated Important findings remain in transactional diagram cleanup/authority concurrency and package-relative queue provenance; automatic fifth repair is prohibited by the approved review loop.",
       "to": "blocked"
+    },
+    {
+      "at": "2026-08-27T09:57:50+00:00",
+      "from": "blocked",
+      "reason": "User explicitly approved the design pivot on 2026-08-27: remove in-place diagram writes and replace queue detection with package-aware fail-closed provenance analysis.",
+      "to": "implementing"
     }
   ],
   "route_id": "0156034c05bd",
   "schema_version": 1,
-  "status": "blocked",
+  "status": "implementing",
   "title": "m2-executable-architecture",
-  "updated_at": "2026-08-27T09:49:21+00:00"
+  "updated_at": "2026-08-27T09:57:50+00:00"
 }
