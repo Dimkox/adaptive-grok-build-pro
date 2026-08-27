@@ -7,5 +7,6 @@
 - [x] Implement exact diff/fitness/monotonic risk with TDD.
 - [x] Implement CLI/diagrams/verification/receipts with TDD.
 - [x] Complete installer/docs/package source and full local verification.
+- [ ] Apply the user-approved read-only diagram and package-aware fail-closed provenance pivot with RED/GREEN evidence.
 - [ ] Complete five independent route reviews and current receipts.
 - [ ] Start M2-B only as a separate factory task.

@@ -33,6 +33,8 @@ Exact final head, architecture evidence digest, and repository fingerprint are i
 - Unsupported applicable contract/language/SQL semantics fail and require architecture review.
 - `not_applicable` is engine-derived with inventory evidence and is revoked by a newly matching artifact.
 - A dirty tree is diagnostic only and cannot be labelled exact-SHA evidence.
+- Diagram render/check never mutates repository paths; render returns the bounded artifact payload and check compares no-follow.
+- Package-relative queue adapters resolve according to Python module/package semantics; relevant ambiguity and analysis ceilings are `unsupported`, while unproven common method names remain non-queue.
 
 ## Non-functional requirements
 

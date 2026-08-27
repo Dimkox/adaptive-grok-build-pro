@@ -160,6 +160,18 @@ M4 does not parse K16, execute the local validator as trusted code, or persist m
 
 Five generated Mermaid text files live under `architecture/generated/`: context, container, deployment, data-flow, and trust-boundary. Ordering, escaping, labels, and LF line endings are deterministic; there are no timestamps or renderer dependencies. `diagram --check` regenerates in memory and fails on manual drift.
 
+### Approved read-only diagram pivot
+
+After four remediation rounds exposed irreducible authority and cleanup races in generic in-place publication, the user approved a design pivot on 2026-08-27. The `diagram` command is now repository-read-only in both modes: without `--check` it returns the five bounded rendered Mermaid texts and their digests; with `--check` it performs the existing no-follow comparison against checked-in projections. It never creates, replaces, deletes, renames, chmods, or otherwise publishes repository paths. Projection updates are ordinary reviewed source edits, outside the CLI capability boundary.
+
+This rejects two alternatives: retaining a transactional in-place writer would preserve an unnecessary destructive capability and its filesystem race surface; delegating publication to a new trusted service would violate M2-A scope. The public architecture-diagram module therefore exposes render, digest, and compare operations only.
+
+### Approved package-aware queue provenance pivot
+
+Background-job applicability and the `new_queue` risk trigger consume one bounded provenance result with exactly three states: `resolved`, `not_queue`, or `unsupported`. Resolution follows Python package semantics for both regular modules and `package/__init__.py`, so a level-one import in `project/jobs/__init__.py` is relative to `project.jobs`, not `project`. Proven Celery/RQ roots, local adapter exports, assignments, factories, and `getattr` chains remain supported; common terminal names such as `submit`, `delay`, and `task` never establish queue provenance by themselves.
+
+Malformed or ambiguous queue-adjacent syntax, unresolved relevant local imports, and depth/module/AST ceilings return `unsupported` and fail closed. Proven non-queue code returns `not_queue`. The same result drives fitness applicability and risk escalation so the two surfaces cannot diverge.
+
 ## Installer ruling
 
 The installer manages architecture library modules, CLI, schemas, and a non-authoritative template. It does not copy `architecture/system.yaml` or `architecture/rules.yaml` into consumer repositories and never overwrites them with `--force`. A repository without explicit adoption reports `not_configured`; after adoption, deletion or corruption fails closed.

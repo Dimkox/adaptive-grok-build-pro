@@ -14,7 +14,7 @@ Two strict JSON-compatible YAML documents are architecture authority after expli
 
 - Architecture model/rules: target-owned untrusted data.
 - Adoption marker: strict target-owned durable state; absent means legacy `not_configured`, present means missing/invalid model files fail closed.
-- Local loader/diff/fitness/diagram modules: advisory preflight implementation.
+- Local loader/diff/fitness/diagram modules: advisory preflight implementation; diagram operations are render/check-only and have no repository mutation capability.
 - M1 spec/receipts: preserved intent and evidence authority, extended only with current architecture bindings.
 - M2-B: separate independently implemented Trust CI enforcement task.
 
@@ -34,6 +34,8 @@ M2-A freezes machine-readable baselines for existing Trust CI HTTP endpoints, ap
 - Use explicit directed capability edges and one structured `failure_behavior` per edge.
 - Install code/schema/templates only; never install or overwrite target-owned architecture authority.
 - Treat examples as non-authoritative and require manual marker creation only after both target documents are reviewed.
+- Keep projection generation read-only; checked-in Mermaid updates are normal reviewed source edits.
+- Resolve queue adapters with Python package semantics and one fail-closed provenance result shared by fitness applicability and risk.
 
 ## Risks and mitigations
 

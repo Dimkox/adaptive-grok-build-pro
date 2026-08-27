@@ -172,3 +172,35 @@
 - [ ] Commit: `docs: complete M2-A executable architecture evidence`
 
 After Task 5, transition the package through verification/review, dispatch all route-selected reviewers against the exact final M2-A diff, fix any load-bearing findings through the same writer, transition to `ready`, then record fresh fingerprint-bound receipts after the final repository write. Do not push or open a PR without explicit authorization. Start M2-B only in a separate worktree/branch/route/package from the frozen M2-A contract head.
+
+---
+
+### Task 6: Approved read-only projection and package-aware provenance pivot
+
+**Files:**
+- Modify: `.grok-stack/adaptive_grok/architecture_diagrams.py`
+- Modify: `.grok-stack/adaptive_grok/architecture_fitness.py`
+- Modify: `scripts/grok_architecture.py`
+- Modify: `tests/test_architecture_model.py`
+- Modify: `tests/test_architecture_fitness.py`
+- Modify: `README.md`, `QUICKSTART.md`, and the active change package only where their operator contract changes
+
+**Interfaces:**
+- `render_diagrams(snapshot) -> dict[str, str]` remains deterministic and bounded.
+- `compare_generated(root, rendered) -> tuple[str, ...]` remains no-follow and read-only.
+- Remove the public `write_generated` capability and all publication/cleanup helpers that exist only for repository mutation.
+- `diagram` without `--check` returns `artifacts`, `digests`, `checked=false`, and `ok=true`; `diagram --check` returns digests and mismatches without artifacts or writes.
+- Queue analysis returns one structured state (`resolved`, `not_queue`, or `unsupported`) plus stable reason and signals; both background-job fitness and `new_queue` risk consume it.
+- Relative imports resolve from the containing package: for `project/jobs/__init__.py`, `from .celery_app import app` resolves `project.jobs.celery_app`; for `project/jobs/worker.py`, the same level resolves from `project.jobs`.
+
+- [ ] **Step 1: write diagram RED tests.** Replace mutation-race tests with behavior tests proving that invoking `diagram` without `--check` returns all five literal Mermaid artifacts while a monkeypatched `os.open`, `os.rename`, `os.unlink`, `os.rmdir`, `os.mkdir`, `os.chmod`, and `os.replace` mutation boundary is never reached; assert repository bytes and inventory are unchanged.
+- [ ] **Step 2: verify diagram RED.** Run `python3 -m unittest -v tests.test_architecture_model.ArchitectureModelTests.test_diagram_render_is_repository_read_only tests.test_architecture_fitness.ArchitectureFitnessTests.test_architecture_cli_exact_diff_and_diagram_check`; expect failure because the current CLI calls `write_generated` and omits rendered artifacts.
+- [ ] **Step 3: implement the minimal read-only diagram API.** Remove `write_generated` and publication/cleanup code; make the CLI return `{ "artifacts": rendered, "checked": false, "digests": artifact_digests(rendered), "mismatches": [], "ok": true }` for render and preserve no-follow comparison for check.
+- [ ] **Step 4: verify diagram GREEN.** Rerun the two focused tests and confirm both pass with an unchanged repository inventory.
+- [ ] **Step 5: write queue RED tests.** Add literal base/head fixtures for `project/jobs/__init__.py -> from .celery_app import app`, `project/jobs/worker.py -> from .celery_app import app`, multi-hop re-exports, a boundary-exceeding relevant chain, an unresolved queue-adjacent local adapter, and unrelated local `submit`, `delay`, and `task` methods. Assert positive and unsupported cases fail fitness with `new_queue`; unrelated cases remain `not_applicable` with no trigger.
+- [ ] **Step 6: verify queue RED.** Run the new selectors with `python3 -m unittest -v`; expect the package-`__init__` cases to fail as `not_applicable` under the current module resolver.
+- [ ] **Step 7: implement the minimal package-aware fail-closed resolver.** Distinguish module files from package initializers when calculating the import package, return an explicit provenance result with stable reason, propagate resolver ceilings and relevant unresolved imports as `unsupported`, and delete terminal-name fallbacks.
+- [ ] **Step 8: verify queue GREEN and shared signaling.** Run all queue provenance tests and assert background fitness status and `new_queue` are derived from the same result for every table row.
+- [ ] **Step 9: update operator documentation and durable evidence.** State that diagram generation is stdout-only/read-only, checked-in projection changes use normal reviewed edits, and no queue/runtime capability was added. Record the approved pivot and rollback as reverting this source-only commit.
+- [ ] **Step 10: run final checks.** Run both architecture test modules, full unittest discovery, Ruff, Bandit, compileall, spec gate, architecture validate/drift/diagram-check, exact `trust-ci/**` separation, and `python3 scripts/grok_verify.py --mode pr --no-record --json`.
+- [ ] **Step 11: commit.** Commit the coherent pivot as `refactor: make architecture evidence read-only` and attach RED/GREEN/full-command evidence under the active change package.
