@@ -33,6 +33,7 @@ MAX_ANALYZED_FILE_BYTES = 10_000_000
 MAX_DIFF_ARTIFACT_BYTES = 50_000_000
 MAX_LINE_STAT_LINES = 100_000
 _EXACT_SHA = re.compile(r"[0-9a-f]{40}")
+_ADOPTION_PATH = "architecture/adoption.json"
 _MODEL_PATHS = ("architecture/system.yaml", "architecture/rules.yaml")
 _SCHEMA_PATHS = (
     "schemas/architecture-system.schema.json",
@@ -272,6 +273,8 @@ def _git_blob(root: Path, sha: str, path: str, *, required: bool = False) -> byt
 class ArchitectureBaseSelection:
     route_base_sha: str
     comparison_base_sha: str
+    base_kind: str
+    bootstrap_baseline: bool
 
 
 def select_architecture_comparison_base(
@@ -284,20 +287,41 @@ def select_architecture_comparison_base(
         candidate if isinstance(candidate, str) else _head_commit(root),
         label="architecture_route_base_sha",
     )
-    if all(_git_blob(root, route_base, path) is not None for path in _MODEL_PATHS):
+    marker_present = _git_blob(root, route_base, _ADOPTION_PATH) is not None
+    model_present = tuple(
+        _git_blob(root, route_base, path) is not None for path in _MODEL_PATHS
+    )
+    if model_present not in {(False, False), (True, True)}:
+        raise ArchitectureError(
+            "route-base architecture model is partially missing",
+            code="missing",
+        )
+    if marker_present and model_present == (False, False):
+        raise ArchitectureError(
+            "route-base adopted architecture model is missing",
+            code="missing",
+        )
+    if model_present == (True, True):
         comparison_base = route_base
+        base_kind = "route_model"
+        bootstrap_baseline = False
     else:
+        bootstrap_baseline = True
         try:
             comparison_base = _exact_commit(
                 root,
                 ADOPTION_BASE_SHA,
                 label="architecture_base_sha",
             )
+            base_kind = "frozen_adoption"
         except ArchitectureError:
             comparison_base = route_base
+            base_kind = "route_pre_adoption"
     return ArchitectureBaseSelection(
         route_base_sha=route_base,
         comparison_base_sha=comparison_base,
+        base_kind=base_kind,
+        bootstrap_baseline=bootstrap_baseline,
     )
 
 
@@ -367,10 +391,16 @@ class _ArchitectureState:
     contracts: tuple[ContractRecord, ...]
 
 
-def _materialized_state(root: Path, sha: str, *, adoption_base: bool = False) -> _ArchitectureState | None:
+def _materialized_state(
+    root: Path,
+    sha: str,
+    *,
+    adoption_base: bool = False,
+    bootstrap_baseline: bool = False,
+) -> _ArchitectureState | None:
     model_values = tuple(_git_blob(root, sha, path) for path in _MODEL_PATHS)
     if model_values == (None, None):
-        if adoption_base and sha == ADOPTION_BASE_SHA:
+        if (adoption_base and sha == ADOPTION_BASE_SHA) or bootstrap_baseline:
             return None
         raise ArchitectureError("architecture model is missing outside the adoption base", code="missing")
     if any(value is None for value in model_values):
@@ -698,9 +728,24 @@ def diff_architecture(
     base_sha: str,
     head_sha: str | None = None,
     worktree: bool = False,
+    _trusted_base_selection: ArchitectureBaseSelection | None = None,
 ) -> ArchitectureDiff:
     repository = Path(root).resolve(strict=True)
     base = _exact_commit(repository, base_sha, label="base_sha")
+    bootstrap_baseline = False
+    if _trusted_base_selection is not None:
+        verified_selection = select_architecture_comparison_base(
+            repository,
+            {"base_commit": _trusted_base_selection.route_base_sha},
+        )
+        if verified_selection != _trusted_base_selection:
+            raise ArchitectureError("architecture base selection is stale", code="git")
+        if base != _trusted_base_selection.comparison_base_sha:
+            raise ArchitectureError(
+                "architecture base selection does not match base_sha",
+                code="git",
+            )
+        bootstrap_baseline = _trusted_base_selection.bootstrap_baseline
     if worktree:
         if head_sha is not None:
             raise ArchitectureError("worktree diff cannot also name head_sha", code="git")
@@ -715,7 +760,12 @@ def diff_architecture(
         if head_state is None:
             raise ArchitectureError("head architecture model is missing", code="missing")
         head_kind = "commit"
-    base_state = _materialized_state(repository, base, adoption_base=True)
+    base_state = _materialized_state(
+        repository,
+        base,
+        adoption_base=True,
+        bootstrap_baseline=bootstrap_baseline,
+    )
     paths = _changed_paths(repository, base, head, worktree=worktree)
     artifacts: list[ChangedArtifact] = []
     artifact_bytes = 0

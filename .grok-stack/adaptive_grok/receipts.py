@@ -107,6 +107,8 @@ def active_architecture_binding(root: Path, route: dict[str, Any]) -> dict[str, 
     return {
         "architecture_adoption_digest": adoption["digest"],
         "architecture_base_sha": base_selection.comparison_base_sha,
+        "architecture_base_kind": base_selection.base_kind,
+        "architecture_bootstrap_baseline": base_selection.bootstrap_baseline,
         "architecture_contract_digests": {record.path: record.digest for record in records},
         "architecture_contract_inventory_digest": contract_inventory_digest(records),
         "architecture_digest": digests["architecture_digest"],

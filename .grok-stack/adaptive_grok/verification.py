@@ -60,8 +60,22 @@ def _architecture_check(
                 {"configured": False, "status": "not_configured"},
             )
         snapshot = load_architecture(root)
-        base = _architecture_base(root, route)
-        diff = diff_architecture(root, base_sha=base, worktree=True)
+        base_selection = select_architecture_comparison_base(root, route)
+        base = base_selection.comparison_base_sha
+        if (
+            binding["architecture_base_sha"] != base
+            or binding["architecture_base_kind"] != base_selection.base_kind
+            or binding["architecture_bootstrap_baseline"]
+            != base_selection.bootstrap_baseline
+            or binding["architecture_route_base_sha"] != base_selection.route_base_sha
+        ):
+            raise ArchitectureError("architecture base binding is inconsistent", code="git")
+        diff = diff_architecture(
+            root,
+            base_sha=base,
+            worktree=True,
+            _trusted_base_selection=base_selection,
+        )
         fitness = evaluate_fitness(
             root,
             snapshot,
@@ -80,6 +94,12 @@ def _architecture_check(
             "adoption_digest": binding["architecture_adoption_digest"],
             "architecture_digest": binding["architecture_digest"],
             "architecture_fingerprint": binding["architecture_fingerprint"],
+            "architecture_base_kind": binding["architecture_base_kind"],
+            "architecture_bootstrap_baseline": binding[
+                "architecture_bootstrap_baseline"
+            ],
+            "architecture_route_base_sha": binding["architecture_route_base_sha"],
+            "baseline_introduced": diff.baseline_introduced,
             "contract_inventory_digest": binding["architecture_contract_inventory_digest"],
             "diff_digest": diff.digest,
             "drift_status": drift_status,

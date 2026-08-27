@@ -13,6 +13,12 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.change import start_change, transition
 from adaptive_grok.architecture import architecture_fingerprint, contract_inventory, load_architecture
+from adaptive_grok.architecture_diagrams import render_diagrams, write_generated
+from adaptive_grok.architecture_diff import (
+    ArchitectureError,
+    diff_architecture,
+    select_architecture_comparison_base,
+)
 from adaptive_grok.receipts import (
     active_architecture_binding,
     invalidate_receipts,
@@ -24,6 +30,7 @@ from adaptive_grok.state import get_active_change, get_active_route, set_active_
 from adaptive_grok.verification import _architecture_check, verify
 from adaptive_grok.spec import dump_canonical_spec
 from tests._support import project_copy
+from tests.test_architecture_model import _rules, _system
 
 _PASSING_UNITTEST = (
     'import unittest\n'
@@ -103,6 +110,56 @@ class ReceiptTests(unittest.TestCase):
         path.write_text(dump_canonical_spec(spec), encoding='utf-8')
         return path
 
+    @staticmethod
+    def _unrelated_adopted_repo(
+        root: Path,
+        *,
+        base_marker: bool = False,
+        base_models: tuple[bool, bool] = (False, False),
+    ) -> str:
+        subprocess.run(['git', 'init', '-q', '-b', 'main'], cwd=root, check=True)
+        subprocess.run(['git', 'config', 'user.name', 'Test'], cwd=root, check=True)
+        subprocess.run(
+            ['git', 'config', 'user.email', 'test@example.com'], cwd=root, check=True
+        )
+        schemas = root / 'schemas'
+        schemas.mkdir()
+        for name in ('architecture-system.schema.json', 'architecture-rules.schema.json'):
+            shutil.copy2(ROOT / 'schemas' / name, schemas / name)
+        architecture = root / 'architecture'
+        architecture.mkdir()
+        if base_models[0]:
+            (architecture / 'system.yaml').write_text(
+                json.dumps(_system(), sort_keys=True, indent=2) + '\n', encoding='utf-8'
+            )
+        if base_models[1]:
+            (architecture / 'rules.yaml').write_text(
+                json.dumps(_rules(), sort_keys=True, indent=2) + '\n', encoding='utf-8'
+            )
+        if base_marker:
+            (architecture / 'adoption.json').write_text(
+                '{\n  "architecture_id": "ARCH-TEST",\n  "schema_version": 1,\n  "state": "adopted"\n}\n',
+                encoding='utf-8',
+            )
+        subprocess.run(['git', 'add', '-A'], cwd=root, check=True)
+        subprocess.run(['git', 'commit', '-qm', 'consumer route base'], cwd=root, check=True)
+        base = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+        ).strip()
+
+        (architecture / 'system.yaml').write_text(
+            json.dumps(_system(), sort_keys=True, indent=2) + '\n', encoding='utf-8'
+        )
+        (architecture / 'rules.yaml').write_text(
+            json.dumps(_rules(), sort_keys=True, indent=2) + '\n', encoding='utf-8'
+        )
+        (architecture / 'adoption.json').write_text(
+            '{\n  "architecture_id": "ARCH-TEST",\n  "schema_version": 1,\n  "state": "adopted"\n}\n',
+            encoding='utf-8',
+        )
+        write_generated(root, render_diagrams(load_architecture(root)))
+        return base
+
     def test_receipt_binds_active_spec_and_declared_criteria(self) -> None:
         with project_copy(git=True) as root:
             route = build_route(root, 'Добавить функцию', 's1').to_dict()
@@ -167,6 +224,16 @@ class ReceiptTests(unittest.TestCase):
         self.assertEqual(evidence['exact_base_sha'], _ADOPTION_BASE)
         self.assertEqual(evidence['architecture_fingerprint'], binding['architecture_fingerprint'])
         self.assertEqual(binding['architecture_route_base_sha'], _PRE_ADOPTION_ROUTE_BASE)
+        self.assertEqual(binding['architecture_base_kind'], 'frozen_adoption')
+        self.assertEqual(
+            evidence['architecture_base_kind'], binding['architecture_base_kind']
+        )
+        self.assertTrue(binding['architecture_bootstrap_baseline'])
+        self.assertEqual(
+            evidence['architecture_bootstrap_baseline'],
+            binding['architecture_bootstrap_baseline'],
+        )
+        self.assertTrue(evidence['baseline_introduced'])
 
         snapshot = load_architecture(ROOT)
         records = contract_inventory(ROOT, snapshot)
@@ -179,6 +246,74 @@ class ReceiptTests(unittest.TestCase):
         )
         self.assertEqual(binding['architecture_fingerprint'], expected_fingerprint)
         self.assertRegex(evidence['architecture_evidence_digest'], r'^[0-9a-f]{64}$')
+
+    def test_unrelated_consumer_bootstrap_is_explicit_and_end_to_end(self) -> None:
+        with tempfile.TemporaryDirectory(prefix='adaptive-grok-consumer-bootstrap-') as tmp:
+            root = Path(tmp)
+            base = self._unrelated_adopted_repo(root)
+            route = {
+                'base_commit': base,
+                'required_evidence': ['verification'],
+                'route_id': 'consumer-bootstrap',
+            }
+            set_active_route(root, route)
+            self.assertNotEqual(
+                subprocess.run(
+                    ['git', 'cat-file', '-e', _ADOPTION_BASE + '^{commit}'],
+                    cwd=root,
+                    check=False,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                ).returncode,
+                0,
+            )
+
+            selection = select_architecture_comparison_base(root, route)
+            self.assertEqual(selection.comparison_base_sha, base)
+            self.assertTrue(selection.bootstrap_baseline)
+            with self.assertRaises(ArchitectureError):
+                diff_architecture(root, base_sha=base, worktree=True)
+
+            receipt = json.loads(
+                write_receipt(root, 'verification', 'pass').read_text(encoding='utf-8')
+            )
+            result, evidence = _architecture_check(root, route)
+            self.assertEqual(result.status, 'pass')
+            self.assertEqual(receipt['architecture_base_sha'], base)
+            self.assertEqual(receipt['architecture_base_sha'], evidence['exact_base_sha'])
+            self.assertEqual(
+                receipt['architecture_fingerprint'], evidence['architecture_fingerprint']
+            )
+            self.assertTrue(receipt['architecture_bootstrap_baseline'])
+            self.assertTrue(evidence['architecture_bootstrap_baseline'])
+            self.assertEqual(receipt['architecture_base_kind'], 'route_pre_adoption')
+            self.assertEqual(
+                receipt['architecture_base_kind'], evidence['architecture_base_kind']
+            )
+            self.assertTrue(evidence['baseline_introduced'])
+
+    def test_route_base_marker_with_partial_model_fails_selection(self) -> None:
+        with tempfile.TemporaryDirectory(prefix='adaptive-grok-marker-partial-') as tmp:
+            root = Path(tmp)
+            base = self._unrelated_adopted_repo(
+                root, base_marker=True, base_models=(True, False)
+            )
+            with self.assertRaisesRegex(ArchitectureError, 'partially missing'):
+                select_architecture_comparison_base(root, {'base_commit': base})
+
+    def test_route_base_marker_with_both_models_missing_fails_selection(self) -> None:
+        with tempfile.TemporaryDirectory(prefix='adaptive-grok-marker-missing-') as tmp:
+            root = Path(tmp)
+            base = self._unrelated_adopted_repo(root, base_marker=True)
+            with self.assertRaisesRegex(ArchitectureError, 'adopted architecture model is missing'):
+                select_architecture_comparison_base(root, {'base_commit': base})
+
+    def test_route_base_partial_model_without_marker_fails_selection(self) -> None:
+        with tempfile.TemporaryDirectory(prefix='adaptive-grok-unmarked-partial-') as tmp:
+            root = Path(tmp)
+            base = self._unrelated_adopted_repo(root, base_models=(False, True))
+            with self.assertRaisesRegex(ArchitectureError, 'partially missing'):
+                select_architecture_comparison_base(root, {'base_commit': base})
 
     def test_route_base_remains_a_separate_architecture_staleness_binding(self) -> None:
         with tempfile.TemporaryDirectory(prefix='adaptive-grok-receipt-base-') as tmp:
