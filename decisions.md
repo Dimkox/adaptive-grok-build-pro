@@ -202,3 +202,7 @@ Return deterministic Mermaid artifacts on stdout and keep checked-in projection 
 ## 2026-08-27 — Preserve provenance identity and installer mutation ownership
 
 Queue provenance retains tuple/list positions and dictionary keys so only the changed operation's dependency can trigger fitness/risk; ambiguous selection over queue and non-queue values is explicitly unsupported. Installer-created directories remain transaction-owned until complete-path identity is reproved, allowing relocation failure to remove only operation-created entries and restore exact file mode under umask.
+
+## 2026-08-27 — Replace patch accumulation with semantic joins and single-publication install
+
+After repeated adjacent review failures, model queue provenance with bounded monotone abstract values and control-flow joins instead of syntax-specific overwrites. Make installation read-only for existing repositories and publish only a fully prepared new target with one atomic rename, eliminating the impossible promise that a failed rollback can always restore already-mutated external bytes.
