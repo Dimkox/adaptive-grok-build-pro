@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import html
+import ctypes
+import errno
 import os
 import secrets
 import stat
@@ -13,6 +15,9 @@ from .architecture import ArchitectureError, ArchitectureSnapshot, _secure_open_
 DIAGRAM_NAMES = ("context", "container", "deployment", "data-flow", "trust-boundary")
 GENERATED_RELATIVE = Path("architecture/generated")
 MAX_GENERATED_ARTIFACT_BYTES = 1_000_000
+MAX_ARCHITECTURE_XATTRS = 64
+MAX_ARCHITECTURE_XATTR_BYTES = 65_536
+_RENAME_EXCHANGE = 2
 
 
 def _escape(value: object) -> str:
@@ -306,81 +311,197 @@ def _discard_entry(parent_fd: int, name: str) -> None:
     os.rmdir(name, dir_fd=parent_fd)
 
 
+def _entry_identity(root_fd: int, name: str) -> tuple[int, int, int]:
+    try:
+        info = os.stat(name, dir_fd=root_fd, follow_symlinks=False)
+    except FileNotFoundError as exc:
+        raise ArchitectureError("architecture publication entry was relocated", code="io") from exc
+    if not stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode):
+        raise ArchitectureError("architecture publication encountered an unsafe entry", code="io")
+    return info.st_dev, info.st_ino, stat.S_IFMT(info.st_mode)
+
+
+def _require_entry_identity(
+    root_fd: int,
+    name: str,
+    expected: tuple[int, int, int],
+) -> None:
+    if _entry_identity(root_fd, name) != expected:
+        raise ArchitectureError("architecture publication entry was relocated", code="io")
+
+
 def _discard_architecture_entry(root_fd: int, name: str) -> None:
-    """Remove a bounded staged/backup architecture tree without following entries."""
+    """Remove a bounded root-contained tree without mutating through a held child fd."""
     no_follow, directory_flag, _nonblock = _secure_open_flags(
         label="generated architecture diagrams"
     )
-    try:
-        info = os.stat(name, dir_fd=root_fd, follow_symlinks=False)
-    except FileNotFoundError:
-        return
-    if stat.S_ISLNK(info.st_mode) or stat.S_ISREG(info.st_mode):
-        os.unlink(name, dir_fd=root_fd)
-        return
-    if not stat.S_ISDIR(info.st_mode):
-        raise ArchitectureError("architecture publication encountered a special entry", code="io")
+    identity = _entry_identity(root_fd, name)
     descriptor = os.open(name, os.O_RDONLY | directory_flag | no_follow, dir_fd=root_fd)
     try:
         entries = sorted(os.listdir(descriptor))
         allowed = {"adoption.json", "system.yaml", "rules.yaml", "generated"}
         if not set(entries).issubset(allowed):
             raise ArchitectureError("architecture publication has unexpected entries", code="io")
+        generated_entries: list[str] = []
         if "generated" in entries:
-            _discard_entry(descriptor, "generated")
-        for entry in ("adoption.json", "system.yaml", "rules.yaml"):
-            if entry in entries:
-                child = os.stat(entry, dir_fd=descriptor, follow_symlinks=False)
-                if not stat.S_ISREG(child.st_mode):
-                    raise ArchitectureError("architecture authority backup is unsafe", code="io")
-                os.unlink(entry, dir_fd=descriptor)
-        os.fsync(descriptor)
+            generated = os.open(
+                "generated", os.O_RDONLY | directory_flag | no_follow, dir_fd=descriptor
+            )
+            try:
+                generated_entries = sorted(os.listdir(generated))
+                if not set(generated_entries).issubset(
+                    {f"{diagram}.mmd" for diagram in DIAGRAM_NAMES}
+                ):
+                    raise ArchitectureError(
+                        "generated diagram directory has unexpected entries", code="io"
+                    )
+            finally:
+                os.close(generated)
     finally:
         os.close(descriptor)
-    current = os.stat(name, dir_fd=root_fd, follow_symlinks=False)
-    if (current.st_dev, current.st_ino) != (info.st_dev, info.st_ino):
-        raise ArchitectureError("architecture publication directory changed", code="io")
+
+    # Never unlink through the descriptors used to inventory the tree. Reprove
+    # the root-relative entry identity before each bounded mutation.
+    for entry in generated_entries:
+        _require_entry_identity(root_fd, name, identity)
+        relative = f"{name}/generated/{entry}"
+        child = os.stat(relative, dir_fd=root_fd, follow_symlinks=False)
+        if not stat.S_ISREG(child.st_mode) or child.st_size > MAX_GENERATED_ARTIFACT_BYTES:
+            raise ArchitectureError("generated diagram backup is unsafe", code="io")
+        os.unlink(relative, dir_fd=root_fd)
+    if "generated" in entries:
+        _require_entry_identity(root_fd, name, identity)
+        os.rmdir(f"{name}/generated", dir_fd=root_fd)
+    for entry in ("adoption.json", "system.yaml", "rules.yaml"):
+        if entry not in entries:
+            continue
+        _require_entry_identity(root_fd, name, identity)
+        relative = f"{name}/{entry}"
+        child = os.stat(relative, dir_fd=root_fd, follow_symlinks=False)
+        if not stat.S_ISREG(child.st_mode):
+            raise ArchitectureError("architecture authority backup is unsafe", code="io")
+        os.unlink(relative, dir_fd=root_fd)
+    _require_entry_identity(root_fd, name, identity)
     os.rmdir(name, dir_fd=root_fd)
 
 
-def _replace_generated(root_fd: int, staging: str, destination: str) -> None:
-    """Publish a complete architecture entry relative to the repository root."""
-    current = os.stat(destination, dir_fd=root_fd, follow_symlinks=False)
-    if not stat.S_ISDIR(current.st_mode) or stat.S_ISLNK(current.st_mode):
-        raise ArchitectureError("architecture publication parent is unsafe", code="io")
-    backup = f".architecture.{secrets.token_hex(12)}.old"
-    moved_old = False
+def _directory_metadata(descriptor: int) -> tuple[int, int, int, tuple[tuple[str, bytes], ...]]:
+    info = os.fstat(descriptor)
     try:
+        names = sorted(os.listxattr(descriptor))
+    except (AttributeError, NotImplementedError, OSError) as exc:
+        raise ArchitectureError("architecture directory metadata is unavailable", code="io") from exc
+    if len(names) > MAX_ARCHITECTURE_XATTRS:
+        raise ArchitectureError("architecture directory xattr limit exceeded", code="limit")
+    attributes: list[tuple[str, bytes]] = []
+    total = 0
+    for name in names:
+        value = os.getxattr(descriptor, name)
+        total += len(name.encode("utf-8")) + len(value)
+        if total > MAX_ARCHITECTURE_XATTR_BYTES:
+            raise ArchitectureError("architecture directory xattr byte limit exceeded", code="limit")
+        attributes.append((name, value))
+    return stat.S_IMODE(info.st_mode), info.st_uid, info.st_gid, tuple(attributes)
+
+
+def _copy_directory_metadata(source_fd: int, destination_fd: int) -> None:
+    mode, uid, gid, attributes = _directory_metadata(source_fd)
+    destination = os.fstat(destination_fd)
+    if (destination.st_uid, destination.st_gid) != (uid, gid):
         try:
-            os.rename(
-                destination,
-                backup,
-                src_dir_fd=root_fd,
-                dst_dir_fd=root_fd,
-            )
-            moved_old = True
-        except FileNotFoundError:
-            pass
-        os.rename(
-            staging,
-            destination,
-            src_dir_fd=root_fd,
-            dst_dir_fd=root_fd,
+            os.fchown(destination_fd, uid, gid)
+        except (AttributeError, PermissionError, OSError) as exc:
+            raise ArchitectureError("architecture directory ownership cannot be preserved", code="io") from exc
+    os.fchmod(destination_fd, mode)
+    for name, value in attributes:
+        try:
+            os.setxattr(destination_fd, name, value)
+        except (AttributeError, NotImplementedError, OSError) as exc:
+            raise ArchitectureError("architecture directory xattrs cannot be preserved", code="io") from exc
+    if _directory_metadata(destination_fd) != (mode, uid, gid, attributes):
+        raise ArchitectureError("architecture directory metadata changed during staging", code="io")
+
+
+def _authority_inventory(descriptor: int) -> tuple[tuple[str, int, int, int, int], ...]:
+    entries = sorted(os.listdir(descriptor))
+    if len(entries) > 4:
+        raise ArchitectureError("architecture directory has unexpected entries", code="io")
+    inventory: list[tuple[str, int, int, int, int]] = []
+    for entry in entries:
+        if entry == "generated":
+            continue
+        info = os.stat(entry, dir_fd=descriptor, follow_symlinks=False)
+        if not stat.S_ISREG(info.st_mode):
+            raise ArchitectureError("architecture authority entry is unsafe", code="io")
+        inventory.append((entry, info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns))
+    return tuple(inventory)
+
+
+def _exchange_entries(root_fd: int, left: str, right: str) -> None:
+    try:
+        function = ctypes.CDLL(None, use_errno=True).renameat2
+    except (AttributeError, OSError) as exc:
+        raise ArchitectureError("atomic architecture exchange is unavailable", code="io") from exc
+    function.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+    function.restype = ctypes.c_int
+    result = function(
+        root_fd,
+        os.fsencode(left),
+        root_fd,
+        os.fsencode(right),
+        _RENAME_EXCHANGE,
+    )
+    if result != 0:
+        code = ctypes.get_errno()
+        if code in {errno.ENOSYS, errno.EINVAL, errno.ENOTSUP, errno.EOPNOTSUPP}:
+            raise ArchitectureError("atomic architecture exchange is unavailable", code="io")
+        raise ArchitectureError(
+            f"atomic architecture exchange failed: {os.strerror(code)}", code="io"
         )
-    except BaseException:
-        if moved_old:
-            try:
-                os.rename(
-                    backup,
-                    destination,
-                    src_dir_fd=root_fd,
-                    dst_dir_fd=root_fd,
-                )
-            except OSError:
-                pass
+
+
+def _replace_generated(root_fd: int, staging: str, destination: str) -> None:
+    """CAS-publish a complete architecture entry relative to the held root."""
+    _entry_identity(root_fd, destination)
+    _entry_identity(root_fd, staging)
+    _exchange_entries(root_fd, destination, staging)
+    current_fd = previous_fd = -1
+    try:
+        no_follow, directory_flag, _nonblock = _secure_open_flags(
+            label="generated architecture diagrams"
+        )
+        current_fd = os.open(
+            destination, os.O_RDONLY | directory_flag | no_follow, dir_fd=root_fd
+        )
+        previous_fd = os.open(staging, os.O_RDONLY | directory_flag | no_follow, dir_fd=root_fd)
+        if (
+            _authority_inventory(current_fd) != _authority_inventory(previous_fd)
+            or _directory_metadata(current_fd) != _directory_metadata(previous_fd)
+        ):
+            raise ArchitectureError(
+                "architecture authority changed before diagram publication", code="io"
+            )
+    except BaseException as exc:
+        for descriptor in (previous_fd, current_fd):
+            if descriptor >= 0:
+                os.close(descriptor)
+        previous_fd = current_fd = -1
+        try:
+            _exchange_entries(root_fd, destination, staging)
+        except BaseException as rollback_exc:
+            raise ArchitectureError(
+                "architecture publication rollback failed", code="io"
+            ) from rollback_exc
+        try:
+            _discard_architecture_entry(root_fd, staging)
+        except ArchitectureError as cleanup_exc:
+            raise cleanup_exc from exc
         raise
-    if moved_old:
-        _discard_architecture_entry(root_fd, backup)
+    finally:
+        for descriptor in (previous_fd, current_fd):
+            if descriptor >= 0:
+                os.close(descriptor)
+    _discard_architecture_entry(root_fd, staging)
     os.fsync(root_fd)
 
 
@@ -457,6 +578,7 @@ def write_generated(root: Path, rendered: Mapping[str, str]) -> tuple[str, ...]:
         staging_architecture_fd = os.open(
             staging, os.O_RDONLY | directory_flag | no_follow, dir_fd=root_fd
         )
+        _copy_directory_metadata(architecture_fd, staging_architecture_fd)
         for authority in ("adoption.json", "system.yaml", "rules.yaml"):
             if authority not in entries:
                 continue

@@ -1025,11 +1025,6 @@ def _queue_provenance(
                 signals.add(
                     "semantic-call:" + ast.dump(node, annotate_fields=True, include_attributes=False)
                 )
-            elif queue_names:
-                signals.add(
-                    "unknown-provenance-call:"
-                    + ast.dump(node, annotate_fields=True, include_attributes=False)
-                )
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             for decorator in node.decorator_list:
                 if queue_derived(decorator):
@@ -1037,12 +1032,54 @@ def _queue_provenance(
                         f"semantic-decorator:{node.name}:"
                         + ast.dump(decorator, annotate_fields=True, include_attributes=False)
                     )
-                elif queue_names:
-                    signals.add(
-                        f"unknown-provenance-decorator:{node.name}:"
-                        + ast.dump(decorator, annotate_fields=True, include_attributes=False)
-                    )
     return signals, queue_names
+
+
+def _operation_dependencies(tree: ast.AST) -> set[str]:
+    """Return names that can feed a changed callable/decorator expression."""
+    dependencies: set[str] = set()
+    for node in ast.walk(tree):
+        values: list[ast.AST] = []
+        if isinstance(node, ast.Call):
+            values.append(node.func)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            values.extend(node.decorator_list)
+        for value in values:
+            dependencies.update(
+                child.id for child in ast.walk(value) if isinstance(child, ast.Name)
+            )
+    assignments: dict[str, ast.AST] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    assignments[target.id] = node.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            assignments[node.target.id] = node.value
+    for _ in range(min(len(assignments) + 1, 64)):
+        expanded = set(dependencies)
+        for name in dependencies:
+            value = assignments.get(name)
+            if value is not None:
+                expanded.update(
+                    child.id for child in ast.walk(value) if isinstance(child, ast.Name)
+                )
+        if expanded == dependencies:
+            break
+        dependencies = expanded
+    return dependencies
+
+
+def _resolve_import_module(current_module: str, module: str | None, level: int) -> str:
+    if not level:
+        return module or ""
+    package = current_module.split(".")[:-1]
+    remove = level - 1
+    if remove > len(package):
+        raise ArchitectureError("relative queue adapter import escapes its package", code="fitness")
+    prefix = package[: len(package) - remove] if remove else package
+    suffix = module.split(".") if module else []
+    return ".".join((*prefix, *suffix))
 
 
 def _local_queue_exports(
@@ -1056,12 +1093,14 @@ def _local_queue_exports(
     if module in cache:
         return cache[module]
     if (
-        len(cache) >= MAX_QUEUE_ADAPTER_MODULES
-        or len(resolving) >= MAX_QUEUE_ADAPTER_DEPTH
-        or not module
+        not module
         or any(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", part) is None for part in module.split("."))
     ):
         return set()
+    if len(cache) >= MAX_QUEUE_ADAPTER_MODULES:
+        raise ArchitectureError("queue adapter module limit exceeded", code="limit")
+    if len(resolving) >= MAX_QUEUE_ADAPTER_DEPTH:
+        raise ArchitectureError("queue adapter depth limit exceeded", code="limit")
     if module in resolving:
         return set()
     resolving.add(module)
@@ -1078,7 +1117,15 @@ def _local_queue_exports(
         tree = ast.parse(value.decode("utf-8"), filename=module)
         if sum(1 for _ in ast.walk(tree)) > MAX_ANALYZED_AST_NODES:
             raise ArchitectureError(f"Python AST node limit exceeded: {module}", code="limit")
-        imported = _queue_adapter_names(root, diff, tree, side, cache, resolving)
+        imported = _queue_adapter_names(
+            root,
+            diff,
+            tree,
+            side,
+            cache,
+            resolving,
+            current_module=module,
+        )
         _signals, derived = _queue_provenance(tree, imported)
         exports = {name for name in derived if not name.startswith("_")}
         cache[module] = exports
@@ -1094,16 +1141,32 @@ def _queue_adapter_names(
     side: str,
     cache: dict[str, set[str]],
     resolving: set[str] | None = None,
+    *,
+    current_module: str = "",
 ) -> set[str]:
     proven: set[str] = set()
     active = resolving if resolving is not None else set()
+    dependencies = _operation_dependencies(tree)
+    if resolving is not None:
+        dependencies.update(
+            alias.asname or alias.name
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom)
+            for alias in node.names
+        )
     for node in ast.walk(tree):
-        if not isinstance(node, ast.ImportFrom) or not node.module or node.level:
+        if not isinstance(node, ast.ImportFrom):
             continue
-        if node.module.split(".")[0] in _QUEUE_IMPORTS:
+        candidates = [
+            alias for alias in node.names if (alias.asname or alias.name) in dependencies
+        ]
+        if not candidates:
             continue
-        exports = _local_queue_exports(root, diff, node.module, side, cache, active)
-        for alias in node.names:
+        module = _resolve_import_module(current_module, node.module, node.level)
+        if module.split(".")[0] in _QUEUE_IMPORTS:
+            continue
+        exports = _local_queue_exports(root, diff, module, side, cache, active)
+        for alias in candidates:
             if alias.name in exports:
                 proven.add(alias.asname or alias.name)
     return proven
@@ -1115,8 +1178,11 @@ def _queue_signals(
     tree: ast.AST,
     side: str,
     cache: dict[str, set[str]],
+    module: str,
 ) -> set[str]:
-    adapters = _queue_adapter_names(root, diff, tree, side, cache)
+    adapters = _queue_adapter_names(
+        root, diff, tree, side, cache, current_module=module
+    )
     return _queue_provenance(tree, adapters)[0]
 
 
@@ -1130,14 +1196,15 @@ def _new_queue_sources(
     base_cache: dict[str, set[str]] = {}
     for path in _python_paths(diff):
         try:
-            head = _queue_signals(root, diff, python.tree(path), "head", head_cache)
+            module = path.rsplit(".", 1)[0].replace("/", ".")
+            head = _queue_signals(root, diff, python.tree(path), "head", head_cache, module)
             base_value = read_diff_file(root, diff, path, "base")
             base: set[str] = set()
             if base_value is not None:
                 base_tree = ast.parse(base_value.decode("utf-8"), filename=path)
                 if sum(1 for _ in ast.walk(base_tree)) > MAX_ANALYZED_AST_NODES:
                     raise ArchitectureError(f"Python AST node limit exceeded: {path}", code="limit")
-                base = _queue_signals(root, diff, base_tree, "base", base_cache)
+                base = _queue_signals(root, diff, base_tree, "base", base_cache, module)
             if head - base:
                 applicable.append(path)
         except ArchitectureError:

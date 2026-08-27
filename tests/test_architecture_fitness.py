@@ -711,6 +711,176 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     (),
                 )
 
+    def test_mixed_queue_files_ignore_operations_without_queue_provenance(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["project", "src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        cases = (
+            (
+                "rq and form",
+                "from rq import Queue\njobs = Queue()\n"
+                "class Form:\n    def submit(self):\n        return None\nform = Form()\n",
+                "form.submit()\n",
+            ),
+            (
+                "celery and timer",
+                "import celery\napp = celery.Celery('jobs')\n"
+                "class Timer:\n    def delay(self):\n        return None\ntimer = Timer()\n",
+                "timer.delay()\n",
+            ),
+            (
+                "adapter and pipeline",
+                "from project.jobs import app\n"
+                "class Pipeline:\n    def task(self, fn):\n        return fn\npipeline = Pipeline()\n",
+                "@pipeline.task\ndef stage():\n    return None\n",
+            ),
+            (
+                "rq and generic call",
+                "from rq import Queue\njobs = Queue()\n"
+                "def format_value():\n    return 'value'\n",
+                "format_value()\n",
+            ),
+        )
+        for label, before, addition in cases:
+            with self.subTest(label=label):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("project/__init__.py", "")
+                if label.startswith("adapter"):
+                    repo.write_text(
+                        "project/jobs.py",
+                        "import celery\napp = celery.Celery('jobs')\n",
+                    )
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", before + addition)
+                head = repo.commit("ordinary operation")
+                report = self._evaluate(repo, base, head)
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "not_applicable")
+                self.assertEqual(report.status, "pass")
+                self.assertNotIn("new_queue", report.triggers)
+                self.assertEqual(
+                    ARCHITECTURE.validate_repository_drift(
+                        repo.root, FIT.load_architecture(repo.root)
+                    ),
+                    (),
+                )
+
+    def test_queue_adapter_resolution_bounds_fail_closed_only_for_possible_operations(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+
+        for label, modules in (("depth nine", 9),):
+            with self.subTest(label=label):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                for index in range(modules):
+                    if index == modules - 1:
+                        value = "import celery\napp = celery.Celery('jobs')\n"
+                    else:
+                        value = f"from adapters.m{index + 1} import app\n"
+                    repo.write_text(f"adapters/m{index}.py", value)
+                before = "from adapters.m0 import app\n"
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text(
+                    "src/jobs.py",
+                    before + "@app.task\ndef stage():\n    return None\n",
+                )
+                head = repo.commit("bounded adapter operation")
+                report = self._evaluate(repo, base, head)
+                self.assertEqual(
+                    self._results(report)["background_job"].status,
+                    "unsupported",
+                )
+                self.assertEqual(report.status, "fail")
+                self.assertIn("new_queue", report.triggers)
+
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        imports = []
+        for index in range(FIT.MAX_QUEUE_ADAPTER_MODULES):
+            imports.append(f"from absent.m{index} import app{index}")
+        imports.append("from adapters.valid import app")
+        repo.write_text("adapters/aggregate.py", "\n".join(imports) + "\n")
+        repo.write_text(
+            "adapters/valid.py",
+            "import celery\napp = celery.Celery('jobs')\n",
+        )
+        imported = "from adapters.aggregate import " + ", ".join(
+            [f"app{index}" for index in range(FIT.MAX_QUEUE_ADAPTER_MODULES)] + ["app"]
+        ) + "\n"
+        repo.write_text("src/jobs.py", imported)
+        base = repo.commit("base")
+        calls = "".join(
+            f"app{index}()\n" for index in range(FIT.MAX_QUEUE_ADAPTER_MODULES)
+        )
+        repo.write_text(
+            "src/jobs.py",
+            imported + calls + "@app.task\ndef stage():\n    return None\n",
+        )
+        head = repo.commit("adapter import ceiling")
+        report = self._evaluate(repo, base, head)
+        self.assertEqual(self._results(report)["background_job"].status, "unsupported")
+        self.assertEqual(report.status, "fail")
+        self.assertIn("new_queue", report.triggers)
+
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_text(
+            "project/celery_app.py",
+            "import celery\napp = celery.Celery('jobs')\n",
+        )
+        repo.write_text("project/jobs.py", "from .celery_app import app\n")
+        before = "from project.jobs import app\n"
+        repo.write_text("src/jobs.py", before)
+        base = repo.commit("base")
+        repo.write_text(
+            "src/jobs.py",
+            before + "@app.task\ndef stage():\n    return None\n",
+        )
+        head = repo.commit("relative adapter operation")
+        report = self._evaluate(repo, base, head)
+        self.assertEqual(self._results(report)["background_job"].status, "unsupported")
+        self.assertIn("new_queue", report.triggers)
+
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        for index in range(10):
+            value = f"from ordinary.m{index + 1} import value\n" if index < 9 else "value = 1\n"
+            repo.write_text(f"ordinary/m{index}.py", value)
+        before = "from ordinary.m0 import value\n"
+        repo.write_text("src/jobs.py", before)
+        base = repo.commit("base")
+        repo.write_text("src/jobs.py", before + "RESULT = value\n")
+        head = repo.commit("ordinary deep import")
+        report = self._evaluate(repo, base, head)
+        self.assertEqual(self._results(report)["background_job"].status, "not_applicable")
+        self.assertEqual(report.status, "pass")
+        self.assertNotIn("new_queue", report.triggers)
+
     def test_network_analysis_handles_stdlib_unowned_and_unknown_clients(self) -> None:
         cases = (
             (

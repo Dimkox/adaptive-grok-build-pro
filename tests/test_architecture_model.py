@@ -4,6 +4,7 @@ import copy
 import importlib
 import json
 import os
+import stat
 import sys
 import tempfile
 import unittest
@@ -696,6 +697,128 @@ class ArchitectureModelTests(unittest.TestCase):
             {
                 path.name: path.read_bytes()
                 for path in (outside_architecture / "generated").iterdir()
+            },
+            before,
+        )
+
+    def test_generated_diagram_publish_preserves_concurrent_authority_and_mode(self) -> None:
+        root = self._repo()
+        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
+        DIAGRAMS.write_generated(root, rendered)
+        architecture = root / "architecture"
+        architecture.chmod(0o700)
+        system = architecture / "system.yaml"
+        concurrent = architecture / "system.concurrent"
+        concurrent_bytes = b"concurrent target-owned authority\n"
+        real_replace = DIAGRAMS._replace_generated
+        replaced = False
+
+        def replace_authority_before_publish(descriptor, source, target):
+            nonlocal replaced
+            concurrent.write_bytes(concurrent_bytes)
+            os.replace(concurrent, system)
+            replaced = True
+            return real_replace(descriptor, source, target)
+
+        changed = dict(rendered)
+        changed["context"] += "%% changed\n"
+        with mock.patch.object(
+            DIAGRAMS, "_replace_generated", side_effect=replace_authority_before_publish
+        ):
+            with self.assertRaises(ARCH.ArchitectureError):
+                DIAGRAMS.write_generated(root, changed)
+        self.assertTrue(replaced)
+        self.assertEqual(system.read_bytes(), concurrent_bytes)
+        self.assertEqual(stat.S_IMODE(architecture.stat().st_mode), 0o700)
+
+    def test_generated_diagram_publish_preserves_restrictive_architecture_mode(self) -> None:
+        root = self._repo()
+        architecture = root / "architecture"
+        architecture.chmod(0o700)
+        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
+        DIAGRAMS.write_generated(root, rendered)
+        self.assertEqual(stat.S_IMODE(architecture.stat().st_mode), 0o700)
+
+    def test_generated_diagram_publish_rolls_back_concurrent_inventory_change(self) -> None:
+        root = self._repo()
+        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
+        DIAGRAMS.write_generated(root, rendered)
+        owner_entry = root / "architecture/owner-note.txt"
+        real_replace = DIAGRAMS._replace_generated
+
+        def add_owner_entry_before_publish(descriptor, source, target):
+            owner_entry.write_text("target owned\n", encoding="utf-8")
+            return real_replace(descriptor, source, target)
+
+        with mock.patch.object(
+            DIAGRAMS, "_replace_generated", side_effect=add_owner_entry_before_publish
+        ):
+            with self.assertRaises(ARCH.ArchitectureError):
+                DIAGRAMS.write_generated(root, rendered)
+        self.assertEqual(owner_entry.read_text(encoding="utf-8"), "target owned\n")
+
+    def test_generated_diagram_publish_fails_before_mutation_without_atomic_exchange(self) -> None:
+        root = self._repo()
+        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
+        DIAGRAMS.write_generated(root, rendered)
+        before = {
+            path.relative_to(root / "architecture").as_posix(): path.read_bytes()
+            for path in (root / "architecture").rglob("*")
+            if path.is_file()
+        }
+        with mock.patch.object(
+            DIAGRAMS,
+            "_exchange_entries",
+            side_effect=ARCH.ArchitectureError("atomic exchange unavailable", code="io"),
+        ):
+            with self.assertRaisesRegex(ARCH.ArchitectureError, "atomic exchange"):
+                DIAGRAMS.write_generated(root, rendered)
+        self.assertEqual(
+            {
+                path.relative_to(root / "architecture").as_posix(): path.read_bytes()
+                for path in (root / "architecture").rglob("*")
+                if path.is_file()
+            },
+            before,
+        )
+
+    def test_generated_diagram_cleanup_never_mutates_relocated_backup(self) -> None:
+        root = self._repo()
+        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
+        DIAGRAMS.write_generated(root, rendered)
+        outside_temp = tempfile.TemporaryDirectory()
+        self.addCleanup(outside_temp.cleanup)
+        outside = Path(outside_temp.name)
+        real_discard = DIAGRAMS._discard_architecture_entry
+        relocated: Path | None = None
+        before: dict[str, bytes] = {}
+
+        def relocate_before_cleanup(descriptor, name):
+            nonlocal relocated, before
+            if name.endswith((".old", ".tmp")):
+                relocated = outside / name
+                os.rename(root / name, relocated)
+                before = {
+                    path.relative_to(relocated).as_posix(): path.read_bytes()
+                    for path in relocated.rglob("*")
+                    if path.is_file()
+                }
+            return real_discard(descriptor, name)
+
+        changed = dict(rendered)
+        changed["context"] += "%% changed\n"
+        with mock.patch.object(
+            DIAGRAMS, "_discard_architecture_entry", side_effect=relocate_before_cleanup
+        ):
+            with self.assertRaises(ARCH.ArchitectureError):
+                DIAGRAMS.write_generated(root, changed)
+        self.assertIsNotNone(relocated)
+        assert relocated is not None
+        self.assertEqual(
+            {
+                path.relative_to(relocated).as_posix(): path.read_bytes()
+                for path in relocated.rglob("*")
+                if path.is_file()
             },
             before,
         )

@@ -340,6 +340,40 @@ class VerificationTests(unittest.TestCase):
                 report = verify(root, mode='fast', record=False)
             self.assertEqual(report['architecture']['status'], 'not_configured')
 
+    def test_clean_legacy_without_architecture_avoids_descriptor_only_metadata(self) -> None:
+        with project_copy(git=False) as root:
+            architecture = root / 'architecture'
+            if architecture.exists():
+                shutil.rmtree(architecture)
+            route = build_route(root, 'Review current code', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            real_stat = receipts_module.os.stat
+            real_open = receipts_module.os.open
+
+            def legacy_stat(path, *args, **kwargs):
+                if kwargs.get('dir_fd') is not None:
+                    raise NotImplementedError('dir_fd unavailable')
+                return real_stat(path, *args, **kwargs)
+
+            def legacy_open(path, flags, *args, **kwargs):
+                if Path(path) == root and flags & getattr(os, 'O_DIRECTORY', 0):
+                    raise NotImplementedError('descriptor directory open unavailable')
+                if kwargs.get('dir_fd') is not None:
+                    raise NotImplementedError('descriptor-relative open unavailable')
+                return real_open(path, flags, *args, **kwargs)
+
+            with (
+                patch.object(architecture_module.os, 'O_NOFOLLOW', 0),
+                patch.object(receipts_module.os, 'stat', side_effect=legacy_stat),
+                patch.object(receipts_module.os, 'open', side_effect=legacy_open),
+            ):
+                try:
+                    binding = receipts_module.active_architecture_binding(root, route)
+                except NotImplementedError as exc:
+                    self.fail(f'legacy absence leaked unsupported metadata primitive: {exc}')
+            self.assertIsNone(binding)
+
     def test_legacy_absence_cannot_hide_authority_created_during_probe(self) -> None:
         with project_copy(git=False) as root:
             architecture = root / 'architecture'
