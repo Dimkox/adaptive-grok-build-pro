@@ -85,11 +85,17 @@
       "from": "implementing",
       "reason": "After the user-authorized second consolidated wave, scoped rereviews confirmed repeated load-bearing failures in two architectures: order-dependent queue provenance propagation and rollback-dependent in-place installer mutation. Systematic debugging requires an explicit architecture pivot before another repair; marker history and frozen digests are closed.",
       "to": "blocked"
+    },
+    {
+      "at": "2026-08-27T15:29:15+00:00",
+      "from": "blocked",
+      "reason": "user approved queue abstract interpreter and read-only/new-target installer pivot; detailed TDD plan committed",
+      "to": "implementing"
     }
   ],
   "route_id": "0156034c05bd",
   "schema_version": 1,
-  "status": "blocked",
+  "status": "implementing",
   "title": "m2-executable-architecture",
-  "updated_at": "2026-08-27T14:54:57+00:00"
+  "updated_at": "2026-08-27T15:29:15+00:00"
 }
