@@ -79,11 +79,17 @@
       "from": "blocked",
       "reason": "User explicitly authorized a second consolidated fix wave on 2026-08-27 and instructed autonomous delivery toward production, while preserving exact external Trust CI and signed-approval gates.",
       "to": "implementing"
+    },
+    {
+      "at": "2026-08-27T14:54:57+00:00",
+      "from": "implementing",
+      "reason": "After the user-authorized second consolidated wave, scoped rereviews confirmed repeated load-bearing failures in two architectures: order-dependent queue provenance propagation and rollback-dependent in-place installer mutation. Systematic debugging requires an explicit architecture pivot before another repair; marker history and frozen digests are closed.",
+      "to": "blocked"
     }
   ],
   "route_id": "0156034c05bd",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "blocked",
   "title": "m2-executable-architecture",
-  "updated_at": "2026-08-27T13:51:20+00:00"
+  "updated_at": "2026-08-27T14:54:57+00:00"
 }
