@@ -306,17 +306,57 @@ def _discard_entry(parent_fd: int, name: str) -> None:
     os.rmdir(name, dir_fd=parent_fd)
 
 
-def _replace_generated(architecture_fd: int, staging: str, destination: str) -> None:
-    """Publish a complete fresh directory without opening the old destination."""
-    backup = f".generated.{secrets.token_hex(12)}.old"
+def _discard_architecture_entry(root_fd: int, name: str) -> None:
+    """Remove a bounded staged/backup architecture tree without following entries."""
+    no_follow, directory_flag, _nonblock = _secure_open_flags(
+        label="generated architecture diagrams"
+    )
+    try:
+        info = os.stat(name, dir_fd=root_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return
+    if stat.S_ISLNK(info.st_mode) or stat.S_ISREG(info.st_mode):
+        os.unlink(name, dir_fd=root_fd)
+        return
+    if not stat.S_ISDIR(info.st_mode):
+        raise ArchitectureError("architecture publication encountered a special entry", code="io")
+    descriptor = os.open(name, os.O_RDONLY | directory_flag | no_follow, dir_fd=root_fd)
+    try:
+        entries = sorted(os.listdir(descriptor))
+        allowed = {"adoption.json", "system.yaml", "rules.yaml", "generated"}
+        if not set(entries).issubset(allowed):
+            raise ArchitectureError("architecture publication has unexpected entries", code="io")
+        if "generated" in entries:
+            _discard_entry(descriptor, "generated")
+        for entry in ("adoption.json", "system.yaml", "rules.yaml"):
+            if entry in entries:
+                child = os.stat(entry, dir_fd=descriptor, follow_symlinks=False)
+                if not stat.S_ISREG(child.st_mode):
+                    raise ArchitectureError("architecture authority backup is unsafe", code="io")
+                os.unlink(entry, dir_fd=descriptor)
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+    current = os.stat(name, dir_fd=root_fd, follow_symlinks=False)
+    if (current.st_dev, current.st_ino) != (info.st_dev, info.st_ino):
+        raise ArchitectureError("architecture publication directory changed", code="io")
+    os.rmdir(name, dir_fd=root_fd)
+
+
+def _replace_generated(root_fd: int, staging: str, destination: str) -> None:
+    """Publish a complete architecture entry relative to the repository root."""
+    current = os.stat(destination, dir_fd=root_fd, follow_symlinks=False)
+    if not stat.S_ISDIR(current.st_mode) or stat.S_ISLNK(current.st_mode):
+        raise ArchitectureError("architecture publication parent is unsafe", code="io")
+    backup = f".architecture.{secrets.token_hex(12)}.old"
     moved_old = False
     try:
         try:
             os.rename(
                 destination,
                 backup,
-                src_dir_fd=architecture_fd,
-                dst_dir_fd=architecture_fd,
+                src_dir_fd=root_fd,
+                dst_dir_fd=root_fd,
             )
             moved_old = True
         except FileNotFoundError:
@@ -324,8 +364,8 @@ def _replace_generated(architecture_fd: int, staging: str, destination: str) -> 
         os.rename(
             staging,
             destination,
-            src_dir_fd=architecture_fd,
-            dst_dir_fd=architecture_fd,
+            src_dir_fd=root_fd,
+            dst_dir_fd=root_fd,
         )
     except BaseException:
         if moved_old:
@@ -333,15 +373,15 @@ def _replace_generated(architecture_fd: int, staging: str, destination: str) -> 
                 os.rename(
                     backup,
                     destination,
-                    src_dir_fd=architecture_fd,
-                    dst_dir_fd=architecture_fd,
+                    src_dir_fd=root_fd,
+                    dst_dir_fd=root_fd,
                 )
             except OSError:
                 pass
         raise
     if moved_old:
-        _discard_entry(architecture_fd, backup)
-    os.fsync(architecture_fd)
+        _discard_architecture_entry(root_fd, backup)
+    os.fsync(root_fd)
 
 
 def compare_generated(root: Path, rendered: Mapping[str, str]) -> tuple[str, ...]:
@@ -370,17 +410,18 @@ def compare_generated(root: Path, rendered: Mapping[str, str]) -> tuple[str, ...
 
 def write_generated(root: Path, rendered: Mapping[str, str]) -> tuple[str, ...]:
     paths = tuple(f"architecture/generated/{name}.mmd" for name in DIAGRAM_NAMES)
-    root_fd = architecture_fd = staging_fd = published_fd = -1
-    staging = f".generated.{secrets.token_hex(12)}.tmp"
+    root_fd = architecture_fd = staging_architecture_fd = staging_fd = -1
+    published_architecture_fd = published_fd = -1
+    staging = f".architecture.{secrets.token_hex(12)}.tmp"
     try:
         no_follow, directory_flag, _nonblock = _secure_open_flags(
             label="generated architecture diagrams"
         )
         supports_dir_fd = getattr(os, "supports_dir_fd", set())
-        required = {os.mkdir, os.rename, os.stat, os.unlink, os.rmdir}
+        required = {os.link, os.mkdir, os.rename, os.stat, os.unlink, os.rmdir}
         if not required.issubset(supports_dir_fd) or os.stat not in getattr(
             os, "supports_follow_symlinks", set()
-        ):
+        ) or os.link not in getattr(os, "supports_follow_symlinks", set()):
             raise ArchitectureError(
                 "generated architecture diagrams: safe publication is unavailable", code="io"
             )
@@ -404,18 +445,52 @@ def write_generated(root: Path, rendered: Mapping[str, str]) -> tuple[str, ...]:
                     os.close(descriptor)
 
         root_fd = os.open(root.resolve(strict=True), os.O_RDONLY | directory_flag | no_follow)
-        try:
-            architecture_fd = os.open(
-                "architecture", os.O_RDONLY | directory_flag | no_follow, dir_fd=root_fd
+        architecture_fd = os.open(
+            "architecture", os.O_RDONLY | directory_flag | no_follow, dir_fd=root_fd
+        )
+        architecture_identity = _directory_identity(architecture_fd)
+        entries = sorted(os.listdir(architecture_fd))
+        allowed_entries = {"adoption.json", "system.yaml", "rules.yaml", "generated"}
+        if not set(entries).issubset(allowed_entries):
+            raise ArchitectureError("architecture directory has unexpected entries", code="io")
+        os.mkdir(staging, mode=0o755, dir_fd=root_fd)
+        staging_architecture_fd = os.open(
+            staging, os.O_RDONLY | directory_flag | no_follow, dir_fd=root_fd
+        )
+        for authority in ("adoption.json", "system.yaml", "rules.yaml"):
+            if authority not in entries:
+                continue
+            before = os.stat(authority, dir_fd=architecture_fd, follow_symlinks=False)
+            if not stat.S_ISREG(before.st_mode):
+                raise ArchitectureError("architecture authority entry is unsafe", code="io")
+            os.link(
+                authority,
+                authority,
+                src_dir_fd=architecture_fd,
+                dst_dir_fd=staging_architecture_fd,
+                follow_symlinks=False,
             )
-        except FileNotFoundError:
-            os.mkdir("architecture", mode=0o755, dir_fd=root_fd)
-            architecture_fd = os.open(
-                "architecture", os.O_RDONLY | directory_flag | no_follow, dir_fd=root_fd
-            )
-        os.mkdir(staging, mode=0o755, dir_fd=architecture_fd)
+            linked = os.stat(authority, dir_fd=staging_architecture_fd, follow_symlinks=False)
+            after = os.stat(authority, dir_fd=architecture_fd, follow_symlinks=False)
+            if (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (
+                linked.st_dev,
+                linked.st_ino,
+                linked.st_size,
+                linked.st_mtime_ns,
+            ) or (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (
+                after.st_dev,
+                after.st_ino,
+                after.st_size,
+                after.st_mtime_ns,
+            ):
+                raise ArchitectureError("architecture authority changed during staging", code="io")
+        if _directory_identity(architecture_fd) != architecture_identity:
+            raise ArchitectureError("architecture directory changed during staging", code="io")
+        os.mkdir("generated", mode=0o755, dir_fd=staging_architecture_fd)
         staging_fd = os.open(
-            staging, os.O_RDONLY | directory_flag | no_follow, dir_fd=architecture_fd
+            "generated",
+            os.O_RDONLY | directory_flag | no_follow,
+            dir_fd=staging_architecture_fd,
         )
         for name in DIAGRAM_NAMES:
             value = _rendered_bytes(rendered, name)
@@ -450,32 +525,39 @@ def write_generated(root: Path, rendered: Mapping[str, str]) -> tuple[str, ...]:
         os.fsync(staging_fd)
         os.close(staging_fd)
         staging_fd = -1
-        reopened_architecture = os.open(
+        os.fsync(staging_architecture_fd)
+        os.close(staging_architecture_fd)
+        staging_architecture_fd = -1
+        os.close(architecture_fd)
+        architecture_fd = -1
+        _replace_generated(root_fd, staging, "architecture")
+        staging = ""
+        published_architecture_fd = os.open(
             "architecture", os.O_RDONLY | directory_flag | no_follow, dir_fd=root_fd
         )
-        try:
-            if _directory_identity(reopened_architecture) != _directory_identity(architecture_fd):
-                raise ArchitectureError("architecture diagram directory changed", code="io")
-        finally:
-            os.close(reopened_architecture)
-        _replace_generated(architecture_fd, staging, "generated")
-        staging = ""
         published_fd = os.open(
-            "generated", os.O_RDONLY | directory_flag | no_follow, dir_fd=architecture_fd
+            "generated",
+            os.O_RDONLY | directory_flag | no_follow,
+            dir_fd=published_architecture_fd,
         )
-        _verify_contained_directory(root_fd, architecture_fd, published_fd)
+        _verify_contained_directory(root_fd, published_architecture_fd, published_fd)
         return paths
     except ArchitectureError:
         raise
     except OSError as exc:
         raise ArchitectureError(f"cannot safely publish generated diagrams: {exc}", code="io") from exc
     finally:
-        for descriptor in (published_fd, staging_fd):
+        for descriptor in (
+            published_fd,
+            published_architecture_fd,
+            staging_fd,
+            staging_architecture_fd,
+        ):
             if descriptor >= 0:
                 os.close(descriptor)
-        if staging and architecture_fd >= 0:
+        if staging and root_fd >= 0:
             try:
-                _discard_entry(architecture_fd, staging)
+                _discard_architecture_entry(root_fd, staging)
             except (ArchitectureError, OSError):
                 pass
         for descriptor in (architecture_fd, root_fd):

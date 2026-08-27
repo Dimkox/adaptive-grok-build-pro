@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import stat
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -38,47 +39,98 @@ def _exact_head(root: Path) -> str | None:
     return None
 
 
-def _authority_presence(root: Path) -> tuple[bool, bool, bool]:
+@dataclass(frozen=True)
+class _AuthorityState:
+    entries: tuple[bool, bool, bool]
+    root_identity: tuple[int, int, int, int, int]
+    architecture_identity: tuple[int, int, int, int, int] | None
+
+
+def _authority_presence(root: Path, *, root_fd: int | None = None) -> _AuthorityState:
     """Establish stable fixed-entry absence without requiring byte-read primitives."""
     architecture = root / "architecture"
+    directory_flag = getattr(os, "O_DIRECTORY", 0)
+    owned_fd = -1
     try:
-        before = os.lstat(architecture)
-    except FileNotFoundError:
-        return False, False, False
+        if root_fd is None:
+            owned_fd = os.open(root.resolve(strict=True), os.O_RDONLY | directory_flag)
+            root_fd = owned_fd
+        root_before = os.fstat(root_fd)
+        try:
+            before = os.lstat(architecture)
+        except FileNotFoundError:
+            try:
+                os.stat("architecture", dir_fd=root_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                root_after = os.fstat(root_fd)
+                if _metadata_identity(root_before) != _metadata_identity(root_after):
+                    raise ArchitectureError(
+                        "architecture authority changed during absence inspection", code="io"
+                    )
+                return _AuthorityState(
+                    entries=(False, False, False),
+                    root_identity=_metadata_identity(root_before),
+                    architecture_identity=None,
+                )
+            raise ArchitectureError(
+                "architecture authority appeared during absence inspection", code="io"
+            )
+        if not stat.S_ISDIR(before.st_mode) or stat.S_ISLNK(before.st_mode):
+            raise ArchitectureError("architecture authority directory is unsafe", code="io")
+        present: list[bool] = []
+        for path in (ADOPTION_PATH, SYSTEM_PATH, RULES_PATH):
+            try:
+                os.lstat(root / path)
+            except FileNotFoundError:
+                present.append(False)
+            except OSError as exc:
+                raise ArchitectureError(
+                    f"architecture authority cannot be inspected: {exc}", code="io"
+                ) from exc
+            else:
+                present.append(True)
+        try:
+            after = os.lstat(architecture)
+        except OSError as exc:
+            raise ArchitectureError(
+                f"architecture authority changed during inspection: {exc}", code="io"
+            ) from exc
+        if _metadata_identity(before) != _metadata_identity(after):
+            raise ArchitectureError("architecture authority changed during inspection", code="io")
+        root_after = os.fstat(root_fd)
+        if _metadata_identity(root_before) != _metadata_identity(root_after):
+            raise ArchitectureError("repository root changed during authority inspection", code="io")
+        return _AuthorityState(
+            entries=tuple(present),  # type: ignore[arg-type]
+            root_identity=_metadata_identity(root_before),
+            architecture_identity=_metadata_identity(before),
+        )
     except OSError as exc:
         raise ArchitectureError(f"architecture authority cannot be inspected: {exc}", code="io") from exc
-    if not stat.S_ISDIR(before.st_mode) or stat.S_ISLNK(before.st_mode):
-        raise ArchitectureError("architecture authority directory is unsafe", code="io")
-    present: list[bool] = []
-    for path in (ADOPTION_PATH, SYSTEM_PATH, RULES_PATH):
-        try:
-            os.lstat(root / path)
-        except FileNotFoundError:
-            present.append(False)
-        except OSError as exc:
-            raise ArchitectureError(f"architecture authority cannot be inspected: {exc}", code="io") from exc
-        else:
-            present.append(True)
-    try:
-        after = os.lstat(architecture)
-    except OSError as exc:
-        raise ArchitectureError(f"architecture authority changed during inspection: {exc}", code="io") from exc
-    def identity(value: os.stat_result) -> tuple[int, int, int, int, int]:
-        return (
-            value.st_dev,
-            value.st_ino,
-            value.st_mode,
-            value.st_mtime_ns,
-            value.st_ctime_ns,
-        )
-    if identity(before) != identity(after):
-        raise ArchitectureError("architecture authority changed during inspection", code="io")
-    return tuple(present)  # type: ignore[return-value]
+    finally:
+        if owned_fd >= 0:
+            os.close(owned_fd)
+
+
+def _metadata_identity(value: os.stat_result) -> tuple[int, int, int, int, int]:
+    return (
+        value.st_dev,
+        value.st_ino,
+        value.st_mode,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+    )
+
+
+def _confirm_legacy_absence(root: Path, root_fd: int, initial: _AuthorityState) -> None:
+    current = _authority_presence(root, root_fd=root_fd)
+    if current != initial or current.entries != (False, False, False):
+        raise RuntimeError("architecture authority appeared during legacy detection")
 
 
 def _architecture_adoption(root: Path, *, present: bool | None = None) -> dict[str, str] | None:
     if present is None:
-        present = _authority_presence(root)[0]
+        present = _authority_presence(root).entries[0]
     if not present:
         return None
     data = _read_regular_bytes(
@@ -109,15 +161,20 @@ def _exact_head_parents(root: Path, head: str) -> tuple[str, ...]:
     return tuple(fields[1:])
 
 
-def active_architecture_binding(root: Path, route: dict[str, Any]) -> dict[str, Any] | None:
-    authority = _authority_presence(root)
-    adoption = _architecture_adoption(root, present=authority[0])
-    present = authority[1:]
+def _active_architecture_binding(
+    root: Path,
+    route: dict[str, Any],
+    root_fd: int,
+) -> dict[str, Any] | None:
+    authority = _authority_presence(root, root_fd=root_fd)
+    adoption = _architecture_adoption(root, present=authority.entries[0])
+    present = authority.entries[1:]
     if adoption is None:
         if present != (False, False):
             raise RuntimeError("architecture adoption marker is missing")
         head = _exact_head(root)
         if head is None:
+            _confirm_legacy_absence(root, root_fd, authority)
             return None
         base_selection = select_architecture_comparison_base(root, route)
         exact_evidence = _exact_tree_has_architecture(root, head) or _exact_tree_has_architecture(
@@ -130,6 +187,7 @@ def active_architecture_binding(root: Path, route: dict[str, Any]) -> dict[str, 
             )
         if exact_evidence:
             raise RuntimeError("adopted architecture marker and model are missing")
+        _confirm_legacy_absence(root, root_fd, authority)
         return None
     if present == (False, False):
         raise RuntimeError("adopted architecture model is missing")
@@ -167,6 +225,18 @@ def active_architecture_binding(root: Path, route: dict[str, Any]) -> dict[str, 
         "architecture_schema_digest": digests["schema_digest"],
         "architecture_system_digest": digests["system_digest"],
     }
+
+
+def active_architecture_binding(root: Path, route: dict[str, Any]) -> dict[str, Any] | None:
+    directory_flag = getattr(os, "O_DIRECTORY", 0)
+    try:
+        root_fd = os.open(root.resolve(strict=True), os.O_RDONLY | directory_flag)
+    except OSError as exc:
+        raise ArchitectureError(f"architecture root cannot be opened: {exc}", code="io") from exc
+    try:
+        return _active_architecture_binding(root, route, root_fd)
+    finally:
+        os.close(root_fd)
 
 
 def receipt_dir(root: Path, route_id: str) -> Path:

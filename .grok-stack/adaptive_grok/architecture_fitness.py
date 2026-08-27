@@ -44,6 +44,8 @@ FITNESS_CATEGORIES = (
 RISK_ORDER = {"green": 0, "yellow": 1, "red": 2}
 MAX_ANALYZED_PYTHON_FILES = 2_000
 MAX_ANALYZED_AST_NODES = 200_000
+MAX_QUEUE_ADAPTER_MODULES = 32
+MAX_QUEUE_ADAPTER_DEPTH = 8
 _PYTHON_SUFFIXES = {".py", ".pyi"}
 _NETWORK_IMPORTS = {
     "aiohttp": "https",
@@ -956,8 +958,11 @@ def _code_budget(
     )
 
 
-def _queue_signals(tree: ast.AST) -> set[str]:
-    queue_names: set[str] = set()
+def _queue_provenance(
+    tree: ast.AST,
+    adapter_names: set[str] | None = None,
+) -> tuple[set[str], set[str]]:
+    queue_names = set(adapter_names or ())
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -969,25 +974,6 @@ def _queue_signals(tree: ast.AST) -> set[str]:
                 local = alias.asname or alias.name
                 if node.module.split(".")[0] in _QUEUE_IMPORTS:
                     queue_names.add(local)
-
-    semantic_methods = {
-        "apply_async", "delay", "enqueue", "enqueue_at", "enqueue_in",
-        "send_task", "submit", "task",
-    }
-
-    def semantic_terminal(value: ast.AST) -> str:
-        if isinstance(value, ast.Attribute):
-            return value.attr
-        if (
-            isinstance(value, ast.Call)
-            and isinstance(value.func, ast.Name)
-            and value.func.id == "getattr"
-            and len(value.args) >= 2
-            and isinstance(value.args[1], ast.Constant)
-            and isinstance(value.args[1].value, str)
-        ):
-            return value.args[1].value
-        return ""
 
     def queue_derived(value: ast.AST) -> bool:
         if isinstance(value, ast.Name):
@@ -1011,7 +997,6 @@ def _queue_signals(tree: ast.AST) -> set[str]:
         node for node in ast.walk(tree)
         if isinstance(node, (ast.Assign, ast.AnnAssign))
     ]
-    semantic_names: set[str] = set()
     for _ in range(min(len(assignments) + 1, 64)):
         changed = False
         for node in assignments:
@@ -1022,15 +1007,6 @@ def _queue_signals(tree: ast.AST) -> set[str]:
             for target in targets:
                 if isinstance(target, ast.Name) and target.id not in queue_names:
                     queue_names.add(target.id)
-                    changed = True
-        for node in assignments:
-            value = node.value
-            if value is None or semantic_terminal(value) not in semantic_methods:
-                continue
-            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            for target in targets:
-                if isinstance(target, ast.Name) and target.id not in semantic_names:
-                    semantic_names.add(target.id)
                     changed = True
         if not changed:
             break
@@ -1045,28 +1021,103 @@ def _queue_signals(tree: ast.AST) -> set[str]:
             signals.add(f"call:{call}")
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
-            terminal = semantic_terminal(node.func)
-            if (
-                queue_derived(node.func)
-                or terminal in semantic_methods
-                or (isinstance(node.func, ast.Name) and node.func.id in semantic_names)
-            ):
+            if queue_derived(node.func):
                 signals.add(
                     "semantic-call:" + ast.dump(node, annotate_fields=True, include_attributes=False)
                 )
+            elif queue_names:
+                signals.add(
+                    "unknown-provenance-call:"
+                    + ast.dump(node, annotate_fields=True, include_attributes=False)
+                )
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             for decorator in node.decorator_list:
-                terminal = semantic_terminal(decorator)
-                if (
-                    queue_derived(decorator)
-                    or terminal == "task"
-                    or (isinstance(decorator, ast.Name) and decorator.id in semantic_names)
-                ):
+                if queue_derived(decorator):
                     signals.add(
                         f"semantic-decorator:{node.name}:"
                         + ast.dump(decorator, annotate_fields=True, include_attributes=False)
                     )
-    return signals
+                elif queue_names:
+                    signals.add(
+                        f"unknown-provenance-decorator:{node.name}:"
+                        + ast.dump(decorator, annotate_fields=True, include_attributes=False)
+                    )
+    return signals, queue_names
+
+
+def _local_queue_exports(
+    root: Path,
+    diff: ArchitectureDiff,
+    module: str,
+    side: str,
+    cache: dict[str, set[str]],
+    resolving: set[str],
+) -> set[str]:
+    if module in cache:
+        return cache[module]
+    if (
+        len(cache) >= MAX_QUEUE_ADAPTER_MODULES
+        or len(resolving) >= MAX_QUEUE_ADAPTER_DEPTH
+        or not module
+        or any(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", part) is None for part in module.split("."))
+    ):
+        return set()
+    if module in resolving:
+        return set()
+    resolving.add(module)
+    try:
+        relative = module.replace(".", "/")
+        value = None
+        for candidate in (f"{relative}.py", f"{relative}/__init__.py"):
+            value = read_diff_file(root, diff, candidate, side)
+            if value is not None:
+                break
+        if value is None:
+            cache[module] = set()
+            return set()
+        tree = ast.parse(value.decode("utf-8"), filename=module)
+        if sum(1 for _ in ast.walk(tree)) > MAX_ANALYZED_AST_NODES:
+            raise ArchitectureError(f"Python AST node limit exceeded: {module}", code="limit")
+        imported = _queue_adapter_names(root, diff, tree, side, cache, resolving)
+        _signals, derived = _queue_provenance(tree, imported)
+        exports = {name for name in derived if not name.startswith("_")}
+        cache[module] = exports
+        return exports
+    finally:
+        resolving.remove(module)
+
+
+def _queue_adapter_names(
+    root: Path,
+    diff: ArchitectureDiff,
+    tree: ast.AST,
+    side: str,
+    cache: dict[str, set[str]],
+    resolving: set[str] | None = None,
+) -> set[str]:
+    proven: set[str] = set()
+    active = resolving if resolving is not None else set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ImportFrom) or not node.module or node.level:
+            continue
+        if node.module.split(".")[0] in _QUEUE_IMPORTS:
+            continue
+        exports = _local_queue_exports(root, diff, node.module, side, cache, active)
+        for alias in node.names:
+            if alias.name in exports:
+                proven.add(alias.asname or alias.name)
+    return proven
+
+
+def _queue_signals(
+    root: Path,
+    diff: ArchitectureDiff,
+    tree: ast.AST,
+    side: str,
+    cache: dict[str, set[str]],
+) -> set[str]:
+    adapters = _queue_adapter_names(root, diff, tree, side, cache)
+    return _queue_provenance(tree, adapters)[0]
 
 
 def _new_queue_sources(
@@ -1075,18 +1126,22 @@ def _new_queue_sources(
     python: _PythonInventory,
 ) -> tuple[str, ...]:
     applicable: list[str] = []
+    head_cache: dict[str, set[str]] = {}
+    base_cache: dict[str, set[str]] = {}
     for path in _python_paths(diff):
         try:
-            head = _queue_signals(python.tree(path))
+            head = _queue_signals(root, diff, python.tree(path), "head", head_cache)
             base_value = read_diff_file(root, diff, path, "base")
             base: set[str] = set()
             if base_value is not None:
                 base_tree = ast.parse(base_value.decode("utf-8"), filename=path)
                 if sum(1 for _ in ast.walk(base_tree)) > MAX_ANALYZED_AST_NODES:
                     raise ArchitectureError(f"Python AST node limit exceeded: {path}", code="limit")
-                base = _queue_signals(base_tree)
+                base = _queue_signals(root, diff, base_tree, "base", base_cache)
             if head - base:
                 applicable.append(path)
+        except ArchitectureError:
+            applicable.append(path)
         except (SyntaxError, UnicodeDecodeError):
             value = read_diff_file(root, diff, path, "head") or b""
             if re.search(

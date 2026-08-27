@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.doctor import run_doctor
 from adaptive_grok import architecture as architecture_module
+from adaptive_grok import receipts as receipts_module
 from adaptive_grok.change import start_change
 from adaptive_grok.router import build_route
 from adaptive_grok.spec import dump_canonical_spec
@@ -338,6 +339,30 @@ class VerificationTests(unittest.TestCase):
             with patch.object(architecture_module.os, 'O_NOFOLLOW', 0):
                 report = verify(root, mode='fast', record=False)
             self.assertEqual(report['architecture']['status'], 'not_configured')
+
+    def test_legacy_absence_cannot_hide_authority_created_during_probe(self) -> None:
+        with project_copy(git=False) as root:
+            architecture = root / 'architecture'
+            if architecture.exists():
+                shutil.rmtree(architecture)
+            real_lstat = receipts_module.os.lstat
+            created = False
+
+            def create_after_missing(path):
+                nonlocal created
+                try:
+                    return real_lstat(path)
+                except FileNotFoundError as exc:
+                    if Path(path) == architecture and not created:
+                        created = True
+                        self._adopt_architecture(root)
+                    raise exc
+
+            with patch.object(receipts_module.os, 'lstat', side_effect=create_after_missing):
+                with self.assertRaises((architecture_module.ArchitectureError, RuntimeError)):
+                    receipts_module.active_architecture_binding(root, {})
+            self.assertTrue(created)
+            self.assertTrue((architecture / 'adoption.json').is_file())
 
     def test_marker_backed_merge_deletion_fails_without_history_inference(self) -> None:
         with project_copy(git=True) as root:

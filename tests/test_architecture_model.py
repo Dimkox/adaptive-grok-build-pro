@@ -623,6 +623,83 @@ class ArchitectureModelTests(unittest.TestCase):
             before,
         )
 
+    def test_generated_diagram_write_does_not_publish_through_relocated_architecture(self) -> None:
+        root = self._repo()
+        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
+        DIAGRAMS.write_generated(root, rendered)
+        changed = dict(rendered)
+        changed["context"] = rendered["context"] + "%% changed\n"
+        architecture = root / "architecture"
+        outside_temp = tempfile.TemporaryDirectory()
+        self.addCleanup(outside_temp.cleanup)
+        outside_architecture = Path(outside_temp.name) / "architecture"
+        before = {
+            path.name: path.read_bytes()
+            for path in (architecture / "generated").iterdir()
+        }
+        real_replace = DIAGRAMS._replace_generated
+        relocated = False
+
+        def relocate_parent_before_publish(descriptor, source, target):
+            nonlocal relocated
+            if not relocated:
+                os.rename(architecture, outside_architecture)
+                relocated = True
+            return real_replace(descriptor, source, target)
+
+        with mock.patch.object(
+            DIAGRAMS, "_replace_generated", side_effect=relocate_parent_before_publish
+        ):
+            with self.assertRaises(ARCH.ArchitectureError):
+                DIAGRAMS.write_generated(root, changed)
+        self.assertTrue(relocated)
+        self.assertEqual(
+            {
+                path.name: path.read_bytes()
+                for path in (outside_architecture / "generated").iterdir()
+            },
+            before,
+        )
+
+    def test_generated_diagram_publish_does_not_follow_replacement_architecture_symlink(self) -> None:
+        root = self._repo()
+        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
+        DIAGRAMS.write_generated(root, rendered)
+        changed = dict(rendered)
+        changed["context"] = rendered["context"] + "%% changed\n"
+        architecture = root / "architecture"
+        outside_temp = tempfile.TemporaryDirectory()
+        self.addCleanup(outside_temp.cleanup)
+        outside_architecture = Path(outside_temp.name) / "architecture"
+        before = {
+            path.name: path.read_bytes()
+            for path in (architecture / "generated").iterdir()
+        }
+        real_replace = DIAGRAMS._replace_generated
+        replaced = False
+
+        def replace_parent_with_symlink(descriptor, source, target):
+            nonlocal replaced
+            if not replaced:
+                os.rename(architecture, outside_architecture)
+                architecture.symlink_to(outside_architecture, target_is_directory=True)
+                replaced = True
+            return real_replace(descriptor, source, target)
+
+        with mock.patch.object(
+            DIAGRAMS, "_replace_generated", side_effect=replace_parent_with_symlink
+        ):
+            with self.assertRaises(ARCH.ArchitectureError):
+                DIAGRAMS.write_generated(root, changed)
+        self.assertTrue(replaced)
+        self.assertEqual(
+            {
+                path.name: path.read_bytes()
+                for path in (outside_architecture / "generated").iterdir()
+            },
+            before,
+        )
+
     def test_generated_diagram_compare_rejects_directory_swap_without_outside_read(self) -> None:
         root = self._repo()
         rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))

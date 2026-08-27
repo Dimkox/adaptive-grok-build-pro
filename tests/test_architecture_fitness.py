@@ -28,6 +28,7 @@ def _fitness_module():
 
 FIT = _fitness_module()
 DIFF = importlib.import_module("adaptive_grok.architecture_diff")
+ARCHITECTURE = importlib.import_module("adaptive_grok.architecture")
 
 
 class GitArchitectureRepo:
@@ -569,6 +570,16 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 "from rq import Queue\njobs = Queue()\njobs.enqueue(task)\n",
             ),
             (
+                "rq multi-hop enqueue",
+                "from rq import Queue\njobs = Queue()\nq1 = jobs\nq2 = q1\n",
+                "from rq import Queue\njobs = Queue()\nq1 = jobs\nq2 = q1\nq2.enqueue(task)\n",
+            ),
+            (
+                "rq getattr multi-hop enqueue",
+                "from rq import Queue\njobs = Queue()\nop = getattr(jobs, 'enqueue')\nalias = op\n",
+                "from rq import Queue\njobs = Queue()\nop = getattr(jobs, 'enqueue')\nalias = op\nalias(task)\n",
+            ),
+            (
                 "celery app decorator",
                 "import celery\napp = celery.Celery('jobs')\n",
                 "import celery\napp = celery.Celery('jobs')\n@app.task\ndef job():\n    return None\n",
@@ -593,11 +604,21 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 "from project.jobs import app\n",
                 "from project.jobs import app\n@app.task\ndef job():\n    return None\n",
             ),
+            (
+                "multi-hop project adapter decorator",
+                "from project.jobs import app\nd1 = app.task\nd2 = d1\n",
+                "from project.jobs import app\nd1 = app.task\nd2 = d1\n@d2\ndef job():\n    return None\n",
+            ),
         )
         for label, before, after in cases:
             with self.subTest(label=label):
                 repo = GitArchitectureRepo(self)
                 repo.model(system, rules)
+                if "project adapter" in label:
+                    repo.write_text(
+                        "project/jobs.py",
+                        "import celery\napp = celery.Celery('jobs')\n",
+                    )
                 repo.write_text("src/jobs.py", before)
                 base = repo.commit("base")
                 repo.write_text("src/jobs.py", after)
@@ -633,6 +654,62 @@ class ArchitectureFitnessTests(unittest.TestCase):
             "unsupported",
         )
         self.assertEqual(report.status, "fail")
+
+    def test_unrelated_semantic_method_names_remain_background_not_applicable(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        cases = (
+            (
+                "form submit",
+                "class Form:\n    def submit(self):\n        return None\nform = Form()\n",
+                "form.submit()\n",
+            ),
+            (
+                "timer delay",
+                "class Timer:\n    def delay(self):\n        return None\ntimer = Timer()\n",
+                "timer.delay()\n",
+            ),
+            (
+                "pipeline task decorator",
+                "class Pipeline:\n    def task(self, function):\n        return function\npipeline = Pipeline()\n",
+                "@pipeline.task\ndef stage():\n    return None\n",
+            ),
+            (
+                "unresolved project adapter",
+                "from project.jobs import app\n",
+                "@app.task\ndef stage():\n    return None\n",
+            ),
+        )
+        for label, before, addition in cases:
+            with self.subTest(label=label):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("src/local.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/local.py", before + addition)
+                head = repo.commit("ordinary local semantics")
+                report = self._evaluate(repo, base, head)
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "not_applicable")
+                self.assertEqual(report.status, "pass")
+                self.assertNotIn("new_queue", report.triggers)
+                self.assertEqual(
+                    ARCHITECTURE.validate_repository_drift(
+                        repo.root, FIT.load_architecture(repo.root)
+                    ),
+                    (),
+                )
 
     def test_network_analysis_handles_stdlib_unowned_and_unknown_clients(self) -> None:
         cases = (
