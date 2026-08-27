@@ -1062,6 +1062,109 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
                 )
 
+    def test_queue_source_root_limit_is_lazy_and_returns_shared_evidence(self) -> None:
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        cases = (
+            ("unrelated below root limit", FIT.MAX_QUEUE_SOURCE_ROOTS - 1, False),
+            ("unrelated above root limit", FIT.MAX_QUEUE_SOURCE_ROOTS, False),
+            ("relevant at root limit", FIT.MAX_QUEUE_SOURCE_ROOTS - 1, True),
+            ("relevant above root limit", FIT.MAX_QUEUE_SOURCE_ROOTS, True),
+        )
+        for label, declared_root_count, relevant in cases:
+            with self.subTest(label=label):
+                repository_paths = [
+                    f"root{index}" for index in range(declared_root_count)
+                ]
+                system = _system()
+                system["nodes"][0]["type"] = "worker"
+                system["nodes"][0]["repository_paths"] = repository_paths
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                for source_root in repository_paths:
+                    repo.write_text(f"{source_root}/__init__.py", "")
+                consumer = "root0/consumer.py"
+                if relevant:
+                    adapter_root = repository_paths[-1]
+                    repo.write_text(
+                        f"{adapter_root}/project/jobs.py",
+                        "import celery\napp = celery.Celery('jobs')\n",
+                    )
+                    before = "from project.jobs import app\n"
+                    addition = "@app.task\ndef stage():\n    return None\n"
+                else:
+                    before = (
+                        "class Form:\n"
+                        "    def submit(self):\n"
+                        "        return None\n\n"
+                        "form = Form()\n"
+                    )
+                    addition = "form.submit()\n"
+                repo.write_text(consumer, before)
+                base = repo.commit("base")
+                repo.write_text(consumer, before + addition)
+                head = repo.commit("changed operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                if relevant:
+                    self.assertEqual(result.status, "unsupported")
+                    self.assertEqual(report.status, "fail")
+                    self.assertIn(consumer, result.applicability.scanned_scope)
+                    self.assertIn("new_queue", report.triggers)
+                else:
+                    self.assertEqual(result.status, "not_applicable")
+                    self.assertEqual(report.status, "pass")
+                    self.assertNotIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
+        repository_paths = [
+            f"root{index}" for index in range(FIT.MAX_QUEUE_SOURCE_ROOTS)
+        ]
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = repository_paths
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        for source_root in repository_paths:
+            repo.write_text(f"{source_root}/__init__.py", "")
+        repo.write_text(
+            f"{repository_paths[-1]}/project/jobs.py",
+            "import celery\napp = celery.Celery('jobs')\n",
+        )
+        consumer = "root0/consumer.py"
+        before = (
+            "from project.jobs import app\n\n"
+            "@app.task\n"
+            "def existing():\n"
+            "    return None\n\n"
+            "class Form:\n"
+            "    def submit(self):\n"
+            "        return None\n\n"
+            "form = Form()\n"
+        )
+        repo.write_text(consumer, before)
+        base = repo.commit("base with existing queue operation")
+        repo.write_text(consumer, before + "form.submit()\n")
+        head = repo.commit("unrelated operation only")
+        report = self._evaluate(repo, base, head, pre_risk="yellow")
+        result = self._results(report)["background_job"]
+        self.assertEqual(result.status, "not_applicable")
+        self.assertEqual(report.status, "pass")
+        self.assertNotIn("new_queue", report.triggers)
+        self.assertGreaterEqual(
+            FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+        )
+
     def test_network_analysis_handles_stdlib_unowned_and_unknown_clients(self) -> None:
         cases = (
             (

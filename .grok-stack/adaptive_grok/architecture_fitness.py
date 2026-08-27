@@ -167,6 +167,12 @@ class _QueueAdapterResolution:
     signals: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class _QueueAdapterNamesResult:
+    names: frozenset[str]
+    unsupported: bool = False
+
+
 def _applicability(predicate: str, scope: Iterable[str], reason_code: str) -> ApplicabilityEvidence:
     scanned = tuple(sorted(set(scope)))
     return ApplicabilityEvidence(
@@ -1142,8 +1148,6 @@ def _queue_source_roots(snapshot: ArchitectureSnapshot) -> tuple[str, ...]:
                 and Path(prefix).suffix.lower() not in file_suffixes
             ):
                 roots.add(prefix.rsplit("/", 1)[0])
-    if len(roots) > MAX_QUEUE_SOURCE_ROOTS:
-        raise ArchitectureError("queue source-root limit exceeded", code="limit")
     return tuple(sorted(roots))
 
 
@@ -1244,11 +1248,15 @@ def _local_queue_resolution(
             current_package=current_package,
             source_roots=source_roots,
         )
-        signals, derived = _queue_provenance(tree, imported)
+        signals, derived = _queue_provenance(tree, set(imported.names))
         exports = tuple(sorted(name for name in derived if not name.startswith("_")))
         has_queue_provenance = bool(signals or exports)
         result = _QueueAdapterResolution(
-            "resolved" if has_queue_provenance else "not_queue",
+            (
+                "unsupported"
+                if imported.unsupported and has_queue_provenance
+                else ("resolved" if has_queue_provenance else "not_queue")
+            ),
             (
                 "local_queue_provenance_resolved"
                 if has_queue_provenance
@@ -1273,8 +1281,9 @@ def _queue_adapter_names(
     *,
     current_package: str = "",
     source_roots: tuple[str, ...],
-) -> set[str]:
+) -> _QueueAdapterNamesResult:
     proven: set[str] = set()
+    unsupported = False
     active = resolving if resolving is not None else set()
     dependencies = _operation_dependencies(tree)
     if resolving is not None:
@@ -1301,12 +1310,39 @@ def _queue_adapter_names(
             if node.module is None:
                 target_module = f"{module}.{alias.name}" if module else alias.name
                 target_name = ""
+            queue_adjacent = _queue_adjacent_module(target_module)
+            if len(source_roots) > MAX_QUEUE_SOURCE_ROOTS and queue_adjacent:
+                proven.add(alias.asname or alias.name)
+                unsupported = True
+                continue
+            bounded_source_roots = source_roots[:MAX_QUEUE_SOURCE_ROOTS]
             resolution = _local_queue_resolution(
-                root, diff, target_module, side, cache, active, source_roots
+                root,
+                diff,
+                target_module,
+                side,
+                cache,
+                active,
+                bounded_source_roots,
             )
             if (
+                len(source_roots) > MAX_QUEUE_SOURCE_ROOTS
+                and resolution.state == "resolved"
+            ):
+                proven.add(alias.asname or alias.name)
+                unsupported = True
+                continue
+            export_resolved = (
+                (target_name and target_name in resolution.exports)
+                or (not target_name and bool(resolution.exports))
+            )
+            if resolution.state == "unsupported" and export_resolved:
+                proven.add(alias.asname or alias.name)
+                unsupported = True
+                continue
+            if (
                 resolution.state == "unsupported"
-                and _queue_adjacent_module(target_module)
+                and queue_adjacent
             ):
                 raise ArchitectureError(
                     f"relevant local queue adapter is unsupported: {target_module}"
@@ -1315,15 +1351,15 @@ def _queue_adapter_names(
                 )
             if (
                 not resolution.exports
-                and _queue_adjacent_module(target_module)
+                and queue_adjacent
                 and (
                     node.level > 0
                     or _has_local_module_root(
-                        root, diff, target_module, side, source_roots
+                        root, diff, target_module, side, bounded_source_roots
                     )
                 )
                 and not _local_module_sources(
-                    root, diff, target_module, side, source_roots
+                    root, diff, target_module, side, bounded_source_roots
                 )
             ):
                 raise ArchitectureError(
@@ -1334,7 +1370,7 @@ def _queue_adapter_names(
                 target_name
                 and target_name not in resolution.exports
                 and resolution.state == "resolved"
-                and _queue_adjacent_module(target_module)
+                and queue_adjacent
             ):
                 raise ArchitectureError(
                     f"relevant local queue adapter export is unresolved: "
@@ -1345,7 +1381,7 @@ def _queue_adapter_names(
                 target_name and target_name in resolution.exports
             ) or (not target_name and resolution.exports):
                 proven.add(alias.asname or alias.name)
-    return proven
+    return _QueueAdapterNamesResult(frozenset(proven), unsupported)
 
 
 def _queue_signals(
@@ -1366,10 +1402,16 @@ def _queue_signals(
         current_package=current_package,
         source_roots=source_roots,
     )
-    signals = tuple(sorted(_queue_provenance(tree, adapters)[0]))
+    signals = tuple(sorted(_queue_provenance(tree, set(adapters.names))[0]))
     return _QueueProvenanceResult(
-        state="resolved" if signals else "not_queue",
-        reason="queue_signals_resolved" if signals else "no_queue_signal",
+        state=("unsupported" if adapters.unsupported and signals else (
+            "resolved" if signals else "not_queue"
+        )),
+        reason=(
+            "queue_provenance_unresolved"
+            if adapters.unsupported and signals
+            else ("queue_signals_resolved" if signals else "no_queue_signal")
+        ),
         signals=signals,
     )
 
@@ -1414,8 +1456,11 @@ def _new_queue_sources(
                 )
             delta = set(head.signals) - set(base.signals)
             if delta:
-                applicable.append(path)
                 changed_signals.update(f"{path}:{signal}" for signal in delta)
+                if head.state == "unsupported":
+                    unsupported.append(path)
+                else:
+                    applicable.append(path)
         except ArchitectureError as exc:
             unsupported.append(path)
             changed_signals.add(f"{path}:unsupported:{exc.code}")
