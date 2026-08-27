@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.doctor import run_doctor
+from adaptive_grok import architecture as architecture_module
 from adaptive_grok.change import start_change
 from adaptive_grok.router import build_route
 from adaptive_grok.spec import dump_canonical_spec
@@ -296,6 +297,38 @@ class VerificationTests(unittest.TestCase):
             self.assertEqual(architecture['status'], 'fail')
             self.assertIn('missing', architecture['summary'])
 
+    def test_missing_adoption_marker_cannot_disable_architecture_checks(self) -> None:
+        for delete_models, committed in ((False, False), (True, False), (False, True), (True, True)):
+            with self.subTest(delete_models=delete_models, committed=committed), project_copy(git=True) as root:
+                route = build_route(root, 'Review current architecture', 's1').to_dict()
+                route['quality_profiles'] = ['base']
+                set_active_route(root, route)
+                self._adopt_architecture(root)
+                subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+                subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=root, check=True)
+                (root / 'architecture/adoption.json').unlink()
+                if delete_models:
+                    (root / 'architecture/system.yaml').unlink()
+                    (root / 'architecture/rules.yaml').unlink()
+                if committed:
+                    subprocess.run(['git', 'add', '-u'], cwd=root, check=True)
+                    subprocess.run(['git', 'commit', '-qm', 'delete architecture authority'], cwd=root, check=True)
+                report = verify(root, mode='fast', record=False)
+                self.assertEqual(report['status'], 'fail')
+                self.assertEqual(_check(report, 'architecture')['status'], 'fail')
+                self.assertIn('missing', _check(report, 'architecture')['summary'])
+
+    def test_adoption_marker_read_fails_when_nofollow_is_unavailable(self) -> None:
+        with project_copy(git=True) as root:
+            self._adopt_architecture(root)
+            route = build_route(root, 'Review current architecture', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            with patch.object(architecture_module.os, 'O_NOFOLLOW', 0):
+                report = verify(root, mode='fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertIn('no-follow', _check(report, 'architecture')['summary'])
+
     def test_marker_backed_merge_deletion_fails_without_history_inference(self) -> None:
         with project_copy(git=True) as root:
             route = build_route(root, 'Review current architecture', 's1').to_dict()
@@ -316,6 +349,7 @@ class VerificationTests(unittest.TestCase):
             subprocess.run(['git', 'commit', '-qm', 'legacy side'], cwd=root, check=True)
             subprocess.run(['git', 'checkout', '-q', main_branch], cwd=root, check=True)
             subprocess.run(['git', 'merge', '--no-commit', '--no-ff', 'legacy-side'], cwd=root, check=True)
+            (root / 'architecture/adoption.json').unlink()
             (root / 'architecture/system.yaml').unlink()
             (root / 'architecture/rules.yaml').unlink()
             subprocess.run(['git', 'add', '-u'], cwd=root, check=True)
@@ -330,6 +364,10 @@ class VerificationTests(unittest.TestCase):
             self._adopt_architecture(source)
             subprocess.run(['git', 'add', '.'], cwd=source, check=True)
             subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=source, check=True)
+            adopted = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=source, text=True, encoding='utf-8'
+            ).strip()
+            (source / 'architecture/adoption.json').unlink()
             (source / 'architecture/system.yaml').unlink()
             (source / 'architecture/rules.yaml').unlink()
             subprocess.run(['git', 'add', '-u'], cwd=source, check=True)
@@ -339,6 +377,16 @@ class VerificationTests(unittest.TestCase):
                 ['git', 'clone', '-q', '--depth=1', f'file://{source}', str(clone)],
                 check=True,
             )
+            subprocess.run(
+                ['git', 'fetch', '-q', '--depth=1', 'origin', f'{adopted}:refs/architecture/adoption-base'],
+                cwd=clone,
+                check=True,
+            )
+            set_active_route(clone, {
+                'base_commit': adopted,
+                'quality_profiles': ['base'],
+                'route_id': 'shallow-adoption-deletion',
+            })
 
             report = verify(clone, mode='fast', record=False)
             self.assertEqual(report['status'], 'fail')

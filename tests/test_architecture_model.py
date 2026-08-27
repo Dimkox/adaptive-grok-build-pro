@@ -490,11 +490,138 @@ class ArchitectureModelTests(unittest.TestCase):
         system_path.symlink_to(outside)
         with self.assertRaises(ARCH.ArchitectureError):
             ARCH.load_architecture(root)
-
         system_path.unlink()
         system_path.mkdir()
         with self.assertRaises(ARCH.ArchitectureError):
             ARCH.load_architecture(root)
+
+    def test_authority_and_repository_reads_fail_when_nofollow_is_unavailable(self) -> None:
+        system = _system()
+        system["contracts"] = [{
+            "id": "CONTRACT-ONE",
+            "kind": "json_schema",
+            "path": "contracts/one.json",
+            "version": "1",
+            "role": "consumer",
+            "compatibility": "exact",
+        }]
+        root = self._repo(system, _rules())
+        (root / "contracts").mkdir()
+        self._write(root / "contracts/one.json", _json_schema({"id": {"type": "string"}}))
+        snapshot = ARCH.load_architecture(root)
+        with mock.patch.object(ARCH.os, "O_NOFOLLOW", 0):
+            with self.assertRaisesRegex(ARCH.ArchitectureError, "no-follow"):
+                ARCH.load_architecture(root)
+            with self.assertRaisesRegex(ARCH.ArchitectureError, "no-follow"):
+                ARCH._load_schema(root, ARCH.SYSTEM_SCHEMA_PATH)
+            with self.assertRaisesRegex(ARCH.ArchitectureError, "no-follow"):
+                ARCH.contract_inventory(root, snapshot)
+            self.assertEqual(
+                ARCH._inspect_repository_path(root, "architecture/system.yaml", regular=True),
+                "unsafe",
+            )
+
+    def test_generated_diagrams_reject_unavailable_nofollow_and_unsafe_files(self) -> None:
+        root = self._repo()
+        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
+        DIAGRAMS.write_generated(root, rendered)
+        generated = root / "architecture/generated"
+        with mock.patch.object(ARCH.os, "O_NOFOLLOW", 0):
+            with self.assertRaisesRegex(ARCH.ArchitectureError, "no-follow"):
+                DIAGRAMS.compare_generated(root, rendered)
+            with self.assertRaisesRegex(ARCH.ArchitectureError, "no-follow"):
+                DIAGRAMS.write_generated(root, rendered)
+
+        context = generated / "context.mmd"
+        context.write_bytes(b"x" * (len(rendered["context"].encode()) + 2))
+        with self.assertRaisesRegex(ARCH.ArchitectureError, "byte limit"):
+            DIAGRAMS.compare_generated(root, rendered)
+        context.unlink()
+        os.mkfifo(context)
+        with self.assertRaisesRegex(ARCH.ArchitectureError, "regular file"):
+            DIAGRAMS.compare_generated(root, rendered)
+
+    def test_generated_diagrams_never_follow_ancestor_or_final_symlinks(self) -> None:
+        root = self._repo()
+        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
+        outside_temp = tempfile.TemporaryDirectory()
+        self.addCleanup(outside_temp.cleanup)
+        outside = Path(outside_temp.name)
+        generated = root / "architecture/generated"
+        generated.symlink_to(outside, target_is_directory=True)
+        with self.assertRaises(ARCH.ArchitectureError):
+            DIAGRAMS.write_generated(root, rendered)
+        with self.assertRaises(ARCH.ArchitectureError):
+            DIAGRAMS.compare_generated(root, rendered)
+        self.assertEqual(tuple(outside.iterdir()), ())
+
+        generated.unlink()
+        generated.mkdir()
+        target = outside / "target.mmd"
+        target.write_text("outside\n", encoding="utf-8")
+        (generated / "context.mmd").symlink_to(target)
+        with self.assertRaisesRegex(ARCH.ArchitectureError, "regular file"):
+            DIAGRAMS.write_generated(root, rendered)
+        with self.assertRaises(ARCH.ArchitectureError):
+            DIAGRAMS.compare_generated(root, rendered)
+        self.assertEqual(target.read_text(encoding="utf-8"), "outside\n")
+
+    def test_generated_diagram_write_rejects_directory_swap_without_outside_write(self) -> None:
+        root = self._repo()
+        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
+        DIAGRAMS.write_generated(root, rendered)
+        generated = root / "architecture/generated"
+        original = root / "architecture/generated-original"
+        outside_temp = tempfile.TemporaryDirectory()
+        self.addCleanup(outside_temp.cleanup)
+        outside = Path(outside_temp.name)
+        real_rename = os.rename
+        real_replace = DIAGRAMS._replace_generated
+        swapped = False
+
+        def swapping_replace(descriptor, source, target):
+            nonlocal swapped
+            result = real_replace(descriptor, source, target)
+            if not swapped:
+                real_rename(generated, original)
+                os.symlink(outside, generated, target_is_directory=True)
+                swapped = True
+            return result
+
+        with mock.patch.object(DIAGRAMS, "_replace_generated", side_effect=swapping_replace):
+            with self.assertRaisesRegex(ARCH.ArchitectureError, "changed"):
+                DIAGRAMS.write_generated(root, rendered)
+        self.assertTrue(swapped)
+        self.assertEqual(tuple(outside.iterdir()), ())
+
+    def test_generated_diagram_compare_rejects_directory_swap_without_outside_read(self) -> None:
+        root = self._repo()
+        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
+        DIAGRAMS.write_generated(root, rendered)
+        generated = root / "architecture/generated"
+        original = root / "architecture/generated-original"
+        outside_temp = tempfile.TemporaryDirectory()
+        self.addCleanup(outside_temp.cleanup)
+        outside = Path(outside_temp.name)
+        sentinel = outside / "context.mmd"
+        sentinel.write_text("outside-sensitive-content\n", encoding="utf-8")
+        real_rename = os.rename
+        real_read = DIAGRAMS._read_generated
+        swapped = False
+
+        def swapping_read(descriptor, filename, limit):
+            nonlocal swapped
+            if filename == "context.mmd" and not swapped:
+                real_rename(generated, original)
+                os.symlink(outside, generated, target_is_directory=True)
+                swapped = True
+            return real_read(descriptor, filename, limit)
+
+        with mock.patch.object(DIAGRAMS, "_read_generated", side_effect=swapping_read):
+            with self.assertRaisesRegex(ARCH.ArchitectureError, "changed"):
+                DIAGRAMS.compare_generated(root, rendered)
+        self.assertTrue(swapped)
+        self.assertEqual(sentinel.read_text(encoding="utf-8"), "outside-sensitive-content\n")
 
     def test_surrogates_bom_trailing_and_non_finite_numbers_fail(self) -> None:
         invalid = (

@@ -149,25 +149,47 @@ def _document_relative(root: Path, path: Path | str, *, label: str) -> str:
     return _safe_relative_path(relative.as_posix(), label=label)
 
 
+def _secure_open_flags(*, label: str) -> tuple[int, int, int]:
+    """Return required descriptor-relative flags, or fail before touching a path."""
+    no_follow = getattr(os, "O_NOFOLLOW", None)
+    directory = getattr(os, "O_DIRECTORY", None)
+    nonblock = getattr(os, "O_NONBLOCK", None)
+    supports_dir_fd = getattr(os, "supports_dir_fd", set())
+    if (
+        not isinstance(no_follow, int)
+        or no_follow == 0
+        or not isinstance(directory, int)
+        or directory == 0
+        or not isinstance(nonblock, int)
+        or os.open not in supports_dir_fd
+    ):
+        raise ArchitectureError(
+            f"{label}: descriptor-relative no-follow reads are unavailable",
+            code="io",
+        )
+    return no_follow, directory, nonblock
+
+
 def _read_regular_bytes(root: Path, relative: str, *, label: str) -> bytes:
+    no_follow, directory_flag, nonblock = _secure_open_flags(label=label)
     parts = PurePosixPath(relative).parts
     descriptors: list[int] = []
     try:
         current = os.open(
             root.resolve(strict=True),
-            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0),
+            os.O_RDONLY | directory_flag | no_follow,
         )
         descriptors.append(current)
         for part in parts[:-1]:
             current = os.open(
                 part,
-                os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
+                os.O_RDONLY | directory_flag | no_follow,
                 dir_fd=current,
             )
             descriptors.append(current)
         descriptor = os.open(
             parts[-1],
-            os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0),
+            os.O_RDONLY | no_follow | nonblock,
             dir_fd=current,
         )
         descriptors.append(descriptor)
@@ -493,24 +515,30 @@ def load_architecture(
 
 
 def _inspect_repository_path(root: Path, relative: str, *, regular: bool) -> str | None:
+    try:
+        no_follow, directory_flag, nonblock = _secure_open_flags(
+            label="repository path inspection"
+        )
+    except ArchitectureError:
+        return "unsafe"
     descriptors: list[int] = []
     parts = PurePosixPath(relative).parts
     try:
         current = os.open(
             root.resolve(strict=True),
-            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0),
+            os.O_RDONLY | directory_flag | no_follow,
         )
         descriptors.append(current)
         for part in parts[:-1]:
             current = os.open(
                 part,
-                os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
+                os.O_RDONLY | directory_flag | no_follow,
                 dir_fd=current,
             )
             descriptors.append(current)
         final = os.open(
             parts[-1],
-            os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0),
+            os.O_RDONLY | no_follow | nonblock,
             dir_fd=current,
         )
         descriptors.append(final)
@@ -661,12 +689,9 @@ def _bounded_repository_inventory(root: Path) -> tuple[_RepositoryArtifact, ...]
     entry_count = 0
     file_count = 0
     byte_count = 0
-    no_follow = getattr(os, "O_NOFOLLOW", None)
-    if no_follow is None:
-        raise ArchitectureError(
-            "repository drift requires descriptor-relative no-follow traversal",
-            code="io",
-        )
+    no_follow, directory_flag, nonblock = _secure_open_flags(
+        label="repository drift"
+    )
 
     def walk(directory_fd: int, relative_parent: PurePosixPath, depth: int) -> None:
         nonlocal byte_count, entry_count, file_count
@@ -696,7 +721,7 @@ def _bounded_repository_inventory(root: Path) -> tuple[_RepositoryArtifact, ...]
                     try:
                         descriptor = os.open(
                             entry.name,
-                            os.O_RDONLY | no_follow | getattr(os, "O_NONBLOCK", 0),
+                            os.O_RDONLY | no_follow | nonblock,
                             dir_fd=directory_fd,
                         )
                         actual = os.fstat(descriptor)
@@ -737,7 +762,7 @@ def _bounded_repository_inventory(root: Path) -> tuple[_RepositoryArtifact, ...]
             try:
                 descriptor = os.open(
                     name,
-                    os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | no_follow,
+                    os.O_RDONLY | directory_flag | no_follow,
                     dir_fd=directory_fd,
                 )
                 actual = os.fstat(descriptor)
@@ -765,7 +790,7 @@ def _bounded_repository_inventory(root: Path) -> tuple[_RepositoryArtifact, ...]
     try:
         root_descriptor = os.open(
             root,
-            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | no_follow,
+            os.O_RDONLY | directory_flag | no_follow,
         )
         walk(root_descriptor, PurePosixPath(), 0)
     except ArchitectureError:

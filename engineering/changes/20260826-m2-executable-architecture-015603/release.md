@@ -14,7 +14,7 @@ Installer delivery includes local architecture modules, CLI, both strict schemas
 - Exact M2-A diff contains no `trust-ci/**` path.
 - M2-B dependency and external policy-epoch rollout remain explicit open items.
 
-Current package state remains `implementing`. Verification plus code, test, security, data, and release review receipts are deliberately pending until the coordinator reviews the exact final M2-A tree; the package must not transition to `ready` in Task 5.
+Task 5 left the package in its historical `implementing` phase. The authoritative current workflow status is recorded in `state.json`; verification plus code, test, security, data, and release review receipts remain required, and this note does not claim the package is `ready`.
 
 ## Rollout and observability
 

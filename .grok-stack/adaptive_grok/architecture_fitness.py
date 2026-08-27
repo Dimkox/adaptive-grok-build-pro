@@ -86,7 +86,7 @@ _CLOUD_SDK_NETWORK_FACTORIES = {
     "boto3": {"client", "resource", "session"},
     "botocore": {"client", "create_client", "get_session", "session"},
 }
-_QUEUE_IMPORTS = {"celery", "confluent_kafka", "kafka", "kombu", "pika", "redis", "rq"}
+_QUEUE_IMPORTS = {"celery", "confluent_kafka", "kafka", "kombu", "pika", "queue", "redis", "rq"}
 _FRAMEWORK_IMPORTS = {"django", "fastapi", "flask", "litestar", "starlette"}
 _GOVERNANCE_IMPORTS = {"adaptive_grok", "architecture", "engineering", "scripts", "tests"}
 _GOVERNANCE_PATHS = (".grok", ".grok-stack", "architecture", "docs", "engineering", "scripts", "tests")
@@ -956,18 +956,77 @@ def _code_budget(
     )
 
 
-def _background_jobs(snapshot: ArchitectureSnapshot, diff: ArchitectureDiff) -> FitnessResult:
+def _queue_signals(tree: ast.AST) -> set[str]:
+    signals = {
+        f"import:{target}"
+        for target in _import_targets(tree)
+        if target.split(".")[0] in _QUEUE_IMPORTS
+    }
+    for imported, call in _called_imports(tree):
+        if imported.split(".")[0] in _QUEUE_IMPORTS:
+            signals.add(f"call:{call}")
+    return signals
+
+
+def _new_queue_sources(
+    root: Path,
+    diff: ArchitectureDiff,
+    python: _PythonInventory,
+) -> tuple[str, ...]:
+    applicable: list[str] = []
+    for path in _python_paths(diff):
+        try:
+            head = _queue_signals(python.tree(path))
+            base_value = read_diff_file(root, diff, path, "base")
+            base: set[str] = set()
+            if base_value is not None:
+                base_tree = ast.parse(base_value.decode("utf-8"), filename=path)
+                if sum(1 for _ in ast.walk(base_tree)) > MAX_ANALYZED_AST_NODES:
+                    raise ArchitectureError(f"Python AST node limit exceeded: {path}", code="limit")
+                base = _queue_signals(base_tree)
+            if head - base:
+                applicable.append(path)
+        except (SyntaxError, UnicodeDecodeError):
+            continue
+    return tuple(sorted(applicable))
+
+
+def _background_jobs(
+    root: Path,
+    snapshot: ArchitectureSnapshot,
+    diff: ArchitectureDiff,
+    python: _PythonInventory,
+) -> FitnessResult:
     rules = snapshot.rules["background_job_policies"]
-    predicate = "worker/runner asynchronous or batch edges are governed as background work"
+    predicate = "declared background edges and exact changed-source queue signals are governed"
+    source_scope = _new_queue_sources(root, diff, python)
     if not rules:
+        if source_scope:
+            return _result(
+                "background_job",
+                status="unsupported",
+                findings=(
+                    f"unsupported changed-source background job semantics: {path}"
+                    for path in source_scope
+                ),
+                predicate=predicate,
+                scope=source_scope,
+                reason="source_signal_without_policy",
+            )
         return _not_applicable("background_job", predicate, (), "no_declared_rules")
-    if not _model_changed(diff):
+    if not _model_changed(diff) and not source_scope:
         return _not_applicable(
-            "background_job", predicate, (), "architecture_unchanged", (rule["id"] for rule in rules)
+            "background_job", predicate, _python_paths(diff), "no_background_signal", (rule["id"] for rule in rules)
         )
     nodes = {node["id"]: node for node in snapshot.system["nodes"]}
     findings: list[str] = []
     scope: list[str] = []
+    if source_scope:
+        scope.extend(source_scope)
+        findings.extend(
+            f"unsupported changed-source background job semantics: {path}"
+            for path in source_scope
+        )
     for rule in rules:
         for edge in snapshot.system["edges"]:
             node = nodes[edge["from"]]
@@ -995,7 +1054,7 @@ def _background_jobs(snapshot: ArchitectureSnapshot, diff: ArchitectureDiff) -> 
         )
     return _result(
         "background_job",
-        status="fail" if findings else "pass",
+        status="unsupported" if source_scope else ("fail" if findings else "pass"),
         rules=(rule["id"] for rule in rules),
         findings=findings,
         predicate=predicate,
@@ -1186,7 +1245,7 @@ def _risk(
     if pre_risk not in RISK_ORDER:
         raise ArchitectureError("pre_risk must be green, yellow, or red", code="risk")
     triggers = set(_risk_triggers(snapshot, diff))
-    if _new_import_family(root, diff, python, _QUEUE_IMPORTS):
+    if _new_queue_sources(root, diff, python):
         triggers.add("new_queue")
     if _new_network_client(root, snapshot, diff, python):
         triggers.add("new_network_client")
@@ -1313,7 +1372,7 @@ def evaluate_fitness(
     raw_results = tuple(
         sorted(
             (
-                _background_jobs(snapshot, diff),
+                _background_jobs(repository, snapshot, diff, python),
                 _change_separation(snapshot, diff),
                 _code_budget(snapshot, diff, python),
                 _contract_compatibility(snapshot, diff),

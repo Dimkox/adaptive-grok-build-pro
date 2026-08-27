@@ -450,6 +450,66 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertEqual(result.status, "fail")
                 self.assertTrue(result.findings)
 
+    def test_source_only_queue_signals_fail_background_fitness(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        cases = (
+            ("celery alias", "", "import celery as c\napp = c.Celery('jobs')\n"),
+            ("rq from import", "", "from rq import Queue as WorkQueue\njobs = WorkQueue()\n"),
+            ("stdlib queue", "", "from queue import Queue\njobs = Queue()\n"),
+            ("existing import new call", "import celery as c\n", "import celery as c\napp = c.Celery('jobs')\n"),
+        )
+        for label, before, after in cases:
+            with self.subTest(label=label):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", after)
+                head = repo.commit("queue source")
+                report = self._evaluate(repo, base, head)
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "unsupported")
+                self.assertEqual(report.status, "fail")
+                self.assertIn("src/jobs.py", result.applicability.scanned_scope)
+                self.assertIn("new_queue", report.triggers)
+
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        base = repo.commit("base")
+        repo.write_text("src/jobs.py", "VALUE = 1\n")
+        head = repo.commit("ordinary source")
+        report = self._evaluate(repo, base, head)
+        self.assertEqual(
+            self._results(report)["background_job"].status,
+            "not_applicable",
+        )
+        self.assertNotIn("new_queue", report.triggers)
+
+        no_policy = _rules()
+        repo = GitArchitectureRepo(self)
+        repo.model(system, no_policy)
+        base = repo.commit("base")
+        repo.write_text("src/jobs.py", "from rq import Queue\njobs = Queue()\n")
+        head = repo.commit("unconfigured queue")
+        report = self._evaluate(repo, base, head)
+        self.assertEqual(
+            self._results(report)["background_job"].status,
+            "unsupported",
+        )
+        self.assertEqual(report.status, "fail")
+
     def test_network_analysis_handles_stdlib_unowned_and_unknown_clients(self) -> None:
         cases = (
             (
@@ -949,6 +1009,30 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     self.assertLess(time.monotonic() - started, 0.4)
                     self.assertFalse(sentinel.exists())
 
+    def test_git_exact_and_worktree_modes_disable_hostile_local_fsmonitor(self) -> None:
+        repo, base = self._repo()
+        repo.write_text("src/app.py", "VALUE = 1\n")
+        head = repo.commit("head")
+        sentinel = repo.root / "fsmonitor-ran"
+        hook = repo.root / "hostile-fsmonitor"
+        hook.write_text(
+            f"#!/bin/sh\n: > '{sentinel}'\nexit 0\n",
+            encoding="utf-8",
+        )
+        hook.chmod(0o755)
+        repo.git("config", "core.fsmonitor", str(hook))
+
+        FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        FIT.diff_architecture(repo.root, base_sha=base, worktree=True)
+        for arguments in (
+            ["ls-files", "-s", "-z"],
+            ["diff", "--name-only", "-z", "HEAD"],
+            ["ls-files", "--others", "--exclude-standard", "-z"],
+        ):
+            with self.subTest(arguments=arguments):
+                DIFF._git(repo.root, arguments)
+        self.assertFalse(sentinel.exists())
+
     def test_line_stats_are_linear_and_have_an_explicit_line_ceiling(self) -> None:
         self.assertTrue(hasattr(DIFF, "MAX_LINE_STAT_LINES"), "line-stat ceiling is absent")
         before = (b"x\n" * 6_000) + b"before\n"
@@ -1083,6 +1167,36 @@ class ArchitectureFitnessTests(unittest.TestCase):
             cwd=ROOT, text=True, capture_output=True, check=False,
         )
         self.assertEqual(stale.returncode, 1)
+        generated_dir = repo.root / "architecture/generated"
+        for child in generated_dir.iterdir():
+            child.unlink()
+        generated_dir.rmdir()
+        with tempfile.TemporaryDirectory() as outside_raw:
+            outside = Path(outside_raw)
+            generated_dir.symlink_to(outside, target_is_directory=True)
+            escaped_write = subprocess.run(
+                [sys.executable, str(script), "--root", str(repo.root), "diagram", "--json"],
+                cwd=ROOT, text=True, capture_output=True, check=False,
+            )
+            escaped_check = subprocess.run(
+                [sys.executable, str(script), "--root", str(repo.root), "diagram", "--check", "--json"],
+                cwd=ROOT, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(escaped_write.returncode, 2)
+            self.assertEqual(escaped_check.returncode, 2)
+            self.assertEqual(tuple(outside.iterdir()), ())
+
+            generated_dir.unlink()
+            generated_dir.mkdir()
+            outside_file = outside / "outside.mmd"
+            outside_file.write_text("outside\n", encoding="utf-8")
+            (generated_dir / "context.mmd").symlink_to(outside_file)
+            final_link = subprocess.run(
+                [sys.executable, str(script), "--root", str(repo.root), "diagram", "--json"],
+                cwd=ROOT, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(final_link.returncode, 2)
+            self.assertEqual(outside_file.read_text(encoding="utf-8"), "outside\n")
 
     def test_architecture_cli_invalid_model_is_nonzero_and_bootstrap_is_explicit(self) -> None:
         repo, _base = self._repo()

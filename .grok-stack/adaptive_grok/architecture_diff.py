@@ -166,6 +166,12 @@ def _git_command(arguments: list[str]) -> list[str]:
         "-c",
         "core.ignoreCase=false",
         "-c",
+        "core.fsmonitor=false",
+        "-c",
+        "core.hooksPath=/dev/null",
+        "-c",
+        "core.pager=cat",
+        "-c",
         "diff.algorithm=myers",
         "-c",
         "diff.external=",
@@ -330,23 +336,32 @@ def _worktree_blob(root: Path, path: str) -> bytes | None:
     if not parts or any(part in {"", ".", ".."} for part in parts):
         raise ArchitectureError(f"invalid worktree path: {path}", code="path")
     no_follow = getattr(os, "O_NOFOLLOW", None)
-    if no_follow is None:
+    directory_flag = getattr(os, "O_DIRECTORY", None)
+    nonblock = getattr(os, "O_NONBLOCK", None)
+    if (
+        not isinstance(no_follow, int)
+        or no_follow == 0
+        or not isinstance(directory_flag, int)
+        or directory_flag == 0
+        or not isinstance(nonblock, int)
+        or os.open not in getattr(os, "supports_dir_fd", set())
+    ):
         raise ArchitectureError("worktree analysis requires O_NOFOLLOW", code="io")
     directory = -1
     descriptor = -1
     try:
-        directory = os.open(root, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | no_follow)
+        directory = os.open(root, os.O_RDONLY | directory_flag | no_follow)
         for component in parts[:-1]:
             child = os.open(
                 component,
-                os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | no_follow,
+                os.O_RDONLY | directory_flag | no_follow,
                 dir_fd=directory,
             )
             os.close(directory)
             directory = child
         descriptor = os.open(
             parts[-1],
-            os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | no_follow,
+            os.O_RDONLY | nonblock | no_follow,
             dir_fd=directory,
         )
         before = os.fstat(descriptor)

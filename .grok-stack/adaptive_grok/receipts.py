@@ -12,13 +12,15 @@ from .architecture import (
     SYSTEM_PATH,
     _parse_json,
     _read_regular_bytes,
+    _secure_open_flags,
+    _inspect_repository_path,
     architecture_digests,
     architecture_fingerprint,
     contract_inventory,
     contract_inventory_digest,
     load_architecture,
 )
-from .architecture_diff import _git, select_architecture_comparison_base
+from .architecture_diff import _git, _git_blob, select_architecture_comparison_base
 from .spec import canonical_spec_digest, load_spec, spec_fingerprint, validate_spec
 from .state import get_active_change, get_active_route
 from .util import dump_json, load_json, now_utc, runtime_dir, tree_fingerprint
@@ -42,6 +44,7 @@ def _exact_head(root: Path) -> str | None:
 
 
 def _architecture_adoption(root: Path) -> dict[str, str] | None:
+    _secure_open_flags(label="architecture adoption")
     marker = root / ADOPTION_PATH
     try:
         marker.lstat()
@@ -79,11 +82,57 @@ def _architecture_adoption(root: Path) -> dict[str, str] | None:
     }
 
 
+def _worktree_model_presence(root: Path) -> tuple[bool, bool]:
+    states = tuple(
+        _inspect_repository_path(root, path.as_posix(), regular=True)
+        for path in (SYSTEM_PATH, RULES_PATH)
+    )
+    if "unsafe" in states:
+        raise ArchitectureError("architecture model path is unsafe", code="io")
+    return tuple(state is None for state in states)  # type: ignore[return-value]
+
+
+def _exact_tree_has_architecture(root: Path, sha: str) -> bool:
+    return any(
+        _git_blob(root, sha, path) is not None
+        for path in (ADOPTION_PATH.as_posix(), SYSTEM_PATH.as_posix(), RULES_PATH.as_posix())
+    )
+
+
+def _exact_head_parents(root: Path, head: str) -> tuple[str, ...]:
+    raw = _git(root, ["rev-list", "--parents", "-n", "1", head], limit=2_048)
+    if raw is None:
+        raise ArchitectureError("cannot inspect exact HEAD parents", code="git")
+    fields = raw.decode("ascii", "strict").strip().split()
+    if not fields or fields[0] != head or len(fields) > 33:
+        raise ArchitectureError("exact HEAD parent inventory is invalid or unbounded", code="git")
+    for value in fields[1:]:
+        if len(value) != 40 or any(character not in "0123456789abcdef" for character in value):
+            raise ArchitectureError("exact HEAD parent is invalid", code="git")
+    return tuple(fields[1:])
+
+
 def active_architecture_binding(root: Path, route: dict[str, Any]) -> dict[str, Any] | None:
     adoption = _architecture_adoption(root)
+    present = _worktree_model_presence(root)
     if adoption is None:
+        if present != (False, False):
+            raise RuntimeError("architecture adoption marker is missing")
+        head = _exact_head(root)
+        if head is None:
+            return None
+        base_selection = select_architecture_comparison_base(root, route)
+        exact_evidence = _exact_tree_has_architecture(root, head) or _exact_tree_has_architecture(
+            root, base_selection.route_base_sha
+        )
+        if not exact_evidence:
+            exact_evidence = any(
+                _exact_tree_has_architecture(root, parent)
+                for parent in _exact_head_parents(root, head)
+            )
+        if exact_evidence:
+            raise RuntimeError("adopted architecture marker and model are missing")
         return None
-    present = tuple((root / path).is_file() for path in (SYSTEM_PATH, RULES_PATH))
     if present == (False, False):
         raise RuntimeError("adopted architecture model is missing")
     if present != (True, True):
