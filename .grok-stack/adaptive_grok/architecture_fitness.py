@@ -89,6 +89,16 @@ _CLOUD_SDK_NETWORK_FACTORIES = {
     "botocore": {"client", "create_client", "get_session", "session"},
 }
 _QUEUE_IMPORTS = {"celery", "confluent_kafka", "kafka", "kombu", "pika", "queue", "redis", "rq"}
+_QUEUE_ADAPTER_MODULE_TOKENS = {
+    *_QUEUE_IMPORTS,
+    "background",
+    "job",
+    "jobs",
+    "task",
+    "tasks",
+    "worker",
+    "workers",
+}
 _FRAMEWORK_IMPORTS = {"django", "fastapi", "flask", "litestar", "starlette"}
 _GOVERNANCE_IMPORTS = {"adaptive_grok", "architecture", "engineering", "scripts", "tests"}
 _GOVERNANCE_PATHS = (".grok", ".grok-stack", "architecture", "docs", "engineering", "scripts", "tests")
@@ -138,6 +148,14 @@ class FitnessReport:
     exemption_state: str
     required_scopes: tuple[str, ...]
     evidence_digest: str
+
+
+@dataclass(frozen=True)
+class _QueueProvenanceResult:
+    state: str
+    reason: str
+    signals: tuple[str, ...]
+    paths: tuple[str, ...] = ()
 
 
 def _applicability(predicate: str, scope: Iterable[str], reason_code: str) -> ApplicabilityEvidence:
@@ -1070,16 +1088,63 @@ def _operation_dependencies(tree: ast.AST) -> set[str]:
     return dependencies
 
 
-def _resolve_import_module(current_module: str, module: str | None, level: int) -> str:
+def _resolve_import_module(current_package: str, module: str | None, level: int) -> str:
     if not level:
         return module or ""
-    package = current_module.split(".")[:-1]
+    package = current_package.split(".") if current_package else []
     remove = level - 1
     if remove > len(package):
         raise ArchitectureError("relative queue adapter import escapes its package", code="fitness")
     prefix = package[: len(package) - remove] if remove else package
     suffix = module.split(".") if module else []
     return ".".join((*prefix, *suffix))
+
+
+def _module_package(path: str) -> str:
+    module = path.rsplit(".", 1)[0].replace("/", ".")
+    if module.endswith(".__init__"):
+        return module.removesuffix(".__init__")
+    return module.rsplit(".", 1)[0] if "." in module else ""
+
+
+def _queue_adjacent_module(module: str) -> bool:
+    tokens = {
+        token
+        for part in module.split(".")
+        for token in re.split(r"[^A-Za-z0-9]+|_+", part.lower())
+        if token
+    }
+    return bool(tokens & _QUEUE_ADAPTER_MODULE_TOKENS)
+
+
+def _local_module_source(
+    root: Path,
+    diff: ArchitectureDiff,
+    module: str,
+    side: str,
+) -> tuple[bytes, str] | None:
+    relative = module.replace(".", "/")
+    module_value = read_diff_file(root, diff, f"{relative}.py", side)
+    if module_value is not None:
+        package = module.rsplit(".", 1)[0] if "." in module else ""
+        return module_value, package
+    package_value = read_diff_file(root, diff, f"{relative}/__init__.py", side)
+    if package_value is not None:
+        return package_value, module
+    return None
+
+
+def _has_local_module_root(
+    root: Path,
+    diff: ArchitectureDiff,
+    module: str,
+    side: str,
+) -> bool:
+    root_name = module.split(".", 1)[0]
+    return any(
+        read_diff_file(root, diff, candidate, side) is not None
+        for candidate in (f"{root_name}.py", f"{root_name}/__init__.py")
+    )
 
 
 def _local_queue_exports(
@@ -1105,16 +1170,18 @@ def _local_queue_exports(
         return set()
     resolving.add(module)
     try:
-        relative = module.replace(".", "/")
-        value = None
-        for candidate in (f"{relative}.py", f"{relative}/__init__.py"):
-            value = read_diff_file(root, diff, candidate, side)
-            if value is not None:
-                break
-        if value is None:
+        source = _local_module_source(root, diff, module, side)
+        if source is None:
             cache[module] = set()
             return set()
-        tree = ast.parse(value.decode("utf-8"), filename=module)
+        value, current_package = source
+        try:
+            tree = ast.parse(value.decode("utf-8"), filename=module)
+        except (SyntaxError, UnicodeDecodeError) as exc:
+            raise ArchitectureError(
+                f"relevant local queue adapter is not analyzable: {module}",
+                code="fitness",
+            ) from exc
         if sum(1 for _ in ast.walk(tree)) > MAX_ANALYZED_AST_NODES:
             raise ArchitectureError(f"Python AST node limit exceeded: {module}", code="limit")
         imported = _queue_adapter_names(
@@ -1124,7 +1191,7 @@ def _local_queue_exports(
             side,
             cache,
             resolving,
-            current_module=module,
+            current_package=current_package,
         )
         _signals, derived = _queue_provenance(tree, imported)
         exports = {name for name in derived if not name.startswith("_")}
@@ -1142,7 +1209,7 @@ def _queue_adapter_names(
     cache: dict[str, set[str]],
     resolving: set[str] | None = None,
     *,
-    current_module: str = "",
+    current_package: str = "",
 ) -> set[str]:
     proven: set[str] = set()
     active = resolving if resolving is not None else set()
@@ -1162,12 +1229,32 @@ def _queue_adapter_names(
         ]
         if not candidates:
             continue
-        module = _resolve_import_module(current_module, node.module, node.level)
+        module = _resolve_import_module(current_package, node.module, node.level)
         if module.split(".")[0] in _QUEUE_IMPORTS:
             continue
-        exports = _local_queue_exports(root, diff, module, side, cache, active)
         for alias in candidates:
-            if alias.name in exports:
+            target_module = module
+            target_name = alias.name
+            if node.module is None:
+                target_module = f"{module}.{alias.name}" if module else alias.name
+                target_name = ""
+            exports = _local_queue_exports(
+                root, diff, target_module, side, cache, active
+            )
+            if (
+                not exports
+                and _queue_adjacent_module(target_module)
+                and (
+                    node.level > 0
+                    or _has_local_module_root(root, diff, target_module, side)
+                )
+                and _local_module_source(root, diff, target_module, side) is None
+            ):
+                raise ArchitectureError(
+                    f"relevant local queue adapter is unresolved: {target_module}",
+                    code="fitness",
+                )
+            if (target_name and target_name in exports) or (not target_name and exports):
                 proven.add(alias.asname or alias.name)
     return proven
 
@@ -1178,45 +1265,74 @@ def _queue_signals(
     tree: ast.AST,
     side: str,
     cache: dict[str, set[str]],
-    module: str,
-) -> set[str]:
+    current_package: str,
+) -> _QueueProvenanceResult:
     adapters = _queue_adapter_names(
-        root, diff, tree, side, cache, current_module=module
+        root, diff, tree, side, cache, current_package=current_package
     )
-    return _queue_provenance(tree, adapters)[0]
+    signals = tuple(sorted(_queue_provenance(tree, adapters)[0]))
+    return _QueueProvenanceResult(
+        state="resolved" if signals else "not_queue",
+        reason="queue_signals_resolved" if signals else "no_queue_signal",
+        signals=signals,
+    )
 
 
 def _new_queue_sources(
     root: Path,
     diff: ArchitectureDiff,
     python: _PythonInventory,
-) -> tuple[str, ...]:
+) -> _QueueProvenanceResult:
     applicable: list[str] = []
+    unsupported: list[str] = []
+    changed_signals: set[str] = set()
     head_cache: dict[str, set[str]] = {}
     base_cache: dict[str, set[str]] = {}
     for path in _python_paths(diff):
         try:
-            module = path.rsplit(".", 1)[0].replace("/", ".")
-            head = _queue_signals(root, diff, python.tree(path), "head", head_cache, module)
+            current_package = _module_package(path)
+            head = _queue_signals(
+                root, diff, python.tree(path), "head", head_cache, current_package
+            )
             base_value = read_diff_file(root, diff, path, "base")
-            base: set[str] = set()
+            base = _QueueProvenanceResult("not_queue", "no_base_source", ())
             if base_value is not None:
                 base_tree = ast.parse(base_value.decode("utf-8"), filename=path)
                 if sum(1 for _ in ast.walk(base_tree)) > MAX_ANALYZED_AST_NODES:
                     raise ArchitectureError(f"Python AST node limit exceeded: {path}", code="limit")
-                base = _queue_signals(root, diff, base_tree, "base", base_cache, module)
-            if head - base:
+                base = _queue_signals(
+                    root, diff, base_tree, "base", base_cache, current_package
+                )
+            delta = set(head.signals) - set(base.signals)
+            if delta:
                 applicable.append(path)
-        except ArchitectureError:
-            applicable.append(path)
+                changed_signals.update(f"{path}:{signal}" for signal in delta)
+        except ArchitectureError as exc:
+            unsupported.append(path)
+            changed_signals.add(f"{path}:unsupported:{exc.code}")
         except (SyntaxError, UnicodeDecodeError):
             value = read_diff_file(root, diff, path, "head") or b""
             if re.search(
                 rb"\b(celery|rq|redis|kombu|pika|kafka|confluent_kafka|enqueue|apply_async|send_task)\b",
                 value,
             ):
-                applicable.append(path)
-    return tuple(sorted(applicable))
+                unsupported.append(path)
+                changed_signals.add(f"{path}:unsupported:syntax")
+    if unsupported:
+        return _QueueProvenanceResult(
+            "unsupported",
+            "queue_provenance_unresolved",
+            tuple(sorted(changed_signals)),
+            tuple(sorted(set((*applicable, *unsupported)))),
+        )
+    if applicable:
+        return _QueueProvenanceResult(
+            "resolved",
+            "new_queue_signal",
+            tuple(sorted(changed_signals)),
+            tuple(sorted(set(applicable))),
+        )
+    return _QueueProvenanceResult("not_queue", "no_queue_signal", ())
 
 
 def _background_jobs(
@@ -1224,10 +1340,11 @@ def _background_jobs(
     snapshot: ArchitectureSnapshot,
     diff: ArchitectureDiff,
     python: _PythonInventory,
+    queue_provenance: _QueueProvenanceResult,
 ) -> FitnessResult:
     rules = snapshot.rules["background_job_policies"]
     predicate = "declared background edges and exact changed-source queue signals are governed"
-    source_scope = _new_queue_sources(root, diff, python)
+    source_scope = queue_provenance.paths
     if not rules:
         if source_scope:
             return _result(
@@ -1287,6 +1404,7 @@ def _background_jobs(
         findings=findings,
         predicate=predicate,
         scope=scope,
+        reason=queue_provenance.reason if source_scope else "applicable",
     )
 
 
@@ -1469,11 +1587,12 @@ def _risk(
     diff: ArchitectureDiff,
     python: _PythonInventory,
     pre_risk: str,
+    queue_provenance: _QueueProvenanceResult,
 ) -> tuple[str, str, tuple[str, ...]]:
     if pre_risk not in RISK_ORDER:
         raise ArchitectureError("pre_risk must be green, yellow, or red", code="risk")
     triggers = set(_risk_triggers(snapshot, diff))
-    if _new_queue_sources(root, diff, python):
+    if queue_provenance.state != "not_queue":
         triggers.add("new_queue")
     if _new_network_client(root, snapshot, diff, python):
         triggers.add("new_network_client")
@@ -1597,10 +1716,13 @@ def evaluate_fitness(
     if architecture_digests(snapshot)["architecture_digest"] != diff.head_architecture_digest:
         raise ArchitectureError("fitness snapshot does not match the diff head", code="fitness")
     python = _PythonInventory(repository, diff)
+    queue_provenance = _new_queue_sources(repository, diff, python)
     raw_results = tuple(
         sorted(
             (
-                _background_jobs(repository, snapshot, diff, python),
+                _background_jobs(
+                    repository, snapshot, diff, python, queue_provenance
+                ),
                 _change_separation(snapshot, diff),
                 _code_budget(snapshot, diff, python),
                 _contract_compatibility(snapshot, diff),
@@ -1623,7 +1745,7 @@ def evaluate_fitness(
     if tuple(item.category for item in results) != FITNESS_CATEGORIES:
         raise ArchitectureError("mandatory fitness category coverage is incomplete", code="fitness")
     escalation, post_risk, triggers = _risk(
-        repository, snapshot, diff, python, pre_risk
+        repository, snapshot, diff, python, pre_risk, queue_provenance
     )
     architecture_significant = diff.baseline_introduced or bool(diff.changes or triggers)
     docs_only = bool(diff.changed_paths) and all(

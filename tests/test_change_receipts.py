@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.change import start_change, transition
 from adaptive_grok.architecture import architecture_fingerprint, contract_inventory, load_architecture
-from adaptive_grok.architecture_diagrams import render_diagrams, write_generated
+from adaptive_grok.architecture_diagrams import render_diagrams
 from adaptive_grok.architecture_diff import (
     ArchitectureError,
     diff_architecture,
@@ -157,7 +157,10 @@ class ReceiptTests(unittest.TestCase):
             '{\n  "architecture_id": "ARCH-TEST",\n  "schema_version": 1,\n  "state": "adopted"\n}\n',
             encoding='utf-8',
         )
-        write_generated(root, render_diagrams(load_architecture(root)))
+        generated = architecture / 'generated'
+        generated.mkdir()
+        for name, artifact in render_diagrams(load_architecture(root)).items():
+            (generated / f'{name}.mmd').write_text(artifact, encoding='utf-8')
         return base
 
     def test_receipt_binds_active_spec_and_declared_criteria(self) -> None:

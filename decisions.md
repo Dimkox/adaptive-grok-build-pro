@@ -194,3 +194,7 @@ Use a strict, target-owned `architecture/adoption.json` marker as the adoption s
 ## 2026-08-26 — Install architecture tools, never target authority
 
 The installer manages architecture modules, CLI, strict schemas, and non-authoritative examples, while an explicit denylist protects `architecture/adoption.json`, `architecture/system.yaml`, and `architecture/rules.yaml` even if a future managed list includes them accidentally. Repository owners adapt and validate the examples, then create the canonical marker manually as the final adoption step.
+
+## 2026-08-27 — Projection rendering is read-only
+
+Return deterministic Mermaid artifacts on stdout and keep checked-in projection updates in the normal reviewed source-edit path; removing the in-place writer eliminated unnecessary repository mutation capability. Queue applicability uses one bounded package-aware provenance result for both fitness and risk so uncertainty fails closed without turning unrelated method names into queue signals.

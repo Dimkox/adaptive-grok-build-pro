@@ -24,7 +24,6 @@ from adaptive_grok.architecture_diagrams import (  # noqa: E402
     artifact_digests,
     compare_generated,
     render_diagrams,
-    write_generated,
 )
 from adaptive_grok.architecture_fitness import diff_architecture, evaluate_fitness  # noqa: E402
 
@@ -146,19 +145,15 @@ def main() -> int:
             return 0
         if args.command == "diagram":
             rendered = render_diagrams(snapshot)
-            mismatches = compare_generated(root, rendered)
-            if not args.check:
-                written = write_generated(root, rendered)
-                mismatches = ()
-            else:
-                written = ()
+            mismatches = compare_generated(root, rendered) if args.check else ()
             payload = {
                 "checked": bool(args.check),
                 "digests": artifact_digests(rendered),
                 "mismatches": list(mismatches),
                 "ok": not mismatches,
-                "written": list(written),
             }
+            if not args.check:
+                payload["artifacts"] = rendered
             _emit(payload, as_json=as_json)
             return 0 if not mismatches else 1
         if args.command == "drift":

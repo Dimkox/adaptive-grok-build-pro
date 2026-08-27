@@ -18,12 +18,12 @@ Before M2-A, the README K16 clique inventoried pieces but could not represent di
 
 ## Outcome
 
-M2-A implements a strict target-owned architecture contract, explicit adoption marker, deterministic local validator/CLI/diagrams/diff/fitness evidence, and receipt staleness. It does not change Trust CI source. M2-B consumes the frozen contract in a separate task for independent enforcement.
+M2-A implements a strict target-owned architecture contract, explicit adoption marker, deterministic read-only local validator/CLI/diagram/diff/fitness evidence, and receipt staleness. It does not change Trust CI source. M2-B consumes the frozen contract in a separate task for independent enforcement.
 
 ## In scope
 
 - canonical schemas, model, rules, public contract baselines, parser, digest, diff, drift and fitness;
-- five reproducible text diagrams;
+- five reproducible stdout-rendered, checked-in text diagrams with read-only comparison;
 - local verification/receipt and installer integration;
 - complete red-risk M2-A package and source verification; independent route reviews and receipts remain coordinator-owned pending work.
 
@@ -38,5 +38,5 @@ M2-A implements a strict target-owned architecture contract, explicit adoption m
 - Backward compatibility: preserve M1 v2, historical v1 read support, and current receipt behavior for repositories without architecture adoption.
 - Data/privacy: only stable secret-class metadata; never secret values, credential paths, source bodies, or raw payloads in evidence.
 - Performance: bounded documents, inventories, findings, Git output, AST analysis, and generated artifacts.
-- Operational: local source only; exact M2 evidence uses the frozen adoption base and an exact clean head.
+- Operational: local source only; exact M2 evidence uses the frozen adoption base and an exact clean head. Diagram tooling has no repository mutation capability, and this change adds no queue or runtime capability.
 - Adoption: installer-delivered examples are non-authoritative; operators review target models and then manually add canonical `architecture/adoption.json`. The installer never manages those three target-owned files.

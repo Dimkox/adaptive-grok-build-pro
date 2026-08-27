@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import copy
+import contextlib
 import importlib
+import importlib.util
+import io
 import json
 import os
-import stat
 import sys
 import tempfile
 import unittest
@@ -163,6 +165,13 @@ class ArchitectureModelTests(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         return root
 
+    @staticmethod
+    def _write_diagram_fixture(root: Path, rendered: dict[str, str]) -> None:
+        generated = root / "architecture/generated"
+        generated.mkdir()
+        for name, value in rendered.items():
+            (generated / f"{name}.mmd").write_text(value, encoding="utf-8")
+
     def _record(
         self,
         document: dict,
@@ -215,6 +224,79 @@ class ArchitectureModelTests(unittest.TestCase):
             self.assertNotIn("timestamp", content.lower())
             self.assertNotIn("\nsubgraph injected", content)
         self.assertIn("&quot;", first["context"])
+
+    def test_diagram_render_is_repository_read_only(self) -> None:
+        root = self._repo()
+        before_inventory = tuple(
+            sorted(path.relative_to(root).as_posix() for path in root.rglob("*"))
+        )
+        before_bytes = {
+            path.relative_to(root).as_posix(): path.read_bytes()
+            for path in root.rglob("*")
+            if path.is_file()
+        }
+        spec = importlib.util.spec_from_file_location(
+            "grok_architecture_task6",
+            ROOT / "scripts/grok_architecture.py",
+        )
+        self.assertIsNotNone(spec)
+        assert spec is not None and spec.loader is not None
+        command = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(command)
+        real_open = os.open
+
+        def read_only_open(path, flags, *args, **kwargs):
+            mutation_flags = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_EXCL
+            if flags & mutation_flags:
+                self.fail(f"diagram render attempted a mutation-shaped open: {path}")
+            return real_open(path, flags, *args, **kwargs)
+
+        def reject_mutation(*args, **kwargs):
+            self.fail(f"diagram render attempted repository mutation: {args!r} {kwargs!r}")
+
+        class GuardedOs:
+            open = staticmethod(read_only_open)
+            rename = staticmethod(reject_mutation)
+            unlink = staticmethod(reject_mutation)
+            rmdir = staticmethod(reject_mutation)
+            mkdir = staticmethod(reject_mutation)
+            chmod = staticmethod(reject_mutation)
+            replace = staticmethod(reject_mutation)
+
+            def __getattr__(self, name):
+                return getattr(os, name)
+
+        output = io.StringIO()
+        with (
+            mock.patch.object(sys, "argv", ["grok_architecture.py", "--root", str(root), "diagram", "--json"]),
+            mock.patch.object(DIAGRAMS, "os", GuardedOs()),
+            contextlib.redirect_stdout(output),
+        ):
+            returncode = command.main()
+        payload = json.loads(output.getvalue())
+        self.assertEqual(returncode, 0, payload)
+        self.assertEqual(payload["checked"], False)
+        self.assertEqual(payload["mismatches"], [])
+        self.assertEqual(payload["ok"], True)
+        self.assertEqual(
+            tuple(payload["artifacts"]),
+            ("container", "context", "data-flow", "deployment", "trust-boundary"),
+        )
+        for artifact in payload["artifacts"].values():
+            self.assertTrue(artifact.startswith("flowchart "))
+            self.assertTrue(artifact.endswith("\n"))
+        self.assertEqual(
+            tuple(sorted(path.relative_to(root).as_posix() for path in root.rglob("*"))),
+            before_inventory,
+        )
+        self.assertEqual(
+            {
+                path.relative_to(root).as_posix(): path.read_bytes()
+                for path in root.rglob("*")
+                if path.is_file()
+            },
+            before_bytes,
+        )
 
     def test_every_authoritative_object_is_closed_and_required(self) -> None:
         system = _system()
@@ -525,13 +607,11 @@ class ArchitectureModelTests(unittest.TestCase):
     def test_generated_diagrams_reject_unavailable_nofollow_and_unsafe_files(self) -> None:
         root = self._repo()
         rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
-        DIAGRAMS.write_generated(root, rendered)
+        self._write_diagram_fixture(root, rendered)
         generated = root / "architecture/generated"
         with mock.patch.object(ARCH.os, "O_NOFOLLOW", 0):
             with self.assertRaisesRegex(ARCH.ArchitectureError, "no-follow"):
                 DIAGRAMS.compare_generated(root, rendered)
-            with self.assertRaisesRegex(ARCH.ArchitectureError, "no-follow"):
-                DIAGRAMS.write_generated(root, rendered)
 
         context = generated / "context.mmd"
         context.write_bytes(b"x" * (len(rendered["context"].encode()) + 2))
@@ -551,8 +631,6 @@ class ArchitectureModelTests(unittest.TestCase):
         generated = root / "architecture/generated"
         generated.symlink_to(outside, target_is_directory=True)
         with self.assertRaises(ARCH.ArchitectureError):
-            DIAGRAMS.write_generated(root, rendered)
-        with self.assertRaises(ARCH.ArchitectureError):
             DIAGRAMS.compare_generated(root, rendered)
         self.assertEqual(tuple(outside.iterdir()), ())
 
@@ -561,272 +639,14 @@ class ArchitectureModelTests(unittest.TestCase):
         target = outside / "target.mmd"
         target.write_text("outside\n", encoding="utf-8")
         (generated / "context.mmd").symlink_to(target)
-        with self.assertRaisesRegex(ARCH.ArchitectureError, "regular file|safely read"):
-            DIAGRAMS.write_generated(root, rendered)
         with self.assertRaises(ARCH.ArchitectureError):
             DIAGRAMS.compare_generated(root, rendered)
         self.assertEqual(target.read_text(encoding="utf-8"), "outside\n")
 
-    def test_generated_diagram_write_rejects_directory_swap_without_outside_write(self) -> None:
-        root = self._repo()
-        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
-        DIAGRAMS.write_generated(root, rendered)
-        generated = root / "architecture/generated"
-        original = root / "architecture/generated-original"
-        outside_temp = tempfile.TemporaryDirectory()
-        self.addCleanup(outside_temp.cleanup)
-        outside = Path(outside_temp.name)
-        real_rename = os.rename
-        real_replace = DIAGRAMS._replace_generated
-        swapped = False
-
-        def swapping_replace(descriptor, source, target):
-            nonlocal swapped
-            result = real_replace(descriptor, source, target)
-            if not swapped:
-                real_rename(generated, original)
-                os.symlink(outside, generated, target_is_directory=True)
-                swapped = True
-            return result
-
-        with mock.patch.object(DIAGRAMS, "_replace_generated", side_effect=swapping_replace):
-            with self.assertRaisesRegex(ARCH.ArchitectureError, "changed|safely publish"):
-                DIAGRAMS.write_generated(root, rendered)
-        self.assertTrue(swapped)
-        self.assertEqual(tuple(outside.iterdir()), ())
-
-    def test_generated_diagram_write_does_not_mutate_relocated_destination(self) -> None:
-        root = self._repo()
-        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
-        DIAGRAMS.write_generated(root, rendered)
-        generated = root / "architecture/generated"
-        before = {path.name: path.read_bytes() for path in generated.iterdir()}
-        changed = dict(rendered)
-        changed["context"] = rendered["context"] + "%% changed\n"
-        outside_temp = tempfile.TemporaryDirectory()
-        self.addCleanup(outside_temp.cleanup)
-        outside_generated = Path(outside_temp.name) / "generated"
-        real_replace = DIAGRAMS._replace_generated
-        relocated = False
-
-        def relocate_before_replace(descriptor, source, target):
-            nonlocal relocated
-            if not relocated:
-                os.rename(generated, outside_generated)
-                relocated = True
-            return real_replace(descriptor, source, target)
-
-        with mock.patch.object(DIAGRAMS, "_replace_generated", side_effect=relocate_before_replace):
-            DIAGRAMS.write_generated(root, changed)
-        self.assertTrue(relocated)
-        self.assertEqual(
-            {path.name: path.read_bytes() for path in outside_generated.iterdir()},
-            before,
-        )
-
-    def test_generated_diagram_write_does_not_publish_through_relocated_architecture(self) -> None:
-        root = self._repo()
-        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
-        DIAGRAMS.write_generated(root, rendered)
-        changed = dict(rendered)
-        changed["context"] = rendered["context"] + "%% changed\n"
-        architecture = root / "architecture"
-        outside_temp = tempfile.TemporaryDirectory()
-        self.addCleanup(outside_temp.cleanup)
-        outside_architecture = Path(outside_temp.name) / "architecture"
-        before = {
-            path.name: path.read_bytes()
-            for path in (architecture / "generated").iterdir()
-        }
-        real_replace = DIAGRAMS._replace_generated
-        relocated = False
-
-        def relocate_parent_before_publish(descriptor, source, target):
-            nonlocal relocated
-            if not relocated:
-                os.rename(architecture, outside_architecture)
-                relocated = True
-            return real_replace(descriptor, source, target)
-
-        with mock.patch.object(
-            DIAGRAMS, "_replace_generated", side_effect=relocate_parent_before_publish
-        ):
-            with self.assertRaises(ARCH.ArchitectureError):
-                DIAGRAMS.write_generated(root, changed)
-        self.assertTrue(relocated)
-        self.assertEqual(
-            {
-                path.name: path.read_bytes()
-                for path in (outside_architecture / "generated").iterdir()
-            },
-            before,
-        )
-
-    def test_generated_diagram_publish_does_not_follow_replacement_architecture_symlink(self) -> None:
-        root = self._repo()
-        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
-        DIAGRAMS.write_generated(root, rendered)
-        changed = dict(rendered)
-        changed["context"] = rendered["context"] + "%% changed\n"
-        architecture = root / "architecture"
-        outside_temp = tempfile.TemporaryDirectory()
-        self.addCleanup(outside_temp.cleanup)
-        outside_architecture = Path(outside_temp.name) / "architecture"
-        before = {
-            path.name: path.read_bytes()
-            for path in (architecture / "generated").iterdir()
-        }
-        real_replace = DIAGRAMS._replace_generated
-        replaced = False
-
-        def replace_parent_with_symlink(descriptor, source, target):
-            nonlocal replaced
-            if not replaced:
-                os.rename(architecture, outside_architecture)
-                architecture.symlink_to(outside_architecture, target_is_directory=True)
-                replaced = True
-            return real_replace(descriptor, source, target)
-
-        with mock.patch.object(
-            DIAGRAMS, "_replace_generated", side_effect=replace_parent_with_symlink
-        ):
-            with self.assertRaises(ARCH.ArchitectureError):
-                DIAGRAMS.write_generated(root, changed)
-        self.assertTrue(replaced)
-        self.assertEqual(
-            {
-                path.name: path.read_bytes()
-                for path in (outside_architecture / "generated").iterdir()
-            },
-            before,
-        )
-
-    def test_generated_diagram_publish_preserves_concurrent_authority_and_mode(self) -> None:
-        root = self._repo()
-        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
-        DIAGRAMS.write_generated(root, rendered)
-        architecture = root / "architecture"
-        architecture.chmod(0o700)
-        system = architecture / "system.yaml"
-        concurrent = architecture / "system.concurrent"
-        concurrent_bytes = b"concurrent target-owned authority\n"
-        real_replace = DIAGRAMS._replace_generated
-        replaced = False
-
-        def replace_authority_before_publish(descriptor, source, target):
-            nonlocal replaced
-            concurrent.write_bytes(concurrent_bytes)
-            os.replace(concurrent, system)
-            replaced = True
-            return real_replace(descriptor, source, target)
-
-        changed = dict(rendered)
-        changed["context"] += "%% changed\n"
-        with mock.patch.object(
-            DIAGRAMS, "_replace_generated", side_effect=replace_authority_before_publish
-        ):
-            with self.assertRaises(ARCH.ArchitectureError):
-                DIAGRAMS.write_generated(root, changed)
-        self.assertTrue(replaced)
-        self.assertEqual(system.read_bytes(), concurrent_bytes)
-        self.assertEqual(stat.S_IMODE(architecture.stat().st_mode), 0o700)
-
-    def test_generated_diagram_publish_preserves_restrictive_architecture_mode(self) -> None:
-        root = self._repo()
-        architecture = root / "architecture"
-        architecture.chmod(0o700)
-        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
-        DIAGRAMS.write_generated(root, rendered)
-        self.assertEqual(stat.S_IMODE(architecture.stat().st_mode), 0o700)
-
-    def test_generated_diagram_publish_rolls_back_concurrent_inventory_change(self) -> None:
-        root = self._repo()
-        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
-        DIAGRAMS.write_generated(root, rendered)
-        owner_entry = root / "architecture/owner-note.txt"
-        real_replace = DIAGRAMS._replace_generated
-
-        def add_owner_entry_before_publish(descriptor, source, target):
-            owner_entry.write_text("target owned\n", encoding="utf-8")
-            return real_replace(descriptor, source, target)
-
-        with mock.patch.object(
-            DIAGRAMS, "_replace_generated", side_effect=add_owner_entry_before_publish
-        ):
-            with self.assertRaises(ARCH.ArchitectureError):
-                DIAGRAMS.write_generated(root, rendered)
-        self.assertEqual(owner_entry.read_text(encoding="utf-8"), "target owned\n")
-
-    def test_generated_diagram_publish_fails_before_mutation_without_atomic_exchange(self) -> None:
-        root = self._repo()
-        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
-        DIAGRAMS.write_generated(root, rendered)
-        before = {
-            path.relative_to(root / "architecture").as_posix(): path.read_bytes()
-            for path in (root / "architecture").rglob("*")
-            if path.is_file()
-        }
-        with mock.patch.object(
-            DIAGRAMS,
-            "_exchange_entries",
-            side_effect=ARCH.ArchitectureError("atomic exchange unavailable", code="io"),
-        ):
-            with self.assertRaisesRegex(ARCH.ArchitectureError, "atomic exchange"):
-                DIAGRAMS.write_generated(root, rendered)
-        self.assertEqual(
-            {
-                path.relative_to(root / "architecture").as_posix(): path.read_bytes()
-                for path in (root / "architecture").rglob("*")
-                if path.is_file()
-            },
-            before,
-        )
-
-    def test_generated_diagram_cleanup_never_mutates_relocated_backup(self) -> None:
-        root = self._repo()
-        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
-        DIAGRAMS.write_generated(root, rendered)
-        outside_temp = tempfile.TemporaryDirectory()
-        self.addCleanup(outside_temp.cleanup)
-        outside = Path(outside_temp.name)
-        real_discard = DIAGRAMS._discard_architecture_entry
-        relocated: Path | None = None
-        before: dict[str, bytes] = {}
-
-        def relocate_before_cleanup(descriptor, name):
-            nonlocal relocated, before
-            if name.endswith((".old", ".tmp")):
-                relocated = outside / name
-                os.rename(root / name, relocated)
-                before = {
-                    path.relative_to(relocated).as_posix(): path.read_bytes()
-                    for path in relocated.rglob("*")
-                    if path.is_file()
-                }
-            return real_discard(descriptor, name)
-
-        changed = dict(rendered)
-        changed["context"] += "%% changed\n"
-        with mock.patch.object(
-            DIAGRAMS, "_discard_architecture_entry", side_effect=relocate_before_cleanup
-        ):
-            with self.assertRaises(ARCH.ArchitectureError):
-                DIAGRAMS.write_generated(root, changed)
-        self.assertIsNotNone(relocated)
-        assert relocated is not None
-        self.assertEqual(
-            {
-                path.relative_to(relocated).as_posix(): path.read_bytes()
-                for path in relocated.rglob("*")
-                if path.is_file()
-            },
-            before,
-        )
-
     def test_generated_diagram_compare_rejects_directory_swap_without_outside_read(self) -> None:
         root = self._repo()
         rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
-        DIAGRAMS.write_generated(root, rendered)
+        self._write_diagram_fixture(root, rendered)
         generated = root / "architecture/generated"
         original = root / "architecture/generated-original"
         outside_temp = tempfile.TemporaryDirectory()

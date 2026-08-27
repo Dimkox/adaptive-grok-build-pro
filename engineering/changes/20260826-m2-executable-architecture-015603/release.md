@@ -20,4 +20,4 @@ Task 5 left the package in its historical `implementing` phase. The authoritativ
 
 M2-A adoption is source-only and manual: review target model/rules, validate them, then commit the exact canonical marker. Observe stable architecture/evidence digests, drift/fitness result counts, risk triggers, and receipt staleness. M2-B and deployment use a separate route/package/authorization.
 
-No migration, database, service, queue, provider, external write, `trust-ci/**` mutation, deployment, push, pull request, merge, tag, or release occurred in M2-A implementation.
+Diagram rendering is stdout-only and checked-in projections change only through normal reviewed source edits. No migration, database, service, queue/runtime capability, provider, external write, `trust-ci/**` mutation, deployment, push, pull request, merge, tag, or release occurred in M2-A implementation.

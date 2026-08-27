@@ -881,6 +881,101 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(report.status, "pass")
         self.assertNotIn("new_queue", report.triggers)
 
+    def test_package_aware_queue_provenance_is_shared_by_fitness_and_risk(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["project", "src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        cases = (
+            (
+                "package initializer child export",
+                {
+                    "project/jobs/__init__.py": "from .celery_app import app\n",
+                    "project/jobs/celery_app.py": (
+                        "import celery\napp = celery.Celery('jobs')\n"
+                    ),
+                },
+                "from project.jobs import app\n",
+                "@app.task\ndef stage():\n    return None\n",
+            ),
+            (
+                "regular module child export",
+                {
+                    "project/jobs/worker.py": "from .celery_app import app\n",
+                    "project/jobs/celery_app.py": (
+                        "import celery\napp = celery.Celery('jobs')\n"
+                    ),
+                },
+                "from project.jobs.worker import app\n",
+                "@app.task\ndef stage():\n    return None\n",
+            ),
+            (
+                "package import child module",
+                {
+                    "project/jobs/__init__.py": "from . import celery_app\n",
+                    "project/jobs/celery_app.py": (
+                        "import celery\napp = celery.Celery('jobs')\n"
+                    ),
+                },
+                "from project.jobs import celery_app\n",
+                "@celery_app.app.task\ndef stage():\n    return None\n",
+            ),
+            (
+                "parent relative package export",
+                {
+                    "project/jobs/subpackage/__init__.py": "from ..celery_app import app\n",
+                    "project/jobs/celery_app.py": (
+                        "import celery\napp = celery.Celery('jobs')\n"
+                    ),
+                },
+                "from project.jobs.subpackage import app\n",
+                "@app.task\ndef stage():\n    return None\n",
+            ),
+            (
+                "multi hop package re-export",
+                {
+                    "project/__init__.py": "from .jobs import app\n",
+                    "project/jobs/__init__.py": "from .celery_app import app\n",
+                    "project/jobs/celery_app.py": (
+                        "import celery\napp = celery.Celery('jobs')\n"
+                    ),
+                },
+                "from project import app\n",
+                "@app.task\ndef stage():\n    return None\n",
+            ),
+            (
+                "relevant unresolved local adapter",
+                {"project/__init__.py": "VALUE = 1\n"},
+                "from project.jobs import app\n",
+                "@app.task\ndef stage():\n    return None\n",
+            ),
+        )
+        for label, modules, before, addition in cases:
+            with self.subTest(label=label):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                for path, value in modules.items():
+                    repo.write_text(path, value)
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", before + addition)
+                head = repo.commit("queue operation")
+                report = self._evaluate(repo, base, head)
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "unsupported")
+                self.assertEqual(report.status, "fail")
+                self.assertIn("src/jobs.py", result.applicability.scanned_scope)
+                self.assertIn("new_queue", report.triggers)
+
     def test_network_analysis_handles_stdlib_unowned_and_unknown_clients(self) -> None:
         cases = (
             (
@@ -1527,6 +1622,18 @@ class ArchitectureFitnessTests(unittest.TestCase):
             cwd=ROOT, text=True, capture_output=True, check=False,
         )
         self.assertEqual(generated.returncode, 0, generated.stderr)
+        rendered_payload = json.loads(generated.stdout)
+        self.assertIn("artifacts", rendered_payload)
+        self.assertEqual(rendered_payload["checked"], False)
+        self.assertEqual(rendered_payload["mismatches"], [])
+        self.assertEqual(
+            tuple(rendered_payload["artifacts"]),
+            ("container", "context", "data-flow", "deployment", "trust-boundary"),
+        )
+        generated_dir = repo.root / "architecture/generated"
+        generated_dir.mkdir()
+        for name, value in rendered_payload["artifacts"].items():
+            (generated_dir / f"{name}.mmd").write_text(value, encoding="utf-8")
         checked = subprocess.run(
             [sys.executable, str(script), "--root", str(repo.root), "diagram", "--check", "--json"],
             cwd=ROOT, text=True, capture_output=True, check=False,
@@ -1538,7 +1645,6 @@ class ArchitectureFitnessTests(unittest.TestCase):
             cwd=ROOT, text=True, capture_output=True, check=False,
         )
         self.assertEqual(stale.returncode, 1)
-        generated_dir = repo.root / "architecture/generated"
         for child in generated_dir.iterdir():
             child.unlink()
         generated_dir.rmdir()
@@ -1553,7 +1659,8 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 [sys.executable, str(script), "--root", str(repo.root), "diagram", "--check", "--json"],
                 cwd=ROOT, text=True, capture_output=True, check=False,
             )
-            self.assertEqual(escaped_write.returncode, 2)
+            self.assertEqual(escaped_write.returncode, 0)
+            self.assertEqual(json.loads(escaped_write.stdout)["checked"], False)
             self.assertEqual(escaped_check.returncode, 2)
             self.assertEqual(tuple(outside.iterdir()), ())
 
@@ -1566,7 +1673,7 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 [sys.executable, str(script), "--root", str(repo.root), "diagram", "--json"],
                 cwd=ROOT, text=True, capture_output=True, check=False,
             )
-            self.assertEqual(final_link.returncode, 2)
+            self.assertEqual(final_link.returncode, 0)
             self.assertEqual(outside_file.read_text(encoding="utf-8"), "outside\n")
 
     def test_architecture_cli_invalid_model_is_nonzero_and_bootstrap_is_explicit(self) -> None:

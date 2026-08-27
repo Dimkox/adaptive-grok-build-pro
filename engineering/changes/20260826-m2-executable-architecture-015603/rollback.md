@@ -12,6 +12,8 @@
 
 Before target adoption, revert the M2-A source slice to completed-M1 SHA `25bfbe59ea188d9687b20a9caad19e7db3d031f8`. For a consumer that has not committed `architecture/adoption.json`, removing unreviewed example copies is safe because architecture remains `not_configured`. No migration or service rollback is needed.
 
+The Task 6 read-only/provenance pivot is source-only and rolls back by reverting its single commit. That restores the prior implementation but no database, queue, runtime, generated file, or external state because the pivot itself performs none of those mutations.
+
 ## Data recovery / forward-fix
 
 No database/schema/backfill or external state is changed. After adoption, do not delete the marker to bypass the gate; restore/fix the reviewed model and rules or forward-fix with a new explicit contract version. Once another milestone consumes architecture contract v1, preserve v1 meaning and forward-fix or introduce a new explicit contract version.

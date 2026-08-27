@@ -21,7 +21,7 @@
 
 ### Optional manual executable-architecture adoption
 
-An installed repository without `architecture/adoption.json` remains backward-compatible and reports architecture as `not_configured`. Adoption is an explicit repository-owner decision: copy the examples, replace every example identity/path/policy with reviewed target truth, validate them, generate/check projections, and create the marker last. Do not use the README K16 graph or generated diagrams as model input.
+An installed repository without `architecture/adoption.json` remains backward-compatible and reports architecture as `not_configured`. Adoption is an explicit repository-owner decision: copy the examples, replace every example identity/path/policy with reviewed target truth, validate them, render/review the projections, and create the marker last. Do not use the README K16 graph or generated diagrams as model input.
 
 ```bash
 cd /path/to/repo
@@ -34,7 +34,9 @@ cp .grok-stack/templates/architecture/rules.example.yaml architecture/rules.yaml
 python3 scripts/grok_architecture.py validate --json
 python3 scripts/grok_architecture.py summary --json
 python3 scripts/grok_architecture.py drift --json
+# This prints all five bounded artifacts and does not write repository files.
 python3 scripts/grok_architecture.py diagram --json
+# Apply approved projection text through normal reviewed source edits, then compare.
 python3 scripts/grok_architecture.py diagram --check --json
 ```
 
@@ -48,7 +50,7 @@ After review succeeds, create `architecture/adoption.json` manually with exactly
 }
 ```
 
-The marker requires sorted keys, two-space JSON, and exactly one final newline. Commit the marker with both reviewed target documents; marker present plus either missing/invalid document fails closed. The marker, diagrams, Markdown, and receipts do not replace the system/rules authority, and local checks do not replace the App-owned exact-SHA Trust CI check.
+The marker requires sorted keys, two-space JSON, and exactly one final newline. Commit the marker with both reviewed target documents; marker present plus either missing/invalid document fails closed. The diagram command is read-only: checked-in projection changes are ordinary reviewed source edits. The marker, diagrams, Markdown, and receipts do not replace the system/rules authority, and local checks do not replace the App-owned exact-SHA Trust CI check.
 
 Exact-state evidence uses literal 40-character commit SHAs. Use `--worktree` only for diagnostics; it never claims an exact head SHA:
 
