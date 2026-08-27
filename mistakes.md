@@ -87,3 +87,7 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** First `grok_verify --mode pr` could not be the completion receipt; reports and `state.json` still had to be written.
 **Root cause:** Verification was used as a mid-implementation checkpoint. The receipt fingerprint is the whole dirty tree, so any later change-package or review-report write invalidates it. Evidence must be recorded only after the last file that will remain in that tree.
+## 2026-08-27 — Treated post-mutation checks as transactional containment
+
+**Symptom:** Four M2-A remediation rounds kept closing named diagram and queue cases while reviewers found equivalent cleanup races, authority-loss windows, and provenance gaps.
+**Root cause:** Publication mutated path components before containment was irrevocably established, and queue analysis encoded examples instead of one explicit provenance/limit contract; post-checks and added cases could not repair those design-level boundaries.
