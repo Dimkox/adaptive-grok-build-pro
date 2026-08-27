@@ -1,7 +1,9 @@
 # M2 data architecture analysis — executable architecture contracts
 
-Route: `0156034c05bd`  
-Change: `20260826-m2-executable-architecture-015603`  
+Route: `0156034c05bd`
+
+Change: `20260826-m2-executable-architecture-015603`
+
 Role: route-selected `data_architect` (read-only analysis; this report is the only write)
 
 ## Ruling

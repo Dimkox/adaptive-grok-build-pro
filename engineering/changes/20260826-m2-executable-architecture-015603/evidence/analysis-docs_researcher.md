@@ -1,7 +1,9 @@
 # M2 documentation and release-evidence research
 
-Route: `0156034c05bd`  
-Change: `20260826-m2-executable-architecture-015603`  
+Route: `0156034c05bd`
+
+Change: `20260826-m2-executable-architecture-015603`
+
 Research is repository-only and read-only. The requested M2 architecture files are not present in the current tree, so the items below are implementation/release documentation requirements rather than claims that they already exist.
 
 ## Documentation authority checklist

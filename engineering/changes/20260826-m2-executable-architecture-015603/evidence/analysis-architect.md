@@ -1,7 +1,9 @@
 # M2 architecture ruling — executable architecture and fitness
 
-Route: `0156034c05bd`  
-Reviewed baseline: `25bfbe59ea188d9687b20a9caad19e7db3d031f8`  
+Route: `0156034c05bd`
+
+Reviewed baseline: `25bfbe59ea188d9687b20a9caad19e7db3d031f8`
+
 Decision: **proceed only as two bounded delivery slices with one frozen contract**
 
 ## Executive ruling

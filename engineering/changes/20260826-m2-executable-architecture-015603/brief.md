@@ -2,10 +2,14 @@
 
 > Typed authority: [`change-spec.yaml`](change-spec.yaml). This Markdown explains context and cannot override typed IDs, risk, acceptance criteria, forbidden outcomes, or approval scopes.
 
-Change ID: `20260826-m2-executable-architecture-015603`  
-Route: `0156034c05bd`  
-Adoption base: `25bfbe59ea188d9687b20a9caad19e7db3d031f8`  
-Risk: red  
+Change ID: `20260826-m2-executable-architecture-015603`
+
+Route: `0156034c05bd`
+
+Adoption base: `25bfbe59ea188d9687b20a9caad19e7db3d031f8`
+
+Risk: red
+
 Domains: API, data, event, security
 
 ## Problem
