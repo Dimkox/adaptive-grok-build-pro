@@ -16,6 +16,8 @@ Installer delivery includes local architecture modules, CLI, both strict schemas
 
 Task 5 left the package in its historical `implementing` phase. The authoritative current workflow status is recorded in `state.json`; verification plus code, test, security, data, and release review receipts remain required, and this note does not claim the package is `ready`.
 
+The first Task 6 code review found unresolved queue-export and `src/` source-root cases. Their source repair and regression coverage are present in the current candidate, but independent rereview and final receipts are still pending.
+
 ## Rollout and observability
 
 M2-A adoption is source-only and manual: review target model/rules, validate them, then commit the exact canonical marker. Observe stable architecture/evidence digests, drift/fitness result counts, risk triggers, and receipt staleness. M2-B and deployment use a separate route/package/authorization.

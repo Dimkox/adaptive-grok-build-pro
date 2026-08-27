@@ -46,6 +46,7 @@ MAX_ANALYZED_PYTHON_FILES = 2_000
 MAX_ANALYZED_AST_NODES = 200_000
 MAX_QUEUE_ADAPTER_MODULES = 32
 MAX_QUEUE_ADAPTER_DEPTH = 8
+MAX_QUEUE_SOURCE_ROOTS = 64
 _PYTHON_SUFFIXES = {".py", ".pyi"}
 _NETWORK_IMPORTS = {
     "aiohttp": "https",
@@ -156,6 +157,14 @@ class _QueueProvenanceResult:
     reason: str
     signals: tuple[str, ...]
     paths: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class _QueueAdapterResolution:
+    state: str
+    reason: str
+    exports: tuple[str, ...] = ()
+    signals: tuple[str, ...] = ()
 
 
 def _applicability(predicate: str, scope: Iterable[str], reason_code: str) -> ApplicabilityEvidence:
@@ -1117,21 +1126,51 @@ def _queue_adjacent_module(module: str) -> bool:
     return bool(tokens & _QUEUE_ADAPTER_MODULE_TOKENS)
 
 
-def _local_module_source(
+def _queue_source_roots(snapshot: ArchitectureSnapshot) -> tuple[str, ...]:
+    roots = {""}
+    file_suffixes = {
+        ".json", ".md", ".py", ".pyi", ".sh", ".sql", ".toml", ".txt", ".yaml", ".yml"
+    }
+    for node in snapshot.system["nodes"]:
+        for prefix in node["repository_paths"]:
+            name = prefix.rsplit("/", 1)[-1]
+            if Path(prefix).suffix.lower() not in file_suffixes:
+                roots.add(prefix)
+            if (
+                "/" in prefix
+                and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name) is not None
+                and Path(prefix).suffix.lower() not in file_suffixes
+            ):
+                roots.add(prefix.rsplit("/", 1)[0])
+    if len(roots) > MAX_QUEUE_SOURCE_ROOTS:
+        raise ArchitectureError("queue source-root limit exceeded", code="limit")
+    return tuple(sorted(roots))
+
+
+def _source_root_path(source_root: str, relative: str) -> str:
+    return f"{source_root}/{relative}" if source_root else relative
+
+
+def _local_module_sources(
     root: Path,
     diff: ArchitectureDiff,
     module: str,
     side: str,
-) -> tuple[bytes, str] | None:
+    source_roots: tuple[str, ...],
+) -> tuple[tuple[str, bytes, str], ...]:
     relative = module.replace(".", "/")
-    module_value = read_diff_file(root, diff, f"{relative}.py", side)
-    if module_value is not None:
-        package = module.rsplit(".", 1)[0] if "." in module else ""
-        return module_value, package
-    package_value = read_diff_file(root, diff, f"{relative}/__init__.py", side)
-    if package_value is not None:
-        return package_value, module
-    return None
+    found: list[tuple[str, bytes, str]] = []
+    for source_root in source_roots:
+        module_path = _source_root_path(source_root, f"{relative}.py")
+        module_value = read_diff_file(root, diff, module_path, side)
+        if module_value is not None:
+            package = module.rsplit(".", 1)[0] if "." in module else ""
+            found.append((module_path, module_value, package))
+        package_path = _source_root_path(source_root, f"{relative}/__init__.py")
+        package_value = read_diff_file(root, diff, package_path, side)
+        if package_value is not None:
+            found.append((package_path, package_value, module))
+    return tuple(found)
 
 
 def _has_local_module_root(
@@ -1139,44 +1178,55 @@ def _has_local_module_root(
     diff: ArchitectureDiff,
     module: str,
     side: str,
+    source_roots: tuple[str, ...],
 ) -> bool:
     root_name = module.split(".", 1)[0]
     return any(
-        read_diff_file(root, diff, candidate, side) is not None
+        read_diff_file(root, diff, _source_root_path(source_root, candidate), side)
+        is not None
+        for source_root in source_roots
         for candidate in (f"{root_name}.py", f"{root_name}/__init__.py")
     )
 
 
-def _local_queue_exports(
+def _local_queue_resolution(
     root: Path,
     diff: ArchitectureDiff,
     module: str,
     side: str,
-    cache: dict[str, set[str]],
+    cache: dict[str, _QueueAdapterResolution],
     resolving: set[str],
-) -> set[str]:
+    source_roots: tuple[str, ...],
+) -> _QueueAdapterResolution:
     if module in cache:
         return cache[module]
     if (
         not module
         or any(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", part) is None for part in module.split("."))
     ):
-        return set()
+        return _QueueAdapterResolution("not_queue", "invalid_local_module")
     if len(cache) >= MAX_QUEUE_ADAPTER_MODULES:
         raise ArchitectureError("queue adapter module limit exceeded", code="limit")
     if len(resolving) >= MAX_QUEUE_ADAPTER_DEPTH:
         raise ArchitectureError("queue adapter depth limit exceeded", code="limit")
     if module in resolving:
-        return set()
+        return _QueueAdapterResolution("unsupported", "cyclic_local_queue_adapter")
     resolving.add(module)
     try:
-        source = _local_module_source(root, diff, module, side)
-        if source is None:
-            cache[module] = set()
-            return set()
-        value, current_package = source
+        sources = _local_module_sources(root, diff, module, side, source_roots)
+        if len(sources) > 1:
+            result = _QueueAdapterResolution(
+                "unsupported", "ambiguous_local_queue_adapter"
+            )
+            cache[module] = result
+            return result
+        if not sources:
+            result = _QueueAdapterResolution("not_queue", "local_module_missing")
+            cache[module] = result
+            return result
+        source_path, value, current_package = sources[0]
         try:
-            tree = ast.parse(value.decode("utf-8"), filename=module)
+            tree = ast.parse(value.decode("utf-8"), filename=source_path)
         except (SyntaxError, UnicodeDecodeError) as exc:
             raise ArchitectureError(
                 f"relevant local queue adapter is not analyzable: {module}",
@@ -1192,11 +1242,23 @@ def _local_queue_exports(
             cache,
             resolving,
             current_package=current_package,
+            source_roots=source_roots,
         )
-        _signals, derived = _queue_provenance(tree, imported)
-        exports = {name for name in derived if not name.startswith("_")}
-        cache[module] = exports
-        return exports
+        signals, derived = _queue_provenance(tree, imported)
+        exports = tuple(sorted(name for name in derived if not name.startswith("_")))
+        has_queue_provenance = bool(signals or exports)
+        result = _QueueAdapterResolution(
+            "resolved" if has_queue_provenance else "not_queue",
+            (
+                "local_queue_provenance_resolved"
+                if has_queue_provenance
+                else "local_module_not_queue"
+            ),
+            exports,
+            tuple(sorted(signals)),
+        )
+        cache[module] = result
+        return result
     finally:
         resolving.remove(module)
 
@@ -1206,10 +1268,11 @@ def _queue_adapter_names(
     diff: ArchitectureDiff,
     tree: ast.AST,
     side: str,
-    cache: dict[str, set[str]],
+    cache: dict[str, _QueueAdapterResolution],
     resolving: set[str] | None = None,
     *,
     current_package: str = "",
+    source_roots: tuple[str, ...],
 ) -> set[str]:
     proven: set[str] = set()
     active = resolving if resolving is not None else set()
@@ -1238,23 +1301,49 @@ def _queue_adapter_names(
             if node.module is None:
                 target_module = f"{module}.{alias.name}" if module else alias.name
                 target_name = ""
-            exports = _local_queue_exports(
-                root, diff, target_module, side, cache, active
+            resolution = _local_queue_resolution(
+                root, diff, target_module, side, cache, active, source_roots
             )
             if (
-                not exports
+                resolution.state == "unsupported"
+                and _queue_adjacent_module(target_module)
+            ):
+                raise ArchitectureError(
+                    f"relevant local queue adapter is unsupported: {target_module}"
+                    f" ({resolution.reason})",
+                    code="fitness",
+                )
+            if (
+                not resolution.exports
                 and _queue_adjacent_module(target_module)
                 and (
                     node.level > 0
-                    or _has_local_module_root(root, diff, target_module, side)
+                    or _has_local_module_root(
+                        root, diff, target_module, side, source_roots
+                    )
                 )
-                and _local_module_source(root, diff, target_module, side) is None
+                and not _local_module_sources(
+                    root, diff, target_module, side, source_roots
+                )
             ):
                 raise ArchitectureError(
                     f"relevant local queue adapter is unresolved: {target_module}",
                     code="fitness",
                 )
-            if (target_name and target_name in exports) or (not target_name and exports):
+            if (
+                target_name
+                and target_name not in resolution.exports
+                and resolution.state == "resolved"
+                and _queue_adjacent_module(target_module)
+            ):
+                raise ArchitectureError(
+                    f"relevant local queue adapter export is unresolved: "
+                    f"{target_module}.{target_name}",
+                    code="fitness",
+                )
+            if (
+                target_name and target_name in resolution.exports
+            ) or (not target_name and resolution.exports):
                 proven.add(alias.asname or alias.name)
     return proven
 
@@ -1264,11 +1353,18 @@ def _queue_signals(
     diff: ArchitectureDiff,
     tree: ast.AST,
     side: str,
-    cache: dict[str, set[str]],
+    cache: dict[str, _QueueAdapterResolution],
     current_package: str,
+    source_roots: tuple[str, ...],
 ) -> _QueueProvenanceResult:
     adapters = _queue_adapter_names(
-        root, diff, tree, side, cache, current_package=current_package
+        root,
+        diff,
+        tree,
+        side,
+        cache,
+        current_package=current_package,
+        source_roots=source_roots,
     )
     signals = tuple(sorted(_queue_provenance(tree, adapters)[0]))
     return _QueueProvenanceResult(
@@ -1282,17 +1378,24 @@ def _new_queue_sources(
     root: Path,
     diff: ArchitectureDiff,
     python: _PythonInventory,
+    source_roots: tuple[str, ...],
 ) -> _QueueProvenanceResult:
     applicable: list[str] = []
     unsupported: list[str] = []
     changed_signals: set[str] = set()
-    head_cache: dict[str, set[str]] = {}
-    base_cache: dict[str, set[str]] = {}
+    head_cache: dict[str, _QueueAdapterResolution] = {}
+    base_cache: dict[str, _QueueAdapterResolution] = {}
     for path in _python_paths(diff):
         try:
             current_package = _module_package(path)
             head = _queue_signals(
-                root, diff, python.tree(path), "head", head_cache, current_package
+                root,
+                diff,
+                python.tree(path),
+                "head",
+                head_cache,
+                current_package,
+                source_roots,
             )
             base_value = read_diff_file(root, diff, path, "base")
             base = _QueueProvenanceResult("not_queue", "no_base_source", ())
@@ -1301,7 +1404,13 @@ def _new_queue_sources(
                 if sum(1 for _ in ast.walk(base_tree)) > MAX_ANALYZED_AST_NODES:
                     raise ArchitectureError(f"Python AST node limit exceeded: {path}", code="limit")
                 base = _queue_signals(
-                    root, diff, base_tree, "base", base_cache, current_package
+                    root,
+                    diff,
+                    base_tree,
+                    "base",
+                    base_cache,
+                    current_package,
+                    source_roots,
                 )
             delta = set(head.signals) - set(base.signals)
             if delta:
@@ -1716,7 +1825,9 @@ def evaluate_fitness(
     if architecture_digests(snapshot)["architecture_digest"] != diff.head_architecture_digest:
         raise ArchitectureError("fitness snapshot does not match the diff head", code="fitness")
     python = _PythonInventory(repository, diff)
-    queue_provenance = _new_queue_sources(repository, diff, python)
+    queue_provenance = _new_queue_sources(
+        repository, diff, python, _queue_source_roots(snapshot)
+    )
     raw_results = tuple(
         sorted(
             (

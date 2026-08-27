@@ -448,7 +448,7 @@ The checked items below mean bounded M2-A repository source and local regression
 - architecture drift is visible in PR evidence;
 - critical fitness rules are outside implementer control.
 
-M2-A locally proves schema validation, reproducible text projections, monotonic risk, and drift/diff evidence. Prohibited-edge independence and critical rules outside implementer control remain unchecked M2-B/deployed exit work.
+M2-A's current source candidate locally proves schema validation, read-only reproducible text projections, bounded package-aware queue provenance, monotonic risk, and drift/diff evidence. Passing final route reviews and current receipts remain pending; prohibited-edge independence and critical rules outside implementer control remain unchecked M2-B/deployed exit work.
 
 ---
 

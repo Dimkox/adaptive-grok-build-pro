@@ -976,6 +976,92 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertIn("src/jobs.py", result.applicability.scanned_scope)
                 self.assertIn("new_queue", report.triggers)
 
+    def test_queue_adapter_uncertainty_and_source_roots_fail_closed(self) -> None:
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        cases = (
+            (
+                "present adapter with unsupported factory export",
+                ["project", "src"],
+                {
+                    "project/jobs.py": (
+                        "import celery\n\n"
+                        "def build_app():\n"
+                        "    return celery.Celery('jobs')\n\n"
+                        "app = build_app()\n"
+                    ),
+                },
+                "src/consumer.py",
+                "unsupported",
+            ),
+            (
+                "src layout adapter",
+                ["src"],
+                {
+                    "src/project/jobs.py": (
+                        "import celery\napp = celery.Celery('jobs')\n"
+                    ),
+                },
+                "src/consumer.py",
+                "unsupported",
+            ),
+            (
+                "ambiguous source roots",
+                ["src", "lib"],
+                {
+                    "src/project/jobs.py": (
+                        "import celery\napp = celery.Celery('src-jobs')\n"
+                    ),
+                    "lib/project/jobs.py": (
+                        "import celery\napp = celery.Celery('lib-jobs')\n"
+                    ),
+                },
+                "src/consumer.py",
+                "unsupported",
+            ),
+            (
+                "grounded source root with missing adapter",
+                ["src"],
+                {"src/project/__init__.py": "VALUE = 1\n"},
+                "src/consumer.py",
+                "unsupported",
+            ),
+        )
+        for label, repository_paths, modules, consumer, expected in cases:
+            with self.subTest(label=label):
+                system = _system()
+                system["nodes"][0]["type"] = "worker"
+                system["nodes"][0]["repository_paths"] = repository_paths
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                for path, value in modules.items():
+                    repo.write_text(path, value)
+                before = "from project.jobs import app\n"
+                repo.write_text(consumer, before)
+                base = repo.commit("base")
+                repo.write_text(
+                    consumer,
+                    before + "@app.task\ndef stage():\n    return None\n",
+                )
+                head = repo.commit("queue operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, expected)
+                self.assertEqual(report.status, "fail")
+                self.assertIn(consumer, result.applicability.scanned_scope)
+                self.assertIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
     def test_network_analysis_handles_stdlib_unowned_and_unknown_clients(self) -> None:
         cases = (
             (
