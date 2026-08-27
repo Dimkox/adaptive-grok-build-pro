@@ -3,6 +3,7 @@ from __future__ import annotations
 import itertools
 import json
 import re
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -10,6 +11,30 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class StructureTests(unittest.TestCase):
+    def test_frozen_m2_handoff_digests_match_canonical_summary(self) -> None:
+        result = subprocess.run(
+            ['python3', 'scripts/grok_architecture.py', 'summary', '--json'],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        summary = json.loads(result.stdout)
+        requirements = (
+            ROOT / 'engineering/changes/20260826-m2-executable-architecture-015603/requirements.md'
+        ).read_text(encoding='utf-8')
+        labels = {
+            'architecture_digest': 'Composite architecture digest',
+            'system_digest': 'System digest',
+            'rules_digest': 'Rules digest',
+            'schema_digest': 'Composite schema digest',
+            'contract_inventory_digest': 'Contract inventory digest',
+        }
+        for field, label in labels.items():
+            matches = re.findall(rf'^- {re.escape(label)}: `([0-9a-f]{{64}})`\.$', requirements, re.M)
+            self.assertEqual(len(matches), 1, label)
+            self.assertEqual(matches[0], summary[field], label)
+
     def test_core_product_files_exist(self) -> None:
         required = (
             "AGENTS.md",

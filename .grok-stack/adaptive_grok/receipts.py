@@ -155,8 +155,6 @@ def _exact_history_has_architecture(root: Path, head: str) -> bool:
             head,
             "--",
             ADOPTION_PATH.as_posix(),
-            SYSTEM_PATH.as_posix(),
-            RULES_PATH.as_posix(),
         ],
         limit=64 * 41,
     )

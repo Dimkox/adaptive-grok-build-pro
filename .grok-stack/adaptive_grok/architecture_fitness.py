@@ -173,6 +173,28 @@ class _QueueAdapterNamesResult:
     unsupported: bool = False
 
 
+@dataclass(frozen=True)
+class _QueueValue:
+    state: str
+    items: tuple[tuple[str, "_QueueValue"], ...] = ()
+
+    def selected(self, key: str | None) -> "_QueueValue":
+        values = dict(self.items)
+        if key is not None and key in values:
+            return values[key]
+        if not values:
+            return self
+        states = {item.aggregate().state for item in values.values()}
+        if states == {"queue"}:
+            return _QueueValue("queue")
+        if states == {"not_queue"}:
+            return _QueueValue("not_queue")
+        return _QueueValue("uncertain")
+
+    def aggregate(self) -> "_QueueValue":
+        return self.selected(None) if self.items else self
+
+
 def _applicability(predicate: str, scope: Iterable[str], reason_code: str) -> ApplicabilityEvidence:
     scanned = tuple(sorted(set(scope)))
     return ApplicabilityEvidence(
@@ -1023,6 +1045,9 @@ def _queue_provenance(
     adapter_names: set[str] | None = None,
 ) -> tuple[set[str], set[str], bool]:
     queue_names = set(adapter_names or ())
+    values: dict[str, _QueueValue] = {
+        name: _QueueValue("queue") for name in queue_names
+    }
     wildcard_queue_import = False
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -1030,6 +1055,9 @@ def _queue_provenance(
                 local = alias.asname or alias.name.split(".")[0]
                 if alias.name.split(".")[0] in _QUEUE_IMPORTS:
                     queue_names.add(local)
+                    values[local] = _QueueValue("queue")
+                else:
+                    values.setdefault(local, _QueueValue("not_queue"))
         elif isinstance(node, ast.ImportFrom) and node.module:
             for alias in node.names:
                 local = alias.asname or alias.name
@@ -1038,39 +1066,103 @@ def _queue_provenance(
                         wildcard_queue_import = True
                     else:
                         queue_names.add(local)
+                        values[local] = _QueueValue("queue")
+                elif alias.name != "*":
+                    values.setdefault(local, _QueueValue("not_queue"))
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            values.setdefault(node.name, _QueueValue("not_queue"))
 
-    def queue_derived(value: ast.AST) -> bool:
+    def literal_key(value: ast.AST) -> str | None:
+        if not isinstance(value, ast.Constant):
+            return None
+        key = value.value
+        if isinstance(key, (str, int)):
+            return repr(key)
+        return None
+
+    def queue_value(value: ast.AST) -> _QueueValue:
         if isinstance(value, ast.Name):
-            return value.id in queue_names
+            known = values.get(value.id)
+            if known is not None:
+                return known
+            return _QueueValue("uncertain" if wildcard_queue_import else "not_queue")
         if isinstance(value, ast.Attribute):
-            return queue_derived(value.value)
+            return queue_value(value.value).aggregate()
         if isinstance(value, ast.Subscript):
-            return queue_derived(value.value)
+            return queue_value(value.value).selected(literal_key(value.slice))
         if isinstance(value, ast.Starred):
-            return queue_derived(value.value)
-        if isinstance(value, (ast.List, ast.Set, ast.Tuple)):
-            return any(queue_derived(item) for item in value.elts)
+            return queue_value(value.value)
+        if isinstance(value, (ast.List, ast.Tuple)):
+            return _QueueValue(
+                "structured",
+                tuple((str(index), queue_value(item)) for index, item in enumerate(value.elts)),
+            )
+        if isinstance(value, ast.Set):
+            states = {queue_value(item).aggregate().state for item in value.elts}
+            if states == {"queue"}:
+                return _QueueValue("queue")
+            if states == {"not_queue"}:
+                return _QueueValue("not_queue")
+            return _QueueValue("uncertain")
         if isinstance(value, ast.Dict):
-            return any(queue_derived(item) for item in value.values)
+            items: list[tuple[str, _QueueValue]] = []
+            for index, (key, item) in enumerate(zip(value.keys, value.values)):
+                resolved = None if key is None else literal_key(key)
+                if resolved is None:
+                    resolved = f"?{index}"
+                items.append((resolved, queue_value(item)))
+            return _QueueValue("structured", tuple(items))
         if isinstance(value, ast.Call):
-            if queue_derived(value.func):
-                return True
-            return (
+            function = queue_value(value.func).aggregate()
+            if function.state in {"queue", "uncertain"}:
+                return function
+            if (
                 isinstance(value.func, ast.Name)
                 and value.func.id == "getattr"
                 and bool(value.args)
-                and queue_derived(value.args[0])
-            )
-        return False
+            ):
+                return queue_value(value.args[0]).aggregate()
+        return _QueueValue("not_queue")
 
-    def target_names(target: ast.AST) -> set[str]:
+    def bind_target(target: ast.AST, value: _QueueValue) -> bool:
         if isinstance(target, ast.Name):
-            return {target.id}
+            if values.get(target.id) == value:
+                return False
+            values[target.id] = value
+            return True
         if isinstance(target, ast.Starred):
-            return target_names(target.value)
+            return bind_target(target.value, value)
         if isinstance(target, (ast.List, ast.Tuple)):
-            return set().union(*(target_names(item) for item in target.elts))
-        return set()
+            changed = False
+            mapping = dict(value.items)
+            positions = [
+                int(key) for key in mapping if key.isdigit()
+            ]
+            item_count = max(positions, default=-1) + 1
+            star_index = next(
+                (index for index, item in enumerate(target.elts) if isinstance(item, ast.Starred)),
+                None,
+            )
+            for index, item in enumerate(target.elts):
+                if isinstance(item, ast.Starred):
+                    suffix = len(target.elts) - index - 1
+                    selected = _QueueValue(
+                        "structured",
+                        tuple(
+                            (str(offset), mapping[str(position)])
+                            for offset, position in enumerate(range(index, item_count - suffix))
+                            if str(position) in mapping
+                        ),
+                    )
+                else:
+                    position = index
+                    if star_index is not None and index > star_index:
+                        position = item_count - (len(target.elts) - index)
+                    selected = mapping.get(str(position), value.aggregate())
+                changed = bind_target(item, selected) or changed
+            return changed
+        return False
 
     # Resolve simple assignment/factory chains to a fixed point. The global AST
     # node limit bounds both this loop and the values considered here.
@@ -1082,16 +1174,20 @@ def _queue_provenance(
         changed = False
         for node in assignments:
             value = node.value
-            if value is None or not queue_derived(value):
+            if value is None:
                 continue
+            resolved = queue_value(value)
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
             for target in targets:
-                additions = target_names(target) - queue_names
-                if additions:
-                    queue_names.update(additions)
-                    changed = True
+                changed = bind_target(target, resolved) or changed
         if not changed:
             break
+
+    queue_names.update(
+        name
+        for name, value in values.items()
+        if value.aggregate().state in {"queue", "uncertain"}
+    )
 
     signals = {
         f"import:{target}"
@@ -1103,64 +1199,23 @@ def _queue_provenance(
             signals.add(f"call:{call}")
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
-            if queue_derived(node.func):
+            provenance = queue_value(node.func).aggregate()
+            if provenance.state in {"queue", "uncertain"}:
                 signals.add(
                     "semantic-call:" + ast.dump(node, annotate_fields=True, include_attributes=False)
                 )
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             for decorator in node.decorator_list:
-                if queue_derived(decorator):
+                provenance = queue_value(decorator).aggregate()
+                if provenance.state in {"queue", "uncertain"}:
                     signals.add(
                         f"semantic-decorator:{node.name}:"
                         + ast.dump(decorator, annotate_fields=True, include_attributes=False)
                     )
 
-    wildcard_uncertain = False
-    if wildcard_queue_import:
-        locally_bound = {
-            name
-            for node in ast.walk(tree)
-            for target in (
-                node.targets if isinstance(node, ast.Assign)
-                else [node.target] if isinstance(node, ast.AnnAssign)
-                else []
-            )
-            for name in target_names(target)
-        }
-        locally_bound.update(
-            node.name
-            for node in ast.walk(tree)
-            if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
-        )
-        locally_bound.update(
-            alias.asname or alias.name.split(".")[0]
-            for node in ast.walk(tree)
-            if isinstance(node, ast.Import)
-            for alias in node.names
-        )
-        locally_bound.update(
-            alias.asname or alias.name
-            for node in ast.walk(tree)
-            if isinstance(node, ast.ImportFrom)
-            for alias in node.names
-            if alias.name != "*"
-        )
-        for node in ast.walk(tree):
-            operations: list[ast.AST] = []
-            if isinstance(node, ast.Call):
-                operations.append(node.func)
-            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                operations.extend(node.decorator_list)
-            for operation in operations:
-                roots = {
-                    child.id for child in ast.walk(operation) if isinstance(child, ast.Name)
-                }
-                if roots - locally_bound - queue_names:
-                    wildcard_uncertain = True
-                    signals.add(
-                        "semantic-wildcard:"
-                        + ast.dump(operation, annotate_fields=True, include_attributes=False)
-                    )
+    wildcard_uncertain = any(
+        value.aggregate().state == "uncertain" for value in values.values()
+    )
     return signals, queue_names, wildcard_uncertain
 
 

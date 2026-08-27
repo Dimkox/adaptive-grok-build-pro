@@ -9,6 +9,6 @@
 - [x] Complete installer/docs/package source and full local verification.
 - [x] Apply the user-approved read-only diagram and package-aware fail-closed provenance pivot with RED/GREEN evidence.
 - [x] Repair the first Task 6 review findings for unresolved queue exports and exact source-root layouts with RED/GREEN evidence.
-- [x] Repair the seven final-review source findings with focused RED/GREEN evidence; independent rereview remains pending.
+- [ ] Close the residual final-review queue, installer, adoption-history, and frozen-evidence boundaries; the second source fix candidate requires fresh independent rereview.
 - [ ] Complete five independent route reviews and current receipts.
 - [ ] Start M2-B only as a separate factory task.

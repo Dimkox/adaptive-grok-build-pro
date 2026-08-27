@@ -61,6 +61,15 @@ def _identity(value: os.stat_result) -> tuple[int, int, int]:
     return value.st_dev, value.st_ino, value.st_mode
 
 
+class _CreatedDirectory:
+    __slots__ = ('parent_fd', 'name', 'identity')
+
+    def __init__(self, parent_fd: int, name: str, identity: tuple[int, int, int]) -> None:
+        self.parent_fd = parent_fd
+        self.name = name
+        self.identity = identity
+
+
 class _TargetTree:
     def __init__(self, root: Path) -> None:
         self.root = root.absolute()
@@ -102,18 +111,12 @@ class _TargetTree:
         if _identity(current) != self.identity or _identity(os.fstat(self.fd)) != self.identity:
             raise UnsafeInstallTarget('installation target changed during operation')
 
-    def _open_dir(self, parts: tuple[str, ...], *, create: bool) -> int:
+    def _open_existing_dir(self, parts: tuple[str, ...]) -> int:
         self._check_root()
         descriptor = os.dup(self.fd)
         try:
             for component in parts:
-                try:
-                    metadata = os.stat(component, dir_fd=descriptor, follow_symlinks=False)
-                except FileNotFoundError:
-                    if not create:
-                        raise
-                    os.mkdir(component, mode=0o755, dir_fd=descriptor)
-                    metadata = os.stat(component, dir_fd=descriptor, follow_symlinks=False)
+                metadata = os.stat(component, dir_fd=descriptor, follow_symlinks=False)
                 if not stat.S_ISDIR(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode):
                     raise UnsafeInstallTarget(
                         f'managed path ancestor is not a real directory: {component}'
@@ -131,6 +134,85 @@ class _TargetTree:
             return descriptor
         except Exception:
             os.close(descriptor)
+            raise
+
+    @staticmethod
+    def _commit_created(created: list[_CreatedDirectory]) -> None:
+        while created:
+            os.close(created.pop().parent_fd)
+
+    @staticmethod
+    def _rollback_created(created: list[_CreatedDirectory]) -> None:
+        failure: Exception | None = None
+        while created:
+            item = created.pop()
+            try:
+                current = os.stat(item.name, dir_fd=item.parent_fd, follow_symlinks=False)
+                if _identity(current) != item.identity or not stat.S_ISDIR(current.st_mode):
+                    raise UnsafeInstallTarget('created installer directory changed before rollback')
+                os.rmdir(item.name, dir_fd=item.parent_fd)
+            except FileNotFoundError:
+                pass
+            except Exception as exc:
+                failure = failure or exc
+            finally:
+                os.close(item.parent_fd)
+        if failure is not None:
+            raise UnsafeInstallTarget(f'cannot roll back created installer directory: {failure}')
+
+    def _open_dir(
+        self,
+        parts: tuple[str, ...],
+        *,
+        create: bool,
+        created: list[_CreatedDirectory] | None = None,
+    ) -> int:
+        owned = created is None
+        transaction = [] if created is None else created
+        self._check_root()
+        descriptor = os.dup(self.fd)
+        prefix: list[str] = []
+        try:
+            for component in parts:
+                prefix.append(component)
+                try:
+                    metadata = os.stat(component, dir_fd=descriptor, follow_symlinks=False)
+                except FileNotFoundError:
+                    if not create:
+                        raise
+                    os.mkdir(component, mode=0o755, dir_fd=descriptor)
+                    metadata = os.stat(component, dir_fd=descriptor, follow_symlinks=False)
+                    transaction.append(
+                        _CreatedDirectory(os.dup(descriptor), component, _identity(metadata))
+                    )
+                if not stat.S_ISDIR(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode):
+                    raise UnsafeInstallTarget(
+                        f'managed path ancestor is not a real directory: {component}'
+                    )
+                child = os.open(
+                    component,
+                    os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                    dir_fd=descriptor,
+                )
+                if _identity(os.fstat(child)) != _identity(metadata):
+                    os.close(child)
+                    raise UnsafeInstallTarget('managed path ancestor changed while opening')
+                current = self._open_existing_dir(tuple(prefix))
+                try:
+                    if _identity(os.fstat(current)) != _identity(os.fstat(child)):
+                        raise UnsafeInstallTarget(
+                            'created installer directory was relocated outside the target'
+                        )
+                finally:
+                    os.close(current)
+                os.close(descriptor)
+                descriptor = child
+            if owned:
+                self._commit_created(transaction)
+            return descriptor
+        except Exception:
+            os.close(descriptor)
+            self._rollback_created(transaction)
             raise
 
     def ensure_dir(self, relative: str, *, dry_run: bool = False) -> None:
@@ -216,26 +298,41 @@ class _TargetTree:
             except FileExistsError:
                 continue
             try:
+                os.fchmod(descriptor, mode)
                 view = memoryview(content)
                 while view:
                     written = os.write(descriptor, view)
                     view = view[written:]
                 os.fsync(descriptor)
-            finally:
+            except Exception:
                 os.close(descriptor)
+                try:
+                    os.unlink(name, dir_fd=self.fd)
+                except FileNotFoundError:
+                    pass
+                raise
+            finally:
+                try:
+                    os.close(descriptor)
+                except OSError:
+                    pass
             return name
         raise UnsafeInstallTarget('cannot allocate a contained installer staging file')
 
     def write(self, relative: str, content: bytes, *, mode: int = 0o644) -> None:
         parts = self._parts(relative)
-        initial_parent = self._open_dir(parts[:-1], create=True)
-        initial_identity = _identity(os.fstat(initial_parent))
-        original_details = self._read_details(relative)
-        original = None if original_details is None else original_details[0]
-        original_mode = mode if original_details is None else original_details[1]
-        stage = self._stage(content, mode)
+        created: list[_CreatedDirectory] = []
+        initial_parent = -1
         published_parent = -1
+        stage = ''
+        success = False
         try:
+            initial_parent = self._open_dir(parts[:-1], create=True, created=created)
+            initial_identity = _identity(os.fstat(initial_parent))
+            original_details = self._read_details(relative)
+            original = None if original_details is None else original_details[0]
+            original_mode = mode if original_details is None else original_details[1]
+            stage = self._stage(content, mode)
             published_parent = self._open_dir(parts[:-1], create=False)
             if _identity(os.fstat(published_parent)) != initial_identity:
                 raise UnsafeInstallTarget(f'managed destination parent changed: {relative}')
@@ -264,8 +361,10 @@ class _TargetTree:
                     )
                 raise UnsafeInstallTarget(str(change_exc))
             os.fsync(published_parent)
+            success = True
         finally:
-            os.close(initial_parent)
+            if initial_parent >= 0:
+                os.close(initial_parent)
             if published_parent >= 0:
                 os.close(published_parent)
             if stage:
@@ -273,6 +372,10 @@ class _TargetTree:
                     os.unlink(stage, dir_fd=self.fd)
                 except FileNotFoundError:
                     pass
+            if success:
+                self._commit_created(created)
+            else:
+                self._rollback_created(created)
 
 
 def iter_source_files(source: Path) -> list[tuple[str, Path]]:

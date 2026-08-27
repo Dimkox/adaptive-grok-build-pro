@@ -189,7 +189,7 @@ Trusted changed-file and mutation discovery consumes byte-oriented `git ... -z` 
 
 ## 2026-08-26 — Architecture adoption is explicit target state
 
-Use a strict, target-owned `architecture/adoption.json` marker as the adoption switch; diagrams and receipts are evidence rather than adoption authority. Marker/model absence preserves legacy `not_configured` only when exact head/route-base trees and a bounded authority-path history contain no architecture authority; incomplete shallow history fails closed because it cannot prove legacy absence.
+Use a strict, target-owned `architecture/adoption.json` marker as the adoption switch; diagrams, model drafts, and receipts are evidence rather than durable adoption authority. Marker/model absence preserves legacy `not_configured` only when current/route-base trees contain no authority and bounded history contains no canonical adoption marker; incomplete shallow history fails closed because it cannot prove legacy absence.
 
 ## 2026-08-26 — Install architecture tools, never target authority
 
@@ -198,3 +198,7 @@ The installer manages architecture modules, CLI, strict schemas, and non-authori
 ## 2026-08-27 — Projection rendering is read-only
 
 Return deterministic Mermaid artifacts on stdout and keep checked-in projection updates in the normal reviewed source-edit path; removing the in-place writer eliminated unnecessary repository mutation capability. Queue applicability uses one bounded package-aware provenance result for both fitness and risk so uncertainty fails closed without turning unrelated method names into queue signals.
+
+## 2026-08-27 — Preserve provenance identity and installer mutation ownership
+
+Queue provenance retains tuple/list positions and dictionary keys so only the changed operation's dependency can trigger fitness/risk; ambiguous selection over queue and non-queue values is explicitly unsupported. Installer-created directories remain transaction-owned until complete-path identity is reproved, allowing relocation failure to remove only operation-created entries and restore exact file mode under umask.

@@ -5,6 +5,7 @@ import importlib.util
 import io
 import json
 import os
+import stat
 import subprocess
 import tempfile
 import unittest
@@ -209,6 +210,108 @@ class InstallerTests(unittest.TestCase):
                     install_silent(ROOT, target, force=True, dry_run=False)
             self.assertTrue(moved)
             self.assertEqual((relocated / 'config.toml').read_bytes(), b'outside original\n')
+
+    def test_directory_creation_relocation_is_recovered_for_all_install_boundaries(self) -> None:
+        cases = (
+            ('managed parent', '.grok', '.grok/agents/tool.toml', b'managed\n'),
+            ('agents guidance parent', 'docs', 'docs/guidance/AGENTS.md', b'agents\n'),
+            ('bitrix guidance parent', 'local', 'local/guidance/AGENTS.md', b'bitrix\n'),
+            ('ensured directory', 'engineering', 'engineering/contracts/openapi', None),
+        )
+        for label, ancestor_name, relative, content in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                target = root / 'target'
+                ancestor = target / ancestor_name
+                ancestor.mkdir(parents=True)
+                (ancestor / 'sentinel.txt').write_bytes(b'outside unchanged\n')
+                relocated = root / f'relocated-{ancestor_name.replace("/", "-")}'
+                real_mkdir = os.mkdir
+                moved = False
+
+                def relocate_before_mkdir(path, *args, **kwargs):
+                    nonlocal moved
+                    parent_fd = kwargs.get('dir_fd')
+                    parent = (
+                        Path(os.readlink(f'/proc/self/fd/{parent_fd}'))
+                        if parent_fd is not None
+                        else None
+                    )
+                    if not moved and parent is not None and ancestor in (parent, *parent.parents):
+                        moved = True
+                        ancestor.rename(relocated)
+                        real_mkdir(ancestor)
+                    return real_mkdir(path, *args, **kwargs)
+
+                with MODULE._TargetTree(target) as tree, patch(
+                    'os.mkdir', side_effect=relocate_before_mkdir
+                ):
+                    with self.assertRaises((OSError, RuntimeError)):
+                        if content is None:
+                            tree.ensure_dir(relative)
+                        else:
+                            tree.write(relative, content)
+                self.assertTrue(moved)
+                self.assertEqual(
+                    (relocated / 'sentinel.txt').read_bytes(), b'outside unchanged\n'
+                )
+                unexpected = Path(relative).relative_to(ancestor_name).parts[0]
+                self.assertFalse((relocated / unexpected).exists())
+
+    def test_relocation_rollback_preserves_bytes_and_mode_under_umask(self) -> None:
+        cases = (
+            ('managed file', '.grok/config.toml', 0o751),
+            ('root agents', 'AGENTS.md', 0o666),
+            ('bitrix agents', 'local/AGENTS.md', 0o640),
+        )
+        for label, relative, original_mode in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                target = root / 'target'
+                path = target / relative
+                path.parent.mkdir(parents=True)
+                path.write_bytes(b'original\n')
+                path.chmod(original_mode)
+                outside = root / 'outside'
+                outside.mkdir()
+                real_open_dir = MODULE._TargetTree._open_dir
+                calls = 0
+
+                def changed_parent(tree, parts, *, create, created=None):
+                    nonlocal calls
+                    descriptor = real_open_dir(
+                        tree, parts, create=create, created=created
+                    )
+                    if parts == path.relative_to(target).parts[:-1]:
+                        calls += 1
+                        if calls == 4:
+                            os.close(descriptor)
+                            return os.open(outside, os.O_RDONLY | os.O_DIRECTORY)
+                    return descriptor
+
+                old_umask = os.umask(0o077)
+                try:
+                    with MODULE._TargetTree(target) as tree, patch.object(
+                        MODULE._TargetTree, '_open_dir', changed_parent
+                    ):
+                        with self.assertRaises((OSError, RuntimeError)):
+                            tree.write(relative, b'replacement\n', mode=0o600)
+                finally:
+                    os.umask(old_umask)
+                self.assertEqual(path.read_bytes(), b'original\n')
+                self.assertEqual(stat.S_IMODE(path.stat().st_mode), original_mode)
+
+    def test_staging_failure_rolls_back_created_parent_and_stage(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'target'
+            target.mkdir()
+            with MODULE._TargetTree(target) as tree, patch(
+                'os.fchmod', side_effect=OSError('mode setup failed')
+            ):
+                with self.assertRaises(OSError):
+                    tree.write('.grok/agents/tool.toml', b'managed\n')
+            self.assertFalse((target / '.grok').exists())
+            self.assertEqual(list(target.glob('.adaptive-install-*')), [])
 
     def test_bitrix_target_gets_local_agents(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

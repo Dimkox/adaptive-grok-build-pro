@@ -785,6 +785,112 @@ class ArchitectureFitnessTests(unittest.TestCase):
         )
         self.assertNotIn("new_queue", report.triggers)
 
+    def test_queue_provenance_is_operation_and_element_specific(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        positives = (
+            (
+                "wildcard celery decorator alias",
+                "from celery import *\ndecorator = shared_task\n",
+                "@decorator\ndef job():\n    return None\n",
+            ),
+            (
+                "wildcard celery factory alias",
+                "from celery import *\nfactory = Celery\napp = factory('jobs')\n",
+                "@app.task\ndef job():\n    return None\n",
+            ),
+            (
+                "wildcard rq factory alias",
+                "from rq import *\nfactory = Queue\njobs = factory()\n",
+                "jobs.enqueue(task)\n",
+            ),
+            (
+                "ambiguous mixed subscript",
+                "import celery\n"
+                "class Pipeline:\n    def task(self, fn):\n        return fn\n"
+                "values = [celery.Celery('jobs'), Pipeline()]\n"
+                "receiver = values[index]\n",
+                "@receiver.task\ndef stage():\n    return None\n",
+            ),
+        )
+        for label, before, addition in positives:
+            with self.subTest(label=label):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", before + addition)
+                head = repo.commit("queue operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "unsupported")
+                self.assertEqual(report.status, "fail")
+                self.assertIn("src/jobs.py", result.applicability.scanned_scope)
+                self.assertIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
+        negatives = (
+            (
+                "wildcard unrelated receiver",
+                "from celery import *\n"
+                "class Pipeline:\n    def task(self, fn):\n        return fn\n"
+                "pipeline = Pipeline()\n",
+                "@pipeline.task\ndef stage():\n    return None\n",
+            ),
+            (
+                "tuple sibling",
+                "import celery\n"
+                "class Pipeline:\n    def task(self, fn):\n        return fn\n"
+                "app, pipeline = (celery.Celery('jobs'), Pipeline())\n",
+                "@pipeline.task\ndef stage():\n    return None\n",
+            ),
+            (
+                "list subscript sibling",
+                "import celery\n"
+                "class Pipeline:\n    def task(self, fn):\n        return fn\n"
+                "values = [celery.Celery('jobs'), Pipeline()]\n"
+                "pipeline = values[1]\n",
+                "@pipeline.task\ndef stage():\n    return None\n",
+            ),
+            (
+                "dict key sibling",
+                "import celery\n"
+                "class Pipeline:\n    def task(self, fn):\n        return fn\n"
+                "values = {'queue': celery.Celery('jobs'), 'pipeline': Pipeline()}\n"
+                "pipeline = values['pipeline']\n",
+                "@pipeline.task\ndef stage():\n    return None\n",
+            ),
+        )
+        for label, before, addition in negatives:
+            with self.subTest(label=label):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", before + addition)
+                head = repo.commit("ordinary operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "not_applicable")
+                self.assertEqual(report.status, "pass")
+                self.assertNotIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
     def test_unrelated_semantic_method_names_remain_background_not_applicable(self) -> None:
         system = _system()
         system["nodes"][0]["type"] = "worker"

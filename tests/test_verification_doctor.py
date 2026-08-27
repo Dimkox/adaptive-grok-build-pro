@@ -345,6 +345,29 @@ class VerificationTests(unittest.TestCase):
             self.assertEqual(report['status'], 'fail')
             self.assertIn('missing', _check(report, 'architecture')['summary'])
 
+    def test_abandoned_unmarked_model_draft_does_not_establish_adoption(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current code', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            architecture = root / 'architecture'
+            architecture.mkdir(exist_ok=True)
+            for name in ('system.yaml', 'rules.yaml'):
+                (architecture / name).write_bytes((ROOT / 'architecture' / name).read_bytes())
+            subprocess.run(['git', 'add', 'architecture'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'unadopted architecture draft'], cwd=root, check=True)
+            (architecture / 'system.yaml').unlink()
+            (architecture / 'rules.yaml').unlink()
+            subprocess.run(['git', 'add', '-u'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'abandon architecture draft'], cwd=root, check=True)
+            (root / 'unrelated.txt').write_text('later\n', encoding='utf-8')
+            subprocess.run(['git', 'add', 'unrelated.txt'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'later descendant'], cwd=root, check=True)
+
+            report = verify(root, mode='fast', record=False)
+            self.assertEqual(report['status'], 'pass')
+            self.assertEqual(report['architecture']['status'], 'not_configured')
+
     def test_adoption_marker_read_fails_when_nofollow_is_unavailable(self) -> None:
         with project_copy(git=True) as root:
             self._adopt_architecture(root)
