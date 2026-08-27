@@ -3,12 +3,15 @@ from __future__ import annotations
 import copy
 import importlib
 import json
+import os
+import signal
 import subprocess
 import sys
 import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from tests.test_architecture_model import _json_schema, _rules, _system
 
@@ -60,6 +63,11 @@ class GitArchitectureRepo:
         path = self.root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(value, encoding="utf-8")
+
+    def write_bytes(self, relative: str, value: bytes) -> None:
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(value)
 
     def model(self, system: dict, rules: dict) -> None:
         self.write_json("architecture/system.yaml", system)
@@ -654,6 +662,128 @@ class ArchitectureFitnessTests(unittest.TestCase):
             "unsupported",
         )
         self.assertEqual(report.status, "fail")
+
+    def test_owner_resolution_rejects_equal_specificity_ties(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "service"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        system["nodes"][1]["repository_paths"] = ["other"]
+        repo, _ = self._repo(system=system)
+        snapshot = FIT.load_architecture(repo.root)
+        snapshot.system["nodes"][1]["repository_paths"] = ["src"]
+        with self.assertRaisesRegex(FIT.ArchitectureError, "ambiguous repository owner"):
+            FIT._owner_for_path(snapshot, "src/client.py")
+
+    def test_network_fitness_uses_the_unique_most_specific_owner(self) -> None:
+        system = _system()
+        system["nodes"][0]["repository_paths"] = ["src"]
+        system["nodes"][1]["type"] = "service"
+        system["nodes"][1]["repository_paths"] = ["src/network"]
+        rules = _rules()
+        rules["network_policies"] = [{
+            "id": "FIT-NETWORK",
+            "node_types": ["service"],
+            "allowed_protocols": ["https"],
+            "require_declared_edge": True,
+            "severity": "error",
+        }]
+        repo, base = self._repo(system=system, rules=rules)
+        repo.write_text("src/network/client.py", "import requests\nrequests.get('https://example.test')\n")
+        head = repo.commit("network client")
+        result = self._results(self._evaluate(repo, base, head))["network_client"]
+        self.assertEqual(result.status, "fail")
+        self.assertTrue(any("NODE-B" in finding for finding in result.findings))
+
+    def test_queue_provenance_covers_wildcards_and_structured_assignments(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        cases = (
+            (
+                "celery wildcard",
+                "from celery import *\n",
+                "@shared_task\ndef job():\n    return None\n",
+            ),
+            (
+                "tuple unpack",
+                "import celery\napps = (celery.Celery('a'), celery.Celery('b'))\n"
+                "app, backup = apps\n",
+                "@app.task\ndef job():\n    return None\n",
+            ),
+            (
+                "list unpack rq",
+                "from rq import Queue\nqueues = [Queue(), Queue()]\n"
+                "jobs, backup = queues\n",
+                "jobs.enqueue(task)\n",
+            ),
+            (
+                "subscript derived",
+                "import celery\napps = [celery.Celery('a')]\napp = apps[0]\n",
+                "@app.task\ndef job():\n    return None\n",
+            ),
+            (
+                "annotated derived",
+                "import celery\napp: object = celery.Celery('a')\n",
+                "@app.task\ndef job():\n    return None\n",
+            ),
+            (
+                "chained derived",
+                "import celery\napp = backup = celery.Celery('a')\n",
+                "@app.task\ndef job():\n    return None\n",
+            ),
+            (
+                "starred unpack",
+                "import celery\napps = [celery.Celery('a')]\napp, *rest = apps\n",
+                "@app.task\ndef job():\n    return None\n",
+            ),
+        )
+        for label, before, addition in cases:
+            with self.subTest(label=label):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", before + addition)
+                head = repo.commit("queue operation")
+                report = self._evaluate(repo, base, head, pre_risk="green")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "unsupported")
+                self.assertEqual(report.status, "fail")
+                self.assertIn("src/jobs.py", result.applicability.scanned_scope)
+                self.assertIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        before = (
+            "class Pipeline:\n"
+            "    def task(self, function):\n"
+            "        return function\n"
+            "pipelines = [Pipeline()]\n"
+            "pipeline = pipelines[0]\n"
+        )
+        repo.write_text("src/jobs.py", before)
+        base = repo.commit("ordinary base")
+        repo.write_text("src/jobs.py", before + "@pipeline.task\ndef stage():\n    return None\n")
+        head = repo.commit("ordinary decorator")
+        report = self._evaluate(repo, base, head, pre_risk="yellow")
+        self.assertEqual(
+            self._results(report)["background_job"].status,
+            "not_applicable",
+        )
+        self.assertNotIn("new_queue", report.triggers)
 
     def test_unrelated_semantic_method_names_remain_background_not_applicable(self) -> None:
         system = _system()
@@ -1356,6 +1486,35 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertEqual(result.status, "fail")
                 self.assertTrue(any(field in finding for finding in result.findings))
 
+    def test_changed_code_budget_rejects_unknown_non_python_line_metrics(self) -> None:
+        for label, content in (
+            ("nul", b"line one\0\nline two\n"),
+            ("invalid utf8", b"line one\n\xff\n"),
+        ):
+            with self.subTest(label=label):
+                rules = _rules()
+                rules["code_budgets"] = [{
+                    "id": "FIT-BUDGET",
+                    "path_prefixes": ["src"],
+                    "max_changed_bytes": 1000,
+                    "max_changed_lines": 1,
+                    "max_ast_complexity": 100,
+                    "severity": "error",
+                }]
+                repo, base = self._repo(rules=rules)
+                repo.write_text("src/readable.js", "const value = 1;\n")
+                repo.write_bytes("src/opaque.js", content)
+                head = repo.commit("unknown line metric")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["code_budget"]
+                self.assertEqual(result.status, "unsupported")
+                self.assertEqual(report.status, "fail")
+                self.assertIn("src/opaque.js", result.applicability.scanned_scope)
+                self.assertIn("unknown line statistics", " ".join(result.findings))
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
     def test_contract_compatibility_rejects_directional_break(self) -> None:
         system = _system()
         system["contracts"] = [{
@@ -1386,6 +1545,39 @@ class ArchitectureFitnessTests(unittest.TestCase):
         result = self._results(self._evaluate(repo, base, head))["contract_compatibility"]
         self.assertEqual(result.status, "fail")
         self.assertIn("CONTRACT-TEST", " ".join(result.findings))
+
+    def test_added_contracts_must_have_supported_baseline_semantics(self) -> None:
+        system = _system()
+        rules = _rules()
+        rules["contract_policies"] = [{
+            "id": "FIT-CONTRACT",
+            "contract_kinds": ["json_schema"],
+            "compatibility": "consumer_accepts_old",
+            "severity": "error",
+        }]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        base = repo.commit("pre-contract baseline")
+        added = copy.deepcopy(system)
+        added["contracts"] = [{
+            "id": "CONTRACT-UNSUPPORTED",
+            "kind": "json_schema",
+            "path": "engineering/contracts/unsupported.json",
+            "version": "1",
+            "role": "consumer",
+            "compatibility": "consumer_accepts_old",
+        }]
+        added["nodes"][0]["public_contracts"] = ["CONTRACT-UNSUPPORTED"]
+        repo.model(added, rules)
+        document = _json_schema({"value": {"type": "string"}})
+        document["properties"]["value"]["oneOf"] = [{"type": "string"}]
+        repo.write_json("engineering/contracts/unsupported.json", document)
+        head = repo.commit("unsupported contract addition")
+        report = self._evaluate(repo, base, head, pre_risk="yellow")
+        result = self._results(report)["contract_compatibility"]
+        self.assertEqual(result.status, "unsupported")
+        self.assertEqual(report.status, "fail")
+        self.assertIn("CONTRACT-UNSUPPORTED", " ".join(result.findings))
 
     def test_migration_history_and_required_phases_fail_closed(self) -> None:
         rules = _rules()
@@ -1713,6 +1905,75 @@ class ArchitectureFitnessTests(unittest.TestCase):
                         )
                     self.assertLess(time.monotonic() - started, 0.4)
                     self.assertFalse(sentinel.exists())
+
+    def test_capped_process_reaps_children_when_selector_setup_fails(self) -> None:
+        real_popen = DIFF.subprocess.Popen
+        for stage in ("selector", "set_blocking", "register"):
+            with self.subTest(stage=stage), tempfile.TemporaryDirectory() as directory:
+                processes = []
+
+                def capture_popen(*args, **kwargs):
+                    process = real_popen(*args, **kwargs)
+                    processes.append(process)
+                    return process
+
+                selector = DIFF.selectors.DefaultSelector()
+                if stage == "selector":
+                    setup_patch = patch.object(
+                        DIFF.selectors,
+                        "DefaultSelector",
+                        side_effect=OSError("forced selector failure"),
+                    )
+                elif stage == "set_blocking":
+                    setup_patch = patch.object(
+                        DIFF.os,
+                        "set_blocking",
+                        side_effect=OSError("forced set_blocking failure"),
+                    )
+                else:
+                    setup_patch = patch.object(
+                        selector,
+                        "register",
+                        side_effect=OSError("forced register failure"),
+                    )
+                selector_patch = (
+                    patch.object(DIFF.selectors, "DefaultSelector", return_value=selector)
+                    if stage == "register"
+                    else None
+                )
+                caught = None
+                try:
+                    with patch.object(DIFF.subprocess, "Popen", side_effect=capture_popen):
+                        if selector_patch is None:
+                            with setup_patch:
+                                DIFF._run_capped(
+                                    [sys.executable, "-c", "import time; time.sleep(30)"],
+                                    cwd=Path(directory),
+                                    env={},
+                                    stdout_limit=1024,
+                                    stderr_limit=1024,
+                                    timeout=5.0,
+                                )
+                        else:
+                            with selector_patch, setup_patch:
+                                DIFF._run_capped(
+                                    [sys.executable, "-c", "import time; time.sleep(30)"],
+                                    cwd=Path(directory),
+                                    env={},
+                                    stdout_limit=1024,
+                                    stderr_limit=1024,
+                                    timeout=5.0,
+                                )
+                except Exception as exc:  # asserted after leak cleanup
+                    caught = exc
+                self.assertEqual(len(processes), 1)
+                alive = processes[0].poll() is None
+                if alive:
+                    os.killpg(processes[0].pid, signal.SIGKILL)
+                    processes[0].wait()
+                selector.close()
+                self.assertIsInstance(caught, FIT.ArchitectureError)
+                self.assertFalse(alive, f"{stage} setup failure leaked the process group")
 
     def test_git_exact_and_worktree_modes_disable_hostile_local_fsmonitor(self) -> None:
         repo, base = self._repo()

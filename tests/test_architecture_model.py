@@ -206,6 +206,17 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertEqual(snapshot.rules["architecture_id"], "ARCH-TEST")
         self.assertEqual(ARCH.validate_architecture(snapshot, root), ())
 
+    def test_repository_path_ownership_rejects_exact_ties(self) -> None:
+        system = _system()
+        system["nodes"][0]["repository_paths"] = ["src"]
+        system["nodes"][1]["repository_paths"] = ["src"]
+        with self.assertRaisesRegex(ARCH.ArchitectureError, "repository path ownership"):
+            ARCH.load_architecture(self._repo(system, _rules()))
+
+        system["nodes"][1]["repository_paths"] = ["src/special"]
+        snapshot = ARCH.load_architecture(self._repo(system, _rules()))
+        self.assertEqual(len(snapshot.system["nodes"]), 2)
+
     def test_five_mermaid_projections_are_deterministic_sorted_and_escaped(self) -> None:
         self.assertIsNotNone(DIAGRAMS, "architecture_diagrams is not implemented")
         system = _system()
@@ -344,6 +355,33 @@ class ArchitectureModelTests(unittest.TestCase):
         rules["unknown"] = True
         with self.assertRaises(ARCH.ArchitectureError):
             ARCH.load_architecture(self._repo(_system(), rules))
+
+        for schema_name, expected_objects in (
+            ("architecture-system.schema.json", 10),
+            ("architecture-rules.schema.json", 13),
+        ):
+            schema = json.loads((ROOT / "schemas" / schema_name).read_text(encoding="utf-8"))
+            objects: list[dict] = []
+
+            def collect(value) -> None:
+                if isinstance(value, dict):
+                    if value.get("type") == "object":
+                        objects.append(value)
+                    for child in value.values():
+                        collect(child)
+                elif isinstance(value, list):
+                    for child in value:
+                        collect(child)
+
+            collect(schema)
+            self.assertEqual(len(objects), expected_objects, schema_name)
+            for index, object_schema in enumerate(objects):
+                with self.subTest(schema=schema_name, object=index):
+                    self.assertIs(object_schema.get("additionalProperties"), False)
+                    self.assertEqual(
+                        set(object_schema.get("required", [])),
+                        set(object_schema.get("properties", {})),
+                    )
 
     def test_unknown_versions_and_non_from_to_direction_fail(self) -> None:
         for target in ("system", "rules"):
@@ -895,6 +933,12 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertEqual(docker_edge["protocol"], "docker_api")
         self.assertEqual(docker_edge["authentication"], "none")
         self.assertEqual(docker_edge["network_policy"], "local_only")
+        compose_owners = [
+            node["id"]
+            for node in snapshot.system["nodes"]
+            if "trust-ci/compose.yaml" in node["repository_paths"]
+        ]
+        self.assertEqual(compose_owners, ["NODE-TRUST-CI-WORKER"])
         self.assertTrue(
             all(node["runtime"]["evidence"] == "source_described" for node in snapshot.system["nodes"])
         )
@@ -993,7 +1037,7 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(
             ARCH.compare_contracts(openapi_record, openapi_record, "bidirectional").status,
-            "unsupported",
+            "compatible",
         )
 
     def test_repository_drift_reports_undeclared_source_and_contract(self) -> None:

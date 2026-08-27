@@ -145,17 +145,39 @@ def _exact_tree_has_architecture(root: Path, sha: str) -> bool:
     )
 
 
-def _exact_head_parents(root: Path, head: str) -> tuple[str, ...]:
-    raw = _git(root, ["rev-list", "--parents", "-n", "1", head], limit=2_048)
+def _exact_history_has_architecture(root: Path, head: str) -> bool:
+    raw = _git(
+        root,
+        [
+            "rev-list",
+            "--full-history",
+            "--max-count=64",
+            head,
+            "--",
+            ADOPTION_PATH.as_posix(),
+            SYSTEM_PATH.as_posix(),
+            RULES_PATH.as_posix(),
+        ],
+        limit=64 * 41,
+    )
     if raw is None:
-        raise ArchitectureError("cannot inspect exact HEAD parents", code="git")
-    fields = raw.decode("ascii", "strict").strip().split()
-    if not fields or fields[0] != head or len(fields) > 33:
-        raise ArchitectureError("exact HEAD parent inventory is invalid or unbounded", code="git")
-    for value in fields[1:]:
-        if len(value) != 40 or any(character not in "0123456789abcdef" for character in value):
-            raise ArchitectureError("exact HEAD parent is invalid", code="git")
-    return tuple(fields[1:])
+        raise ArchitectureError("cannot inspect bounded architecture history", code="git")
+    commits = raw.decode("ascii", "strict").splitlines()
+    if len(commits) > 64:
+        raise ArchitectureError("architecture history inventory is unbounded", code="limit")
+    for value in commits:
+        if len(value) != 40 or any(
+            character not in "0123456789abcdef" for character in value
+        ):
+            raise ArchitectureError("architecture history contains an invalid commit", code="git")
+    return bool(commits)
+
+
+def _history_is_shallow(root: Path) -> bool:
+    raw = _git(root, ["rev-parse", "--is-shallow-repository"], limit=16)
+    if raw not in {b"true\n", b"false\n"}:
+        raise ArchitectureError("cannot determine repository history completeness", code="git")
+    return raw == b"true\n"
 
 
 def _active_architecture_binding(
@@ -178,12 +200,13 @@ def _active_architecture_binding(
             root, base_selection.route_base_sha
         )
         if not exact_evidence:
-            exact_evidence = any(
-                _exact_tree_has_architecture(root, parent)
-                for parent in _exact_head_parents(root, head)
-            )
+            exact_evidence = _exact_history_has_architecture(root, head)
         if exact_evidence:
             raise RuntimeError("adopted architecture marker and model are missing")
+        if _history_is_shallow(root):
+            raise RuntimeError(
+                "architecture adoption history is incomplete in a shallow repository"
+            )
         _confirm_legacy_absence(root, root_fd, authority)
         return None
     if present == (False, False):

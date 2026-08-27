@@ -4,6 +4,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 import subprocess
 import tempfile
 import unittest
@@ -149,6 +150,65 @@ class InstallerTests(unittest.TestCase):
             install_silent(ROOT, target, force=True, dry_run=False)
             self.assertIn('sandbox_mode', path.read_text())
             self.assertEqual(other.read_text(), 'keep')
+
+    def test_force_rejects_symlink_and_special_managed_destinations(self) -> None:
+        for label in ('final_symlink', 'ancestor_symlink', 'special_file'):
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                target = root / 'target'
+                outside = root / 'outside'
+                authority = target / 'architecture/system.yaml'
+                authority.parent.mkdir(parents=True)
+                authority.write_bytes(b'target authority\n')
+                outside.mkdir()
+                if label == 'final_symlink':
+                    managed = target / '.grok/config.toml'
+                    managed.parent.mkdir(parents=True)
+                    managed.symlink_to(authority)
+                elif label == 'ancestor_symlink':
+                    outside_managed = outside / 'config.toml'
+                    outside_managed.write_bytes(b'outside\n')
+                    (target / '.grok').symlink_to(outside, target_is_directory=True)
+                else:
+                    managed = target / '.grok/config.toml'
+                    managed.parent.mkdir(parents=True)
+                    os.mkfifo(managed)
+                with self.assertRaises((OSError, RuntimeError, SystemExit)):
+                    install_silent(ROOT, target, force=True, dry_run=False)
+                self.assertEqual(authority.read_bytes(), b'target authority\n')
+                if label == 'ancestor_symlink':
+                    self.assertEqual((outside / 'config.toml').read_bytes(), b'outside\n')
+
+    def test_force_rolls_back_when_managed_parent_is_relocated(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            target = root / 'target'
+            managed = target / '.grok/config.toml'
+            managed.parent.mkdir(parents=True)
+            managed.write_bytes(b'outside original\n')
+            relocated = root / 'relocated-grok'
+            real_replace = os.replace
+            moved = False
+
+            def relocate_before_replace(src, dst, *args, **kwargs):
+                nonlocal moved
+                destination_fd = kwargs.get('dst_dir_fd')
+                destination = (
+                    Path(os.readlink(f'/proc/self/fd/{destination_fd}'))
+                    if destination_fd is not None
+                    else None
+                )
+                if not moved and destination == managed.parent:
+                    moved = True
+                    managed.parent.rename(relocated)
+                    managed.parent.mkdir()
+                return real_replace(src, dst, *args, **kwargs)
+
+            with patch('os.replace', side_effect=relocate_before_replace):
+                with self.assertRaises((OSError, RuntimeError, SystemExit)):
+                    install_silent(ROOT, target, force=True, dry_run=False)
+            self.assertTrue(moved)
+            self.assertEqual((relocated / 'config.toml').read_bytes(), b'outside original\n')
 
     def test_bitrix_target_gets_local_agents(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

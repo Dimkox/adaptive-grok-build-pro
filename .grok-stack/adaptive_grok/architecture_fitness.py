@@ -431,7 +431,12 @@ def _contract_compatibility(snapshot: ArchitectureSnapshot, diff: ArchitectureDi
         if not matching:
             unsupported.append(f"{identity}: no compatibility policy for {kind}")
         elif old is None:
-            continue
+            for rule in matching:
+                result = compare_contracts(new, new, rule["compatibility"])
+                if result.status == "unsupported":
+                    unsupported.append(
+                        f"{identity}: unsupported added-contract baseline semantics"
+                    )
         elif new is None:
             findings.append(f"{identity}: declared contract removed")
         else:
@@ -728,7 +733,16 @@ def _owner_for_path(snapshot: ArchitectureSnapshot, path: str) -> dict[str, Any]
         for repository_path in node["repository_paths"]
         if _matches(path, (repository_path,))
     ]
-    return None if not matches else max(matches, key=lambda item: item[0])[1]
+    if not matches:
+        return None
+    specificity = max(length for length, _ in matches)
+    owners = {node["id"]: node for length, node in matches if length == specificity}
+    if len(owners) != 1:
+        raise ArchitectureError(
+            f"ambiguous repository owner for {path}: {sorted(owners)}",
+            code="fitness",
+        )
+    return next(iter(owners.values()))
 
 
 def _project_import_roots(
@@ -952,7 +966,20 @@ def _code_budget(
             continue
         applicable_paths.update(item.path for item in artifacts)
         changed_bytes = sum(max(item.base_size, item.head_size) for item in artifacts)
-        changed_lines = sum((item.added_lines or 0) + (item.deleted_lines or 0) for item in artifacts)
+        unknown_line_items = [
+            item.path
+            for item in artifacts
+            if item.added_lines is None or item.deleted_lines is None
+        ]
+        unsupported.extend(
+            f"{rule['id']}: unknown line statistics for {path}"
+            for path in unknown_line_items
+        )
+        changed_lines = sum(
+            item.added_lines + item.deleted_lines
+            for item in artifacts
+            if item.added_lines is not None and item.deleted_lines is not None
+        )
         complexity = 0
         for item in artifacts:
             if Path(item.path).suffix not in _PYTHON_SUFFIXES:
@@ -994,8 +1021,9 @@ def _code_budget(
 def _queue_provenance(
     tree: ast.AST,
     adapter_names: set[str] | None = None,
-) -> tuple[set[str], set[str]]:
+) -> tuple[set[str], set[str], bool]:
     queue_names = set(adapter_names or ())
+    wildcard_queue_import = False
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -1006,13 +1034,24 @@ def _queue_provenance(
             for alias in node.names:
                 local = alias.asname or alias.name
                 if node.module.split(".")[0] in _QUEUE_IMPORTS:
-                    queue_names.add(local)
+                    if alias.name == "*":
+                        wildcard_queue_import = True
+                    else:
+                        queue_names.add(local)
 
     def queue_derived(value: ast.AST) -> bool:
         if isinstance(value, ast.Name):
             return value.id in queue_names
         if isinstance(value, ast.Attribute):
             return queue_derived(value.value)
+        if isinstance(value, ast.Subscript):
+            return queue_derived(value.value)
+        if isinstance(value, ast.Starred):
+            return queue_derived(value.value)
+        if isinstance(value, (ast.List, ast.Set, ast.Tuple)):
+            return any(queue_derived(item) for item in value.elts)
+        if isinstance(value, ast.Dict):
+            return any(queue_derived(item) for item in value.values)
         if isinstance(value, ast.Call):
             if queue_derived(value.func):
                 return True
@@ -1023,6 +1062,15 @@ def _queue_provenance(
                 and queue_derived(value.args[0])
             )
         return False
+
+    def target_names(target: ast.AST) -> set[str]:
+        if isinstance(target, ast.Name):
+            return {target.id}
+        if isinstance(target, ast.Starred):
+            return target_names(target.value)
+        if isinstance(target, (ast.List, ast.Tuple)):
+            return set().union(*(target_names(item) for item in target.elts))
+        return set()
 
     # Resolve simple assignment/factory chains to a fixed point. The global AST
     # node limit bounds both this loop and the values considered here.
@@ -1038,8 +1086,9 @@ def _queue_provenance(
                 continue
             targets = node.targets if isinstance(node, ast.Assign) else [node.target]
             for target in targets:
-                if isinstance(target, ast.Name) and target.id not in queue_names:
-                    queue_names.add(target.id)
+                additions = target_names(target) - queue_names
+                if additions:
+                    queue_names.update(additions)
                     changed = True
         if not changed:
             break
@@ -1065,7 +1114,54 @@ def _queue_provenance(
                         f"semantic-decorator:{node.name}:"
                         + ast.dump(decorator, annotate_fields=True, include_attributes=False)
                     )
-    return signals, queue_names
+
+    wildcard_uncertain = False
+    if wildcard_queue_import:
+        locally_bound = {
+            name
+            for node in ast.walk(tree)
+            for target in (
+                node.targets if isinstance(node, ast.Assign)
+                else [node.target] if isinstance(node, ast.AnnAssign)
+                else []
+            )
+            for name in target_names(target)
+        }
+        locally_bound.update(
+            node.name
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
+        )
+        locally_bound.update(
+            alias.asname or alias.name.split(".")[0]
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Import)
+            for alias in node.names
+        )
+        locally_bound.update(
+            alias.asname or alias.name
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom)
+            for alias in node.names
+            if alias.name != "*"
+        )
+        for node in ast.walk(tree):
+            operations: list[ast.AST] = []
+            if isinstance(node, ast.Call):
+                operations.append(node.func)
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                operations.extend(node.decorator_list)
+            for operation in operations:
+                roots = {
+                    child.id for child in ast.walk(operation) if isinstance(child, ast.Name)
+                }
+                if roots - locally_bound - queue_names:
+                    wildcard_uncertain = True
+                    signals.add(
+                        "semantic-wildcard:"
+                        + ast.dump(operation, annotate_fields=True, include_attributes=False)
+                    )
+    return signals, queue_names, wildcard_uncertain
 
 
 def _operation_dependencies(tree: ast.AST) -> set[str]:
@@ -1248,13 +1344,15 @@ def _local_queue_resolution(
             current_package=current_package,
             source_roots=source_roots,
         )
-        signals, derived = _queue_provenance(tree, set(imported.names))
+        signals, derived, wildcard_uncertain = _queue_provenance(
+            tree, set(imported.names)
+        )
         exports = tuple(sorted(name for name in derived if not name.startswith("_")))
         has_queue_provenance = bool(signals or exports)
         result = _QueueAdapterResolution(
             (
                 "unsupported"
-                if imported.unsupported and has_queue_provenance
+                if (imported.unsupported or wildcard_uncertain) and has_queue_provenance
                 else ("resolved" if has_queue_provenance else "not_queue")
             ),
             (
@@ -1403,14 +1501,17 @@ def _queue_signals(
         current_package=current_package,
         source_roots=source_roots,
     )
-    signals = tuple(sorted(_queue_provenance(tree, set(adapters.names))[0]))
+    local_signals, _derived, wildcard_uncertain = _queue_provenance(
+        tree, set(adapters.names)
+    )
+    signals = tuple(sorted(local_signals))
     return _QueueProvenanceResult(
-        state=("unsupported" if adapters.unsupported and signals else (
+        state=("unsupported" if (adapters.unsupported or wildcard_uncertain) and signals else (
             "resolved" if signals else "not_queue"
         )),
         reason=(
             "queue_provenance_unresolved"
-            if adapters.unsupported and signals
+            if (adapters.unsupported or wildcard_uncertain) and signals
             else ("queue_signals_resolved" if signals else "no_queue_signal")
         ),
         signals=signals,

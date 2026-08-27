@@ -91,3 +91,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Four M2-A remediation rounds kept closing named diagram and queue cases while reviewers found equivalent cleanup races, authority-loss windows, and provenance gaps.
 **Root cause:** Publication mutated path components before containment was irrevocably established, and queue analysis encoded examples instead of one explicit provenance/limit contract; post-checks and added cases could not repair those design-level boundaries.
+
+## 2026-08-27 — Expanded an abbreviated commit ID without Git
+
+**Symptom:** An exact-head fitness command used a guessed 40-character SHA and failed because the object did not exist.
+**Root cause:** The abbreviated commit output was copied into evidence without first resolving it through `git rev-parse HEAD`; exact identities must always come from Git.

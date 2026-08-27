@@ -373,6 +373,7 @@ def _validate_system_semantics(system: dict[str, Any]) -> None:
                 f"contract {contract['id']}: examples and .gitkeep are non-authoritative",
                 code="contract",
             )
+    repository_owners: dict[str, str] = {}
     for node in system["nodes"]:
         _require_references(
             [node["trust_domain"]], trust_domains, label=f"node {node['id']} trust_domain"
@@ -387,7 +388,15 @@ def _validate_system_semantics(system: dict[str, Any]) -> None:
             node["public_contracts"], contracts, label=f"node {node['id']} public_contracts"
         )
         for path in node["repository_paths"]:
-            _safe_relative_path(path, label=f"node {node['id']} repository path")
+            normalized = _safe_relative_path(path, label=f"node {node['id']} repository path")
+            prior = repository_owners.get(normalized)
+            if prior is not None and prior != node["id"]:
+                raise ArchitectureError(
+                    f"repository path ownership tie: {normalized} is owned by "
+                    f"{prior} and {node['id']}",
+                    code="ownership",
+                )
+            repository_owners[normalized] = node["id"]
     capability_keys: set[str] = set()
     for edge in system["edges"]:
         _require_references(
@@ -1087,6 +1096,21 @@ def _content_schema(container: dict[str, Any]) -> dict[str, Any] | None:
     return media["schema"]
 
 
+def _content_schemas(container: Any) -> dict[str, dict[str, Any]]:
+    if not isinstance(container, dict):
+        return {}
+    content = container.get("content")
+    if not isinstance(content, dict):
+        return {}
+    return {
+        media_type: media["schema"]
+        for media_type, media in content.items()
+        if isinstance(media_type, str)
+        and isinstance(media, dict)
+        and isinstance(media.get("schema"), dict)
+    }
+
+
 def _media_schema(operation: dict[str, Any], key: str) -> dict[str, Any] | None:
     container = operation.get(key)
     if not isinstance(container, dict):
@@ -1095,15 +1119,22 @@ def _media_schema(operation: dict[str, Any], key: str) -> dict[str, Any] | None:
 
 
 def _supported_content(content: Any, schemas: list[dict[str, Any]]) -> bool:
-    if not isinstance(content, dict) or set(content) != {"application/json"}:
+    supported_media = {"application/json", "application/octet-stream", "text/plain"}
+    if (
+        not isinstance(content, dict)
+        or not content
+        or len(content) > len(supported_media)
+        or not set(content) <= supported_media
+    ):
         return False
-    media = content["application/json"]
-    if not isinstance(media, dict) or set(media) != {"schema"}:
-        return False
-    schema = media["schema"]
-    if _unsupported_schema(schema):
-        return False
-    schemas.append(schema)
+    for media_type in sorted(content):
+        media = content[media_type]
+        if not isinstance(media, dict) or set(media) != {"schema"}:
+            return False
+        schema = media["schema"]
+        if _unsupported_schema(schema):
+            return False
+        schemas.append(schema)
     return True
 
 
@@ -1379,9 +1410,9 @@ def _compare_openapi(base: dict[str, Any], head: dict[str, Any], reasons: set[st
             _compare_schema_direction(
                 base_parameter["schema"], head_parameter["schema"], "consumer", reasons
             )
-        base_request = _media_schema(base_operation, "requestBody")
-        head_request = _media_schema(head_operation, "requestBody")
-        if base_request is not None and head_request is not None:
+        base_request = _content_schemas(base_operation.get("requestBody"))
+        head_request = _content_schemas(head_operation.get("requestBody"))
+        if base_request and head_request:
             base_body = base_operation.get("requestBody", {})
             head_body = head_operation.get("requestBody", {})
             if (
@@ -1391,10 +1422,15 @@ def _compare_openapi(base: dict[str, Any], head: dict[str, Any], reasons: set[st
                 and head_body.get("required", False)
             ):
                 reasons.add("new_required_input")
-            _compare_schema_direction(base_request, head_request, "consumer", reasons)
-        elif base_request is not None:
+            if set(base_request) - set(head_request):
+                reasons.add("removed_request_media_type")
+            for media_type in set(base_request) & set(head_request):
+                _compare_schema_direction(
+                    base_request[media_type], head_request[media_type], "consumer", reasons
+                )
+        elif base_request:
             reasons.add("removed_request_schema")
-        elif base_request is None and head_request is not None:
+        elif head_request:
             request_body = head_operation.get("requestBody", {})
             if isinstance(request_body, dict) and request_body.get("required"):
                 reasons.add("new_required_input")
@@ -1409,13 +1445,23 @@ def _compare_openapi(base: dict[str, Any], head: dict[str, Any], reasons: set[st
             head_response = head_responses[status]
             if not isinstance(base_response, dict) or not isinstance(head_response, dict):
                 continue
-            base_schema = _content_schema(base_response)
-            head_schema = _content_schema(head_response)
-            if base_schema is not None and head_schema is not None:
-                _compare_schema_direction(base_schema, head_schema, "producer", reasons)
-            elif base_schema is not None:
+            base_schemas = _content_schemas(base_response)
+            head_schemas = _content_schemas(head_response)
+            if base_schemas and head_schemas:
+                if set(head_schemas) - set(base_schemas):
+                    reasons.add("widened_producer_output")
+                if set(base_schemas) - set(head_schemas):
+                    reasons.add("removed_response_schema")
+                for media_type in set(base_schemas) & set(head_schemas):
+                    _compare_schema_direction(
+                        base_schemas[media_type],
+                        head_schemas[media_type],
+                        "producer",
+                        reasons,
+                    )
+            elif base_schemas:
                 reasons.add("removed_response_schema")
-            elif head_schema is not None:
+            elif head_schemas:
                 reasons.add("widened_producer_output")
 
 

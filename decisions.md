@@ -189,7 +189,7 @@ Trusted changed-file and mutation discovery consumes byte-oriented `git ... -z` 
 
 ## 2026-08-26 — Architecture adoption is explicit target state
 
-Use a strict, target-owned `architecture/adoption.json` marker as the adoption switch; diagrams and receipts are evidence rather than adoption authority. Marker/model absence preserves legacy `not_configured` only when bounded exact HEAD, direct-parent, and route-base trees also contain no architecture authority; exact adoption evidence makes deletion fail closed without an unbounded history walk.
+Use a strict, target-owned `architecture/adoption.json` marker as the adoption switch; diagrams and receipts are evidence rather than adoption authority. Marker/model absence preserves legacy `not_configured` only when exact head/route-base trees and a bounded authority-path history contain no architecture authority; incomplete shallow history fails closed because it cannot prove legacy absence.
 
 ## 2026-08-26 — Install architecture tools, never target authority
 

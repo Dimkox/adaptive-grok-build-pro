@@ -16,7 +16,7 @@ Installer delivery includes local architecture modules, CLI, both strict schemas
 
 Task 5 left the package in its historical `implementing` phase. The authoritative current workflow status is recorded in `state.json`; verification plus code, test, security, data, and release review receipts remain required, and this note does not claim the package is `ready`.
 
-The first Task 6 code review found unresolved queue-export and `src/` source-root cases. Their source repair and regression coverage are present in the current candidate, but independent rereview and final receipts are still pending.
+The final route review found seven source defects across queue provenance, installer containment, durable adoption, code-budget metrics, bounded process cleanup, added-contract comparison, and repository ownership. Their source repairs and focused regression coverage are present in the current candidate, but independent rereview and final receipts are still pending.
 
 ## Rollout and observability
 

@@ -319,6 +319,32 @@ class VerificationTests(unittest.TestCase):
                 self.assertEqual(_check(report, 'architecture')['status'], 'fail')
                 self.assertIn('missing', _check(report, 'architecture')['summary'])
 
+    def test_adopted_deletion_remains_invalid_after_unrelated_descendants(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current architecture', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            self._adopt_architecture(root)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=root, check=True)
+            (root / 'architecture/adoption.json').unlink()
+            (root / 'architecture/system.yaml').unlink()
+            (root / 'architecture/rules.yaml').unlink()
+            subprocess.run(['git', 'add', '-u'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'delete architecture'], cwd=root, check=True)
+            for index in range(3):
+                (root / 'unrelated.txt').write_text(f'{index}\n', encoding='utf-8')
+                subprocess.run(['git', 'add', 'unrelated.txt'], cwd=root, check=True)
+                subprocess.run(
+                    ['git', 'commit', '-qm', f'unrelated descendant {index}'],
+                    cwd=root,
+                    check=True,
+                )
+
+            report = verify(root, mode='fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertIn('missing', _check(report, 'architecture')['summary'])
+
     def test_adoption_marker_read_fails_when_nofollow_is_unavailable(self) -> None:
         with project_copy(git=True) as root:
             self._adopt_architecture(root)
@@ -460,6 +486,41 @@ class VerificationTests(unittest.TestCase):
             report = verify(clone, mode='fast', record=False)
             self.assertEqual(report['status'], 'fail')
             self.assertIn('missing', _check(report, 'architecture')['summary'])
+
+    def test_shallow_descendant_cannot_hide_prior_adoption_from_legacy_route(self) -> None:
+        with project_copy(git=True) as source, tempfile.TemporaryDirectory() as tmp:
+            legacy = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=source, text=True, encoding='utf-8'
+            ).strip()
+            self._adopt_architecture(source)
+            subprocess.run(['git', 'add', '.'], cwd=source, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=source, check=True)
+            for name in ('adoption.json', 'system.yaml', 'rules.yaml'):
+                (source / 'architecture' / name).unlink()
+            subprocess.run(['git', 'add', '-u'], cwd=source, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'delete architecture'], cwd=source, check=True)
+            (source / 'unrelated.txt').write_text('later\n', encoding='utf-8')
+            subprocess.run(['git', 'add', 'unrelated.txt'], cwd=source, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'later descendant'], cwd=source, check=True)
+
+            clone = Path(tmp) / 'shallow'
+            subprocess.run(
+                ['git', 'clone', '-q', '--depth=1', f'file://{source}', str(clone)],
+                check=True,
+            )
+            subprocess.run(
+                ['git', 'fetch', '-q', '--depth=1', 'origin', f'{legacy}:refs/architecture/route-base'],
+                cwd=clone,
+                check=True,
+            )
+            set_active_route(clone, {
+                'base_commit': legacy,
+                'quality_profiles': ['base'],
+                'route_id': 'shallow-legacy-route-after-deletion',
+            })
+            report = verify(clone, mode='fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertIn('history', _check(report, 'architecture')['summary'])
 
     def test_malformed_adoption_marker_fails_closed(self) -> None:
         malformed = (

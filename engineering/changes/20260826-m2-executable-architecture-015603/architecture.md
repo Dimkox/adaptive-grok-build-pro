@@ -48,6 +48,7 @@ M2-A freezes machine-readable baselines for existing Trust CI HTTP endpoints, ap
 ## Reproducible operator surfaces
 
 - Authority: `architecture/adoption.json`, `architecture/system.yaml`, `architecture/rules.yaml`.
+- Repository-path ownership uses a unique longest-prefix rule; exact/equal-specificity ownership ties are invalid. Shared `trust-ci/compose.yaml` configuration has one source owner and describes runtime nodes through their explicit relationships.
 - Schemas: `schemas/architecture-system.schema.json`, `schemas/architecture-rules.schema.json`.
 - CLI: `scripts/grok_architecture.py` (`validate`, `summary`, `drift`, `diagram`, `diff`, `fitness`).
 - Generated projections: `architecture/generated/{context,container,deployment,data-flow,trust-boundary}.mmd`.

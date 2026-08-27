@@ -89,16 +89,25 @@ def _run_capped(
         shell=False,
         start_new_session=True,
     )
-    if process.stdout is None or process.stderr is None:  # pragma: no cover - Popen contract
-        _stop_process(process)
-        raise ArchitectureError("bounded process pipes are unavailable", code="io")
-    selector = selectors.DefaultSelector()
-    streams = {process.stdout: (bytearray(), stdout_limit), process.stderr: (bytearray(), stderr_limit)}
-    for stream in streams:
-        os.set_blocking(stream.fileno(), False)
-        selector.register(stream, selectors.EVENT_READ)
-    deadline = time.monotonic() + timeout
+    selector: selectors.BaseSelector | None = None
+    streams: dict[Any, tuple[bytearray, int]] = {}
     try:
+        if process.stdout is None or process.stderr is None:  # pragma: no cover - Popen contract
+            raise ArchitectureError("bounded process pipes are unavailable", code="io")
+        streams = {
+            process.stdout: (bytearray(), stdout_limit),
+            process.stderr: (bytearray(), stderr_limit),
+        }
+        try:
+            selector = selectors.DefaultSelector()
+            for stream in streams:
+                os.set_blocking(stream.fileno(), False)
+                selector.register(stream, selectors.EVENT_READ)
+        except Exception as exc:
+            raise ArchitectureError(
+                f"bounded process setup failed: {exc}", code="io"
+            ) from exc
+        deadline = time.monotonic() + timeout
         while selector.get_map():
             remaining = deadline - time.monotonic()
             if remaining <= 0:
@@ -131,8 +140,11 @@ def _run_capped(
             raise ArchitectureError("bounded process timeout exceeded", code="timeout") from exc
         return returncode, bytes(streams[process.stdout][0]), bytes(streams[process.stderr][0])
     finally:
-        selector.close()
-        for stream in streams:
+        if selector is not None:
+            selector.close()
+        for stream in (process.stdout, process.stderr):
+            if stream is None:
+                continue
             if not stream.closed:
                 stream.close()
         if process.poll() is None:

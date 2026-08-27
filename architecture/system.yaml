@@ -550,9 +550,7 @@
       "id": "NODE-DOCKER-ENGINE",
       "owner": "Trust CI operators; compose-described TCP/2375 local executor",
       "public_contracts": [],
-      "repository_paths": [
-        "trust-ci/compose.yaml"
-      ],
+      "repository_paths": [],
       "runtime": {
         "evidence": "source_described",
         "kind": "container",

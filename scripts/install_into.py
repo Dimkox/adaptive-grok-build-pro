@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import argparse
-import filecmp
-import shutil
+import os
+import stat
 import sys
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -49,6 +50,229 @@ TARGET_OWNED_ARCHITECTURE = frozenset({
 })
 MANAGED_START = '<!-- ADAPTIVE-GROK-PRO:START -->'
 MANAGED_END = '<!-- ADAPTIVE-GROK-PRO:END -->'
+MAX_TARGET_FILE_BYTES = 16 * 1024 * 1024
+
+
+class UnsafeInstallTarget(RuntimeError):
+    pass
+
+
+def _identity(value: os.stat_result) -> tuple[int, int, int]:
+    return value.st_dev, value.st_ino, value.st_mode
+
+
+class _TargetTree:
+    def __init__(self, root: Path) -> None:
+        self.root = root.absolute()
+        self.root.mkdir(parents=True, exist_ok=True)
+        nofollow = getattr(os, 'O_NOFOLLOW', 0)
+        directory = getattr(os, 'O_DIRECTORY', 0)
+        if not nofollow or not directory:
+            raise UnsafeInstallTarget('safe no-follow directory operations are unavailable')
+        metadata = os.lstat(self.root)
+        if not stat.S_ISDIR(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode):
+            raise UnsafeInstallTarget('installation target must be a real directory')
+        self.fd = os.open(self.root, os.O_RDONLY | directory | nofollow)
+        if _identity(os.fstat(self.fd)) != _identity(metadata):
+            os.close(self.fd)
+            raise UnsafeInstallTarget('installation target changed while opening')
+        self.identity = _identity(metadata)
+
+    def close(self) -> None:
+        os.close(self.fd)
+
+    def __enter__(self) -> '_TargetTree':
+        return self
+
+    def __exit__(self, *_exc) -> None:
+        self.close()
+
+    @staticmethod
+    def _parts(relative: str) -> tuple[str, ...]:
+        path = Path(relative)
+        if path.is_absolute() or not path.parts or any(part in {'', '.', '..'} for part in path.parts):
+            raise UnsafeInstallTarget(f'unsafe managed path: {relative}')
+        return path.parts
+
+    def _check_root(self) -> None:
+        try:
+            current = os.lstat(self.root)
+        except OSError as exc:
+            raise UnsafeInstallTarget(f'installation target is unavailable: {exc}') from exc
+        if _identity(current) != self.identity or _identity(os.fstat(self.fd)) != self.identity:
+            raise UnsafeInstallTarget('installation target changed during operation')
+
+    def _open_dir(self, parts: tuple[str, ...], *, create: bool) -> int:
+        self._check_root()
+        descriptor = os.dup(self.fd)
+        try:
+            for component in parts:
+                try:
+                    metadata = os.stat(component, dir_fd=descriptor, follow_symlinks=False)
+                except FileNotFoundError:
+                    if not create:
+                        raise
+                    os.mkdir(component, mode=0o755, dir_fd=descriptor)
+                    metadata = os.stat(component, dir_fd=descriptor, follow_symlinks=False)
+                if not stat.S_ISDIR(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode):
+                    raise UnsafeInstallTarget(
+                        f'managed path ancestor is not a real directory: {component}'
+                    )
+                child = os.open(
+                    component,
+                    os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                    dir_fd=descriptor,
+                )
+                if _identity(os.fstat(child)) != _identity(metadata):
+                    os.close(child)
+                    raise UnsafeInstallTarget('managed path ancestor changed while opening')
+                os.close(descriptor)
+                descriptor = child
+            return descriptor
+        except Exception:
+            os.close(descriptor)
+            raise
+
+    def ensure_dir(self, relative: str, *, dry_run: bool = False) -> None:
+        parts = self._parts(relative)
+        if dry_run:
+            try:
+                descriptor = self._open_dir(parts, create=False)
+            except FileNotFoundError:
+                return
+        else:
+            descriptor = self._open_dir(parts, create=True)
+        os.close(descriptor)
+
+    def is_dir(self, relative: str) -> bool:
+        try:
+            descriptor = self._open_dir(self._parts(relative), create=False)
+        except FileNotFoundError:
+            return False
+        os.close(descriptor)
+        return True
+
+    def _file(self, relative: str) -> tuple[int, str, os.stat_result | None]:
+        parts = self._parts(relative)
+        try:
+            parent = self._open_dir(parts[:-1], create=False)
+        except FileNotFoundError:
+            return -1, parts[-1], None
+        try:
+            metadata = os.stat(parts[-1], dir_fd=parent, follow_symlinks=False)
+        except FileNotFoundError:
+            metadata = None
+        if metadata is not None and not stat.S_ISREG(metadata.st_mode):
+            os.close(parent)
+            raise UnsafeInstallTarget(f'managed destination is not a regular file: {relative}')
+        return parent, parts[-1], metadata
+
+    def _read_details(self, relative: str) -> tuple[bytes, int] | None:
+        parent, name, metadata = self._file(relative)
+        if metadata is None:
+            if parent >= 0:
+                os.close(parent)
+            return None
+        descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parent)
+        os.close(parent)
+        try:
+            opened = os.fstat(descriptor)
+            if _identity(opened) != _identity(metadata) or opened.st_size > MAX_TARGET_FILE_BYTES:
+                raise UnsafeInstallTarget(f'managed destination changed or is oversized: {relative}')
+            chunks: list[bytes] = []
+            remaining = opened.st_size
+            while remaining:
+                chunk = os.read(descriptor, min(65_536, remaining))
+                if not chunk:
+                    raise UnsafeInstallTarget(f'managed destination was truncated: {relative}')
+                chunks.append(chunk)
+                remaining -= len(chunk)
+            after = os.fstat(descriptor)
+            if (
+                _identity(after) != _identity(opened)
+                or after.st_size != opened.st_size
+                or after.st_mtime_ns != opened.st_mtime_ns
+                or after.st_ctime_ns != opened.st_ctime_ns
+            ):
+                raise UnsafeInstallTarget(f'managed destination changed while reading: {relative}')
+            return b''.join(chunks), stat.S_IMODE(opened.st_mode)
+        finally:
+            os.close(descriptor)
+
+    def read(self, relative: str) -> bytes | None:
+        details = self._read_details(relative)
+        return None if details is None else details[0]
+
+    def _stage(self, content: bytes, mode: int) -> str:
+        for _ in range(32):
+            name = f'.adaptive-install-{uuid.uuid4().hex}'
+            try:
+                descriptor = os.open(
+                    name,
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                    mode,
+                    dir_fd=self.fd,
+                )
+            except FileExistsError:
+                continue
+            try:
+                view = memoryview(content)
+                while view:
+                    written = os.write(descriptor, view)
+                    view = view[written:]
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+            return name
+        raise UnsafeInstallTarget('cannot allocate a contained installer staging file')
+
+    def write(self, relative: str, content: bytes, *, mode: int = 0o644) -> None:
+        parts = self._parts(relative)
+        initial_parent = self._open_dir(parts[:-1], create=True)
+        initial_identity = _identity(os.fstat(initial_parent))
+        original_details = self._read_details(relative)
+        original = None if original_details is None else original_details[0]
+        original_mode = mode if original_details is None else original_details[1]
+        stage = self._stage(content, mode)
+        published_parent = -1
+        try:
+            published_parent = self._open_dir(parts[:-1], create=False)
+            if _identity(os.fstat(published_parent)) != initial_identity:
+                raise UnsafeInstallTarget(f'managed destination parent changed: {relative}')
+            os.replace(stage, parts[-1], src_dir_fd=self.fd, dst_dir_fd=published_parent)
+            stage = ''
+            try:
+                current_parent = self._open_dir(parts[:-1], create=False)
+            except FileNotFoundError as exc:
+                current_parent = -1
+                changed = True
+                change_exc: Exception = exc
+            else:
+                changed = _identity(os.fstat(current_parent)) != initial_identity
+                change_exc = UnsafeInstallTarget(f'managed destination parent relocated: {relative}')
+                os.close(current_parent)
+            if changed:
+                if original is None:
+                    os.unlink(parts[-1], dir_fd=published_parent)
+                else:
+                    rollback = self._stage(original, original_mode)
+                    os.replace(
+                        rollback,
+                        parts[-1],
+                        src_dir_fd=self.fd,
+                        dst_dir_fd=published_parent,
+                    )
+                raise UnsafeInstallTarget(str(change_exc))
+            os.fsync(published_parent)
+        finally:
+            os.close(initial_parent)
+            if published_parent >= 0:
+                os.close(published_parent)
+            if stage:
+                try:
+                    os.unlink(stage, dir_fd=self.fd)
+                except FileNotFoundError:
+                    pass
 
 
 def iter_source_files(source: Path) -> list[tuple[str, Path]]:
@@ -76,10 +300,9 @@ def iter_source_files(source: Path) -> list[tuple[str, Path]]:
     return sorted(files)
 
 
-def different(left: Path, right: Path) -> bool:
-    if not right.is_file():
-        return False
-    return not filecmp.cmp(left, right, shallow=False)
+def different(left: Path, tree: _TargetTree, relative: str) -> bool:
+    right = tree.read(relative)
+    return right is not None and left.read_bytes() != right
 
 
 def managed_agents_text(source: Path) -> str:
@@ -87,9 +310,10 @@ def managed_agents_text(source: Path) -> str:
     return f'\n{MANAGED_START}\n{core}\n{MANAGED_END}\n'
 
 
-def merge_agents(source: Path, target: Path, dry_run: bool) -> None:
+def merge_agents(source: Path, target: Path, tree: _TargetTree, dry_run: bool) -> None:
     agent_file = target / 'AGENTS.md'
-    existing = agent_file.read_text(encoding='utf-8') if agent_file.exists() else ''
+    existing_bytes = tree.read('AGENTS.md')
+    existing = existing_bytes.decode('utf-8') if existing_bytes is not None else ''
     block = managed_agents_text(source)
     if MANAGED_START in existing and MANAGED_END in existing:
         before, rest = existing.split(MANAGED_START, 1)
@@ -99,7 +323,7 @@ def merge_agents(source: Path, target: Path, dry_run: bool) -> None:
         merged = existing.rstrip() + block
     print(f'UPDATE {agent_file}')
     if not dry_run:
-        agent_file.write_text(merged, encoding='utf-8')
+        tree.write('AGENTS.md', merged.encode('utf-8'))
 
 
 def install(
@@ -118,56 +342,59 @@ def install(
             'GitHub Actions is forbidden. Use local `make verify` / '
             '`python3 scripts/grok_verify.py --mode pr`.'
         )
-    target.mkdir(parents=True, exist_ok=True)
-    source_files = iter_source_files(source)
-    conflicts = [rel for rel, src in source_files if different(src, target / rel)]
-    if conflicts and not force:
-        formatted = '\n'.join(f'  - {item}' for item in conflicts[:50])
-        extra = '' if len(conflicts) <= 50 else f'\n  ... and {len(conflicts) - 50} more'
-        raise SystemExit(
-            'Adaptive Grok managed files already exist with different content. '
-            'Review them, back up the repository, then rerun with --force to overwrite only these files.\n'
-            + formatted + extra
-        )
+    with _TargetTree(target) as tree:
+        source_files = iter_source_files(source)
+        conflicts = [rel for rel, src in source_files if different(src, tree, rel)]
+        if conflicts and not force:
+            formatted = '\n'.join(f'  - {item}' for item in conflicts[:50])
+            extra = '' if len(conflicts) <= 50 else f'\n  ... and {len(conflicts) - 50} more'
+            raise SystemExit(
+                'Adaptive Grok managed files already exist with different content. '
+                'Review them, back up the repository, then rerun with --force to overwrite only these files.\n'
+                + formatted + extra
+            )
 
-    for rel, src in source_files:
-        dst = target / rel
-        action = 'OVERWRITE' if dst.exists() and different(src, dst) else ('KEEP' if dst.exists() else 'COPY')
-        print(f'{action} {rel}')
-        if dry_run or action == 'KEEP':
-            continue
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dst)
+        for rel, src in source_files:
+            current = tree.read(rel)
+            content = src.read_bytes()
+            action = 'OVERWRITE' if current is not None and current != content else (
+                'KEEP' if current is not None else 'COPY'
+            )
+            print(f'{action} {rel}')
+            if dry_run or action == 'KEEP':
+                continue
+            tree.write(rel, content, mode=src.stat().st_mode & 0o777)
 
-    merge_agents(source, target, dry_run)
+        merge_agents(source, target, tree, dry_run)
 
-    profile = detect_repo(target)
-    if profile.kind == 'bitrix' and (target / 'local').is_dir():
-        local_agents = target / 'local/AGENTS.md'
-        bitrix_block = (source / 'docs/bitrix-local-AGENTS.md').read_text(encoding='utf-8')
-        if not local_agents.exists():
-            print(f'CREATE {local_agents.relative_to(target)}')
-            if not dry_run:
-                local_agents.write_text(bitrix_block, encoding='utf-8')
-        elif bitrix_block not in local_agents.read_text(encoding='utf-8'):
-            print(f'NOTICE {local_agents.relative_to(target)} exists; Bitrix-local guidance was not overwritten.')
+        profile = detect_repo(target)
+        if profile.kind == 'bitrix' and tree.is_dir('local'):
+            local_agents = target / 'local/AGENTS.md'
+            bitrix_block = (source / 'docs/bitrix-local-AGENTS.md').read_bytes()
+            existing = tree.read('local/AGENTS.md')
+            if existing is None:
+                print(f'CREATE {local_agents.relative_to(target)}')
+                if not dry_run:
+                    tree.write('local/AGENTS.md', bitrix_block)
+            elif bitrix_block not in existing:
+                print(f'NOTICE {local_agents.relative_to(target)} exists; Bitrix-local guidance was not overwritten.')
 
-    for rel in (
-        'engineering/changes',
-        'engineering/adr',
-        'engineering/runbooks',
-        'engineering/reviews',
-        'engineering/contracts/openapi',
-        'engineering/contracts/asyncapi',
-        'engineering/contracts/schemas',
-    ):
-        print(f'ENSURE {rel}')
-        if not dry_run:
-            (target / rel).mkdir(parents=True, exist_ok=True)
+        for rel in (
+            'engineering/changes',
+            'engineering/adr',
+            'engineering/runbooks',
+            'engineering/reviews',
+            'engineering/contracts/openapi',
+            'engineering/contracts/asyncapi',
+            'engineering/contracts/schemas',
+        ):
+            print(f'ENSURE {rel}')
+            tree.ensure_dir(rel, dry_run=dry_run)
+
+        pin_root = target if tree.read('.grok-stack/config/toolchain.json') is not None else source
 
     print(f'Detected target profile: {profile.kind}; domains={profile.domains}; modules={profile.bitrix_modules}')
 
-    pin_root = target if (target / '.grok-stack/config/toolchain.json').is_file() else source
     dep_results = pull_dependencies(
         pin_root,
         apply=install_deps,
