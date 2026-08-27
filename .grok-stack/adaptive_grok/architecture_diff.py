@@ -77,16 +77,17 @@ def _run_capped(
     stdout_limit: int,
     stderr_limit: int,
     timeout: float,
+    stdin_data: bytes | None = None,
 ) -> tuple[int, bytes, bytes]:
     """Run a process while enforcing limits before output is fully produced."""
+    input_stream = tempfile.TemporaryFile() if stdin_data is not None else None
+    if input_stream is not None:
+        input_stream.write(stdin_data)
+        input_stream.seek(0)
     process = subprocess.Popen(  # nosec B603
-        command,
-        cwd=cwd,
-        env=env,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=False,
+        command, cwd=cwd, env=env,
+        stdin=input_stream if input_stream is not None else subprocess.DEVNULL,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False,
         start_new_session=True,
     )
     selector: selectors.BaseSelector | None = None
@@ -149,6 +150,8 @@ def _run_capped(
                 stream.close()
         if process.poll() is None:
             _stop_process(process)
+        if input_stream is not None:
+            input_stream.close()
 
 
 def _git_environment() -> dict[str, str]:
@@ -200,6 +203,7 @@ def _git(
     *,
     allow_failure: bool = False,
     limit: int = MAX_GIT_OUTPUT_BYTES,
+    stdin_data: bytes | None = None,
 ) -> bytes | None:
     returncode, output, error = _run_capped(
         _git_command(arguments),
@@ -208,6 +212,7 @@ def _git(
         stdout_limit=limit,
         stderr_limit=65_536,
         timeout=_GIT_TIMEOUT_SECONDS,
+        stdin_data=stdin_data,
     )
     if returncode:
         if allow_failure:
@@ -247,44 +252,9 @@ def _head_commit(root: Path) -> str:
 
 
 def _git_blob(root: Path, sha: str, path: str, *, required: bool = False) -> bytes | None:
-    entry = _git(
-        root,
-        ["--literal-pathspecs", "ls-tree", "-z", sha, "--", path],
-        allow_failure=True,
-        limit=4_096 + len(os.fsencode(path)),
-    )
-    if not entry:
-        if required:
-            raise ArchitectureError(f"required Git object path is missing: {path}", code="missing")
-        return None
-    records = [record for record in entry.split(b"\0") if record]
-    if len(records) != 1 or b"\t" not in records[0]:
-        raise ArchitectureError(f"ambiguous Git tree entry for {path}", code="git")
-    metadata, returned_path = records[0].split(b"\t", 1)
-    fields = metadata.split()
-    if returned_path != os.fsencode(path) or len(fields) != 3:
-        raise ArchitectureError(f"unexpected Git tree entry for {path}", code="git")
-    mode, kind, _object_id = fields
-    if kind != b"blob" or mode not in {b"100644", b"100755"}:
-        raise ArchitectureError(f"Git object path is not a regular file: {path}", code="io")
-    spec = f"{sha}:{path}"
-    size_raw = _git(root, ["cat-file", "-s", spec], allow_failure=True, limit=64)
-    if size_raw is None:
-        if required:
-            raise ArchitectureError(f"required Git object path is missing: {path}", code="missing")
-        return None
-    try:
-        size = int(size_raw)
-    except ValueError as exc:
-        raise ArchitectureError(f"invalid Git blob size for {path}", code="git") from exc
-    if size > MAX_ANALYZED_FILE_BYTES:
-        raise ArchitectureError(f"Git blob exceeds analysis limit: {path}", code="limit")
-    value = _required_output(
-        _git(root, ["show", spec], limit=MAX_ANALYZED_FILE_BYTES),
-        operation=f"read blob {path}",
-    )
-    if len(value) != size:
-        raise ArchitectureError(f"Git blob changed during object read: {path}", code="git")
+    value = _git_blobs(root, sha, (path,))[path]
+    if value is None and required:
+        raise ArchitectureError(f"required Git object path is missing: {path}", code="missing")
     return value
 
 
@@ -536,17 +506,9 @@ class ArchitectureDiff:
 
 def _object_digest(value: Any) -> str:
     if isinstance(value, ContractRecord):
-        return _digest(
-            {
-                "id": value.id,
-                "kind": value.kind,
-                "path": value.path,
-                "version": value.version,
-                "role": value.role,
-                "compatibility": value.compatibility,
-                "document_digest": value.digest,
-            }
-        )
+        projected = {key: getattr(value, key) for key in ("id", "kind", "path", "version", "role", "compatibility")}
+        projected["document_digest"] = value.digest
+        return _digest(projected)
     return _digest(value)
 
 
@@ -556,6 +518,9 @@ def _change_records(
     def indexed(values: list[dict[str, Any]]) -> dict[str, Any]:
         return {value["id"]: value for value in values}
 
+    def indexed_rules(rules: dict[str, Any]) -> dict[str, Any]:
+        return {item["id"]: item for collection in RULE_COLLECTIONS for item in rules.get(collection, [])}
+
     base_system = base.snapshot.system if base else {}
     head_system = head.snapshot.system
     collections: list[tuple[str, dict[str, Any], dict[str, Any]]] = [
@@ -564,28 +529,6 @@ def _change_records(
             {"ARCHITECTURE": {key: base_system[key] for key in ("schema_version", "architecture_id")}}
             if base else {},
             {"ARCHITECTURE": {key: head_system[key] for key in ("schema_version", "architecture_id")}},
-        ),
-        (
-            "trust_domain",
-            indexed(base_system.get("trust_domains", [])),
-            indexed(head_system["trust_domains"]),
-        ),
-        (
-            "signal",
-            indexed(base_system.get("signals", [])),
-            indexed(head_system["signals"]),
-        ),
-        ("node", indexed(base_system.get("nodes", [])), indexed(head_system["nodes"])),
-        ("edge", indexed(base_system.get("edges", [])), indexed(head_system["edges"])),
-        (
-            "classification",
-            indexed(base_system.get("data_classifications", [])),
-            indexed(head_system["data_classifications"]),
-        ),
-        (
-            "secret",
-            indexed(base_system.get("secret_classes", [])),
-            indexed(head_system["secret_classes"]),
         ),
         (
             "runtime",
@@ -598,31 +541,23 @@ def _change_records(
             {item.id: item for item in head.contracts},
         ),
     ]
+    for kind, key in (
+        ("trust_domain", "trust_domains"), ("signal", "signals"), ("node", "nodes"),
+        ("edge", "edges"), ("classification", "data_classifications"),
+        ("secret", "secret_classes"),
+    ):
+        collections.append((kind, indexed(base_system.get(key, [])), indexed(head_system[key])))
     base_rules = base.snapshot.rules if base else {}
     head_rules = head.snapshot.rules
-    collections.append(
+    collections.extend((
         (
             "rules",
             {"ARCHITECTURE": {key: base_rules[key] for key in ("schema_version", "architecture_id")}}
             if base else {},
             {"ARCHITECTURE": {key: head_rules[key] for key in ("schema_version", "architecture_id")}},
-        )
-    )
-    collections.append(
-        (
-            "rule",
-            {
-                item["id"]: item
-                for collection in RULE_COLLECTIONS
-                for item in base_rules.get(collection, [])
-            },
-            {
-                item["id"]: item
-                for collection in RULE_COLLECTIONS
-                for item in head_rules[collection]
-            },
-        )
-    )
+        ),
+        ("rule", indexed_rules(base_rules), indexed_rules(head_rules)),
+    ))
     changes: list[ArchitectureChange] = []
     for kind, before, after in collections:
         for identity in set(before) | set(after):
@@ -736,6 +671,95 @@ def read_diff_file(root: Path, diff: ArchitectureDiff, path: str, side: str = "h
     return _git_blob(repository, _required_head(diff.head_sha), path)
 
 
+def _git_blobs(root: Path, sha: str, paths: tuple[str, ...]) -> dict[str, bytes | None]:
+    requested = tuple(sorted(set(paths)))
+    if len(requested) > MAX_CHANGED_PATHS:
+        raise ArchitectureError("diff file batch path limit exceeded", code="limit")
+    if not requested:
+        return {}
+    encoded = tuple(os.fsencode(path) for path in requested)
+    if any(b"\0" in path for path in encoded) or sum(map(len, encoded)) > 65_536:
+        raise ArchitectureError("diff file batch path input limit exceeded", code="limit")
+    raw = _required_output(
+        _git(
+            root,
+            ["--literal-pathspecs", "ls-tree", "-lr", "-z", "--full-tree", sha, "--", *requested],
+            limit=min(MAX_GIT_OUTPUT_BYTES, 4_096 + sum(map(len, encoded))),
+        ),
+        operation="read Git batch tree metadata",
+    )
+    entries: dict[str, tuple[bytes, int]] = {}
+    for record in (item for item in raw.split(b"\0") if item):
+        if b"\t" not in record:
+            raise ArchitectureError("invalid Git batch tree metadata", code="git")
+        metadata, returned_path = record.split(b"\t", 1)
+        fields = metadata.split()
+        path = _path_text(returned_path)
+        if path not in requested or len(fields) != 4 or path in entries:
+            raise ArchitectureError(f"unexpected Git tree entry for {path}", code="git")
+        mode, kind, object_id, size_raw = fields
+        if kind != b"blob" or mode not in {b"100644", b"100755"}:
+            raise ArchitectureError(f"Git object path is not a regular file: {path}", code="io")
+        if _EXACT_SHA.fullmatch(object_id.decode("ascii", "replace")) is None:
+            raise ArchitectureError(f"invalid Git blob identity for {path}", code="git")
+        try:
+            size = int(size_raw)
+        except ValueError as exc:
+            raise ArchitectureError(f"invalid Git blob size for {path}", code="git") from exc
+        if size > MAX_ANALYZED_FILE_BYTES:
+            raise ArchitectureError(f"Git blob exceeds analysis limit: {path}", code="limit")
+        entries[path] = object_id, size
+    present = tuple(path for path in requested if path in entries)
+    total = sum(entries[path][1] for path in present)
+    if total > MAX_GIT_OUTPUT_BYTES:
+        raise ArchitectureError("Git blob batch exceeds analysis limit", code="limit")
+    if not present:
+        return {path: None for path in requested}
+    specs = b"".join(sha.encode("ascii") + b":" + os.fsencode(path) + b"\0" for path in present)
+    output = _required_output(
+        _git(
+            root,
+            ["cat-file", "-Z", "--batch=%(objectname) %(objecttype) %(objectsize)"],
+            limit=total + 128 * len(present),
+            stdin_data=specs,
+        ),
+        operation="read Git blob batch",
+    )
+    values: dict[str, bytes | None] = {path: None for path in requested}
+    cursor = 0
+    for path in present:
+        end = output.find(b"\0", cursor)
+        if end < 0:
+            raise ArchitectureError(f"truncated Git blob batch header for {path}", code="git")
+        fields = output[cursor:end].split()
+        object_id, size = entries[path]
+        if fields != [object_id, b"blob", str(size).encode("ascii")]:
+            raise ArchitectureError(f"unexpected Git blob batch header for {path}", code="git")
+        start = end + 1
+        finish = start + size
+        if finish >= len(output) or output[finish:finish + 1] != b"\0":
+            raise ArchitectureError(f"truncated Git blob batch content for {path}", code="git")
+        values[path] = output[start:finish]
+        cursor = finish + 1
+    if cursor != len(output):
+        raise ArchitectureError("unexpected trailing Git blob batch output", code="git")
+    return values
+
+
+def read_diff_files(
+    root: Path, diff: ArchitectureDiff, paths: tuple[str, ...], side: str = "head"
+) -> dict[str, bytes | None]:
+    """Read a bounded exact set of paths, batching immutable Git blob content."""
+    repository = Path(root).resolve(strict=True)
+    if side not in {"base", "head"}:
+        raise ArchitectureError("diff file side must be base or head", code="invalid")
+    requested = tuple(sorted(set(paths)))
+    if side == "head" and diff.head_kind == "worktree":
+        return {path: _worktree_blob(repository, path) for path in requested}
+    sha = diff.base_sha if side == "base" else _required_head(diff.head_sha)
+    return _git_blobs(repository, sha, requested)
+
+
 def git_tree_paths(root: Path, sha: str, prefixes: tuple[str, ...]) -> tuple[str, ...]:
     raw = _required_output(
         _git(root, ["ls-tree", "-r", "--name-only", "-z", "--full-tree", sha]),
@@ -745,7 +769,7 @@ def git_tree_paths(root: Path, sha: str, prefixes: tuple[str, ...]) -> tuple[str
         sorted(
             path
             for path in (_path_text(item) for item in raw.split(b"\0") if item)
-            if any(path == prefix or path.startswith(prefix + "/") for prefix in prefixes)
+            if any(not prefix or path == prefix or path.startswith(prefix + "/") for prefix in prefixes)
         )
     )
     if len(paths) > MAX_CHANGED_PATHS:

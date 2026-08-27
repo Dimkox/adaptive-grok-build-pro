@@ -876,7 +876,7 @@ class _Interpreter:
                 local = alias.asname or alias.name.split(".")[0]
                 self._bind(
                     ast.Name(id=local),
-                    QUEUE if alias.name.split(".")[0] in _QUEUE_IMPORTS else NON_QUEUE,
+                    QUEUE if local in self.adapter_names or alias.name.split(".")[0] in _QUEUE_IMPORTS else NON_QUEUE,
                     environment,
                 )
             return environment

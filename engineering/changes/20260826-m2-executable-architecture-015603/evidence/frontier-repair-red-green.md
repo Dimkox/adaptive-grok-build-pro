@@ -168,3 +168,77 @@ Bandit, compileall, the 7/7 typed spec gate, architecture validate/drift/diagram
 README K16, diff whitespace, and protected-path checks all pass.
 
 Commit and exact post-commit evidence are appended after commit.
+
+## Security follow-up: exact local imports and bounded Git batching
+
+The exact-side resolver previously normalized only `ImportFrom`, so a relevant
+`import project.runtime as runtime` module alias and a local wildcard could hide a
+queue export. Relative child imports also accepted an empty export name as a
+declaration even when the child source did not exist. Exact module discovery then
+used repeated per-path Git blob subprocesses and made the fitness suite approach
+the verifier timeout.
+
+RED evidence:
+
+```text
+test_local_module_and_wildcard_imports_resolve_queue_exports
+Ran 1 test in 1.026s
+FAILED (failures=2: module-alias and wildcard queue positives were N/A)
+
+test_relative_child_import_requires_a_resolved_local_source
+Ran 1 test in 2.742s
+FAILED (failures=3: missing child below/at/above frontier was N/A)
+
+test_external_imports_use_batched_local_module_inventory
+Ran 1 test in 0.384s
+FAILED (external_alpha/external_beta triggered per-import Git probes)
+
+test_exact_batch_blob_reader_is_bounded_and_validates_entries
+Ran 1 test in 0.219s
+FAILED (AttributeError: read_diff_files was absent)
+```
+
+The repair normalizes ordinary module aliases and local wildcards into the same
+reachable-operation decision, requires an exact local source before accepting a
+relative child as nonqueue, and preserves per-top-level module budgets while
+sharing only completed immutable resolutions. Exact Git module content is now
+read from parsed regular-blob `ls-tree` metadata with one bounded, deterministic
+`cat-file --batch` content process. OIDs, types, sizes, response order, delimiters,
+per-file size, aggregate bytes, and requested paths are validated. Worktree reads
+continue to use descriptor-relative no-follow reads.
+
+GREEN and performance evidence:
+
+```text
+7 focused batching/frontier/import/cache tests
+Ran 7 tests in 7.238s
+OK
+
+python3 -m unittest -v tests.test_architecture_fitness
+Ran 67 tests in 73.874s
+OK
+elapsed=74.06 maxrss=66584
+
+python3 -m unittest discover
+Ran 361 tests in 180.826s
+OK
+elapsed=181.07 maxrss=101248
+
+python3 scripts/grok_architecture.py fitness \
+  --base 25bfbe59ea188d9687b20a9caad19e7db3d031f8 --worktree --json
+fitness=pass; background_job=pass; code_budget=pass
+max_changed_lines=10000/10000; elapsed=5.33s
+```
+
+The prior post-normalization fitness run took 263.756 seconds; a root-only inventory
+reduced it to 238.183 seconds, while the validated content batch reduced the final
+run to 73.874 seconds without raising a timeout, source limit, AST limit, module
+limit, or dependency-work limit. The first full-suite run exposed only a Bandit
+B105 false positive in an internal semantic mapping; the tuple-form equivalent
+then passed configured Bandit and the three affected verifier selectors before the
+clean 361-test rerun.
+
+Tracked files in this follow-up are the queue provenance/fitness implementation,
+the exact diff reader, this evidence, and the focused fitness regressions. No
+`trust-ci/**` or `.github/workflows/**` path changed. Exact post-commit SHA and the
+required text verifier result are recorded after the product commit.

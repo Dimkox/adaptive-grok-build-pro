@@ -2015,6 +2015,16 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 repo.write_text("src/jobs.py", before)
                 base = repo.commit("base")
                 repo.write_text("src/jobs.py", before + operation)
+                worktree_diff = FIT.diff_architecture(
+                    repo.root, base_sha=base, worktree=True
+                )
+                worktree_report = FIT.evaluate_fitness(
+                    repo.root,
+                    FIT.load_architecture(repo.root),
+                    worktree_diff,
+                    worktree_diff.changed_paths,
+                    pre_risk="yellow",
+                )
                 head = repo.commit("frontier operation")
                 report = self._evaluate(repo, base, head, pre_risk="yellow")
                 result = self._results(report)["background_job"]
@@ -2025,6 +2035,14 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     self.assertIn("src/jobs.py", result.applicability.scanned_scope)
                 self.assertGreaterEqual(
                     FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+                self.assertEqual(
+                    (
+                        worktree_report.status,
+                        self._results(worktree_report)["background_job"].status,
+                        worktree_report.triggers,
+                    ),
+                    (report.status, result.status, report.triggers),
                 )
 
     def test_unrelated_exhausted_dependency_frontier_remains_not_applicable(self) -> None:
@@ -2096,17 +2114,18 @@ class ArchitectureFitnessTests(unittest.TestCase):
         for path in ("src/first.py", "src/second.py"):
             repo.write_text(path, before + "app.delay(task)\n")
         head = repo.commit("two queue importers")
-        real_sources = FIT._local_module_sources
-        with patch.object(FIT, "_local_module_sources", wraps=real_sources) as sources:
+        real_batch = FIT.read_diff_files
+        with patch.object(FIT, "read_diff_files", wraps=real_batch) as batches:
             report = self._evaluate(repo, base, head, pre_risk="yellow")
         runtime_reads = sorted(
-            (call.args[2], call.args[3])
-            for call in sources.call_args_list
-            if call.args[2] == "project.runtime"
+            (path, call.args[3])
+            for call in batches.call_args_list
+            for path in call.args[2]
+            if path == "project/runtime.py"
         )
         self.assertEqual(
             runtime_reads,
-            [("project.runtime", "head")],
+            [("project/runtime.py", "head")],
         )
         result = self._results(report)["background_job"]
         self.assertEqual(result.status, "unsupported")
@@ -2119,6 +2138,283 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertGreaterEqual(
             FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
         )
+
+    def test_shared_queue_cache_does_not_share_importer_work_budget(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["adapters", "src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        per_importer = FIT.MAX_QUEUE_ADAPTER_MODULES // 2 + 1
+        wide = ", ".join(
+            f"wide{index}" for index in range(FIT.MAX_QUEUE_DEPENDENCY_WORK)
+        )
+        for group in ("a", "b"):
+            imports = []
+            aliases = []
+            for index in range(per_importer):
+                alias = f"zz{group}{index:02d}"
+                imports.append(
+                    f"from adapters.{group}{index:02d} import value as {alias}"
+                )
+                aliases.append(alias)
+                repo.write_text(f"adapters/{group}{index:02d}.py", "value = 1\n")
+            before = "\n".join(imports) + f"\nreceiver = ({wide}, {', '.join(aliases)})\n"
+            repo.write_text(f"src/{group}.py", before)
+        base = repo.commit("base")
+        for group in ("a", "b"):
+            path = repo.root / f"src/{group}.py"
+            repo.write_text(
+                f"src/{group}.py",
+                path.read_text(encoding="utf-8") + "receiver.delay(task)\n",
+            )
+        head = repo.commit("two bounded exhausted importers")
+        real_batch = FIT.read_diff_files
+        with patch.object(FIT, "read_diff_files", wraps=real_batch) as batches:
+            report = self._evaluate(repo, base, head, pre_risk="yellow")
+        modules = {
+            path
+            for call in batches.call_args_list
+            if call.args[3] == "head"
+            for path in call.args[2]
+            if path.startswith("adapters/")
+        }
+        self.assertGreater(len(modules), FIT.MAX_QUEUE_ADAPTER_MODULES)
+        self.assertEqual(
+            self._results(report)["background_job"].status, "not_applicable"
+        )
+        self.assertEqual(report.status, "pass")
+        self.assertNotIn("new_queue", report.triggers)
+
+    def test_external_imports_use_batched_local_module_inventory(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        before = "import external_alpha as alpha\nimport external_beta as beta\n"
+        for path in ("src/first.py", "src/second.py"):
+            repo.write_text(path, before)
+        base = repo.commit("base")
+        for path in ("src/first.py", "src/second.py"):
+            repo.write_text(path, before + "alpha.render()\nbeta.validate()\n")
+        head = repo.commit("ordinary external imports")
+        real_batch = FIT.read_diff_files
+        with patch.object(FIT, "read_diff_files", wraps=real_batch) as batches:
+            report = self._evaluate(repo, base, head, pre_risk="yellow")
+        external_reads = [
+            path
+            for call in batches.call_args_list
+            for path in call.args[2]
+            if path.startswith("external_")
+        ]
+        self.assertEqual(external_reads, [])
+        self.assertEqual(
+            self._results(report)["background_job"].status, "not_applicable"
+        )
+        self.assertNotIn("new_queue", report.triggers)
+
+    def test_exact_batch_blob_reader_is_bounded_and_validates_entries(self) -> None:
+        repo = GitArchitectureRepo(self)
+        repo.model(_system(), _rules())
+        paths = tuple(f"src/module{index:02d}.py" for index in range(32))
+        for path in paths:
+            repo.write_text(path, "VALUE = 1\n")
+        base = repo.commit("base")
+        repo.write_text("src/changed.py", "VALUE = 2\n")
+        head = repo.commit("head")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        real_git = DIFF._git
+        with patch.object(DIFF, "_git", wraps=real_git) as git:
+            values = DIFF.read_diff_files(repo.root, diff, (*paths, "src/missing.py"))
+        self.assertEqual(values[paths[0]], b"VALUE = 1\n")
+        self.assertIsNone(values["src/missing.py"])
+        batch_calls = [
+            call
+            for call in git.call_args_list
+            if any("--batch" in argument for argument in call.args[1])
+        ]
+        self.assertEqual(len(batch_calls), 1)
+
+        os.symlink("module00.py", repo.root / "src/link.py")
+        repo.write_bytes(
+            "src/oversized.py", b"x" * (DIFF.MAX_ANALYZED_FILE_BYTES + 1)
+        )
+        bad_base = repo.commit("unsafe entries")
+        repo.write_text("src/changed.py", "VALUE = 3\n")
+        bad_head = repo.commit("query unsafe entries")
+        bad_diff = FIT.diff_architecture(repo.root, base_sha=bad_base, head_sha=bad_head)
+        with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "not a regular file"):
+            DIFF.read_diff_files(repo.root, bad_diff, ("src/link.py",))
+        with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "exceeds analysis limit"):
+            DIFF.read_diff_files(repo.root, bad_diff, ("src/oversized.py",))
+
+    def test_local_module_and_wildcard_imports_resolve_queue_exports(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["project", "src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        queue_source = "import celery\napp = celery.Celery('jobs')\n"
+        nonqueue_source = (
+            "class Form:\n"
+            "    def delay(self, value):\n"
+            "        return value\n"
+            "app = Form()\n"
+        )
+        cases = (
+            (
+                "module alias queue",
+                "import project.runtime as runtime\n",
+                "runtime.app.delay(task)\n",
+                queue_source,
+                True,
+            ),
+            (
+                "module alias nonqueue",
+                "import project.runtime as runtime\n",
+                "runtime.app.delay(task)\n",
+                nonqueue_source,
+                False,
+            ),
+            (
+                "wildcard queue",
+                "from project.runtime import *\n",
+                "app.delay(task)\n",
+                queue_source,
+                True,
+            ),
+            (
+                "wildcard nonqueue",
+                "from project.runtime import *\n",
+                "app.delay(task)\n",
+                nonqueue_source,
+                False,
+            ),
+        )
+        for label, imported, operation, module_source, expected_queue in cases:
+            with self.subTest(case=label):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("project/runtime.py", module_source)
+                repo.write_text("src/jobs.py", imported)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", imported + operation)
+                head = repo.commit("local import operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(
+                    result.status,
+                    "unsupported" if expected_queue else "not_applicable",
+                )
+                self.assertEqual(report.status, "fail" if expected_queue else "pass")
+                self.assertEqual("new_queue" in report.triggers, expected_queue)
+                if expected_queue:
+                    self.assertIn("src/jobs.py", result.applicability.scanned_scope)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
+    def test_relative_child_import_requires_a_resolved_local_source(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        cases = (
+            ("missing below", FIT.MAX_QUEUE_DEPENDENCY_WORK - 3, None, True),
+            ("missing at", FIT.MAX_QUEUE_DEPENDENCY_WORK - 2, None, True),
+            ("missing above", FIT.MAX_QUEUE_DEPENDENCY_WORK - 1, None, True),
+            (
+                "queue child at frontier",
+                FIT.MAX_QUEUE_DEPENDENCY_WORK - 2,
+                "import celery\napp = celery.Celery('jobs')\n",
+                True,
+            ),
+            (
+                "nonqueue child at frontier",
+                FIT.MAX_QUEUE_DEPENDENCY_WORK - 2,
+                "class Runtime:\n    pass\nruntime = Runtime()\n",
+                False,
+            ),
+        )
+        for label, width, child_source, expected_queue in cases:
+            with self.subTest(case=label):
+                wide = ", ".join(f"wide{index}" for index in range(width))
+                before = (
+                    "from . import runtime\n"
+                    "zzzz = runtime\n"
+                    f"receiver = ({wide}, zzzz)\n"
+                )
+                dependency_result = FIT._operation_dependencies(
+                    ast.parse(before + "receiver.delay(task)\n")
+                )
+                self.assertEqual(
+                    dependency_result.exhausted,
+                    width >= FIT.MAX_QUEUE_DEPENDENCY_WORK - 2,
+                )
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("src/project/__init__.py", "")
+                if child_source is not None:
+                    repo.write_text("src/project/runtime.py", child_source)
+                repo.write_text("src/project/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text(
+                    "src/project/jobs.py", before + "receiver.delay(task)\n"
+                )
+                head = repo.commit("relative child operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(
+                    result.status,
+                    "unsupported" if expected_queue else "not_applicable",
+                )
+                self.assertEqual(report.status, "fail" if expected_queue else "pass")
+                self.assertEqual("new_queue" in report.triggers, expected_queue)
+                if expected_queue:
+                    self.assertIn(
+                        "src/project/jobs.py", result.applicability.scanned_scope
+                    )
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
 
     def test_package_aware_queue_provenance_is_shared_by_fitness_and_risk(self) -> None:
         system = _system()

@@ -26,6 +26,7 @@ from .architecture_diff import (
     diff_architecture,
     git_tree_paths,
     read_diff_file,
+    read_diff_files,
 )
 from .queue_provenance import QueueAnalysisLimit, analyze_queue_tree
 
@@ -169,6 +170,7 @@ class _QueueAdapterResolution:
     exports: tuple[str, ...] = ()
     signals: tuple[str, ...] = ()
     declared_exports: tuple[str, ...] = ()
+    sources: tuple[tuple[str, bytes, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -475,7 +477,7 @@ def _contract_compatibility(snapshot: ArchitectureSnapshot, diff: ArchitectureDi
     )
 
 
-def _migration_paths(root: Path, diff: ArchitectureDiff, prefixes: tuple[str, ...]) -> tuple[str, ...]:
+def _repository_paths(root: Path, diff: ArchitectureDiff, prefixes: tuple[str, ...]) -> tuple[str, ...]:
     if diff.head_kind == "commit":
         if diff.head_sha is None:
             raise ArchitectureError("commit diff is missing exact head_sha", code="git")
@@ -621,7 +623,7 @@ def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: Architec
             for item in relevant:
                 if item.status in {"modified", "deleted"}:
                     findings.append(f"{rule['id']}: immutable migration history changed: {item.path}")
-        head_paths = _migration_paths(root, diff, tuple(rule["path_prefixes"]))
+        head_paths = _repository_paths(root, diff, tuple(rule["path_prefixes"]))
         phases: dict[str, set[str]] = {}
         version_groups: dict[int, set[str]] = {}
         phase_paths: dict[tuple[int, str, str], list[str]] = {}
@@ -769,7 +771,7 @@ def _project_import_roots(
             }
         )
     )
-    paths = _migration_paths(root, diff, prefixes) if prefixes else ()
+    paths = _repository_paths(root, diff, prefixes) if prefixes else ()
     roots = set(_GOVERNANCE_IMPORTS)
     for path in paths:
         if Path(path).suffix not in _PYTHON_SUFFIXES:
@@ -1109,7 +1111,7 @@ def _operation_dependencies(
                         unresolved.add(dependency)
                         unresolved_pending.append(dependency)
             return _OperationDependencies(
-                frozenset(dependencies), frozenset(frontier),
+                frozenset(dependencies), frozenset(unresolved),
                 frozenset(unresolved & imported_names), True
             )
         work += 1
@@ -1161,12 +1163,7 @@ def _module_package(path: str, source_roots: tuple[str, ...] = ()) -> str:
 
 
 def _queue_adjacent_module(module: str) -> bool:
-    tokens = {
-        token
-        for part in module.split(".")
-        for token in re.split(r"[^A-Za-z0-9]+|_+", part.lower())
-        if token
-    }
+    tokens = set(filter(None, re.split(r"[^A-Za-z0-9]+|_+", module.lower())))
     return bool(tokens & _QUEUE_ADAPTER_MODULE_TOKENS)
 
 
@@ -1178,57 +1175,39 @@ def _queue_source_roots(snapshot: ArchitectureSnapshot) -> tuple[str, ...]:
     for node in snapshot.system["nodes"]:
         for prefix in node["repository_paths"]:
             name = prefix.rsplit("/", 1)[-1]
-            if Path(prefix).suffix.lower() not in file_suffixes:
-                roots.add(prefix)
-            if (
-                "/" in prefix
-                and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name) is not None
-                and Path(prefix).suffix.lower() not in file_suffixes
-            ):
+            if Path(prefix).suffix.lower() in file_suffixes:
+                continue
+            roots.add(prefix)
+            if "/" in prefix and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
                 roots.add(prefix.rsplit("/", 1)[0])
     return tuple(sorted(roots))
 
 
-def _source_root_path(source_root: str, relative: str) -> str:
-    return f"{source_root}/{relative}" if source_root else relative
+def _queue_module_inventory(root: Path, diff: ArchitectureDiff, side: str, source_roots: tuple[str, ...]) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    paths = _repository_paths(root, diff, source_roots) if side == "head" else git_tree_paths(root, diff.base_sha, source_roots)
+    modules = {relative.removesuffix("/__init__.py").removesuffix(".py").replace("/", ".") for path in paths for prefix in source_roots if not prefix or _matches(path, (prefix,)) for relative in (path[len(prefix) + 1:] if prefix else path,) if relative.endswith(".py")}
+    return tuple(sorted(modules)), tuple(sorted(path for path in paths if path.endswith(".py")))
 
 
-def _local_module_sources(
-    root: Path,
-    diff: ArchitectureDiff,
-    module: str,
-    side: str,
-    source_roots: tuple[str, ...],
-) -> tuple[tuple[str, bytes, str], ...]:
-    relative = module.replace(".", "/")
-    found: list[tuple[str, bytes, str]] = []
-    for source_root in source_roots:
-        module_path = _source_root_path(source_root, f"{relative}.py")
-        module_value = read_diff_file(root, diff, module_path, side)
-        if module_value is not None:
-            package = module.rsplit(".", 1)[0] if "." in module else ""
-            found.append((module_path, module_value, package))
-        package_path = _source_root_path(source_root, f"{relative}/__init__.py")
-        package_value = read_diff_file(root, diff, package_path, side)
-        if package_value is not None:
-            found.append((package_path, package_value, module))
-    return tuple(found)
-
-
-def _has_local_module_root(
-    root: Path,
-    diff: ArchitectureDiff,
-    module: str,
-    side: str,
-    source_roots: tuple[str, ...],
-) -> bool:
-    root_name = module.split(".", 1)[0]
-    return any(
-        read_diff_file(root, diff, _source_root_path(source_root, candidate), side)
-        is not None
-        for source_root in source_roots
-        for candidate in (f"{root_name}.py", f"{root_name}/__init__.py")
-    )
+def _prime_local_module_sources(
+    root: Path, diff: ArchitectureDiff, modules: set[str], side: str,
+    cache: dict[str, _QueueAdapterResolution], source_roots: tuple[str, ...],
+) -> None:
+    inventory = cache.get("\0")
+    if inventory is None:
+        return
+    pending = sorted(module for module in modules if module in inventory.declared_exports and module not in cache)
+    paths_by_module = {
+        module: tuple(path for source_root in source_roots for path in (
+            f"{source_root + '/' if source_root else ''}{module.replace('.', '/')}.py",
+            f"{source_root + '/' if source_root else ''}{module.replace('.', '/')}/__init__.py",
+        ) if path in inventory.signals)
+        for module in pending
+    }
+    values = read_diff_files(root, diff, tuple(path for paths in paths_by_module.values() for path in paths), side)
+    for module, paths in paths_by_module.items():
+        sources = tuple((path, values[path], module if path.endswith("/__init__.py") else module.rsplit(".", 1)[0] if "." in module else "") for path in paths if values[path] is not None)
+        cache[module] = _QueueAdapterResolution("prefetched", "local_module_prefetched", sources=sources)
 
 
 def _local_queue_resolution(
@@ -1241,13 +1220,16 @@ def _local_queue_resolution(
     visited: set[str],
     source_roots: tuple[str, ...],
 ) -> _QueueAdapterResolution:
-    if module in cache:
-        return cache[module]
+    prefetched = cache.get(module)
+    if prefetched is not None and prefetched.state != "prefetched":
+        return prefetched
     if (
         not module
         or any(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", part) is None for part in module.split("."))
     ):
         return _QueueAdapterResolution("not_queue", "invalid_local_module")
+    if (inventory := cache.get("\0")) is not None and module not in inventory.declared_exports:
+        return _QueueAdapterResolution("not_queue", "local_module_missing")
     if len(visited) >= MAX_QUEUE_ADAPTER_MODULES:
         raise ArchitectureError("queue adapter module limit exceeded", code="limit")
     visited.add(module)
@@ -1257,7 +1239,7 @@ def _local_queue_resolution(
         return _QueueAdapterResolution("unsupported", "cyclic_local_queue_adapter")
     resolving.add(module)
     try:
-        sources = _local_module_sources(root, diff, module, side, source_roots)
+        sources = prefetched.sources if prefetched is not None else ()
         if len(sources) > 1:
             result = _QueueAdapterResolution(
                 "unsupported", "ambiguous_local_queue_adapter"
@@ -1335,6 +1317,7 @@ def _queue_adapter_names(
     seen = visited if visited is not None else set()
     dependency_result = _operation_dependencies(tree)
     dependencies = set(dependency_result.names)
+    reachable = dependencies | set(dependency_result.frontier)
     if resolving is not None:
         dependencies.update(
             alias.asname or alias.name
@@ -1342,31 +1325,30 @@ def _queue_adapter_names(
             if isinstance(node, ast.ImportFrom)
             for alias in node.names
         )
+    normalized: list[tuple[str, str, str, int, bool, bool]] = []
     for node in ast.walk(tree):
-        if not isinstance(node, ast.ImportFrom):
+        if isinstance(node, ast.Import):
+            imports = tuple((alias.name, "", alias.asname or alias.name.split(".", 1)[0], 0, True, False) for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            module = _resolve_import_module(current_package, node.module, node.level)
+            imports = tuple((
+                f"{module}.{alias.name}" if node.module is None else module,
+                "" if node.module is None else alias.name,
+                alias.asname or alias.name,
+                node.level, node.module is None, alias.name == "*",
+            ) for alias in node.names)
+        else:
             continue
-        module = _resolve_import_module(current_package, node.module, node.level)
-        if module.split(".")[0] in _QUEUE_IMPORTS:
-            continue
-        candidates = [
-            alias
-            for alias in node.names
-            if (alias.asname or alias.name) in dependencies
-            or (alias.asname or alias.name) in dependency_result.frontier_imports
-        ]
-        if not candidates:
-            continue
-        for alias in candidates:
-            target_module = module
-            target_name = alias.name
-            if node.module is None:
-                target_module = f"{module}.{alias.name}" if module else alias.name
-                target_name = ""
+        normalized.extend(imports)
+    relevant = [item for item in normalized if item[0].split(".")[0] not in _QUEUE_IMPORTS and (item[5] and reachable or item[2] in dependencies or item[2] in dependency_result.frontier_imports)]
+    _prime_local_module_sources(root, diff, {item[0] for item in relevant}, side, cache, source_roots[:MAX_QUEUE_SOURCE_ROOTS])
+    for target_module, target_name, local_name, level, whole_module, wildcard in normalized:
+            if target_module.split(".")[0] in _QUEUE_IMPORTS or not (wildcard and reachable or local_name in dependencies or local_name in dependency_result.frontier_imports):
+                continue
             queue_adjacent = _queue_adjacent_module(target_module)
-            local_name = alias.asname or alias.name
             frontier_reachable = local_name in dependency_result.frontier_imports
             if len(source_roots) > MAX_QUEUE_SOURCE_ROOTS and (queue_adjacent or frontier_reachable):
-                proven.add(alias.asname or alias.name)
+                proven.add(local_name)
                 unsupported = True
                 continue
             bounded_source_roots = source_roots[:MAX_QUEUE_SOURCE_ROOTS]
@@ -1384,17 +1366,19 @@ def _queue_adapter_names(
                 (target_name and target_name in resolution.exports)
                 or (not target_name and bool(resolution.exports))
             )
-            if frontier_reachable and (
-                node.level > 0
+            local_values = tuple(sorted(reachable & set(resolution.declared_exports))) if wildcard else (local_name,)
+            if (frontier_reachable or whole_module or wildcard) and (
+                level > 0
                 or resolution.reason != "local_module_missing"
-                or _has_local_module_root(
-                    root, diff, target_module, side, bounded_source_roots
-                )
+                or any(name == target_module.split(".", 1)[0] or name.startswith(target_module.split(".", 1)[0] + ".") for name in cache["\0"].declared_exports)
             ):
-                declared = not target_name or target_name in resolution.declared_exports
-                if resolution.state == "not_queue" and declared:
+                declared = resolution.reason == "local_module_not_queue" and (
+                    whole_module or wildcard or target_name in resolution.declared_exports)
+                if declared or wildcard and not local_values and (
+                    resolution.reason == "local_queue_provenance_resolved"
+                ):
                     continue
-                proven.add(local_name)
+                proven.update(local_values or reachable)
                 unsupported = True
                 continue
             if (
@@ -1402,11 +1386,11 @@ def _queue_adapter_names(
                 and resolution.state == "resolved"
                 and export_resolved
             ):
-                proven.add(alias.asname or alias.name)
+                proven.add(local_name)
                 unsupported = True
                 continue
             if resolution.state == "unsupported" and export_resolved:
-                proven.add(alias.asname or alias.name)
+                proven.add(local_name)
                 unsupported = True
                 continue
             if (
@@ -1422,14 +1406,10 @@ def _queue_adapter_names(
                 not resolution.exports
                 and queue_adjacent
                 and (
-                    node.level > 0
-                    or _has_local_module_root(
-                        root, diff, target_module, side, bounded_source_roots
-                    )
+                    level > 0
+                    or any(name == target_module.split(".", 1)[0] or name.startswith(target_module.split(".", 1)[0] + ".") for name in cache["\0"].declared_exports)
                 )
-                and not _local_module_sources(
-                    root, diff, target_module, side, bounded_source_roots
-                )
+                and resolution.reason == "local_module_missing"
             ):
                 raise ArchitectureError(
                     f"relevant local queue adapter is unresolved: {target_module}",
@@ -1449,7 +1429,7 @@ def _queue_adapter_names(
             if (
                 target_name and target_name in resolution.exports
             ) or (not target_name and resolution.exports):
-                proven.add(alias.asname or alias.name)
+                proven.add(local_name)
     return _QueueAdapterNamesResult(frozenset(proven), unsupported)
 
 
@@ -1475,18 +1455,11 @@ def _queue_signals(
         analysis = analyze_queue_tree(tree, adapters.names)
     except QueueAnalysisLimit as exc:
         raise ArchitectureError(str(exc), code="limit") from exc
-    signals = analysis.signals
+    unresolved = bool((adapters.unsupported or analysis.uncertain) and analysis.signals)
     return _QueueProvenanceResult(
-        state=("unsupported" if (adapters.unsupported or analysis.uncertain) and signals else (
-            "resolved" if signals else "not_queue"
-        )),
-        reason=(
-            "queue_provenance_unresolved"
-            if (adapters.unsupported or analysis.uncertain) and signals
-            else ("queue_signals_resolved" if signals else "no_queue_signal")
-        ),
-        signals=signals,
-    )
+        "unsupported" if unresolved else ("resolved" if analysis.signals else "not_queue"),
+        "queue_provenance_unresolved" if unresolved else ("queue_signals_resolved" if analysis.signals else "no_queue_signal"),
+        analysis.signals)
 
 
 def _new_queue_sources(
@@ -1498,8 +1471,10 @@ def _new_queue_sources(
     applicable: list[str] = []
     unsupported: list[str] = []
     changed_signals: set[str] = set()
-    head_cache: dict[str, _QueueAdapterResolution] = {}
-    base_cache: dict[str, _QueueAdapterResolution] = {}
+    head_modules, head_paths = _queue_module_inventory(root, diff, "head", source_roots)
+    base_modules, base_paths = _queue_module_inventory(root, diff, "base", source_roots)
+    head_cache = {"\0": _QueueAdapterResolution("not_queue", "module_inventory", declared_exports=head_modules, signals=head_paths)}
+    base_cache = {"\0": _QueueAdapterResolution("not_queue", "module_inventory", declared_exports=base_modules, signals=base_paths)}
     for path in _python_paths(diff):
         try:
             current_package = _module_package(path, source_roots)
@@ -1888,7 +1863,7 @@ def _bind_applicability_inventory(
         )
         scope.update(prefixes)
         if prefixes:
-            scope.update(_migration_paths(root, diff, prefixes))
+            scope.update(_repository_paths(root, diff, prefixes))
     model_ids = {
         item["id"]
         for collection_name in (
