@@ -55,11 +55,17 @@
       "from": "implementing",
       "reason": "Task 6 user-approved design pivot passed independent scoped code review after three fix rounds; begin fresh exact-head final verification before route reviews.",
       "to": "verifying"
+    },
+    {
+      "at": "2026-08-27T12:12:12+00:00",
+      "from": "verifying",
+      "reason": "Fresh no-record PR verification passed with 331 tests and 81% coverage; exact-commit architecture fitness, diagram check, diff hygiene, and trust-ci separation passed; begin all five route-selected final reviews.",
+      "to": "reviewing"
     }
   ],
   "route_id": "0156034c05bd",
   "schema_version": 1,
-  "status": "verifying",
+  "status": "reviewing",
   "title": "m2-executable-architecture",
-  "updated_at": "2026-08-27T12:06:43+00:00"
+  "updated_at": "2026-08-27T12:12:12+00:00"
 }
