@@ -61,11 +61,17 @@
       "from": "verifying",
       "reason": "Fresh no-record PR verification passed with 331 tests and 81% coverage; exact-commit architecture fitness, diagram check, diff hygiene, and trust-ci separation passed; begin all five route-selected final reviews.",
       "to": "reviewing"
+    },
+    {
+      "at": "2026-08-27T12:34:29+00:00",
+      "from": "reviewing",
+      "reason": "Final route review wave found seven unique Important source defects across queue provenance, installer containment, durable adoption, code-budget unknowns, process cleanup, added-contract validation, and repository ownership; return all findings to the sole writer as one fix batch.",
+      "to": "implementing"
     }
   ],
   "route_id": "0156034c05bd",
   "schema_version": 1,
-  "status": "reviewing",
+  "status": "implementing",
   "title": "m2-executable-architecture",
-  "updated_at": "2026-08-27T12:12:12+00:00"
+  "updated_at": "2026-08-27T12:34:29+00:00"
 }
