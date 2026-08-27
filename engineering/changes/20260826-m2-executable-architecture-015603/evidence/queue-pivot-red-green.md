@@ -246,3 +246,99 @@ code. Rollout remains source-only through review; rollback is a revert of this
 fix commit with no runtime or external state recovery.
 
 Commit subject: `fix: preserve queue provenance across scopes`.
+
+## Task 1 review fix round 2
+
+### Root causes and RED
+
+The first fix analyzed a function body against the environment captured at its
+definition, but Python resolves free/global names when the body executes. A
+queue binding introduced later in bounded module flow was therefore absent.
+`AugAssign` also always detached its target as a rebind even though list `+=`
+mutates the shared object. Finally, alias groups were duplicated under every
+member name and joined with an uncharged transitive-closure loop.
+
+Three behavior tests were added before production changes. Exact Git base/head
+matrices cover function/method globals rebound on both sides of definition and
+call, Celery/RQ list `+=`, tuple rebinding, and an unrelated list alias. Direct
+analyzer tests cover alias-count and branch-merge ceilings plus a no-root N/A
+control.
+
+```text
+python3 -m unittest -v \
+  tests.test_architecture_fitness.ArchitectureFitnessTests.test_queue_free_names_join_bounded_module_flow \
+  tests.test_architecture_fitness.ArchitectureFitnessTests.test_queue_inplace_add_mutates_only_mutable_alias_groups \
+  tests.test_architecture_fitness.ArchitectureFitnessTests.test_queue_alias_work_is_bounded_before_branch_closure
+Ran 3 tests in 2.503s
+FAILED (failures=5)
+```
+
+The failures were the two late queue-after-definition cases, both mutable-list
+`+=` positives, and the missing alias ceiling. Existing early queue bindings,
+tuple rebinding, unrelated aliases, and no-root N/A behavior already passed.
+
+### Repair and GREEN
+
+Callable bodies are now deferred until the bounded module pass has accumulated
+a monotone value summary. Function locals are identified without descending
+into nested lexical scopes; only free/global names receive the module-flow
+summary. Mutable list/dict bindings participate in alias components, while tuple
+bindings remain immutable rebindings; list `+=` updates the whole component.
+
+Alias state is now a name-to-component map plus one member set per component.
+Union-by-size replaces transitive closure. Alias creation, union, environment
+fork, and component mutation charge an explicit alias-work counter against the
+public `value_limit`, and each charge occurs before the corresponding copy,
+merge, or iteration.
+
+```text
+python3 -m unittest -v \
+  tests.test_architecture_fitness.ArchitectureFitnessTests.test_queue_free_names_join_bounded_module_flow \
+  tests.test_architecture_fitness.ArchitectureFitnessTests.test_queue_inplace_add_mutates_only_mutable_alias_groups \
+  tests.test_architecture_fitness.ArchitectureFitnessTests.test_queue_alias_work_is_bounded_before_branch_closure
+Ran 3 tests in 2.493s
+OK
+
+python3 -m unittest -v -k queue tests.test_architecture_fitness
+Ran 16 tests in 27.977s
+OK
+
+python3 -m unittest -v tests.test_architecture_fitness
+Ran 57 tests in 184.789s
+OK
+
+python3 -m ruff check \
+  .grok-stack/adaptive_grok/queue_provenance.py \
+  tests/test_architecture_fitness.py
+All checks passed!
+
+python3 -m compileall -q .grok-stack/adaptive_grok
+exit 0
+
+git diff --check
+exit 0
+
+git diff --name-only \
+  2cff96039623cf4d041790a5ec31a5913b0ecc70 -- \
+  trust-ci .github/workflows
+empty output
+```
+
+### Files, self-review, rollout, and rollback
+
+- `.grok-stack/adaptive_grok/queue_provenance.py`: bounded module summaries,
+  local/free-name separation, mutable alias components, and charged alias work.
+- `tests/test_architecture_fitness.py`: exact global-flow/`+=` matrices and
+  direct low-limit checks.
+- `decisions.md`: reusable bounded-component decision.
+- This evidence file and the ignored Task 1 report: fix-round evidence.
+
+Self-review confirmed that semantic signal strings and the one shared fitness/
+risk provenance result are unchanged; local assignments shadow module values;
+tuple `+=` detaches only the target; list `+=` updates all aliases; branch joins
+union possible alias components without fixed-point closure; and the no-root
+fast path does no irrelevant alias work. No Task 2/3 or protected/runtime scope
+changed. Rollout remains the reviewed source branch, and rollback is a single
+fix-commit revert with no external or data recovery.
+
+Commit subject: `fix: bound late queue provenance`.

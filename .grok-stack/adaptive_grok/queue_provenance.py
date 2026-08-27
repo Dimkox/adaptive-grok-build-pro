@@ -63,12 +63,23 @@ class QueueTreeAnalysis:
 
 
 @dataclass
+class _AliasState:
+    by_name: dict[str, int]
+    groups: dict[int, set[str]]
+    next_group: int = 0
+
+    def fork(self) -> "_AliasState":
+        return _AliasState(
+            dict(self.by_name),
+            {group: set(members) for group, members in self.groups.items()},
+            self.next_group,
+        )
+
+
+@dataclass
 class _Environment:
     values: dict[str, AbstractValue]
-    aliases: dict[str, frozenset[str]]
-
-    def fork(self) -> "_Environment":
-        return _Environment(dict(self.values), dict(self.aliases))
+    aliases: _AliasState
 
 
 NON_QUEUE = AbstractValue("non_queue")
@@ -231,6 +242,79 @@ def _called_imports(tree: ast.AST) -> set[tuple[str, str]]:
     return called
 
 
+class _FunctionLocalVisitor(ast.NodeVisitor):
+    def __init__(self) -> None:
+        self.names: set[str] = set()
+        self.globals: set[str] = set()
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self.names.add(node.name)
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self.names.add(node.name)
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self.names.add(node.name)
+
+    def visit_Import(self, node: ast.Import) -> None:
+        self.names.update(alias.asname or alias.name.split(".")[0] for alias in node.names)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        self.names.update(
+            alias.asname or alias.name for alias in node.names if alias.name != "*"
+        )
+
+    def visit_Name(self, node: ast.Name) -> None:
+        if isinstance(node.ctx, (ast.Store, ast.Del)):
+            self.names.add(node.id)
+
+    def visit_Global(self, node: ast.Global) -> None:
+        self.globals.update(node.names)
+
+    def visit_Nonlocal(self, node: ast.Nonlocal) -> None:
+        self.globals.update(node.names)
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        return
+
+    def visit_ListComp(self, node: ast.ListComp) -> None:
+        return
+
+    def visit_SetComp(self, node: ast.SetComp) -> None:
+        return
+
+    def visit_DictComp(self, node: ast.DictComp) -> None:
+        return
+
+    def visit_GeneratorExp(self, node: ast.GeneratorExp) -> None:
+        return
+
+    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+        if node.name:
+            self.names.add(node.name)
+        for statement in node.body:
+            self.visit(statement)
+
+
+def _function_local_names(
+    statement: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> set[str]:
+    visitor = _FunctionLocalVisitor()
+    for item in statement.body:
+        visitor.visit(item)
+    arguments = (
+        *statement.args.posonlyargs,
+        *statement.args.args,
+        *statement.args.kwonlyargs,
+    )
+    visitor.names.update(argument.arg for argument in arguments)
+    if statement.args.vararg is not None:
+        visitor.names.add(statement.args.vararg.arg)
+    if statement.args.kwarg is not None:
+        visitor.names.add(statement.args.kwarg.arg)
+    return visitor.names - visitor.globals
+
+
 class _Interpreter:
     def __init__(
         self,
@@ -249,9 +333,18 @@ class _Interpreter:
         self.loop_limit = loop_limit
         self.statement_count = 0
         self.value_count = 0
+        self.alias_work = 0
         self.wildcard_queue_import = False
         self.signals: set[str] = set()
         self.uncertain = False
+        self.lexical_depth = 0
+        self.module_values: dict[str, AbstractValue] = {
+            name: QUEUE for name in self.adapter_names
+        }
+        self.pending_functions: list[
+            tuple[ast.FunctionDef | ast.AsyncFunctionDef, _Environment]
+        ] = []
+        self.defer_functions = True
 
     def _statement(self) -> None:
         self.statement_count += 1
@@ -267,9 +360,60 @@ class _Interpreter:
     def _join(self, left: AbstractValue, right: AbstractValue) -> AbstractValue:
         return self._value(join_value(left, right))
 
+    def _alias_charge(self, amount: int = 1) -> None:
+        self.alias_work += amount
+        if self.alias_work > self.value_limit:
+            raise QueueAnalysisLimit("queue alias limit exceeded")
+
+    def _fork(self, environment: _Environment) -> _Environment:
+        self._alias_charge(len(environment.aliases.by_name))
+        return _Environment(dict(environment.values), environment.aliases.fork())
+
+    def _alias_detach(self, name: str, aliases: _AliasState) -> None:
+        group = aliases.by_name.pop(name, None)
+        if group is None:
+            return
+        members = aliases.groups[group]
+        members.remove(name)
+        if not members:
+            del aliases.groups[group]
+
+    def _alias_create(self, name: str, aliases: _AliasState) -> None:
+        self._alias_detach(name, aliases)
+        self._alias_charge()
+        group = aliases.next_group
+        aliases.next_group += 1
+        aliases.by_name[name] = group
+        aliases.groups[group] = {name}
+
+    def _alias_union(self, left: str, right: str, aliases: _AliasState) -> None:
+        left_group = aliases.by_name.get(left)
+        right_group = aliases.by_name.get(right)
+        if left_group is None or right_group is None or left_group == right_group:
+            return
+        self._alias_charge()
+        left_members = aliases.groups[left_group]
+        right_members = aliases.groups[right_group]
+        if len(left_members) < len(right_members):
+            left_group, right_group = right_group, left_group
+            left_members, right_members = right_members, left_members
+        for member in right_members:
+            aliases.by_name[member] = left_group
+        left_members.update(right_members)
+        del aliases.groups[right_group]
+
+    @staticmethod
+    def _alias_members(name: str, aliases: _AliasState) -> set[str]:
+        group = aliases.by_name.get(name)
+        return aliases.groups[group] if group is not None else {name}
+
+    @staticmethod
+    def _alias_contains(name: str, aliases: _AliasState) -> bool:
+        return name in aliases.by_name
+
     def _join_envs(self, environments: list[_Environment]) -> _Environment:
         if not environments:
-            return _Environment({}, {})
+            return _Environment({}, _AliasState({}, {}))
         names = set().union(*(environment.values.keys() for environment in environments))
         result: dict[str, AbstractValue] = {}
         for name in names:
@@ -277,25 +421,22 @@ class _Interpreter:
             for environment in environments[1:]:
                 value = self._join(value, environment.values.get(name, NON_QUEUE))
             result[name] = value
-        relations: dict[str, set[str]] = {name: {name} for name in names}
+        aliases = _AliasState({}, {})
+        mutable_names = sorted(
+            name
+            for name in names
+            if any(self._alias_contains(name, environment.aliases) for environment in environments)
+        )
+        for name in mutable_names:
+            self._alias_create(name, aliases)
         for environment in environments:
-            for name, group in environment.aliases.items():
-                members = set(group) & names
-                for member in members:
-                    relations[member].update(members)
-        changed = True
-        while changed:
-            changed = False
-            for name, group in tuple(relations.items()):
-                expanded = set().union(*(relations[item] for item in group))
-                if expanded != group:
-                    relations[name] = expanded
-                    changed = True
-        aliases = {
-            name: frozenset(group)
-            for name, group in relations.items()
-            if len(group) > 1 or result[name].state in {"sequence", "mapping"}
-        }
+            for members in environment.aliases.groups.values():
+                present = sorted(members & names)
+                if not present:
+                    continue
+                first = present[0]
+                for member in present[1:]:
+                    self._alias_union(first, member, aliases)
         return _Environment(result, aliases)
 
     def _evaluate(self, node: ast.AST, environment: _Environment) -> AbstractValue:
@@ -377,24 +518,28 @@ class _Interpreter:
         target: ast.AST,
         value: AbstractValue,
         environment: _Environment,
-        alias_group: frozenset[str] | None = None,
+        alias_with: str | None = None,
+        track_alias: bool = False,
     ) -> None:
         if isinstance(target, ast.Name):
             name = target.id
-            previous = environment.aliases.pop(name, frozenset({name}))
-            for member in previous - {name}:
-                remaining = environment.aliases.get(member, frozenset({member})) - {name}
-                environment.aliases[member] = remaining or frozenset({member})
+            self._alias_detach(name, environment.aliases)
             environment.values[name] = value
-            if alias_group is not None:
-                group = frozenset(set(alias_group) | {name})
-                for member in group:
-                    environment.aliases[member] = group
-            elif value.state in {"sequence", "mapping"}:
-                environment.aliases[name] = frozenset({name})
+            if alias_with is not None and self._alias_contains(
+                alias_with, environment.aliases
+            ):
+                self._alias_create(name, environment.aliases)
+                self._alias_union(name, alias_with, environment.aliases)
+            elif track_alias:
+                self._alias_create(name, environment.aliases)
+            if self.lexical_depth == 0:
+                previous = self.module_values.get(name)
+                self.module_values[name] = (
+                    value if previous is None else self._join(previous, value)
+                )
             return
         if isinstance(target, ast.Starred):
-            self._bind(target.value, value, environment, alias_group)
+            self._bind(target.value, value, environment, alias_with, track_alias)
             return
         if isinstance(target, (ast.List, ast.Tuple)):
             length = _sequence_length(value)
@@ -461,8 +606,18 @@ class _Interpreter:
             )
 
     @staticmethod
-    def _alias_group(name: str, environment: _Environment) -> frozenset[str]:
-        return environment.aliases.get(name, frozenset({name}))
+    def _is_mutable_expression(node: ast.AST, environment: _Environment) -> bool:
+        if isinstance(node, ast.Name):
+            return node.id in environment.aliases.by_name
+        if isinstance(node, (ast.List, ast.Dict)):
+            return True
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+            return _Interpreter._is_mutable_expression(node.left, environment)
+        if isinstance(node, ast.IfExp):
+            return _Interpreter._is_mutable_expression(
+                node.body, environment
+            ) or _Interpreter._is_mutable_expression(node.orelse, environment)
+        return False
 
     def _set_alias_value(
         self,
@@ -470,8 +625,15 @@ class _Interpreter:
         value: AbstractValue,
         environment: _Environment,
     ) -> None:
-        for member in self._alias_group(name, environment):
+        members = self._alias_members(name, environment.aliases)
+        self._alias_charge(len(members))
+        for member in members:
             environment.values[member] = value
+            if self.lexical_depth == 0:
+                previous = self.module_values.get(member)
+                self.module_values[member] = (
+                    value if previous is None else self._join(previous, value)
+                )
 
     def _mutate_call(self, node: ast.Call, environment: _Environment) -> bool:
         if not isinstance(node.func, ast.Attribute) or not isinstance(node.func.value, ast.Name):
@@ -563,19 +725,40 @@ class _Interpreter:
         ):
             self._record_expression(expression, environment)
         self._bind(ast.Name(id=statement.name), NON_QUEUE, environment)
-        local = environment.fork()
+        captured = self._fork(environment)
+        if self.defer_functions:
+            self.pending_functions.append((statement, captured))
+            return
+        self._analyze_function(statement, captured)
+
+    def _analyze_function(
+        self,
+        statement: ast.FunctionDef | ast.AsyncFunctionDef,
+        captured: _Environment,
+    ) -> None:
+        local_names = _function_local_names(statement)
+        for name, value in self.module_values.items():
+            if name not in local_names:
+                captured.values[name] = value
+                self._alias_detach(name, captured.aliases)
+        self.lexical_depth += 1
+        for name in sorted(local_names):
+            self._bind(ast.Name(id=name), NON_QUEUE, captured)
         arguments = (
             *statement.args.posonlyargs,
             *statement.args.args,
             *statement.args.kwonlyargs,
         )
         for argument in arguments:
-            self._bind(ast.Name(id=argument.arg), NON_QUEUE, local)
+            self._bind(ast.Name(id=argument.arg), NON_QUEUE, captured)
         if statement.args.vararg is not None:
-            self._bind(ast.Name(id=statement.args.vararg.arg), NON_QUEUE, local)
+            self._bind(ast.Name(id=statement.args.vararg.arg), NON_QUEUE, captured)
         if statement.args.kwarg is not None:
-            self._bind(ast.Name(id=statement.args.kwarg.arg), NON_QUEUE, local)
-        self._block(statement.body, local)
+            self._bind(ast.Name(id=statement.args.kwarg.arg), NON_QUEUE, captured)
+        try:
+            self._block(statement.body, captured)
+        finally:
+            self.lexical_depth -= 1
 
     def _block(
         self,
@@ -595,10 +778,10 @@ class _Interpreter:
         target: ast.AST | None = None,
         iterable: AbstractValue = UNKNOWN_QUEUE,
     ) -> _Environment:
-        zero = environment.fork()
-        current = environment.fork()
+        zero = self._fork(environment)
+        current = self._fork(environment)
         for _iteration in range(self.loop_limit):
-            one = current.fork()
+            one = self._fork(current)
             if target is not None:
                 self._bind(target, _aggregate(iterable), one)
             one = self._block(body, one)
@@ -644,42 +827,54 @@ class _Interpreter:
                 self._record_expression(decorator, environment)
             for expression in (*statement.bases, *(item.value for item in statement.keywords)):
                 self._record_expression(expression, environment)
-            local = environment.fork()
-            self._block(statement.body, local)
+            local = self._fork(environment)
+            self.lexical_depth += 1
+            try:
+                self._block(statement.body, local)
+            finally:
+                self.lexical_depth -= 1
             self._bind(ast.Name(id=statement.name), NON_QUEUE, environment)
             return environment
         if isinstance(statement, ast.Assign):
             self._record_expression(statement.value, environment)
             value = self._evaluate(statement.value, environment)
-            direct_names = {
-                target.id for target in statement.targets if isinstance(target, ast.Name)
-            }
-            if isinstance(statement.value, ast.Name):
-                direct_names.update(self._alias_group(statement.value.id, environment))
-            alias_group = (
-                frozenset(direct_names)
-                if value.state in {"sequence", "mapping", "unknown_queue"}
-                and direct_names
+            mutable = self._is_mutable_expression(statement.value, environment)
+            alias_with = (
+                statement.value.id
+                if isinstance(statement.value, ast.Name)
+                and self._alias_contains(statement.value.id, environment.aliases)
                 else None
             )
             for target in statement.targets:
-                self._bind(target, value, environment, alias_group)
+                self._bind(
+                    target,
+                    value,
+                    environment,
+                    alias_with=alias_with,
+                    track_alias=mutable and alias_with is None,
+                )
+                if alias_with is None and isinstance(target, ast.Name) and mutable:
+                    alias_with = target.id
             return environment
         if isinstance(statement, ast.AnnAssign):
             if statement.value is not None:
                 self._record_expression(statement.value, environment)
                 value = self._evaluate(statement.value, environment)
-                alias_group = None
+                alias_with = None
                 if (
                     isinstance(statement.value, ast.Name)
-                    and value.state in {"sequence", "mapping", "unknown_queue"}
+                    and self._alias_contains(statement.value.id, environment.aliases)
                 ):
-                    alias_group = self._alias_group(statement.value.id, environment)
+                    alias_with = statement.value.id
                 self._bind(
                     statement.target,
                     value,
                     environment,
-                    alias_group,
+                    alias_with=alias_with,
+                    track_alias=self._is_mutable_expression(
+                        statement.value, environment
+                    )
+                    and alias_with is None,
                 )
             return environment
         if isinstance(statement, ast.AugAssign):
@@ -691,7 +886,20 @@ class _Interpreter:
                 )
             else:
                 value = UNKNOWN_QUEUE
-            self._bind(statement.target, value, environment)
+            if (
+                isinstance(statement.op, ast.Add)
+                and isinstance(statement.target, ast.Name)
+                and self._alias_contains(statement.target.id, environment.aliases)
+            ):
+                self._set_alias_value(statement.target.id, value, environment)
+            else:
+                self._bind(
+                    statement.target,
+                    value,
+                    environment,
+                    track_alias=isinstance(statement.op, ast.Add)
+                    and self._is_mutable_expression(statement.target, environment),
+                )
             return environment
         if isinstance(statement, ast.Expr):
             self._record_expression(statement.value, environment)
@@ -700,8 +908,8 @@ class _Interpreter:
             return environment
         if isinstance(statement, ast.If):
             self._record_expression(statement.test, environment)
-            body = self._block(statement.body, environment.fork())
-            orelse = self._block(statement.orelse, environment.fork())
+            body = self._block(statement.body, self._fork(environment))
+            orelse = self._block(statement.orelse, self._fork(environment))
             return self._join_envs([body, orelse])
         if isinstance(statement, (ast.For, ast.AsyncFor)):
             self._record_expression(statement.iter, environment)
@@ -717,11 +925,11 @@ class _Interpreter:
             self._record_expression(statement.test, environment)
             return self._loop(statement.body, statement.orelse, environment)
         if isinstance(statement, ast.Try):
-            normal = self._block(statement.body, environment.fork())
+            normal = self._block(statement.body, self._fork(environment))
             normal = self._block(statement.orelse, normal)
             alternatives = [normal]
             alternatives.extend(
-                self._block(handler.body, environment.fork())
+                self._block(handler.body, self._fork(environment))
                 for handler in statement.handlers
             )
             joined = self._join_envs(alternatives)
@@ -739,9 +947,10 @@ class _Interpreter:
         if isinstance(statement, ast.Match):
             self._record_expression(statement.subject, environment)
             alternatives = [
-                self._block(case.body, environment.fork()) for case in statement.cases
+                self._block(case.body, self._fork(environment))
+                for case in statement.cases
             ]
-            alternatives.append(environment.fork())
+            alternatives.append(self._fork(environment))
             return self._join_envs(alternatives)
         expressions: list[ast.AST] = []
         if isinstance(statement, (ast.Return, ast.Raise, ast.Assert)):
@@ -771,9 +980,15 @@ class _Interpreter:
         body = self.tree.body if isinstance(self.tree, ast.Module) else []
         environment = _Environment(
             {name: QUEUE for name in self.adapter_names},
-            {},
+            _AliasState({}, {}),
         )
         environment = self._block(body, environment)
+        self.defer_functions = False
+        pending_index = 0
+        while pending_index < len(self.pending_functions):
+            statement, captured = self.pending_functions[pending_index]
+            pending_index += 1
+            self._analyze_function(statement, captured)
         self.signals.update({
             f"import:{target}"
             for target in queue_imports

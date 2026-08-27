@@ -206,3 +206,7 @@ Queue provenance retains tuple/list positions and dictionary keys so only the ch
 ## 2026-08-27 — Replace patch accumulation with semantic joins and single-publication install
 
 After repeated adjacent review failures, model queue provenance with bounded monotone abstract values and control-flow joins instead of syntax-specific overwrites. Make installation read-only for existing repositories and publish only a fully prepared new target with one atomic rename, eliminating the impossible promise that a failed rollback can always restore already-mutated external bytes.
+
+## 2026-08-27 — Charge alias components before copying or merging
+
+Represent may-alias state as one member set per component plus a name-to-component map, union smaller components into larger ones, and charge create, merge, fork, and mutation work before performing it. This removes duplicated per-name closure state and makes the configured value ceiling bound alias analysis as well as abstract values.

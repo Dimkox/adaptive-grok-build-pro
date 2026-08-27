@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import copy
 import importlib
 import json
@@ -1259,6 +1260,250 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertGreaterEqual(
             FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
         )
+
+    def test_queue_free_names_join_bounded_module_flow(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        pipeline = (
+            "class Pipeline:\n"
+            "    def delay(self, task):\n"
+            "        return task\n\n"
+            "import celery\n"
+        )
+        cases = (
+            (
+                "function queue rebound after definition before call",
+                "receiver = Pipeline()\n"
+                "def configure():\n"
+                "    return None\n"
+                "receiver = celery.Celery('jobs')\n"
+                "configure()\n",
+                "receiver = Pipeline()\n"
+                "def configure():\n"
+                "    receiver.delay(task)\n"
+                "receiver = celery.Celery('jobs')\n"
+                "configure()\n",
+            ),
+            (
+                "function queue rebound before definition and ordinary after call",
+                "receiver = celery.Celery('jobs')\n"
+                "def configure():\n"
+                "    return None\n"
+                "configure()\n"
+                "receiver = Pipeline()\n",
+                "receiver = celery.Celery('jobs')\n"
+                "def configure():\n"
+                "    receiver.delay(task)\n"
+                "configure()\n"
+                "receiver = Pipeline()\n",
+            ),
+            (
+                "method queue rebound after definition before call",
+                "receiver = Pipeline()\n"
+                "class Configurer:\n"
+                "    def configure(self):\n"
+                "        return None\n"
+                "receiver = celery.Celery('jobs')\n"
+                "Configurer().configure()\n",
+                "receiver = Pipeline()\n"
+                "class Configurer:\n"
+                "    def configure(self):\n"
+                "        receiver.delay(task)\n"
+                "receiver = celery.Celery('jobs')\n"
+                "Configurer().configure()\n",
+            ),
+            (
+                "method queue rebound before definition and ordinary after call",
+                "receiver = celery.Celery('jobs')\n"
+                "class Configurer:\n"
+                "    def configure(self):\n"
+                "        return None\n"
+                "Configurer().configure()\n"
+                "receiver = Pipeline()\n",
+                "receiver = celery.Celery('jobs')\n"
+                "class Configurer:\n"
+                "    def configure(self):\n"
+                "        receiver.delay(task)\n"
+                "Configurer().configure()\n"
+                "receiver = Pipeline()\n",
+            ),
+        )
+        for label, before_body, after_body in cases:
+            with self.subTest(label=label):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("src/jobs.py", pipeline + before_body)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", pipeline + after_body)
+                head = repo.commit("queue operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "unsupported")
+                self.assertEqual(report.status, "fail")
+                self.assertIn("src/jobs.py", result.applicability.scanned_scope)
+                self.assertIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
+    def test_queue_inplace_add_mutates_only_mutable_alias_groups(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        pipeline = (
+            "class Pipeline:\n"
+            "    def task(self, function):\n"
+            "        return function\n"
+            "    def enqueue(self, function):\n"
+            "        return function\n\n"
+        )
+        frameworks = (
+            (
+                "celery",
+                "import celery\n",
+                "celery.Celery('jobs')",
+                "@receiver.task\ndef stage():\n    return None\n",
+            ),
+            (
+                "rq",
+                "from rq import Queue\n",
+                "Queue()",
+                "receiver.enqueue(task)\n",
+            ),
+        )
+        for framework, imported, queue_value, addition in frameworks:
+            with self.subTest(framework=framework, mutable="list"):
+                before = (
+                    pipeline
+                    + imported
+                    + "values = []\n"
+                    + "alias = values\n"
+                    + f"alias += [{queue_value}]\n"
+                    + "receiver = values[0]\n"
+                )
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", before + addition)
+                head = repo.commit("queue operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "unsupported")
+                self.assertEqual(report.status, "fail")
+                self.assertIn("src/jobs.py", result.applicability.scanned_scope)
+                self.assertIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
+            with self.subTest(framework=framework, mutable="tuple rebind"):
+                before = (
+                    pipeline
+                    + imported
+                    + "values = (Pipeline(),)\n"
+                    + "alias = values\n"
+                    + f"alias += ({queue_value},)\n"
+                    + "receiver = values[0]\n"
+                )
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", before + addition)
+                head = repo.commit("ordinary tuple operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "not_applicable")
+                self.assertEqual(report.status, "pass")
+                self.assertNotIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
+        before = (
+            pipeline
+            + "from rq import Queue\n"
+            + "queue_values = [Queue()]\n"
+            + "ordinary_values = []\n"
+            + "alias = ordinary_values\n"
+            + "alias += [Pipeline()]\n"
+            + "receiver = ordinary_values[0]\n"
+        )
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_text("src/jobs.py", before)
+        base = repo.commit("base")
+        repo.write_text(
+            "src/jobs.py",
+            before + "@receiver.task\ndef stage():\n    return None\n",
+        )
+        head = repo.commit("unrelated alias operation")
+        report = self._evaluate(repo, base, head, pre_risk="yellow")
+        self.assertEqual(
+            self._results(report)["background_job"].status,
+            "not_applicable",
+        )
+        self.assertEqual(report.status, "pass")
+        self.assertNotIn("new_queue", report.triggers)
+
+    def test_queue_alias_work_is_bounded_before_branch_closure(self) -> None:
+        alias_chain = "\n".join(f"alias{index} = values" for index in range(40))
+        with self.assertRaisesRegex(FIT.QueueAnalysisLimit, "alias"):
+            FIT.analyze_queue_tree(
+                ast.parse("import celery\nvalues = []\n" + alias_chain + "\n"),
+                value_limit=32,
+            )
+
+        left_aliases = "\n".join(f"left{index} = left" for index in range(10))
+        right_aliases = "\n".join(f"right{index} = right" for index in range(10))
+        branch_aliases = "\n".join(
+            f"    bridge{index} = {'left' if index % 2 == 0 else 'right'}"
+            for index in range(10)
+        )
+        with self.assertRaisesRegex(FIT.QueueAnalysisLimit, "alias"):
+            FIT.analyze_queue_tree(
+                ast.parse(
+                    "import celery\nleft = []\nright = []\n"
+                    + left_aliases
+                    + "\n"
+                    + right_aliases
+                    + "\nif enabled:\n"
+                    + branch_aliases
+                    + "\nelse:\n"
+                    + branch_aliases.replace("left", "right")
+                    + "\n"
+                ),
+                value_limit=150,
+            )
+
+        ordinary = FIT.analyze_queue_tree(
+            ast.parse("values = []\n" + alias_chain + "\nform.submit()\n"),
+            value_limit=1,
+        )
+        self.assertEqual(ordinary.signals, ())
+        self.assertFalse(ordinary.uncertain)
 
     def test_unrelated_semantic_method_names_remain_background_not_applicable(self) -> None:
         system = _system()
