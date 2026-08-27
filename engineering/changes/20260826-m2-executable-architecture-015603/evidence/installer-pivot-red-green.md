@@ -138,3 +138,108 @@ Task 2 commit; no existing repository, dependency state, or external system is
 mutated by verification.
 
 Commit subject: `refactor: make installer publication atomic`.
+
+## Task 2 fix round 1 — review boundary hardening
+
+The three Important review findings shared one ownership problem: pathname
+validation and resource allocation were separated from the descriptor or
+created-name authority used later. The repair binds target ancestry one
+component at a time from a retained filesystem-root descriptor, reads every
+managed source through retained no-follow descriptors with a `limit + 1`
+ceiling and stable full file identity, and records each exclusive staged name
+immediately after creation so constructor failures can clean only that owned
+entry. The compatibility notice now has one shared literal and each invocation
+prints it once.
+
+### RED
+
+The initial combined regression run exercised an intermediate/final ancestry
+swap, managed/AGENTS/Bitrix/toolchain source races, and stage/directory/file
+constructor gaps:
+
+```text
+python3 -m unittest -v \
+  tests.test_installer.InstallerTests.test_materialize_new_rejects_ancestor_swaps_during_parent_binding \
+  tests.test_installer.InstallerTests.test_source_reads_are_nofollow_and_bounded_at_the_descriptor \
+  tests.test_installer.InstallerTests.test_constructor_failures_remove_every_exclusively_created_entry
+Ran 3 tests in 0.207s
+FAILED (failures=7, errors=1)
+```
+
+The old parent binding followed the swapped ancestry (or leaked a raw
+`NotADirectoryError`), all three injected post-create metadata failures left an
+`.adaptive-install-*` sibling, and path reads exceeded the declared boundary.
+After correcting a test-callback precedence defect, the definitive source-read
+RED was:
+
+```text
+python3 -m unittest -v \
+  tests.test_installer.InstallerTests.test_source_reads_are_nofollow_and_bounded_at_the_descriptor
+Ran 1 test in 0.009s
+FAILED (failures=4)
+```
+
+All four source families consumed 34 bytes through the swapped path where the
+test allowed at most the configured `limit + 1` of 33 bytes; the toolchain path
+also failed to reject its swapped source.
+
+### GREEN
+
+```text
+python3 -m unittest -v \
+  tests.test_installer.InstallerTests.test_materialize_new_rejects_ancestor_swaps_during_parent_binding \
+  tests.test_installer.InstallerTests.test_source_reads_are_nofollow_and_bounded_at_the_descriptor \
+  tests.test_installer.InstallerTests.test_constructor_failures_remove_every_exclusively_created_entry \
+  tests.test_installer.InstallerTests.test_cli_modes_plan_by_default_and_materialize_only_when_explicit
+Ran 4 tests in 1.153s
+OK
+
+python3 -m unittest -v \
+  tests.test_installer tests.test_manifest_package tests.test_structure
+Ran 39 tests in 6.375s
+OK
+
+python3 -m ruff check \
+  scripts/install_into.py tests/test_installer.py tests/test_manifest_package.py
+All checks passed!
+
+python3 -m bandit -q -c bandit.yaml scripts/install_into.py
+exit 0
+
+python3 -m compileall -q scripts tests
+exit 0
+
+git diff --check
+exit 0
+
+git diff --name-only -- trust-ci .github/workflows \
+  .grok-stack/adaptive_grok/queue_provenance.py \
+  tests/test_architecture_fitness.py
+empty output
+
+python3 scripts/grok_architecture.py fitness \
+  --base e28d6f404e624f0840487b6ab70e01ea32c6832e \
+  --worktree --json
+fitness_status=pass; risk_post=green; no failing/unsupported category
+```
+
+### Files, self-review, and recovery
+
+- `scripts/install_into.py`: stable component-wise directory bindings, bounded
+  descriptor-relative source reads, immediate created-name ownership, exact
+  constructor-failure cleanup, and one compatibility notice constant.
+- `tests/test_installer.py`: deterministic ancestry-swap, bounded-read race,
+  registration-gap, and single-notice regressions.
+- This evidence and the ignored Task 2 report record the fix round.
+
+Self-review confirmed that source accepts bytes only after dev/inode/size/
+mtime/ctime/mode stability, final and ancestor symlinks are never followed,
+publication remains the sole target mutation, and cleanup stays limited to
+exclusive installer-created names under retained directory descriptors. No
+target/outside sentinel changed in any injected failure. Residual platform risk
+is unchanged: lack of `O_NOFOLLOW`, descriptor-relative directory operations,
+or `renameat2(RENAME_NOREPLACE)` disables materialization rather than selecting
+an unsafe fallback. Rollout remains source-only; rollback is a revert of this
+fix commit, with no external or installed-repository state to recover.
+
+Commit subject: `fix: harden installer path ownership`.
