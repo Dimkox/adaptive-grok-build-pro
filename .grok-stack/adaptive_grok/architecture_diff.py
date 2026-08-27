@@ -24,6 +24,7 @@ from .architecture import (
     architecture_digests,
     contract_inventory,
     load_architecture,
+    parse_adoption_marker,
 )
 
 ADOPTION_BASE_SHA = "25bfbe59ea188d9687b20a9caad19e7db3d031f8"
@@ -308,6 +309,11 @@ def select_architecture_comparison_base(
             code="missing",
         )
     if model_present == (True, True):
+        marker_value = _git_blob(root, route_base, _ADOPTION_PATH, required=True)
+        parse_adoption_marker(
+            _required_output(marker_value, operation="read route-base adoption marker")
+        )
+    if model_present == (True, True):
         comparison_base = route_base
         base_kind = "route_model"
         bootstrap_baseline = False
@@ -404,6 +410,8 @@ def _worktree_blob(root: Path, path: str) -> bytes | None:
 class _ArchitectureState:
     snapshot: ArchitectureSnapshot
     contracts: tuple[ContractRecord, ...]
+    adoption_state: str
+    adoption_digest: str
 
 
 def _materialized_state(
@@ -414,12 +422,20 @@ def _materialized_state(
     bootstrap_baseline: bool = False,
 ) -> _ArchitectureState | None:
     model_values = tuple(_git_blob(root, sha, path) for path in _MODEL_PATHS)
+    marker_value = _git_blob(root, sha, _ADOPTION_PATH)
     if model_values == (None, None):
+        if marker_value is not None:
+            raise ArchitectureError(
+                "architecture adoption marker exists without the model", code="missing"
+            )
         if (adoption_base and sha == ADOPTION_BASE_SHA) or bootstrap_baseline:
             return None
         raise ArchitectureError("architecture model is missing outside the adoption base", code="missing")
     if any(value is None for value in model_values):
         raise ArchitectureError("architecture model is partially missing", code="missing")
+    if marker_value is None:
+        raise ArchitectureError("architecture adoption marker is missing", code="missing")
+    adoption = parse_adoption_marker(marker_value)
     schema_values = tuple(_git_blob(root, sha, path, required=True) for path in _SCHEMA_PATHS)
     with tempfile.TemporaryDirectory(prefix="adaptive-architecture-object-") as directory:
         materialized = Path(directory)
@@ -434,12 +450,34 @@ def _materialized_state(
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(_required_output(value, operation=f"materialize {contract['path']}"))
         records = contract_inventory(materialized, snapshot)
-    return _ArchitectureState(snapshot=snapshot, contracts=records)
+    if adoption["architecture_id"] != snapshot.system["architecture_id"]:
+        raise ArchitectureError(
+            "architecture adoption marker id does not match the model", code="schema"
+        )
+    return _ArchitectureState(
+        snapshot=snapshot,
+        contracts=records,
+        adoption_state="adopted",
+        adoption_digest=adoption["digest"],
+    )
 
 
 def _worktree_state(root: Path) -> _ArchitectureState:
     snapshot = load_architecture(root)
-    return _ArchitectureState(snapshot=snapshot, contracts=contract_inventory(root, snapshot))
+    marker_value = _worktree_blob(root, _ADOPTION_PATH)
+    if marker_value is None:
+        raise ArchitectureError("architecture adoption marker is missing", code="missing")
+    adoption = parse_adoption_marker(marker_value)
+    if adoption["architecture_id"] != snapshot.system["architecture_id"]:
+        raise ArchitectureError(
+            "architecture adoption marker id does not match the model", code="schema"
+        )
+    return _ArchitectureState(
+        snapshot=snapshot,
+        contracts=contract_inventory(root, snapshot),
+        adoption_state="adopted",
+        adoption_digest=adoption["digest"],
+    )
 
 
 @dataclass(frozen=True)
@@ -474,6 +512,10 @@ class ArchitectureDiff:
     artifacts: tuple[ChangedArtifact, ...]
     base_architecture_digest: str | None
     head_architecture_digest: str
+    base_adoption_state: str
+    head_adoption_state: str
+    base_adoption_digest: str | None
+    head_adoption_digest: str
     repository_inventory_digest: str
     digest: str
     _base_state: _ArchitectureState | None = field(repr=False, compare=False)
@@ -824,6 +866,10 @@ def diff_architecture(
         "baseline_introduced": base_state is None,
         "base_architecture_digest": base_digest,
         "head_architecture_digest": head_digest,
+        "base_adoption_state": "bootstrap_absent" if base_state is None else base_state.adoption_state,
+        "head_adoption_state": head_state.adoption_state,
+        "base_adoption_digest": None if base_state is None else base_state.adoption_digest,
+        "head_adoption_digest": head_state.adoption_digest,
         "changed_paths": paths,
         "changes": [
             {
@@ -846,6 +892,10 @@ def diff_architecture(
         artifacts=tuple(artifacts),
         base_architecture_digest=base_digest,
         head_architecture_digest=head_digest,
+        base_adoption_state="bootstrap_absent" if base_state is None else base_state.adoption_state,
+        head_adoption_state=head_state.adoption_state,
+        base_adoption_digest=None if base_state is None else base_state.adoption_digest,
+        head_adoption_digest=head_state.adoption_digest,
         repository_inventory_digest=_tree_inventory_digest(
             repository, head, worktree=worktree, artifacts=tuple(artifacts)
         ),

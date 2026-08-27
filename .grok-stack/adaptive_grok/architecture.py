@@ -28,6 +28,8 @@ MAX_DRIFT_FINDINGS = 10_000
 MAX_DRIFT_ENTRIES = 100_000
 MAX_DRIFT_FILES = 20_000
 MAX_DRIFT_BYTES = 250_000_000
+MAX_ADOPTION_BYTES = 4_096
+_ARCHITECTURE_ID = re.compile(r"^[A-Z][A-Z0-9_-]{2,127}$")
 
 SYSTEM_PATH = Path("architecture/system.yaml")
 RULES_PATH = Path("architecture/rules.yaml")
@@ -291,6 +293,33 @@ def _parse_json(data: bytes, *, label: str, counter: list[int] | None = None) ->
         raise ArchitectureError(f"{label}: root must be an object", code="parse")
     _bounded_walk(value, counter=counter)
     return value
+
+
+def parse_adoption_marker(data: bytes, *, label: str = "architecture adoption") -> dict[str, str]:
+    """Validate a target-owned durable adoption marker from trusted bytes."""
+    if len(data) > MAX_ADOPTION_BYTES:
+        raise ArchitectureError(f"{label}: marker byte limit exceeded", code="limit")
+    value = _parse_json(data, label=label)
+    if set(value) != {"architecture_id", "schema_version", "state"}:
+        raise ArchitectureError(f"{label}: marker fields are invalid", code="schema")
+    architecture_id = value["architecture_id"]
+    if (
+        type(value["schema_version"]) is not int
+        or value["schema_version"] != 1
+        or value["state"] != "adopted"
+        or not isinstance(architecture_id, str)
+        or _ARCHITECTURE_ID.fullmatch(architecture_id) is None
+    ):
+        raise ArchitectureError(f"{label}: marker values are invalid", code="schema")
+    canonical = (
+        json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+    ).encode("utf-8")
+    if data != canonical:
+        raise ArchitectureError(f"{label}: marker is not canonical JSON", code="parse")
+    return {
+        "architecture_id": architecture_id,
+        "digest": hashlib.sha256(data).hexdigest(),
+    }
 
 
 def _load_schema(root: Path, relative: Path) -> dict[str, Any]:

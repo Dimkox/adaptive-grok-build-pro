@@ -329,6 +329,16 @@ class VerificationTests(unittest.TestCase):
             self.assertEqual(report['status'], 'fail')
             self.assertIn('no-follow', _check(report, 'architecture')['summary'])
 
+    def test_clean_legacy_repository_remains_unconfigured_without_nofollow(self) -> None:
+        with project_copy(git=False) as root:
+            (root / 'architecture').mkdir(exist_ok=True)
+            route = build_route(root, 'Review current code', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            with patch.object(architecture_module.os, 'O_NOFOLLOW', 0):
+                report = verify(root, mode='fast', record=False)
+            self.assertEqual(report['architecture']['status'], 'not_configured')
+
     def test_marker_backed_merge_deletion_fails_without_history_inference(self) -> None:
         with project_copy(git=True) as root:
             route = build_route(root, 'Review current architecture', 's1').to_dict()

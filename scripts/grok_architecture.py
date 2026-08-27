@@ -62,6 +62,10 @@ def _diff_payload(diff: Any) -> dict[str, Any]:
     result: dict[str, Any] = {
         "base_architecture_digest": diff.base_architecture_digest,
         "baseline_introduced": diff.baseline_introduced,
+        "base_adoption_state": diff.base_adoption_state,
+        "head_adoption_state": diff.head_adoption_state,
+        "base_adoption_digest": diff.base_adoption_digest,
+        "head_adoption_digest": diff.head_adoption_digest,
         "changed_paths": list(diff.changed_paths),
         "changes": [dataclasses.asdict(item) for item in diff.changes],
         "artifacts": [dataclasses.asdict(item) for item in diff.artifacts],

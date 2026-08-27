@@ -63,6 +63,11 @@ class GitArchitectureRepo:
     def model(self, system: dict, rules: dict) -> None:
         self.write_json("architecture/system.yaml", system)
         self.write_json("architecture/rules.yaml", rules)
+        self.write_json("architecture/adoption.json", {
+            "architecture_id": system["architecture_id"],
+            "schema_version": 1,
+            "state": "adopted",
+        })
 
     def commit(self, message: str) -> str:
         self.git("add", "-A")
@@ -117,6 +122,95 @@ class ArchitectureFitnessTests(unittest.TestCase):
         adopted = repo.commit("adopt")
         with self.assertRaisesRegex(FIT.ArchitectureError, "adoption|missing"):
             FIT.diff_architecture(repo.root, base_sha=absent, head_sha=adopted)
+
+    def test_exact_and_worktree_diffs_fail_when_adoption_marker_is_removed(self) -> None:
+        script = ROOT / "scripts/grok_architecture.py"
+
+        def invoke(repo: GitArchitectureRepo, *args: str):
+            return subprocess.run(
+                [sys.executable, str(script), "--root", str(repo.root), *args],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+
+        repo, base = self._repo()
+        (repo.root / "architecture/adoption.json").unlink()
+        removed = repo.commit("remove adoption marker")
+        with self.assertRaisesRegex(FIT.ArchitectureError, "adoption marker"):
+            FIT.diff_architecture(repo.root, base_sha=base, head_sha=removed)
+        for command in ("diff", "fitness"):
+            result = invoke(repo, command, "--base", base, "--head", removed, "--json")
+            self.assertNotEqual(result.returncode, 0, (command, result.stdout, result.stderr))
+            self.assertIn("adoption marker", result.stdout + result.stderr)
+
+        repo.git("reset", "--hard", base)
+        (repo.root / "architecture/adoption.json").unlink()
+        with self.assertRaisesRegex(FIT.ArchitectureError, "adoption marker"):
+            FIT.diff_architecture(repo.root, base_sha=base, worktree=True)
+        for command in ("diff", "fitness"):
+            result = invoke(repo, command, "--base", base, "--worktree", "--json")
+            self.assertNotEqual(result.returncode, 0, (command, result.stdout, result.stderr))
+            self.assertIn("adoption marker", result.stdout + result.stderr)
+
+    def test_adoption_marker_state_is_bound_into_exact_diff_evidence(self) -> None:
+        repo, base = self._repo()
+        repo.write_text("src/app.py", "VALUE = 1\n")
+        head = repo.commit("head")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        self.assertEqual(diff.base_adoption_state, "adopted")
+        self.assertEqual(diff.head_adoption_state, "adopted")
+        self.assertRegex(diff.base_adoption_digest, r"^[0-9a-f]{64}$")
+        self.assertEqual(diff.base_adoption_digest, diff.head_adoption_digest)
+        evidence = FIT.architecture_evidence(
+            repo.root, base_sha=base, head_sha=head, pre_risk="green"
+        )
+        self.assertEqual(evidence["base_adoption_state"], "adopted")
+        self.assertEqual(evidence["head_adoption_state"], "adopted")
+        self.assertEqual(evidence["base_adoption_digest"], diff.base_adoption_digest)
+        self.assertEqual(evidence["head_adoption_digest"], diff.head_adoption_digest)
+
+    def test_invalid_adoption_marker_fails_exact_and_worktree_state(self) -> None:
+        repo, base = self._repo()
+        repo.write_text(
+            "architecture/adoption.json",
+            '{"architecture_id":"ARCH-TEST","schema_version":1,"state":"adopted"}\n',
+        )
+        invalid = repo.commit("noncanonical marker")
+        with self.assertRaisesRegex(FIT.ArchitectureError, "canonical"):
+            FIT.diff_architecture(repo.root, base_sha=base, head_sha=invalid)
+        repo.git("reset", "--hard", base)
+        repo.write_text("architecture/adoption.json", "{}\n")
+        with self.assertRaisesRegex(FIT.ArchitectureError, "marker fields"):
+            FIT.diff_architecture(repo.root, base_sha=base, worktree=True)
+
+    def test_merge_and_shallow_exact_marker_deletions_fail_closed(self) -> None:
+        repo, adopted = self._repo()
+        repo.git("checkout", "-qb", "side")
+        repo.write_text("side.txt", "side\n")
+        repo.commit("side")
+        repo.git("checkout", "-q", "main")
+        (repo.root / "architecture/adoption.json").unlink()
+        repo.commit("remove marker")
+        repo.git("merge", "--no-edit", "side")
+        merge_head = repo.git("rev-parse", "HEAD")
+        with self.assertRaisesRegex(FIT.ArchitectureError, "adoption marker"):
+            FIT.diff_architecture(repo.root, base_sha=adopted, head_sha=merge_head)
+
+        with tempfile.TemporaryDirectory() as directory:
+            clone = Path(directory) / "shallow"
+            subprocess.run(
+                ["git", "clone", "-q", "--depth=1", f"file://{repo.root}", str(clone)],
+                check=True,
+            )
+            subprocess.run(
+                ["git", "fetch", "-q", "--depth=1", "origin", f"{adopted}:refs/architecture/adopted"],
+                cwd=clone,
+                check=True,
+            )
+            with self.assertRaisesRegex(FIT.ArchitectureError, "adoption marker"):
+                FIT.diff_architecture(clone, base_sha=adopted, head_sha=merge_head)
 
     def test_exact_commits_are_required_and_route_base_is_never_inferred(self) -> None:
         repo, base = self._repo()
@@ -469,6 +563,36 @@ class ArchitectureFitnessTests(unittest.TestCase):
             ("rq from import", "", "from rq import Queue as WorkQueue\njobs = WorkQueue()\n"),
             ("stdlib queue", "", "from queue import Queue\njobs = Queue()\n"),
             ("existing import new call", "import celery as c\n", "import celery as c\napp = c.Celery('jobs')\n"),
+            (
+                "rq instance enqueue",
+                "from rq import Queue\njobs = Queue()\n",
+                "from rq import Queue\njobs = Queue()\njobs.enqueue(task)\n",
+            ),
+            (
+                "celery app decorator",
+                "import celery\napp = celery.Celery('jobs')\n",
+                "import celery\napp = celery.Celery('jobs')\n@app.task\ndef job():\n    return None\n",
+            ),
+            (
+                "aliased factory assignment",
+                "import celery as c\nfactory = c.Celery\napp = factory('jobs')\n",
+                "import celery as c\nfactory = c.Celery\napp = factory('jobs')\n@app.task\ndef job():\n    return None\n",
+            ),
+            (
+                "getattr factory",
+                "import celery\napp = getattr(celery, 'Celery')('jobs')\n",
+                "import celery\napp = getattr(celery, 'Celery')('jobs')\n@app.task\ndef job():\n    return None\n",
+            ),
+            (
+                "getattr project adapter",
+                "from project.jobs import app\ntask = getattr(app, 'task')\n",
+                "from project.jobs import app\ntask = getattr(app, 'task')\n@task\ndef job():\n    return None\n",
+            ),
+            (
+                "project adapter decorator",
+                "from project.jobs import app\n",
+                "from project.jobs import app\n@app.task\ndef job():\n    return None\n",
+            ),
         )
         for label, before, after in cases:
             with self.subTest(label=label):

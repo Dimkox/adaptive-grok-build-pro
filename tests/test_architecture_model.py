@@ -538,7 +538,7 @@ class ArchitectureModelTests(unittest.TestCase):
             DIAGRAMS.compare_generated(root, rendered)
         context.unlink()
         os.mkfifo(context)
-        with self.assertRaisesRegex(ARCH.ArchitectureError, "regular file"):
+        with self.assertRaisesRegex(ARCH.ArchitectureError, "regular file|safely read"):
             DIAGRAMS.compare_generated(root, rendered)
 
     def test_generated_diagrams_never_follow_ancestor_or_final_symlinks(self) -> None:
@@ -560,7 +560,7 @@ class ArchitectureModelTests(unittest.TestCase):
         target = outside / "target.mmd"
         target.write_text("outside\n", encoding="utf-8")
         (generated / "context.mmd").symlink_to(target)
-        with self.assertRaisesRegex(ARCH.ArchitectureError, "regular file"):
+        with self.assertRaisesRegex(ARCH.ArchitectureError, "regular file|safely read"):
             DIAGRAMS.write_generated(root, rendered)
         with self.assertRaises(ARCH.ArchitectureError):
             DIAGRAMS.compare_generated(root, rendered)
@@ -589,10 +589,39 @@ class ArchitectureModelTests(unittest.TestCase):
             return result
 
         with mock.patch.object(DIAGRAMS, "_replace_generated", side_effect=swapping_replace):
-            with self.assertRaisesRegex(ARCH.ArchitectureError, "changed"):
+            with self.assertRaisesRegex(ARCH.ArchitectureError, "changed|safely publish"):
                 DIAGRAMS.write_generated(root, rendered)
         self.assertTrue(swapped)
         self.assertEqual(tuple(outside.iterdir()), ())
+
+    def test_generated_diagram_write_does_not_mutate_relocated_destination(self) -> None:
+        root = self._repo()
+        rendered = DIAGRAMS.render_diagrams(ARCH.load_architecture(root))
+        DIAGRAMS.write_generated(root, rendered)
+        generated = root / "architecture/generated"
+        before = {path.name: path.read_bytes() for path in generated.iterdir()}
+        changed = dict(rendered)
+        changed["context"] = rendered["context"] + "%% changed\n"
+        outside_temp = tempfile.TemporaryDirectory()
+        self.addCleanup(outside_temp.cleanup)
+        outside_generated = Path(outside_temp.name) / "generated"
+        real_replace = DIAGRAMS._replace_generated
+        relocated = False
+
+        def relocate_before_replace(descriptor, source, target):
+            nonlocal relocated
+            if not relocated:
+                os.rename(generated, outside_generated)
+                relocated = True
+            return real_replace(descriptor, source, target)
+
+        with mock.patch.object(DIAGRAMS, "_replace_generated", side_effect=relocate_before_replace):
+            DIAGRAMS.write_generated(root, changed)
+        self.assertTrue(relocated)
+        self.assertEqual(
+            {path.name: path.read_bytes() for path in outside_generated.iterdir()},
+            before,
+        )
 
     def test_generated_diagram_compare_rejects_directory_swap_without_outside_read(self) -> None:
         root = self._repo()

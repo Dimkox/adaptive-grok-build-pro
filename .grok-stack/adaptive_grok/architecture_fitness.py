@@ -957,6 +957,84 @@ def _code_budget(
 
 
 def _queue_signals(tree: ast.AST) -> set[str]:
+    queue_names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                local = alias.asname or alias.name.split(".")[0]
+                if alias.name.split(".")[0] in _QUEUE_IMPORTS:
+                    queue_names.add(local)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            for alias in node.names:
+                local = alias.asname or alias.name
+                if node.module.split(".")[0] in _QUEUE_IMPORTS:
+                    queue_names.add(local)
+
+    semantic_methods = {
+        "apply_async", "delay", "enqueue", "enqueue_at", "enqueue_in",
+        "send_task", "submit", "task",
+    }
+
+    def semantic_terminal(value: ast.AST) -> str:
+        if isinstance(value, ast.Attribute):
+            return value.attr
+        if (
+            isinstance(value, ast.Call)
+            and isinstance(value.func, ast.Name)
+            and value.func.id == "getattr"
+            and len(value.args) >= 2
+            and isinstance(value.args[1], ast.Constant)
+            and isinstance(value.args[1].value, str)
+        ):
+            return value.args[1].value
+        return ""
+
+    def queue_derived(value: ast.AST) -> bool:
+        if isinstance(value, ast.Name):
+            return value.id in queue_names
+        if isinstance(value, ast.Attribute):
+            return queue_derived(value.value)
+        if isinstance(value, ast.Call):
+            if queue_derived(value.func):
+                return True
+            return (
+                isinstance(value.func, ast.Name)
+                and value.func.id == "getattr"
+                and bool(value.args)
+                and queue_derived(value.args[0])
+            )
+        return False
+
+    # Resolve simple assignment/factory chains to a fixed point. The global AST
+    # node limit bounds both this loop and the values considered here.
+    assignments = [
+        node for node in ast.walk(tree)
+        if isinstance(node, (ast.Assign, ast.AnnAssign))
+    ]
+    semantic_names: set[str] = set()
+    for _ in range(min(len(assignments) + 1, 64)):
+        changed = False
+        for node in assignments:
+            value = node.value
+            if value is None or not queue_derived(value):
+                continue
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for target in targets:
+                if isinstance(target, ast.Name) and target.id not in queue_names:
+                    queue_names.add(target.id)
+                    changed = True
+        for node in assignments:
+            value = node.value
+            if value is None or semantic_terminal(value) not in semantic_methods:
+                continue
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for target in targets:
+                if isinstance(target, ast.Name) and target.id not in semantic_names:
+                    semantic_names.add(target.id)
+                    changed = True
+        if not changed:
+            break
+
     signals = {
         f"import:{target}"
         for target in _import_targets(tree)
@@ -965,6 +1043,29 @@ def _queue_signals(tree: ast.AST) -> set[str]:
     for imported, call in _called_imports(tree):
         if imported.split(".")[0] in _QUEUE_IMPORTS:
             signals.add(f"call:{call}")
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            terminal = semantic_terminal(node.func)
+            if (
+                queue_derived(node.func)
+                or terminal in semantic_methods
+                or (isinstance(node.func, ast.Name) and node.func.id in semantic_names)
+            ):
+                signals.add(
+                    "semantic-call:" + ast.dump(node, annotate_fields=True, include_attributes=False)
+                )
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            for decorator in node.decorator_list:
+                terminal = semantic_terminal(decorator)
+                if (
+                    queue_derived(decorator)
+                    or terminal == "task"
+                    or (isinstance(decorator, ast.Name) and decorator.id in semantic_names)
+                ):
+                    signals.add(
+                        f"semantic-decorator:{node.name}:"
+                        + ast.dump(decorator, annotate_fields=True, include_attributes=False)
+                    )
     return signals
 
 
@@ -987,7 +1088,12 @@ def _new_queue_sources(
             if head - base:
                 applicable.append(path)
         except (SyntaxError, UnicodeDecodeError):
-            continue
+            value = read_diff_file(root, diff, path, "head") or b""
+            if re.search(
+                rb"\b(celery|rq|redis|kombu|pika|kafka|confluent_kafka|enqueue|apply_async|send_task)\b",
+                value,
+            ):
+                applicable.append(path)
     return tuple(sorted(applicable))
 
 
@@ -1465,6 +1571,10 @@ def architecture_evidence(
         "exact_head_sha": diff.head_sha,
         "head_kind": diff.head_kind,
         "baseline_introduced": diff.baseline_introduced,
+        "base_adoption_state": diff.base_adoption_state,
+        "head_adoption_state": diff.head_adoption_state,
+        "base_adoption_digest": diff.base_adoption_digest,
+        "head_adoption_digest": diff.head_adoption_digest,
         "fitness_results": [_result_payload(item) for item in report.results],
         "fitness_status": report.status,
         "risk_pre": report.pre_risk,

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import hashlib
-import json
-import re
+import os
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -10,15 +9,13 @@ from .architecture import (
     ArchitectureError,
     RULES_PATH,
     SYSTEM_PATH,
-    _parse_json,
     _read_regular_bytes,
-    _secure_open_flags,
-    _inspect_repository_path,
     architecture_digests,
     architecture_fingerprint,
     contract_inventory,
     contract_inventory_digest,
     load_architecture,
+    parse_adoption_marker,
 )
 from .architecture_diff import _git, _git_blob, select_architecture_comparison_base
 from .spec import canonical_spec_digest, load_spec, spec_fingerprint, validate_spec
@@ -26,8 +23,6 @@ from .state import get_active_change, get_active_route
 from .util import dump_json, load_json, now_utc, runtime_dir, tree_fingerprint
 
 ADOPTION_PATH = Path("architecture/adoption.json")
-MAX_ADOPTION_BYTES = 4_096
-_ARCHITECTURE_ID = re.compile(r"^[A-Z][A-Z0-9_-]{2,127}$")
 
 
 def _exact_head(root: Path) -> str | None:
@@ -43,53 +38,55 @@ def _exact_head(root: Path) -> str | None:
     return None
 
 
-def _architecture_adoption(root: Path) -> dict[str, str] | None:
-    _secure_open_flags(label="architecture adoption")
-    marker = root / ADOPTION_PATH
+def _authority_presence(root: Path) -> tuple[bool, bool, bool]:
+    """Establish stable fixed-entry absence without requiring byte-read primitives."""
+    architecture = root / "architecture"
     try:
-        marker.lstat()
+        before = os.lstat(architecture)
     except FileNotFoundError:
-        return None
+        return False, False, False
     except OSError as exc:
-        raise ArchitectureError(f"architecture adoption: cannot inspect marker: {exc}", code="io") from exc
+        raise ArchitectureError(f"architecture authority cannot be inspected: {exc}", code="io") from exc
+    if not stat.S_ISDIR(before.st_mode) or stat.S_ISLNK(before.st_mode):
+        raise ArchitectureError("architecture authority directory is unsafe", code="io")
+    present: list[bool] = []
+    for path in (ADOPTION_PATH, SYSTEM_PATH, RULES_PATH):
+        try:
+            os.lstat(root / path)
+        except FileNotFoundError:
+            present.append(False)
+        except OSError as exc:
+            raise ArchitectureError(f"architecture authority cannot be inspected: {exc}", code="io") from exc
+        else:
+            present.append(True)
+    try:
+        after = os.lstat(architecture)
+    except OSError as exc:
+        raise ArchitectureError(f"architecture authority changed during inspection: {exc}", code="io") from exc
+    def identity(value: os.stat_result) -> tuple[int, int, int, int, int]:
+        return (
+            value.st_dev,
+            value.st_ino,
+            value.st_mode,
+            value.st_mtime_ns,
+            value.st_ctime_ns,
+        )
+    if identity(before) != identity(after):
+        raise ArchitectureError("architecture authority changed during inspection", code="io")
+    return tuple(present)  # type: ignore[return-value]
+
+
+def _architecture_adoption(root: Path, *, present: bool | None = None) -> dict[str, str] | None:
+    if present is None:
+        present = _authority_presence(root)[0]
+    if not present:
+        return None
     data = _read_regular_bytes(
         root,
         ADOPTION_PATH.as_posix(),
         label="architecture adoption",
     )
-    if len(data) > MAX_ADOPTION_BYTES:
-        raise ArchitectureError("architecture adoption: marker byte limit exceeded", code="limit")
-    value = _parse_json(data, label="architecture adoption")
-    if set(value) != {"architecture_id", "schema_version", "state"}:
-        raise ArchitectureError("architecture adoption: marker fields are invalid", code="schema")
-    architecture_id = value["architecture_id"]
-    if (
-        type(value["schema_version"]) is not int
-        or value["schema_version"] != 1
-        or value["state"] != "adopted"
-        or not isinstance(architecture_id, str)
-        or _ARCHITECTURE_ID.fullmatch(architecture_id) is None
-    ):
-        raise ArchitectureError("architecture adoption: marker values are invalid", code="schema")
-    canonical = (
-        json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
-    ).encode("utf-8")
-    if data != canonical:
-        raise ArchitectureError("architecture adoption: marker is not canonical JSON", code="parse")
-    return {
-        "architecture_id": architecture_id,
-        "digest": hashlib.sha256(data).hexdigest(),
-    }
-
-
-def _worktree_model_presence(root: Path) -> tuple[bool, bool]:
-    states = tuple(
-        _inspect_repository_path(root, path.as_posix(), regular=True)
-        for path in (SYSTEM_PATH, RULES_PATH)
-    )
-    if "unsafe" in states:
-        raise ArchitectureError("architecture model path is unsafe", code="io")
-    return tuple(state is None for state in states)  # type: ignore[return-value]
+    return parse_adoption_marker(data)
 
 
 def _exact_tree_has_architecture(root: Path, sha: str) -> bool:
@@ -113,8 +110,9 @@ def _exact_head_parents(root: Path, head: str) -> tuple[str, ...]:
 
 
 def active_architecture_binding(root: Path, route: dict[str, Any]) -> dict[str, Any] | None:
-    adoption = _architecture_adoption(root)
-    present = _worktree_model_presence(root)
+    authority = _authority_presence(root)
+    adoption = _architecture_adoption(root, present=authority[0])
+    present = authority[1:]
     if adoption is None:
         if present != (False, False):
             raise RuntimeError("architecture adoption marker is missing")

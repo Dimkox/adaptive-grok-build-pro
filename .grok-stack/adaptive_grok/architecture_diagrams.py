@@ -270,13 +270,78 @@ def _read_generated(generated_fd: int, filename: str, expected_limit: int) -> by
             os.close(descriptor)
 
 
-def _replace_generated(generated_fd: int, temporary: str, filename: str) -> None:
-    os.rename(
-        temporary,
-        filename,
-        src_dir_fd=generated_fd,
-        dst_dir_fd=generated_fd,
+def _discard_entry(parent_fd: int, name: str) -> None:
+    """Remove a bounded generated entry without following a symlink entry."""
+    no_follow, directory_flag, _nonblock = _secure_open_flags(
+        label="generated architecture diagrams"
     )
+    try:
+        info = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return
+    if stat.S_ISLNK(info.st_mode) or stat.S_ISREG(info.st_mode):
+        os.unlink(name, dir_fd=parent_fd)
+        return
+    if not stat.S_ISDIR(info.st_mode):
+        raise ArchitectureError("generated diagram publication encountered a special file", code="io")
+    descriptor = os.open(name, os.O_RDONLY | directory_flag | no_follow, dir_fd=parent_fd)
+    try:
+        entries = sorted(os.listdir(descriptor))
+        if len(entries) > len(DIAGRAM_NAMES):
+            raise ArchitectureError("generated diagram directory has unexpected entries", code="io")
+        for entry in entries:
+            child = os.stat(entry, dir_fd=descriptor, follow_symlinks=False)
+            if not stat.S_ISREG(child.st_mode) or child.st_size > MAX_GENERATED_ARTIFACT_BYTES:
+                raise ArchitectureError("generated diagram backup is unsafe", code="io")
+            os.unlink(entry, dir_fd=descriptor)
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+    try:
+        current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return
+    if (current.st_dev, current.st_ino) != (info.st_dev, info.st_ino):
+        raise ArchitectureError("generated diagram directory changed during publication", code="io")
+    os.rmdir(name, dir_fd=parent_fd)
+
+
+def _replace_generated(architecture_fd: int, staging: str, destination: str) -> None:
+    """Publish a complete fresh directory without opening the old destination."""
+    backup = f".generated.{secrets.token_hex(12)}.old"
+    moved_old = False
+    try:
+        try:
+            os.rename(
+                destination,
+                backup,
+                src_dir_fd=architecture_fd,
+                dst_dir_fd=architecture_fd,
+            )
+            moved_old = True
+        except FileNotFoundError:
+            pass
+        os.rename(
+            staging,
+            destination,
+            src_dir_fd=architecture_fd,
+            dst_dir_fd=architecture_fd,
+        )
+    except BaseException:
+        if moved_old:
+            try:
+                os.rename(
+                    backup,
+                    destination,
+                    src_dir_fd=architecture_fd,
+                    dst_dir_fd=architecture_fd,
+                )
+            except OSError:
+                pass
+        raise
+    if moved_old:
+        _discard_entry(architecture_fd, backup)
+    os.fsync(architecture_fd)
 
 
 def compare_generated(root: Path, rendered: Mapping[str, str]) -> tuple[str, ...]:
@@ -304,32 +369,64 @@ def compare_generated(root: Path, rendered: Mapping[str, str]) -> tuple[str, ...
 
 
 def write_generated(root: Path, rendered: Mapping[str, str]) -> tuple[str, ...]:
-    paths: list[str] = []
-    root_fd = architecture_fd = generated_fd = -1
+    paths = tuple(f"architecture/generated/{name}.mmd" for name in DIAGRAM_NAMES)
+    root_fd = architecture_fd = staging_fd = published_fd = -1
+    staging = f".generated.{secrets.token_hex(12)}.tmp"
     try:
-        root_fd, architecture_fd, generated_fd = _open_generated_directory(root, create=True)
+        no_follow, directory_flag, _nonblock = _secure_open_flags(
+            label="generated architecture diagrams"
+        )
+        supports_dir_fd = getattr(os, "supports_dir_fd", set())
+        required = {os.mkdir, os.rename, os.stat, os.unlink, os.rmdir}
+        if not required.issubset(supports_dir_fd) or os.stat not in getattr(
+            os, "supports_follow_symlinks", set()
+        ):
+            raise ArchitectureError(
+                "generated architecture diagrams: safe publication is unavailable", code="io"
+            )
+        # Validate an existing destination, but never retain its descriptor for writes.
+        check_root = check_architecture = check_generated = -1
+        try:
+            check_root, check_architecture, check_generated = _open_generated_directory(
+                root, create=False
+            )
+            if check_generated >= 0:
+                entries = sorted(os.listdir(check_generated))
+                expected_names = {f"{name}.mmd" for name in DIAGRAM_NAMES}
+                if not set(entries).issubset(expected_names):
+                    raise ArchitectureError("generated diagram directory has unexpected entries", code="io")
+                for filename in entries:
+                    _read_generated(check_generated, filename, MAX_GENERATED_ARTIFACT_BYTES)
+                _verify_contained_directory(check_root, check_architecture, check_generated)
+        finally:
+            for descriptor in (check_generated, check_architecture, check_root):
+                if descriptor >= 0:
+                    os.close(descriptor)
+
+        root_fd = os.open(root.resolve(strict=True), os.O_RDONLY | directory_flag | no_follow)
+        try:
+            architecture_fd = os.open(
+                "architecture", os.O_RDONLY | directory_flag | no_follow, dir_fd=root_fd
+            )
+        except FileNotFoundError:
+            os.mkdir("architecture", mode=0o755, dir_fd=root_fd)
+            architecture_fd = os.open(
+                "architecture", os.O_RDONLY | directory_flag | no_follow, dir_fd=root_fd
+            )
+        os.mkdir(staging, mode=0o755, dir_fd=architecture_fd)
+        staging_fd = os.open(
+            staging, os.O_RDONLY | directory_flag | no_follow, dir_fd=architecture_fd
+        )
         for name in DIAGRAM_NAMES:
             value = _rendered_bytes(rendered, name)
             filename = f"{name}.mmd"
-            try:
-                existing = os.stat(filename, dir_fd=generated_fd, follow_symlinks=False)
-            except FileNotFoundError:
-                existing = None
-            except OSError as exc:
-                raise ArchitectureError(f"cannot inspect generated diagram {filename}: {exc}", code="io") from exc
-            if existing is not None and not stat.S_ISREG(existing.st_mode):
-                raise ArchitectureError(f"generated diagram is not a regular file: {filename}", code="io")
-            temporary = f".{filename}.{secrets.token_hex(12)}.tmp"
             descriptor = -1
             try:
-                no_follow, _directory_flag, _nonblock = _secure_open_flags(
-                    label="generated architecture diagrams"
-                )
                 descriptor = os.open(
-                    temporary,
+                    filename,
                     os.O_WRONLY | os.O_CREAT | os.O_EXCL | no_follow,
                     0o644,
-                    dir_fd=generated_fd,
+                    dir_fd=staging_fd,
                 )
                 written = 0
                 while written < len(value):
@@ -343,8 +440,6 @@ def write_generated(root: Path, rendered: Mapping[str, str]) -> tuple[str, ...]:
                 os.fsync(descriptor)
                 os.close(descriptor)
                 descriptor = -1
-                _replace_generated(generated_fd, temporary, filename)
-                os.fsync(generated_fd)
             except ArchitectureError:
                 raise
             except OSError as exc:
@@ -352,15 +447,38 @@ def write_generated(root: Path, rendered: Mapping[str, str]) -> tuple[str, ...]:
             finally:
                 if descriptor >= 0:
                     os.close(descriptor)
-                try:
-                    os.unlink(temporary, dir_fd=generated_fd)
-                except FileNotFoundError:
-                    pass
-            paths.append(f"architecture/generated/{filename}")
-        _verify_contained_directory(root_fd, architecture_fd, generated_fd)
-        return tuple(paths)
+        os.fsync(staging_fd)
+        os.close(staging_fd)
+        staging_fd = -1
+        reopened_architecture = os.open(
+            "architecture", os.O_RDONLY | directory_flag | no_follow, dir_fd=root_fd
+        )
+        try:
+            if _directory_identity(reopened_architecture) != _directory_identity(architecture_fd):
+                raise ArchitectureError("architecture diagram directory changed", code="io")
+        finally:
+            os.close(reopened_architecture)
+        _replace_generated(architecture_fd, staging, "generated")
+        staging = ""
+        published_fd = os.open(
+            "generated", os.O_RDONLY | directory_flag | no_follow, dir_fd=architecture_fd
+        )
+        _verify_contained_directory(root_fd, architecture_fd, published_fd)
+        return paths
+    except ArchitectureError:
+        raise
+    except OSError as exc:
+        raise ArchitectureError(f"cannot safely publish generated diagrams: {exc}", code="io") from exc
     finally:
-        for descriptor in (generated_fd, architecture_fd, root_fd):
+        for descriptor in (published_fd, staging_fd):
+            if descriptor >= 0:
+                os.close(descriptor)
+        if staging and architecture_fd >= 0:
+            try:
+                _discard_entry(architecture_fd, staging)
+            except (ArchitectureError, OSError):
+                pass
+        for descriptor in (architecture_fd, root_fd):
             if descriptor >= 0:
                 os.close(descriptor)
 
