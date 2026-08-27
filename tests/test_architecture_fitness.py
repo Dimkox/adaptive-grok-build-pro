@@ -1952,6 +1952,174 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(report.status, "pass")
         self.assertNotIn("new_queue", report.triggers)
 
+    def test_queue_dependency_frontier_resolves_reachable_local_exports(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["project", "src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        wide = ", ".join(
+            f"wide{index}" for index in range(FIT.MAX_QUEUE_DEPENDENCY_WORK)
+        )
+        cases = (
+            (
+                "neutral module queue export",
+                "project/runtime.py",
+                "import celery\napp = celery.Celery('jobs')\n",
+                "from project.runtime import app\nzzzz = app\n",
+                "app",
+                "unsupported",
+                "fail",
+                True,
+            ),
+            (
+                "queue-adjacent module nonqueue export",
+                "project/jobs.py",
+                "class Form:\n    def submit(self):\n        return None\nform = Form()\n",
+                "from project.jobs import form\nzzzz = form\n",
+                "form",
+                "not_applicable",
+                "pass",
+                False,
+            ),
+        )
+        for (
+            label,
+            module_path,
+            module_source,
+            prefix,
+            imported_name,
+            expected_background,
+            expected_status,
+            expected_trigger,
+        ) in cases:
+            with self.subTest(case=label):
+                before = prefix + f"receiver = ({wide}, zzzz)\n"
+                operation = "receiver.delay(task)\n"
+                dependency_result = FIT._operation_dependencies(
+                    ast.parse(before + operation)
+                )
+                self.assertTrue(dependency_result.exhausted)
+                self.assertNotIn(imported_name, dependency_result.names)
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text(module_path, module_source)
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", before + operation)
+                head = repo.commit("frontier operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, expected_background)
+                self.assertEqual(report.status, expected_status)
+                self.assertEqual("new_queue" in report.triggers, expected_trigger)
+                if expected_trigger:
+                    self.assertIn("src/jobs.py", result.applicability.scanned_scope)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
+    def test_unrelated_exhausted_dependency_frontier_remains_not_applicable(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["project", "src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        wide = ", ".join(
+            f"wide{index}" for index in range(FIT.MAX_QUEUE_DEPENDENCY_WORK)
+        )
+        before = "from project.jobs import form\nform.submit()\n"
+        head_source = before + f"receiver = ({wide})\nreceiver.delay(task)\n"
+        dependency_result = FIT._operation_dependencies(ast.parse(head_source))
+        self.assertTrue(dependency_result.exhausted)
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_text(
+            "project/jobs.py",
+            "class Form:\n    def submit(self):\n        return None\nform = Form()\n",
+        )
+        repo.write_text("src/jobs.py", before)
+        base = repo.commit("base")
+        repo.write_text("src/jobs.py", head_source)
+        head = repo.commit("unrelated exhausted graph")
+        report = self._evaluate(repo, base, head, pre_risk="yellow")
+        self.assertEqual(
+            self._results(report)["background_job"].status,
+            "not_applicable",
+        )
+        self.assertEqual(report.status, "pass")
+        self.assertNotIn("new_queue", report.triggers)
+        self.assertGreaterEqual(
+            FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+        )
+
+    def test_queue_local_resolution_is_reused_across_changed_importers(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["project", "src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_text(
+            "project/runtime.py",
+            "import celery\napp = celery.Celery('jobs')\n",
+        )
+        before = "from project.runtime import app\n"
+        for path in ("src/first.py", "src/second.py"):
+            repo.write_text(path, before)
+        base = repo.commit("base")
+        for path in ("src/first.py", "src/second.py"):
+            repo.write_text(path, before + "app.delay(task)\n")
+        head = repo.commit("two queue importers")
+        real_sources = FIT._local_module_sources
+        with patch.object(FIT, "_local_module_sources", wraps=real_sources) as sources:
+            report = self._evaluate(repo, base, head, pre_risk="yellow")
+        runtime_reads = sorted(
+            (call.args[2], call.args[3])
+            for call in sources.call_args_list
+            if call.args[2] == "project.runtime"
+        )
+        self.assertEqual(
+            runtime_reads,
+            [("project.runtime", "head")],
+        )
+        result = self._results(report)["background_job"]
+        self.assertEqual(result.status, "unsupported")
+        self.assertEqual(report.status, "fail")
+        self.assertEqual(
+            set(result.applicability.scanned_scope),
+            {"FIT-JOBS", "src/first.py", "src/second.py"},
+        )
+        self.assertIn("new_queue", report.triggers)
+        self.assertGreaterEqual(
+            FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+        )
+
     def test_package_aware_queue_provenance_is_shared_by_fitness_and_risk(self) -> None:
         system = _system()
         system["nodes"][0]["type"] = "worker"

@@ -168,6 +168,7 @@ class _QueueAdapterResolution:
     reason: str
     exports: tuple[str, ...] = ()
     signals: tuple[str, ...] = ()
+    declared_exports: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -179,6 +180,8 @@ class _QueueAdapterNamesResult:
 @dataclass(frozen=True)
 class _OperationDependencies:
     names: frozenset[str]
+    frontier: frozenset[str] = frozenset()
+    frontier_imports: frozenset[str] = frozenset()
     exhausted: bool = False
 
 
@@ -1033,8 +1036,6 @@ def _operation_dependencies(
     work_limit: int = MAX_QUEUE_DEPENDENCY_WORK,
 ) -> _OperationDependencies:
     """Return names that can feed a changed callable/decorator expression."""
-    if work_limit < 1:
-        return _OperationDependencies(frozenset(), True)
     dependencies: set[str] = set()
     for node in ast.walk(tree):
         values: list[ast.AST] = []
@@ -1047,7 +1048,10 @@ def _operation_dependencies(
                 child.id for child in ast.walk(value) if isinstance(child, ast.Name)
             )
     assignments: dict[str, set[str]] = {}
-
+    imported_names = {
+        alias.asname or alias.name for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)
+        for alias in node.names
+    }
     def target_names(target: ast.AST) -> set[str]:
         if isinstance(target, ast.Name):
             return {target.id}
@@ -1058,7 +1062,6 @@ def _operation_dependencies(
         if isinstance(target, ast.Subscript) and isinstance(target.value, ast.Name):
             return {target.value.id}
         return set()
-
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
             for target in node.targets:
@@ -1088,7 +1091,6 @@ def _operation_dependencies(
                 for child in ast.walk(argument)
                 if isinstance(child, ast.Name)
             )
-
     pending = deque(sorted(dependencies))
     processed: set[str] = set()
     work = 0
@@ -1097,14 +1099,40 @@ def _operation_dependencies(
         if name in processed:
             continue
         if work >= work_limit:
-            return _OperationDependencies(frozenset(dependencies), True)
+            frontier = {name, *pending}
+            unresolved = set(frontier)
+            unresolved_pending = deque(sorted(frontier))
+            while unresolved_pending:
+                unresolved_name = unresolved_pending.popleft()
+                for dependency in sorted(assignments.get(unresolved_name, ())):
+                    if dependency not in unresolved:
+                        unresolved.add(dependency)
+                        unresolved_pending.append(dependency)
+            return _OperationDependencies(
+                frozenset(dependencies), frozenset(frontier),
+                frozenset(unresolved & imported_names), True
+            )
         work += 1
         processed.add(name)
         for dependency in sorted(assignments.get(name, ())):
             if dependency not in dependencies:
                 dependencies.add(dependency)
                 pending.append(dependency)
-    return _OperationDependencies(frozenset(dependencies), False)
+    return _OperationDependencies(frozenset(dependencies))
+
+
+def _declared_module_exports(tree: ast.Module) -> tuple[str, ...]:
+    declared: set[str] = set()
+    for node in tree.body:
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            declared.add(node.name)
+        elif isinstance(node, ast.Assign):
+            declared.update(target.id for target in node.targets if isinstance(target, ast.Name))
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            declared.add(node.target.id)
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            declared.update(alias.asname or alias.name for alias in node.names)
+    return tuple(sorted(name for name in declared if not name.startswith("_")))
 
 
 def _resolve_import_module(current_package: str, module: str | None, level: int) -> str:
@@ -1210,6 +1238,7 @@ def _local_queue_resolution(
     side: str,
     cache: dict[str, _QueueAdapterResolution],
     resolving: set[str],
+    visited: set[str],
     source_roots: tuple[str, ...],
 ) -> _QueueAdapterResolution:
     if module in cache:
@@ -1219,8 +1248,9 @@ def _local_queue_resolution(
         or any(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", part) is None for part in module.split("."))
     ):
         return _QueueAdapterResolution("not_queue", "invalid_local_module")
-    if len(cache) >= MAX_QUEUE_ADAPTER_MODULES:
+    if len(visited) >= MAX_QUEUE_ADAPTER_MODULES:
         raise ArchitectureError("queue adapter module limit exceeded", code="limit")
+    visited.add(module)
     if len(resolving) >= MAX_QUEUE_ADAPTER_DEPTH:
         raise ArchitectureError("queue adapter depth limit exceeded", code="limit")
     if module in resolving:
@@ -1255,6 +1285,7 @@ def _local_queue_resolution(
             side,
             cache,
             resolving,
+            visited,
             current_package=current_package,
             source_roots=source_roots,
         )
@@ -1279,6 +1310,7 @@ def _local_queue_resolution(
             ),
             exports,
             analysis.signals,
+            _declared_module_exports(tree),
         )
         cache[module] = result
         return result
@@ -1293,13 +1325,14 @@ def _queue_adapter_names(
     side: str,
     cache: dict[str, _QueueAdapterResolution],
     resolving: set[str] | None = None,
-    *,
-    current_package: str = "",
+    visited: set[str] | None = None,
+    *, current_package: str = "",
     source_roots: tuple[str, ...],
 ) -> _QueueAdapterNamesResult:
     proven: set[str] = set()
     unsupported = False
     active = resolving if resolving is not None else set()
+    seen = visited if visited is not None else set()
     dependency_result = _operation_dependencies(tree)
     dependencies = set(dependency_result.names)
     if resolving is not None:
@@ -1315,12 +1348,11 @@ def _queue_adapter_names(
         module = _resolve_import_module(current_package, node.module, node.level)
         if module.split(".")[0] in _QUEUE_IMPORTS:
             continue
-        queue_adjacent = _queue_adjacent_module(module)
         candidates = [
             alias
             for alias in node.names
             if (alias.asname or alias.name) in dependencies
-            or dependency_result.exhausted and queue_adjacent
+            or (alias.asname or alias.name) in dependency_result.frontier_imports
         ]
         if not candidates:
             continue
@@ -1331,11 +1363,9 @@ def _queue_adapter_names(
                 target_module = f"{module}.{alias.name}" if module else alias.name
                 target_name = ""
             queue_adjacent = _queue_adjacent_module(target_module)
-            if dependency_result.exhausted and queue_adjacent:
-                proven.add(alias.asname or alias.name)
-                unsupported = True
-                continue
-            if len(source_roots) > MAX_QUEUE_SOURCE_ROOTS and queue_adjacent:
+            local_name = alias.asname or alias.name
+            frontier_reachable = local_name in dependency_result.frontier_imports
+            if len(source_roots) > MAX_QUEUE_SOURCE_ROOTS and (queue_adjacent or frontier_reachable):
                 proven.add(alias.asname or alias.name)
                 unsupported = True
                 continue
@@ -1347,12 +1377,26 @@ def _queue_adapter_names(
                 side,
                 cache,
                 active,
+                seen,
                 bounded_source_roots,
             )
             export_resolved = (
                 (target_name and target_name in resolution.exports)
                 or (not target_name and bool(resolution.exports))
             )
+            if frontier_reachable and (
+                node.level > 0
+                or resolution.reason != "local_module_missing"
+                or _has_local_module_root(
+                    root, diff, target_module, side, bounded_source_roots
+                )
+            ):
+                declared = not target_name or target_name in resolution.declared_exports
+                if resolution.state == "not_queue" and declared:
+                    continue
+                proven.add(local_name)
+                unsupported = True
+                continue
             if (
                 len(source_roots) > MAX_QUEUE_SOURCE_ROOTS
                 and resolution.state == "resolved"
@@ -1454,9 +1498,9 @@ def _new_queue_sources(
     applicable: list[str] = []
     unsupported: list[str] = []
     changed_signals: set[str] = set()
+    head_cache: dict[str, _QueueAdapterResolution] = {}
+    base_cache: dict[str, _QueueAdapterResolution] = {}
     for path in _python_paths(diff):
-        head_cache: dict[str, _QueueAdapterResolution] = {}
-        base_cache: dict[str, _QueueAdapterResolution] = {}
         try:
             current_package = _module_package(path, source_roots)
             head = _queue_signals(
