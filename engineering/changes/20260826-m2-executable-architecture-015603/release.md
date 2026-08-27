@@ -4,7 +4,9 @@
 
 M2-A is a local branch/change package only until separately authorized push/PR delivery. It contains no deployment and does not activate independent enforcement.
 
-Installer delivery includes local architecture modules, CLI, both strict schemas, and non-authoritative examples. It excludes the target-owned marker, model, and rules under normal and forced installation.
+Local verification and receipts remain preflight evidence. Merge authority remains the App-owned policy-epoch check on the exact pull-request head plus every separately required signed approval.
+
+Installer planning is read-only for existing repositories and reports managed-file metadata plus dependency advice without executing it. `--materialize-new` publishes a verified complete payload only to an absent target; `--force` is rejected. Every plan and payload excludes the target-owned marker, model, and rules.
 
 ## Go/no-go criteria
 
@@ -14,12 +16,12 @@ Installer delivery includes local architecture modules, CLI, both strict schemas
 - Exact M2-A diff contains no `trust-ci/**` path.
 - M2-B dependency and external policy-epoch rollout remain explicit open items.
 
-Task 5 left the package in its historical `implementing` phase. The authoritative current workflow status is recorded in `state.json`; verification plus code, test, security, data, and release review receipts remain required, and this note does not claim the package is `ready`.
+The authoritative current workflow status is recorded in `state.json` as `implementing`. Coordinator-owned exact-head verification plus code, test, security, data, and release review receipts remain required, and this note does not claim the package is `ready`.
 
-The final route review found seven source defects across queue provenance, installer containment, durable adoption, code-budget metrics, bounded process cleanup, added-contract comparison, and repository ownership. Scoped rereviews found residual queue, installer, adoption-history, and frozen-evidence boundaries after the first repair candidate. The second source fix candidate requires fresh independent review; no final review or receipt is claimed here.
+The approved final safety pivot replaced order-dependent queue-name propagation with a package-aware bounded abstract interpreter and removed all mutation of existing installer targets. Tasks 1 and 2 and their scoped fix rounds are source-complete and review-clean; this Task 3 documentation tree still requires the coordinator's fresh final verification/review wave on one immutable fingerprint. No final route review or receipt is claimed here, so AC-007 remains open.
 
 ## Rollout and observability
 
-M2-A adoption is source-only and manual: review target model/rules, validate them, then commit the exact canonical marker. Observe stable architecture/evidence digests, drift/fitness result counts, risk triggers, and receipt staleness. M2-B and deployment use a separate route/package/authorization.
+M2-A adoption is source-only and manual: review target model/rules, validate them, then commit the exact canonical marker. Existing consumer updates are ordinary reviewed source changes prepared from `--plan`; absent-target materialization has no in-place rollback path. Observe stable architecture/evidence digests, drift/fitness result counts, risk triggers, plan digests, publication failures, and receipt staleness. M2-B and deployment use a separate route/package/authorization.
 
 Diagram rendering is stdout-only and checked-in projections change only through normal reviewed source edits. No migration, database, service, queue/runtime capability, provider, external write, `trust-ci/**` mutation, deployment, push, pull request, merge, tag, or release occurred in M2-A implementation.

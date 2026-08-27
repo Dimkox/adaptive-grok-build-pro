@@ -9,7 +9,7 @@
 - [x] AC-003: deterministic CLI and five byte-reproducible Mermaid projections.
 - [x] AC-004: every mandatory fitness category and monotonic post-diff risk.
 - [x] AC-005: architecture-bound verification/receipts and staleness without M1 regression.
-- [x] AC-006: safe installer delivery and K16 decorative-only documentation.
+- [x] AC-006: read-only existing-target planning, atomic absent-target materialization, architecture-authority exclusion, and K16 decorative-only documentation.
 - [ ] AC-007: exact-fingerprint verification/reviews, no `trust-ci/**` diff, frozen M2-B contract.
 
 AC-001 through AC-006 are source-backed by the tests mapped in `change-spec.yaml`. AC-007 remains open until the coordinator runs final verification and all five independent route reviews on one unchanged fingerprint and records fresh receipts.
@@ -35,10 +35,13 @@ Exact final head, architecture evidence digest, and repository fingerprint are i
 - A dirty tree is diagnostic only and cannot be labelled exact-SHA evidence.
 - Diagram render/check never mutates repository paths; render returns the bounded artifact payload and check compares no-follow.
 - Package-relative queue adapters resolve according to Python module/package semantics; relevant ambiguity and analysis ceilings are `unsupported`, while unproven common method names remain non-queue.
+- Queue control-flow and container values use a bounded abstract interpreter with commutative, associative, idempotent joins; fitness and `new_queue` risk share its exact result.
+- Installer planning never mutates a target or executes dependency advice. Materialization requires an absent target and fail-closed no-replace publication; `--force` is rejected.
+- If a constructor gap leaves original staging-entry ownership unprovable, preserve the unresolved name and emit `manual cleanup required: installer ownership is unresolved`; a later same-name lookup is never deletion authority.
 
 ## Non-functional requirements
 
 - Security: no executable rule language, network fetch, target import, secret value, approval creation, or external capability.
-- Reliability: canonical bytes, deterministic sorting, exact base/head and current-fingerprint binding.
+- Reliability: canonical bytes, deterministic sorting, exact base/head and current-fingerprint binding, read-only existing-target planning, and verified atomic new-target publication.
 - Performance: explicit byte/count/depth/finding/AST/output bounds.
 - Observability: stable finding/reason/trigger IDs, per-category results, inventory/diff/evidence digests.

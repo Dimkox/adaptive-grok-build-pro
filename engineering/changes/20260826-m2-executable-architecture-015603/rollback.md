@@ -5,14 +5,17 @@
 - Canonical digest or diagram output is not reproducible.
 - M1 validation/receipt compatibility regresses.
 - Architecture rules silently pass unsupported/applicable input or lower risk.
-- Installer creates or overwrites a target model.
+- Queue provenance becomes order-dependent, misses relevant uncertainty, or taints an unrelated operation.
+- Installer mutates an existing target, executes dependency advice, publishes over a target, or includes target-owned architecture authority.
 - Adoption marker and model identity disagree or adoption can be disabled by deleting model files.
 
 ## Application rollback
 
 Before target adoption, revert the M2-A source slice to completed-M1 SHA `25bfbe59ea188d9687b20a9caad19e7db3d031f8`. For a consumer that has not committed `architecture/adoption.json`, removing unreviewed example copies is safe because architecture remains `not_configured`. No migration or service rollback is needed.
 
-The Task 6 read-only/provenance pivot is source-only and rolls back by reverting its single commit. That restores the prior implementation but no database, queue, runtime, generated file, or external state because the pivot itself performs none of those mutations.
+The queue/installer safety pivot is source-only and rolls back before release by reverting its tracked pivot commits. That restores the prior implementation but requires no database, queue, runtime, generated-file, or external-state recovery because repository verification performs no consumer materialization.
+
+Existing targets are never modified, so there are no bytes for the installer to restore. A failure before publication removes only entries whose original descriptor identity is still proven. If constructor identity is unresolved, the installer deliberately preserves the current name and emits `manual cleanup required: installer ownership is unresolved`; an operator must inspect that sibling entry before any cleanup. After successful absent-target publication, the installer offers no automatic rollback: retain or remove the new tree only through a separate reviewed filesystem operation.
 
 ## Data recovery / forward-fix
 
@@ -20,4 +23,4 @@ No database/schema/backfill or external state is changed. After adoption, do not
 
 ## Verification after rollback
 
-Run root tests, compileall, PR verification, M1 spec gate checks, and installer compatibility. Never reuse M2-A receipts after a tree or contract change.
+Run root tests, compileall, PR verification, M1 spec gate checks, queue exact-delta tests, and installer plan/materialization compatibility. Never reuse M2-A receipts after a tree or contract change.

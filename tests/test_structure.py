@@ -143,6 +143,53 @@ class StructureTests(unittest.TestCase):
         self.assertIn('"state": "adopted"', quickstart)
         self.assertIn("marker last", quickstart.lower())
 
+    def test_installer_safety_pivot_is_documented(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        quickstart = (ROOT / "QUICKSTART.md").read_text(encoding="utf-8")
+        roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
+        package = ROOT / "engineering/changes/20260826-m2-executable-architecture-015603"
+        package_text = "\n".join(
+            (package / name).read_text(encoding="utf-8")
+            for name in (
+                "architecture.md",
+                "requirements.md",
+                "test-plan.md",
+                "tasks.md",
+                "release.md",
+                "rollback.md",
+            )
+        )
+
+        for text in (readme, quickstart):
+            self.assertIn("scripts/install_into.py --plan /path/to/your/repo", text)
+            self.assertIn("scripts/install_into.py --materialize-new /path/to/new/repo", text)
+            self.assertIn("`--force` is rejected", text)
+            self.assertIn("existing repositories are read-only", text.lower())
+            self.assertIn("dependency advice", text.lower())
+            self.assertIn("architecture/adoption.json", text)
+            self.assertIn("architecture/system.yaml", text)
+            self.assertIn("architecture/rules.yaml", text)
+
+        self.assertIn(
+            "docs/superpowers/specs/2026-08-27-m2a-queue-installer-pivot-design.md",
+            readme,
+        )
+        self.assertIn(
+            "docs/superpowers/plans/2026-08-27-m2a-queue-installer-pivot.md",
+            readme,
+        )
+        self.assertNotIn(
+            "copies the local stack and installs missing required tools",
+            readme,
+        )
+        self.assertNotIn("installs the stack and missing required tools", quickstart)
+        self.assertIn("bounded abstract interpreter", roadmap.lower())
+        self.assertIn("bounded abstract interpreter", package_text.lower())
+        self.assertIn("manual cleanup required: installer ownership is unresolved", package_text)
+        self.assertIn("AC-007 remains open", package_text)
+        self.assertIn("M2-B", package_text)
+        self.assertIn("App-owned", package_text)
+
     def test_no_github_actions_workflow_exists(self) -> None:
         self.assertFalse((ROOT / ".github/workflows").exists())
         for path in ROOT.rglob("*.yml"):

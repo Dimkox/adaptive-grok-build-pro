@@ -11,13 +11,22 @@
 
 2. Auth: run `grok` once, sign in with SuperGrok account.
 
-3. Install this stack into your repo:
+3. Plan an update for an existing repository without changing it:
    ```bash
-   python3 scripts/install_into.py /path/to/repo
-   # installs the stack and missing required tools (use --no-deps to copy only)
+   python3 scripts/install_into.py --plan /path/to/your/repo
    ```
 
-   The installer delivers the architecture CLI, parser/evaluators, strict schemas, and non-authoritative examples. It never creates or overwrites `architecture/system.yaml`, `architecture/rules.yaml`, or `architecture/adoption.json`, even with `--force`.
+   Existing repositories are read-only installer inputs. The plan is a deterministic managed-file manifest plus dependency advice; it performs no writes and executes no dependency command. The historical positional command and `--dry-run` are planning aliases. `--force` is rejected; update an existing consumer by applying the plan through a normal reviewed source-change commit.
+
+   To create a complete installation, choose an absent path:
+
+   ```bash
+   python3 scripts/install_into.py --materialize-new /path/to/new/repo
+   ```
+
+   New-target materialization uses an owned sibling stage and fail-closed no-replace publication. It refuses an existing, symlink, or special-file target. If the original identity of a newly created staging entry cannot be proven after a constructor failure, the installer preserves that unresolved entry, reports `manual cleanup required: installer ownership is unresolved`, and never deletes a same-named replacement.
+
+   The payload delivers the architecture CLI, parser/evaluators, strict schemas, and non-authoritative examples. Every plan and payload excludes the target-owned `architecture/system.yaml`, `architecture/rules.yaml`, and `architecture/adoption.json`. It also excludes `trust-ci/` and `.github/workflows/`.
 
 ### Optional manual executable-architecture adoption
 
@@ -78,7 +87,7 @@ python3 scripts/grok_architecture.py fitness --base <40-char-sha> --head <40-cha
 
 ## Scope split
 
-`install_into.py` copies the local Grok stack (skills, agents, hooks, scripts, `AGENTS.md`). It does **not** copy `trust-ci/`, this repository’s `README.md`, `QUICKSTART.md`, or `VERSION`. Consumer laptops do not stand up PostgreSQL.
+`install_into.py --plan` inspects an existing target read-only. `install_into.py --materialize-new` publishes the local Grok stack (skills, agents, hooks, scripts, `AGENTS.md`) only at an absent target. It does **not** copy `trust-ci/`, `.github/workflows/`, target-owned architecture authority, this repository’s `README.md`, `QUICKSTART.md`, or `VERSION`. Consumer laptops do not stand up PostgreSQL.
 
 Local `python3 scripts/grok_verify.py --mode pr` is preflight evidence. It is **not merge authority**. Merge trust, when deployed, is the GitHub App-owned check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 

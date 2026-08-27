@@ -108,7 +108,7 @@ At the roadmap baseline, the public branch response showed `main` without requir
 | GitHub App registration | Implemented externally | Verify installation, credentials, check ownership, and branch protection |
 | Durable CI jobs | Implemented | Keep separate from implementation task state |
 | Typed business specification | Missing | Build schema, validator, traceability, and evidence mapping |
-| Executable architecture model | Missing | Replace decorative graph as authority with machine-readable architecture and fitness rules |
+| Executable architecture model | M2-A source candidate | Complete final reviews/receipts, then implement the independent M2-B enforcement floor |
 | Agent-loop backpressure | Missing | Add structured findings and bounded repair cycles |
 | Semantic validator/adjudicator | Missing | Add independent requirement-level verdict separate from implementer reasoning |
 | Controlled learning | Missing | Replace automatic Markdown promotion with reviewed rule lifecycle |
@@ -448,7 +448,7 @@ The checked items below mean bounded M2-A repository source and local regression
 - architecture drift is visible in PR evidence;
 - critical fitness rules are outside implementer control.
 
-M2-A's current source candidate locally proves schema validation, read-only reproducible text projections, bounded package-aware queue provenance, monotonic risk, and drift/diff evidence. Passing final route reviews and current receipts remain pending; prohibited-edge independence and critical rules outside implementer control remain unchecked M2-B/deployed exit work.
+M2-A's current source candidate locally proves schema validation, read-only reproducible text projections, a package-aware bounded abstract interpreter for queue provenance, monotonic risk, drift/diff evidence, read-only planning for existing installer targets, and atomic materialization of absent targets. The installer emits dependency advice but never executes it, rejects `--force`, and excludes target-owned architecture authority. Passing final route reviews and current receipts remain pending; prohibited-edge independence and critical rules outside implementer control remain unchecked M2-B/deployed exit work.
 
 ---
 

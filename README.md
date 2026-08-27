@@ -8,7 +8,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
 - M1 typed intent is locally source-ready: canonical schema-v2 specs, route-driven generation, strict bounded validation, criterion-bound receipts, and `scripts/grok_spec.py` summary/coverage commands passed full local verification and all four route-selected wave-7 reviews on exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a`. A later authorized local database run passed PostgreSQL integration 10/10 and the full Trust CI suite 200/200 with no skips, validating six Trust CI tables, three migrations through version 3, and four bounded `NOLOGIN` roles; this is [local test evidence](engineering/changes/20260826-m1-typed-intent-evidence-rebuild-a4f882/evidence/postgres-integration-local.md), not deployed proof. PR update, the App-owned exact-SHA check, signed approvals, merge, and deployment of the new holdout, worker reader, policy, and attestation emitter remain incomplete operator-controlled steps. Historical schema-v1 YAML is explicit unchanged-history compatibility only.
-- M2-A executable architecture is a local source candidate: strict target-owned model/rules/adoption state, bounded deterministic parsing, exact Git-object diff, repository/contract drift, mandatory fitness evidence including package-aware fail-closed queue provenance, monotonic risk, five read-only Mermaid text projections, and architecture-bound local verification/receipts are implemented. Passing final route reviews, current fingerprint-bound receipts, PR delivery, the external exact-SHA check, M2-B independent enforcement, and deployment remain pending; local architecture output is not merge authority.
+- M2-A executable architecture is a local source candidate: strict target-owned model/rules/adoption state, bounded deterministic parsing, exact Git-object diff, repository/contract drift, mandatory fitness evidence including a package-aware bounded abstract interpreter for queue provenance, monotonic risk, five read-only Mermaid text projections, architecture-bound local verification/receipts, and a read-only/new-target installer boundary are implemented. Passing final route reviews, current fingerprint-bound receipts, PR delivery, the external exact-SHA check, M2-B independent enforcement, and deployment remain pending; local architecture output is not merge authority.
 - Independent CI candidate: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
 - Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. The PR #2 bootstrap exception is revoked. PR #5 is not mergeable while that Check Run is `action_required`.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
@@ -256,7 +256,9 @@ python3 scripts/grok_architecture.py diff --base <40-char-sha> --head <40-char-s
 python3 scripts/grok_architecture.py fitness --base <40-char-sha> --head <40-char-sha> --pre-risk red --json
 ```
 
-Diagram rendering is stdout-only and repository-read-only. To update a checked-in projection, apply the reviewed rendered text through the normal source-edit workflow and then run `diagram --check`; projections are never authority. Malformed, unknown, unsafe, excessive, partially missing, or applicable-but-unsupported adopted architecture fails closed. Installer-delivered examples live under [`.grok-stack/templates/architecture/`](.grok-stack/templates/architecture/system.example.yaml), but the installer never creates or overwrites a consumer's model, rules, or adoption marker, including with `--force`; follow the manual review-and-adopt sequence in [QUICKSTART.md](QUICKSTART.md).
+Diagram rendering is stdout-only and repository-read-only. To update a checked-in projection, apply the reviewed rendered text through the normal source-edit workflow and then run `diagram --check`; projections are never authority. Malformed, unknown, unsafe, excessive, partially missing, or applicable-but-unsupported adopted architecture fails closed. Installer-delivered examples live under [`.grok-stack/templates/architecture/`](.grok-stack/templates/architecture/system.example.yaml), but every plan and payload excludes the consumer-owned `architecture/system.yaml`, `architecture/rules.yaml`, and `architecture/adoption.json`; follow the manual review-and-adopt sequence in [QUICKSTART.md](QUICKSTART.md).
+
+The queue and installer safety boundary is specified in the [approved pivot design](docs/superpowers/specs/2026-08-27-m2a-queue-installer-pivot-design.md) and its [implementation plan](docs/superpowers/plans/2026-08-27-m2a-queue-installer-pivot.md). Queue fitness and `new_queue` risk consume one bounded abstract-interpreter result: relevant uncertainty fails closed, while unrelated common method names remain non-queue.
 
 ## Requirements
 
@@ -285,14 +287,21 @@ Machine-readable local pins: `.grok-stack/config/toolchain.json`. Trust CI uses 
 
 ## Install into a project
 
+Existing repositories are read-only installer inputs. Generate a deterministic manifest and dependency advice, then apply an update through a normal reviewed source-change commit:
+
 ```bash
-# from this package root — copies the local stack and installs missing required tools
-python3 scripts/install_into.py /path/to/your/repo
-# skip host installs: --no-deps
-# also PHP/Node/gh: --all-deps
+python3 scripts/install_into.py --plan /path/to/your/repo
 ```
 
-Or copy manually:
+The historical positional form and `--dry-run` are planning aliases. `--force` is rejected; dependency advice is output only and no dependency runner is executed.
+
+To create a complete installation, the target must be absent:
+
+```bash
+python3 scripts/install_into.py --materialize-new /path/to/new/repo
+```
+
+Materialization builds and verifies one owned sibling stage and publishes it with fail-closed no-replace semantics. If constructor identity becomes unresolved, it preserves the entry for manual inspection and reports `manual cleanup required: installer ownership is unresolved`; it never deletes an unproven replacement. It refuses an existing, symlink, or special-file target. The payload includes:
 
 ```text
 .grok/            → project .grok/          (config, hooks, agents, skills)
@@ -304,6 +313,8 @@ decisions.md      → project decisions.md
 mistakes.md       → project mistakes.md
 engineering/      → project engineering/  (if empty scaffold needed)
 ```
+
+It excludes `trust-ci/`, `.github/workflows/`, `architecture/adoption.json`, `architecture/system.yaml`, and `architecture/rules.yaml`. Adopt architecture manually only after reviewing target truth as described in [QUICKSTART.md](QUICKSTART.md).
 
 Then in the project:
 
@@ -337,7 +348,7 @@ Local loop: route → change → verify → independent reviews → `ready` → 
 | `scripts/grok_approve.py` | Delegated local action/resource grant bound to repository, route, change, exact HEAD and tree fingerprint; not accepted by Trust CI |
 | `scripts/grok_deploy.py` | Prepare-only human last mile |
 | `scripts/grok_doctor.py` | Local health check |
-| `scripts/install_into.py` | Install local stack into target repo |
+| `scripts/install_into.py` | Plan an existing repository read-only or atomically materialize an absent new target |
 | `adaptive-trust-ci` | External API, worker, migration, signed approvals, holdout verification, attestation verification and app-bound branch protection |
 
 ## Hooks
