@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import sys
 import tempfile
 import unittest
 import zipfile
@@ -9,7 +10,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-import sys
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.manifest import generate_manifest, included_files, verify_manifest
@@ -64,6 +64,29 @@ class ManifestTests(unittest.TestCase):
 
 
 class PackageTests(unittest.TestCase):
+    def test_packaged_installer_materializes_new_target_without_authority(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            archive_path = Path(tmp) / "project.zip"
+            PACKAGE.write_archive(ROOT, archive_path)
+            extracted = Path(tmp) / "extracted"
+            with zipfile.ZipFile(archive_path) as archive:
+                archive.extractall(extracted)
+            source = extracted / "adaptive-grok-build-pro"
+            install_spec = importlib.util.spec_from_file_location(
+                "packaged_install_into", source / "scripts/install_into.py"
+            )
+            installer = importlib.util.module_from_spec(install_spec)
+            assert install_spec and install_spec.loader
+            sys.modules[install_spec.name] = installer
+            install_spec.loader.exec_module(installer)
+            target = Path(tmp) / "installed"
+            plan = installer.materialize_new(source, target)
+            self.assertEqual(plan["target_state"], "absent")
+            self.assertTrue((target / "scripts/grok_verify.py").is_file())
+            self.assertFalse((target / "architecture/system.yaml").exists())
+            self.assertFalse((target / "architecture/rules.yaml").exists())
+            self.assertFalse((target / "architecture/adoption.json").exists())
+
     def test_default_output_follows_version_file(self) -> None:
         self.assertEqual(
             PACKAGE._default_output(ROOT),

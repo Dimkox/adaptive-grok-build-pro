@@ -1,533 +1,391 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import importlib.util
 import io
-import json
 import os
 import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location('install_into', ROOT / 'scripts/install_into.py')
+SPEC = importlib.util.spec_from_file_location("install_into", ROOT / "scripts/install_into.py")
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
+sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
 
 
-def _noop_runner(command: str):
-    return SimpleNamespace(returncode=0)
+def _snapshot(root: Path) -> tuple[tuple[object, ...], ...]:
+    if not os.path.lexists(root):
+        return ((".", "absent"),)
+    records: list[tuple[object, ...]] = []
+    paths = [root, *sorted(root.rglob("*"), key=lambda item: item.as_posix())]
+    for path in paths:
+        metadata = os.lstat(path)
+        relative = "." if path == root else path.relative_to(root).as_posix()
+        kind = (
+            "symlink"
+            if stat.S_ISLNK(metadata.st_mode)
+            else "file"
+            if stat.S_ISREG(metadata.st_mode)
+            else "directory"
+            if stat.S_ISDIR(metadata.st_mode)
+            else "special"
+        )
+        content: object = None
+        if kind == "file":
+            content = path.read_bytes()
+        elif kind == "symlink":
+            content = os.readlink(path)
+        records.append(
+            (
+                relative,
+                kind,
+                stat.S_IMODE(metadata.st_mode),
+                metadata.st_dev,
+                metadata.st_ino,
+                metadata.st_size,
+                metadata.st_mtime_ns,
+                content,
+            )
+        )
+    return tuple(records)
 
 
-def install_silent(*args, **kwargs) -> None:
-    kwargs.setdefault('runner', _noop_runner)
-    with contextlib.redirect_stdout(io.StringIO()):
-        MODULE.install(*args, **kwargs)
+def _stage_names(parent: Path) -> list[str]:
+    return sorted(path.name for path in parent.glob(".adaptive-install-*"))
 
 
 class InstallerTests(unittest.TestCase):
-    def test_clean_install_delivers_architecture_tooling_without_adopting_a_model(self) -> None:
+    def test_existing_target_modes_are_read_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            install_silent(ROOT, target, force=False, dry_run=False)
-            self.assertTrue((target / 'scripts/grok_architecture.py').is_file())
-            self.assertTrue((target / 'schemas/architecture-system.schema.json').is_file())
-            self.assertTrue((target / 'schemas/architecture-rules.schema.json').is_file())
-            self.assertFalse((target / 'architecture/system.yaml').exists())
-            self.assertFalse((target / 'architecture/rules.yaml').exists())
-            self.assertFalse((target / 'architecture/adoption.json').exists())
-            subprocess.run(['git', 'init', '-q'], cwd=target, check=True)
+            target = Path(tmp) / "target"
+            nested = target / "existing/data.txt"
+            nested.parent.mkdir(parents=True)
+            nested.write_bytes(b"keep exactly\n")
+            nested.chmod(0o640)
+            before = _snapshot(target)
+            runner_calls: list[str] = []
+            real_open = os.open
+
+            def read_only_open(path, flags, *args, **kwargs):
+                write_flags = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC
+                if flags & write_flags:
+                    raise AssertionError(f"planning opened for mutation: {path}")
+                return real_open(path, flags, *args, **kwargs)
+
+            invocations = (
+                lambda: MODULE.install(
+                    ROOT,
+                    target,
+                    force=False,
+                    dry_run=False,
+                    runner=lambda command: runner_calls.append(command),
+                ),
+                lambda: MODULE.plan_install(ROOT, target),
+                lambda: MODULE.install(
+                    ROOT,
+                    target,
+                    force=False,
+                    dry_run=True,
+                    runner=lambda command: runner_calls.append(command),
+                ),
+            )
+            plans = []
+            output = io.StringIO()
+            with (
+                patch.object(MODULE.os, "open", side_effect=read_only_open),
+                patch.object(MODULE.os, "mkdir", side_effect=AssertionError("mkdir")),
+                patch.object(MODULE.os, "unlink", side_effect=AssertionError("unlink")),
+                patch.object(MODULE.os, "rename", side_effect=AssertionError("rename")),
+                patch.object(MODULE.os, "replace", side_effect=AssertionError("replace")),
+                patch.object(MODULE.os, "chmod", side_effect=AssertionError("chmod")),
+                contextlib.redirect_stdout(output),
+            ):
+                for invoke in invocations:
+                    plans.append(invoke())
+                    self.assertEqual(_snapshot(target), before)
+
+            self.assertEqual(plans[0], plans[1])
+            self.assertEqual(plans[1], plans[2])
+            self.assertEqual(plans[0]["version"], 1)
+            self.assertEqual(plans[0]["target_state"], "directory")
+            entries = plans[0]["entries"]
+            self.assertEqual(
+                [item["path"].encode("utf-8") for item in entries],
+                sorted(item["path"].encode("utf-8") for item in entries),
+            )
+            self.assertEqual(len({item["path"] for item in entries}), len(entries))
+            for item in entries:
+                self.assertEqual(len(item["sha256"]), 64)
+                self.assertGreaterEqual(item["size"], 0)
+            self.assertEqual(runner_calls, [])
+            self.assertIn("read-only plan", output.getvalue().lower())
+
+    def test_force_is_rejected_without_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
+            authority = target / "architecture/system.yaml"
+            authority.parent.mkdir(parents=True)
+            authority.write_bytes(b"target authority\n")
+            before = _snapshot(target)
+            with self.assertRaises(SystemExit) as raised:
+                MODULE.install(ROOT, target, force=True, dry_run=False)
+            self.assertIn("--force", str(raised.exception))
+            self.assertIn("no longer supported", str(raised.exception).lower())
+            self.assertEqual(_snapshot(target), before)
+
+    def test_payload_is_sorted_safe_duplicate_free_and_profile_explicit(self) -> None:
+        generic = MODULE.build_payload(ROOT)
+        bitrix = MODULE.build_payload(ROOT, profile_kind="bitrix")
+        generic_paths = [entry.path for entry in generic]
+        bitrix_paths = [entry.path for entry in bitrix]
+        self.assertEqual(
+            [path.encode("utf-8") for path in generic_paths],
+            sorted(path.encode("utf-8") for path in generic_paths),
+        )
+        self.assertEqual(len(generic_paths), len(set(generic_paths)))
+        self.assertIn("AGENTS.md", generic_paths)
+        self.assertNotIn("local/AGENTS.md", generic_paths)
+        self.assertIn("local/AGENTS.md", bitrix_paths)
+        local_guidance = next(entry for entry in bitrix if entry.path == "local/AGENTS.md")
+        self.assertEqual(local_guidance.content, (ROOT / "docs/bitrix-local-AGENTS.md").read_bytes())
+        self.assertFalse(set(MODULE.TARGET_OWNED_ARCHITECTURE) & set(generic_paths))
+        for entry in generic:
+            self.assertEqual(entry.size, len(entry.content))
+            self.assertEqual(entry.sha256, hashlib.sha256(entry.content).hexdigest())
+        with patch.object(
+            MODULE,
+            "MANAGED_FILES",
+            (*MODULE.MANAGED_FILES, "architecture/system.yaml"),
+        ):
+            with self.assertRaises(MODULE.UnsafeInstallTarget):
+                MODULE.build_payload(ROOT)
+        with patch.object(
+            MODULE,
+            "MANAGED_FILES",
+            (*MODULE.MANAGED_FILES, MODULE.MANAGED_FILES[0]),
+        ):
+            with self.assertRaises(MODULE.UnsafeInstallTarget):
+                MODULE.build_payload(ROOT)
+
+    def test_materialize_new_publishes_verified_payload_once(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            target = parent / "target"
+            plan = MODULE.plan_install(ROOT, target)
+            old_umask = os.umask(0o077)
+            try:
+                with patch("subprocess.Popen", side_effect=AssertionError("dependency runner")):
+                    result = MODULE.materialize_new(ROOT, target)
+            finally:
+                os.umask(old_umask)
+
+            self.assertEqual(result, plan)
+            self.assertEqual(result["target_state"], "absent")
+            for item in result["entries"]:
+                installed = target / item["path"]
+                self.assertTrue(installed.is_file(), item["path"])
+                self.assertEqual(installed.stat().st_size, item["size"])
+                self.assertEqual(
+                    hashlib.sha256(installed.read_bytes()).hexdigest(), item["sha256"]
+                )
+                self.assertEqual(stat.S_IMODE(installed.stat().st_mode), item["mode"])
+            for relative in (
+                "engineering/changes",
+                "engineering/adr",
+                "engineering/runbooks",
+                "engineering/reviews",
+                "engineering/contracts/openapi",
+                "engineering/contracts/asyncapi",
+                "engineering/contracts/schemas",
+            ):
+                self.assertTrue((target / relative).is_dir(), relative)
+            for authority in (
+                "architecture/adoption.json",
+                "architecture/rules.yaml",
+                "architecture/system.yaml",
+            ):
+                self.assertFalse((target / authority).exists(), authority)
+            self.assertEqual(_stage_names(parent), [])
             result = subprocess.run(
-                ['python3', 'scripts/grok_verify.py', '--mode', 'fast', '--no-record', '--json'],
+                ["python3", "scripts/grok_architecture.py", "--help"],
                 cwd=target,
                 text=True,
                 capture_output=True,
                 check=False,
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            self.assertEqual(json.loads(result.stdout)['architecture']['status'], 'not_configured')
 
-    def test_clean_install_delivers_valid_non_authoritative_architecture_templates(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            install_silent(ROOT, target, force=False, dry_run=False)
-            template_root = target / '.grok-stack/templates/architecture'
-            system_example = template_root / 'system.example.yaml'
-            rules_example = template_root / 'rules.example.yaml'
-            self.assertTrue(system_example.is_file())
-            self.assertTrue(rules_example.is_file())
-            authority = target / 'architecture'
-            authority.mkdir()
-            (authority / 'system.yaml').write_bytes(system_example.read_bytes())
-            (authority / 'rules.yaml').write_bytes(rules_example.read_bytes())
-            result = subprocess.run(
-                ['python3', 'scripts/grok_architecture.py', '--root', '.', 'validate', '--json'],
-                cwd=target,
-                text=True,
-                capture_output=True,
-                check=False,
-            )
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            self.assertTrue(json.loads(result.stdout)['ok'])
-
-    def test_force_never_manages_target_owned_architecture_authority(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            expected = {
-                'architecture/system.yaml': b'target system\n',
-                'architecture/rules.yaml': b'target rules\n',
-                'architecture/adoption.json': b'target adoption\n',
-            }
-            for relative, content in expected.items():
-                path = target / relative
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes(content)
-            accidentally_managed = (*MODULE.MANAGED_FILES, *expected)
-            with patch.object(MODULE, 'MANAGED_FILES', accidentally_managed):
-                install_silent(ROOT, target, force=True, dry_run=False)
-            for relative, content in expected.items():
-                self.assertEqual((target / relative).read_bytes(), content, relative)
-
-    def test_clean_install_delivers_schema_and_runnable_spec_cli(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            install_silent(ROOT, target, force=False, dry_run=False)
-            schema = target / 'schemas/change-spec.schema.json'
-            self.assertEqual(schema.read_bytes(), (ROOT / 'schemas/change-spec.schema.json').read_bytes())
-            change = target / 'engineering/changes/20260826-installed-cli'
-            change.mkdir(parents=True)
-            payload = {
-                'schema_version': 2, 'change_id': '20260826-installed-cli',
-                'objective': {'id': 'OBJ-001', 'statement': 'installed CLI', 'success_metric': 'exit', 'target': 'zero'},
-                'risk': {'tier': 'green', 'domains': []},
-                'acceptance_criteria': [{'id': 'AC-001', 'statement': 'validates', 'evidence': [{'receipt': 'verification'}]}],
-                'invariants': [], 'forbidden_outcomes': [],
-                'contracts': {'openapi': [], 'json_schema': [], 'events': []}, 'observability': [],
-                'rollback': {'strategy': 'forward_fix', 'maximum_steps': 1}, 'approvals': {'required_scopes': []},
-            }
-            spec_path = change / 'change-spec.yaml'
-            spec_path.write_text(json.dumps(payload), encoding='utf-8')
-            proc = subprocess.run(
-                ['python3', str(target / 'scripts/grok_spec.py'), 'validate', str(spec_path.relative_to(target)), '--gate', '--json'],
-                cwd=target, text=True, capture_output=True, check=False,
-            )
-            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
-    def test_installs_without_deleting_unrelated_agent_files(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            (target / '.grok/agents').mkdir(parents=True)
-            unrelated = target / '.grok/agents/custom.toml'
-            unrelated.write_text('name="custom"')
-            install_silent(ROOT, target, force=False, dry_run=False)
-            self.assertTrue(unrelated.is_file())
-            self.assertTrue((target / '.grok/agents/bitrix_implementer.toml').is_file())
-            self.assertIn('ADAPTIVE-GROK-PRO:START', (target / 'AGENTS.md').read_text())
-            self.assertTrue((target / 'pre_tool_use.py').is_file())
-            self.assertIn('.grok', (target / 'pre_tool_use.py').read_text())
-            self.assertNotIn('STACK =', (target / 'pre_tool_use.py').read_text())
-
-    def test_conflicting_managed_file_stops_without_force(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            path = target / '.grok/config.toml'
-            path.parent.mkdir(parents=True)
-            path.write_text('different=true')
-            with self.assertRaises(SystemExit):
-                install_silent(ROOT, target, force=False, dry_run=False)
-
-    def test_force_overwrites_only_managed_conflict(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            path = target / '.grok/config.toml'
-            path.parent.mkdir(parents=True)
-            path.write_text('different=true')
-            other = target / '.grok/keep.txt'
-            other.write_text('keep')
-            install_silent(ROOT, target, force=True, dry_run=False)
-            self.assertIn('sandbox_mode', path.read_text())
-            self.assertEqual(other.read_text(), 'keep')
-
-    def test_force_rejects_symlink_and_special_managed_destinations(self) -> None:
-        for label in ('final_symlink', 'ancestor_symlink', 'special_file'):
-            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
-                root = Path(tmp)
-                target = root / 'target'
-                outside = root / 'outside'
-                authority = target / 'architecture/system.yaml'
-                authority.parent.mkdir(parents=True)
-                authority.write_bytes(b'target authority\n')
+    def test_materialize_new_rejects_existing_symlink_and_special_targets(self) -> None:
+        for kind in ("directory", "symlink", "fifo"):
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as tmp:
+                parent = Path(tmp)
+                target = parent / "target"
+                outside = parent / "outside"
                 outside.mkdir()
-                if label == 'final_symlink':
-                    managed = target / '.grok/config.toml'
-                    managed.parent.mkdir(parents=True)
-                    managed.symlink_to(authority)
-                elif label == 'ancestor_symlink':
-                    outside_managed = outside / 'config.toml'
-                    outside_managed.write_bytes(b'outside\n')
-                    (target / '.grok').symlink_to(outside, target_is_directory=True)
+                sentinel = outside / "sentinel.txt"
+                sentinel.write_bytes(b"outside unchanged\n")
+                if kind == "directory":
+                    target.mkdir()
+                    (target / "owned.txt").write_bytes(b"existing\n")
+                elif kind == "symlink":
+                    target.symlink_to(outside, target_is_directory=True)
                 else:
-                    managed = target / '.grok/config.toml'
-                    managed.parent.mkdir(parents=True)
-                    os.mkfifo(managed)
-                with self.assertRaises((OSError, RuntimeError, SystemExit)):
-                    install_silent(ROOT, target, force=True, dry_run=False)
-                self.assertEqual(authority.read_bytes(), b'target authority\n')
-                if label == 'ancestor_symlink':
-                    self.assertEqual((outside / 'config.toml').read_bytes(), b'outside\n')
+                    os.mkfifo(target)
+                before = _snapshot(target)
+                with self.assertRaises(MODULE.UnsafeInstallTarget):
+                    MODULE.materialize_new(ROOT, target)
+                self.assertEqual(_snapshot(target), before)
+                self.assertEqual(sentinel.read_bytes(), b"outside unchanged\n")
+                self.assertEqual(_stage_names(parent), [])
 
-    def test_force_rolls_back_when_managed_parent_is_relocated(self) -> None:
+    def test_materialize_new_loses_target_creation_race_without_overwrite(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            target = parent / "target"
+            real_rename = MODULE._rename_noreplace
+
+            def create_target(parent_fd: int, stage_name: str, target_name: str) -> None:
+                os.mkdir(target_name, dir_fd=parent_fd)
+                target_fd = os.open(
+                    target_name,
+                    os.O_RDONLY | os.O_DIRECTORY,
+                    dir_fd=parent_fd,
+                )
+                try:
+                    descriptor = os.open(
+                        "winner.txt",
+                        os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                        0o600,
+                        dir_fd=target_fd,
+                    )
+                    try:
+                        os.write(descriptor, b"winner\n")
+                    finally:
+                        os.close(descriptor)
+                finally:
+                    os.close(target_fd)
+                real_rename(parent_fd, stage_name, target_name)
+
+            with patch.object(MODULE, "_rename_noreplace", side_effect=create_target):
+                with self.assertRaises(MODULE.UnsafeInstallTarget):
+                    MODULE.materialize_new(ROOT, target)
+            self.assertEqual((target / "winner.txt").read_bytes(), b"winner\n")
+            self.assertEqual(_stage_names(parent), [])
+
+    def test_materialize_new_failure_injections_clean_owned_stage(self) -> None:
+        injections = (
+            ("write", "_write_all", OSError("write failed")),
+            ("manifest", "_verify_stage", MODULE.UnsafeInstallTarget("bad manifest")),
+            ("publication", "_rename_noreplace", OSError("publish failed")),
+        )
+        for label, attribute, failure in injections:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
+                parent = Path(tmp)
+                target = parent / "target"
+                sentinel = parent / "outside.txt"
+                sentinel.write_bytes(b"outside unchanged\n")
+                with patch.object(MODULE, attribute, side_effect=failure):
+                    with self.assertRaises((OSError, MODULE.UnsafeInstallTarget)):
+                        MODULE.materialize_new(ROOT, target)
+                self.assertFalse(os.path.lexists(target))
+                self.assertEqual(sentinel.read_bytes(), b"outside unchanged\n")
+                self.assertEqual(_stage_names(parent), [])
+
+    def test_materialize_new_fsync_failure_cleans_owned_stage(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            target = parent / "target"
+            with patch.object(MODULE.os, "fsync", side_effect=OSError("fsync failed")):
+                with self.assertRaises(OSError):
+                    MODULE.materialize_new(ROOT, target)
+            self.assertFalse(os.path.lexists(target))
+            self.assertEqual(_stage_names(parent), [])
+
+    def test_materialize_new_parent_relocation_does_not_touch_outside_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            target = root / 'target'
-            managed = target / '.grok/config.toml'
-            managed.parent.mkdir(parents=True)
-            managed.write_bytes(b'outside original\n')
-            relocated = root / 'relocated-grok'
-            real_replace = os.replace
-            moved = False
+            parent = root / "parent"
+            parent.mkdir()
+            target = parent / "target"
+            sentinel = parent / "outside.txt"
+            sentinel.write_bytes(b"outside unchanged\n")
+            relocated = root / "relocated"
 
-            def relocate_before_replace(src, dst, *args, **kwargs):
-                nonlocal moved
-                destination_fd = kwargs.get('dst_dir_fd')
-                destination = (
-                    Path(os.readlink(f'/proc/self/fd/{destination_fd}'))
-                    if destination_fd is not None
-                    else None
-                )
-                if not moved and destination == managed.parent:
-                    moved = True
-                    managed.parent.rename(relocated)
-                    managed.parent.mkdir()
-                return real_replace(src, dst, *args, **kwargs)
+            def relocate_parent(*_args) -> None:
+                parent.rename(relocated)
+                parent.mkdir()
+                raise MODULE.UnsafeInstallTarget("parent relocated")
 
-            with patch('os.replace', side_effect=relocate_before_replace):
-                with self.assertRaises((OSError, RuntimeError, SystemExit)):
-                    install_silent(ROOT, target, force=True, dry_run=False)
-            self.assertTrue(moved)
-            self.assertEqual((relocated / 'config.toml').read_bytes(), b'outside original\n')
+            with patch.object(MODULE, "_rename_noreplace", side_effect=relocate_parent):
+                with self.assertRaises(MODULE.UnsafeInstallTarget):
+                    MODULE.materialize_new(ROOT, target)
+            self.assertEqual((relocated / "outside.txt").read_bytes(), b"outside unchanged\n")
+            self.assertEqual(_stage_names(relocated), [])
+            self.assertEqual(_stage_names(parent), [])
+            self.assertFalse(os.path.lexists(target))
 
-    def test_directory_creation_relocation_is_recovered_for_all_install_boundaries(self) -> None:
-        cases = (
-            ('managed parent', '.grok', '.grok/agents/tool.toml', b'managed\n'),
-            ('agents guidance parent', 'docs', 'docs/guidance/AGENTS.md', b'agents\n'),
-            ('bitrix guidance parent', 'local', 'local/guidance/AGENTS.md', b'bitrix\n'),
-            ('ensured directory', 'engineering', 'engineering/contracts/openapi', None),
-        )
-        for label, ancestor_name, relative, content in cases:
-            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
-                root = Path(tmp)
-                target = root / 'target'
-                ancestor = target / ancestor_name
-                ancestor.mkdir(parents=True)
-                (ancestor / 'sentinel.txt').write_bytes(b'outside unchanged\n')
-                relocated = root / f'relocated-{ancestor_name.replace("/", "-")}'
-                real_mkdir = os.mkdir
-                moved = False
-
-                def relocate_before_mkdir(path, *args, **kwargs):
-                    nonlocal moved
-                    parent_fd = kwargs.get('dir_fd')
-                    parent = (
-                        Path(os.readlink(f'/proc/self/fd/{parent_fd}'))
-                        if parent_fd is not None
-                        else None
-                    )
-                    if not moved and parent is not None and ancestor in (parent, *parent.parents):
-                        moved = True
-                        ancestor.rename(relocated)
-                        real_mkdir(ancestor)
-                    return real_mkdir(path, *args, **kwargs)
-
-                with MODULE._TargetTree(target) as tree, patch(
-                    'os.mkdir', side_effect=relocate_before_mkdir
-                ):
-                    with self.assertRaises((OSError, RuntimeError)):
-                        if content is None:
-                            tree.ensure_dir(relative)
-                        else:
-                            tree.write(relative, content)
-                self.assertTrue(moved)
-                self.assertEqual(
-                    (relocated / 'sentinel.txt').read_bytes(), b'outside unchanged\n'
-                )
-                unexpected = Path(relative).relative_to(ancestor_name).parts[0]
-                self.assertFalse((relocated / unexpected).exists())
-
-    def test_relocation_rollback_preserves_bytes_and_mode_under_umask(self) -> None:
-        cases = (
-            ('managed file', '.grok/config.toml', 0o751),
-            ('root agents', 'AGENTS.md', 0o666),
-            ('bitrix agents', 'local/AGENTS.md', 0o640),
-        )
-        for label, relative, original_mode in cases:
-            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmp:
-                root = Path(tmp)
-                target = root / 'target'
-                path = target / relative
-                path.parent.mkdir(parents=True)
-                path.write_bytes(b'original\n')
-                path.chmod(original_mode)
-                outside = root / 'outside'
-                outside.mkdir()
-                real_open_dir = MODULE._TargetTree._open_dir
-                calls = 0
-
-                def changed_parent(tree, parts, *, create, created=None):
-                    nonlocal calls
-                    descriptor = real_open_dir(
-                        tree, parts, create=create, created=created
-                    )
-                    if parts == path.relative_to(target).parts[:-1]:
-                        calls += 1
-                        if calls == 4:
-                            os.close(descriptor)
-                            return os.open(outside, os.O_RDONLY | os.O_DIRECTORY)
-                    return descriptor
-
-                old_umask = os.umask(0o077)
-                try:
-                    with MODULE._TargetTree(target) as tree, patch.object(
-                        MODULE._TargetTree, '_open_dir', changed_parent
-                    ):
-                        with self.assertRaises((OSError, RuntimeError)):
-                            tree.write(relative, b'replacement\n', mode=0o600)
-                finally:
-                    os.umask(old_umask)
-                self.assertEqual(path.read_bytes(), b'original\n')
-                self.assertEqual(stat.S_IMODE(path.stat().st_mode), original_mode)
-
-    def test_staging_failure_rolls_back_created_parent_and_stage(self) -> None:
+    def test_cli_modes_plan_by_default_and_materialize_only_when_explicit(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
+            root = Path(tmp)
+            existing = root / "existing"
+            existing.mkdir()
+            sentinel = existing / "sentinel.txt"
+            sentinel.write_bytes(b"unchanged\n")
+            before = _snapshot(existing)
+            default = subprocess.run(
+                ["python3", "scripts/install_into.py", str(existing)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            explicit = subprocess.run(
+                ["python3", "scripts/install_into.py", "--plan", str(existing)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            target = root / "new"
+            materialized = subprocess.run(
+                ["python3", "scripts/install_into.py", "--materialize-new", str(target)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(default.returncode, 0, default.stdout + default.stderr)
+            self.assertEqual(explicit.returncode, 0, explicit.stdout + explicit.stderr)
+            self.assertEqual(materialized.returncode, 0, materialized.stdout + materialized.stderr)
+            self.assertIn("read-only plan", default.stdout.lower())
+            self.assertEqual(_snapshot(existing), before)
+            self.assertTrue((target / "scripts/grok_verify.py").is_file())
+            self.assertFalse((target / ".github/workflows").exists())
+
+    def test_with_ci_remains_forbidden_without_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"
             target.mkdir()
-            with MODULE._TargetTree(target) as tree, patch(
-                'os.fchmod', side_effect=OSError('mode setup failed')
-            ):
-                with self.assertRaises(OSError):
-                    tree.write('.grok/agents/tool.toml', b'managed\n')
-            self.assertFalse((target / '.grok').exists())
-            self.assertEqual(list(target.glob('.adaptive-install-*')), [])
-
-    def test_bitrix_target_gets_local_agents(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            (target / 'bitrix').mkdir(parents=True)
-            (target / 'local').mkdir()
-            install_silent(ROOT, target, force=False, dry_run=False)
-            self.assertTrue((target / 'local/AGENTS.md').is_file())
-
-    def test_with_ci_is_forbidden_and_preserves_unrelated_workflow(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            workflows = target / '.github/workflows'
-            workflows.mkdir(parents=True)
-            unrelated = workflows / 'existing.yml'
-            unrelated.write_text('name: existing\n', encoding='utf-8')
-            with self.assertRaises(SystemExit) as ctx:
-                install_silent(ROOT, target, force=False, dry_run=False, with_ci=True)
-            self.assertIn('forbidden', str(ctx.exception).lower())
-            self.assertEqual(unrelated.read_text(encoding='utf-8'), 'name: existing\n')
-            self.assertFalse((workflows / 'adaptive-grok.yml').exists())
-
-    def test_with_ci_dry_run_is_forbidden_and_writes_nothing(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            workflows = target / '.github/workflows'
-            workflows.mkdir(parents=True)
-            unrelated = workflows / 'existing.yml'
-            unrelated.write_text('name: existing\n', encoding='utf-8')
-            with self.assertRaises(SystemExit) as ctx:
-                install_silent(ROOT, target, force=True, dry_run=True, with_ci=True)
-            self.assertIn('forbidden', str(ctx.exception).lower())
-            self.assertEqual(unrelated.read_text(encoding='utf-8'), 'name: existing\n')
-            self.assertFalse((workflows / 'adaptive-grok.yml').exists())
-            self.assertFalse((target / 'scripts/grok_verify.py').exists())
-
-    def test_default_install_does_not_copy_workflow_from_grok_stack(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            install_silent(ROOT, target, force=False, dry_run=False)
-            self.assertTrue((target / 'scripts/grok_verify.py').is_file())
-            self.assertFalse((target / '.github/workflows').exists())
-            self.assertFalse((target / '.grok-stack/templates/ci/github-actions.yml').exists())
-            copied = [
-                path for path in target.rglob('*')
-                if path.is_file() and path.suffix in {'.yml', '.yaml'} and (
-                    '.github/workflows' in path.as_posix() or path.name == 'github-actions.yml'
-                )
-            ]
-            self.assertEqual(copied, [])
-
-    def test_default_install_copies_quality_configs(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            install_silent(ROOT, target, force=False, dry_run=False)
-            for name in ('ruff.toml', 'bandit.yaml', '.coveragerc'):
-                copied = target / name
-                self.assertTrue(copied.is_file(), name)
-                self.assertEqual(copied.read_bytes(), (ROOT / name).read_bytes(), name)
-            self.assertFalse((target / '.github/workflows').exists())
-
-    def test_managed_agents_block_is_idempotent(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            target = Path(tmp) / 'target'
-            install_silent(ROOT, target, force=False, dry_run=False)
-            install_silent(ROOT, target, force=False, dry_run=False)
-            text = (target / 'AGENTS.md').read_text()
-            self.assertEqual(text.count('ADAPTIVE-GROK-PRO:START'), 1)
-
-    def test_install_runs_required_dep_command(self) -> None:
-        from adaptive_grok.toolchain import ToolCheck
-
-        missing = ToolCheck(
-            id='python3',
-            name='Python 3',
-            status='fail',
-            message='missing',
-            required=True,
-            install='echo install-python',
-            offer='Install fallback Python 3.12',
-        )
-        calls: list[str] = []
-
-        def runner(command: str):
-            calls.append(command)
-            return SimpleNamespace(returncode=0)
-
-        with tempfile.TemporaryDirectory() as tmp, patch(
-            'adaptive_grok.toolchain.check_toolchain',
-            return_value=[missing],
-        ):
-            target = Path(tmp) / 'target'
-            MODULE.install(ROOT, target, force=True, dry_run=False, install_deps=True, runner=runner)
-        self.assertEqual(calls, ['echo install-python'])
-
-    def test_install_no_deps_skips_runner(self) -> None:
-        from adaptive_grok.toolchain import ToolCheck
-
-        missing = ToolCheck(
-            id='python3',
-            name='Python 3',
-            status='fail',
-            message='missing',
-            required=True,
-            install='echo install-python',
-            offer='offer',
-        )
-        calls: list[str] = []
-        with tempfile.TemporaryDirectory() as tmp, patch(
-            'adaptive_grok.toolchain.check_toolchain',
-            return_value=[missing],
-        ):
-            target = Path(tmp) / 'target'
-            MODULE.install(
-                ROOT,
-                target,
-                force=True,
-                dry_run=False,
-                install_deps=False,
-                runner=lambda command: calls.append(command) or SimpleNamespace(returncode=0),
-            )
-        self.assertEqual(calls, [])
-
-    def test_install_skips_optional_deps_unless_all_deps(self) -> None:
-        from adaptive_grok.toolchain import ToolCheck
-
-        optional = ToolCheck(
-            id='php',
-            name='PHP',
-            status='info',
-            message='missing',
-            required=False,
-            install='echo install-php',
-            offer='offer',
-        )
-        calls: list[str] = []
-        with tempfile.TemporaryDirectory() as tmp, patch(
-            'adaptive_grok.toolchain.check_toolchain',
-            return_value=[optional],
-        ):
-            target = Path(tmp) / 'target'
-            MODULE.install(ROOT, target, force=True, dry_run=False, install_deps=True, runner=lambda c: calls.append(c) or SimpleNamespace(returncode=0))
-            self.assertEqual(calls, [])
-            MODULE.install(
-                ROOT,
-                target,
-                force=True,
-                dry_run=False,
-                install_deps=True,
-                all_deps=True,
-                runner=lambda c: calls.append(c) or SimpleNamespace(returncode=0),
-            )
-        self.assertEqual(calls, ['echo install-php'])
-
-    def test_install_http_url_is_manual_and_does_not_run_runner(self) -> None:
-        from adaptive_grok.toolchain import ToolCheck
-
-        missing = ToolCheck(
-            id='widget',
-            name='Widget',
-            status='fail',
-            message='missing',
-            required=True,
-            install='HTTPS://example.com/widget/install',
-            offer='Install Widget from URL',
-        )
-        calls: list[str] = []
-        with tempfile.TemporaryDirectory() as tmp, patch(
-            'adaptive_grok.toolchain.check_toolchain',
-            return_value=[missing],
-        ):
-            target = Path(tmp) / 'target'
-            buf = io.StringIO()
-            with contextlib.redirect_stdout(buf):
+            before = _snapshot(target)
+            with self.assertRaises(SystemExit) as raised:
                 MODULE.install(
                     ROOT,
                     target,
-                    force=True,
+                    force=False,
                     dry_run=False,
-                    install_deps=True,
-                    runner=lambda command: calls.append(command) or SimpleNamespace(returncode=0),
+                    with_ci=True,
                 )
-        self.assertEqual(calls, [])
-        self.assertIn('MANUAL widget: HTTPS://example.com/widget/install', buf.getvalue())
-
-    def test_install_dry_run_would_install_and_does_not_run_runner(self) -> None:
-        from adaptive_grok.toolchain import ToolCheck
-
-        missing = ToolCheck(
-            id='python3',
-            name='Python 3',
-            status='fail',
-            message='missing',
-            required=True,
-            install='echo install-python',
-            offer='offer',
-        )
-        calls: list[str] = []
-        with tempfile.TemporaryDirectory() as tmp, patch(
-            'adaptive_grok.toolchain.check_toolchain',
-            return_value=[missing],
-        ):
-            target = Path(tmp) / 'target'
-            buf = io.StringIO()
-            with contextlib.redirect_stdout(buf):
-                MODULE.install(
-                    ROOT,
-                    target,
-                    force=True,
-                    dry_run=True,
-                    install_deps=True,
-                    runner=lambda command: calls.append(command) or SimpleNamespace(returncode=0),
-                )
-        self.assertEqual(calls, [])
-        self.assertIn('WOULD INSTALL python3: echo install-python', buf.getvalue())
+            self.assertIn("forbidden", str(raised.exception).lower())
+            self.assertEqual(_snapshot(target), before)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
