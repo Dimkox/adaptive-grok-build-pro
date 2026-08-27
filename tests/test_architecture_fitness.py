@@ -1165,6 +1165,56 @@ class ArchitectureFitnessTests(unittest.TestCase):
             FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
         )
 
+    def test_queue_root_limit_does_not_inherit_sibling_export_provenance(self) -> None:
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        for declared_root_count in (
+            FIT.MAX_QUEUE_SOURCE_ROOTS - 1,
+            FIT.MAX_QUEUE_SOURCE_ROOTS,
+        ):
+            with self.subTest(declared_root_count=declared_root_count):
+                repository_paths = [
+                    f"root{index:03d}" for index in range(declared_root_count)
+                ]
+                system = _system()
+                system["nodes"][0]["type"] = "worker"
+                system["nodes"][0]["repository_paths"] = repository_paths
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                for source_root in repository_paths:
+                    repo.write_text(f"{source_root}/__init__.py", "")
+                repo.write_text(
+                    "root000/project/forms.py",
+                    "import celery\n"
+                    "app = celery.Celery('jobs')\n\n"
+                    "class Form:\n"
+                    "    def submit(self):\n"
+                    "        return None\n\n"
+                    "form = Form()\n",
+                )
+                consumer = "root000/consumer.py"
+                before = "from project.forms import form\n"
+                repo.write_text(consumer, before)
+                base = repo.commit("base with mixed exports")
+                repo.write_text(consumer, before + "form.submit()\n")
+                head = repo.commit("unrelated export operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "not_applicable")
+                self.assertEqual(report.status, "pass")
+                self.assertNotIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
     def test_network_analysis_handles_stdlib_unowned_and_unknown_clients(self) -> None:
         cases = (
             (

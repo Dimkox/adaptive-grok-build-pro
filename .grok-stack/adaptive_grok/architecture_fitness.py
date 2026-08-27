@@ -1325,17 +1325,18 @@ def _queue_adapter_names(
                 active,
                 bounded_source_roots,
             )
-            if (
-                len(source_roots) > MAX_QUEUE_SOURCE_ROOTS
-                and resolution.state == "resolved"
-            ):
-                proven.add(alias.asname or alias.name)
-                unsupported = True
-                continue
             export_resolved = (
                 (target_name and target_name in resolution.exports)
                 or (not target_name and bool(resolution.exports))
             )
+            if (
+                len(source_roots) > MAX_QUEUE_SOURCE_ROOTS
+                and resolution.state == "resolved"
+                and export_resolved
+            ):
+                proven.add(alias.asname or alias.name)
+                unsupported = True
+                continue
             if resolution.state == "unsupported" and export_resolved:
                 proven.add(alias.asname or alias.name)
                 unsupported = True
