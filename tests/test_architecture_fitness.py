@@ -1075,6 +1075,191 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
                 )
 
+    def test_queue_operations_keep_operation_site_and_lexical_provenance(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        pipeline = (
+            "class Pipeline:\n"
+            "    def task(self, function):\n"
+            "        return function\n\n"
+        )
+        cases = (
+            (
+                "operation before overwrite",
+                pipeline
+                + "import celery\n"
+                + "receiver = celery.Celery('jobs')\n"
+                + "receiver = Pipeline()\n",
+                pipeline
+                + "import celery\n"
+                + "receiver = celery.Celery('jobs')\n"
+                + "receiver.delay(task)\n"
+                + "receiver = Pipeline()\n",
+            ),
+            (
+                "function local decorator",
+                pipeline
+                + "import celery\n"
+                + "def configure():\n"
+                + "    receiver = celery.Celery('jobs')\n"
+                + "    def stage():\n"
+                + "        return None\n",
+                pipeline
+                + "import celery\n"
+                + "def configure():\n"
+                + "    receiver = celery.Celery('jobs')\n"
+                + "    @receiver.task\n"
+                + "    def stage():\n"
+                + "        return None\n",
+            ),
+            (
+                "method local decorator",
+                pipeline
+                + "import celery\n"
+                + "class Configurer:\n"
+                + "    def configure(self):\n"
+                + "        receiver = celery.Celery('jobs')\n"
+                + "        def stage():\n"
+                + "            return None\n",
+                pipeline
+                + "import celery\n"
+                + "class Configurer:\n"
+                + "    def configure(self):\n"
+                + "        receiver = celery.Celery('jobs')\n"
+                + "        @receiver.task\n"
+                + "        def stage():\n"
+                + "            return None\n",
+            ),
+        )
+        for label, before, after in cases:
+            with self.subTest(label=label):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", after)
+                head = repo.commit("queue operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "unsupported")
+                self.assertEqual(report.status, "fail")
+                self.assertIn("src/jobs.py", result.applicability.scanned_scope)
+                self.assertIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
+    def test_queue_alias_mutations_propagate_without_tainting_unrelated_aliases(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        pipeline = (
+            "class Pipeline:\n"
+            "    def task(self, function):\n"
+            "        return function\n"
+            "    def enqueue(self, function):\n"
+            "        return function\n\n"
+        )
+        frameworks = (
+            (
+                "celery",
+                "import celery\n",
+                "celery.Celery('jobs')",
+                "@receiver.task\ndef stage():\n    return None\n",
+            ),
+            (
+                "rq",
+                "from rq import Queue\n",
+                "Queue()",
+                "receiver.enqueue(task)\n",
+            ),
+        )
+        mutations = (
+            (
+                "alias append",
+                "values = []\nalias = values\nalias.append({queue})\n"
+                "receiver = values[0]\n",
+            ),
+            (
+                "alias subscript store",
+                "values = [Pipeline()]\nalias = values\nalias[0] = {queue}\n"
+                "receiver = values[0]\n",
+            ),
+            (
+                "unsupported alias mutator",
+                "values = []\nalias = values\nalias.insert(0, {queue})\n"
+                "receiver = values[0]\n",
+            ),
+        )
+        for framework, imported, queue_value, addition in frameworks:
+            for mutation, source in mutations:
+                with self.subTest(framework=framework, mutation=mutation):
+                    before = pipeline + imported + source.format(queue=queue_value)
+                    repo = GitArchitectureRepo(self)
+                    repo.model(system, rules)
+                    repo.write_text("src/jobs.py", before)
+                    base = repo.commit("base")
+                    repo.write_text("src/jobs.py", before + addition)
+                    head = repo.commit("queue operation")
+                    report = self._evaluate(repo, base, head, pre_risk="yellow")
+                    result = self._results(report)["background_job"]
+                    self.assertEqual(result.status, "unsupported")
+                    self.assertEqual(report.status, "fail")
+                    self.assertIn("src/jobs.py", result.applicability.scanned_scope)
+                    self.assertIn("new_queue", report.triggers)
+                    self.assertGreaterEqual(
+                        FIT.RISK_ORDER[report.post_risk],
+                        FIT.RISK_ORDER[report.pre_risk],
+                    )
+
+        before = (
+            pipeline
+            + "from rq import Queue\n"
+            + "queue_values = [Queue()]\n"
+            + "ordinary_values = [Pipeline()]\n"
+            + "alias = ordinary_values\n"
+            + "queue_values.insert(0, Queue())\n"
+            + "receiver = alias[0]\n"
+        )
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_text("src/jobs.py", before)
+        base = repo.commit("base")
+        repo.write_text(
+            "src/jobs.py",
+            before + "@receiver.task\ndef stage():\n    return None\n",
+        )
+        head = repo.commit("ordinary aliased operation")
+        report = self._evaluate(repo, base, head, pre_risk="yellow")
+        result = self._results(report)["background_job"]
+        self.assertEqual(result.status, "not_applicable")
+        self.assertEqual(report.status, "pass")
+        self.assertNotIn("new_queue", report.triggers)
+        self.assertGreaterEqual(
+            FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+        )
+
     def test_unrelated_semantic_method_names_remain_background_not_applicable(self) -> None:
         system = _system()
         system["nodes"][0]["type"] = "worker"

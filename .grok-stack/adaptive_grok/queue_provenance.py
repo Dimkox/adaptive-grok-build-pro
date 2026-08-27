@@ -25,6 +25,24 @@ _QUEUE_IMPORTS = {
     "rq",
 }
 
+_CONTAINER_MUTATORS = {
+    "add",
+    "clear",
+    "difference_update",
+    "discard",
+    "insert",
+    "intersection_update",
+    "pop",
+    "popitem",
+    "remove",
+    "reverse",
+    "setdefault",
+    "sort",
+    "symmetric_difference_update",
+    "union_update",
+    "update",
+}
+
 
 class QueueAnalysisLimit(RuntimeError):
     """Raised when bounded queue analysis cannot safely continue."""
@@ -42,6 +60,15 @@ class QueueTreeAnalysis:
     signals: tuple[str, ...]
     derived_names: frozenset[str]
     uncertain: bool
+
+
+@dataclass
+class _Environment:
+    values: dict[str, AbstractValue]
+    aliases: dict[str, frozenset[str]]
+
+    def fork(self) -> "_Environment":
+        return _Environment(dict(self.values), dict(self.aliases))
 
 
 NON_QUEUE = AbstractValue("non_queue")
@@ -85,8 +112,6 @@ def join_value(left: AbstractValue, right: AbstractValue) -> AbstractValue:
     default = join_value(left_default, right_default)
     left_entries = _entry_map(left)
     right_entries = _entry_map(right)
-    if left.state == "sequence" and left_entries.keys() != right_entries.keys():
-        return UNKNOWN_QUEUE
     keys = left_entries.keys() | right_entries.keys()
     entries = {
         key: join_value(
@@ -225,6 +250,8 @@ class _Interpreter:
         self.statement_count = 0
         self.value_count = 0
         self.wildcard_queue_import = False
+        self.signals: set[str] = set()
+        self.uncertain = False
 
     def _statement(self) -> None:
         self.statement_count += 1
@@ -240,21 +267,40 @@ class _Interpreter:
     def _join(self, left: AbstractValue, right: AbstractValue) -> AbstractValue:
         return self._value(join_value(left, right))
 
-    def _join_envs(self, environments: list[dict[str, AbstractValue]]) -> dict[str, AbstractValue]:
+    def _join_envs(self, environments: list[_Environment]) -> _Environment:
         if not environments:
-            return {}
-        names = set().union(*(environment.keys() for environment in environments))
+            return _Environment({}, {})
+        names = set().union(*(environment.values.keys() for environment in environments))
         result: dict[str, AbstractValue] = {}
         for name in names:
-            value = environments[0].get(name, NON_QUEUE)
+            value = environments[0].values.get(name, NON_QUEUE)
             for environment in environments[1:]:
-                value = self._join(value, environment.get(name, NON_QUEUE))
+                value = self._join(value, environment.values.get(name, NON_QUEUE))
             result[name] = value
-        return result
+        relations: dict[str, set[str]] = {name: {name} for name in names}
+        for environment in environments:
+            for name, group in environment.aliases.items():
+                members = set(group) & names
+                for member in members:
+                    relations[member].update(members)
+        changed = True
+        while changed:
+            changed = False
+            for name, group in tuple(relations.items()):
+                expanded = set().union(*(relations[item] for item in group))
+                if expanded != group:
+                    relations[name] = expanded
+                    changed = True
+        aliases = {
+            name: frozenset(group)
+            for name, group in relations.items()
+            if len(group) > 1 or result[name].state in {"sequence", "mapping"}
+        }
+        return _Environment(result, aliases)
 
-    def _evaluate(self, node: ast.AST, environment: dict[str, AbstractValue]) -> AbstractValue:
+    def _evaluate(self, node: ast.AST, environment: _Environment) -> AbstractValue:
         if isinstance(node, ast.Name):
-            known = environment.get(node.id)
+            known = environment.values.get(node.id)
             if known is not None:
                 return known
             return UNKNOWN_QUEUE if self.wildcard_queue_import else NON_QUEUE
@@ -330,13 +376,25 @@ class _Interpreter:
         self,
         target: ast.AST,
         value: AbstractValue,
-        environment: dict[str, AbstractValue],
+        environment: _Environment,
+        alias_group: frozenset[str] | None = None,
     ) -> None:
         if isinstance(target, ast.Name):
-            environment[target.id] = value
+            name = target.id
+            previous = environment.aliases.pop(name, frozenset({name}))
+            for member in previous - {name}:
+                remaining = environment.aliases.get(member, frozenset({member})) - {name}
+                environment.aliases[member] = remaining or frozenset({member})
+            environment.values[name] = value
+            if alias_group is not None:
+                group = frozenset(set(alias_group) | {name})
+                for member in group:
+                    environment.aliases[member] = group
+            elif value.state in {"sequence", "mapping"}:
+                environment.aliases[name] = frozenset({name})
             return
         if isinstance(target, ast.Starred):
-            self._bind(target.value, value, environment)
+            self._bind(target.value, value, environment, alias_group)
             return
         if isinstance(target, (ast.List, ast.Tuple)):
             length = _sequence_length(value)
@@ -372,45 +430,74 @@ class _Interpreter:
             return
         if isinstance(target, ast.Subscript) and isinstance(target.value, ast.Name):
             container_name = target.value.id
-            container = environment.get(container_name, UNKNOWN_QUEUE)
+            container = environment.values.get(container_name, UNKNOWN_QUEUE)
             key = normalize_literal_key(target.slice)
             if key is None or container.state not in {"sequence", "mapping"}:
-                environment[container_name] = UNKNOWN_QUEUE
+                self._set_alias_value(container_name, UNKNOWN_QUEUE, environment)
                 return
             entries = _entry_map(container)
             if container.state == "sequence":
                 if key[0] != "number" or not isinstance(key[1], int):
-                    environment[container_name] = UNKNOWN_QUEUE
+                    self._set_alias_value(container_name, UNKNOWN_QUEUE, environment)
                     return
                 index = key[1]
                 length = _sequence_length(container)
                 if length is None:
-                    environment[container_name] = UNKNOWN_QUEUE
+                    self._set_alias_value(container_name, UNKNOWN_QUEUE, environment)
                     return
                 if index < 0:
                     index += length
                 if index < 0 or index >= length:
-                    environment[container_name] = UNKNOWN_QUEUE
+                    self._set_alias_value(container_name, UNKNOWN_QUEUE, environment)
                     return
                 key = "number", index
             entries[key] = value
-            environment[container_name] = self._value(
-                _structured(container.state, entries, container.default or NON_QUEUE)
+            self._set_alias_value(
+                container_name,
+                self._value(
+                    _structured(container.state, entries, container.default or NON_QUEUE)
+                ),
+                environment,
             )
 
-    def _mutate_call(self, node: ast.Call, environment: dict[str, AbstractValue]) -> bool:
+    @staticmethod
+    def _alias_group(name: str, environment: _Environment) -> frozenset[str]:
+        return environment.aliases.get(name, frozenset({name}))
+
+    def _set_alias_value(
+        self,
+        name: str,
+        value: AbstractValue,
+        environment: _Environment,
+    ) -> None:
+        for member in self._alias_group(name, environment):
+            environment.values[member] = value
+
+    def _mutate_call(self, node: ast.Call, environment: _Environment) -> bool:
         if not isinstance(node.func, ast.Attribute) or not isinstance(node.func.value, ast.Name):
             return False
-        if node.func.attr not in {"append", "extend"}:
-            return False
         name = node.func.value.id
-        container = environment.get(name, UNKNOWN_QUEUE)
+        container = environment.values.get(name, NON_QUEUE)
+        if container.state not in {"sequence", "mapping", "unknown_queue"}:
+            return False
+        if node.func.attr not in {"append", "extend"} | _CONTAINER_MUTATORS:
+            return False
+        if node.func.attr in _CONTAINER_MUTATORS:
+            dependencies = [container]
+            dependencies.extend(self._evaluate(item, environment) for item in node.args)
+            dependencies.extend(
+                self._evaluate(item.value, environment) for item in node.keywords
+            )
+            if all(_aggregate(item) == NON_QUEUE for item in dependencies):
+                return True
+            self._set_alias_value(name, UNKNOWN_QUEUE, environment)
+            return True
         if container.state != "sequence" or len(node.args) != 1 or node.keywords:
-            environment[name] = UNKNOWN_QUEUE
+            self._set_alias_value(name, UNKNOWN_QUEUE, environment)
             return True
         length = _sequence_length(container)
         if length is None:
-            environment[name] = UNKNOWN_QUEUE
+            self._set_alias_value(name, UNKNOWN_QUEUE, environment)
             return True
         entries = _entry_map(container)
         if node.func.attr == "append":
@@ -419,20 +506,82 @@ class _Interpreter:
             extension = self._evaluate(node.args[0], environment)
             extension_length = _sequence_length(extension)
             if extension_length is None:
-                environment[name] = UNKNOWN_QUEUE
+                self._set_alias_value(name, UNKNOWN_QUEUE, environment)
                 return True
             entries.update({
                 ("number", length + int(key[1])): value
                 for key, value in extension.entries
             })
-        environment[name] = self._value(_structured("sequence", entries))
+        self._set_alias_value(
+            name,
+            self._value(_structured("sequence", entries)),
+            environment,
+        )
         return True
+
+    def _record_operation(
+        self,
+        kind: Literal["call", "decorator"],
+        node: ast.AST,
+        value_node: ast.AST,
+        environment: _Environment,
+        function_name: str = "",
+    ) -> None:
+        value = _aggregate(self._evaluate(value_node, environment))
+        if value.state not in {"queue", "unknown_queue"}:
+            return
+        if value.state == "unknown_queue":
+            self.uncertain = True
+        dumped = ast.dump(node, annotate_fields=True, include_attributes=False)
+        if kind == "call":
+            self.signals.add(f"semantic-call:{dumped}")
+        else:
+            self.signals.add(f"semantic-decorator:{function_name}:{dumped}")
+
+    def _record_expression(self, node: ast.AST, environment: _Environment) -> None:
+        for child in ast.walk(node):
+            if isinstance(child, ast.Call):
+                self._record_operation("call", child, child.func, environment)
+
+    def _function_body(
+        self,
+        statement: ast.FunctionDef | ast.AsyncFunctionDef,
+        environment: _Environment,
+    ) -> None:
+        for decorator in statement.decorator_list:
+            self._record_operation(
+                "decorator",
+                decorator,
+                decorator,
+                environment,
+                statement.name,
+            )
+            self._record_expression(decorator, environment)
+        for expression in (
+            *statement.args.defaults,
+            *(item for item in statement.args.kw_defaults if item is not None),
+        ):
+            self._record_expression(expression, environment)
+        self._bind(ast.Name(id=statement.name), NON_QUEUE, environment)
+        local = environment.fork()
+        arguments = (
+            *statement.args.posonlyargs,
+            *statement.args.args,
+            *statement.args.kwonlyargs,
+        )
+        for argument in arguments:
+            self._bind(ast.Name(id=argument.arg), NON_QUEUE, local)
+        if statement.args.vararg is not None:
+            self._bind(ast.Name(id=statement.args.vararg.arg), NON_QUEUE, local)
+        if statement.args.kwarg is not None:
+            self._bind(ast.Name(id=statement.args.kwarg.arg), NON_QUEUE, local)
+        self._block(statement.body, local)
 
     def _block(
         self,
         statements: list[ast.stmt],
-        environment: dict[str, AbstractValue],
-    ) -> dict[str, AbstractValue]:
+        environment: _Environment,
+    ) -> _Environment:
         for statement in statements:
             self._statement()
             environment = self._transfer(statement, environment)
@@ -442,14 +591,14 @@ class _Interpreter:
         self,
         body: list[ast.stmt],
         orelse: list[ast.stmt],
-        environment: dict[str, AbstractValue],
+        environment: _Environment,
         target: ast.AST | None = None,
         iterable: AbstractValue = UNKNOWN_QUEUE,
-    ) -> dict[str, AbstractValue]:
-        zero = dict(environment)
-        current = dict(environment)
+    ) -> _Environment:
+        zero = environment.fork()
+        current = environment.fork()
         for _iteration in range(self.loop_limit):
-            one = dict(current)
+            one = current.fork()
             if target is not None:
                 self._bind(target, _aggregate(iterable), one)
             one = self._block(body, one)
@@ -462,13 +611,15 @@ class _Interpreter:
     def _transfer(
         self,
         statement: ast.stmt,
-        environment: dict[str, AbstractValue],
-    ) -> dict[str, AbstractValue]:
+        environment: _Environment,
+    ) -> _Environment:
         if isinstance(statement, ast.Import):
             for alias in statement.names:
                 local = alias.asname or alias.name.split(".")[0]
-                environment[local] = (
-                    QUEUE if alias.name.split(".")[0] in _QUEUE_IMPORTS else NON_QUEUE
+                self._bind(
+                    ast.Name(id=local),
+                    QUEUE if alias.name.split(".")[0] in _QUEUE_IMPORTS else NON_QUEUE,
+                    environment,
                 )
             return environment
         if isinstance(statement, ast.ImportFrom):
@@ -481,27 +632,58 @@ class _Interpreter:
                 if is_queue and alias.name == "*":
                     self.wildcard_queue_import = True
                 elif local in self.adapter_names or is_queue:
-                    environment[local] = QUEUE
+                    self._bind(ast.Name(id=local), QUEUE, environment)
                 elif alias.name != "*":
-                    environment[local] = NON_QUEUE
+                    self._bind(ast.Name(id=local), NON_QUEUE, environment)
             return environment
-        if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            environment[statement.name] = NON_QUEUE
+        if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            self._function_body(statement, environment)
+            return environment
+        if isinstance(statement, ast.ClassDef):
+            for decorator in statement.decorator_list:
+                self._record_expression(decorator, environment)
+            for expression in (*statement.bases, *(item.value for item in statement.keywords)):
+                self._record_expression(expression, environment)
+            local = environment.fork()
+            self._block(statement.body, local)
+            self._bind(ast.Name(id=statement.name), NON_QUEUE, environment)
             return environment
         if isinstance(statement, ast.Assign):
+            self._record_expression(statement.value, environment)
             value = self._evaluate(statement.value, environment)
+            direct_names = {
+                target.id for target in statement.targets if isinstance(target, ast.Name)
+            }
+            if isinstance(statement.value, ast.Name):
+                direct_names.update(self._alias_group(statement.value.id, environment))
+            alias_group = (
+                frozenset(direct_names)
+                if value.state in {"sequence", "mapping", "unknown_queue"}
+                and direct_names
+                else None
+            )
             for target in statement.targets:
-                self._bind(target, value, environment)
+                self._bind(target, value, environment, alias_group)
             return environment
         if isinstance(statement, ast.AnnAssign):
             if statement.value is not None:
+                self._record_expression(statement.value, environment)
+                value = self._evaluate(statement.value, environment)
+                alias_group = None
+                if (
+                    isinstance(statement.value, ast.Name)
+                    and value.state in {"sequence", "mapping", "unknown_queue"}
+                ):
+                    alias_group = self._alias_group(statement.value.id, environment)
                 self._bind(
                     statement.target,
-                    self._evaluate(statement.value, environment),
+                    value,
                     environment,
+                    alias_group,
                 )
             return environment
         if isinstance(statement, ast.AugAssign):
+            self._record_expression(statement.value, environment)
             if isinstance(statement.op, ast.Add):
                 value = self._evaluate(
                     ast.BinOp(left=statement.target, op=ast.Add(), right=statement.value),
@@ -512,14 +694,17 @@ class _Interpreter:
             self._bind(statement.target, value, environment)
             return environment
         if isinstance(statement, ast.Expr):
+            self._record_expression(statement.value, environment)
             if isinstance(statement.value, ast.Call):
                 self._mutate_call(statement.value, environment)
             return environment
         if isinstance(statement, ast.If):
-            body = self._block(statement.body, dict(environment))
-            orelse = self._block(statement.orelse, dict(environment))
+            self._record_expression(statement.test, environment)
+            body = self._block(statement.body, environment.fork())
+            orelse = self._block(statement.orelse, environment.fork())
             return self._join_envs([body, orelse])
         if isinstance(statement, (ast.For, ast.AsyncFor)):
+            self._record_expression(statement.iter, environment)
             iterable = self._evaluate(statement.iter, environment)
             return self._loop(
                 statement.body,
@@ -529,19 +714,21 @@ class _Interpreter:
                 iterable,
             )
         if isinstance(statement, ast.While):
+            self._record_expression(statement.test, environment)
             return self._loop(statement.body, statement.orelse, environment)
         if isinstance(statement, ast.Try):
-            normal = self._block(statement.body, dict(environment))
+            normal = self._block(statement.body, environment.fork())
             normal = self._block(statement.orelse, normal)
             alternatives = [normal]
             alternatives.extend(
-                self._block(handler.body, dict(environment))
+                self._block(handler.body, environment.fork())
                 for handler in statement.handlers
             )
             joined = self._join_envs(alternatives)
             return self._block(statement.finalbody, joined)
         if isinstance(statement, (ast.With, ast.AsyncWith)):
             for item in statement.items:
+                self._record_expression(item.context_expr, environment)
                 if item.optional_vars is not None:
                     self._bind(
                         item.optional_vars,
@@ -550,58 +737,61 @@ class _Interpreter:
                     )
             return self._block(statement.body, environment)
         if isinstance(statement, ast.Match):
+            self._record_expression(statement.subject, environment)
             alternatives = [
-                self._block(case.body, dict(environment)) for case in statement.cases
+                self._block(case.body, environment.fork()) for case in statement.cases
             ]
-            alternatives.append(dict(environment))
+            alternatives.append(environment.fork())
             return self._join_envs(alternatives)
+        expressions: list[ast.AST] = []
+        if isinstance(statement, (ast.Return, ast.Raise, ast.Assert)):
+            expressions.extend(
+                value
+                for value in (
+                    getattr(statement, "value", None),
+                    getattr(statement, "exc", None),
+                    getattr(statement, "cause", None),
+                    getattr(statement, "test", None),
+                    getattr(statement, "msg", None),
+                )
+                if value is not None
+            )
+        for expression in expressions:
+            self._record_expression(expression, environment)
         return environment
 
     def analyze(self) -> QueueTreeAnalysis:
-        body = self.tree.body if isinstance(self.tree, ast.Module) else []
-        environment = {
-            name: QUEUE for name in self.adapter_names
-        }
-        environment = self._block(body, environment)
-        signals = {
-            f"import:{target}"
+        queue_imports = {
+            target
             for target in _import_targets(self.tree)
             if target.split(".")[0] in _QUEUE_IMPORTS
         }
+        if not queue_imports and not self.adapter_names:
+            return QueueTreeAnalysis((), frozenset(), False)
+        body = self.tree.body if isinstance(self.tree, ast.Module) else []
+        environment = _Environment(
+            {name: QUEUE for name in self.adapter_names},
+            {},
+        )
+        environment = self._block(body, environment)
+        self.signals.update({
+            f"import:{target}"
+            for target in queue_imports
+        })
         for imported, call in _called_imports(self.tree):
             if imported.split(".")[0] in _QUEUE_IMPORTS:
-                signals.add(f"call:{call}")
-
-        uncertain = False
-        for node in ast.walk(self.tree):
-            values: list[tuple[str, ast.AST]] = []
-            if isinstance(node, ast.Call):
-                values.append(("call", node.func))
-            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                values.extend((f"decorator:{node.name}", item) for item in node.decorator_list)
-            for kind, value_node in values:
-                value = _aggregate(self._evaluate(value_node, environment))
-                if value.state not in {"queue", "unknown_queue"}:
-                    continue
-                if value.state == "unknown_queue":
-                    uncertain = True
-                dumped = ast.dump(
-                    node if kind == "call" else value_node,
-                    annotate_fields=True,
-                    include_attributes=False,
-                )
-                if kind == "call":
-                    signals.add(f"semantic-call:{dumped}")
-                else:
-                    function_name = kind.split(":", 1)[1]
-                    signals.add(f"semantic-decorator:{function_name}:{dumped}")
+                self.signals.add(f"call:{call}")
 
         derived_names = frozenset(
             name
-            for name, value in environment.items()
+            for name, value in environment.values.items()
             if _aggregate(value).state in {"queue", "unknown_queue"}
         )
-        return QueueTreeAnalysis(tuple(sorted(signals)), derived_names, uncertain)
+        return QueueTreeAnalysis(
+            tuple(sorted(self.signals)),
+            derived_names,
+            self.uncertain,
+        )
 
 
 def analyze_queue_tree(
