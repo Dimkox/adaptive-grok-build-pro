@@ -342,3 +342,98 @@ changed. Rollout remains the reviewed source branch, and rollback is a single
 fix-commit revert with no external or data recovery.
 
 Commit subject: `fix: bound late queue provenance`.
+
+## Task 1 review fix round 3
+
+### Root cause and RED
+
+The lexical-name visitor stored both `global` and `nonlocal` declarations in
+one set. Deferred callable analysis then refreshed every declared name from the
+module summary, although Python resolves `nonlocal` against the nearest
+enclosing function scope. In addition, nested callable bodies were analyzed
+before an enclosing function's later bindings had entered a bounded scope
+summary.
+
+One exact Git base/head matrix was added before the repair. It covers nested
+functions and method closures with Celery/RQ bindings before and after the
+nested definition, same-named module controls, an ordinary enclosing binding
+that must override a queue-valued module name, and an explicit `global` control
+that must ignore a queue-valued enclosing binding.
+
+```text
+python3 -m unittest -v \
+  tests.test_architecture_fitness.ArchitectureFitnessTests.test_queue_nonlocal_names_resolve_nearest_enclosing_scope
+Ran 1 test in 1.662s
+FAILED (failures=5)
+```
+
+All four positive subtests incorrectly returned background-job N/A. The
+ordinary `nonlocal` control was also incorrectly promoted from the same-named
+queue-valued module binding. The explicit `global` control already passed.
+
+### Repair and GREEN
+
+Function scope discovery now represents local, global, and nonlocal names
+separately. Each analyzed function accumulates a bounded value summary and a
+list of its nested callables. Nested bodies are analyzed after the enclosing
+body so that nearest-scope lookup sees bindings on either side of the nested
+definition. Explicit globals consult only the module summary; explicit
+nonlocals consult only the nearest enclosing summary. Class-body assignments
+are excluded from enclosing function summaries.
+
+```text
+python3 -m unittest -v \
+  tests.test_architecture_fitness.ArchitectureFitnessTests.test_queue_nonlocal_names_resolve_nearest_enclosing_scope
+Ran 1 test in 1.600s
+OK
+
+python3 -m unittest -v \
+  tests.test_architecture_fitness.ArchitectureFitnessTests.test_queue_alias_mutations_propagate_without_tainting_unrelated_aliases \
+  tests.test_architecture_fitness.ArchitectureFitnessTests.test_queue_free_names_join_bounded_module_flow \
+  tests.test_architecture_fitness.ArchitectureFitnessTests.test_queue_inplace_add_mutates_only_mutable_alias_groups \
+  tests.test_architecture_fitness.ArchitectureFitnessTests.test_queue_alias_work_is_bounded_before_branch_closure
+Ran 4 tests in 4.444s
+OK
+
+python3 -m unittest -v tests.test_architecture_fitness -k queue
+Ran 17 tests in 29.668s
+OK
+
+python3 -m unittest -v tests.test_architecture_fitness
+Ran 58 tests in 191.590s
+OK
+
+python3 -m ruff check \
+  .grok-stack/adaptive_grok/queue_provenance.py \
+  tests/test_architecture_fitness.py
+All checks passed!
+
+python3 -m compileall -q .grok-stack/adaptive_grok
+exit 0
+
+git diff --check
+exit 0
+
+git diff --name-only \
+  2cff96039623cf4d041790a5ec31a5913b0ecc70 -- \
+  trust-ci .github/workflows
+empty output
+```
+
+### Files and self-review
+
+- `.grok-stack/adaptive_grok/queue_provenance.py`: scope-kind separation,
+  nearest-enclosing summaries, and deferred nested callable analysis.
+- `tests/test_architecture_fitness.py`: exact positive/control scope matrix.
+- This evidence file and the ignored Task 1 report: fix-round evidence.
+
+Self-review confirmed that the existing alias-component representation and
+limits are unchanged, mutable alias propagation remains covered, explicit
+globals retain module semantics, unrelated controls remain true N/A, and the
+same provenance result still drives background fitness and monotonic risk.
+Dynamic execution remains outside the bounded abstract domain and therefore
+fails closed when queue relevance cannot be proven. Rollout remains source-only
+through review; rollback is a revert of this fix commit with no external or
+data-state recovery.
+
+Commit subject: `fix: resolve nested queue scopes`.

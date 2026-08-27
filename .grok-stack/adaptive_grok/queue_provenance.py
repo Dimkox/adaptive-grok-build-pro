@@ -242,10 +242,24 @@ def _called_imports(tree: ast.AST) -> set[tuple[str, str]]:
     return called
 
 
+@dataclass(frozen=True)
+class _ScopeNames:
+    locals: frozenset[str]
+    globals: frozenset[str]
+    nonlocals: frozenset[str]
+
+
+@dataclass
+class _FunctionScope:
+    values: dict[str, AbstractValue]
+    pending: list[tuple[ast.FunctionDef | ast.AsyncFunctionDef, _Environment]]
+
+
 class _FunctionLocalVisitor(ast.NodeVisitor):
     def __init__(self) -> None:
         self.names: set[str] = set()
         self.globals: set[str] = set()
+        self.nonlocals: set[str] = set()
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self.names.add(node.name)
@@ -272,7 +286,7 @@ class _FunctionLocalVisitor(ast.NodeVisitor):
         self.globals.update(node.names)
 
     def visit_Nonlocal(self, node: ast.Nonlocal) -> None:
-        self.globals.update(node.names)
+        self.nonlocals.update(node.names)
 
     def visit_Lambda(self, node: ast.Lambda) -> None:
         return
@@ -296,9 +310,9 @@ class _FunctionLocalVisitor(ast.NodeVisitor):
             self.visit(statement)
 
 
-def _function_local_names(
+def _function_scope_names(
     statement: ast.FunctionDef | ast.AsyncFunctionDef,
-) -> set[str]:
+) -> _ScopeNames:
     visitor = _FunctionLocalVisitor()
     for item in statement.body:
         visitor.visit(item)
@@ -312,7 +326,12 @@ def _function_local_names(
         visitor.names.add(statement.args.vararg.arg)
     if statement.args.kwarg is not None:
         visitor.names.add(statement.args.kwarg.arg)
-    return visitor.names - visitor.globals
+    excluded = visitor.globals | visitor.nonlocals
+    return _ScopeNames(
+        frozenset(visitor.names - excluded),
+        frozenset(visitor.globals),
+        frozenset(visitor.nonlocals),
+    )
 
 
 class _Interpreter:
@@ -338,13 +357,14 @@ class _Interpreter:
         self.signals: set[str] = set()
         self.uncertain = False
         self.lexical_depth = 0
+        self.class_depth = 0
         self.module_values: dict[str, AbstractValue] = {
             name: QUEUE for name in self.adapter_names
         }
         self.pending_functions: list[
             tuple[ast.FunctionDef | ast.AsyncFunctionDef, _Environment]
         ] = []
-        self.defer_functions = True
+        self.scope_stack: list[_FunctionScope] = []
 
     def _statement(self) -> None:
         self.statement_count += 1
@@ -513,6 +533,18 @@ class _Interpreter:
             return value
         return NON_QUEUE
 
+    def _record_binding(self, name: str, value: AbstractValue) -> None:
+        if self.class_depth:
+            return
+        if self.lexical_depth == 0:
+            values = self.module_values
+        elif self.scope_stack:
+            values = self.scope_stack[-1].values
+        else:
+            return
+        previous = values.get(name)
+        values[name] = value if previous is None else self._join(previous, value)
+
     def _bind(
         self,
         target: ast.AST,
@@ -520,6 +552,7 @@ class _Interpreter:
         environment: _Environment,
         alias_with: str | None = None,
         track_alias: bool = False,
+        record_scope: bool = True,
     ) -> None:
         if isinstance(target, ast.Name):
             name = target.id
@@ -532,14 +565,18 @@ class _Interpreter:
                 self._alias_union(name, alias_with, environment.aliases)
             elif track_alias:
                 self._alias_create(name, environment.aliases)
-            if self.lexical_depth == 0:
-                previous = self.module_values.get(name)
-                self.module_values[name] = (
-                    value if previous is None else self._join(previous, value)
-                )
+            if record_scope:
+                self._record_binding(name, value)
             return
         if isinstance(target, ast.Starred):
-            self._bind(target.value, value, environment, alias_with, track_alias)
+            self._bind(
+                target.value,
+                value,
+                environment,
+                alias_with,
+                track_alias,
+                record_scope,
+            )
             return
         if isinstance(target, (ast.List, ast.Tuple)):
             length = _sequence_length(value)
@@ -571,7 +608,7 @@ class _Interpreter:
                         if length is not None
                         else _aggregate(value)
                     )
-                self._bind(item, selected, environment)
+                self._bind(item, selected, environment, record_scope=record_scope)
             return
         if isinstance(target, ast.Subscript) and isinstance(target.value, ast.Name):
             container_name = target.value.id
@@ -629,11 +666,7 @@ class _Interpreter:
         self._alias_charge(len(members))
         for member in members:
             environment.values[member] = value
-            if self.lexical_depth == 0:
-                previous = self.module_values.get(member)
-                self.module_values[member] = (
-                    value if previous is None else self._join(previous, value)
-                )
+            self._record_binding(member, value)
 
     def _mutate_call(self, node: ast.Call, environment: _Environment) -> bool:
         if not isinstance(node.func, ast.Attribute) or not isinstance(node.func.value, ast.Name):
@@ -726,24 +759,62 @@ class _Interpreter:
             self._record_expression(expression, environment)
         self._bind(ast.Name(id=statement.name), NON_QUEUE, environment)
         captured = self._fork(environment)
-        if self.defer_functions:
-            self.pending_functions.append((statement, captured))
-            return
-        self._analyze_function(statement, captured)
+        pending = (
+            self.scope_stack[-1].pending
+            if self.scope_stack
+            else self.pending_functions
+        )
+        pending.append((statement, captured))
+
+    @staticmethod
+    def _nearest_scope_value(
+        name: str,
+        enclosing_values: tuple[dict[str, AbstractValue], ...],
+    ) -> AbstractValue | None:
+        for values in reversed(enclosing_values):
+            if name in values:
+                return values[name]
+        return None
 
     def _analyze_function(
         self,
         statement: ast.FunctionDef | ast.AsyncFunctionDef,
         captured: _Environment,
+        enclosing_values: tuple[dict[str, AbstractValue], ...],
     ) -> None:
-        local_names = _function_local_names(statement)
-        for name, value in self.module_values.items():
-            if name not in local_names:
-                captured.values[name] = value
-                self._alias_detach(name, captured.aliases)
+        scope_names = _function_scope_names(statement)
+        captured_names = (
+            set(self.module_values)
+            | set(scope_names.globals)
+            | set(scope_names.nonlocals)
+        )
+        for values in enclosing_values:
+            captured_names.update(values)
+        for name in sorted(captured_names - set(scope_names.locals)):
+            if name in scope_names.globals:
+                value = self.module_values.get(name, NON_QUEUE)
+            elif name in scope_names.nonlocals:
+                value = self._nearest_scope_value(name, enclosing_values)
+                if value is None:
+                    value = UNKNOWN_QUEUE
+            else:
+                value = self._nearest_scope_value(name, enclosing_values)
+                if value is None:
+                    value = self.module_values.get(name)
+                if value is None:
+                    continue
+            captured.values[name] = value
+            self._alias_detach(name, captured.aliases)
+        scope = _FunctionScope({}, [])
         self.lexical_depth += 1
-        for name in sorted(local_names):
-            self._bind(ast.Name(id=name), NON_QUEUE, captured)
+        self.scope_stack.append(scope)
+        for name in sorted(scope_names.locals):
+            self._bind(
+                ast.Name(id=name),
+                NON_QUEUE,
+                captured,
+                record_scope=False,
+            )
         arguments = (
             *statement.args.posonlyargs,
             *statement.args.args,
@@ -758,7 +829,11 @@ class _Interpreter:
         try:
             self._block(statement.body, captured)
         finally:
+            self.scope_stack.pop()
             self.lexical_depth -= 1
+        nested_enclosing = (*enclosing_values, scope.values)
+        for nested, nested_captured in scope.pending:
+            self._analyze_function(nested, nested_captured, nested_enclosing)
 
     def _block(
         self,
@@ -829,9 +904,11 @@ class _Interpreter:
                 self._record_expression(expression, environment)
             local = self._fork(environment)
             self.lexical_depth += 1
+            self.class_depth += 1
             try:
                 self._block(statement.body, local)
             finally:
+                self.class_depth -= 1
                 self.lexical_depth -= 1
             self._bind(ast.Name(id=statement.name), NON_QUEUE, environment)
             return environment
@@ -983,12 +1060,11 @@ class _Interpreter:
             _AliasState({}, {}),
         )
         environment = self._block(body, environment)
-        self.defer_functions = False
         pending_index = 0
         while pending_index < len(self.pending_functions):
             statement, captured = self.pending_functions[pending_index]
             pending_index += 1
-            self._analyze_function(statement, captured)
+            self._analyze_function(statement, captured, ())
         self.signals.update({
             f"import:{target}"
             for target in queue_imports

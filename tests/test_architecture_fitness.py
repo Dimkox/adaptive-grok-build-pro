@@ -1357,6 +1357,148 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
                 )
 
+    def test_queue_nonlocal_names_resolve_nearest_enclosing_scope(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        pipeline = (
+            "class Pipeline:\n"
+            "    def delay(self, task):\n"
+            "        return task\n"
+            "    def enqueue(self, task):\n"
+            "        return task\n\n"
+        )
+        positives = (
+            (
+                "nested function enclosing binding before definition",
+                "import celery\n"
+                "receiver = Pipeline()\n"
+                "def outer():\n"
+                "    receiver = celery.Celery('jobs')\n"
+                "    def inner():\n"
+                "        nonlocal receiver\n"
+                "        {operation}"
+                "    inner()\n"
+                "outer()\n",
+                "receiver.delay(task)\n",
+            ),
+            (
+                "nested function enclosing binding after definition",
+                "import celery\n"
+                "receiver = Pipeline()\n"
+                "def outer():\n"
+                "    def inner():\n"
+                "        nonlocal receiver\n"
+                "        {operation}"
+                "    receiver = celery.Celery('jobs')\n"
+                "    inner()\n"
+                "outer()\n",
+                "receiver.delay(task)\n",
+            ),
+            (
+                "method closure enclosing binding before definition",
+                "from rq import Queue\n"
+                "receiver = Pipeline()\n"
+                "class Configurer:\n"
+                "    def configure(self):\n"
+                "        receiver = Queue()\n"
+                "        def inner():\n"
+                "            nonlocal receiver\n"
+                "            {operation}"
+                "        inner()\n"
+                "Configurer().configure()\n",
+                "receiver.enqueue(task)\n",
+            ),
+            (
+                "method closure enclosing binding after definition",
+                "from rq import Queue\n"
+                "receiver = Pipeline()\n"
+                "class Configurer:\n"
+                "    def configure(self):\n"
+                "        def inner():\n"
+                "            nonlocal receiver\n"
+                "            {operation}"
+                "        receiver = Queue()\n"
+                "        inner()\n"
+                "Configurer().configure()\n",
+                "receiver.enqueue(task)\n",
+            ),
+        )
+        for label, template, operation in positives:
+            with self.subTest(label=label):
+                before = pipeline + template.format(operation="return None\n")
+                after = pipeline + template.format(operation=operation)
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", after)
+                head = repo.commit("nested queue operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "unsupported")
+                self.assertEqual(report.status, "fail")
+                self.assertIn("src/jobs.py", result.applicability.scanned_scope)
+                self.assertIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
+        controls = (
+            (
+                "nonlocal ordinary enclosing binding beats queue module",
+                "import celery\n"
+                "receiver = celery.Celery('jobs')\n"
+                "def outer():\n"
+                "    receiver = Pipeline()\n"
+                "    def inner():\n"
+                "        nonlocal receiver\n"
+                "        {operation}"
+                "    inner()\n"
+                "outer()\n",
+            ),
+            (
+                "explicit global ordinary module beats queue enclosing binding",
+                "import celery\n"
+                "receiver = Pipeline()\n"
+                "def outer():\n"
+                "    receiver = celery.Celery('jobs')\n"
+                "    def inner():\n"
+                "        global receiver\n"
+                "        {operation}"
+                "    inner()\n"
+                "outer()\n",
+            ),
+        )
+        for label, template in controls:
+            with self.subTest(label=label):
+                before = pipeline + template.format(operation="return None\n")
+                after = pipeline + template.format(operation="receiver.delay(task)\n")
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", after)
+                head = repo.commit("ordinary nested operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "not_applicable")
+                self.assertEqual(report.status, "pass")
+                self.assertNotIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
     def test_queue_inplace_add_mutates_only_mutable_alias_groups(self) -> None:
         system = _system()
         system["nodes"][0]["type"] = "worker"
