@@ -268,6 +268,39 @@ def _git_blob(root: Path, sha: str, path: str, *, required: bool = False) -> byt
     return value
 
 
+@dataclass(frozen=True)
+class ArchitectureBaseSelection:
+    route_base_sha: str
+    comparison_base_sha: str
+
+
+def select_architecture_comparison_base(
+    root: Path,
+    route: dict[str, Any] | None,
+) -> ArchitectureBaseSelection:
+    candidate = (route or {}).get("base_commit")
+    route_base = _exact_commit(
+        root,
+        candidate if isinstance(candidate, str) else _head_commit(root),
+        label="architecture_route_base_sha",
+    )
+    if all(_git_blob(root, route_base, path) is not None for path in _MODEL_PATHS):
+        comparison_base = route_base
+    else:
+        try:
+            comparison_base = _exact_commit(
+                root,
+                ADOPTION_BASE_SHA,
+                label="architecture_base_sha",
+            )
+        except ArchitectureError:
+            comparison_base = route_base
+    return ArchitectureBaseSelection(
+        route_base_sha=route_base,
+        comparison_base_sha=comparison_base,
+    )
+
+
 def _worktree_blob(root: Path, path: str) -> bytes | None:
     parts = path.split("/")
     if not parts or any(part in {"", ".", ".."} for part in parts):

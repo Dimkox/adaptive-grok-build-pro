@@ -18,7 +18,7 @@ from .architecture import (
     contract_inventory_digest,
     load_architecture,
 )
-from .architecture_diff import _exact_commit, _git
+from .architecture_diff import _git, select_architecture_comparison_base
 from .spec import canonical_spec_digest, load_spec, spec_fingerprint, validate_spec
 from .state import get_active_change, get_active_route
 from .util import dump_json, load_json, now_utc, runtime_dir, tree_fingerprint
@@ -96,27 +96,24 @@ def active_architecture_binding(root: Path, route: dict[str, Any]) -> dict[str, 
     head = _exact_head(root)
     if head is None:
         raise RuntimeError("architecture binding requires an exact Git HEAD")
-    base = _exact_commit(
-        root,
-        str(route.get("base_commit") or head),
-        label="architecture_base_sha",
-    )
+    base_selection = select_architecture_comparison_base(root, route)
     fingerprint = architecture_fingerprint(
         root,
         snapshot,
-        base_sha=base,
+        base_sha=base_selection.comparison_base_sha,
         head_sha=f"worktree:{head}",
         contract_digests={record.path: record.digest for record in records},
     )
     return {
         "architecture_adoption_digest": adoption["digest"],
-        "architecture_base_sha": base,
+        "architecture_base_sha": base_selection.comparison_base_sha,
         "architecture_contract_digests": {record.path: record.digest for record in records},
         "architecture_contract_inventory_digest": contract_inventory_digest(records),
         "architecture_digest": digests["architecture_digest"],
         "architecture_fingerprint": fingerprint,
         "architecture_head_commit": head,
         "architecture_head_kind": "worktree",
+        "architecture_route_base_sha": base_selection.route_base_sha,
         "architecture_rules_digest": digests["rules_digest"],
         "architecture_schema_digest": digests["schema_digest"],
         "architecture_system_digest": digests["system_digest"],

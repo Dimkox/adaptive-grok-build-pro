@@ -4,6 +4,7 @@ import sys
 import json
 import subprocess
 import shutil
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -11,10 +12,16 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.change import start_change, transition
-from adaptive_grok.receipts import invalidate_receipts, validate_evidence, write_receipt
+from adaptive_grok.architecture import architecture_fingerprint, contract_inventory, load_architecture
+from adaptive_grok.receipts import (
+    active_architecture_binding,
+    invalidate_receipts,
+    validate_evidence,
+    write_receipt,
+)
 from adaptive_grok.router import build_route
 from adaptive_grok.state import get_active_change, get_active_route, set_active_route
-from adaptive_grok.verification import verify
+from adaptive_grok.verification import _architecture_check, verify
 from adaptive_grok.spec import dump_canonical_spec
 from tests._support import project_copy
 
@@ -25,6 +32,10 @@ _PASSING_UNITTEST = (
     '    def test_ok(self) -> None:\n'
     '        self.assertTrue(True)\n'
 )
+
+_ADOPTION_BASE = '25bfbe59ea188d9687b20a9caad19e7db3d031f8'
+_PRE_ADOPTION_ROUTE_BASE = '069fe8226addb8a1922dde3db4e753434baa3a3d'
+_ALTERNATE_PRE_ADOPTION_ROUTE_BASE = 'd17e95d9a99db2495c81f66053f0eebc7ae47d8d'
 
 
 class ChangeTests(unittest.TestCase):
@@ -143,6 +154,81 @@ class ReceiptTests(unittest.TestCase):
             receipt.pop('architecture_fingerprint')
             receipt_path.write_text(json.dumps(receipt), encoding='utf-8')
             self.assertTrue(any('architecture binding stale' in gap for gap in validate_evidence(root, route)))
+
+    def test_pre_adoption_route_base_uses_one_architecture_comparison_base(self) -> None:
+        route = {'base_commit': _PRE_ADOPTION_ROUTE_BASE}
+        binding = active_architecture_binding(ROOT, route)
+        self.assertIsNotNone(binding)
+        assert binding is not None
+
+        result, evidence = _architecture_check(ROOT, route)
+        self.assertEqual(result.status, 'pass')
+        self.assertEqual(binding['architecture_base_sha'], _ADOPTION_BASE)
+        self.assertEqual(evidence['exact_base_sha'], _ADOPTION_BASE)
+        self.assertEqual(evidence['architecture_fingerprint'], binding['architecture_fingerprint'])
+        self.assertEqual(binding['architecture_route_base_sha'], _PRE_ADOPTION_ROUTE_BASE)
+
+        snapshot = load_architecture(ROOT)
+        records = contract_inventory(ROOT, snapshot)
+        expected_fingerprint = architecture_fingerprint(
+            ROOT,
+            snapshot,
+            base_sha=_ADOPTION_BASE,
+            head_sha=f"worktree:{binding['architecture_head_commit']}",
+            contract_digests={record.path: record.digest for record in records},
+        )
+        self.assertEqual(binding['architecture_fingerprint'], expected_fingerprint)
+        self.assertRegex(evidence['architecture_evidence_digest'], r'^[0-9a-f]{64}$')
+
+    def test_route_base_remains_a_separate_architecture_staleness_binding(self) -> None:
+        with tempfile.TemporaryDirectory(prefix='adaptive-grok-receipt-base-') as tmp:
+            root = Path(tmp) / 'project'
+            subprocess.run(
+                ['git', 'clone', '-q', '--no-local', str(ROOT), str(root)],
+                check=True,
+            )
+            route = {
+                'base_commit': _PRE_ADOPTION_ROUTE_BASE,
+                'required_evidence': ['verification'],
+                'route_id': 'receipt-base-regression',
+            }
+            set_active_route(root, route)
+            receipt = json.loads(
+                write_receipt(root, 'verification', 'pass').read_text(encoding='utf-8')
+            )
+            result, evidence = _architecture_check(root, route)
+            self.assertEqual(result.status, 'pass')
+            self.assertEqual(receipt['architecture_base_sha'], _ADOPTION_BASE)
+            self.assertEqual(receipt['architecture_base_sha'], evidence['exact_base_sha'])
+            self.assertEqual(
+                receipt['architecture_fingerprint'], evidence['architecture_fingerprint']
+            )
+            self.assertEqual(receipt['architecture_route_base_sha'], _PRE_ADOPTION_ROUTE_BASE)
+
+            route['base_commit'] = _ALTERNATE_PRE_ADOPTION_ROUTE_BASE
+            set_active_route(root, route)
+            current = active_architecture_binding(root, route)
+            self.assertIsNotNone(current)
+            assert current is not None
+            self.assertEqual(current['architecture_base_sha'], _ADOPTION_BASE)
+            self.assertEqual(
+                current['architecture_fingerprint'], receipt['architecture_fingerprint']
+            )
+            self.assertTrue(
+                any(
+                    'architecture binding stale' in gap
+                    for gap in validate_evidence(root, route)
+                )
+            )
+
+            route['base_commit'] = 'f' * 40
+            set_active_route(root, route)
+            self.assertTrue(
+                any(
+                    'architecture binding stale' in gap
+                    for gap in validate_evidence(root, route)
+                )
+            )
 
     def test_unconfigured_consumer_keeps_legacy_receipt_compatibility(self) -> None:
         with project_copy(git=True) as root:

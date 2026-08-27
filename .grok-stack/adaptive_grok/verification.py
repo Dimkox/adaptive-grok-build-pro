@@ -10,7 +10,7 @@ from pathlib import Path
 from .bitrix_checks import check_bitrix
 from .architecture import ArchitectureError, load_architecture, validate_repository_drift
 from .architecture_diagrams import artifact_digests, compare_generated, render_diagrams
-from .architecture_diff import ADOPTION_BASE_SHA, _exact_commit, _git_blob, _head_commit
+from .architecture_diff import select_architecture_comparison_base
 from .architecture_fitness import diff_architecture, evaluate_fitness
 from .receipts import active_architecture_binding, write_receipt
 from .spec import canonical_spec_digest, criterion_coverage, load_spec, spec_fingerprint, validate_spec
@@ -39,26 +39,7 @@ def _canonical_digest(value: object) -> str:
 
 
 def _architecture_base(root: Path, route: dict[str, object] | None) -> str:
-    candidate = route.get("base_commit") if route else None
-    if isinstance(candidate, str):
-        try:
-            exact = _exact_commit(root, candidate, label="base_sha")
-            if all(
-                _git_blob(root, exact, path) is not None
-                for path in ("architecture/system.yaml", "architecture/rules.yaml")
-            ):
-                return exact
-        except ArchitectureError:
-            pass
-    try:
-        return _exact_commit(root, ADOPTION_BASE_SHA, label="base_sha")
-    except ArchitectureError:
-        if isinstance(candidate, str):
-            try:
-                return _exact_commit(root, candidate, label="base_sha")
-            except ArchitectureError:
-                pass
-        return _head_commit(root)
+    return select_architecture_comparison_base(root, route).comparison_base_sha
 
 
 def _risk_level(route: dict[str, object] | None) -> str:
