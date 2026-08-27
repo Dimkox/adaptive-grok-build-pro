@@ -382,6 +382,74 @@ class InstallerTests(unittest.TestCase):
                 self.assertEqual(_stage_names(outside_parent), [])
                 self.assertEqual(_stage_names(relocated), [])
 
+    def test_plan_rejects_symlinked_target_ancestry_without_mutation(self) -> None:
+        for boundary in ("intermediate ancestor", "final parent"):
+            with self.subTest(boundary=boundary), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                anchor = root / "anchor"
+                anchor.mkdir()
+                outside = root / "outside"
+                outside.mkdir()
+                if boundary == "intermediate ancestor":
+                    (outside / "container").mkdir()
+                    (anchor / "link").symlink_to(outside, target_is_directory=True)
+                    target = anchor / "link/container/target"
+                else:
+                    (anchor / "parent").symlink_to(outside, target_is_directory=True)
+                    target = anchor / "parent/target"
+                before = _snapshot(outside)
+                plan = MODULE.plan_install(ROOT, target)
+                self.assertEqual(plan["target_state"], "unsafe")
+                self.assertEqual(_snapshot(outside), before)
+                self.assertEqual(_stage_names(anchor), [])
+
+    def test_source_inventory_rejects_bound_root_or_managed_dir_relocation(self) -> None:
+        for boundary in ("source root", "managed directory"):
+            with self.subTest(boundary=boundary), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                source = root / "source"
+                managed = source / ".grok"
+                managed.mkdir(parents=True)
+                (source / "AGENTS.md").write_text("managed agents\n", encoding="utf-8")
+                (managed / "required.md").write_text("required\n", encoding="utf-8")
+                target = root / "target"
+                relocated = root / "relocated"
+                outside = root / "outside.txt"
+                outside.write_bytes(b"outside unchanged\n")
+                real_init = MODULE._SourceTree.__init__
+                swapped = False
+
+                def bind_then_relocate(tree, source_path):
+                    nonlocal swapped
+                    real_init(tree, source_path)
+                    if swapped:
+                        return
+                    swapped = True
+                    if boundary == "source root":
+                        source.rename(relocated)
+                        source.mkdir()
+                        (source / ".grok").mkdir()
+                    else:
+                        managed.rename(relocated)
+                        managed.mkdir()
+
+                with (
+                    patch.object(MODULE, "MANAGED_DIRS", (".grok",)),
+                    patch.object(MODULE, "MANAGED_FILES", ()),
+                    patch.object(MODULE._SourceTree, "__init__", bind_then_relocate),
+                ):
+                    with self.assertRaises(MODULE.UnsafeInstallTarget):
+                        MODULE._materialize_new(
+                            source,
+                            target,
+                            include_dependencies=False,
+                            include_optional=False,
+                        )
+                self.assertTrue(swapped)
+                self.assertFalse(os.path.lexists(target))
+                self.assertEqual(_stage_names(root), [])
+                self.assertEqual(outside.read_bytes(), b"outside unchanged\n")
+
     def test_source_reads_are_nofollow_and_bounded_at_the_descriptor(self) -> None:
         cases = ("managed", "agents", "bitrix", "toolchain")
         for family in cases:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+from collections import deque
 import hashlib
 import json
 import re
@@ -48,6 +49,7 @@ MAX_ANALYZED_AST_NODES = 200_000
 MAX_QUEUE_ADAPTER_MODULES = 32
 MAX_QUEUE_ADAPTER_DEPTH = 8
 MAX_QUEUE_SOURCE_ROOTS = 64
+MAX_QUEUE_DEPENDENCY_WORK = 4_096
 _PYTHON_SUFFIXES = {".py", ".pyi"}
 _NETWORK_IMPORTS = {
     "aiohttp": "https",
@@ -172,6 +174,12 @@ class _QueueAdapterResolution:
 class _QueueAdapterNamesResult:
     names: frozenset[str]
     unsupported: bool = False
+
+
+@dataclass(frozen=True)
+class _OperationDependencies:
+    names: frozenset[str]
+    exhausted: bool = False
 
 
 def _applicability(predicate: str, scope: Iterable[str], reason_code: str) -> ApplicabilityEvidence:
@@ -1019,8 +1027,14 @@ def _code_budget(
     )
 
 
-def _operation_dependencies(tree: ast.AST) -> set[str]:
+def _operation_dependencies(
+    tree: ast.AST,
+    *,
+    work_limit: int = MAX_QUEUE_DEPENDENCY_WORK,
+) -> _OperationDependencies:
     """Return names that can feed a changed callable/decorator expression."""
+    if work_limit < 1:
+        return _OperationDependencies(frozenset(), True)
     dependencies: set[str] = set()
     for node in ast.walk(tree):
         values: list[ast.AST] = []
@@ -1032,7 +1046,7 @@ def _operation_dependencies(tree: ast.AST) -> set[str]:
             dependencies.update(
                 child.id for child in ast.walk(value) if isinstance(child, ast.Name)
             )
-    assignments: dict[str, list[ast.AST]] = {}
+    assignments: dict[str, set[str]] = {}
 
     def target_names(target: ast.AST) -> set[str]:
         if isinstance(target, ast.Name):
@@ -1049,10 +1063,18 @@ def _operation_dependencies(tree: ast.AST) -> set[str]:
         if isinstance(node, ast.Assign):
             for target in node.targets:
                 for name in target_names(target):
-                    assignments.setdefault(name, []).append(node.value)
+                    assignments.setdefault(name, set()).update(
+                        child.id
+                        for child in ast.walk(node.value)
+                        if isinstance(child, ast.Name)
+                    )
         elif isinstance(node, ast.AnnAssign) and node.value is not None:
             for name in target_names(node.target):
-                assignments.setdefault(name, []).append(node.value)
+                assignments.setdefault(name, set()).update(
+                    child.id
+                    for child in ast.walk(node.value)
+                    if isinstance(child, ast.Name)
+                )
         elif (
             isinstance(node, ast.Expr)
             and isinstance(node.value, ast.Call)
@@ -1060,18 +1082,29 @@ def _operation_dependencies(tree: ast.AST) -> set[str]:
             and isinstance(node.value.func.value, ast.Name)
             and node.value.func.attr in {"append", "extend"}
         ):
-            assignments.setdefault(node.value.func.value.id, []).extend(node.value.args)
-    for _ in range(min(len(assignments) + 1, 64)):
-        expanded = set(dependencies)
-        for name in dependencies:
-            for value in assignments.get(name, ()):
-                expanded.update(
-                    child.id for child in ast.walk(value) if isinstance(child, ast.Name)
-                )
-        if expanded == dependencies:
-            break
-        dependencies = expanded
-    return dependencies
+            assignments.setdefault(node.value.func.value.id, set()).update(
+                child.id
+                for argument in node.value.args
+                for child in ast.walk(argument)
+                if isinstance(child, ast.Name)
+            )
+
+    pending = deque(sorted(dependencies))
+    processed: set[str] = set()
+    work = 0
+    while pending:
+        name = pending.popleft()
+        if name in processed:
+            continue
+        if work >= work_limit:
+            return _OperationDependencies(frozenset(dependencies), True)
+        work += 1
+        processed.add(name)
+        for dependency in sorted(assignments.get(name, ())):
+            if dependency not in dependencies:
+                dependencies.add(dependency)
+                pending.append(dependency)
+    return _OperationDependencies(frozenset(dependencies), False)
 
 
 def _resolve_import_module(current_package: str, module: str | None, level: int) -> str:
@@ -1267,7 +1300,8 @@ def _queue_adapter_names(
     proven: set[str] = set()
     unsupported = False
     active = resolving if resolving is not None else set()
-    dependencies = _operation_dependencies(tree)
+    dependency_result = _operation_dependencies(tree)
+    dependencies = set(dependency_result.names)
     if resolving is not None:
         dependencies.update(
             alias.asname or alias.name
@@ -1278,13 +1312,17 @@ def _queue_adapter_names(
     for node in ast.walk(tree):
         if not isinstance(node, ast.ImportFrom):
             continue
-        candidates = [
-            alias for alias in node.names if (alias.asname or alias.name) in dependencies
-        ]
-        if not candidates:
-            continue
         module = _resolve_import_module(current_package, node.module, node.level)
         if module.split(".")[0] in _QUEUE_IMPORTS:
+            continue
+        queue_adjacent = _queue_adjacent_module(module)
+        candidates = [
+            alias
+            for alias in node.names
+            if (alias.asname or alias.name) in dependencies
+            or dependency_result.exhausted and queue_adjacent
+        ]
+        if not candidates:
             continue
         for alias in candidates:
             target_module = module
@@ -1293,6 +1331,10 @@ def _queue_adapter_names(
                 target_module = f"{module}.{alias.name}" if module else alias.name
                 target_name = ""
             queue_adjacent = _queue_adjacent_module(target_module)
+            if dependency_result.exhausted and queue_adjacent:
+                proven.add(alias.asname or alias.name)
+                unsupported = True
+                continue
             if len(source_roots) > MAX_QUEUE_SOURCE_ROOTS and queue_adjacent:
                 proven.add(alias.asname or alias.name)
                 unsupported = True

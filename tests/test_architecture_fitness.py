@@ -1873,6 +1873,85 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(report.status, "pass")
         self.assertNotIn("new_queue", report.triggers)
 
+    def test_local_queue_adapter_dependency_chains_do_not_silently_truncate(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["project", "src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+
+        dependency_boundary = FIT.MAX_QUEUE_DEPENDENCY_WORK
+        boundary_cases = (
+            ("below", dependency_boundary - 2, False),
+            ("at", dependency_boundary - 1, False),
+            ("above", dependency_boundary, True),
+        )
+        for label, links, expected_exhausted in boundary_cases:
+            with self.subTest(boundary=label, links=links):
+                chain = ["from project.jobs import app"]
+                previous = "app"
+                for index in range(links):
+                    current = f"alias{index}"
+                    chain.append(f"{current} = {previous}")
+                    previous = current
+                before = "\n".join(chain) + "\n"
+                operation = f"{previous}.delay(task)\n"
+                dependency_result = FIT._operation_dependencies(
+                    ast.parse(before + operation)
+                )
+                self.assertEqual(dependency_result.exhausted, expected_exhausted)
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text(
+                    "project/jobs.py",
+                    "import celery\napp = celery.Celery('jobs')\n",
+                )
+                repo.write_text("src/jobs.py", before)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", before + operation)
+                head = repo.commit("long local queue dependency")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "unsupported")
+                self.assertEqual(report.status, "fail")
+                self.assertIn("src/jobs.py", result.applicability.scanned_scope)
+                self.assertIn("new_queue", report.triggers)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
+
+        unrelated_chain = [
+            "class Form:\n    def submit(self):\n        return None",
+            "value0 = Form()",
+        ]
+        for index in range(1, dependency_boundary + 1):
+            unrelated_chain.append(f"value{index} = value{index - 1}")
+        before = "\n".join(unrelated_chain) + "\n"
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        repo.write_text("src/jobs.py", before)
+        base = repo.commit("base")
+        repo.write_text(
+            "src/jobs.py",
+            before + f"value{dependency_boundary}.submit()\n",
+        )
+        head = repo.commit("long unrelated dependency")
+        report = self._evaluate(repo, base, head, pre_risk="yellow")
+        self.assertEqual(
+            self._results(report)["background_job"].status,
+            "not_applicable",
+        )
+        self.assertEqual(report.status, "pass")
+        self.assertNotIn("new_queue", report.triggers)
+
     def test_package_aware_queue_provenance_is_shared_by_fitness_and_risk(self) -> None:
         system = _system()
         system["nodes"][0]["type"] = "worker"
