@@ -49,11 +49,17 @@
       "from": "blocked",
       "reason": "User explicitly approved the design pivot on 2026-08-27: remove in-place diagram writes and replace queue detection with package-aware fail-closed provenance analysis.",
       "to": "implementing"
+    },
+    {
+      "at": "2026-08-27T12:06:43+00:00",
+      "from": "implementing",
+      "reason": "Task 6 user-approved design pivot passed independent scoped code review after three fix rounds; begin fresh exact-head final verification before route reviews.",
+      "to": "verifying"
     }
   ],
   "route_id": "0156034c05bd",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "verifying",
   "title": "m2-executable-architecture",
-  "updated_at": "2026-08-27T09:57:50+00:00"
+  "updated_at": "2026-08-27T12:06:43+00:00"
 }
