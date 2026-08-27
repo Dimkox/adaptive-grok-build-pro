@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "repository": "Dimkox/adaptive-grok-build-pro",
+  "default_branch": "main",
+  "bootstrap_entrypoint": "START_HERE.md",
+  "engineering_contract": "AGENTS.md",
+  "roadmap": "DARK_FACTORY_ROADMAP.md",
+  "completed_milestones": [
+    "M0"
+  ],
+  "active_milestone": "M1",
+  "last_completed_milestone_merge": {
+    "pull_request": 5,
+    "commit": "069fe8226addb8a1922dde3db4e753434baa3a3d",
+    "title": "M0: consolidate live Trust Authority"
+  },
+  "recent_repairs": [
+    {
+      "pull_request": 7,
+      "commit": "98f0c45c780c9dd8be6b01afe4667f0b4b0b7630",
+      "purpose": "Trust CI runtime/workspace integrity repair"
+    },
+    {
+      "pull_request": 6,
+      "commit": "d17e95d9a99db2495c81f66053f0eebc7ae47d8d",
+      "purpose": "target-aware shell policy and denial-loop circuit breaker"
+    }
+  ],
+  "active_work": {
+    "pull_request": 8,
+    "branch": "milestone/m1-typed-intent-evidence",
+    "status": "design_and_plan_committed_implementation_not_started",
+    "design": "docs/superpowers/specs/2026-08-26-m1-typed-intent-evidence-design.md",
+    "plan": "docs/superpowers/plans/2026-08-26-m1-typed-intent-evidence.md",
+    "next_action": "Implement Task 1 from the M1 plan with TDD: strict typed schema and zero-dependency validator"
+  },
+  "trust_ci": {
+    "required_check": "adaptive-trust-ci/verified@6737355947c2",
+    "github_app_id": 4694114,
+    "protected_branch": "main",
+    "service_identity": "2.1.0",
+    "no_github_actions": true,
+    "source_directory": "trust-ci",
+    "operator_runbooks": "engineering/runbooks"
+  },
+  "fresh_clone": {
+    "active_route_may_be_absent": true,
+    "must_fetch_remote_refs": true,
+    "continue_active_work_from_pull_request": true,
+    "chat_history_required": false
+  },
+  "intentionally_untracked": [
+    "environment files and credentials",
+    "GitHub App private keys",
+    "human approval private keys",
+    "Trust CI signing private keys",
+    "PostgreSQL runtime state",
+    "runtime approvals and receipts",
+    "host-local deployment overlays and scratch"
+  ]
+}

@@ -4,33 +4,44 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## Current state
 
+- Fresh-agent bootstrap: start with [`START_HERE.md`](START_HERE.md), then [`PROJECT_STATE.json`](PROJECT_STATE.json). A clean clone must be sufficient to understand the current milestone without chat history.
 - Identity: **2.0.12** (`VERSION`, README H1). Published GitHub Release is `v2.0.12`.
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
-- Independent CI candidate: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
-- Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. The PR #2 bootstrap exception is revoked. PR #5 is not mergeable while that Check Run is `action_required`.
+- Independent Trust CI: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
+- M0 Live Trust Authority is complete on `main`. PR #7 repaired the Trust CI workspace/runtime path, PR #6 fixed target-aware shell policy/denial loops, and PR #5 consolidated the live authority milestone.
+- Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. Bootstrap merge exceptions are revoked.
+- Active development milestone: **M1 — Typed Intent, Acceptance Criteria, and Evidence Traceability**, tracked in draft PR #8 on branch `milestone/m1-typed-intent-evidence`. Its design and implementation plan are committed there; implementation has not started.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
 
 ## Read first
 
-1. [AGENTS.md](AGENTS.md)
-2. [decisions.md](decisions.md)
-3. [mistakes.md](mistakes.md)
-4. [CHANGELOG.md](CHANGELOG.md)
-5. [QUICKSTART.md](QUICKSTART.md)
-6. [`trust-ci/README.md`](trust-ci/README.md)
-7. `.grok-stack/runtime/active-route.json` (live route; not product identity or merge authority)
-8. This README’s stack graph and map
+1. [START_HERE.md](START_HERE.md)
+2. [PROJECT_STATE.json](PROJECT_STATE.json)
+3. [AGENTS.md](AGENTS.md)
+4. [decisions.md](decisions.md)
+5. [mistakes.md](mistakes.md)
+6. [DARK_FACTORY_ROADMAP.md](DARK_FACTORY_ROADMAP.md)
+7. [CHANGELOG.md](CHANGELOG.md)
+8. [QUICKSTART.md](QUICKSTART.md)
+9. [`trust-ci/README.md`](trust-ci/README.md)
+10. `.grok-stack/runtime/active-route.json` if present (machine-local route; it may be absent in a clean clone and is not merge authority)
+11. This README’s stack graph and map
 
 ## How work runs
 
 Source-of-truth order is in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Local loop: route → change package → one write owner → if the product changed, `grok_verify --mode pr` and independent local reviews → `ready` → branch and pull request. The deployed Trust CI service verifies the exact PR SHA under server-side policy, executes an external holdout bundle before repository checks, rejects source mutation, checks signed human approval scopes, signs the attestation, and publishes `adaptive-trust-ci/verified@<policy-sha12>` through its GitHub App. A human owns merge, tag and production promotion.
 
+For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.json` first. Runtime route files are not expected to be committed; when no route exists, continue the explicitly named active PR/branch or route a new task before implementation.
+
 ## Map
 
+- [START_HERE.md](START_HERE.md) — zero-context agent/human entrypoint
+- [PROJECT_STATE.json](PROJECT_STATE.json) — machine-readable milestone handoff
 - [AGENTS.md](AGENTS.md)
 - [decisions.md](decisions.md)
 - [mistakes.md](mistakes.md)
+- [DARK_FACTORY_ROADMAP.md](DARK_FACTORY_ROADMAP.md)
 - [CHANGELOG.md](CHANGELOG.md)
 - [QUICKSTART.md](QUICKSTART.md)
 - [VERSION](VERSION)
@@ -53,6 +64,7 @@ Source-of-truth order is in AGENTS.md. Large work is split into small subtasks t
 
 ## What this is
 
+- Zero-context project handoff through `START_HERE.md` and `PROJECT_STATE.json`
 - Task routing + domain skills (Bitrix, API/events, data, frontend, security, incidents, …)
 - Quality profiles and change packages under `engineering/changes/`
 - Local verification / review receipts via `scripts/grok_*.py`
@@ -63,7 +75,7 @@ Source-of-truth order is in AGENTS.md. Large work is split into small subtasks t
 
 ## Stack graph
 
-Simple complete graph: every listed core node is linked to every other with a `---` edge. The listed set is the local Grok workflow plus the independently deployed Trust CI applications and PostgreSQL. Prompts, local receipts and delegated grants are not merge authority.
+Simple complete graph: every listed core node is linked to every other with a `---` edge. The listed set is the local Grok workflow plus the independently deployed Trust CI applications and PostgreSQL. Bootstrap documents (`START_HERE.md`, `PROJECT_STATE.json`), prompts, local receipts and delegated grants are not core runtime nodes or merge authority.
 
 ```mermaid
 graph TD
@@ -317,11 +329,3 @@ python3 scripts/package_stack.py
 ```
 
 Default output is `dist/adaptive-grok-build-pro-v<VERSION>.zip` (gitignored scratch). Published copies live in `packages/` and on the GitHub Release. Zip members use the prefix `adaptive-grok-build-pro/`.
-
-## Bitrix
-
-See skills under `.grok/skills/bitrix-development/` and example module in `examples/bitrix-module/`.
-
-## License
-
-**MIT.** A commercial product that is free of charge: use, copy, modify, and ship it. The repository is public. No EULA, no paid tier. Local checks: `make doctor` / `make verify` / `make trust-ci-test`. Merge trust, when deployed, is the App-owned policy-epoch exact-SHA check described in [`trust-ci/README.md`](trust-ci/README.md).
