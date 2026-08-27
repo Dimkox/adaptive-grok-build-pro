@@ -91,11 +91,17 @@
       "from": "blocked",
       "reason": "user approved queue abstract interpreter and read-only/new-target installer pivot; detailed TDD plan committed",
       "to": "implementing"
+    },
+    {
+      "at": "2026-08-27T20:12:08+00:00",
+      "from": "implementing",
+      "reason": "The single SDD final fix wave addressed all original findings, but scoped rereview found one new load-bearing queue exhaustion defect: unresolved local-import frontier is discarded and module-name heuristics can false-N/A or false-promote. A separately approved bounded repair is required.",
+      "to": "blocked"
     }
   ],
   "route_id": "0156034c05bd",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "blocked",
   "title": "m2-executable-architecture",
-  "updated_at": "2026-08-27T15:29:15+00:00"
+  "updated_at": "2026-08-27T20:12:08+00:00"
 }

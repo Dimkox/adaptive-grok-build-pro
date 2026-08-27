@@ -96,3 +96,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** An exact-head fitness command used a guessed 40-character SHA and failed because the object did not exist.
 **Root cause:** The abbreviated commit output was copied into evidence without first resolving it through `git rev-parse HEAD`; exact identities must always come from Git.
+
+## 2026-08-27 — Used module-name tokens to classify an exhausted dependency frontier
+
+**Symptom:** The final queue fix closed the former 64-round truncation but could still return N/A for a real local queue adapter in a neutral-named module after the 4,096-item worklist exhausted.
+**Root cause:** Exhaustion preserved only a boolean and then guessed relevance from module-name tokens instead of retaining the precise unresolved dependency frontier and resolving its local imports.
