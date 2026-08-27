@@ -67,11 +67,17 @@
       "from": "reviewing",
       "reason": "Final route review wave found seven unique Important source defects across queue provenance, installer containment, durable adoption, code-budget unknowns, process cleanup, added-contract validation, and repository ownership; return all findings to the sole writer as one fix batch.",
       "to": "implementing"
+    },
+    {
+      "at": "2026-08-27T13:31:00+00:00",
+      "from": "implementing",
+      "reason": "The single permitted final-review fix wave closed the original durable-adoption, line-budget, process-cleanup, data-contract, ownership, and schema findings, but scoped rereviews found load-bearing residuals in wildcard/mixed queue provenance, installer relocation/mode recovery, marker-only adoption history, frozen digest synchronization, and completion evidence. SDD requires a new human decision before a second final fix wave.",
+      "to": "blocked"
     }
   ],
   "route_id": "0156034c05bd",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "blocked",
   "title": "m2-executable-architecture",
-  "updated_at": "2026-08-27T12:34:29+00:00"
+  "updated_at": "2026-08-27T13:31:00+00:00"
 }
