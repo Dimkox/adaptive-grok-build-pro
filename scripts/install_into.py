@@ -66,6 +66,7 @@ LEGACY_PLAN_NOTICE = (
     "NOTICE: legacy install mode now emits a read-only plan; "
     "use --materialize-new only for an absent target."
 )
+MANUAL_CLEANUP_PREFIX = "manual cleanup required: installer ownership is unresolved"
 MAX_SOURCE_FILE_BYTES = 16 * 1024 * 1024
 MAX_TOOLCHAIN_BYTES = 1024 * 1024
 RENAME_NOREPLACE = 1
@@ -633,48 +634,53 @@ def _allocate_stage(parent_fd: int) -> tuple[str, int, tuple[int, int, int]]:
         stage_identity: tuple[int, int, int] | None = None
         descriptor = -1
         try:
-            metadata = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
-            stage_identity = _identity(metadata)
-            if not stat.S_ISDIR(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode):
-                raise UnsafeInstallTarget("installer stage is not a real directory")
             descriptor = os.open(
                 name,
                 os.O_RDONLY | directory | nofollow,
                 dir_fd=parent_fd,
             )
-            if _identity(os.fstat(descriptor)) != _identity(metadata):
-                os.close(descriptor)
-                descriptor = -1
-                raise UnsafeInstallTarget("installer stage changed while opening")
-            return name, descriptor, _identity(metadata)
+            try:
+                metadata = os.fstat(descriptor)
+            except BaseException as failure:
+                try:
+                    metadata = os.fstat(descriptor)
+                except BaseException as retry_failure:
+                    raise UnsafeInstallTarget(
+                        f"{MANUAL_CLEANUP_PREFIX}: stage {name}"
+                    ) from retry_failure
+                stage_identity = _identity(metadata)
+                raise failure
+            stage_identity = _identity(metadata)
+            if not stat.S_ISDIR(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode):
+                raise UnsafeInstallTarget("installer stage is not a real directory")
+            return name, descriptor, stage_identity
         except BaseException as failure:
             if descriptor >= 0:
                 os.close(descriptor)
+            if stage_identity is None:
+                if isinstance(failure, UnsafeInstallTarget) and str(failure).startswith(
+                    MANUAL_CLEANUP_PREFIX
+                ):
+                    raise
+                raise UnsafeInstallTarget(
+                    f"{MANUAL_CLEANUP_PREFIX}: stage {name}"
+                ) from failure
             try:
-                if stage_identity is None:
-                    descriptor = os.open(
-                        name,
-                        os.O_RDONLY | directory | nofollow,
-                        dir_fd=parent_fd,
-                    )
-                    try:
-                        current = os.fstat(descriptor)
-                        if not stat.S_ISDIR(current.st_mode) or os.listdir(descriptor):
-                            raise UnsafeInstallTarget(
-                                "unbound installer stage is unsafe for cleanup"
-                            )
-                        stage_identity = _identity(current)
-                    finally:
-                        os.close(descriptor)
                 current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
                 if _identity(current) != stage_identity or not stat.S_ISDIR(
                     current.st_mode
                 ):
-                    raise UnsafeInstallTarget("unsafe installer stage cannot be cleaned")
+                    raise UnsafeInstallTarget(
+                        f"{MANUAL_CLEANUP_PREFIX}: stage {name}"
+                    )
                 os.rmdir(name, dir_fd=parent_fd)
             except BaseException as cleanup_failure:
+                if isinstance(
+                    cleanup_failure, UnsafeInstallTarget
+                ) and str(cleanup_failure).startswith(MANUAL_CLEANUP_PREFIX):
+                    raise cleanup_failure from failure
                 raise UnsafeInstallTarget(
-                    f"installer stage allocation cleanup failed: {cleanup_failure}"
+                    f"{MANUAL_CLEANUP_PREFIX}: stage {name}; {cleanup_failure}"
                 ) from failure
             raise
     raise UnsafeInstallTarget("cannot allocate an installer-owned sibling stage")
@@ -712,26 +718,49 @@ def _create_stage(
         parent_fd = directory_fds[parent_name]
         os.mkdir(parts[-1], mode=0o755, dir_fd=parent_fd)
         created_directories.add(relative)
-        metadata = os.stat(parts[-1], dir_fd=parent_fd, follow_symlinks=False)
-        if not stat.S_ISDIR(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode):
-            raise UnsafeInstallTarget(f"staged directory is unsafe: {relative}")
-        directory_identities[relative] = _identity(metadata)
-        descriptor = os.open(
-            parts[-1],
-            os.O_RDONLY | directory | nofollow,
-            dir_fd=parent_fd,
-        )
+        descriptor = -1
+        retained = False
         try:
+            descriptor = os.open(
+                parts[-1],
+                os.O_RDONLY | directory | nofollow,
+                dir_fd=parent_fd,
+            )
+            try:
+                opened = os.fstat(descriptor)
+            except BaseException as failure:
+                try:
+                    opened = os.fstat(descriptor)
+                except BaseException as retry_failure:
+                    raise UnsafeInstallTarget(
+                        f"{MANUAL_CLEANUP_PREFIX}: directory {relative}"
+                    ) from retry_failure
+                if not stat.S_ISDIR(opened.st_mode):
+                    raise UnsafeInstallTarget(
+                        f"staged directory is unsafe: {relative}"
+                    )
+                directory_fds[relative] = descriptor
+                retained = True
+                directory_identities[relative] = _identity(opened)
+                raise failure
+            if not stat.S_ISDIR(opened.st_mode):
+                raise UnsafeInstallTarget(f"staged directory is unsafe: {relative}")
+            directory_fds[relative] = descriptor
+            retained = True
+            directory_identities[relative] = _identity(opened)
             os.fchmod(descriptor, 0o755)  # nosec B103
-            opened = os.fstat(descriptor)
-        except BaseException:
-            os.close(descriptor)
+            after = os.fstat(descriptor)
+            if (after.st_dev, after.st_ino) != (opened.st_dev, opened.st_ino):
+                raise UnsafeInstallTarget(f"staged directory changed: {relative}")
+            directory_identities[relative] = _identity(after)
+        except BaseException as failure:
+            if descriptor < 0:
+                raise UnsafeInstallTarget(
+                    f"{MANUAL_CLEANUP_PREFIX}: directory {relative}"
+                ) from failure
+            if not retained:
+                os.close(descriptor)
             raise
-        if (opened.st_dev, opened.st_ino) != (metadata.st_dev, metadata.st_ino):
-            os.close(descriptor)
-            raise UnsafeInstallTarget(f"staged directory changed: {relative}")
-        directory_fds[relative] = descriptor
-        directory_identities[relative] = _identity(opened)
     for entry in payload:
         parts = _path_parts(entry.path)
         parent_name = PurePosixPath(*parts[:-1]).as_posix() if len(parts) > 1 else ""
@@ -835,7 +864,6 @@ def _cleanup_stage(
     created_directories: set[str],
     created_files: set[str],
 ) -> None:
-    nofollow, directory = _require_descriptor_primitives()
     _check_stage(parent_fd, stage_name, stage_fd, stage_identity)
     for relative in sorted(
         created_files,
@@ -847,21 +875,9 @@ def _cleanup_stage(
         parent = directory_fds[parent_name]
         expected = file_identities.get(relative)
         if expected is None:
-            descriptor = os.open(
-                parts[-1],
-                os.O_RDONLY | nofollow,
-                dir_fd=parent,
+            raise UnsafeInstallTarget(
+                f"{MANUAL_CLEANUP_PREFIX}: file {relative}"
             )
-            try:
-                opened = os.fstat(descriptor)
-                if not stat.S_ISREG(opened.st_mode):
-                    raise UnsafeInstallTarget(
-                        f"unbound staged file is unsafe for cleanup: {relative}"
-                    )
-                expected = _identity(opened)
-                file_identities[relative] = expected
-            finally:
-                os.close(descriptor)
         metadata = os.stat(parts[-1], dir_fd=parent, follow_symlinks=False)
         if _identity(metadata) != expected or not stat.S_ISREG(metadata.st_mode):
             raise UnsafeInstallTarget(f"staged file changed before cleanup: {relative}")
@@ -880,21 +896,9 @@ def _cleanup_stage(
             os.close(descriptor)
         expected = directory_identities.get(relative)
         if expected is None:
-            descriptor = os.open(
-                parts[-1],
-                os.O_RDONLY | directory | nofollow,
-                dir_fd=parent,
+            raise UnsafeInstallTarget(
+                f"{MANUAL_CLEANUP_PREFIX}: directory {relative}"
             )
-            try:
-                opened = os.fstat(descriptor)
-                if not stat.S_ISDIR(opened.st_mode) or os.listdir(descriptor):
-                    raise UnsafeInstallTarget(
-                        f"unbound staged directory is unsafe for cleanup: {relative}"
-                    )
-                expected = _identity(opened)
-                directory_identities[relative] = expected
-            finally:
-                os.close(descriptor)
         metadata = os.stat(parts[-1], dir_fd=parent, follow_symlinks=False)
         if (
             _identity(metadata) != expected

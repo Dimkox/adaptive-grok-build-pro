@@ -243,3 +243,97 @@ an unsafe fallback. Rollout remains source-only; rollback is a revert of this
 fix commit, with no external or installed-repository state to recover.
 
 Commit subject: `fix: harden installer path ownership`.
+
+## Task 2 fix round 2 — immutable cleanup ownership
+
+This section supersedes the earlier unconditional “no stage residue” claim for
+the adversarial `mkdirat` to first descriptor-binding gap. A created name is an
+enumeration fact, not proof that its later occupant is installer-owned. Cleanup
+now removes an entry only when its identity was captured from the descriptor
+returned by the original file/directory open and the current no-follow name
+still has that identity. When initial directory binding or repeated descriptor
+identity acquisition fails, the installer preserves the unresolved name and
+raises the stable `manual cleanup required: installer ownership is unresolved`
+diagnostic. This security invariant intentionally takes precedence over
+automatic residue removal.
+
+### RED
+
+```text
+python3 -m unittest -v \
+  tests.test_installer.InstallerTests.test_constructor_gap_swaps_preserve_unproven_replacements \
+  tests.test_installer.InstallerTests.test_known_owned_constructor_failures_remove_every_created_entry
+test_constructor_gap_swaps_preserve_unproven_replacements ...
+  (boundary='stage') ... FAIL
+  (boundary='nested directory') ... FAIL
+  (boundary='file') ... FAIL
+test_known_owned_constructor_failures_remove_every_created_entry ... ok
+Ran 2 tests in 0.481s
+FAILED (failures=3)
+```
+
+Each failure proved the previous cleanup deleted the same-name replacement.
+The ordinary one-shot identity failures remained a passing control, showing
+that the defect was late pathname re-binding rather than cleanup generally.
+
+### GREEN
+
+```text
+python3 -m unittest -v \
+  tests.test_installer.InstallerTests.test_constructor_gap_swaps_preserve_unproven_replacements \
+  tests.test_installer.InstallerTests.test_known_owned_constructor_failures_remove_every_created_entry
+Ran 2 tests in 0.440s
+OK
+
+python3 -m unittest -v \
+  tests.test_installer tests.test_manifest_package tests.test_structure
+Ran 40 tests in 6.975s
+OK
+
+python3 -m ruff check scripts/install_into.py tests/test_installer.py
+All checks passed!
+
+python3 -m bandit -q -c bandit.yaml scripts/install_into.py
+exit 0
+
+python3 -m compileall -q scripts tests
+exit 0
+
+git diff --check
+exit 0
+
+git diff --name-only \
+  9d428cfaefbb55c7ae3144c98457755438c62bb7 -- \
+  trust-ci .github/workflows \
+  .grok-stack/adaptive_grok/queue_provenance.py \
+  tests/test_architecture_fitness.py
+empty output
+
+python3 scripts/grok_architecture.py fitness \
+  --base 9d428cfaefbb55c7ae3144c98457755438c62bb7 \
+  --worktree --json
+fitness_status=pass; risk_post=green; no failing/unsupported category
+
+python3 scripts/grok_verify.py --mode pr --no-record --json
+status=pass; python-unittest=349 tests in 474.220s; coverage=80%;
+architecture/spec/Ruff/Bandit/diff/secret/contract/SQL checks pass
+```
+
+### Files, self-review, and recovery
+
+- `scripts/install_into.py`: original-descriptor identity binding and
+  fail-closed unresolved-ownership diagnostics.
+- `tests/test_installer.py`: stage, nested-directory, and file replacement
+  races plus known-owned cleanup controls.
+- `decisions.md`: durable ownership rule for later Task 2 work.
+- This evidence and the ignored Task 2 report.
+
+The replacement cases assert unchanged device/inode/mode for all three entry
+types and exact bytes for the file, plus unchanged outside bytes and target
+absence. Known-owned one-shot failures still clean the complete stage. A
+manual-cleanup error may deliberately leave an installer-looking sibling when
+ownership cannot be proven; operators must inspect that exact reported entry
+rather than deleting by prefix. Rollout and rollback remain source-only commit
+operations with no existing-target or external mutation.
+
+Commit subject: `fix: preserve unresolved installer entries`.

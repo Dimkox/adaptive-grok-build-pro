@@ -480,64 +480,173 @@ class InstallerTests(unittest.TestCase):
                 self.assertTrue(swapped)
                 self.assertLessEqual(path_bytes_read, 33)
 
-    def test_constructor_failures_remove_every_exclusively_created_entry(self) -> None:
-        for boundary in ("stage stat", "directory stat", "file fstat"):
+    def test_known_owned_constructor_failures_remove_every_created_entry(self) -> None:
+        for boundary in ("stage fstat", "directory fstat", "file fstat"):
             with self.subTest(boundary=boundary), tempfile.TemporaryDirectory() as tmp:
                 parent = Path(tmp)
                 target = parent / "target"
                 sentinel = parent / "outside.txt"
                 sentinel.write_bytes(b"outside unchanged\n")
-                real_stat = os.stat
                 real_fstat = os.fstat
                 injected = False
-
-                def fail_stat(path, *args, **kwargs):
-                    nonlocal injected
-                    name = os.fsdecode(path)
-                    parent_fd = kwargs.get("dir_fd")
-                    parent_path = (
-                        Path(os.readlink(f"/proc/self/fd/{parent_fd}"))
-                        if parent_fd is not None
-                        else None
-                    )
-                    stage_gap = boundary == "stage stat" and name.startswith(
-                        ".adaptive-install-"
-                    )
-                    directory_gap = (
-                        boundary == "directory stat"
-                        and name == "engineering"
-                        and parent_path is not None
-                        and parent_path.name.startswith(".adaptive-install-")
-                    )
-                    if not injected and (stage_gap or directory_gap):
-                        injected = True
-                        raise OSError(f"injected {boundary}")
-                    return real_stat(path, *args, **kwargs)
 
                 def fail_fstat(descriptor):
                     nonlocal injected
                     metadata = real_fstat(descriptor)
                     resolved = Path(os.readlink(f"/proc/self/fd/{descriptor}"))
-                    if (
-                        not injected
-                        and boundary == "file fstat"
+                    stage_gap = (
+                        boundary == "stage fstat"
+                        and resolved.parent == parent
+                        and resolved.name.startswith(".adaptive-install-")
+                        and stat.S_ISDIR(metadata.st_mode)
+                    )
+                    directory_gap = (
+                        boundary == "directory fstat"
+                        and resolved.name == "engineering"
+                        and resolved.parent.name.startswith(".adaptive-install-")
+                        and stat.S_ISDIR(metadata.st_mode)
+                    )
+                    file_gap = (
+                        boundary == "file fstat"
                         and ".adaptive-install-" in resolved.as_posix()
                         and stat.S_ISREG(metadata.st_mode)
+                    )
+                    if (
+                        not injected
+                        and (stage_gap or directory_gap or file_gap)
                     ):
                         injected = True
                         raise OSError(f"injected {boundary}")
                     return metadata
 
-                with (
-                    patch.object(MODULE.os, "stat", side_effect=fail_stat),
-                    patch.object(MODULE.os, "fstat", side_effect=fail_fstat),
-                ):
+                with patch.object(MODULE.os, "fstat", side_effect=fail_fstat):
                     with self.assertRaises((OSError, MODULE.UnsafeInstallTarget)):
                         MODULE.materialize_new(ROOT, target)
                 self.assertTrue(injected)
                 self.assertFalse(os.path.lexists(target))
                 self.assertEqual(sentinel.read_bytes(), b"outside unchanged\n")
                 self.assertEqual(_stage_names(parent), [])
+
+    def test_constructor_gap_swaps_preserve_unproven_replacements(self) -> None:
+        for boundary in ("stage", "nested directory", "file"):
+            with self.subTest(boundary=boundary), tempfile.TemporaryDirectory() as tmp:
+                parent = Path(tmp)
+                target = parent / "target"
+                outside = parent / "outside.txt"
+                outside.write_bytes(b"outside unchanged\n")
+                real_open = os.open
+                real_stat = os.stat
+                real_fstat = os.fstat
+                replacement: Path | None = None
+                replacement_identity: tuple[int, int, int] | None = None
+                original_file_identity: tuple[int, int] | None = None
+
+                def swap_directory(path: Path) -> None:
+                    nonlocal replacement, replacement_identity
+                    original = path.with_name(f"{path.name}.original-owned")
+                    path.rename(original)
+                    path.mkdir(mode=0o711)
+                    metadata = os.lstat(path)
+                    replacement = path
+                    replacement_identity = (
+                        metadata.st_dev,
+                        metadata.st_ino,
+                        stat.S_IMODE(metadata.st_mode),
+                    )
+
+                def race_stat(path, *args, **kwargs):
+                    name = os.fsdecode(path)
+                    parent_fd = kwargs.get("dir_fd")
+                    if parent_fd is not None and replacement is None:
+                        directory_path = Path(os.readlink(f"/proc/self/fd/{parent_fd}"))
+                        if (
+                            boundary == "stage"
+                            and name.startswith(".adaptive-install-")
+                            and directory_path == parent
+                        ) or (
+                            boundary == "nested directory"
+                            and name == "engineering"
+                            and directory_path.name.startswith(".adaptive-install-")
+                        ):
+                            swap_directory(directory_path / name)
+                            raise OSError(f"injected {boundary} identity failure")
+                    return real_stat(path, *args, **kwargs)
+
+                def race_open(path, flags, *args, **kwargs):
+                    name = os.fsdecode(path)
+                    parent_fd = kwargs.get("dir_fd")
+                    if parent_fd is not None and replacement is None:
+                        directory_path = Path(os.readlink(f"/proc/self/fd/{parent_fd}"))
+                        if (
+                            boundary == "stage"
+                            and name.startswith(".adaptive-install-")
+                            and directory_path == parent
+                        ) or (
+                            boundary == "nested directory"
+                            and name == "engineering"
+                            and directory_path.name.startswith(".adaptive-install-")
+                        ):
+                            swap_directory(directory_path / name)
+                            raise OSError(f"injected {boundary} open failure")
+                    return real_open(path, flags, *args, **kwargs)
+
+                def race_fstat(descriptor):
+                    nonlocal replacement, replacement_identity, original_file_identity
+                    metadata = real_fstat(descriptor)
+                    resolved = Path(os.readlink(f"/proc/self/fd/{descriptor}"))
+                    if (
+                        boundary == "file"
+                        and stat.S_ISREG(metadata.st_mode)
+                        and ".adaptive-install-" in resolved.as_posix()
+                    ):
+                        identity = (metadata.st_dev, metadata.st_ino)
+                        if original_file_identity is None:
+                            original_file_identity = identity
+                            original = resolved.with_name(
+                                f"{resolved.name}.original-owned"
+                            )
+                            resolved.rename(original)
+                            resolved.write_bytes(b"concurrent replacement\n")
+                            resolved.chmod(0o640)
+                            current = os.lstat(resolved)
+                            replacement = resolved
+                            replacement_identity = (
+                                current.st_dev,
+                                current.st_ino,
+                                stat.S_IMODE(current.st_mode),
+                            )
+                        if identity == original_file_identity:
+                            raise OSError("injected file identity failure")
+                    return metadata
+
+                with (
+                    patch.object(MODULE.os, "stat", side_effect=race_stat),
+                    patch.object(MODULE.os, "open", side_effect=race_open),
+                    patch.object(MODULE.os, "fstat", side_effect=race_fstat),
+                ):
+                    with self.assertRaises(MODULE.UnsafeInstallTarget) as raised:
+                        MODULE.materialize_new(ROOT, target)
+                self.assertIsNotNone(replacement)
+                self.assertIsNotNone(replacement_identity)
+                assert replacement is not None
+                self.assertTrue(os.path.lexists(replacement))
+                current = os.lstat(replacement)
+                self.assertEqual(
+                    (
+                        current.st_dev,
+                        current.st_ino,
+                        stat.S_IMODE(current.st_mode),
+                    ),
+                    replacement_identity,
+                )
+                if boundary == "file":
+                    self.assertEqual(
+                        replacement.read_bytes(),
+                        b"concurrent replacement\n",
+                    )
+                self.assertIn("manual cleanup required", str(raised.exception))
+                self.assertEqual(outside.read_bytes(), b"outside unchanged\n")
+                self.assertFalse(os.path.lexists(target))
 
     def test_cli_modes_plan_by_default_and_materialize_only_when_explicit(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

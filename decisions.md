@@ -210,3 +210,7 @@ After repeated adjacent review failures, model queue provenance with bounded mon
 ## 2026-08-27 — Charge alias components before copying or merging
 
 Represent may-alias state as one member set per component plus a name-to-component map, union smaller components into larger ones, and charge create, merge, fork, and mutation work before performing it. This removes duplicated per-name closure state and makes the configured value ceiling bound alias analysis as well as abstract values.
+
+## 2026-08-27 — Created names are not cleanup ownership proof
+
+Bind cleanup identity from the descriptor returned by the original create/open sequence and compare the current no-follow name before removal. If the directory-create gap or descriptor identity failure leaves ownership unresolved, preserve the entry and emit an exact manual-cleanup diagnostic instead of adopting a later same-name occupant.
