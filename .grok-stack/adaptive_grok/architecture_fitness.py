@@ -1192,11 +1192,12 @@ def _queue_module_inventory(root: Path, diff: ArchitectureDiff, side: str, sourc
 def _prime_local_module_sources(
     root: Path, diff: ArchitectureDiff, modules: set[str], side: str,
     cache: dict[str, _QueueAdapterResolution], source_roots: tuple[str, ...],
+    remaining: int,
 ) -> None:
-    inventory = cache.get("\0")
-    if inventory is None:
-        return
+    inventory = cache["\0"]
     pending = sorted(module for module in modules if module in inventory.declared_exports and module not in cache)
+    if len(pending) > remaining:
+        raise ArchitectureError("queue adapter module limit exceeded", code="limit")
     paths_by_module = {
         module: tuple(path for source_root in source_roots for path in (
             f"{source_root + '/' if source_root else ''}{module.replace('.', '/')}.py",
@@ -1204,10 +1205,21 @@ def _prime_local_module_sources(
         ) if path in inventory.signals)
         for module in pending
     }
-    values = read_diff_files(root, diff, tuple(path for paths in paths_by_module.values() for path in paths), side)
     for module, paths in paths_by_module.items():
+        if len(paths) > 1:
+            cache[module] = _QueueAdapterResolution("unsupported", "ambiguous_local_queue_adapter")
+    values = read_diff_files(root, diff, tuple(paths[0] for module, paths in paths_by_module.items() if module not in cache and paths), side)
+    for module, paths in paths_by_module.items():
+        if module in cache:
+            continue
         sources = tuple((path, values[path], module if path.endswith("/__init__.py") else module.rsplit(".", 1)[0] if "." in module else "") for path in paths if values[path] is not None)
         cache[module] = _QueueAdapterResolution("prefetched", "local_module_prefetched", sources=sources)
+
+
+def _is_local_package(cache: dict[str, _QueueAdapterResolution], module: str) -> bool:
+    inventory = cache["\0"]
+    package_path = f"{module.replace('.', '/')}/__init__.py"
+    return any(path.endswith(package_path) for path in inventory.signals) or module not in inventory.declared_exports and any(name.startswith(module + ".") for name in inventory.declared_exports)
 
 
 def _local_queue_resolution(
@@ -1220,9 +1232,6 @@ def _local_queue_resolution(
     visited: set[str],
     source_roots: tuple[str, ...],
 ) -> _QueueAdapterResolution:
-    prefetched = cache.get(module)
-    if prefetched is not None and prefetched.state != "prefetched":
-        return prefetched
     if (
         not module
         or any(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", part) is None for part in module.split("."))
@@ -1230,9 +1239,13 @@ def _local_queue_resolution(
         return _QueueAdapterResolution("not_queue", "invalid_local_module")
     if (inventory := cache.get("\0")) is not None and module not in inventory.declared_exports:
         return _QueueAdapterResolution("not_queue", "local_module_missing")
-    if len(visited) >= MAX_QUEUE_ADAPTER_MODULES:
-        raise ArchitectureError("queue adapter module limit exceeded", code="limit")
-    visited.add(module)
+    if module not in visited:
+        if len(visited) >= MAX_QUEUE_ADAPTER_MODULES:
+            raise ArchitectureError("queue adapter module limit exceeded", code="limit")
+        visited.add(module)
+    prefetched = cache.get(module)
+    if prefetched is not None and prefetched.state != "prefetched":
+        return prefetched
     if len(resolving) >= MAX_QUEUE_ADAPTER_DEPTH:
         raise ArchitectureError("queue adapter depth limit exceeded", code="limit")
     if module in resolving:
@@ -1240,12 +1253,6 @@ def _local_queue_resolution(
     resolving.add(module)
     try:
         sources = prefetched.sources if prefetched is not None else ()
-        if len(sources) > 1:
-            result = _QueueAdapterResolution(
-                "unsupported", "ambiguous_local_queue_adapter"
-            )
-            cache[module] = result
-            return result
         if not sources:
             result = _QueueAdapterResolution("not_queue", "local_module_missing")
             cache[module] = result
@@ -1279,20 +1286,14 @@ def _local_queue_resolution(
             name for name in analysis.derived_names if not name.startswith("_")
         ))
         has_queue_provenance = bool(analysis.signals or exports)
+        state = (
+            "unsupported"
+            if (imported.unsupported or analysis.uncertain) and has_queue_provenance
+            else ("resolved" if has_queue_provenance else "not_queue")
+        )
+        reason = "local_queue_provenance_resolved" if has_queue_provenance else "local_module_not_queue"
         result = _QueueAdapterResolution(
-            (
-                "unsupported"
-                if (imported.unsupported or analysis.uncertain) and has_queue_provenance
-                else ("resolved" if has_queue_provenance else "not_queue")
-            ),
-            (
-                "local_queue_provenance_resolved"
-                if has_queue_provenance
-                else "local_module_not_queue"
-            ),
-            exports,
-            analysis.signals,
-            _declared_module_exports(tree),
+            state, reason, exports, analysis.signals, _declared_module_exports(tree)
         )
         cache[module] = result
         return result
@@ -1341,7 +1342,7 @@ def _queue_adapter_names(
             continue
         normalized.extend(imports)
     relevant = [item for item in normalized if item[0].split(".")[0] not in _QUEUE_IMPORTS and (item[5] and reachable or item[2] in dependencies or item[2] in dependency_result.frontier_imports)]
-    _prime_local_module_sources(root, diff, {item[0] for item in relevant}, side, cache, source_roots[:MAX_QUEUE_SOURCE_ROOTS])
+    _prime_local_module_sources(root, diff, {item[0] for item in relevant}, side, cache, source_roots[:MAX_QUEUE_SOURCE_ROOTS], MAX_QUEUE_ADAPTER_MODULES - len(seen))
     for target_module, target_name, local_name, level, whole_module, wildcard in normalized:
             if target_module.split(".")[0] in _QUEUE_IMPORTS or not (wildcard and reachable or local_name in dependencies or local_name in dependency_result.frontier_imports):
                 continue
@@ -1362,11 +1363,20 @@ def _queue_adapter_names(
                 seen,
                 bounded_source_roots,
             )
+            if target_name and not wildcard and target_name not in resolution.declared_exports and _is_local_package(cache, target_module):
+                target_module, target_name, whole_module = f"{target_module}.{target_name}", "", True
+                _prime_local_module_sources(root, diff, {target_module}, side, cache, bounded_source_roots, MAX_QUEUE_ADAPTER_MODULES - len(seen))
+                resolution = _local_queue_resolution(root, diff, target_module, side, cache, active, seen, bounded_source_roots)
+                queue_adjacent = _queue_adjacent_module(target_module)
             export_resolved = (
                 (target_name and target_name in resolution.exports)
                 or (not target_name and bool(resolution.exports))
             )
-            local_values = tuple(sorted(reachable & set(resolution.declared_exports))) if wildcard else (local_name,)
+            local_values = tuple(sorted(reachable & set(resolution.exports))) if wildcard else (local_name,)
+            if whole_module and resolution.reason in {"local_queue_provenance_resolved", "local_module_not_queue"}:
+                proven.update(f"{local_name}.{export}" for export in resolution.exports)
+                unsupported = unsupported or bool(resolution.exports)
+                continue
             if (frontier_reachable or whole_module or wildcard) and (
                 level > 0
                 or resolution.reason != "local_module_missing"

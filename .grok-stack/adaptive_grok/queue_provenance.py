@@ -12,6 +12,7 @@ QueueState = Literal[
     "unknown_queue",
     "sequence",
     "mapping",
+    "object",
 ]
 
 _QUEUE_IMPORTS = {
@@ -87,22 +88,18 @@ QUEUE = AbstractValue("queue")
 UNKNOWN_QUEUE = AbstractValue("unknown_queue")
 
 
-def _key_sort(key: LiteralKey) -> tuple[str, str]:
-    return key[0], repr(key[1])
-
-
 def _entry_map(value: AbstractValue) -> dict[LiteralKey, AbstractValue]:
     return dict(value.entries)
 
 
 def _structured(
-    state: Literal["sequence", "mapping"],
+    state: Literal["sequence", "mapping", "object"],
     entries: dict[LiteralKey, AbstractValue],
     default: AbstractValue = NON_QUEUE,
 ) -> AbstractValue:
     return AbstractValue(
         state,
-        tuple(sorted(entries.items(), key=lambda item: _key_sort(item[0]))),
+        tuple(sorted(entries.items(), key=lambda item: (item[0][0], repr(item[0][1])))),
         default,
     )
 
@@ -167,7 +164,7 @@ def normalize_literal_key(node: ast.AST) -> LiteralKey | None:
 
 
 def _aggregate(value: AbstractValue) -> AbstractValue:
-    if value.state not in {"sequence", "mapping"}:
+    if value.state not in {"sequence", "mapping", "object"}:
         return value
     values = [_aggregate(item) for _key, item in value.entries]
     if not values:
@@ -192,7 +189,7 @@ def _sequence_length(value: AbstractValue) -> int | None:
 
 
 def _select(value: AbstractValue, key: LiteralKey | None) -> AbstractValue:
-    if value.state not in {"sequence", "mapping"}:
+    if value.state not in {"sequence", "mapping", "object"}:
         return value
     if key is None:
         return _aggregate(value)
@@ -358,9 +355,12 @@ class _Interpreter:
         self.uncertain = False
         self.lexical_depth = 0
         self.class_depth = 0
-        self.module_values: dict[str, AbstractValue] = {
-            name: QUEUE for name in self.adapter_names
+        module_names = {name.split(".", 1)[0] for name in self.adapter_names if "." in name}
+        self.module_values = {
+            name: _structured("object", {("string", value.split(".", 1)[1]): QUEUE for value in self.adapter_names if value.startswith(name + ".")})
+            for name in module_names
         }
+        self.module_values.update({name: QUEUE for name in self.adapter_names if "." not in name})
         self.pending_functions: list[
             tuple[ast.FunctionDef | ast.AsyncFunctionDef, _Environment]
         ] = []
@@ -466,7 +466,8 @@ class _Interpreter:
                 return known
             return UNKNOWN_QUEUE if self.wildcard_queue_import else NON_QUEUE
         if isinstance(node, ast.Attribute):
-            return _aggregate(self._evaluate(node.value, environment))
+            value = self._evaluate(node.value, environment)
+            return _select(value, ("string", node.attr)) if value.state == "object" else _aggregate(value)
         if isinstance(node, ast.Subscript):
             return _select(
                 self._evaluate(node.value, environment),
@@ -876,7 +877,7 @@ class _Interpreter:
                 local = alias.asname or alias.name.split(".")[0]
                 self._bind(
                     ast.Name(id=local),
-                    QUEUE if local in self.adapter_names or alias.name.split(".")[0] in _QUEUE_IMPORTS else NON_QUEUE,
+                    self.module_values.get(local, QUEUE if alias.name.split(".")[0] in _QUEUE_IMPORTS else NON_QUEUE),
                     environment,
                 )
             return environment
@@ -889,8 +890,8 @@ class _Interpreter:
                 local = alias.asname or alias.name
                 if is_queue and alias.name == "*":
                     self.wildcard_queue_import = True
-                elif local in self.adapter_names or is_queue:
-                    self._bind(ast.Name(id=local), QUEUE, environment)
+                elif local in self.module_values or is_queue:
+                    self._bind(ast.Name(id=local), self.module_values.get(local, QUEUE), environment)
                 elif alias.name != "*":
                     self._bind(ast.Name(id=local), NON_QUEUE, environment)
             return environment
@@ -1052,23 +1053,17 @@ class _Interpreter:
             for target in _import_targets(self.tree)
             if target.split(".")[0] in _QUEUE_IMPORTS
         }
-        if not queue_imports and not self.adapter_names:
+        if not queue_imports and not self.module_values:
             return QueueTreeAnalysis((), frozenset(), False)
         body = self.tree.body if isinstance(self.tree, ast.Module) else []
-        environment = _Environment(
-            {name: QUEUE for name in self.adapter_names},
-            _AliasState({}, {}),
-        )
+        environment = _Environment(dict(self.module_values), _AliasState({}, {}))
         environment = self._block(body, environment)
         pending_index = 0
         while pending_index < len(self.pending_functions):
             statement, captured = self.pending_functions[pending_index]
             pending_index += 1
             self._analyze_function(statement, captured, ())
-        self.signals.update({
-            f"import:{target}"
-            for target in queue_imports
-        })
+        self.signals.update(f"import:{target}" for target in queue_imports)
         for imported, call in _called_imports(self.tree):
             if imported.split(".")[0] in _QUEUE_IMPORTS:
                 self.signals.add(f"call:{call}")
@@ -1078,11 +1073,7 @@ class _Interpreter:
             for name, value in environment.values.items()
             if _aggregate(value).state in {"queue", "unknown_queue"}
         )
-        return QueueTreeAnalysis(
-            tuple(sorted(self.signals)),
-            derived_names,
-            self.uncertain,
-        )
+        return QueueTreeAnalysis(tuple(sorted(self.signals)), derived_names, self.uncertain)
 
 
 def analyze_queue_tree(
@@ -1093,10 +1084,4 @@ def analyze_queue_tree(
     value_limit: int = 4096,
     loop_limit: int = 8,
 ) -> QueueTreeAnalysis:
-    return _Interpreter(
-        tree,
-        adapter_names,
-        statement_limit,
-        value_limit,
-        loop_limit,
-    ).analyze()
+    return _Interpreter(tree, adapter_names, statement_limit, value_limit, loop_limit).analyze()

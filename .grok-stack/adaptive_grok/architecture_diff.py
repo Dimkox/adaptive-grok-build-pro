@@ -571,15 +571,11 @@ def _change_records(
                 change = "changed"
             else:
                 continue
-            changes.append(
-                ArchitectureChange(
-                    kind=kind,
-                    id=identity,
-                    change=change,
-                    before_digest=None if old is None else _object_digest(old),
-                    after_digest=None if new is None else _object_digest(new),
-                )
-            )
+            changes.append(ArchitectureChange(
+                kind, identity, change,
+                None if old is None else _object_digest(old),
+                None if new is None else _object_digest(new),
+            ))
     return tuple(sorted(changes, key=lambda item: (item.kind, item.id, item.change)))
 
 
@@ -702,10 +698,9 @@ def _git_blobs(root: Path, sha: str, paths: tuple[str, ...]) -> dict[str, bytes 
             raise ArchitectureError(f"Git object path is not a regular file: {path}", code="io")
         if _EXACT_SHA.fullmatch(object_id.decode("ascii", "replace")) is None:
             raise ArchitectureError(f"invalid Git blob identity for {path}", code="git")
-        try:
-            size = int(size_raw)
-        except ValueError as exc:
-            raise ArchitectureError(f"invalid Git blob size for {path}", code="git") from exc
+        if not size_raw.isdigit():
+            raise ArchitectureError(f"invalid Git blob size for {path}", code="git")
+        size = int(size_raw)
         if size > MAX_ANALYZED_FILE_BYTES:
             raise ArchitectureError(f"Git blob exceeds analysis limit: {path}", code="limit")
         entries[path] = object_id, size
@@ -715,11 +710,11 @@ def _git_blobs(root: Path, sha: str, paths: tuple[str, ...]) -> dict[str, bytes 
         raise ArchitectureError("Git blob batch exceeds analysis limit", code="limit")
     if not present:
         return {path: None for path in requested}
-    specs = b"".join(sha.encode("ascii") + b":" + os.fsencode(path) + b"\0" for path in present)
+    specs = b"".join(entries[path][0] + b"\n" for path in present)
     output = _required_output(
         _git(
             root,
-            ["cat-file", "-Z", "--batch=%(objectname) %(objecttype) %(objectsize)"],
+            ["cat-file", "--batch=%(objectname) %(objecttype) %(objectsize)"],
             limit=total + 128 * len(present),
             stdin_data=specs,
         ),
@@ -728,7 +723,7 @@ def _git_blobs(root: Path, sha: str, paths: tuple[str, ...]) -> dict[str, bytes 
     values: dict[str, bytes | None] = {path: None for path in requested}
     cursor = 0
     for path in present:
-        end = output.find(b"\0", cursor)
+        end = output.find(b"\n", cursor)
         if end < 0:
             raise ArchitectureError(f"truncated Git blob batch header for {path}", code="git")
         fields = output[cursor:end].split()
@@ -737,7 +732,7 @@ def _git_blobs(root: Path, sha: str, paths: tuple[str, ...]) -> dict[str, bytes 
             raise ArchitectureError(f"unexpected Git blob batch header for {path}", code="git")
         start = end + 1
         finish = start + size
-        if finish >= len(output) or output[finish:finish + 1] != b"\0":
+        if finish >= len(output) or output[finish:finish + 1] != b"\n":
             raise ArchitectureError(f"truncated Git blob batch content for {path}", code="git")
         values[path] = output[start:finish]
         cursor = finish + 1
@@ -754,8 +749,18 @@ def read_diff_files(
     if side not in {"base", "head"}:
         raise ArchitectureError("diff file side must be base or head", code="invalid")
     requested = tuple(sorted(set(paths)))
+    encoded = tuple(os.fsencode(path) for path in requested)
+    if len(requested) > MAX_CHANGED_PATHS or sum(map(len, encoded)) > 65_536:
+        raise ArchitectureError("diff file batch path limit exceeded", code="limit")
     if side == "head" and diff.head_kind == "worktree":
-        return {path: _worktree_blob(repository, path) for path in requested}
+        values: dict[str, bytes | None] = {}
+        total = 0
+        for path in requested:
+            values[path] = _worktree_blob(repository, path)
+            total += len(values[path] or b"")
+            if total > MAX_GIT_OUTPUT_BYTES:
+                raise ArchitectureError("worktree blob batch exceeds analysis limit", code="limit")
+        return values
     sha = diff.base_sha if side == "base" else _required_head(diff.head_sha)
     return _git_blobs(repository, sha, requested)
 

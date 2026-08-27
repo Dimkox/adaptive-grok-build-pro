@@ -242,3 +242,65 @@ Tracked files in this follow-up are the queue provenance/fitness implementation,
 the exact diff reader, this evidence, and the focused fitness regressions. No
 `trust-ci/**` or `.github/workflows/**` path changed. Exact post-commit SHA and the
 required text verifier result are recorded after the product commit.
+
+## Package-child and member-specific security rereview
+
+The rereview found that `from project import runtime` did not inspect an exact
+local `project.runtime` child when the parent package lacked that export. It also
+found that queue provenance from one module export overtainted ordinary sibling
+exports, cached resolutions bypassed per-importer module accounting, the exact
+batch reader used Git 2.42-only `cat-file -Z`, and worktree batches did not share
+the exact-side request and aggregate limits.
+
+RED evidence, before the implementation change:
+
+```text
+4 focused selectors
+Ran 4 tests in 3.615s
+FAILED (failures=10)
+```
+
+The regressions cover namespace and regular packages, queue/nonqueue/missing/
+ambiguous package children, mixed module-alias and wildcard exports, cold/warm
+and reversed cache order at the 64-module ceiling, legacy Git batch framing,
+negative and malformed metadata, real gitlink/nonblob entries, constant total
+metadata-plus-content subprocess calls at 1 versus 32 paths, and exact/worktree
+batch limits.
+
+GREEN and performance evidence on the repaired worktree:
+
+```text
+4 focused security/cache selectors
+Ran 4 tests in 4.479s
+OK
+
+test_exact_batch_blob_reader_is_bounded_and_validates_entries
+Ran 1 test in 1.003s
+OK
+
+python3 -m unittest -v tests.test_architecture_fitness
+Ran 70 tests in 77.309s
+OK
+elapsed=77.50 exit=0
+
+python3 -m unittest discover -v
+Ran 364 tests in 186.619s
+OK
+elapsed=186.87 exit=0
+```
+
+Exact worktree fitness passes with background-job fitness passing without
+findings, monotonic risk `green -> red`, and the changed-code budget at
+`9999/10000`. The exact batch protocol uses legacy-compatible
+`git cat-file --batch`, validates deterministic OIDs and size-framed responses,
+and rejects negative sizes and non-regular tree entries. Completed cache entries
+avoid repeated I/O but every distinct semantic module is charged to each
+top-level importer before cache reuse. Member-aware object provenance keeps
+ordinary sibling exports N/A while queue exports use the single shared
+fitness/risk result.
+
+Ruff, configured Bandit, and compileall pass. The typed spec gate passes 7/7;
+architecture validate, drift, and diagram check pass without findings or
+mismatches; README K16 passes; diff whitespace and protected-path checks pass.
+The required text-verifier, commit, and exact-SHA evidence are recorded below
+after those gates complete.

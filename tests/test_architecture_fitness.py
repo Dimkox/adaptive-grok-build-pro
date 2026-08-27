@@ -11,6 +11,7 @@ import sys
 import tempfile
 import time
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -2245,6 +2246,9 @@ class ArchitectureFitnessTests(unittest.TestCase):
         head = repo.commit("head")
         diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
         real_git = DIFF._git
+        with patch.object(DIFF, "_git", wraps=real_git) as single_git:
+            DIFF.read_diff_files(repo.root, diff, (paths[0],))
+        self.assertEqual(single_git.call_count, 2)
         with patch.object(DIFF, "_git", wraps=real_git) as git:
             values = DIFF.read_diff_files(repo.root, diff, (*paths, "src/missing.py"))
         self.assertEqual(values[paths[0]], b"VALUE = 1\n")
@@ -2255,6 +2259,8 @@ class ArchitectureFitnessTests(unittest.TestCase):
             if any("--batch" in argument for argument in call.args[1])
         ]
         self.assertEqual(len(batch_calls), 1)
+        self.assertEqual(git.call_count, 2)
+        self.assertNotIn("-Z", batch_calls[0].args[1])
 
         os.symlink("module00.py", repo.root / "src/link.py")
         repo.write_bytes(
@@ -2268,6 +2274,205 @@ class ArchitectureFitnessTests(unittest.TestCase):
             DIFF.read_diff_files(repo.root, bad_diff, ("src/link.py",))
         with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "exceeds analysis limit"):
             DIFF.read_diff_files(repo.root, bad_diff, ("src/oversized.py",))
+
+        repo.git("update-index", "--add", "--cacheinfo", f"160000,{head},src/gitlink")
+        repo.git("commit", "-qm", "gitlink entry")
+        gitlink_base = repo.git("rev-parse", "HEAD")
+        repo.write_text("src/changed.py", "VALUE = 4\n")
+        repo.git("add", "src/changed.py")
+        repo.git("commit", "-qm", "query gitlink entry")
+        gitlink_head = repo.git("rev-parse", "HEAD")
+        gitlink_diff = FIT.diff_architecture(repo.root, base_sha=gitlink_base, head_sha=gitlink_head)
+        with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "not a regular file"):
+            DIFF.read_diff_files(repo.root, gitlink_diff, ("src/gitlink",))
+
+        object_id = repo.git("rev-parse", f"{head}:{paths[0]}").encode("ascii")
+        negative = b"100644 blob " + object_id + b" -1\t" + paths[0].encode() + b"\0"
+        with patch.object(DIFF, "_git", return_value=negative):
+            with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "invalid Git blob size"):
+                DIFF.read_diff_files(repo.root, diff, (paths[0],))
+        metadata = b"100644 blob " + object_id + b" 10\t" + paths[0].encode() + b"\0"
+        malformed = object_id + b" blob 9\0VALUE = 1\n\0"
+        with patch.object(DIFF, "_git", side_effect=(metadata, malformed)):
+            with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "unexpected Git blob batch header"):
+                DIFF.read_diff_files(repo.root, diff, (paths[0],))
+
+        worktree = replace(diff, head_sha=None, head_kind="worktree")
+        with patch.object(DIFF, "_worktree_blob") as worktree_blob:
+            with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "batch path limit"):
+                DIFF.read_diff_files(
+                    repo.root,
+                    worktree,
+                    tuple(f"src/{index}.py" for index in range(DIFF.MAX_CHANGED_PATHS + 1)),
+                )
+            worktree_blob.assert_not_called()
+        large = b"x" * (DIFF.MAX_GIT_OUTPUT_BYTES // 2 + 1)
+        with patch.object(DIFF, "_worktree_blob", return_value=large) as worktree_blob:
+            with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "batch exceeds analysis limit"):
+                DIFF.read_diff_files(repo.root, worktree, (paths[0], paths[1]))
+            self.assertEqual(worktree_blob.call_count, 2)
+
+    def test_package_child_import_uses_exact_local_module_provenance(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["project", "src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS",
+            "node_types": ["worker"],
+            "max_retries": 3,
+            "require_idempotency": True,
+            "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"],
+            "severity": "error",
+        }]
+        queue_source = "import celery\napp = celery.Celery('jobs')\n"
+        nonqueue_source = "class Form: pass\napp = Form()\n"
+        cases = (
+            ("namespace queue", None, queue_source, True),
+            ("regular queue alias", "", queue_source, True),
+            ("namespace nonqueue", None, nonqueue_source, False),
+            ("regular nonqueue alias", "", nonqueue_source, False),
+        )
+        for label, package_source, child_source, expected_queue in cases:
+            with self.subTest(case=label):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                if package_source is not None:
+                    repo.write_text("project/__init__.py", package_source)
+                repo.write_text("project/runtime.py", child_source)
+                imported = "from project import runtime as job_runtime\n"
+                repo.write_text("src/jobs.py", imported)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", imported + "job_runtime.app.delay(task)\n")
+                head = repo.commit("package child operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                result = self._results(report)["background_job"]
+                self.assertEqual(result.status, "unsupported" if expected_queue else "not_applicable")
+                self.assertEqual(report.status, "fail" if expected_queue else "pass")
+                self.assertEqual("new_queue" in report.triggers, expected_queue)
+                self.assertGreaterEqual(FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk])
+
+        missing_cases = (
+            ("regular local package", "project/__init__.py"),
+            ("namespace local package", "project/other.py"),
+        )
+        for label, local_path in missing_cases:
+            with self.subTest(case=f"{label} missing child"):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text(local_path, "VALUE = 1\n")
+                imported = "from project import runtime as job_runtime\n"
+                repo.write_text("src/jobs.py", imported)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", imported + "job_runtime.app.delay(task)\n")
+                head = repo.commit("missing local child operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                self.assertEqual(self._results(report)["background_job"].status, "unsupported")
+                self.assertEqual(report.status, "fail")
+                self.assertIn("new_queue", report.triggers)
+
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        imported = "from external_package import runtime as job_runtime\n"
+        repo.write_text("src/jobs.py", imported)
+        base = repo.commit("base")
+        repo.write_text("src/jobs.py", imported + "job_runtime.app.delay(task)\n")
+        head = repo.commit("external absent child operation")
+        report = self._evaluate(repo, base, head, pre_risk="yellow")
+        self.assertEqual(self._results(report)["background_job"].status, "not_applicable")
+        self.assertNotIn("new_queue", report.triggers)
+
+        ambiguous = copy.deepcopy(system)
+        ambiguous["nodes"][0]["repository_paths"] = ["one", "two", "src"]
+        repo = GitArchitectureRepo(self)
+        repo.model(ambiguous, rules)
+        for root in ("one", "two"):
+            repo.write_text(f"{root}/project/runtime.py", nonqueue_source)
+        imported = "from project import runtime as job_runtime\n"
+        repo.write_text("src/jobs.py", imported)
+        base = repo.commit("base")
+        repo.write_text("src/jobs.py", imported + "job_runtime.app.delay(task)\n")
+        head = repo.commit("ambiguous child operation")
+        report = self._evaluate(repo, base, head, pre_risk="yellow")
+        self.assertEqual(self._results(report)["background_job"].status, "unsupported")
+        self.assertIn("new_queue", report.triggers)
+
+    def test_mixed_local_module_exports_are_member_specific(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["project", "src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS", "node_types": ["worker"], "max_retries": 3,
+            "require_idempotency": True, "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"], "severity": "error",
+        }]
+        module_source = (
+            "import celery\n"
+            "app = celery.Celery('jobs')\n"
+            "class Form: pass\n"
+            "form = Form()\n"
+        )
+        cases = (
+            ("module queue", "import project.runtime as runtime\n", "runtime.app.delay(task)\n", True),
+            ("module ordinary", "import project.runtime as runtime\n", "runtime.form.delay(task)\n", False),
+            ("wildcard queue", "from project.runtime import *\n", "app.delay(task)\n", True),
+            ("wildcard ordinary", "from project.runtime import *\n", "form.delay(task)\n", False),
+        )
+        for label, imported, operation, expected_queue in cases:
+            with self.subTest(case=label):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_text("project/runtime.py", module_source)
+                repo.write_text("src/jobs.py", imported)
+                base = repo.commit("base")
+                repo.write_text("src/jobs.py", imported + operation)
+                head = repo.commit("mixed member operation")
+                report = self._evaluate(repo, base, head, pre_risk="yellow")
+                self.assertEqual(
+                    self._results(report)["background_job"].status,
+                    "unsupported" if expected_queue else "not_applicable",
+                )
+                self.assertEqual("new_queue" in report.triggers, expected_queue)
+
+    def test_completed_queue_cache_is_charged_per_importer_before_reuse(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "worker"
+        system["nodes"][0]["repository_paths"] = ["adapters", "src"]
+        rules = _rules()
+        rules["background_job_policies"] = [{
+            "id": "FIT-JOBS", "node_types": ["worker"], "max_retries": 3,
+            "require_idempotency": True, "require_correlation_id": True,
+            "terminal_actions": ["dead_letter"], "severity": "error",
+        }]
+        for reversed_order in (False, True):
+            with self.subTest(reversed_paths=reversed_order):
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                aliases = []
+                imports = []
+                for index in range(FIT.MAX_QUEUE_ADAPTER_MODULES):
+                    alias = f"adapter{index:02d}"
+                    aliases.append(alias)
+                    imports.append(f"from adapters.module{index:02d} import value as {alias}")
+                    repo.write_text(f"adapters/module{index:02d}.py", "value = 1\n")
+                repo.write_text("adapters/extra.py", "value = 1\n")
+                shared = "\n".join(imports) + "\n"
+                bounded_path, excess_path = (("src/z.py", "src/a.py") if reversed_order else ("src/a.py", "src/z.py"))
+                repo.write_text(bounded_path, shared)
+                repo.write_text(excess_path, shared + "from adapters.extra import value as extra\n")
+                base = repo.commit("base")
+                operations = "".join(f"{alias}.delay(task)\n" for alias in aliases)
+                repo.write_text(bounded_path, shared + operations)
+                repo.write_text(excess_path, shared + "from adapters.extra import value as extra\n" + operations + "extra.delay(task)\n")
+                head = repo.commit("overlapping importer limits")
+                real_batch = FIT.read_diff_files
+                with patch.object(FIT, "read_diff_files", wraps=real_batch) as batches:
+                    report = self._evaluate(repo, base, head, pre_risk="yellow")
+                self.assertEqual(self._results(report)["background_job"].status, "unsupported")
+                self.assertIn("new_queue", report.triggers)
+                self.assertTrue(all(len(call.args[2]) <= FIT.MAX_QUEUE_ADAPTER_MODULES for call in batches.call_args_list))
 
     def test_local_module_and_wildcard_imports_resolve_queue_exports(self) -> None:
         system = _system()
