@@ -2,6 +2,12 @@
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-08-28 — Treated evidence-shaped claims as live governance evidence
+
+**Symptom:** Task 3 review showed that a direct rule with `../outside` could transition to reviewed and active rules with missing or mutated evidence could become effective.
+**Root cause:** `RuleRecord.from_dict()` erased repository provenance, while transition and effectiveness treated a non-empty path plus lowercase hex as equivalent to descriptor-relative containment and an exact live content hash.
+**Durable rule:** Authority-bearing lifecycle values must carry a non-caller-constructible, digest-bound repository identity and reverify evidence through the pinned no-follow boundary at every promotion or effect decision.
+
 ## 2026-08-26 — Parallelized a bytecode-mutating holdout command with its digest test
 
 **Symptom:** Exact holdout validation ran without `PYTHONDONTWRITEBYTECODE=1` beside the Trust suite, created ignored `holdout.example/__pycache__`, and raced the measured-bundle assertion into one failure out of 200; the cache was moved recoverably to `/tmp/adaptive-grok-holdout-pycache-20260826-final`.
