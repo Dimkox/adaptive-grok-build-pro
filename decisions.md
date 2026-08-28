@@ -239,3 +239,7 @@ Treat `actor_kind`, approver names, timestamps, and authority observations insid
 ## 2026-08-28 — Preserve nullable contracts with typed schema unions
 
 When a closed schema requires a value or `null`, support the standard JSON Schema type array and test both the allowed null and a rejected non-member type. This preserves fail-closed typing instead of weakening the field to an unconstrained value.
+
+## 2026-08-28 — Normalize only declared governance sets
+
+Sort registry records by stable identity and sort only fields whose governance contract defines set semantics; preserve every other array in source order. This makes equivalent registries digest-identical without silently erasing meaning from ordered schema or future record fields.
