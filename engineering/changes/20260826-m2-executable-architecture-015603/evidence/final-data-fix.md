@@ -426,3 +426,50 @@ are `architecture_fitness.py`, `test_architecture_fitness.py`, this evidence
 ledger, and `decisions.md`; no migration bytes, runtime behavior, dependency,
 Trust CI source, or workflow changed. Rollback is a normal revert of this source
 commit; rollout is the standard exact-head review and external Trust CI path.
+
+## Canonical group-collision follow-up
+
+Exact code and security review found that the first repair keyed ownership by
+free-form group text alone. A canonical `001_schema.sql` and phased
+`001_schema_{expand,migrate,contract}.sql` therefore collapsed to the same set
+member; the same bypass applied to canonical versions 002 and 003.
+
+```text
+canonical collision selector before repair
+Ran 1 test in 1.972s
+FAILED (failures=3)
+- same-case 001_schema phased collision passed
+- mixed-case 002_Operational_Indexes phased collision passed
+- nested mixed-case 003_DATABASE_ROLES phased collision passed
+
+same selector after repair
+Ran 1 test in 1.884s
+OK
+
+python3 -m unittest tests.test_architecture_fitness -k migration -v
+Ran 11 tests in 7.817s
+OK
+
+python3 -m unittest tests.test_architecture_model tests.test_architecture_fitness
+Ran 125 tests in 86.502s
+OK
+
+python3 -m unittest discover
+Ran 377 tests in 197.401s
+OK
+```
+
+Version ownership now records `(normalized_group, is_legacy)` rather than only
+the group string. This preserves free-form phased group behavior while making a
+canonical numeric reservation distinct even when the attacker copies its
+stem, casing, or nested-path placement. The valid mirrored phased version 004,
+mirror equality, immutable history, phase ordering, and every migration work
+bound remain green. The production replacement is line-neutral and exact
+worktree fitness remains at `10000/10000` with change separation pass and
+monotonic risk `green -> red`.
+
+Ruff, configured Bandit, compileall, spec 7/7, architecture validate/drift,
+deterministic diagram check, README K16, exact-range whitespace, and protected
+path checks pass. No migration bytes, runtime behavior, dependency, Trust CI
+source, or workflow changed; rollback remains a normal revert of this source
+commit.

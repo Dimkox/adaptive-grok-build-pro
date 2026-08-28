@@ -619,13 +619,13 @@ class _MigrationAnalysis:
                 self.record(True, f"{rule_id}: migration version cannot be derived: {path}")
                 continue
             version = int(match.group("version"))
-            version_groups.setdefault(version, set()).add(group)
+            version_groups.setdefault(version, set()).add((group, phase == "legacy"))
             if (version, group, phase) in phase_paths:
                 self.record(False, f"{rule_id}: duplicate migration artifact for {version}/{group}/{phase}: {path}")
             phase_paths.add((version, group, phase))
         for version, groups in version_groups.items():
             if len(groups) > 1:
-                self.record(False, f"{rule_id}: duplicate migration version {version}: {','.join(sorted(groups))}")
+                self.record(False, f"{rule_id}: duplicate migration version {version}: {','.join(sorted(group for group, _ in groups))}")
         if version_groups and set(version_groups) != set(range(1, max(version_groups) + 1)):
             self.record(False, f"{rule_id}: migration version history is not contiguous")
         for item in plan.primary:

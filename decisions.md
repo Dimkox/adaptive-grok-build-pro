@@ -226,3 +226,4 @@ Charge conservative schema, derived-root, matching, inventory, semantic-plan, an
 ## 2026-08-28 — Canonical migrations seed phased history
 
 Treat the immutable `001_schema`, `002_operational_indexes`, and `003_database_roles` names as exact logical versions in history while reserving expand/migrate/contract semantics for new phased artifacts. This preserves the repository's established convention while making version 004 contiguous and rejecting phased reuse of versions 001–003.
+Legacy versus phased identity is tracked independently of the free-form group text, so a phased group cannot evade the reservation by copying a canonical stem.

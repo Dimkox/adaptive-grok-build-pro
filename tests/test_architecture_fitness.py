@@ -3439,6 +3439,22 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertEqual(result.status, "fail", result.findings)
                 self.assertIn("duplicate migration version", " ".join(result.findings))
 
+        collisions = (
+            "001_schema",
+            "002_Operational_Indexes",
+            "nested/003_DATABASE_ROLES",
+        )
+        for group in collisions:
+            with self.subTest(canonical_group_collision=group):
+                repo, base = seeded_repo()
+                for phase, source in phased.items():
+                    for prefix in ("migrations", "package/resources"):
+                        repo.write_text(f"{prefix}/{group}_{phase}.sql", source)
+                duplicate = repo.commit(f"reuse canonical group {group}")
+                result = self._results(self._evaluate(repo, base, duplicate))["migration_safety"]
+                self.assertEqual(result.status, "fail", result.findings)
+                self.assertIn("duplicate migration version", " ".join(result.findings))
+
     def test_migration_history_requires_declared_resource_mirror(self) -> None:
         system = _system()
         system["nodes"][0]["repository_paths"] = ["migrations", "package/resources"]
