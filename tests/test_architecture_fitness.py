@@ -375,7 +375,7 @@ class ArchitectureFitnessTests(unittest.TestCase):
         diff = FIT.diff_architecture(ROOT, base_sha=ADOPTION_BASE, head_sha=head)
         report = FIT.evaluate_fitness(
             ROOT,
-            FIT.load_architecture(ROOT),
+            diff._head_state.snapshot,
             diff,
             diff.changed_paths,
             pre_risk="yellow",
@@ -3356,6 +3356,37 @@ class ArchitectureFitnessTests(unittest.TestCase):
         result = self._results(self._evaluate(repo, base, head))["migration_safety"]
         self.assertEqual(result.status, "fail")
         self.assertIn("mirror", " ".join(result.findings))
+
+    def test_migration_mirror_only_change_is_applicable_and_fails_drift(self) -> None:
+        system = _system()
+        system["nodes"][0]["repository_paths"] = ["migrations", "package/resources"]
+        rules = _rules()
+        rules["migration_policies"] = [{
+            "id": "FIT-MIGRATION",
+            "path_prefixes": ["migrations"],
+            "required_phases": ["expand", "migrate", "contract"],
+            "immutable_history": True,
+            "severity": "error",
+        }]
+        repo, _initial = self._repo(system=system, rules=rules)
+        sources = {
+            "001_expand.sql": "CREATE TABLE item(id integer);\n",
+            "001_migrate.sql": "UPDATE item SET id = id WHERE id BETWEEN 1 AND 100;\n",
+            "001_contract.sql": "ALTER TABLE item DROP COLUMN legacy;\n",
+        }
+        for name, source in sources.items():
+            repo.write_text(f"migrations/{name}", source)
+            repo.write_text(f"package/resources/{name}", source)
+        base = repo.commit("mirrored migration base")
+        repo.write_text(
+            "package/resources/001_expand.sql",
+            "CREATE TABLE item(id bigint);\n",
+        )
+        head = repo.commit("mirror-only drift")
+        result = self._results(self._evaluate(repo, base, head))["migration_safety"]
+        self.assertEqual(result.status, "fail")
+        self.assertIn("package/resources/001_expand.sql", result.applicability.scanned_scope)
+        self.assertIn("mirror differs", " ".join(result.findings))
 
     def test_migration_content_and_versions_are_conservative_for_every_status(self) -> None:
         cases = (

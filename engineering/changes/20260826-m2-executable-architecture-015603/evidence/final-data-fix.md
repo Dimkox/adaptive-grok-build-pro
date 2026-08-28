@@ -1,0 +1,97 @@
+# Final data-review repair evidence
+
+Date: 2026-08-28
+
+Scope: the three Important findings from the data review on
+`4206166576ad271f693efb65eb80db4c13ef9a24`, plus the release-review chronology
+Minor. No `trust-ci/**` or `.github/workflows/**` file changed.
+
+## Root causes and bounded design
+
+1. System semantic validation resolved `allowed_data` IDs but did not derive the
+   set whose `contains_secret` flag is true. A secret-bearing classification
+   could therefore be attached to any edge. The bounded invariant now requires
+   every such edge to be an authenticated `secret_flow`; it adds no schema field
+   or runtime capability.
+2. Migration applicability matched only declared primary prefixes. Derived
+   package-resource mirrors were compared only after a primary artifact was
+   already applicable, so mirror-only drift returned N/A. One deterministic
+   primary-plus-mirror root set now drives changed-path matching and applicability
+   inventory. An unpaired mirror change fails, while a paired change retains the
+   existing byte comparison against its primary.
+3. The seed assigned `runner.py` to the secretless isolated runner even though
+   `worker.py` constructs `JobRunner` with the database, signer, GitHub client,
+   and token provider. `JobRunner` reads approvals and attestations and writes
+   signed attestations. Ownership now belongs to the trusted worker; both real
+   PostgreSQL edges declare the approval, attestation, and job-state data they
+   use. Canonical digests and the data-flow projection were regenerated.
+4. `release.md` described an obsolete Task 3/review-clean checkpoint. It now
+   states only that source repairs are implemented and keeps verification, all
+   five reviews/receipts, M2-B, PR, Trust CI, and deployment pending.
+
+## RED
+
+```text
+python3 -m unittest -v \
+  tests.test_architecture_model.ArchitectureModelTests.test_secret_bearing_data_requires_authenticated_secret_flow \
+  tests.test_architecture_model.ArchitectureModelTests.test_seed_architecture_models_current_boundaries_and_real_contracts \
+  tests.test_architecture_fitness.ArchitectureFitnessTests.test_migration_mirror_only_change_is_applicable_and_fails_drift
+
+Ran 3 tests in 0.231s
+FAILED (failures=4)
+
+- deployment and unauthenticated secret_flow accepted DATA-TRUST-MATERIAL
+- runner.py owner was NODE-ISOLATED-RUNNER
+- mirror-only SQL mutation returned not_applicable instead of fail
+```
+
+The first complete fitness run after the canonical model edit also found a
+fixture error: an exact-HEAD diff was evaluated against the mutable worktree
+snapshot. It correctly raised `fitness snapshot does not match the diff head`.
+The test now evaluates the immutable `diff._head_state.snapshot` it claims to
+cover.
+
+## GREEN
+
+```text
+Focused architecture-model, mirror, and frozen-digest checks
+Ran 45 tests in 1.195s
+OK
+
+python3 -m unittest -q tests.test_architecture_fitness
+Ran 74 tests in 79.560s
+OK
+elapsed=79.74 exit=0
+
+python3 -m unittest discover -s tests -p 'test_*.py' -q
+Ran 369 tests in 189.433s
+OK
+elapsed=189.63 exit=0
+```
+
+Ruff, configured Bandit, compileall, typed spec 7/7, architecture validate,
+repository drift, deterministic diagram check, frozen digest structure check,
+README K16, exact worktree diff/fitness/change separation, and diff whitespace
+all pass. Exact fitness reports `green -> red` monotonic risk and code budget
+`10000/10000`. The current summary binds:
+
+- architecture digest: `5ab48dfaac3b649b82c364f05351266979a104ef8420f58e62533d1322805290`
+- system digest: `da6453d9bbb291b297a393ff3d63fb68a0f3ec120107b6ed2cac4ee5a2d6e72b`
+- data-flow diagram digest: `1e0ad51b8bd1474306f2d63dfce5cc36c1d516e630ec82e222b95ceedefeecb1`
+
+## Files, rollout, and rollback
+
+Changed application/model files are `architecture.py`,
+`architecture_fitness.py`, `architecture/system.yaml`, and the generated
+data-flow projection. Tests cover secret semantics, mirror-only applicability,
+exact snapshot binding, source ownership, real edge data, and frozen digests.
+The package requirements, release chronology, and decision ledger carry the
+updated evidence.
+
+Rollout remains source-only through the existing PR and external Trust CI path.
+Rollback is one revert of the eventual repair commit, which restores the prior
+model, digests, projection, and conservative fitness behavior together. The
+residual boundary is intentional: secret-bearing data on untyped or
+unauthenticated edges and unpaired package-mirror changes fail closed.
+
+The exact no-record verifier result and commit SHA follow after the final gate.

@@ -214,3 +214,7 @@ Represent may-alias state as one member set per component plus a name-to-compone
 ## 2026-08-27 — Created names are not cleanup ownership proof
 
 Bind cleanup identity from the descriptor returned by the original create/open sequence and compare the current no-follow name before removal. If the directory-create gap or descriptor identity failure leaves ownership unresolved, preserve the entry and emit an exact manual-cleanup diagnostic instead of adopting a later same-name occupant.
+
+## 2026-08-28 — Derived data artifacts are first-class fitness inputs
+
+Treat packaged migration mirrors as applicability and inventory roots, not as checks reached only through a primary-path change. Secret-bearing data classifications require an explicitly authenticated `secret_flow`, while source ownership and allowed-data edges describe the credentialed process that actually performs the read or write.

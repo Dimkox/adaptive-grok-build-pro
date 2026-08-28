@@ -18,7 +18,7 @@ Installer planning is read-only for existing repositories and reports managed-fi
 
 The authoritative current workflow status is recorded in `state.json` as `implementing`. Coordinator-owned exact-head verification plus code, test, security, data, and release review receipts remain required, and this note does not claim the package is `ready`.
 
-The approved final safety pivot replaced order-dependent queue-name propagation with a package-aware bounded abstract interpreter and removed all mutation of existing installer targets. Tasks 1 and 2 and their scoped fix rounds are source-complete and review-clean; this Task 3 documentation tree still requires the coordinator's fresh final verification/review wave on one immutable fingerprint. No final route review or receipt is claimed here, so AC-007 remains open.
+The approved final safety pivot replaced order-dependent queue-name propagation with a package-aware bounded abstract interpreter and removed all mutation of existing installer targets. Current source repairs are implemented, but coordinator-owned final verification and all five independent route reviews and receipts remain pending on one immutable fingerprint. No final route review or receipt is claimed here, so AC-007 remains open.
 
 ## Rollout and observability
 

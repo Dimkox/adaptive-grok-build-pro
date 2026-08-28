@@ -361,6 +361,7 @@ def _validate_system_semantics(system: dict[str, Any]) -> None:
     _stable_ids(system, SYSTEM_COLLECTIONS, label="system")
     trust_domains = {item["id"] for item in system["trust_domains"]}
     data_types = {item["id"] for item in system["data_classifications"]}
+    secret_data = {item["id"] for item in system["data_classifications"] if item["contains_secret"]}
     secret_classes = {item["id"] for item in system["secret_classes"]}
     signals = {item["id"] for item in system["signals"]}
     contracts = {item["id"] for item in system["contracts"]}
@@ -405,6 +406,11 @@ def _validate_system_semantics(system: dict[str, Any]) -> None:
         _require_references(
             edge["allowed_data"], data_types, label=f"edge {edge['id']} allowed_data"
         )
+        secret = secret_data & set(edge["allowed_data"])
+        if secret and (edge["type"] != "secret_flow" or edge["authentication"] == "none"):
+            raise ArchitectureError(
+                f"edge {edge['id']}: secret-bearing data requires authenticated secret_flow", code="secret_data"
+            )
         _require_references(
             [edge["failure_behavior"]["observable_signal"]],
             signals,

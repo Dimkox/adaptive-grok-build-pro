@@ -461,6 +461,49 @@ class ArchitectureModelTests(unittest.TestCase):
         with self.assertRaises(ARCH.ArchitectureError):
             ARCH.load_architecture(self._repo(_system(), rules))
 
+    def test_secret_bearing_data_requires_authenticated_secret_flow(self) -> None:
+        for label, edge_type, authentication in (
+            ("deployment", "deployment", "none"),
+            ("unauthenticated secret flow", "secret_flow", "none"),
+        ):
+            system = _system()
+            system["data_classifications"].append(
+                {
+                    "id": "DATA-TRUST-MATERIAL",
+                    "classification": "restricted",
+                    "tenant_scoped": False,
+                    "contains_secret": True,
+                }
+            )
+            system["edges"][0].update(
+                allowed_data=["DATA-TRUST-MATERIAL"],
+                type=edge_type,
+                authentication=authentication,
+            )
+            with self.subTest(label=label), self.assertRaisesRegex(
+                ARCH.ArchitectureError, "secret-bearing"
+            ):
+                ARCH.load_architecture(self._repo(system, _rules()))
+
+        system = _system()
+        system["data_classifications"].append(
+            {
+                "id": "DATA-TRUST-MATERIAL",
+                "classification": "restricted",
+                "tenant_scoped": False,
+                "contains_secret": True,
+            }
+        )
+        system["edges"][0].update(
+            allowed_data=["DATA-TRUST-MATERIAL"],
+            type="secret_flow",
+            authentication="local_os",
+        )
+        self.assertEqual(
+            ARCH.load_architecture(self._repo(system, _rules())).system["edges"][0]["id"],
+            "EDGE-A-B",
+        )
+
     def test_duplicate_capability_edges_fail_even_with_distinct_ids(self) -> None:
         system = _system()
         duplicate = copy.deepcopy(system["edges"][0])
@@ -939,6 +982,29 @@ class ArchitectureModelTests(unittest.TestCase):
             if "trust-ci/compose.yaml" in node["repository_paths"]
         ]
         self.assertEqual(compose_owners, ["NODE-TRUST-CI-WORKER"])
+        owners = {
+            path: node["id"]
+            for node in snapshot.system["nodes"]
+            for path in node["repository_paths"]
+        }
+        self.assertEqual(
+            owners["trust-ci/src/adaptive_trust_ci/runner.py"],
+            "NODE-TRUST-CI-WORKER",
+        )
+        worker_source = (ROOT / "trust-ci/src/adaptive_trust_ci/worker.py").read_text()
+        runner_source = (ROOT / "trust-ci/src/adaptive_trust_ci/runner.py").read_text()
+        self.assertIn("from .runner import JobRunner", worker_source)
+        self.assertIn("self.store.has_valid_approval", runner_source)
+        self.assertIn("self.store.record_attestation", runner_source)
+        edges = {edge["id"]: edge for edge in snapshot.system["edges"]}
+        self.assertEqual(
+            set(edges["EDGE-API-POSTGRES"]["allowed_data"]),
+            {"DATA-APPROVAL", "DATA-ATTESTATION", "DATA-JOB-STATE"},
+        )
+        self.assertEqual(
+            set(edges["EDGE-WORKER-POSTGRES"]["allowed_data"]),
+            {"DATA-APPROVAL", "DATA-ATTESTATION", "DATA-JOB-STATE"},
+        )
         self.assertTrue(
             all(node["runtime"]["evidence"] == "source_described" for node in snapshot.system["nodes"])
         )

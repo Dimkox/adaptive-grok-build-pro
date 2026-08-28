@@ -187,6 +187,7 @@
     {
       "allowed_data": [
         "DATA-APPROVAL",
+        "DATA-ATTESTATION",
         "DATA-JOB-STATE"
       ],
       "authentication": "database_role",
@@ -210,6 +211,7 @@
     },
     {
       "allowed_data": [
+        "DATA-APPROVAL",
         "DATA-ATTESTATION",
         "DATA-JOB-STATE"
       ],
@@ -509,6 +511,7 @@
         "trust-ci/src/adaptive_trust_ci/lookup.py",
         "trust-ci/src/adaptive_trust_ci/models.py",
         "trust-ci/src/adaptive_trust_ci/policy.py",
+        "trust-ci/src/adaptive_trust_ci/runner.py",
         "trust-ci/src/adaptive_trust_ci/settings.py",
         "trust-ci/src/adaptive_trust_ci/signing.py",
         "trust-ci/src/adaptive_trust_ci/worker.py"
@@ -569,7 +572,6 @@
       "repository_paths": [
         "trust-ci/scripts",
         "trust-ci/src/adaptive_trust_ci/holdout.py",
-        "trust-ci/src/adaptive_trust_ci/runner.py",
         "trust-ci/src/adaptive_trust_ci/sandbox.py",
         "trust-ci/src/adaptive_trust_ci/workspace.py"
       ],
