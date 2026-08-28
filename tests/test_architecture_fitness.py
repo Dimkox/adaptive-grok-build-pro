@@ -2305,6 +2305,12 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     worktree,
                     tuple(f"src/{index}.py" for index in range(DIFF.MAX_CHANGED_PATHS + 1)),
                 )
+            with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "batch path limit"):
+                DIFF.read_diff_files(
+                    repo.root,
+                    worktree,
+                    tuple(f"src/{index:04d}-{'x' * 64}.py" for index in range(1024)),
+                )
             worktree_blob.assert_not_called()
         large = b"x" * (DIFF.MAX_GIT_OUTPUT_BYTES // 2 + 1)
         with patch.object(DIFF, "_worktree_blob", return_value=large) as worktree_blob:
@@ -2417,6 +2423,8 @@ class ArchitectureFitnessTests(unittest.TestCase):
         cases = (
             ("module queue", "import project.runtime as runtime\n", "runtime.app.delay(task)\n", True),
             ("module ordinary", "import project.runtime as runtime\n", "runtime.form.delay(task)\n", False),
+            ("dotted queue", "import project.runtime\n", "project.runtime.app.delay(task)\n", True),
+            ("dotted ordinary", "import project.runtime\n", "project.runtime.form.delay(task)\n", False),
             ("wildcard queue", "from project.runtime import *\n", "app.delay(task)\n", True),
             ("wildcard ordinary", "from project.runtime import *\n", "form.delay(task)\n", False),
         )
@@ -2434,7 +2442,11 @@ class ArchitectureFitnessTests(unittest.TestCase):
                     self._results(report)["background_job"].status,
                     "unsupported" if expected_queue else "not_applicable",
                 )
+                self.assertEqual(report.status, "fail" if expected_queue else "pass")
                 self.assertEqual("new_queue" in report.triggers, expected_queue)
+                self.assertGreaterEqual(
+                    FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+                )
 
     def test_completed_queue_cache_is_charged_per_importer_before_reuse(self) -> None:
         system = _system()

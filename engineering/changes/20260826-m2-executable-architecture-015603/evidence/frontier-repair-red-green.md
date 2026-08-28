@@ -304,3 +304,56 @@ architecture validate, drift, and diagram check pass without findings or
 mismatches; README K16 passes; diff whitespace and protected-path checks pass.
 The required text-verifier, commit, and exact-SHA evidence are recorded below
 after those gates complete.
+
+## Unaliased dotted-import rereview
+
+The rereview found that `import project.runtime` retained only the bound root
+`project` and emitted `project.app`, dropping the `runtime` segment before
+abstract interpretation. The same review requested removal of the magic cache
+inventory sentinel and independent worktree request-count and encoded-input
+limit oracles.
+
+RED evidence:
+
+```text
+test_mixed_local_module_exports_are_member_specific
+test_exact_batch_blob_reader_is_bounded_and_validates_entries
+Ran 2 tests in 2.402s
+FAILED (failures=1: dotted queue was not_applicable instead of unsupported)
+```
+
+The repair carries a distinct full access prefix while retaining the import
+binding root for dependency matching. The interpreter constructs nested object
+provenance for unaliased dotted imports, so `project.runtime.app` is queue-derived
+without tainting `project.runtime.form`; existing aliased and wildcard semantics
+remain unchanged. `_QueueResolutionCache` now explicitly contains module
+inventory, source paths, and prefetched/completed resolutions; no sentinel key
+remains.
+
+GREEN and performance evidence:
+
+```text
+2 focused dotted-import and independent batch-limit selectors
+Ran 2 tests in 2.399s
+OK
+
+python3 -m unittest -v -k queue tests.test_architecture_fitness
+Ran 23 tests in 30.522s
+OK
+
+python3 -m unittest -v tests.test_architecture_fitness
+Ran 70 tests in 76.746s
+OK
+elapsed=76.93 exit=0
+
+python3 -m unittest discover -v
+Ran 364 tests in 188.994s
+OK
+elapsed=189.24 exit=0
+```
+
+Exact worktree fitness passes with background-job findings empty, monotonic risk
+`green -> red`, and code budget preserved at `9999/10000`. Ruff, configured
+Bandit, compileall, typed spec 7/7, architecture validate/drift/diagram, README
+K16, diff whitespace, protected paths, and exact change separation all pass.
+Text-verifier, commit, and exact-SHA evidence follow after the final gates.

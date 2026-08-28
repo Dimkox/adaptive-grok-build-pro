@@ -343,7 +343,6 @@ class _Interpreter:
         if min(statement_limit, value_limit, loop_limit) < 1:
             raise QueueAnalysisLimit("queue analysis limits must be positive")
         self.tree = tree
-        self.adapter_names = frozenset(adapter_names)
         self.statement_limit = statement_limit
         self.value_limit = value_limit
         self.loop_limit = loop_limit
@@ -355,12 +354,12 @@ class _Interpreter:
         self.uncertain = False
         self.lexical_depth = 0
         self.class_depth = 0
-        module_names = {name.split(".", 1)[0] for name in self.adapter_names if "." in name}
+        module_names = {name.rsplit(".", 1)[0] for name in adapter_names if "." in name}
         self.module_values = {
-            name: _structured("object", {("string", value.split(".", 1)[1]): QUEUE for value in self.adapter_names if value.startswith(name + ".")})
+            name: _structured("object", {("string", value.rsplit(".", 1)[1]): QUEUE for value in adapter_names if value.startswith(name + ".")})
             for name in module_names
         }
-        self.module_values.update({name: QUEUE for name in self.adapter_names if "." not in name})
+        self.module_values.update({name: QUEUE for name in adapter_names if "." not in name})
         self.pending_functions: list[
             tuple[ast.FunctionDef | ast.AsyncFunctionDef, _Environment]
         ] = []
@@ -875,11 +874,11 @@ class _Interpreter:
         if isinstance(statement, ast.Import):
             for alias in statement.names:
                 local = alias.asname or alias.name.split(".")[0]
-                self._bind(
-                    ast.Name(id=local),
-                    self.module_values.get(local, QUEUE if alias.name.split(".")[0] in _QUEUE_IMPORTS else NON_QUEUE),
-                    environment,
-                )
+                value = self.module_values.get(alias.asname or alias.name, QUEUE if alias.name.split(".")[0] in _QUEUE_IMPORTS else NON_QUEUE)
+                if not alias.asname and value != NON_QUEUE:
+                    for part in reversed(alias.name.split(".")[1:]):
+                        value = _structured("object", {("string", part): value})
+                self._bind(ast.Name(id=local), value, environment)
             return environment
         if isinstance(statement, ast.ImportFrom):
             is_queue = bool(
