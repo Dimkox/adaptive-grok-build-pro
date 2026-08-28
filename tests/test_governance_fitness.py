@@ -189,6 +189,71 @@ class GovernanceFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "fail")
         self.assertIn("handoff", " ".join(result.findings))
 
+    def test_frozen_handoff_rejects_integrity_schema_weakening(self) -> None:
+        cases = (
+            (
+                "architecture digest property",
+                ("properties", "architecture_digest"),
+                {"type": "boolean"},
+            ),
+            (
+                "base SHA property",
+                ("properties", "exact_base_sha"),
+                {"type": "boolean"},
+            ),
+            (
+                "head SHA property",
+                ("properties", "exact_head_sha"),
+                {"type": "boolean"},
+            ),
+            (
+                "governance digest property",
+                ("properties", "governance_digest"),
+                {"type": "boolean"},
+            ),
+            (
+                "evidence digest property",
+                ("properties", "governance_evidence_digest"),
+                {"type": "boolean"},
+            ),
+            ("definitions removed", ("$defs",), None),
+            ("draft identity removed", ("$schema",), None),
+            ("schema identity changed", ("$id",), "https://example.test/weakened.json"),
+            ("unknown root metadata", ("$comment",), "locally trusted"),
+            ("additional definition", ("$defs", "unbounded"), {"type": "string"}),
+            ("SHA-40 type", ("$defs", "sha40", "type"), "boolean"),
+            ("SHA-40 pattern", ("$defs", "sha40", "pattern"), "^.*$"),
+            ("SHA-40 minimum length", ("$defs", "sha40", "minLength"), 0),
+            ("SHA-40 maximum length", ("$defs", "sha40", "maxLength"), 400),
+            ("SHA-256 type", ("$defs", "sha256", "type"), "boolean"),
+            ("SHA-256 pattern", ("$defs", "sha256", "pattern"), "^.*$"),
+            ("SHA-256 minimum length", ("$defs", "sha256", "minLength"), 0),
+            ("SHA-256 maximum length", ("$defs", "sha256", "maxLength"), 640),
+        )
+        for label, path, replacement in cases:
+            with self.subTest(label=label):
+                repo, base = self._repo()
+                handoff = json.loads(
+                    (ROOT / HANDOFF_SCHEMA_PATH).read_text(encoding="utf-8")
+                )
+                parent = handoff
+                for key in path[:-1]:
+                    parent = parent[key]
+                if replacement is None:
+                    parent.pop(path[-1])
+                else:
+                    parent[path[-1]] = replacement
+                repo.write_json(HANDOFF_SCHEMA_PATH, handoff)
+                repo.write_text("governance/README.md", "governance change\n")
+                head = repo.commit(f"weaken {label}")
+
+                report = self._evaluate(repo, base, head)
+                result = self._results(report)["governance_promotion"]
+
+                self.assertEqual(result.status, "fail")
+                self.assertEqual(report.status, "fail")
+                self.assertIn("handoff", " ".join(result.findings))
+
     def test_malformed_applicable_input_is_unsupported_and_fails_report(self) -> None:
         repo, base = self._repo()
         repo.write_text(RULES_PATH, "{not-json\n")

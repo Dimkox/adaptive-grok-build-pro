@@ -2,6 +2,45 @@
 
 Status: READY FOR INDEPENDENT REVIEW
 
+## Fix round 1 — freeze the complete handoff schema
+
+Independent review found that the initial handoff predicate froze the six root
+property names but not the five SHA/digest property schemas, `$defs`, draft/ID,
+or unknown/additional schema content. A changed handoff could therefore replace
+all integrity fields with booleans, remove their definitions, and still receive
+`governance_promotion=pass`.
+
+The repair binds the complete parsed schema to the trusted canonical v1
+semantic digest
+`3527385869bc73f628e1dc0e22025d3e54b7e3972aba3703f9b579146a8c80ba`.
+Serialization whitespace and object-key order do not matter, while any semantic
+removal, weakening, identity change, or addition fails the handoff match.
+
+The regression was RED for all 18 cases before the repair: each of the five
+integrity properties replaced by a boolean; `$defs` or `$schema` removal;
+changed `$id`; unknown root metadata; an extra definition; and type, pattern,
+minimum-length, or maximum-length changes for both SHA-40 and SHA-256. After the
+repair:
+
+```text
+python3 -m unittest tests.test_governance_fitness -v
+Ran 8 tests in 7.034s
+OK
+
+python3 scripts/grok_architecture.py diagram --check --json
+ok=true, mismatches=[]
+
+ruff check .grok-stack/adaptive_grok/architecture_fitness.py \
+  tests/test_governance_fitness.py
+All checks passed!
+
+git diff --check
+exit 0
+```
+
+No Task 7 file, architecture model, schema, generated artifact, external
+authority, runtime, or operational state changed in this fix round.
+
 ## Scope completed
 
 - Extended the existing M2 executable architecture with repository-owned

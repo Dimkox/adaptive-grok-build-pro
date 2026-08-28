@@ -131,6 +131,9 @@ _GOVERNANCE_SCHEMA_PATHS = (
     "schemas/governance-rule.schema.json",
 )
 _GOVERNANCE_HANDOFF_SCHEMA = "schemas/governance-handoff-v1.schema.json"
+_GOVERNANCE_HANDOFF_SCHEMA_DIGEST = (
+    "3527385869bc73f628e1dc0e22025d3e54b7e3972aba3703f9b579146a8c80ba"
+)
 _GOVERNANCE_PROJECTIONS = {"decisions.md", "mistakes.md"}
 _GOVERNANCE_VERSION = 1
 _MAX_GOVERNANCE_NODES = 100_000
@@ -367,27 +370,7 @@ def _schema_version(document: dict[str, Any], *, path: str) -> int:
 
 
 def _handoff_shape_matches(document: dict[str, Any]) -> bool:
-    fields = {
-        "architecture_digest",
-        "exact_base_sha",
-        "exact_head_sha",
-        "governance_contract_version",
-        "governance_digest",
-        "governance_evidence_digest",
-    }
-    properties = document.get("properties")
-    required = document.get("required")
-    return (
-        document.get("type") == "object"
-        and document.get("additionalProperties") is False
-        and isinstance(properties, dict)
-        and set(properties) == fields
-        and isinstance(required, list)
-        and len(required) == len(fields)
-        and set(required) == fields
-        and properties.get("governance_contract_version")
-        == {"const": 1, "type": "integer"}
-    )
+    return _digest(document) == _GOVERNANCE_HANDOFF_SCHEMA_DIGEST
 
 
 def _activation_findings(

@@ -14,6 +14,12 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-08-28 — Froze a contract shell instead of the complete schema
+
+**Symptom:** Governance fitness accepted handoff schemas whose five digest/SHA fields were booleans and whose `$defs` or draft identity had been removed.
+**Root cause:** `_handoff_shape_matches()` compared selected root names and only the version field, treating a familiar outer shape as equivalent to the complete frozen v1 contract.
+**Durable rule:** Frozen contracts must be bound to a trusted canonical semantic digest or compared exhaustively; unknown and additive schema mutations fail closed.
+
 ## 2026-08-28 — Let a direct evidence mapping bypass strict JSON parsing
 
 **Symptom:** A direct caller could put `NaN` into an architecture evidence mapping and receive a raw serialization `ValueError` instead of a typed governance rejection.
