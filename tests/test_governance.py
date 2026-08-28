@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import hmac
+import inspect
 import os
+import runpy
 import shutil
 import sys
 import tempfile
@@ -17,6 +21,7 @@ sys.path.insert(0, str(ROOT / ".grok-stack"))
 import adaptive_grok.governance as governance
 from adaptive_grok.spec import SpecError, load_schema, validate_schema
 from adaptive_grok.governance import (
+    ActorRef,
     GovernanceError,
     MAX_DEBT_ENTRIES,
     MAX_DEPTH,
@@ -25,9 +30,12 @@ from adaptive_grok.governance import (
     MAX_EXAMPLES,
     MAX_PARSED_NODES,
     MAX_RULES,
+    RuleRecord,
+    effective_rules,
     governance_digests,
     load_bytes,
     load_governance,
+    transition_rule,
     validate_governance,
 )
 
@@ -133,6 +141,111 @@ def _valid_example() -> dict[str, object]:
         "supersedes": ["EXAMPLE-REPOSITORY-000", "EXAMPLE-LEGACY-REPOSITORY"],
         "version": 1,
     }
+
+
+def _active_rule(
+    rule_id: str = "RULE-LIVE",
+    *,
+    author_id: str = "agent-author",
+    reviewer_id: str = "reviewer-1",
+    statement: str = "Repository adapters must use bounded operations.",
+) -> dict[str, object]:
+    rule = _valid_rule()
+    rule.update(
+        {
+            "approved_by": [
+                {
+                    "actor_id": "governance-owner",
+                    "actor_kind": "human",
+                    "approved_at": "2026-08-28T12:30:00Z",
+                    "scope": "governance",
+                }
+            ],
+            "author": {"actor_id": author_id, "actor_kind": "agent"},
+            "created_at": "2026-08-28T11:30:00Z",
+            "expires_at": "2026-08-29T11:30:00Z",
+            "reviewed_by": [
+                {
+                    "actor_id": reviewer_id,
+                    "actor_kind": "system",
+                    "reviewed_at": "2026-08-28T12:00:00Z",
+                }
+            ],
+            "revision": 4,
+            "rule_id": rule_id,
+            "statement": statement,
+            "status": "active",
+        }
+    )
+    rule["evidence"] = [
+        {
+            "evidence_id": f"EVIDENCE-{rule_id}",
+            "path": f"engineering/evidence/{rule_id.lower()}.json",
+            "sha256": "0" * 64,
+        }
+    ]
+    return rule
+
+
+def _make_fixture(
+    test: unittest.TestCase,
+    *,
+    rules: list[dict[str, object]] | None = None,
+    debt: list[dict[str, object]] | None = None,
+    examples: list[dict[str, object]] | None = None,
+    rules_symlink: bool = False,
+    materialize_evidence: bool = False,
+) -> Path:
+    temporary = tempfile.TemporaryDirectory()
+    test.addCleanup(temporary.cleanup)
+    root = Path(temporary.name)
+    (root / "schemas").mkdir()
+    (root / "governance" / "rules").mkdir(parents=True)
+    (root / "governance" / "debt").mkdir(parents=True)
+    (root / "governance" / "canonical-examples").mkdir(parents=True)
+    for schema_name in (
+        "governance-rule.schema.json",
+        "debt-entry.schema.json",
+        "canonical-example.schema.json",
+        "governance-handoff-v1.schema.json",
+    ):
+        shutil.copy2(ROOT / "schemas" / schema_name, root / "schemas" / schema_name)
+
+    documents = {
+        "governance/rules/index.json": {
+            "governance_id": "GOV-ADAPTIVE-GROK-M3",
+            "rules": rules if rules is not None else [],
+            "schema_version": 1,
+        },
+        "governance/debt/index.json": {
+            "entries": debt if debt is not None else [],
+            "governance_id": "GOV-ADAPTIVE-GROK-M3",
+            "schema_version": 1,
+        },
+        "governance/canonical-examples/index.json": {
+            "examples": examples if examples is not None else [],
+            "governance_id": "GOV-ADAPTIVE-GROK-M3",
+            "schema_version": 1,
+        },
+    }
+    if materialize_evidence:
+        for collection in (rules or [], debt or [], examples or []):
+            for record in collection:
+                for evidence in record["evidence"]:
+                    evidence_path = root / evidence["path"]
+                    evidence_path.parent.mkdir(parents=True, exist_ok=True)
+                    content = f'{evidence["evidence_id"]}\n'.encode()
+                    evidence_path.write_bytes(content)
+                    evidence["sha256"] = hashlib.sha256(content).hexdigest()
+    for relative, document in documents.items():
+        (root / relative).write_bytes(_canonical_bytes(document))
+    if rules_symlink:
+        rules_path = root / "governance" / "rules" / "index.json"
+        outside = root / "outside-rules.json"
+        outside.write_bytes(rules_path.read_bytes())
+        rules_path.unlink()
+        rules_path.symlink_to(outside)
+    return root
 
 
 class GovernanceSchemaTests(unittest.TestCase):
@@ -268,48 +381,16 @@ class GovernanceLoaderTests(unittest.TestCase):
         debt: list[dict[str, object]] | None = None,
         examples: list[dict[str, object]] | None = None,
         rules_symlink: bool = False,
+        materialize_evidence: bool = False,
     ) -> Path:
-        temporary = tempfile.TemporaryDirectory()
-        self.addCleanup(temporary.cleanup)
-        root = Path(temporary.name)
-        (root / "schemas").mkdir()
-        (root / "governance" / "rules").mkdir(parents=True)
-        (root / "governance" / "debt").mkdir(parents=True)
-        (root / "governance" / "canonical-examples").mkdir(parents=True)
-        for schema_name in (
-            "governance-rule.schema.json",
-            "debt-entry.schema.json",
-            "canonical-example.schema.json",
-            "governance-handoff-v1.schema.json",
-        ):
-            shutil.copy2(ROOT / "schemas" / schema_name, root / "schemas" / schema_name)
-
-        documents = {
-            "governance/rules/index.json": {
-                "governance_id": "GOV-ADAPTIVE-GROK-M3",
-                "rules": rules if rules is not None else [],
-                "schema_version": 1,
-            },
-            "governance/debt/index.json": {
-                "entries": debt if debt is not None else [],
-                "governance_id": "GOV-ADAPTIVE-GROK-M3",
-                "schema_version": 1,
-            },
-            "governance/canonical-examples/index.json": {
-                "examples": examples if examples is not None else [],
-                "governance_id": "GOV-ADAPTIVE-GROK-M3",
-                "schema_version": 1,
-            },
-        }
-        for relative, document in documents.items():
-            (root / relative).write_bytes(_canonical_bytes(document))
-        if rules_symlink:
-            rules_path = root / "governance" / "rules" / "index.json"
-            outside = root / "outside-rules.json"
-            outside.write_bytes(rules_path.read_bytes())
-            rules_path.unlink()
-            rules_path.symlink_to(outside)
-        return root
+        return _make_fixture(
+            self,
+            rules=rules,
+            debt=debt,
+            examples=examples,
+            rules_symlink=rules_symlink,
+            materialize_evidence=materialize_evidence,
+        )
 
     def _rules_for_digest(self) -> list[dict[str, object]]:
         first = _valid_rule()
@@ -640,6 +721,304 @@ class GovernanceLoaderTests(unittest.TestCase):
         self.assertNotEqual(first["governance_digest"], changed["governance_digest"])
         self.assertEqual(first["debt_digest"], changed["debt_digest"])
         self.assertEqual(first["examples_digest"], changed["examples_digest"])
+
+
+class GovernanceLifecycleTests(unittest.TestCase):
+    NOW = datetime(2026, 8, 28, 13, 0, tzinfo=timezone.utc)
+
+    def _fixture(
+        self,
+        *,
+        rules: list[dict[str, object]] | None = None,
+        materialize_evidence: bool = False,
+    ) -> Path:
+        return _make_fixture(
+            self,
+            rules=rules,
+            materialize_evidence=materialize_evidence,
+        )
+
+    def test_agent_can_only_create_candidate_and_exact_graph_preserves_identity(self) -> None:
+        candidate_data = _valid_rule()
+        candidate_data["author"] = {
+            "actor_id": "same-agent",
+            "actor_kind": "agent",
+        }
+        candidate = RuleRecord.from_dict(candidate_data)
+
+        with self.assertRaisesRegex(GovernanceError, "agent may only create candidate"):
+            transition_rule(
+                candidate,
+                "active",
+                ActorRef("same-agent", "agent"),
+                at=self.NOW,
+            )
+
+        reviewer = ActorRef("reviewer-1", "system")
+        reviewed = transition_rule(candidate, "reviewed", reviewer, at=self.NOW)
+        self.assertEqual(reviewed.status, "reviewed")
+        self.assertEqual(reviewed.revision, candidate.revision + 1)
+        self.assertEqual(reviewed.rule_id, candidate.rule_id)
+        self.assertEqual(reviewed.source_task, candidate.source_task)
+        self.assertEqual(reviewed.author, candidate.author)
+        self.assertEqual(reviewed.created_at, candidate.created_at)
+        self.assertEqual(reviewed.reviewed_by[-1].actor_id, "reviewer-1")
+
+        approved = transition_rule(
+            reviewed,
+            "approved",
+            ActorRef("governance-owner", "human"),
+            at=self.NOW,
+        )
+        active = transition_rule(
+            approved,
+            "active",
+            ActorRef("activation-controller", "system"),
+            at=self.NOW,
+        )
+        deprecated = transition_rule(
+            active,
+            "deprecated",
+            ActorRef("governance-owner", "human"),
+            at=self.NOW,
+        )
+        revoked = transition_rule(
+            deprecated,
+            "revoked",
+            ActorRef("governance-owner", "human"),
+            at=self.NOW,
+        )
+        emergency = transition_rule(
+            active,
+            "revoked",
+            ActorRef("revocation-controller", "system"),
+            at=self.NOW,
+        )
+        self.assertEqual(revoked.status, "revoked")
+        self.assertEqual(emergency.status, "revoked")
+        with self.assertRaisesRegex(GovernanceError, "invalid rule transition"):
+            transition_rule(
+                active,
+                "reviewed",
+                ActorRef("governance-owner", "human"),
+                at=self.NOW,
+            )
+
+    def test_transition_requires_evidence_independent_review_and_human_approval(self) -> None:
+        missing_evidence = _valid_rule()
+        missing_evidence["evidence"] = []
+        with self.assertRaisesRegex(GovernanceError, "evidence digest"):
+            transition_rule(
+                RuleRecord.from_dict(missing_evidence),
+                "reviewed",
+                ActorRef("reviewer-1", "system"),
+                at=self.NOW,
+            )
+
+        candidate = RuleRecord.from_dict(_valid_rule())
+        with self.assertRaisesRegex(GovernanceError, "independent reviewer"):
+            transition_rule(
+                candidate,
+                "reviewed",
+                ActorRef(candidate.author.actor_id, "system"),
+                at=self.NOW,
+            )
+
+        reviewed = transition_rule(
+            candidate,
+            "reviewed",
+            ActorRef("reviewer-1", "system"),
+            at=self.NOW,
+        )
+        unapproved = RuleRecord.from_dict(
+            {**reviewed.to_dict(), "status": "approved", "revision": 3}
+        )
+        with self.assertRaisesRegex(GovernanceError, "human governance approval"):
+            transition_rule(
+                unapproved,
+                "active",
+                ActorRef("activation-controller", "system"),
+                at=self.NOW,
+            )
+
+    def test_agent_authored_self_reviewed_unapproved_active_rule_is_rejected(self) -> None:
+        rule = _active_rule(
+            "RULE-SELF-REVIEWED",
+            author_id="agent-a",
+            reviewer_id="agent-a",
+        )
+        rule["approved_by"] = []
+        root = self._fixture(rules=[rule], materialize_evidence=True)
+
+        findings = validate_governance(
+            load_governance(root), root, now=self.NOW
+        )
+        self.assertIn(
+            "rule-review-not-independent", {item.code for item in findings}
+        )
+        self.assertIn("rule-approval-required", {item.code for item in findings})
+
+    def test_live_evidence_is_required_after_candidate_status(self) -> None:
+        rule = _active_rule("RULE-EVIDENCE")
+        root = self._fixture(rules=[rule])
+        findings = validate_governance(load_governance(root), root, now=self.NOW)
+        self.assertIn("rule-evidence-unavailable", {item.code for item in findings})
+
+        evidence = root / rule["evidence"][0]["path"]
+        evidence.parent.mkdir(parents=True)
+        evidence.write_text("different\n", encoding="utf-8")
+        findings = validate_governance(load_governance(root), root, now=self.NOW)
+        self.assertIn("rule-evidence-digest-mismatch", {item.code for item in findings})
+
+    def test_expired_revoked_and_deprecated_rules_are_not_effective(self) -> None:
+        expired = _active_rule("RULE-EXPIRED")
+        expired["expires_at"] = "2026-08-28T12:59:59Z"
+        revoked = _active_rule("RULE-REVOKED")
+        revoked["status"] = "revoked"
+        deprecated = _active_rule("RULE-DEPRECATED")
+        deprecated["status"] = "deprecated"
+        live = _active_rule("RULE-LIVE")
+        root = self._fixture(
+            rules=[expired, revoked, deprecated, live],
+            materialize_evidence=True,
+        )
+        snapshot = load_governance(root)
+
+        self.assertEqual(
+            [item.rule_id for item in effective_rules(snapshot, now=self.NOW)],
+            ["RULE-LIVE"],
+        )
+        self.assertIn(
+            "rule-expired",
+            {item.code for item in validate_governance(snapshot, root, now=self.NOW)},
+        )
+        with self.assertRaisesRegex(GovernanceError, "timezone-aware"):
+            effective_rules(snapshot, now=self.NOW.replace(tzinfo=None))
+
+    def test_duplicate_and_conflict_findings_are_deterministic(self) -> None:
+        first = _active_rule("RULE-A", statement="Use explicit timeouts.")
+        duplicate = _active_rule(
+            "RULE-B", statement="  Use   explicit\n timeouts.  "
+        )
+        conflict = _active_rule("RULE-C", statement="Retries are unbounded.")
+        conflict["scope"] = {
+            "domains": ["ai"],
+            "repository_paths": ["src"],
+            "route_intents": ["feature"],
+        }
+        for rule in (first, duplicate):
+            rule["scope"] = {
+                "domains": ["ai"],
+                "repository_paths": ["src/adapters"],
+                "route_intents": ["feature"],
+            }
+
+        def relevant_findings(rules: list[dict[str, object]]) -> list[tuple[str, str]]:
+            root = self._fixture(rules=rules, materialize_evidence=True)
+            findings = validate_governance(load_governance(root), root, now=self.NOW)
+            return [
+                (item.code, item.path)
+                for item in findings
+                if item.code in {"rule-conflict", "rule-duplicate"}
+            ]
+
+        expected = [
+            ("rule-conflict", "rules[RULE-A,RULE-C]"),
+            ("rule-conflict", "rules[RULE-B,RULE-C]"),
+            ("rule-duplicate", "rules[RULE-A,RULE-B]"),
+        ]
+        self.assertEqual(relevant_findings([first, duplicate, conflict]), expected)
+        self.assertEqual(relevant_findings([conflict, duplicate, first]), expected)
+
+    def test_seven_canonical_examples_expose_small_safe_surfaces(self) -> None:
+        examples = ROOT / "governance" / "canonical-examples"
+        expected = {
+            "authorization.py",
+            "background_job.py",
+            "error_handling.py",
+            "http_adapter.py",
+            "migration.sql",
+            "repository.py",
+            "webhook_handler.py",
+        }
+        self.assertTrue(expected.issubset({path.name for path in examples.iterdir()}))
+
+        http = runpy.run_path(examples / "http_adapter.py")
+        calls: list[tuple[object, ...]] = []
+        adapter = http["HttpAdapter"](
+            lambda method, path, timeout, correlation: calls.append(
+                (method, path, timeout, correlation)
+            )
+            or {"status": 204}
+        )
+        self.assertEqual(
+            adapter.request(
+                "GET", "/health", timeout_seconds=5, correlation_id="corr-1"
+            ),
+            {"status": 204},
+        )
+        self.assertEqual(calls, [("GET", "/health", 5, "corr-1")])
+        with self.assertRaises(http["HttpAdapterError"]):
+            adapter.request(
+                "GET", "/health", timeout_seconds=0, correlation_id="corr-1"
+            )
+
+        repository = runpy.run_path(examples / "repository.py")
+        queries: list[tuple[str, tuple[object, ...]]] = []
+        repo = repository["Repository"](
+            lambda query, parameters: queries.append((query, parameters)) or {"id": 7}
+        )
+        self.assertEqual(repo.get_by_id(7), {"id": 7})
+        repo.save({"id": 7}, "save-7")
+        self.assertEqual(queries[0][1], (7,))
+        self.assertEqual(queries[1][1], ({"id": 7}, "save-7"))
+
+        background = runpy.run_path(examples / "background_job.py")
+        attempts = 0
+
+        def flaky_job(correlation_id: str) -> str:
+            nonlocal attempts
+            attempts += 1
+            if attempts < 2:
+                raise background["RetryableJobError"]("temporary")
+            return correlation_id
+
+        self.assertEqual(
+            background["run_background_job"](
+                flaky_job, max_attempts=2, correlation_id="corr-2"
+            ),
+            "corr-2",
+        )
+        self.assertEqual(attempts, 2)
+
+        webhook = runpy.run_path(examples / "webhook_handler.py")
+        body = b'{"event":"ping"}'
+        secret = b"test-secret"
+        signature = hmac.new(secret, body, hashlib.sha256).hexdigest()
+        self.assertTrue(webhook["verify_webhook"](body, signature, secret))
+        self.assertFalse(webhook["verify_webhook"](body, "0" * 64, secret))
+
+        authorization = runpy.run_path(examples / "authorization.py")
+        actor = authorization["Actor"](
+            actor_id="human-1", permissions=frozenset({("read", "document")})
+        )
+        resource = authorization["Resource"]("document", "doc-1")
+        self.assertTrue(authorization["authorize"](actor, "read", resource))
+        self.assertFalse(authorization["authorize"](actor, "delete", resource))
+
+        errors = runpy.run_path(examples / "error_handling.py")
+        error = errors["DomainError"]("not_found", "Resource not found")
+        self.assertEqual((error.code, str(error)), ("not_found", "Resource not found"))
+        self.assertEqual(
+            list(inspect.signature(errors["DomainError"]).parameters),
+            ["code", "safe_message"],
+        )
+
+        migration = (examples / "migration.sql").read_text(encoding="utf-8")
+        self.assertIn("ADD COLUMN IF NOT EXISTS correlation_id text", migration)
+        self.assertIn("CREATE INDEX CONCURRENTLY IF NOT EXISTS", migration)
+        self.assertNotIn("NOT NULL", migration.upper())
+        self.assertNotIn("DROP ", migration.upper())
 
 
 if __name__ == "__main__":

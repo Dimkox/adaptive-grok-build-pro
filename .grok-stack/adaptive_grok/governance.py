@@ -8,9 +8,9 @@ import os
 import stat
 import unicodedata
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 from .spec import SpecError, _schema_preflight, validate_schema
 
@@ -44,6 +44,103 @@ class GovernanceFinding:
     message: str
     path: str
     severity: str = "error"
+
+
+ActorKind = Literal["human", "agent", "system"]
+RuleStatus = Literal[
+    "candidate", "reviewed", "approved", "active", "deprecated", "revoked"
+]
+
+
+@dataclass(frozen=True)
+class ActorRef:
+    actor_id: str
+    actor_kind: ActorKind
+
+    def __post_init__(self) -> None:
+        if not self.actor_id or self.actor_kind not in {"human", "agent", "system"}:
+            raise GovernanceError("transition actor is invalid", code="actor")
+
+
+@dataclass(frozen=True)
+class RuleReview:
+    actor_id: str
+    actor_kind: Literal["human", "system"]
+    reviewed_at: str
+
+
+@dataclass(frozen=True)
+class GovernanceApproval:
+    actor_id: str
+    actor_kind: Literal["human"]
+    approved_at: str
+    scope: Literal["governance"]
+
+
+@dataclass(frozen=True)
+class EvidenceRef:
+    evidence_id: str
+    path: str
+    sha256: str
+
+
+@dataclass(frozen=True)
+class RuleRecord:
+    _canonical_document: bytes
+
+    @classmethod
+    def from_dict(cls, document: dict[str, Any]) -> RuleRecord:
+        try:
+            canonical = _canonical_bytes(document)
+        except (KeyError, TypeError, ValueError, UnicodeEncodeError) as exc:
+            raise GovernanceError("rule record is invalid", code="rule") from exc
+        return cls(canonical)
+
+    def to_dict(self) -> dict[str, Any]:
+        return json.loads(self._canonical_document)
+
+    @property
+    def rule_id(self) -> str:
+        return self.to_dict()["rule_id"]
+
+    @property
+    def source_task(self) -> str:
+        return self.to_dict()["source_task"]
+
+    @property
+    def author(self) -> ActorRef:
+        author = self.to_dict()["author"]
+        return ActorRef(author["actor_id"], author["actor_kind"])
+
+    @property
+    def created_at(self) -> str:
+        return self.to_dict()["created_at"]
+
+    @property
+    def expires_at(self) -> str | None:
+        return self.to_dict()["expires_at"]
+
+    @property
+    def status(self) -> RuleStatus:
+        return self.to_dict()["status"]
+
+    @property
+    def revision(self) -> int:
+        return self.to_dict()["revision"]
+
+    @property
+    def evidence(self) -> tuple[EvidenceRef, ...]:
+        return tuple(EvidenceRef(**item) for item in self.to_dict()["evidence"])
+
+    @property
+    def reviewed_by(self) -> tuple[RuleReview, ...]:
+        return tuple(RuleReview(**item) for item in self.to_dict()["reviewed_by"])
+
+    @property
+    def approved_by(self) -> tuple[GovernanceApproval, ...]:
+        return tuple(
+            GovernanceApproval(**item) for item in self.to_dict()["approved_by"]
+        )
 
 
 @dataclass(frozen=True)
@@ -648,18 +745,345 @@ def load_governance(root: Path | str) -> GovernanceSnapshot:
         os.close(repository.descriptor)
 
 
+_RULE_TRANSITIONS: dict[RuleStatus, frozenset[RuleStatus]] = {
+    "candidate": frozenset({"reviewed"}),
+    "reviewed": frozenset({"approved"}),
+    "approved": frozenset({"active"}),
+    "active": frozenset({"deprecated", "revoked"}),
+    "deprecated": frozenset({"revoked"}),
+    "revoked": frozenset(),
+}
+
+
+def _require_aware(value: datetime, *, label: str) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise GovernanceError(f"{label} must be timezone-aware", code="timestamp")
+    return value.astimezone(timezone.utc)
+
+
+def _format_timestamp(value: datetime) -> str:
+    normalized = _require_aware(value, label="transition timestamp")
+    rendered = normalized.isoformat(timespec="microseconds")
+    if normalized.microsecond == 0:
+        rendered = normalized.isoformat(timespec="seconds")
+    return rendered.replace("+00:00", "Z")
+
+
+def _parse_timestamp(value: str, *, label: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value.removesuffix("Z") + "+00:00")
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise GovernanceError(f"{label} is not a valid UTC timestamp", code="timestamp") from exc
+    return _require_aware(parsed, label=label)
+
+
+def _has_independent_review(rule: RuleRecord) -> bool:
+    return any(review.actor_id != rule.author.actor_id for review in rule.reviewed_by)
+
+
+def _has_human_governance_approval(rule: RuleRecord) -> bool:
+    return any(
+        approval.actor_kind == "human" and approval.scope == "governance"
+        for approval in rule.approved_by
+    )
+
+
+def _has_evidence_digests(rule: RuleRecord) -> bool:
+    return bool(rule.evidence) and all(
+        evidence.path
+        and len(evidence.sha256) == 64
+        and all(character in "0123456789abcdef" for character in evidence.sha256)
+        for evidence in rule.evidence
+    )
+
+
+def transition_rule(
+    rule: RuleRecord,
+    target: RuleStatus,
+    actor: ActorRef,
+    *,
+    at: datetime,
+) -> RuleRecord:
+    timestamp = _format_timestamp(at)
+    if actor.actor_kind == "agent":
+        raise GovernanceError(
+            "agent may only create candidate governance rules",
+            code="rule-transition-actor",
+        )
+    if target not in _RULE_TRANSITIONS.get(rule.status, frozenset()):
+        raise GovernanceError(
+            f"invalid rule transition: {rule.status} -> {target}",
+            code="rule-transition",
+        )
+
+    document = rule.to_dict()
+    if target == "reviewed":
+        if not _has_evidence_digests(rule):
+            raise GovernanceError(
+                "reviewed rule requires at least one repository evidence digest",
+                code="rule-evidence-required",
+            )
+        if actor.actor_id == rule.author.actor_id:
+            raise GovernanceError(
+                "reviewed rule requires an independent reviewer",
+                code="rule-review-not-independent",
+            )
+        document["reviewed_by"].append(
+            {
+                "actor_id": actor.actor_id,
+                "actor_kind": actor.actor_kind,
+                "reviewed_at": timestamp,
+            }
+        )
+    elif target == "approved":
+        if not _has_independent_review(rule):
+            raise GovernanceError(
+                "approved rule requires an independent reviewer",
+                code="rule-review-not-independent",
+            )
+        if actor.actor_kind != "human":
+            raise GovernanceError(
+                "approval requires a human governance approval actor",
+                code="rule-approval-required",
+            )
+        document["approved_by"].append(
+            {
+                "actor_id": actor.actor_id,
+                "actor_kind": "human",
+                "approved_at": timestamp,
+                "scope": "governance",
+            }
+        )
+    elif target == "active":
+        if not _has_independent_review(rule):
+            raise GovernanceError(
+                "active rule requires an independent reviewer",
+                code="rule-review-not-independent",
+            )
+        if not _has_human_governance_approval(rule):
+            raise GovernanceError(
+                "active rule requires a human governance approval",
+                code="rule-approval-required",
+            )
+
+    document["status"] = target
+    document["revision"] = rule.revision + 1
+    return RuleRecord.from_dict(document)
+
+
+def _rule_is_unexpired(rule: RuleRecord, now: datetime) -> bool:
+    if rule.expires_at is None:
+        return True
+    return _parse_timestamp(
+        rule.expires_at, label=f"rule {rule.rule_id} expires_at"
+    ) > now
+
+
+def _rule_is_lifecycle_qualified(rule: RuleRecord) -> bool:
+    return (
+        rule.status == "active"
+        and _has_evidence_digests(rule)
+        and _has_independent_review(rule)
+        and _has_human_governance_approval(rule)
+    )
+
+
+def effective_rules(
+    snapshot: GovernanceSnapshot,
+    *,
+    now: datetime,
+) -> tuple[RuleRecord, ...]:
+    effective_at = _require_aware(now, label="now")
+    records = (RuleRecord.from_dict(rule) for rule in snapshot.rules["rules"])
+    return tuple(
+        sorted(
+            (
+                rule
+                for rule in records
+                if _rule_is_lifecycle_qualified(rule)
+                and _rule_is_unexpired(rule, effective_at)
+            ),
+            key=lambda rule: rule.rule_id,
+        )
+    )
+
+
+def _normalized_statement(statement: str) -> str:
+    return " ".join(unicodedata.normalize("NFC", statement).split())
+
+
+def _normalized_scope(rule: RuleRecord) -> dict[str, tuple[str, ...]]:
+    scope = rule.to_dict()["scope"]
+    return {
+        field: tuple(sorted(scope[field]))
+        for field in ("domains", "repository_paths", "route_intents")
+    }
+
+
+def _dimension_overlaps(first: tuple[str, ...], second: tuple[str, ...]) -> bool:
+    return not first or not second or bool(set(first).intersection(second))
+
+
+def _path_overlaps(first: str, second: str) -> bool:
+    first_parts = PurePosixPath(first).parts
+    second_parts = PurePosixPath(second).parts
+    common = min(len(first_parts), len(second_parts))
+    return first_parts[:common] == second_parts[:common]
+
+
+def _scopes_overlap(
+    first: dict[str, tuple[str, ...]], second: dict[str, tuple[str, ...]]
+) -> bool:
+    first_paths = first["repository_paths"]
+    second_paths = second["repository_paths"]
+    paths_overlap = (
+        not first_paths
+        or not second_paths
+        or any(
+            _path_overlaps(first_path, second_path)
+            for first_path in first_paths
+            for second_path in second_paths
+        )
+    )
+    return (
+        paths_overlap
+        and _dimension_overlaps(first["domains"], second["domains"])
+        and _dimension_overlaps(first["route_intents"], second["route_intents"])
+    )
+
+
+def _rule_pair_findings(
+    rules: tuple[RuleRecord, ...], *, now: datetime
+) -> list[GovernanceFinding]:
+    findings: list[GovernanceFinding] = []
+    ordered = sorted(rules, key=lambda rule: rule.rule_id)
+    for index, first in enumerate(ordered):
+        for second in ordered[index + 1 :]:
+            path = f"rules[{first.rule_id},{second.rule_id}]"
+            first_document = first.to_dict()
+            second_document = second.to_dict()
+            first_scope = _normalized_scope(first)
+            second_scope = _normalized_scope(second)
+            first_statement = _normalized_statement(first_document["statement"])
+            second_statement = _normalized_statement(second_document["statement"])
+            first_enforcement = first_document["enforcement"]
+            second_enforcement = second_document["enforcement"]
+            if (
+                first_scope == second_scope
+                and first_statement == second_statement
+                and first_enforcement == second_enforcement
+            ):
+                findings.append(
+                    GovernanceFinding(
+                        "rule-duplicate",
+                        f"rules {first.rule_id} and {second.rule_id} are duplicates",
+                        path,
+                    )
+                )
+                continue
+            both_live_active = (
+                first.status == "active"
+                and second.status == "active"
+                and _rule_is_unexpired(first, now)
+                and _rule_is_unexpired(second, now)
+            )
+            if (
+                both_live_active
+                and _scopes_overlap(first_scope, second_scope)
+                and first_enforcement["selector"] == second_enforcement["selector"]
+                and (
+                    first_statement != second_statement
+                    or first_enforcement["kind"] != second_enforcement["kind"]
+                )
+            ):
+                findings.append(
+                    GovernanceFinding(
+                        "rule-conflict",
+                        f"rules {first.rule_id} and {second.rule_id} conflict",
+                        path,
+                    )
+                )
+    return findings
+
+
 def validate_governance(
     snapshot: GovernanceSnapshot,
     root: Path | str,
     *,
     now: datetime,
 ) -> tuple[GovernanceFinding, ...]:
-    del now
+    validated_at = _require_aware(now, label="now")
     repository = _open_repository(root)
     try:
         _validate_structural_semantics(snapshot, repository.descriptor)
+        rules = tuple(
+            RuleRecord.from_dict(document) for document in snapshot.rules["rules"]
+        )
+        findings: list[GovernanceFinding] = []
+        for rule in rules:
+            path = f"rules[{rule.rule_id}]"
+            if rule.status != "candidate":
+                if not _has_independent_review(rule):
+                    findings.append(
+                        GovernanceFinding(
+                            "rule-review-not-independent",
+                            f"rule {rule.rule_id} requires an independent reviewer",
+                            path,
+                        )
+                    )
+                if rule.status in {"approved", "active", "deprecated", "revoked"} and not _has_human_governance_approval(rule):
+                    findings.append(
+                        GovernanceFinding(
+                            "rule-approval-required",
+                            f"rule {rule.rule_id} requires human governance approval",
+                            path,
+                        )
+                    )
+                for evidence in rule.evidence:
+                    try:
+                        content = _read_regular_bytes(
+                            repository.descriptor,
+                            evidence.path,
+                            label=f"rule {rule.rule_id} evidence {evidence.evidence_id}",
+                        )
+                    except GovernanceError:
+                        findings.append(
+                            GovernanceFinding(
+                                "rule-evidence-unavailable",
+                                f"rule {rule.rule_id} evidence is unavailable",
+                                evidence.path,
+                            )
+                        )
+                        continue
+                    if hashlib.sha256(content).hexdigest() != evidence.sha256:
+                        findings.append(
+                            GovernanceFinding(
+                                "rule-evidence-digest-mismatch",
+                                f"rule {rule.rule_id} evidence digest does not match",
+                                evidence.path,
+                            )
+                        )
+            if rule.status == "active" and not _rule_is_unexpired(rule, validated_at):
+                findings.append(
+                    GovernanceFinding(
+                        "rule-expired",
+                        f"rule {rule.rule_id} is expired",
+                        path,
+                    )
+                )
+        findings.extend(_rule_pair_findings(rules, now=validated_at))
         _verify_repository(repository)
-        return ()
+        return tuple(
+            sorted(
+                findings,
+                key=lambda finding: (
+                    finding.code,
+                    finding.path,
+                    finding.message,
+                    finding.severity,
+                ),
+            )
+        )
     finally:
         os.close(repository.descriptor)
 
