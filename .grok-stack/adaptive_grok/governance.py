@@ -84,9 +84,37 @@ class EvidenceRef:
     sha256: str
 
 
+_RULE_EVIDENCE_AUTHORITY = object()
+
+
 @dataclass(frozen=True)
+class _RuleEvidenceBinding:
+    repository_path: Path
+    repository_identity: tuple[int, int]
+    rule_digest: str
+    authority: object
+
+
+@dataclass(frozen=True, init=False)
 class RuleRecord:
     _canonical_document: bytes
+    _evidence_binding: _RuleEvidenceBinding | None = None
+
+    def __init__(self, canonical_document: bytes) -> None:
+        if not isinstance(canonical_document, bytes):
+            raise TypeError("canonical_document must be bytes")
+        object.__setattr__(self, "_canonical_document", canonical_document)
+        object.__setattr__(self, "_evidence_binding", None)
+
+    @classmethod
+    def _bound(
+        cls,
+        canonical_document: bytes,
+        binding: _RuleEvidenceBinding,
+    ) -> RuleRecord:
+        record = cls(canonical_document)
+        object.__setattr__(record, "_evidence_binding", binding)
+        return record
 
     @classmethod
     def from_dict(cls, document: dict[str, Any]) -> RuleRecord:
@@ -95,6 +123,36 @@ class RuleRecord:
         except (KeyError, TypeError, ValueError, UnicodeEncodeError) as exc:
             raise GovernanceError("rule record is invalid", code="rule") from exc
         return cls(canonical)
+
+    @classmethod
+    def _from_repository(
+        cls, document: dict[str, Any], repository: _RepositoryHandle
+    ) -> RuleRecord:
+        record = cls.from_dict(document)
+        return cls._bound(
+            record._canonical_document,
+            _RuleEvidenceBinding(
+                repository_path=repository.path,
+                repository_identity=repository.identity,
+                rule_digest=hashlib.sha256(record._canonical_document).hexdigest(),
+                authority=_RULE_EVIDENCE_AUTHORITY,
+            ),
+        )
+
+    def _with_document(self, document: dict[str, Any]) -> RuleRecord:
+        updated = self.from_dict(document)
+        binding = self._evidence_binding
+        if binding is None or binding.authority is not _RULE_EVIDENCE_AUTHORITY:
+            return updated
+        return RuleRecord._bound(
+            updated._canonical_document,
+            _RuleEvidenceBinding(
+                repository_path=binding.repository_path,
+                repository_identity=binding.repository_identity,
+                rule_digest=hashlib.sha256(updated._canonical_document).hexdigest(),
+                authority=_RULE_EVIDENCE_AUTHORITY,
+            ),
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return json.loads(self._canonical_document)
@@ -155,6 +213,7 @@ class GovernanceSnapshot:
     rules_path: str
     debt_path: str
     examples_path: str
+    rule_records: tuple[RuleRecord, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -711,13 +770,14 @@ def load_governance(root: Path | str) -> GovernanceSnapshot:
             label=EXAMPLES_PATH.as_posix(),
         )
 
+        normalized_rules = _normalize_root(
+            registry_documents[RULES_PATH],
+            collection="rules",
+            normalize_record=_normalize_rule,
+            stable_fields=("rule_id", "revision"),
+        )
         snapshot = GovernanceSnapshot(
-            rules=_normalize_root(
-                registry_documents[RULES_PATH],
-                collection="rules",
-                normalize_record=_normalize_rule,
-                stable_fields=("rule_id", "revision"),
-            ),
+            rules=normalized_rules,
             debt=_normalize_root(
                 registry_documents[DEBT_PATH],
                 collection="entries",
@@ -737,6 +797,10 @@ def load_governance(root: Path | str) -> GovernanceSnapshot:
             rules_path=RULES_PATH.as_posix(),
             debt_path=DEBT_PATH.as_posix(),
             examples_path=EXAMPLES_PATH.as_posix(),
+            rule_records=tuple(
+                RuleRecord._from_repository(rule, repository)
+                for rule in normalized_rules["rules"]
+            ),
         )
         _validate_structural_semantics(snapshot, repository.descriptor)
         _verify_repository(repository)
@@ -797,6 +861,58 @@ def _has_evidence_digests(rule: RuleRecord) -> bool:
     )
 
 
+def _has_live_repository_evidence(rule: RuleRecord) -> bool:
+    binding = rule._evidence_binding
+    if (
+        binding is None
+        or binding.authority is not _RULE_EVIDENCE_AUTHORITY
+        or binding.rule_digest
+        != hashlib.sha256(rule._canonical_document).hexdigest()
+        or not _has_evidence_digests(rule)
+    ):
+        return False
+    try:
+        repository = _open_repository(binding.repository_path)
+    except GovernanceError:
+        return False
+    try:
+        if repository.identity != binding.repository_identity:
+            return False
+        for evidence in rule.evidence:
+            _safe_relative_path(
+                repository.descriptor,
+                evidence.path,
+                label=f"rule {rule.rule_id} evidence {evidence.evidence_id}",
+            )
+            content = _read_regular_bytes(
+                repository.descriptor,
+                evidence.path,
+                label=f"rule {rule.rule_id} evidence {evidence.evidence_id}",
+            )
+            if hashlib.sha256(content).hexdigest() != evidence.sha256:
+                return False
+        _verify_repository(repository)
+        return True
+    except GovernanceError:
+        return False
+    finally:
+        os.close(repository.descriptor)
+
+
+def _snapshot_rule_records(
+    snapshot: GovernanceSnapshot,
+) -> tuple[RuleRecord, ...]:
+    documents = snapshot.rules["rules"]
+    if len(snapshot.rule_records) != len(documents):
+        return ()
+    if any(
+        record._canonical_document != _canonical_bytes(document)
+        for record, document in zip(snapshot.rule_records, documents)
+    ):
+        return ()
+    return snapshot.rule_records
+
+
 def transition_rule(
     rule: RuleRecord,
     target: RuleStatus,
@@ -814,6 +930,11 @@ def transition_rule(
         raise GovernanceError(
             f"invalid rule transition: {rule.status} -> {target}",
             code="rule-transition",
+        )
+    if target != "revoked" and not _has_live_repository_evidence(rule):
+        raise GovernanceError(
+            "rule transition requires repository-validated live evidence",
+            code="rule-evidence-unvalidated",
         )
 
     document = rule.to_dict()
@@ -868,7 +989,7 @@ def transition_rule(
 
     document["status"] = target
     document["revision"] = rule.revision + 1
-    return RuleRecord.from_dict(document)
+    return rule._with_document(document)
 
 
 def _rule_is_unexpired(rule: RuleRecord, now: datetime) -> bool:
@@ -882,7 +1003,7 @@ def _rule_is_unexpired(rule: RuleRecord, now: datetime) -> bool:
 def _rule_is_lifecycle_qualified(rule: RuleRecord) -> bool:
     return (
         rule.status == "active"
-        and _has_evidence_digests(rule)
+        and _has_live_repository_evidence(rule)
         and _has_independent_review(rule)
         and _has_human_governance_approval(rule)
     )
@@ -894,7 +1015,7 @@ def effective_rules(
     now: datetime,
 ) -> tuple[RuleRecord, ...]:
     effective_at = _require_aware(now, label="now")
-    records = (RuleRecord.from_dict(rule) for rule in snapshot.rules["rules"])
+    records = _snapshot_rule_records(snapshot)
     return tuple(
         sorted(
             (

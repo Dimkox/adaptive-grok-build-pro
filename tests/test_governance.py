@@ -738,13 +738,21 @@ class GovernanceLifecycleTests(unittest.TestCase):
             materialize_evidence=materialize_evidence,
         )
 
+    def _repository_validated_rule(
+        self, rule: dict[str, object]
+    ) -> RuleRecord:
+        root = self._fixture(rules=[rule], materialize_evidence=True)
+        snapshot = load_governance(root)
+        self.assertEqual(len(snapshot.rule_records), 1)
+        return snapshot.rule_records[0]
+
     def test_agent_can_only_create_candidate_and_exact_graph_preserves_identity(self) -> None:
         candidate_data = _valid_rule()
         candidate_data["author"] = {
             "actor_id": "same-agent",
             "actor_kind": "agent",
         }
-        candidate = RuleRecord.from_dict(candidate_data)
+        candidate = self._repository_validated_rule(candidate_data)
 
         with self.assertRaisesRegex(GovernanceError, "agent may only create candidate"):
             transition_rule(
@@ -807,7 +815,7 @@ class GovernanceLifecycleTests(unittest.TestCase):
     def test_transition_requires_evidence_independent_review_and_human_approval(self) -> None:
         missing_evidence = _valid_rule()
         missing_evidence["evidence"] = []
-        with self.assertRaisesRegex(GovernanceError, "evidence digest"):
+        with self.assertRaisesRegex(GovernanceError, "live evidence"):
             transition_rule(
                 RuleRecord.from_dict(missing_evidence),
                 "reviewed",
@@ -815,7 +823,7 @@ class GovernanceLifecycleTests(unittest.TestCase):
                 at=self.NOW,
             )
 
-        candidate = RuleRecord.from_dict(_valid_rule())
+        candidate = self._repository_validated_rule(_valid_rule())
         with self.assertRaisesRegex(GovernanceError, "independent reviewer"):
             transition_rule(
                 candidate,
@@ -824,15 +832,11 @@ class GovernanceLifecycleTests(unittest.TestCase):
                 at=self.NOW,
             )
 
-        reviewed = transition_rule(
-            candidate,
-            "reviewed",
-            ActorRef("reviewer-1", "system"),
-            at=self.NOW,
-        )
-        unapproved = RuleRecord.from_dict(
-            {**reviewed.to_dict(), "status": "approved", "revision": 3}
-        )
+        unapproved_data = _active_rule("RULE-UNAPPROVED")
+        unapproved_data["approved_by"] = []
+        unapproved_data["revision"] = 3
+        unapproved_data["status"] = "approved"
+        unapproved = self._repository_validated_rule(unapproved_data)
         with self.assertRaisesRegex(GovernanceError, "human governance approval"):
             transition_rule(
                 unapproved,
@@ -840,6 +844,47 @@ class GovernanceLifecycleTests(unittest.TestCase):
                 ActorRef("activation-controller", "system"),
                 at=self.NOW,
             )
+
+    def test_transition_rejects_unvalidated_traversal_evidence(self) -> None:
+        candidate = _valid_rule()
+        candidate["evidence"] = [
+            {
+                "evidence_id": "EVIDENCE-ESCAPE",
+                "path": "../outside",
+                "sha256": "a" * 64,
+            }
+        ]
+
+        with self.assertRaisesRegex(
+            GovernanceError, "repository-validated live evidence"
+        ):
+            transition_rule(
+                RuleRecord.from_dict(candidate),
+                "reviewed",
+                ActorRef("reviewer-1", "system"),
+                at=self.NOW,
+            )
+
+    def test_repository_validation_binding_is_not_caller_constructible(self) -> None:
+        candidate = RuleRecord.from_dict(_valid_rule())
+        with self.assertRaises(TypeError):
+            RuleRecord(candidate._canonical_document, object())
+
+    def test_effective_rules_reject_missing_and_mismatched_evidence(self) -> None:
+        for case, materialize in (("missing", False), ("mismatch", True)):
+            with self.subTest(case=case):
+                rule = _active_rule(f"RULE-{case.upper()}")
+                root = self._fixture(
+                    rules=[rule], materialize_evidence=materialize
+                )
+                snapshot = load_governance(root)
+                if materialize:
+                    evidence = root / rule["evidence"][0]["path"]
+                    evidence.write_text("mutated after registry load\n", encoding="utf-8")
+
+                self.assertEqual(
+                    effective_rules(snapshot, now=self.NOW), ()
+                )
 
     def test_agent_authored_self_reviewed_unapproved_active_rule_is_rejected(self) -> None:
         rule = _active_rule(
