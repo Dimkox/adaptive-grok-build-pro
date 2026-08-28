@@ -101,3 +101,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The final queue fix closed the former 64-round truncation but could still return N/A for a real local queue adapter in a neutral-named module after the 4,096-item worklist exhausted.
 **Root cause:** Exhaustion preserved only a boolean and then guessed relevance from module-name tokens instead of retaining the precise unresolved dependency frontier and resolving its local imports.
+
+## 2026-08-28 — Restored provenance over evolved same-path evidence
+
+**Symptom:** Restoring design commit `d3b49b7` produced add/add conflicts and briefly replaced newer M2-stack package files before the local commit was amended.
+**Root cause:** The restoration ruling was applied to every historical path without first comparing the target lineage for evolved same-path content. Provenance recovery must restore only missing blobs and merge genuinely absent decisions unless replacement of newer files is explicitly required.
