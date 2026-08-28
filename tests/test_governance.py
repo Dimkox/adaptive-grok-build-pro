@@ -1223,6 +1223,21 @@ class GovernanceKnowledgeTests(unittest.TestCase):
         }))
         return root
 
+    def _fixture_with_raw_debt_evidence(
+        self, debt: dict[str, object], content: bytes
+    ) -> Path:
+        root = self._fixture(debt=[debt])
+        evidence = debt["evidence"][0]
+        evidence_path = root / evidence["path"]
+        evidence_path.write_bytes(content)
+        evidence["sha256"] = hashlib.sha256(content).hexdigest()
+        (root / "governance/debt/index.json").write_bytes(_canonical_bytes({
+            "entries": [debt],
+            "governance_id": "GOV-ADAPTIVE-GROK-M3",
+            "schema_version": 1,
+        }))
+        return root
+
     def test_active_example_requires_review_approval_live_digest_and_contracts(self) -> None:
         mutations = {
             "example-evidence-required": lambda item: item.update(evidence=[]),
@@ -1247,13 +1262,24 @@ class GovernanceKnowledgeTests(unittest.TestCase):
                 findings = validate_governance(snapshot, root, now=self.NOW)
                 self.assertIn(code, {finding.code for finding in findings})
 
+    def test_repository_authored_example_authority_cannot_make_example_effective(self) -> None:
+        example = self._example()
+        root = self._fixture(examples=[example])
+        snapshot = load_governance(root)
+        self.assertIn(
+            "example-external-authority-required",
+            {
+                item.code
+                for item in validate_governance(snapshot, root, now=self.NOW)
+            },
+        )
+        self.assertEqual(effective_examples(snapshot), ())
+
     def test_effective_examples_require_loaded_provenance_and_explicit_supersession(self) -> None:
         example = self._example()
         root = self._fixture(examples=[example])
         snapshot = load_governance(root)
-        effective = effective_examples(snapshot)
-        self.assertEqual([item.example_id for item in effective], [example["example_id"]])
-        clone = ExampleRecord.from_dict(effective[0].to_dict())
+        clone = ExampleRecord.from_dict(snapshot.example_records[0].to_dict())
         self.assertEqual(effective_examples(replace(snapshot, example_records=(clone,))), ())
         (root / example["repository_paths"][0]).write_text("mutated\n", encoding="utf-8")
         self.assertEqual(effective_examples(snapshot), ())
@@ -1285,10 +1311,9 @@ class GovernanceKnowledgeTests(unittest.TestCase):
         example["category"] = "migration"
         root = self._fixture(examples=[example])
         snapshot = load_governance(root)
-        finding = validate_example_deviation(
+        self.assertIsNone(validate_example_deviation(
             snapshot, category="migration", justification=None
-        )
-        self.assertEqual(finding.code, "canonical-example-deviation")
+        ))
         self.assertIsNone(validate_example_deviation(
             snapshot,
             category="migration",
@@ -1348,7 +1373,7 @@ class GovernanceKnowledgeTests(unittest.TestCase):
         self.assertIn("debt-repayment-evidence-required", codes)
         self.assertIn("debt-acceptance-approval-required", codes)
 
-    def test_debt_repaid_and_accepted_accept_exact_structured_evidence(self) -> None:
+    def test_repository_authored_debt_evidence_cannot_repay_or_accept_debt(self) -> None:
         repaid = self._debt("DEBT-REPAID-001")
         repaid["status"] = "repaid"
         accepted = self._debt("DEBT-ACCEPTED-001")
@@ -1381,6 +1406,95 @@ class GovernanceKnowledgeTests(unittest.TestCase):
         }
         self.assertNotIn("debt-repayment-evidence-required", codes)
         self.assertNotIn("debt-acceptance-approval-required", codes)
+        self.assertIn("debt-repayment-authority-required", codes)
+        self.assertIn("debt-acceptance-authority-required", codes)
+
+    def test_malformed_repayment_evidence_is_a_finding_not_an_exception(self) -> None:
+        debt = self._debt("DEBT-REPAID-MALFORMED")
+        debt["status"] = "repaid"
+        test_path = debt["behavior_preserving_tests"][0]
+        documents = {
+            "scalar-tests": {"behavior_preserving_tests": 7},
+            "null-tests": {"behavior_preserving_tests": None},
+            "mixed-tests": {
+                "behavior_preserving_tests": [test_path, 7],
+            },
+            "oversized-tests": {
+                "behavior_preserving_tests": [
+                    f"tests/behavior_{index}.py" for index in range(129)
+                ],
+            },
+            "unknown-field": {
+                "behavior_preserving_tests": [test_path],
+                "untrusted": True,
+            },
+            "duplicate-tests": {
+                "behavior_preserving_tests": [test_path, test_path],
+            },
+            "null-receipt": None,
+        }
+        for label, document in documents.items():
+            with self.subTest(label=label):
+                current = self._debt(f"DEBT-REPAID-{label.upper()}")
+                current["status"] = "repaid"
+                if document is None:
+                    content = b"null"
+                else:
+                    content = _canonical_bytes({
+                        "debt_id": current["debt_id"],
+                        "revision": current["revision"],
+                        "status": "pass",
+                        **document,
+                    })
+                root = self._fixture_with_raw_debt_evidence(current, content)
+                codes = {
+                    item.code
+                    for item in validate_governance(
+                        load_governance(root), root, now=self.NOW
+                    )
+                }
+                self.assertIn("debt-evidence-document-invalid", codes)
+                self.assertIn("debt-repayment-authority-required", codes)
+
+    def test_malformed_acceptance_receipt_is_a_finding_not_authority(self) -> None:
+        invalid_receipts = {
+            "scalar-approval": {
+                "approved_by": 7,
+                "status": "accepted",
+            },
+            "null-approval": {
+                "approved_by": None,
+                "status": "accepted",
+            },
+            "unknown-field": {
+                "approved_by": {
+                    "actor_id": "governance-owner",
+                    "actor_kind": "human",
+                    "approved_at": "2026-08-28T12:00:00Z",
+                    "scope": "governance",
+                },
+                "status": "accepted",
+                "untrusted": True,
+            },
+        }
+        for label, receipt in invalid_receipts.items():
+            with self.subTest(label=label):
+                debt = self._debt(f"DEBT-ACCEPTED-{label.upper()}")
+                debt.update(status="accepted", deadline="2026-09-28T13:00:00Z")
+                content = _canonical_bytes({
+                    "debt_id": debt["debt_id"],
+                    "revision": debt["revision"],
+                    **receipt,
+                })
+                root = self._fixture_with_raw_debt_evidence(debt, content)
+                codes = {
+                    item.code
+                    for item in validate_governance(
+                        load_governance(root), root, now=self.NOW
+                    )
+                }
+                self.assertIn("debt-evidence-document-invalid", codes)
+                self.assertIn("debt-acceptance-authority-required", codes)
 
 
 if __name__ == "__main__":

@@ -86,6 +86,14 @@ class EvidenceRef:
     sha256: str
 
 
+@dataclass(frozen=True)
+class _DebtEvidenceClaim:
+    kind: Literal["observed", "repayment", "acceptance"]
+    debt_id: str | None = None
+    revision: int | None = None
+    behavior_preserving_tests: tuple[str, ...] = ()
+
+
 @dataclass(frozen=True, init=False, eq=False)
 class ExampleRecord:
     _canonical_document: bytes
@@ -995,6 +1003,13 @@ def _example_findings(
             findings.append(GovernanceFinding("example-review-required", f"example {example_id} requires independent review", path))
         if not any(item.get("actor_kind") == "human" and item.get("scope") == "governance" for item in approvals):
             findings.append(GovernanceFinding("example-approval-required", f"example {example_id} requires human governance approval", path))
+        findings.append(
+            GovernanceFinding(
+                "example-external-authority-required",
+                f"example {example_id} requires independently verified exact-record review and approval authority",
+                path,
+            )
+        )
         evidence_findings, _ = _evidence_contents(repository, document.get("evidence", []), owner=path, prefix="example")
         findings.extend(evidence_findings)
         files: list[tuple[str, bytes]] = []
@@ -1049,16 +1064,124 @@ def _example_findings(
     return findings
 
 
-def _parse_evidence_documents(contents: list[bytes]) -> list[dict[str, Any]]:
-    documents: list[dict[str, Any]] = []
-    for content in contents:
+def _parse_debt_evidence_documents(
+    contents: list[bytes],
+    repository: _RepositoryHandle,
+    *,
+    owner: str,
+) -> tuple[list[GovernanceFinding], list[_DebtEvidenceClaim]]:
+    findings: list[GovernanceFinding] = []
+    claims: list[_DebtEvidenceClaim] = []
+    for index, content in enumerate(contents):
+        evidence_path = f"{owner}.evidence[{index}]"
         try:
             document = load_bytes(content, label="governance evidence")
+            keys = frozenset(document)
+            status = document.get("status")
+            if status == "observed" and keys == {"status"}:
+                claims.append(_DebtEvidenceClaim("observed"))
+                continue
+            if status == "pass":
+                if keys != {
+                    "behavior_preserving_tests",
+                    "debt_id",
+                    "revision",
+                    "status",
+                }:
+                    raise GovernanceError(
+                        "repayment evidence has unknown or missing fields",
+                        code="evidence",
+                    )
+                debt_id = document.get("debt_id")
+                revision = document.get("revision")
+                tests = document.get("behavior_preserving_tests")
+                if (
+                    not isinstance(debt_id, str)
+                    or not debt_id
+                    or len(debt_id) > 128
+                    or isinstance(revision, bool)
+                    or not isinstance(revision, int)
+                    or not 1 <= revision <= 1_000_000
+                    or not isinstance(tests, list)
+                    or not 1 <= len(tests) <= 128
+                    or any(
+                        not isinstance(item, str)
+                        or not item
+                        or len(item) > 4_096
+                        for item in tests
+                    )
+                    or len(set(tests)) != len(tests)
+                ):
+                    raise GovernanceError(
+                        "repayment evidence fields are invalid", code="evidence"
+                    )
+                for relative in tests:
+                    _safe_relative_path(
+                        repository.descriptor,
+                        relative,
+                        label="debt repayment evidence test",
+                    )
+                claims.append(
+                    _DebtEvidenceClaim(
+                        "repayment",
+                        debt_id=debt_id,
+                        revision=revision,
+                        behavior_preserving_tests=tuple(sorted(tests)),
+                    )
+                )
+                continue
+            if status == "accepted":
+                if keys != {"approved_by", "debt_id", "revision", "status"}:
+                    raise GovernanceError(
+                        "acceptance evidence has unknown or missing fields",
+                        code="evidence",
+                    )
+                debt_id = document.get("debt_id")
+                revision = document.get("revision")
+                approval = document.get("approved_by")
+                if (
+                    not isinstance(debt_id, str)
+                    or not debt_id
+                    or len(debt_id) > 128
+                    or isinstance(revision, bool)
+                    or not isinstance(revision, int)
+                    or not 1 <= revision <= 1_000_000
+                    or not isinstance(approval, dict)
+                    or frozenset(approval)
+                    != {"actor_id", "actor_kind", "approved_at", "scope"}
+                    or not isinstance(approval.get("actor_id"), str)
+                    or not approval["actor_id"]
+                    or len(approval["actor_id"]) > 256
+                    or approval.get("actor_kind") != "human"
+                    or approval.get("scope") != "governance"
+                    or not isinstance(approval.get("approved_at"), str)
+                    or not approval["approved_at"].endswith("Z")
+                ):
+                    raise GovernanceError(
+                        "acceptance evidence fields are invalid", code="evidence"
+                    )
+                _parse_timestamp(
+                    approval["approved_at"], label="debt acceptance approved_at"
+                )
+                claims.append(
+                    _DebtEvidenceClaim(
+                        "acceptance", debt_id=debt_id, revision=revision
+                    )
+                )
+                continue
+            raise GovernanceError(
+                "debt evidence status is unsupported", code="evidence"
+            )
         except GovernanceError:
+            findings.append(
+                GovernanceFinding(
+                    "debt-evidence-document-invalid",
+                    f"{owner} evidence must match a closed bounded evidence contract",
+                    evidence_path,
+                )
+            )
             continue
-        if isinstance(document, dict):
-            documents.append(document)
-    return documents
+    return findings, claims
 
 
 def _debt_findings(
@@ -1097,30 +1220,48 @@ def _debt_findings(
                 findings.append(GovernanceFinding("debt-test-unavailable", f"debt {debt_id} test is unavailable", relative))
         evidence_findings, contents = _evidence_contents(repository, document.get("evidence", []), owner=path, prefix="debt")
         findings.extend(evidence_findings)
-        evidence_documents = _parse_evidence_documents(contents)
+        evidence_document_findings, evidence_claims = (
+            _parse_debt_evidence_documents(
+                contents, repository, owner=path
+            )
+        )
+        findings.extend(evidence_document_findings)
         status = document.get("status")
         if status in {"open", "repaying"} and deadline is not None and deadline <= now:
             findings.append(GovernanceFinding("debt-overdue", f"debt {debt_id} is overdue and remains open", path))
-        if status == "repaid" and not any(
-            item.get("debt_id") == debt_id
-            and item.get("revision") == document.get("revision")
-            and item.get("status") == "pass"
-            and sorted(item.get("behavior_preserving_tests", [])) == sorted(tests)
-            for item in evidence_documents
-        ):
-            findings.append(GovernanceFinding("debt-repayment-evidence-required", f"debt {debt_id} requires passing evidence for every behavior test", path))
+        if status == "repaid":
+            normalized_tests = tuple(sorted(tests))
+            if not any(
+                item.kind == "repayment"
+                and item.debt_id == debt_id
+                and item.revision == document.get("revision")
+                and item.behavior_preserving_tests == normalized_tests
+                for item in evidence_claims
+            ):
+                findings.append(GovernanceFinding("debt-repayment-evidence-required", f"debt {debt_id} requires passing evidence for every behavior test", path))
+            findings.append(
+                GovernanceFinding(
+                    "debt-repayment-authority-required",
+                    f"repaid debt {debt_id} requires independently verified exact-record repayment authority",
+                    path,
+                )
+            )
         if status == "accepted":
             approved = any(
-                item.get("debt_id") == debt_id
-                and item.get("revision") == document.get("revision")
-                and item.get("status") == "accepted"
-                and isinstance(item.get("approved_by"), dict)
-                and item["approved_by"].get("actor_kind") == "human"
-                and item["approved_by"].get("scope") == "governance"
-                for item in evidence_documents
+                item.kind == "acceptance"
+                and item.debt_id == debt_id
+                and item.revision == document.get("revision")
+                for item in evidence_claims
             )
             if not approved:
                 findings.append(GovernanceFinding("debt-acceptance-approval-required", f"accepted debt {debt_id} requires human governance approval evidence", path))
+            findings.append(
+                GovernanceFinding(
+                    "debt-acceptance-authority-required",
+                    f"accepted debt {debt_id} requires independently verified exact-record acceptance authority",
+                    path,
+                )
+            )
             if deadline is not None and deadline <= now:
                 findings.append(GovernanceFinding("debt-accepted-review-overdue", f"accepted debt {debt_id} requires a future review deadline", path))
     return findings
