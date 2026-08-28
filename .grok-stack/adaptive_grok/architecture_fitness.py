@@ -54,6 +54,8 @@ MAX_QUEUE_DEPENDENCY_WORK = 4_096
 MAX_MIGRATION_WORK = 4_096
 MAX_MIGRATION_FINDINGS = 256
 MAX_MIGRATION_BATCH_PATHS = 8
+MAX_MIGRATION_BYTES = 8 * 1024 * 1024
+MAX_MIGRATION_STATEMENTS = 4_096
 _PYTHON_SUFFIXES = {".py", ".pyi"}
 _NETWORK_IMPORTS = {
     "aiohttp": "https",
@@ -504,77 +506,148 @@ def _migration_phase(path: str) -> tuple[str, str] | None:
 
 def _migration_roots(snapshot: ArchitectureSnapshot, prefixes: tuple[str, ...]) -> tuple[str, ...]:
     primary = set(prefixes)
-    mirrors = {
-        path
-        for node in snapshot.system["nodes"]
-        if primary & set(node["repository_paths"])
+    return tuple(sorted(primary | {
+        path for node in snapshot.system["nodes"] if primary & set(node["repository_paths"])
         for path in node["repository_paths"]
         if Path(path).name.lower() in {"resources", "migrations"}
-    }
-    return tuple(sorted(primary | mirrors))
-
-
-def _migration_version(group: str) -> int | None:
-    match = re.match(r"^(?:v)?(?P<version>[0-9]+)(?:[_-].*)?$", group)
-    return int(match.group("version")) if match else None
+    }))
 
 
 def _bounded_migrate_predicate(statement: str) -> bool:
     where = re.search(r"\bWHERE\b(?P<predicate>.*?)(?:\bRETURNING\b|$)", statement)
-    if where is None:
-        return False
-    predicate = where.group("predicate")
+    predicate = where.group("predicate") if where else ""
     identifier = r"[A-Z_][A-Z0-9_.]*"
     operand = r"(?:\?|\$[0-9]+|%S|:[A-Z_][A-Z0-9_]*|[-+]?[0-9]+)"
-    if re.fullmatch(rf"\s*{identifier}\s+BETWEEN\s+{operand}\s+AND\s+{operand}\s*", predicate):
-        return True
     pattern = (rf"\s*(?P<column>{identifier})\s*(?P<first>>=?|<=?)\s*{operand}\s+AND\s+"
                rf"(?P=column)\s*(?P<second>>=?|<=?)\s*{operand}\s*")
     match = re.fullmatch(pattern, predicate)
-    return bool(match and (match["first"].startswith(">") != match["second"].startswith(">")))
+    between = re.fullmatch(rf"\s*{identifier}\s+BETWEEN\s+{operand}\s+AND\s+{operand}\s*", predicate)
+    return bool(between or match and (match["first"].startswith(">") != match["second"].startswith(">")))
 
 
-def _migration_source_findings(rule_id: str, path: str, phase: str, source: str) -> tuple[list[str], list[str]]:
-    findings, unsupported = [], []
-    statements = [item.strip() for item in re.sub(r"--[^\n]*", "", source).split(";") if item.strip()]
-    if not statements:
-        unsupported.append(f"{rule_id}: migration contains no analyzable SQL: {path}")
-        return findings, unsupported
-    for statement in statements:
-        normalized = " ".join(statement.upper().split())
-        verb = normalized.split()[0]
-        if phase != "contract" and re.search(r"\b(DROP|TRUNCATE)\b|\bALTER TABLE\b.*\bDROP\b", normalized):
-            findings.append(f"{rule_id}: destructive SQL outside contract phase: {path}")
-        elif phase == "expand" and " NOT NULL" in normalized:
-            findings.append(f"{rule_id}: NOT NULL is unsafe in expand phase: {path}")
-        elif phase == "expand" and not re.match(r"^(CREATE TABLE|CREATE (UNIQUE )?INDEX CONCURRENTLY|ALTER TABLE .* ADD )", normalized):
-            unsupported.append(f"{rule_id}: unsupported expand SQL semantics: {path}")
-        elif phase == "migrate" and verb in {"UPDATE", "DELETE"}:
-            if not re.search(r"\bWHERE\b", normalized) or re.search(r"\bWHERE\b.*(?:\b1\s*=\s*1\b|\bTRUE\b)", normalized):
-                findings.append(f"{rule_id}: unbounded {verb} in migrate phase: {path}")
-            elif not _bounded_migrate_predicate(normalized):
-                unsupported.append(f"{rule_id}: migrate bounded/resumable predicate is unproven: {path}")
-        elif phase == "migrate":
-            unsupported.append(f"{rule_id}: unsupported bounded INSERT semantics: {path}" if verb == "INSERT" else f"{rule_id}: unsupported migrate SQL semantics: {path}")
-        elif phase == "contract" and re.match(r"^ALTER TABLE\b.*\bADD\b", normalized):
-            findings.append(f"{rule_id}: expansive SQL in contract phase: {path}")
-        elif phase == "contract" and not re.match(r"^(ALTER TABLE .* DROP|DROP|TRUNCATE)\b", normalized):
-            unsupported.append(f"{rule_id}: unsupported contract SQL semantics: {path}")
-    return findings, unsupported
+class _MigrationPlan(NamedTuple):
+    rule: dict[str, Any]
+    roots: tuple[str, ...]
+    relevant: tuple[ChangedArtifact, ...]
+    primary: tuple[ChangedArtifact, ...]
+    head_paths: tuple[str, ...]
+    copies: dict[str, tuple[str, ...]]
 
 
-def _migration_blobs(root: Path, diff: ArchitectureDiff, paths: Iterable[str]) -> dict[str, bytes | None]:
-    values: dict[str, bytes | None] = {}
-    ordered = tuple(sorted(set(paths)))
-    for start in range(0, len(ordered), MAX_MIGRATION_BATCH_PATHS):
-        values.update(read_diff_files(root, diff, ordered[start:start + MAX_MIGRATION_BATCH_PATHS]))
-    return values
+class _MigrationAnalysis:
+    def __init__(self) -> None:
+        self.plans: list[_MigrationPlan] = []
+        self.root_plans: dict[str, list[int]] = {}
+        self.scope: tuple[str, ...] = ()
+        self.issues: list[tuple[bool, str]] = []
+        self.statements = 0
 
+    def record(self, unsupported: bool, message: str) -> None:
+        if len(self.issues) >= MAX_MIGRATION_FINDINGS - 1:
+            raise ArchitectureError("migration finding limit exceeded", code="limit")
+        self.issues.append((unsupported, message))
 
-def _migration_unsupported(rules, predicate: str, scope: Iterable[str], finding: str) -> FitnessResult:
-    return _result(
-        "migration_safety", status="unsupported", findings=(finding,), predicate=predicate,
-        rules=(rule["id"] for rule in rules), scope=scope, reason="unsupported_migration_semantics")
+    def read(self, root: Path, diff: ArchitectureDiff, paths: Iterable[str]) -> dict[str, bytes | None]:
+        values: dict[str, bytes | None] = {}
+        ordered = tuple(sorted(set(paths)))
+        total = 0
+        for start in range(0, len(ordered), MAX_MIGRATION_BATCH_PATHS):
+            batch = read_diff_files(root, diff, ordered[start:start + MAX_MIGRATION_BATCH_PATHS])
+            total += sum(len(value or b"") for value in batch.values())
+            if total > MAX_MIGRATION_BYTES:
+                raise ArchitectureError("migration aggregate byte limit exceeded", code="limit")
+            values.update(batch)
+        return values
+
+    def source(self, rule_id: str, path: str, phase: str, source: str) -> None:
+        if not (statements := [item.strip() for item in re.sub(r"--[^\n]*", "", source).split(";") if item.strip()]):
+            self.record(True, f"{rule_id}: migration contains no analyzable SQL: {path}")
+            return
+        for statement in statements:
+            if self.statements >= MAX_MIGRATION_STATEMENTS or len(self.issues) >= MAX_MIGRATION_FINDINGS - 1:
+                message = "migration statement work limit exceeded" if self.statements >= MAX_MIGRATION_STATEMENTS else "migration finding limit exceeded"
+                raise ArchitectureError(message, code="limit")
+            self.statements += 1
+            normalized = " ".join(statement.upper().split())
+            verb = normalized.split()[0]
+            unbounded = phase == "migrate" and verb in {"UPDATE", "DELETE"} and (
+                not re.search(r"\bWHERE\b", normalized)
+                or re.search(r"\bWHERE\b.*(?:\b1\s*=\s*1\b|\bTRUE\b)", normalized)
+            )
+            unproven = (phase == "migrate" and verb in {"UPDATE", "DELETE"}
+                        and not unbounded and not _bounded_migrate_predicate(normalized))
+            checks = (
+                (phase != "contract" and re.search(r"\b(DROP|TRUNCATE)\b|\bALTER TABLE\b.*\bDROP\b", normalized), False, "destructive SQL outside contract phase"),
+                (phase == "expand" and " NOT NULL" in normalized, False, "NOT NULL is unsafe in expand phase"),
+                (phase == "expand" and not re.match(r"^(CREATE TABLE|CREATE (UNIQUE )?INDEX CONCURRENTLY|ALTER TABLE .* ADD )", normalized), True, "unsupported expand SQL semantics"),
+                (unbounded, False, f"unbounded {verb} in migrate phase"),
+                (unproven, True, "migrate bounded/resumable predicate is unproven"),
+                (phase == "migrate" and verb not in {"UPDATE", "DELETE"}, True, "unsupported bounded INSERT semantics" if verb == "INSERT" else "unsupported migrate SQL semantics"),
+                (phase == "contract" and re.match(r"^ALTER TABLE\b.*\bADD\b", normalized), False, "expansive SQL in contract phase"),
+                (phase == "contract" and not re.match(r"^(ALTER TABLE .* DROP|DROP|TRUNCATE)\b", normalized), True, "unsupported contract SQL semantics"),
+            )
+            for applies, unsupported, message in checks:
+                if applies:
+                    self.record(unsupported, f"{rule_id}: {message}: {path}")
+                    break
+
+    def check(self, plan: _MigrationPlan, blobs: dict[str, bytes | None]) -> None:
+        rule, rule_id = plan.rule, plan.rule["id"]
+        changed_primary = {
+            item.path[len(prefix):].lstrip("/") for item in plan.primary for prefix in rule["path_prefixes"]
+            if _matches(item.path, (prefix,))
+        }
+        for item in plan.relevant:
+            relative = next(item.path[len(prefix):].lstrip("/") for prefix in plan.roots if _matches(item.path, (prefix,)))
+            if item not in plan.primary and relative not in changed_primary:
+                self.record(False, f"{rule_id}: migration mirror differs: {item.path}")
+            if rule["immutable_history"] and item.status in {"modified", "deleted"}:
+                self.record(False, f"{rule_id}: immutable migration history changed: {item.path}")
+        phases, version_groups, phase_paths = {}, {}, set()
+        for path in plan.head_paths:
+            parsed = _migration_phase(path)
+            if parsed is None:
+                continue
+            group, phase = parsed
+            phases.setdefault(group, set()).add(phase)
+            if (match := re.match(r"^(?:v)?(?P<version>[0-9]+)(?:[_-].*)?$", group)) is None:
+                self.record(True, f"{rule_id}: migration version cannot be derived: {path}")
+                continue
+            version = int(match.group("version"))
+            version_groups.setdefault(version, set()).add(group)
+            if (version, group, phase) in phase_paths:
+                self.record(False, f"{rule_id}: duplicate migration artifact for {version}/{group}/{phase}: {path}")
+            phase_paths.add((version, group, phase))
+        for version, groups in version_groups.items():
+            if len(groups) > 1:
+                self.record(False, f"{rule_id}: duplicate migration version {version}: {','.join(sorted(groups))}")
+        if version_groups and set(version_groups) != set(range(1, max(version_groups) + 1)):
+            self.record(False, f"{rule_id}: migration version history is not contiguous")
+        for item in plan.primary:
+            if item.status == "deleted":
+                self.record(False, f"{rule_id}: migration history removed: {item.path}")
+                continue
+            parsed = _migration_phase(item.path)
+            if parsed is None:
+                self.record(True, f"{rule_id}: migration phase cannot be derived: {item.path}")
+                continue
+            missing = sorted(set(rule["required_phases"]) - phases.get(parsed[0], set()))
+            if missing:
+                self.record(False, f"{rule_id}: migration {parsed[0]} missing phases: {','.join(missing)}")
+            value = blobs.get(item.path)
+            if value is None:
+                self.record(True, f"{rule_id}: migration source unavailable: {item.path}")
+                continue
+            try:
+                source = value.decode("utf-8")
+            except UnicodeDecodeError:
+                self.record(True, f"{rule_id}: migration is not UTF-8: {item.path}")
+                continue
+            self.source(rule_id, item.path, parsed[1], source)
+            for mirror in plan.copies[item.path]:
+                mirror_value = blobs.get(mirror)
+                if mirror_value != value:
+                    self.record(False, f"{rule_id}: migration mirror {'missing' if mirror_value is None else 'differs'}: {mirror}")
 
 
 def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: ArchitectureDiff) -> FitnessResult:
@@ -582,136 +655,62 @@ def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: Architec
     predicate = "changed SQL paths match a declared migration-history or derived mirror prefix"
     if not rules:
         return _not_applicable("migration_safety", predicate, (), "no_declared_rules")
-    root_work = sum(len(rule["path_prefixes"]) for rule in rules) * sum(
-        len(node["repository_paths"]) for node in snapshot.system["nodes"])
-    if root_work > MAX_MIGRATION_WORK:
-        return _migration_unsupported(rules, predicate, (), "migration aggregate work limit exceeded")
-    plans = []
-    root_plans: dict[str, list[int]] = {}
-    for rule in rules:
-        primary = tuple(rule["path_prefixes"])
-        mirrors = tuple(
-            (prefix, tuple(item for item in _migration_roots(snapshot, (prefix,)) if item != prefix))
-            for prefix in primary
-        )
-        roots = tuple(sorted(set(primary).union(*(items for _, items in mirrors))))
-        plans.append((rule, roots, mirrors))
-        for migration_root in roots:
-            root_plans.setdefault(migration_root, []).append(len(plans) - 1)
-    sql_artifacts = tuple(item for item in diff.artifacts if Path(item.path).suffix.lower() == ".sql")
-    if len(sql_artifacts) * max(1, len(root_plans)) > MAX_MIGRATION_WORK:
-        return _migration_unsupported(
-            rules, predicate, (*root_plans, *(item.path for item in sql_artifacts)),
-            "migration aggregate work limit exceeded")
-    matches: dict[str, set[int]] = {}
-    for artifact in sql_artifacts:
-        matches[artifact.path] = {
-            index for prefix, indices in root_plans.items()
-            if _matches(artifact.path, (prefix,)) for index in indices
-        }
-    applicable = [item for item in sql_artifacts if matches[item.path]]
-    if not applicable:
-        return _not_applicable("migration_safety", predicate, root_plans, "no_matching_sql_change",
-                               (rule["id"] for rule in rules))
-    inventory = _repository_paths(root, diff, tuple(root_plans))
-    scope = (*root_plans, *inventory, *(item.path for item in applicable))
-    reads: set[str] = set()
-    for index, (rule, roots, mirrors) in enumerate(plans):
-        relevant = [item for item in applicable if index in matches[item.path]]
-        primary = tuple(rule["path_prefixes"])
-        primary_relevant = [item for item in relevant if _matches(item.path, primary)]
-        reads.update(item.path for item in primary_relevant if item.status != "deleted")
-        for item in primary_relevant:
-            for prefix, mirror_roots in mirrors:
-                if _matches(item.path, (prefix,)):
-                    relative = item.path[len(prefix):].lstrip("/")
-                    reads.update(f"{mirror}/{relative}" for mirror in mirror_roots)
-    work = root_work + (len(sql_artifacts) + 2 * len(applicable) * len(plans)) * max(1, len(root_plans)) + len(inventory) * len(plans) + len(reads)
-    if work > MAX_MIGRATION_WORK:
-        return _migration_unsupported(rules, predicate, scope, "migration aggregate work limit exceeded")
+    analysis = _MigrationAnalysis()
     try:
-        blobs = _migration_blobs(root, diff, reads)
-    except ArchitectureError as exc:
-        return _migration_unsupported(rules, predicate, scope, f"migration source analysis unavailable: {exc}")
-    findings, unsupported = [], []
-    for index, (rule, roots, mirrors) in enumerate(plans):
-        primary = tuple(rule["path_prefixes"])
-        relevant = [item for item in applicable if index in matches[item.path]]
-        primary_relevant = [item for item in relevant if _matches(item.path, primary)]
-        head_paths = (path for path in inventory if _matches(path, primary))
-        changed_primary = {
-            next(item.path[len(prefix):].lstrip("/") for prefix in primary if _matches(item.path, (prefix,)))
-            for item in primary_relevant
-        }
-        for item in relevant:
-            relative = next(item.path[len(prefix):].lstrip("/") for prefix in roots if _matches(item.path, (prefix,)))
-            if item not in primary_relevant and relative not in changed_primary:
-                findings.append(f"{rule['id']}: migration mirror differs: {item.path}")
-        if rule["immutable_history"]:
-            findings.extend(f"{rule['id']}: immutable migration history changed: {item.path}"
-                            for item in relevant if item.status in {"modified", "deleted"})
-        phases, version_groups, phase_paths = {}, {}, set()
-        for path in head_paths:
-            parsed = _migration_phase(path)
-            if parsed is None:
-                continue
-            group, phase = parsed
-            phases.setdefault(group, set()).add(phase)
-            version = _migration_version(group)
-            if version is None:
-                unsupported.append(f"{rule['id']}: migration version cannot be derived: {path}")
-                continue
-            version_groups.setdefault(version, set()).add(group)
-            key = (version, group, phase)
-            if key in phase_paths:
-                findings.append(f"{rule['id']}: duplicate migration artifact for {version}/{group}/{phase}: {path}")
-            phase_paths.add(key)
-        findings.extend(f"{rule['id']}: duplicate migration version {version}: {','.join(sorted(groups))}"
-                        for version, groups in version_groups.items() if len(groups) > 1)
-        versions = set(version_groups)
-        if versions and versions != set(range(1, max(versions) + 1)):
-            findings.append(f"{rule['id']}: migration version history is not contiguous")
-        for item in primary_relevant:
-            if item.status == "deleted":
-                findings.append(f"{rule['id']}: migration history removed: {item.path}")
-                continue
-            parsed = _migration_phase(item.path)
-            if parsed is None:
-                unsupported.append(f"{rule['id']}: migration phase cannot be derived: {item.path}")
-                continue
-            missing = sorted(set(rule["required_phases"]) - phases.get(parsed[0], set()))
-            if missing:
-                findings.append(f"{rule['id']}: migration {parsed[0]} missing phases: {','.join(missing)}")
-            value = blobs.get(item.path)
-            if value is None:
-                unsupported.append(f"{rule['id']}: migration source unavailable: {item.path}")
-                continue
-            try:
-                source = value.decode("utf-8")
-            except UnicodeDecodeError:
-                unsupported.append(f"{rule['id']}: migration is not UTF-8: {item.path}")
-                continue
-            source_findings, source_unsupported = _migration_source_findings(rule["id"], item.path, parsed[1], source)
-            findings.extend(source_findings)
-            unsupported.extend(source_unsupported)
-            for prefix, mirror_roots in mirrors:
-                if not _matches(item.path, (prefix,)):
-                    continue
+        work = sum(len(rule["path_prefixes"]) for rule in rules) * sum(
+            len(node["repository_paths"]) for node in snapshot.system["nodes"])
+        seeds = []
+        for rule in rules:
+            primary = tuple(rule["path_prefixes"])
+            mirrors = tuple(
+                (prefix, tuple(path for path in _migration_roots(snapshot, (prefix,)) if path != prefix))
+                for prefix in primary)
+            roots = tuple(sorted(set(primary).union(*(items for _, items in mirrors))))
+            seeds.append((rule, roots, mirrors))
+            for migration_root in roots:
+                analysis.root_plans.setdefault(migration_root, []).append(len(seeds) - 1)
+        sql = tuple(item for item in diff.artifacts if Path(item.path).suffix.lower() == ".sql")
+        def matched_plans(path: str) -> set[int]:
+            return {index for prefix, indices in analysis.root_plans.items()
+                    if _matches(path, (prefix,)) for index in indices}
+        matches = {artifact.path: matched_plans(artifact.path) for artifact in sql}
+        applicable = tuple(item for item in sql if matches[item.path])
+        inventory = _repository_paths(root, diff, tuple(analysis.root_plans))
+        analysis.scope = (*analysis.root_plans, *inventory, *(item.path for item in applicable))
+        work += len(sql) * max(1, len(analysis.root_plans)) + len(inventory) * len(seeds)
+        work += 2 * len(applicable) * len(seeds) * max(1, len(analysis.root_plans))
+        if work > MAX_MIGRATION_WORK:
+            raise ArchitectureError("migration aggregate work limit exceeded", code="limit")
+        if not applicable:
+            return _not_applicable("migration_safety", predicate, analysis.scope,
+                                   "no_matching_sql_change", (rule["id"] for rule in rules))
+        reads: set[str] = set()
+        for index, (rule, roots, mirrors) in enumerate(seeds):
+            relevant = tuple(item for item in applicable if index in matches[item.path])
+            primary = tuple(item for item in relevant if _matches(item.path, tuple(rule["path_prefixes"])))
+            head_paths = tuple(path for path in inventory if _matches(path, tuple(rule["path_prefixes"])))
+            copies: dict[str, tuple[str, ...]] = {}
+            reads.update(item.path for item in primary if item.status != "deleted")
+            for item in primary:
+                prefix = next(path for path in rule["path_prefixes"] if _matches(item.path, (path,)))
                 relative = item.path[len(prefix):].lstrip("/")
-                for mirror_root in mirror_roots:
-                    mirror = f"{mirror_root}/{relative}"
-                    if blobs.get(mirror) is None:
-                        findings.append(f"{rule['id']}: migration mirror missing: {mirror}")
-                    elif blobs[mirror] != value:
-                        findings.append(f"{rule['id']}: migration mirror differs: {mirror}")
-    combined = [*findings, *unsupported]
-    capped = len(combined) > MAX_MIGRATION_FINDINGS
-    if capped:
-        combined = [*combined[:MAX_MIGRATION_FINDINGS - 1], "migration finding limit exceeded"]
-    status = "unsupported" if unsupported or capped else ("fail" if findings else "pass")
+                copies[item.path] = tuple(
+                    f"{mirror}/{relative}" for prefix, mirror_roots in mirrors
+                    if _matches(item.path, (prefix,)) for mirror in mirror_roots)
+                reads.update(copies[item.path])
+            analysis.plans.append(_MigrationPlan(rule, roots, relevant, primary, head_paths, copies))
+        if work + len(reads) > MAX_MIGRATION_WORK:
+            raise ArchitectureError("migration aggregate work limit exceeded", code="limit")
+        blobs = analysis.read(root, diff, reads)
+        for plan in analysis.plans:
+            analysis.check(plan, blobs)
+    except ArchitectureError as exc:
+        analysis.issues.append((True, str(exc)))
+    unsupported = any(item[0] for item in analysis.issues)
+    status = "unsupported" if unsupported else ("fail" if analysis.issues else "pass")
     return _result("migration_safety", status=status, rules=(rule["id"] for rule in rules),
-                   findings=combined, predicate=predicate, scope=scope,
-                   reason="unsupported_migration_semantics" if unsupported or capped else "applicable")
+                   findings=(item[1] for item in analysis.issues), predicate=predicate, scope=analysis.scope,
+                   reason="unsupported_migration_semantics" if unsupported else "applicable")
 
 
 def _tenant_authorization(snapshot: ArchitectureSnapshot, diff: ArchitectureDiff) -> FitnessResult:
@@ -734,7 +733,7 @@ def _tenant_authorization(snapshot: ArchitectureSnapshot, diff: ArchitectureDiff
         f"{rule['id']}: model v1 has no tenant-filter edge field"
         for edge in edges for rule in rules if rule["require_tenant_filter"]
         and set(edge["allowed_data"]) & set(rule["data_classifications"]) & tenant_data)
-    status = "fail" if findings else ("unsupported" if unsupported else "pass")
+    status = "unsupported" if unsupported else ("fail" if findings else "pass")
     return _result("tenant_authorization", status=status, rules=(rule["id"] for rule in rules),
                    findings=(*findings, *unsupported), predicate=predicate,
                    scope=(*tenant_data, *(edge["id"] for edge in edges)),

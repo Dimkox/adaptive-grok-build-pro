@@ -149,3 +149,55 @@ receipts, PR, Trust CI, M2-B, and deployment pending, so no chronology edit was
 needed in this rereview.
 
 The exact no-record verifier result and commit SHA follow after the final gate.
+
+## Tenant precedence and bounded migration consumption rereview
+
+The final test and code rereviews identified four related gaps in the aggregate
+migration repair. The batch oracle did not require a positive read count or a
+content-sensitive mismatch, mirror-only coverage omitted worktree and unchanged
+N/A evidence, migration blob bytes/statements/findings were not stopped before
+their limits, and mixed unauthenticated plus tenant-filter-unknown edges
+published `fail` instead of the more conservative `unsupported` result.
+
+RED evidence was captured before the replacement. The mixed tenant case
+returned `fail`; patched byte and statement ceilings returned `pass`; and a
+three-finding ceiling still invoked the bounded-predicate analyzer six times.
+The strengthened exact/worktree inventory and paired-content controls already
+passed, proving that the remaining defect was bounded consumption rather than
+applicability.
+
+One named `_MigrationAnalysis` now owns the prepared rule/root index, bounded
+issues, statement work, and deterministic eight-path reads. A conservative
+pre-analysis work ceiling is checked before semantic traversal. Aggregate blob
+bytes stop between batches, statement/finding ceilings stop before predicate or
+finding generation, and mirror copies are prepared once for both read inventory
+and byte comparison. Any limit becomes typed unsupported. Tenant unsupported
+evidence takes precedence while retaining the simultaneous unauthenticated
+finding.
+
+```text
+focused tenant, batching, mirror exact/worktree, and limit methods
+Ran 4 tests in 2.748s
+OK
+
+python3 -m unittest tests.test_architecture_fitness
+Ran 78 tests in 82.681s
+OK
+real 82.86
+
+python3 -m unittest discover
+Ran 373 tests in 191.487s
+OK
+real 191.72
+```
+
+Ruff, configured Bandit, compileall, typed spec 7/7, architecture validate,
+repository drift, deterministic diagram check, exact architecture diff, README
+K16, and diff whitespace all pass. Both the frozen-adoption and task-base
+protected-path queries are empty. Exact worktree fitness passes with code budget
+`9999/10000`, change separation pass, and monotonic risk `green -> red`.
+Unchanged exact and worktree migration evaluation is specifically N/A with
+`no_matching_sql_change` and audited primary-plus-mirror inventory; mirror-only
+drift fails in both modes.
+
+The final verifier and exact commit SHA follow after the evidence-bound gate.

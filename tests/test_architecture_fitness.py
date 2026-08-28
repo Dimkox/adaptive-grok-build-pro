@@ -517,7 +517,8 @@ class ArchitectureFitnessTests(unittest.TestCase):
 
     def test_tenant_data_governs_every_edge_and_cannot_be_hidden_by_rules(self) -> None:
         cases = (
-            ("deployment without auth", "deployment", "none", True, "fail"),
+            ("deployment without auth", "deployment", "none", False, "fail"),
+            ("auth and filter uncertainty", "deployment", "none", True, "unsupported"),
             ("missing policy", "deployment", "local_os", None, "unsupported"),
             ("secret flow without filter evidence", "secret_flow", "local_os", True, "unsupported"),
             ("authenticated governed flow", "deployment", "local_os", False, "pass"),
@@ -550,6 +551,9 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertEqual(result.status, expected)
                 self.assertIn("EDGE-A-B", result.applicability.scanned_scope)
                 self.assertEqual(report.status, "pass" if expected == "pass" else "fail")
+                if label == "auth and filter uncertainty":
+                    self.assertIn("unauthenticated tenant edge", " ".join(result.findings))
+                    self.assertIn("tenant-filter edge field", " ".join(result.findings))
 
         system = _system()
         rules = _rules()
@@ -3426,13 +3430,30 @@ class ArchitectureFitnessTests(unittest.TestCase):
             repo.write_text(f"migrations/{name}", source)
             repo.write_text(f"package/resources/{name}", source)
         base = repo.commit("mirrored migration base")
+        exact_unchanged = self._results(self._evaluate(repo, base, base))["migration_safety"]
+        clean_diff = FIT.diff_architecture(repo.root, base_sha=base, worktree=True)
+        worktree_unchanged = self._results(FIT.evaluate_fitness(
+            repo.root, FIT.load_architecture(repo.root), clean_diff,
+            clean_diff.changed_paths, pre_risk="green",
+        ))["migration_safety"]
+        for result in (exact_unchanged, worktree_unchanged):
+            self.assertEqual(result.status, "not_applicable")
+            self.assertEqual(result.applicability.reason_code, "no_matching_sql_change")
+            for prefix in ("migrations", "package/resources"):
+                for name in sources:
+                    self.assertIn(f"{prefix}/{name}", result.applicability.scanned_scope)
         repo.write_text(
             "package/resources/001_expand.sql",
             "CREATE TABLE item(id bigint);\n",
         )
+        worktree_diff = FIT.diff_architecture(repo.root, base_sha=base, worktree=True)
+        worktree = self._results(FIT.evaluate_fitness(
+            repo.root, FIT.load_architecture(repo.root), worktree_diff,
+            worktree_diff.changed_paths, pre_risk="green",
+        ))["migration_safety"]
         head = repo.commit("mirror-only drift")
         result = self._results(self._evaluate(repo, base, head))["migration_safety"]
-        self.assertEqual(result.status, "fail")
+        self.assertEqual((result.status, worktree.status), ("fail", "fail"))
         self.assertIn("package/resources/001_expand.sql", result.applicability.scanned_scope)
         self.assertIn("mirror differs", " ".join(result.findings))
 
@@ -3478,9 +3499,16 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 worktree_diff.changed_paths,
                 pre_risk="green",
             ))["migration_safety"]
-        self.assertEqual((exact.status, worktree.status), ("pass", "pass"))
-        self.assertLessEqual(roots.call_count, 4)
-        self.assertLessEqual(batches.call_count, 4)
+            repo.write_text("package/resources/001_expand.sql", "CREATE TABLE item(id numeric);\n")
+            mismatch_diff = FIT.diff_architecture(repo.root, base_sha=base, worktree=True)
+            mismatch = self._results(FIT.evaluate_fitness(
+                repo.root, FIT.load_architecture(repo.root), mismatch_diff,
+                mismatch_diff.changed_paths, pre_risk="green",
+            ))["migration_safety"]
+        self.assertEqual((exact.status, worktree.status, mismatch.status), ("pass", "pass", "fail"))
+        self.assertIn("mirror differs", " ".join(mismatch.findings))
+        self.assertEqual(roots.call_count, 3)
+        self.assertEqual(batches.call_count, 3)
 
     def test_migration_work_and_published_findings_have_explicit_limits(self) -> None:
         rules = _rules()
@@ -3508,6 +3536,59 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(capped.status, "unsupported")
         self.assertEqual(len(capped.findings), 3)
         self.assertIn("finding limit", capped.findings[-1])
+
+    def test_migration_blob_statement_and_finding_limits_stop_early(self) -> None:
+        rules = _rules()
+        rules["migration_policies"] = [{
+            "id": "FIT-MIGRATION",
+            "path_prefixes": ["migrations"],
+            "required_phases": ["expand", "migrate", "contract"],
+            "immutable_history": False,
+            "severity": "error",
+        }]
+        repo, base = self._repo(rules=rules)
+        sources = {
+            "001_expand.sql": "CREATE TABLE item(id integer);\n",
+            "001_migrate.sql": "UPDATE item SET id=id WHERE id BETWEEN 1 AND 2;\n",
+            "001_contract.sql": "ALTER TABLE item DROP COLUMN legacy;\n",
+        }
+        for name, source in sources.items():
+            repo.write_text(f"migrations/{name}", source)
+        head = repo.commit("migration aggregate limits")
+        with patch.object(FIT, "MAX_MIGRATION_BATCH_PATHS", 1), \
+             patch.object(FIT, "MAX_MIGRATION_BYTES", 8, create=True), \
+             patch.object(FIT, "read_diff_files", wraps=FIT.read_diff_files) as reads:
+            byte_limited = self._results(self._evaluate(repo, base, head))["migration_safety"]
+            byte_calls = reads.call_count
+
+        bounded = "UPDATE item SET id=id WHERE id BETWEEN 1 AND 2;\n" * 6
+        repo.write_text("migrations/001_migrate.sql", bounded)
+        statement_head = repo.commit("migration statement limit")
+        with patch.object(FIT, "MAX_MIGRATION_STATEMENTS", 2, create=True), \
+             patch.object(FIT, "_bounded_migrate_predicate", wraps=FIT._bounded_migrate_predicate) as predicates:
+            statement_limited = self._results(
+                self._evaluate(repo, head, statement_head)
+            )["migration_safety"]
+            statement_calls = predicates.call_count
+
+        unsafe = "UPDATE item SET id=id WHERE id = 1;\n" * 6
+        repo.write_text("migrations/001_migrate.sql", unsafe)
+        finding_head = repo.commit("migration finding limit")
+        with patch.object(FIT, "MAX_MIGRATION_FINDINGS", 3), \
+             patch.object(FIT, "_bounded_migrate_predicate", wraps=FIT._bounded_migrate_predicate) as predicates:
+            finding_limited = self._results(
+                self._evaluate(repo, statement_head, finding_head)
+            )["migration_safety"]
+            finding_calls = predicates.call_count
+        for label, result, calls, marker in (
+            ("bytes", byte_limited, byte_calls, "byte limit"),
+            ("statements", statement_limited, statement_calls, "statement work limit"),
+            ("findings", finding_limited, finding_calls, "finding limit"),
+        ):
+            with self.subTest(bound=label):
+                self.assertEqual(result.status, "unsupported")
+                self.assertIn(marker, " ".join(result.findings))
+                self.assertEqual(calls, 1 if label == "bytes" else 2)
 
     def test_migration_content_and_versions_are_conservative_for_every_status(self) -> None:
         cases = (
