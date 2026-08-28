@@ -384,7 +384,13 @@ def validate_schema(
             raise SpecError(f"{path}: above maximum")
 
 
-def _type_matches(instance: Any, expected: str) -> bool:
+def _type_matches(instance: Any, expected: str | list[str]) -> bool:
+    if isinstance(expected, list):
+        if not expected or any(not isinstance(item, str) for item in expected):
+            raise SpecError("schema type array must contain type names")
+        return any(_type_matches(instance, item) for item in expected)
+    if not isinstance(expected, str):
+        raise SpecError("schema type must be a string or array of strings")
     mapping = {
         "object": dict,
         "array": list,
