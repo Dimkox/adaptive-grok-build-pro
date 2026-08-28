@@ -912,6 +912,22 @@ class GovernanceLifecycleTests(unittest.TestCase):
 
         self.assertEqual(effective_rules(forged_snapshot, now=self.NOW), ())
 
+    def test_equal_content_clone_does_not_inherit_repository_authority(self) -> None:
+        active = _active_rule("RULE-CLONED-PROVENANCE")
+        root = self._fixture(rules=[active], materialize_evidence=True)
+        snapshot = load_governance(root)
+        bound = snapshot.rule_records[0]
+        clone = RuleRecord.from_dict(bound.to_dict())
+        cloned_snapshot = replace(
+            snapshot,
+            rule_records=(clone,),
+        )
+
+        self.assertIsNot(bound, clone)
+        self.assertNotEqual(bound, clone)
+        self.assertEqual(effective_rules(snapshot, now=self.NOW), (bound,))
+        self.assertEqual(effective_rules(cloned_snapshot, now=self.NOW), ())
+
     def test_effective_rules_reject_missing_and_mismatched_evidence(self) -> None:
         for case, materialize in (("missing", False), ("mismatch", True)):
             with self.subTest(case=case):
