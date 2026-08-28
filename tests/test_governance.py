@@ -1711,6 +1711,91 @@ class GovernanceHandoffTests(unittest.TestCase):
                 consumed_input_digests={},
             )
 
+    def test_handoff_binds_repeated_evidence_path_to_first_observation(self) -> None:
+        shared_path = "engineering/evidence/shared.json"
+        first_bytes = b'{"generation":"A"}\n'
+        head_bytes = b'{"generation":"B"}\n'
+
+        def fixture(*, first_digest: str) -> tuple[Path, object, str, dict[str, object]]:
+            rules = [_active_rule("RULE-SHARED-A"), _active_rule("RULE-SHARED-B")]
+            rules[1]["scope"]["repository_paths"] = ["lib"]
+            for rule, digest in zip(
+                rules,
+                (first_digest, hashlib.sha256(head_bytes).hexdigest()),
+            ):
+                rule["evidence"] = [
+                    {
+                        "evidence_id": f"EVIDENCE-{rule['rule_id']}",
+                        "path": shared_path,
+                        "sha256": digest,
+                    }
+                ]
+            root = _make_fixture(self, rules=rules)
+            evidence_path = root / shared_path
+            evidence_path.parent.mkdir(parents=True, exist_ok=True)
+            evidence_path.write_bytes(head_bytes)
+            _materialize_architecture(root)
+            shutil.copy2(ROOT / "decisions.md", root / "decisions.md")
+            shutil.copy2(ROOT / "mistakes.md", root / "mistakes.md")
+            head = _git_commit_fixture(root)
+            return root, load_governance(root), head, _architecture_evidence(
+                root, head, head
+            )
+
+        root, snapshot, head, architecture = fixture(
+            first_digest=hashlib.sha256(first_bytes).hexdigest()
+        )
+        real_read = governance._read_regular_bytes
+        reads = 0
+
+        def alternating_read(
+            descriptor: int, relative: str, *, label: str
+        ) -> bytes:
+            nonlocal reads
+            if relative == shared_path:
+                reads += 1
+                return first_bytes if reads % 2 else head_bytes
+            return real_read(descriptor, relative, label=label)
+
+        with mock.patch.object(
+            governance, "_read_regular_bytes", side_effect=alternating_read
+        ):
+            with self.assertRaisesRegex(GovernanceError, "findings|exact Git head"):
+                build_governance_handoff(
+                    snapshot,
+                    architecture=architecture,
+                    base_sha=head,
+                    head_sha=head,
+                    now=self.NOW,
+                )
+        self.assertEqual(reads, 1)
+
+        root, snapshot, head, architecture = fixture(
+            first_digest=hashlib.sha256(head_bytes).hexdigest()
+        )
+        real_read = governance._read_regular_bytes
+        reads = 0
+
+        def counted_read(
+            descriptor: int, relative: str, *, label: str
+        ) -> bytes:
+            nonlocal reads
+            if relative == shared_path:
+                reads += 1
+            return real_read(descriptor, relative, label=label)
+
+        with mock.patch.object(
+            governance, "_read_regular_bytes", side_effect=counted_read
+        ):
+            build_governance_handoff(
+                snapshot,
+                architecture=architecture,
+                base_sha=head,
+                head_sha=head,
+                now=self.NOW,
+            )
+        self.assertEqual(reads, 1)
+
     def test_handoff_rejects_dirty_worktree_sha_and_digest_mismatches(self) -> None:
         root, snapshot, head, architecture = self._clean_fixture()
         invalid_cases = {

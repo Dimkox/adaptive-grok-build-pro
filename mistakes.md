@@ -182,3 +182,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** A governance snapshot could combine schema and registry files from different nested-directory generations while the repository root remained unchanged.
 **Root cause:** Each authority read independently reopened its ancestor directories, so root-only identity checks did not bind the fixed authority topology or the bytes consumed by exact-head evaluation.
+
+## 2026-08-28 — Let repeated evidence overwrite its first observation
+
+**Symptom:** Alternating bytes for one shared evidence path could validate separate rules while only the final exact-HEAD-matching digest survived.
+**Root cause:** Evaluation stored path digests with last-write-wins assignment and then reread evidence during liveness checks instead of binding and reusing one immutable first observation.

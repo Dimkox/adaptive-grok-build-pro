@@ -333,6 +333,51 @@ class _AuthorityTopology:
     files: dict[Path, _PinnedAuthorityFile]
 
 
+class _ConsumedInputRecorder:
+    def __init__(self) -> None:
+        self._contents: dict[str, bytes] = {}
+
+    def observe(self, path: str, content: bytes) -> bytes:
+        existing = self._contents.get(path)
+        if existing is not None:
+            if existing != content:
+                raise GovernanceError(
+                    f"governance input changed during evaluation: {path}",
+                    code="digest",
+                )
+            return existing
+        if len(self._contents) >= MAX_EVIDENCE_REFERENCES:
+            raise GovernanceError(
+                "governance consumed-input limit exceeded", code="limit"
+            )
+        self._contents[path] = content
+        return content
+
+    def read(
+        self,
+        repository: _RepositoryHandle,
+        path: str,
+        *,
+        label: str,
+    ) -> bytes:
+        normalized = _safe_relative_path(
+            repository.descriptor, path, label=label
+        )
+        existing = self._contents.get(normalized)
+        if existing is not None:
+            return existing
+        content = _read_regular_bytes(
+            repository.descriptor, normalized, label=label
+        )
+        return self.observe(normalized, content)
+
+    def digests(self) -> dict[str, str]:
+        return {
+            path: hashlib.sha256(content).hexdigest()
+            for path, content in self._contents.items()
+        }
+
+
 def _unsafe_text(value: str) -> bool:
     return any(
         unicodedata.category(character) in {"Cc", "Cf", "Cs", "Zl", "Zp"}
@@ -1295,7 +1340,7 @@ def _evidence_contents(
     *,
     owner: str,
     prefix: str,
-    consumed_input_digests: dict[str, str] | None = None,
+    recorder: _ConsumedInputRecorder | None = None,
 ) -> tuple[list[GovernanceFinding], list[bytes]]:
     findings: list[GovernanceFinding] = []
     contents: list[bytes] = []
@@ -1304,16 +1349,19 @@ def _evidence_contents(
     for item in evidence:
         path = item.get("path", "")
         try:
-            _safe_relative_path(repository.descriptor, path, label=f"{owner} evidence")
-            content = _read_regular_bytes(repository.descriptor, path, label=f"{owner} evidence")
+            content = (
+                recorder.read(repository, path, label=f"{owner} evidence")
+                if recorder is not None
+                else _read_regular_bytes(
+                    repository.descriptor, path, label=f"{owner} evidence"
+                )
+            )
         except GovernanceError:
             findings.append(GovernanceFinding(f"{prefix}-evidence-unavailable", f"{owner} evidence is unavailable", path))
             continue
         if hashlib.sha256(content).hexdigest() != item.get("sha256"):
             findings.append(GovernanceFinding(f"{prefix}-evidence-digest-mismatch", f"{owner} evidence digest does not match", path))
             continue
-        if consumed_input_digests is not None:
-            consumed_input_digests[path] = hashlib.sha256(content).hexdigest()
         contents.append(content)
     return findings, contents
 
@@ -1341,7 +1389,7 @@ def _m2_contract_ids(root: Path) -> frozenset[str]:
 def _example_findings(
     examples: tuple[ExampleRecord, ...],
     repository: _RepositoryHandle,
-    consumed_input_digests: dict[str, str] | None = None,
+    recorder: _ConsumedInputRecorder | None = None,
 ) -> list[GovernanceFinding]:
     findings: list[GovernanceFinding] = []
     all_documents = [record.to_dict() for record in examples]
@@ -1374,7 +1422,7 @@ def _example_findings(
             document.get("evidence", []),
             owner=path,
             prefix="example",
-            consumed_input_digests=consumed_input_digests,
+            recorder=recorder,
         )
         findings.extend(evidence_findings)
         files: list[tuple[str, bytes]] = []
@@ -1383,16 +1431,19 @@ def _example_findings(
             findings.append(GovernanceFinding("example-path-required", f"example {example_id} requires a repository path", path))
         for relative in repository_paths:
             try:
-                _safe_relative_path(repository.descriptor, relative, label=f"example {example_id} path")
-                content = _read_regular_bytes(
-                    repository.descriptor,
-                    relative,
-                    label=f"example {example_id} path",
+                content = (
+                    recorder.read(
+                        repository,
+                        relative,
+                        label=f"example {example_id} path",
+                    )
+                    if recorder is not None
+                    else _read_regular_bytes(
+                        repository.descriptor,
+                        relative,
+                        label=f"example {example_id} path",
+                    )
                 )
-                if consumed_input_digests is not None:
-                    consumed_input_digests[relative] = hashlib.sha256(
-                        content
-                    ).hexdigest()
                 files.append((relative, content))
             except GovernanceError:
                 findings.append(GovernanceFinding("example-path-unavailable", f"example {example_id} path is unavailable", relative))
@@ -1563,7 +1614,7 @@ def _debt_findings(
     repository: _RepositoryHandle,
     *,
     now: datetime,
-    consumed_input_digests: dict[str, str] | None = None,
+    recorder: _ConsumedInputRecorder | None = None,
 ) -> list[GovernanceFinding]:
     findings: list[GovernanceFinding] = []
     for record in debts:
@@ -1589,16 +1640,19 @@ def _debt_findings(
             findings.append(GovernanceFinding("debt-tests-required", f"debt {debt_id} requires behavior-preserving tests", path))
         for relative in tests:
             try:
-                _safe_relative_path(repository.descriptor, relative, label=f"debt {debt_id} test")
-                content = _read_regular_bytes(
-                    repository.descriptor,
-                    relative,
-                    label=f"debt {debt_id} test",
+                _ = (
+                    recorder.read(
+                        repository,
+                        relative,
+                        label=f"debt {debt_id} test",
+                    )
+                    if recorder is not None
+                    else _read_regular_bytes(
+                        repository.descriptor,
+                        relative,
+                        label=f"debt {debt_id} test",
+                    )
                 )
-                if consumed_input_digests is not None:
-                    consumed_input_digests[relative] = hashlib.sha256(
-                        content
-                    ).hexdigest()
             except GovernanceError:
                 findings.append(GovernanceFinding("debt-test-unavailable", f"debt {debt_id} test is unavailable", relative))
         evidence_findings, contents = _evidence_contents(
@@ -1606,7 +1660,7 @@ def _debt_findings(
             document.get("evidence", []),
             owner=path,
             prefix="debt",
-            consumed_input_digests=consumed_input_digests,
+            recorder=recorder,
         )
         findings.extend(evidence_findings)
         evidence_document_findings, evidence_claims = (
@@ -1846,7 +1900,10 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
             rule_digest=hashlib.sha256(record._canonical_document).hexdigest(),
         )
 
-    def has_live_evidence(rule: RuleRecord) -> bool:
+    def has_live_evidence(
+        rule: RuleRecord,
+        recorder: _ConsumedInputRecorder | None = None,
+    ) -> bool:
         binding = bindings.get(rule)
         if (
             binding is None
@@ -1863,15 +1920,15 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
             if repository.identity != binding.repository_identity:
                 return False
             for evidence in rule.evidence:
-                _safe_relative_path(
-                    repository.descriptor,
-                    evidence.path,
-                    label=f"rule {rule.rule_id} evidence {evidence.evidence_id}",
-                )
-                content = _read_regular_bytes(
-                    repository.descriptor,
-                    evidence.path,
-                    label=f"rule {rule.rule_id} evidence {evidence.evidence_id}",
+                label = f"rule {rule.rule_id} evidence {evidence.evidence_id}"
+                content = (
+                    recorder.read(repository, evidence.path, label=label)
+                    if recorder is not None
+                    else _read_regular_bytes(
+                        repository.descriptor,
+                        evidence.path,
+                        label=label,
+                    )
                 )
                 if hashlib.sha256(content).hexdigest() != evidence.sha256:
                     return False
@@ -1930,6 +1987,7 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
         snapshot: GovernanceSnapshot,
         *,
         now: datetime,
+        _recorder: _ConsumedInputRecorder | None = None,
     ) -> tuple[RuleRecord, ...]:
         effective_at = _require_aware(now, label="now")
         records = _snapshot_rule_records(snapshot)
@@ -1939,7 +1997,7 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
                     rule
                     for rule in records
                     if _rule_is_lifecycle_qualified(
-                        rule, live_evidence=has_live_evidence(rule)
+                        rule, live_evidence=has_live_evidence(rule, _recorder)
                     )
                     and _rule_is_unexpired(rule, effective_at)
                 ),
@@ -1947,7 +2005,11 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
             )
         )
 
-    def effective_example_records(snapshot: GovernanceSnapshot) -> tuple[ExampleRecord, ...]:
+    def effective_example_records(
+        snapshot: GovernanceSnapshot,
+        *,
+        _recorder: _ConsumedInputRecorder | None = None,
+    ) -> tuple[ExampleRecord, ...]:
         records = _snapshot_example_records(snapshot)
         if not records:
             return ()
@@ -1970,7 +2032,7 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
         try:
             if repository.identity != first_binding.repository_identity:
                 return ()
-            findings = _example_findings(records, repository)
+            findings = _example_findings(records, repository, recorder=_recorder)
             _verify_repository(repository)
             if findings:
                 return ()
@@ -2182,7 +2244,7 @@ def validate_governance(
     root: Path | str,
     *,
     now: datetime,
-    _consumed_input_digests: dict[str, str] | None = None,
+    _recorder: _ConsumedInputRecorder | None = None,
 ) -> tuple[GovernanceFinding, ...]:
     validated_at = _require_aware(now, label="now")
     repository = _open_repository(root)
@@ -2213,10 +2275,19 @@ def validate_governance(
                     )
                 for evidence in rule.evidence:
                     try:
-                        content = _read_regular_bytes(
-                            repository.descriptor,
-                            evidence.path,
-                            label=f"rule {rule.rule_id} evidence {evidence.evidence_id}",
+                        label = (
+                            f"rule {rule.rule_id} evidence {evidence.evidence_id}"
+                        )
+                        content = (
+                            _recorder.read(
+                                repository, evidence.path, label=label
+                            )
+                            if _recorder is not None
+                            else _read_regular_bytes(
+                                repository.descriptor,
+                                evidence.path,
+                                label=label,
+                            )
                         )
                     except GovernanceError:
                         findings.append(
@@ -2235,10 +2306,6 @@ def validate_governance(
                                 evidence.path,
                             )
                         )
-                    elif _consumed_input_digests is not None:
-                        _consumed_input_digests[evidence.path] = hashlib.sha256(
-                            content
-                        ).hexdigest()
             if rule.status == "active" and not _rule_is_unexpired(rule, validated_at):
                 findings.append(
                     GovernanceFinding(
@@ -2259,7 +2326,7 @@ def validate_governance(
             _example_findings(
                 examples,
                 repository,
-                consumed_input_digests=_consumed_input_digests,
+                recorder=_recorder,
             )
         )
         findings.extend(
@@ -2267,7 +2334,7 @@ def validate_governance(
                 debts,
                 repository,
                 now=validated_at,
-                consumed_input_digests=_consumed_input_digests,
+                recorder=_recorder,
             )
         )
         _verify_repository(repository)
@@ -2618,7 +2685,7 @@ def _governance_evaluation(
     snapshot: GovernanceSnapshot,
     *,
     now: datetime,
-) -> tuple[GovernanceSnapshot, Path, dict[str, Any], dict[str, str]]:
+) -> tuple[GovernanceSnapshot, Path, dict[str, Any], _ConsumedInputRecorder]:
     evaluated_at = _require_aware(now, label="now")
     root = _snapshot_repository(snapshot)
     if root is None:
@@ -2632,20 +2699,25 @@ def _governance_evaluation(
         raise GovernanceError(
             "governance snapshot digest mismatch", code="digest"
         )
-    consumed_input_digests: dict[str, str] = {}
+    recorder = _ConsumedInputRecorder()
     findings = validate_governance(
         current,
         root,
         now=evaluated_at,
-        _consumed_input_digests=consumed_input_digests,
+        _recorder=recorder,
     )
-    active_rules = tuple(rule.rule_id for rule in effective_rules(current, now=evaluated_at))
+    active_rules = tuple(
+        rule.rule_id
+        for rule in effective_rules(
+            current, now=evaluated_at, _recorder=recorder
+        )
+    )
     active_examples = tuple(
         {
             "example_id": record.example_id,
             "version": record.to_dict()["version"],
         }
-        for record in effective_examples(current)
+        for record in effective_examples(current, _recorder=recorder)
     )
     open_debt_ids = tuple(
         sorted(
@@ -2674,7 +2746,7 @@ def _governance_evaluation(
         "open_debt_ids": list(open_debt_ids),
         "overall_status": status,
         "overdue_debt_ids": list(overdue_debt_ids),
-    }, consumed_input_digests
+    }, recorder
 
 
 def governance_summary(
@@ -2718,7 +2790,7 @@ def build_governance_handoff(
         base_sha=base_sha,
         head_sha=head_sha,
     )
-    current, root, evaluation, consumed_input_digests = _governance_evaluation(
+    current, root, evaluation, recorder = _governance_evaluation(
         snapshot, now=evaluated_at
     )
     _require_clean_exact_git_state(root, base_sha=base_sha, head_sha=head_sha)
@@ -2726,7 +2798,7 @@ def build_governance_handoff(
         current,
         root,
         head_sha=head_sha,
-        consumed_input_digests=consumed_input_digests,
+        consumed_input_digests=recorder.digests(),
     )
     try:
         derived_architecture = derive_architecture_evidence(
