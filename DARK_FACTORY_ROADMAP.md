@@ -517,15 +517,17 @@ status
 ## Work items
 
 - [ ] Convert agent-written lessons into `candidate` records rather than immediate standing policy.
-- [ ] Require independent review or explicit human approval before promotion to `active`.
-- [ ] Generate human-readable `decisions.md` and `mistakes.md` views from approved/candidate records, or clearly mark Markdown as a non-authoritative projection.
-- [ ] Add expiration and revalidation for context-sensitive rules.
-- [ ] Add revocation and provenance audit.
+- [x] Require independent review or explicit human approval before promotion to `active`.
+- [x] Generate human-readable `decisions.md` and `mistakes.md` views from approved/candidate records, or clearly mark Markdown as a non-authoritative projection.
+- [x] Add expiration and revalidation for context-sensitive rules.
+- [x] Add revocation and provenance audit.
 - [ ] Create canonical examples for HTTP adapters, repositories, background jobs, webhook handlers, migrations, authorization checks, and error handling.
 - [ ] Require agents to prefer canonical examples or explicitly justify deviation.
-- [ ] Add duplicate-pattern and conflicting-pattern detection.
-- [ ] Introduce a debt ledger that distinguishes intentional debt from accidental slop.
-- [ ] Prevent a factory task from activating its own governance rule.
+- [x] Add duplicate-pattern and conflicting-pattern detection.
+- [x] Introduce a debt ledger that distinguishes intentional debt from accidental slop.
+- [x] Prevent a factory task from activating its own governance rule.
+
+Checked M3 items denote implemented source behavior with focused regression evidence on the milestone branch. They do not denote merge, deployment, external authority, or active governance. The seven small example source files exist, but the canonical-example registry remains empty until an independent exact-record authority and real human governance approval are available; therefore the two canonical-example work items remain open. M4 remains pending until the final M3 verifier/review gate, PR delivery, external exact-SHA Trust CI check, signed scopes, and merge are complete.
 
 ## Exit criteria
 

@@ -152,6 +152,18 @@ class InstallerTests(unittest.TestCase):
         )
         self.assertEqual(len(generic_paths), len(set(generic_paths)))
         self.assertIn("AGENTS.md", generic_paths)
+        for expected in (
+            ".grok-stack/adaptive_grok/governance.py",
+            ".grok-stack/templates/change/architecture.md",
+            ".grok-stack/templates/change/requirements.md",
+            "scripts/grok_governance.py",
+            "schemas/canonical-example.schema.json",
+            "schemas/debt-entry.schema.json",
+            "schemas/governance-handoff-v1.schema.json",
+            "schemas/governance-rule.schema.json",
+        ):
+            self.assertIn(expected, generic_paths)
+        self.assertFalse(set(MODULE.TARGET_OWNED_GOVERNANCE) & set(generic_paths))
         self.assertNotIn("local/AGENTS.md", generic_paths)
         self.assertIn("local/AGENTS.md", bitrix_paths)
         local_guidance = next(entry for entry in bitrix if entry.path == "local/AGENTS.md")
@@ -164,6 +176,13 @@ class InstallerTests(unittest.TestCase):
             MODULE,
             "MANAGED_FILES",
             (*MODULE.MANAGED_FILES, "architecture/system.yaml"),
+        ):
+            with self.assertRaises(MODULE.UnsafeInstallTarget):
+                MODULE.build_payload(ROOT)
+        with patch.object(
+            MODULE,
+            "MANAGED_FILES",
+            (*MODULE.MANAGED_FILES, "governance/rules/index.json"),
         ):
             with self.assertRaises(MODULE.UnsafeInstallTarget):
                 MODULE.build_payload(ROOT)
@@ -211,6 +230,9 @@ class InstallerTests(unittest.TestCase):
                 "architecture/adoption.json",
                 "architecture/rules.yaml",
                 "architecture/system.yaml",
+                "governance/rules/index.json",
+                "governance/debt/index.json",
+                "governance/canonical-examples/index.json",
             ):
                 self.assertFalse((target / authority).exists(), authority)
             self.assertEqual(_stage_names(parent), [])

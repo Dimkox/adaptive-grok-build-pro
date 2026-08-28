@@ -9,6 +9,8 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
 - M1 typed intent is locally source-ready: canonical schema-v2 specs, route-driven generation, strict bounded validation, criterion-bound receipts, and `scripts/grok_spec.py` summary/coverage commands passed full local verification and all four route-selected wave-7 reviews on exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a`. A later authorized local database run passed PostgreSQL integration 10/10 and the full Trust CI suite 200/200 with no skips, validating six Trust CI tables, three migrations through version 3, and four bounded `NOLOGIN` roles; this is [local test evidence](engineering/changes/20260826-m1-typed-intent-evidence-rebuild-a4f882/evidence/postgres-integration-local.md), not deployed proof. PR update, the App-owned exact-SHA check, signed approvals, merge, and deployment of the new holdout, worker reader, policy, and attestation emitter remain incomplete operator-controlled steps. Historical schema-v1 YAML is explicit unchanged-history compatibility only.
 - M2-A executable architecture is a local source candidate: strict target-owned model/rules/adoption state, bounded deterministic parsing, exact Git-object diff, repository/contract drift, mandatory fitness evidence including a package-aware bounded abstract interpreter for queue provenance, monotonic risk, five read-only Mermaid text projections, architecture-bound local verification/receipts, and a read-only/new-target installer boundary are implemented. Passing final route reviews, current fingerprint-bound receipts, PR delivery, the external exact-SHA check, M2-B independent enforcement, and deployment remain pending; local architecture output is not merge authority.
+- M3 controlled knowledge and debt is a local source candidate: strict target-owned governance registries, bounded no-follow loading, reviewed rule lifecycle, conflict detection, canonical-example/debt semantics, non-authoritative Markdown projections, exact `GovernanceHandoffV1`, executable architecture fitness, governance-bound local receipts, and safe installer distribution are implemented. The shipped registries are empty, repository-authored approval-looking fields are not external authority, and no active rule/example or closed debt is fabricated. Task 8 final verification/reviews, PR delivery, the App-owned exact-SHA check, signed approvals, merge, and any deployment remain pending.
+- M4 durable factory control-plane implementation is pending and cannot start from local M3 prose or receipts. It must consume current exact M1/M2/M3 handoffs and separately verified external authority on its own branch and pull request.
 - Independent CI candidate: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
 - Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. The PR #2 bootstrap exception is revoked. PR #5 is not mergeable while that Check Run is `action_required`.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
@@ -26,7 +28,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## How work runs
 
-Source-of-truth order is in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Local loop: route → change package → one write owner → if the product changed, `grok_verify --mode pr` and independent local reviews → `ready` → branch and pull request. The deployed Trust CI service verifies the exact PR SHA under server-side policy, executes an external holdout bundle before repository checks, rejects source mutation, checks signed human approval scopes, signs the attestation, and publishes `adaptive-trust-ci/verified@<policy-sha12>` through its GitHub App. A human owns merge, tag and production promotion.
+Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, executable M2 architecture second, and target-owned M3 governance third; local receipts bind all configured layers to one worktree fingerprint but remain preflight evidence. Canonical governance JSON and exact handoffs outrank generated `decisions.md` / `mistakes.md` projections, while external Trust CI policy, holdout, signed approvals, and exact-SHA attestation remain the higher merge authority described in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Local loop: route → change package → one write owner → if the product changed, `grok_verify --mode pr` and independent local reviews → `ready` → branch and pull request. The deployed Trust CI service verifies the exact PR SHA under server-side policy, executes an external holdout bundle before repository checks, rejects source mutation, checks signed human approval scopes, signs the attestation, and publishes `adaptive-trust-ci/verified@<policy-sha12>` through its GitHub App. A human owns merge, tag and production promotion.
 
 ## Map
 
@@ -50,6 +52,14 @@ Source-of-truth order is in AGENTS.md. Large work is split into small subtasks t
 - [architecture rules schema](schemas/architecture-rules.schema.json)
 - [architecture CLI](scripts/grok_architecture.py)
 - [generated architecture views](architecture/generated/context.mmd)
+- [governance rules](governance/rules/index.json)
+- [governance debt](governance/debt/index.json)
+- [canonical-example registry](governance/canonical-examples/index.json)
+- [governance rule schema](schemas/governance-rule.schema.json)
+- [debt schema](schemas/debt-entry.schema.json)
+- [canonical-example schema](schemas/canonical-example.schema.json)
+- [governance handoff schema](schemas/governance-handoff-v1.schema.json)
+- [governance CLI](scripts/grok_governance.py)
 - [`scripts/grok_verify.py`](scripts/grok_verify.py)
 - [`scripts/grok_review.py`](scripts/grok_review.py)
 - [`scripts/grok_approve.py`](scripts/grok_approve.py) — exact action/resource delegated local grant only
@@ -68,6 +78,7 @@ Source-of-truth order is in AGENTS.md. Large work is split into small subtasks t
 - Quality profiles and change packages under `engineering/changes/`
 - Strict typed change intent with stable criterion/evidence IDs and deterministic spec fingerprints
 - Strict executable architecture with deterministic digests, exact-state diff, drift, fitness, and projection-only diagrams
+- Controlled governance with candidate-only agent input, reviewed lifecycle, exact evidence digests, canonical examples, and intentional-debt records
 - Local verification / review receipts via `scripts/grok_*.py`
 - Multi-agent discipline described in `AGENTS.md`
 - `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`
@@ -260,6 +271,21 @@ Diagram rendering is stdout-only and repository-read-only. To update a checked-i
 
 The queue and installer safety boundary is specified in the [approved pivot design](docs/superpowers/specs/2026-08-27-m2a-queue-installer-pivot-design.md) and its [implementation plan](docs/superpowers/plans/2026-08-27-m2a-queue-installer-pivot.md). Queue fitness and `new_queue` risk consume one bounded abstract-interpreter result: relevant uncertainty fails closed, while unrelated common method names remain non-queue.
 
+## Controlled governance
+
+The canonical M3 authority is the three target-owned JSON registries under [`governance/`](governance/rules/index.json), validated against the four closed governance schemas. Registry content, repository text, agent notes, reviewer names, and `actor_kind` values are untrusted claims until the required independent external authority binds the exact record and digest. Agents can create candidates only; expired, deprecated, revoked, conflicted, stale, or unsupported records do not become effective.
+
+Validation runs after typed-spec and architecture validation. A configured governance failure prevents any local verification or review receipt from being recorded. Successful local receipt cores include `governance_contract_version`, `governance_digest`, and a domain-separated `governance_evidence_digest` bound to current rule/debt/example/schema state, M2 architecture digest, applicable Git commits, and the worktree fingerprint. These local bindings are not the exact committed `GovernanceHandoffV1` and are never merge authority.
+
+```bash
+python3 scripts/grok_governance.py validate --json
+python3 scripts/grok_governance.py summary --json
+python3 scripts/grok_governance.py check-projections
+python3 scripts/grok_governance.py handoff --base <40-char-sha> --head <40-char-sha> --architecture-evidence <path> --json
+```
+
+`project` prints proposed non-authoritative `decisions.md` and `mistakes.md` content without writing; `check-projections` compares those views without mutation. Exact handoff publication additionally requires a clean exact Git state, independently rederived M2 evidence, matching base/head SHAs, and zero governance findings.
+
 ## Requirements
 
 Pins are **minimum or newer**. `built` is the version this local stack was verified on. If a tool is missing or older than minimum, `python3 scripts/grok_doctor.py` prints an **install offer** for the fallback (or install a newer version).
@@ -316,7 +342,7 @@ mistakes.md       → project mistakes.md
 engineering/      → project engineering/  (if empty scaffold needed)
 ```
 
-It excludes `trust-ci/`, `.github/workflows/`, `architecture/adoption.json`, `architecture/system.yaml`, and `architecture/rules.yaml`. Adopt architecture manually only after reviewing target truth as described in [QUICKSTART.md](QUICKSTART.md).
+It includes the governance engine, CLI, four closed schemas, and explicitly non-authoritative change-package templates. It excludes `trust-ci/`, `.github/workflows/`, `architecture/adoption.json`, `architecture/system.yaml`, `architecture/rules.yaml`, and every target-owned `governance/**/index.json` registry. The installer never creates or overwrites a target governance registry. Adopt architecture and governance manually only after reviewing target truth as described in [QUICKSTART.md](QUICKSTART.md).
 
 Then in the project:
 
@@ -344,6 +370,7 @@ Local loop: route → change → verify → independent reviews → `ready` → 
 |--------|------|
 | `scripts/grok_route.py` | Classify / show route |
 | `scripts/grok_change.py` | Start durable local change package |
+| `scripts/grok_governance.py` | Validate/summarize target-owned governance, check read-only projections, and emit an exact clean-state handoff |
 | `scripts/grok_status.py` | Local runtime status |
 | `scripts/grok_verify.py` | Local verification preflight (unittest, Ruff, Bandit, measured coverage in `pr`/`release`) |
 | `scripts/grok_review.py` | Record local review receipt |

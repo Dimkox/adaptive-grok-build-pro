@@ -157,3 +157,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** A caller could erase adverse fitness, risk, scope, diff, inventory, and adoption evidence, recompute the unkeyed self-hash, and still receive a governance handoff.
 **Root cause:** The handoff checked caller-controlled status and aggregate model identity instead of independently deriving the complete exact-state M2 evidence with a trusted risk input and comparing every canonical field.
+
+## 2026-08-28 — Patched a helper at an ambiguous internal context
+
+**Symptom:** The first Task 7 edit temporarily nested the architecture-check body beneath the new governance helper and made the intended path unreachable.
+**Root cause:** The patch anchor ended at a repeated inner call instead of the complete function boundary; structural helpers must be inserted against an unambiguous top-level boundary and compiled immediately.

@@ -12,6 +12,15 @@
 
 ## API and event contracts
 
+## Governance context
+
+{{GOVERNANCE_AUTHORITY_NOTICE}}
+
+- Applicable rule IDs:
+- Applicable canonical example IDs/versions:
+- Open or overdue debt IDs:
+- Expected governance handoff or receipt impact:
+
 ## Bitrix-specific impact
 
 - Modules/events/agents/components affected:

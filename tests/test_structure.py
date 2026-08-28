@@ -4,6 +4,7 @@ import itertools
 import json
 import re
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -12,17 +13,47 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class StructureTests(unittest.TestCase):
     def test_frozen_m2_handoff_digests_match_canonical_summary(self) -> None:
-        result = subprocess.run(
-            ['python3', 'scripts/grok_architecture.py', 'summary', '--json'],
+        base = '635c9ddf2d63c1ea823074106976a8f3de6299a9'
+        with tempfile.TemporaryDirectory(prefix='adaptive-grok-frozen-m2-') as tmp:
+            archive = subprocess.Popen(
+                ['git', 'archive', base],
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+            )
+            extracted = subprocess.run(
+                ['tar', '-x', '-C', tmp],
+                stdin=archive.stdout,
+                check=True,
+            )
+            self.assertEqual(extracted.returncode, 0)
+            assert archive.stdout is not None
+            archive.stdout.close()
+            self.assertEqual(archive.wait(), 0)
+            result = subprocess.run(
+                [
+                    'python3',
+                    'scripts/grok_architecture.py',
+                    '--root',
+                    tmp,
+                    'summary',
+                    '--json',
+                ],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+        summary = json.loads(result.stdout)
+        requirements = subprocess.check_output(
+            [
+                'git',
+                'show',
+                f'{base}:engineering/changes/20260826-m2-executable-architecture-015603/requirements.md',
+            ],
             cwd=ROOT,
             text=True,
-            capture_output=True,
-            check=True,
+            encoding='utf-8',
         )
-        summary = json.loads(result.stdout)
-        requirements = (
-            ROOT / 'engineering/changes/20260826-m2-executable-architecture-015603/requirements.md'
-        ).read_text(encoding='utf-8')
         labels = {
             'architecture_digest': 'Composite architecture digest',
             'system_digest': 'System digest',
@@ -68,6 +99,14 @@ class StructureTests(unittest.TestCase):
             "schemas/architecture-system.schema.json",
             "schemas/architecture-rules.schema.json",
             "scripts/grok_architecture.py",
+            "governance/rules/index.json",
+            "governance/debt/index.json",
+            "governance/canonical-examples/index.json",
+            "schemas/governance-rule.schema.json",
+            "schemas/debt-entry.schema.json",
+            "schemas/canonical-example.schema.json",
+            "schemas/governance-handoff-v1.schema.json",
+            "scripts/grok_governance.py",
         )
         for relative in required:
             self.assertTrue((ROOT / relative).exists(), relative)

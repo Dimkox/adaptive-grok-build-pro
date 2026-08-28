@@ -204,6 +204,17 @@ class VerificationTests(unittest.TestCase):
             shutil.copytree(source, target)
         (root / 'architecture/adoption.json').write_text(_ADOPTION_MARKER, encoding='utf-8')
 
+    @staticmethod
+    def _adopt_governance(root: Path) -> None:
+        shutil.copytree(ROOT / 'governance', root / 'governance')
+        for name in (
+            'canonical-example.schema.json',
+            'debt-entry.schema.json',
+            'governance-handoff-v1.schema.json',
+            'governance-rule.schema.json',
+        ):
+            shutil.copy2(ROOT / 'schemas' / name, root / 'schemas' / name)
+
     def test_invalid_json_contract_fails(self) -> None:
         with project_copy() as root:
             path = root / 'engineering/contracts/schemas/bad.schema.json'
@@ -246,6 +257,28 @@ class VerificationTests(unittest.TestCase):
             self.assertEqual(report['status'], 'pass')
             receipt = root / f".grok-stack/runtime/receipts/{route['route_id']}/verification.json"
             self.assertTrue(receipt.is_file())
+
+    def test_governance_runs_after_spec_and_architecture_and_failure_is_not_receipted(self) -> None:
+        with project_copy(git=True) as root:
+            self._adopt_architecture(root)
+            self._adopt_governance(root)
+            route = build_route(root, 'Review governed architecture', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt governance'], cwd=root, check=True)
+            (root / 'governance/rules/index.json').write_text('{', encoding='utf-8')
+
+            report = verify(root, mode='fast', record=True)
+            names = [item['name'] for item in report['checks']]
+            self.assertLess(names.index('change-spec'), names.index('architecture'))
+            self.assertLess(names.index('architecture'), names.index('governance'))
+            governance = _check(report, 'governance')
+            self.assertIsNotNone(governance)
+            self.assertEqual(governance['status'], 'fail')
+            self.assertEqual(report['governance']['status'], 'fail')
+            receipt = root / f".grok-stack/runtime/receipts/{route['route_id']}/verification.json"
+            self.assertFalse(receipt.exists())
 
     def test_verify_reports_architecture_metadata_without_exact_worktree_sha(self) -> None:
         with project_copy(git=True) as root:

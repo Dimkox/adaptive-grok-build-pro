@@ -12,7 +12,11 @@ from .architecture import ArchitectureError, load_architecture, validate_reposit
 from .architecture_diagrams import artifact_digests, compare_generated, render_diagrams
 from .architecture_diff import select_architecture_comparison_base
 from .architecture_fitness import diff_architecture, evaluate_fitness
-from .receipts import active_architecture_binding, write_receipt
+from .receipts import (
+    active_architecture_binding,
+    active_governance_binding,
+    write_receipt,
+)
 from .spec import canonical_spec_digest, criterion_coverage, load_spec, spec_fingerprint, validate_spec
 from .state import get_active_change, get_active_route
 from .util import changed_files, command_exists, now_utc, read_text_limited, run, tree_fingerprint
@@ -167,6 +171,47 @@ def _architecture_check(
         }]
         return (
             CheckResult("architecture", "fail", str(exc), details=details),
+            {"configured": True, "error": str(exc), "status": "fail"},
+        )
+
+
+def _governance_check(
+    root: Path,
+    route: dict[str, object] | None,
+    architecture: dict[str, object],
+) -> tuple[CheckResult, dict[str, object]]:
+    try:
+        binding = active_governance_binding(root, route or {})
+        if binding is None:
+            return (
+                CheckResult("governance", "skip", "governance is not configured"),
+                {"configured": False, "status": "not_configured"},
+            )
+        metadata = {
+            "architecture_status": architecture.get("status", "unknown"),
+            "configured": True,
+            "status": "pass",
+            **binding,
+        }
+        return (
+            CheckResult(
+                "governance",
+                "pass",
+                "governance registries and evidence are current",
+            ),
+            metadata,
+        )
+    except (RuntimeError, OSError, TypeError, ValueError) as exc:
+        details = [
+            {
+                "severity": "error",
+                "code": getattr(exc, "code", "governance-invalid"),
+                "path": "governance",
+                "message": str(exc),
+            }
+        ]
+        return (
+            CheckResult("governance", "fail", str(exc), details=details),
             {"configured": True, "error": str(exc), "status": "fail"},
         )
 
@@ -505,11 +550,15 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
 
     spec_check, spec_metadata = _change_specs(root, files, route, mode)
     architecture_check, architecture_metadata = _architecture_check(root, route)
+    governance_check, governance_metadata = _governance_check(
+        root, route, architecture_metadata
+    )
 
     results: list[CheckResult] = [
         _git_diff_check(root),
         spec_check,
         architecture_check,
+        governance_check,
         _secret_scan(root, files),
         _contracts(root, files),
         _sql_safety(root, files),
@@ -540,9 +589,10 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
         'changed_files': files,
         'spec': spec_metadata,
         'architecture': architecture_metadata,
+        'governance': governance_metadata,
         'status': 'pass' if not failures else 'fail',
         'checks': [item.to_dict() for item in results],
     }
-    if record and route:
+    if record and route and governance_check.status != 'fail':
         write_receipt(root, 'verification', report['status'], details=report)
     return report

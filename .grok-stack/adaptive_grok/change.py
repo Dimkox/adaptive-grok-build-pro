@@ -9,6 +9,12 @@ from .state import get_active_route, set_active_change, update_route
 from .spec import dump_canonical_spec, generate_spec
 from .util import dump_json, now_utc, slugify
 
+GOVERNANCE_AUTHORITY_NOTICE = (
+    "Canonical governance JSON under `governance/` remains separately reviewed "
+    "authority. Any rule, example, debt, or digest named here is non-authoritative "
+    "context until the verifier rederives current governance evidence."
+)
+
 TRANSITIONS = {
     'draft': {'scoped', 'cancelled'},
     'scoped': {'approved', 'draft', 'cancelled'},
@@ -50,6 +56,7 @@ def start_change(root: Path, title: str | None = None) -> dict[str, Any]:
         '{{RISK}}': route['risk'],
         '{{COMPLEXITY}}': route['complexity'],
         '{{DOMAINS}}': ', '.join(route['domains']),
+        '{{GOVERNANCE_AUTHORITY_NOTICE}}': GOVERNANCE_AUTHORITY_NOTICE,
     }
     for file in path.rglob('*'):
         if file.is_file():

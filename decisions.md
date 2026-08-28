@@ -267,3 +267,7 @@ Sort registry records by stable identity and sort only fields whose governance c
 ## 2026-08-28 — Derive handoff inputs at the trust boundary
 
 Recompute the complete M2 architecture evidence from the clean exact Git base/head with conservative trusted risk, then compare every canonical field to the supplied envelope. A caller file is transport only; its self-hash and aggregate architecture digest do not grant authority.
+
+## 2026-08-28 — Separate worktree governance receipts from committed handoffs
+
+Use a distinct `adaptive-grok.governance-receipt-evidence/v1` digest domain for local receipts and bind it to the worktree fingerprint, applicable Git commits, M2 architecture digest, and all effective M3 state. This prevents a local preflight digest from being mistaken for the clean exact-SHA `GovernanceHandoffV1` consumed by later milestones.
