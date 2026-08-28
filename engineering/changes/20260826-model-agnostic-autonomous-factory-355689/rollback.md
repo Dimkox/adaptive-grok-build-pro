@@ -6,7 +6,7 @@ Any M3/M4 contract, lifecycle, fencing, capacity, budget, kill, audit, Unix-sock
 
 ## Application rollback
 
-Before M4 durable intake, revert/close the stacked feature PR normally. After durable intake, enable the factory kill switch and stop new claims; do not down-migrate or delete audit evidence. M3 v1 semantics and M4 migrations are forward-fixed with new versions.
+Rollback is forward-only. Before M4 durable intake, add an explicit reviewed revert commit or close the stacked candidate PR. After durable intake, enable the factory kill switch and stop new claims; do not rewrite protected history, down-migrate, or delete audit evidence. M3 v1 semantics and M4 migrations are forward-fixed with new versions.
 
 ## Data recovery / forward-fix
 

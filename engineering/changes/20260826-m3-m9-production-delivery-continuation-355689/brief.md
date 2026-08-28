@@ -16,6 +16,12 @@ Architect and implement an AI/LLM model-agnostic autonomous local software facto
 
 Deliver M3 as the next independently verified milestone, then use its exact `GovernanceHandoffV1` as the gate for separate M4–M9 branches. The final M9 outcome is exact-SHA signed preview/staging/canary delivery with exercised rollback and human-owned production promotion.
 
+## Current delivery status
+
+M3 Tasks 1–7 are implemented and independently task-reviewed through product commit `73a45d1feea639247fe5f66052f4a72cd6e98f9a`; the latest review-only head is `e7c903d837af437904b2e43a909b9e1a5bb67fc6`. Focused evidence proves the strict records/loader, lifecycle, governance authority gates, example/debt semantics, exact handoff builder, executable architecture fitness, governance-bound receipts, installer boundary, and stale-source protections.
+
+Task 8 final verification and the code/test/security/release review wave remain open and must bind the post-package final fingerprint. M4 is the next separate stacked PR after M3 passes its local and external gates. M5–M9 remain roadmap/design only; no merge, deployment, external authority, or production result is claimed.
+
 ## Scope
 
 ### In scope

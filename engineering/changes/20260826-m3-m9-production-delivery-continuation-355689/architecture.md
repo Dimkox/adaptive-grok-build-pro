@@ -4,7 +4,7 @@
 
 ## Current behavior
 
-M2-A is locally source-ready. M3 contains only an uncommitted partial Task 1 and one focused test is red. M4 has a plan but no `factory/`; M5–M9 are design/roadmap only.
+M2-A remains the stacked source base. M3 Tasks 1–7 are implemented and independently task-reviewed through `73a45d1`, with the Task 7 approval recorded at review-only head `e7c903d`. The repository now contains the strict governance engine, schemas, empty target-owned registries, exact handoff builder, executable M3 architecture model/fitness, governance-bound verifier receipts, installer payload, and current documentation. Task 8 final exact-fingerprint verification/reviews remain open. M4 has a plan but no `factory/`; M5–M9 are design/roadmap only.
 
 ## Proposed behavior
 
@@ -20,6 +20,8 @@ Complete M3 as a repository-local intent-plane validator and publish a closed, e
 ## Data flow
 
 `candidate registries → bounded validation → deterministic governance digest → exact GovernanceHandoffV1 → M4 intake gate`. Later: `protected merge → signed preview → staging → signed promotion request → canary metrics → human production promotion or automatic halt/rollback`.
+
+The handoff path is fail closed: clean exact base/head Git objects plus independently derived M2 architecture evidence and current governance state produce the six-field v1 envelope. Worktree-local receipt evidence is separately domain-tagged and fingerprint-bound; neither artifact is the App-owned Trust CI verdict or a human approval.
 
 ## API and event contracts
 
@@ -38,6 +40,7 @@ Complete M3 as a repository-local intent-plane validator and publish a closed, e
 - Complete M3 before creating M4–M9 implementation branches.
 - Restore the missing reviewed factory design before using the M3 plan.
 - Treat the user's current message as scope/design approval for continuation, not external Trust CI or production authority.
+- Keep M4 as the next separate stacked PR; keep M5–M9 as roadmap/design until their own scopes, tests, reviews, and authority gates exist.
 
 ## Risks and mitigations
 

@@ -49,3 +49,9 @@ Deliver two reviewable stacked implementation PRs: M3 controlled knowledge/debt 
 ## Scope expansion authority
 
 After the original design gate, the user explicitly approved full stacked M2 -> M3 -> M4 implementation without functional cuts and asked to reduce only redundant repeated tests. The user also required the existing `baby-bot.service`, isolated in `/run/netns/vpn`, to consume the future factory through a Unix-domain-socket admin API; only that M4 contract is in this scope, while bot code/deployment and Telegram-token rotation remain separate human/operator-controlled work.
+
+## Current stacked-delivery status
+
+This package remains the historical binding design record. M3 Tasks 1–7 are now implemented and independently task-reviewed through product commit `73a45d1feea639247fe5f66052f4a72cd6e98f9a`; review-only head `e7c903d837af437904b2e43a909b9e1a5bb67fc6` records the latest approval. Final Task 8 exact-fingerprint verification and route-selected reviews are still pending.
+
+M4 is the next separate stacked PR after M3 passes its remaining local and external gates. M5–M9 remain roadmap/design only. This status update claims no final handoff, receipt, PR, merge, release, deployment, external authority, or production action.

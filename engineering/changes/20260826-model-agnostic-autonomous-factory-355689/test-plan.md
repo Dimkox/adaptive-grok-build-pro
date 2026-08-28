@@ -35,3 +35,5 @@
 ## Reduced repetition policy
 
 During implementation, run focused tests for the changed task only. Run one full repository verifier on the final M3 product fingerprint and one on the final M4 product fingerprint; report-only/evidence commits do not trigger redundant full suites. A product repair invalidates the prior verifier and gets one replacement final run after all repairs.
+
+M3 Tasks 1–7 have completed their focused TDD and independent task-review checkpoints, including the reviewed fail-closed repairs. The one final M3 verifier and route-selected code/test/security/release review wave remain deliberately unclaimed until the active continuation package is finalized on one fingerprint.

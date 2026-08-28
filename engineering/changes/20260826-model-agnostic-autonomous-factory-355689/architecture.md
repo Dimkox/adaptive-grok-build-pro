@@ -2,7 +2,7 @@
 
 ## Current behavior
 
-M0 Trust CI remains separate. M1 is the typed-intent authority. Exact M2-A exists at `635c9ddf2d63c1ea823074106976a8f3de6299a9`; M3 and `factory/` do not yet exist on this branch.
+M0 Trust CI remains separate. M1 is the typed-intent authority. Exact M2-A at `635c9ddf2d63c1ea823074106976a8f3de6299a9` remains the stack base. M3 Tasks 1–7 now exist and are independently task-reviewed through product commit `73a45d1`; final Task 8 exact-fingerprint verification/reviews remain open. `factory/` does not exist, so M4 is still the next separate stacked PR and M5–M9 remain roadmap/design only.
 
 ## Proposed behavior
 
@@ -38,7 +38,7 @@ ready_for_human -> separate Trust CI/human delivery process, not factory authori
 
 ## Repository impact
 
-This planning commit changes documentation and the durable package only. The approved M3 implementation adds governance source; the stacked M4 implementation adds the isolated `factory/` package and migrations, but neither adds a root packaging marker, GitHub Actions, provider execution, systemd activation, or external writes.
+The original planning commit changed documentation and the durable package only. The reviewed M3 implementation now adds governance source, strict schemas/empty registries, executable architecture integration, receipt/installer integration, and documentation. The future stacked M4 implementation may add the isolated `factory/` package and migrations, but neither milestone adds GitHub Actions, provider execution, systemd activation, or external writes.
 
 ## Decisions
 

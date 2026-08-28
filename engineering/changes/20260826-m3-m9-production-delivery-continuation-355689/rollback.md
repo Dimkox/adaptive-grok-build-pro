@@ -6,11 +6,11 @@ Contract incompatibility, unsafe lifecycle promotion, stale digest acceptance, v
 
 ## Application rollback
 
-Before merge, revert the bounded M3 commits on its branch. After merge, use a reviewed forward-fix/revert PR; never rewrite protected history.
+Rollback is forward-only. Before merge, add an explicit revert commit on the bounded M3 branch or close the candidate PR. After merge, use a reviewed forward-fix or revert PR; never rewrite protected history or silently restore an older governance digest.
 
 ## Data recovery / forward-fix
 
-M3 adds repository records only and no database. Preserve evidence, revoke unsafe governance records explicitly, rotate the digest, and regenerate receipts.
+M3 adds repository records only and no database. Preserve evidence, revoke unsafe governance records explicitly, rotate the digest, regenerate the handoff/receipts, and renew every affected exact-fingerprint review.
 
 ## Verification after rollback
 

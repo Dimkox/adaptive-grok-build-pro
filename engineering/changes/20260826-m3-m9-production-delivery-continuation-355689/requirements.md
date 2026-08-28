@@ -4,12 +4,14 @@
 
 ## Acceptance criteria
 
-- [ ] M3 strict schemas, bounded loader, lifecycle, conflict, example/debt semantics, exact handoff, architecture fitness, receipts, installer behavior, and docs pass their focused tests.
-- [ ] Agent-authored governance can remain only a candidate; activation requires independent review and explicit human governance approval.
-- [ ] M3 emits no factory runtime, provider execution, systemd, credential, network, Trust CI mutation, or external write capability.
+- [x] M3 strict schemas, bounded loader, lifecycle, conflict, example/debt semantics, exact handoff, architecture fitness, receipts, installer behavior, and docs pass their focused tests.
+- [x] Agent-authored governance can remain only a candidate; activation requires independent review and explicit human governance approval.
+- [x] M3 emits no factory runtime, provider execution, systemd, credential, network, Trust CI mutation, or external write capability.
 - [ ] Final M3 evidence binds the same exact fingerprint across verifier and code/test/security/release reviews.
 - [ ] M4 cannot start unless the M1/M2/M3 handoff contracts and required external authority evidence are current.
 - [ ] M9 remains a later separate milestone: exact merged SHA, signed manifest, deterministic preview/staging checks, explicit canary abort thresholds, exercised rollback, and human production promotion.
+
+The checked items above are implementation-behavior claims bound to the exact reviewed Task 1–7 commits in `evidence/m3-task-evidence.md`. They do not satisfy the still-open final exact-fingerprint criterion or authorize merge/deployment.
 
 ## Failure and edge cases
 
