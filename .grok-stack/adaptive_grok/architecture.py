@@ -940,9 +940,9 @@ _SUPPORTED_COMPATIBILITY_MODES = {
     "producer_accepted_by_old",
     "versioned_break",
 }
-_SUPPORTED_CLOSED_SCHEMA_DIGESTS = {
-    "f3cd912607444a1a2a40333f523d586e96947050d94ee7591dd3a273963fd71f",
-}
+_REVIEWED_GOVERNANCE_HANDOFF_SCHEMA_DIGEST = (
+    "f3cd912607444a1a2a40333f523d586e96947050d94ee7591dd3a273963fd71f"
+)
 _NONNEGATIVE_INTEGER_KEYWORDS = {"maxItems", "maxLength", "minItems", "minLength"}
 _NUMBER_KEYWORDS = {"maximum", "minimum"}
 _SUPPORTED_SCHEMA_TYPES = {
@@ -1541,6 +1541,17 @@ def compare_contracts(
     if base.id != head.id or base.kind != head.kind:
         return CompatibilityResult("incompatible", ("contract_identity_changed",))
     documents = (base.document, head.document)
+    canonical_documents_match = _canonical_bytes(base.document) == _canonical_bytes(
+        head.document
+    )
+    reviewed_governance_handoff_pair = (
+        base.kind == "json_schema"
+        and canonical_documents_match
+        and all(
+            _sha256(document) == _REVIEWED_GOVERNANCE_HANDOFF_SCHEMA_DIGEST
+            for document in documents
+        )
+    )
     if base.kind == "openapi":
         if mode not in {"bidirectional", "exact", "versioned_break"}:
             return CompatibilityResult("unsupported", ("unsupported_compatibility_policy",))
@@ -1551,13 +1562,11 @@ def compare_contracts(
         schemas = base_schemas + head_schemas
     else:
         schemas = documents
-    if any(
-        _unsupported_schema(schema)
-        and _sha256(schema) not in _SUPPORTED_CLOSED_SCHEMA_DIGESTS
-        for schema in schemas
+    if any(_unsupported_schema(schema) for schema in schemas) and not (
+        reviewed_governance_handoff_pair
     ):
         return CompatibilityResult("unsupported", ("unsupported_schema_keyword",))
-    if _canonical_bytes(base.document) == _canonical_bytes(head.document):
+    if canonical_documents_match:
         return CompatibilityResult("compatible", ())
     if mode == "exact":
         return CompatibilityResult("incompatible", ("same_version_semantic_change",))

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import itertools
 import json
 import re
@@ -12,6 +13,26 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class StructureTests(unittest.TestCase):
+    def test_m3_route_binds_exact_reviewed_m2_fingerprint(self) -> None:
+        route = json.loads(
+            (
+                ROOT
+                / "engineering/changes/20260826-m3-m9-production-delivery-continuation-355689/route.json"
+            ).read_text(encoding="utf-8")
+        )
+        expected_commit = "635c9ddf2d63c1ea823074106976a8f3de6299a9"
+        expected_fingerprint = (
+            "6b4212f06a6c095db1a9e9c6eeb8c51d731dfa900e596bc915f98c012a4ac59c"
+        )
+
+        self.assertEqual(route["base_commit"], expected_commit)
+        self.assertEqual(len(route["base_fingerprint"]), 64)
+        self.assertEqual(route["base_fingerprint"], expected_fingerprint)
+        self.assertEqual(
+            route["base_fingerprint"],
+            hashlib.sha256(expected_commit.encode("ascii")).hexdigest(),
+        )
+
     def test_frozen_m2_handoff_digests_match_canonical_summary(self) -> None:
         base = '635c9ddf2d63c1ea823074106976a8f3de6299a9'
         with tempfile.TemporaryDirectory(prefix='adaptive-grok-frozen-m2-') as tmp:

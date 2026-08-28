@@ -1350,6 +1350,52 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertEqual(result.status, "compatible")
         self.assertEqual(result.reasons, ())
 
+    def test_governance_handoff_exception_rejects_changed_supported_copies(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        frozen = next(
+            item
+            for item in ARCH.contract_inventory(ROOT, snapshot)
+            if item.id == "CONTRACT-GOVERNANCE-HANDOFF-V1"
+        )
+        supported_copy = copy.deepcopy(frozen.document)
+        supported_copy.pop("$defs")
+        for property_schema in supported_copy["properties"].values():
+            if "$ref" in property_schema:
+                property_schema.clear()
+                property_schema["type"] = "string"
+            property_schema.pop("const", None)
+        altered_supported_copy = copy.deepcopy(supported_copy)
+        altered_supported_copy["properties"]["architecture_digest"]["type"] = [
+            "string",
+            "null",
+        ]
+
+        for label, changed_document in (
+            ("constraints removed", supported_copy),
+            ("supported copy altered", altered_supported_copy),
+        ):
+            changed = self._record(changed_document)
+            changed = ARCH.ContractRecord(
+                id=frozen.id,
+                kind=frozen.kind,
+                path=frozen.path,
+                version=frozen.version,
+                role=frozen.role,
+                compatibility=frozen.compatibility,
+                digest=changed.digest,
+                document=changed.document,
+            )
+            for direction, base, head in (
+                ("frozen base", frozen, changed),
+                ("frozen head", changed, frozen),
+            ):
+                with self.subTest(label=label, direction=direction):
+                    result = ARCH.compare_contracts(
+                        base, head, "consumer_accepts_old"
+                    )
+                    self.assertEqual(result.status, "unsupported")
+                    self.assertEqual(result.reasons, ("unsupported_schema_keyword",))
+
     def test_schema_type_arrays_are_bounded_sets_with_directional_semantics(self) -> None:
         string = {"type": "string"}
         nullable = {"type": ["string", "null"]}
