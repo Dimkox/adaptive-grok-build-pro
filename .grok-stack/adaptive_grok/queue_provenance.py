@@ -49,15 +49,13 @@ class QueueAnalysisLimit(RuntimeError):
     """Raised when bounded queue analysis cannot safely continue."""
 
 
-@dataclass(frozen=True)
-class AbstractValue:
+class AbstractValue(NamedTuple):
     state: QueueState
     entries: tuple[tuple[LiteralKey, "AbstractValue"], ...] = ()
     default: "AbstractValue | None" = None
 
 
-@dataclass(frozen=True)
-class QueueTreeAnalysis:
+class QueueTreeAnalysis(NamedTuple):
     signals: tuple[str, ...]
     derived_names: frozenset[str]
     uncertain: bool
@@ -77,8 +75,7 @@ class _AliasState:
         )
 
 
-@dataclass
-class _Environment:
+class _Environment(NamedTuple):
     values: dict[str, AbstractValue]
     aliases: _AliasState
 
@@ -245,8 +242,7 @@ class _ScopeNames(NamedTuple):
     nonlocals: frozenset[str]
 
 
-@dataclass
-class _FunctionScope:
+class _FunctionScope(NamedTuple):
     values: dict[str, AbstractValue]
     pending: list[tuple[ast.FunctionDef | ast.AsyncFunctionDef, _Environment]]
 
@@ -375,7 +371,12 @@ class _Interpreter:
             raise QueueAnalysisLimit("queue value limit exceeded")
         return value
 
-    def _join(self, left: AbstractValue, right: AbstractValue) -> AbstractValue:
+    def _join(self, left: AbstractValue, right: AbstractValue, augment_objects: bool = False) -> AbstractValue:
+        if augment_objects and left.state == right.state == "object":
+            entries = _entry_map(left)
+            for key, value in right.entries:
+                entries[key] = self._join(entries[key], value, True) if key in entries else value
+            return self._value(_structured("object", entries))
         return self._value(join_value(left, right))
 
     def _alias_charge(self, amount: int = 1) -> None:
@@ -879,7 +880,7 @@ class _Interpreter:
                         value = _structured("object", {("string", part): value})
                     current = environment.values.get(local)
                     if current is not None and current.state == value.state == "object":
-                        value = _structured("object", {**_entry_map(current), **_entry_map(value)})
+                        value = self._join(current, value, augment_objects=True)
                 self._bind(ast.Name(id=local), value, environment)
             return environment
         if isinstance(statement, ast.ImportFrom):
@@ -1068,7 +1069,6 @@ class _Interpreter:
         for imported, call in _called_imports(self.tree):
             if imported.split(".")[0] in _QUEUE_IMPORTS:
                 self.signals.add(f"call:{call}")
-
         derived_names = frozenset(
             name
             for name, value in environment.values.items()

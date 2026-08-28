@@ -412,3 +412,54 @@ Exact worktree fitness passes with background-job findings empty, monotonic risk
 Bandit, compileall, typed spec 7/7, architecture validate/drift/diagram, README
 K16, diff whitespace, protected paths, and exact separation all pass. The text
 verifier, commit, and exact-SHA evidence follow after final gates.
+
+## Recursive dotted-branch rereview
+
+The rereview found that shallow package-root augmentation still replaced a
+colliding intermediate branch: queue `project.services.runtime` disappeared when
+ordinary `project.services.forms` was imported afterward. It also required the
+merge traversal itself to consume existing bounded-analysis capacity.
+
+RED evidence:
+
+```text
+test_mixed_local_module_exports_are_member_specific
+test_queue_alias_work_is_bounded_before_branch_closure
+Ran 2 tests in 3.717s
+FAILED (failures=2: deep queue-first was N/A; low-limit merge did not stop)
+```
+
+Object augmentation now recurses only through colliding object branches,
+preserves disjoint descendants, and conservatively joins conflicting leaves.
+Every rebuilt object charges its complete entry count through the existing value
+limit, so depth/width cannot bypass the established bound. Both import orders,
+ordinary sibling controls, duplicate queue/nonqueue leaves, aliases, and direct
+siblings remain covered.
+
+GREEN evidence:
+
+```text
+2 focused depth and bound selectors
+Ran 2 tests in 3.746s
+OK
+
+python3 -m unittest -q -k queue tests.test_architecture_fitness
+Ran 23 tests in 30.558s
+OK
+
+python3 -m unittest -q tests.test_architecture_fitness
+Ran 70 tests in 79.900s
+OK
+elapsed=80.08 exit=0
+
+python3 -m unittest discover -q
+Ran 364 tests in 187.109s
+OK
+elapsed=187.35 exit=0
+```
+
+Exact worktree fitness passes with background findings empty, risk monotonic
+`green -> red`, and code budget `10000/10000`. Ruff, configured Bandit,
+compileall, typed spec 7/7, architecture validate/drift/diagram, README K16,
+diff whitespace, protected paths, and exact separation all pass. The final
+verifier, commit, and exact-SHA evidence follow after final gates.

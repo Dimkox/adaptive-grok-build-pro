@@ -1648,6 +1648,19 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(ordinary.signals, ())
         self.assertFalse(ordinary.uncertain)
 
+        deep_imports = "\n".join(
+            f"import project.services.module{index}" for index in range(8)
+        )
+        deep_adapters = {
+            f"project.services.module{index}.app" for index in range(8)
+        }
+        with self.assertRaisesRegex(FIT.QueueAnalysisLimit, "alias|value"):
+            FIT.analyze_queue_tree(
+                ast.parse(deep_imports + "\nproject.services.module0.app.delay(task)\n"),
+                deep_adapters,
+                value_limit=16,
+            )
+
     def test_unrelated_semantic_method_names_remain_background_not_applicable(self) -> None:
         system = _system()
         system["nodes"][0]["type"] = "worker"
@@ -2431,6 +2444,12 @@ class ArchitectureFitnessTests(unittest.TestCase):
             ("dotted sibling queue last", "import project.forms\nimport project.runtime\n", "project.runtime.app.delay(task)\n", True),
             ("dotted sibling ordinary first", "import project.runtime\nimport project.forms\n", "project.forms.form.delay(task)\n", False),
             ("dotted sibling ordinary last", "import project.forms\nimport project.runtime\n", "project.forms.form.delay(task)\n", False),
+            ("deep sibling queue first", "import project.services.runtime\nimport project.services.forms\n", "project.services.runtime.app.delay(task)\n", True),
+            ("deep sibling queue last", "import project.services.forms\nimport project.services.runtime\n", "project.services.runtime.app.delay(task)\n", True),
+            ("deep sibling ordinary first", "import project.services.runtime\nimport project.services.forms\n", "project.services.forms.form.delay(task)\n", False),
+            ("deep sibling ordinary last", "import project.services.forms\nimport project.services.runtime\n", "project.services.forms.form.delay(task)\n", False),
+            ("deep duplicate queue", "import project.services.runtime\nimport project.services.runtime\n", "project.services.runtime.app.delay(task)\n", True),
+            ("deep duplicate ordinary", "import project.services.forms\nimport project.services.forms\n", "project.services.forms.form.delay(task)\n", False),
             ("wildcard queue", "from project.runtime import *\n", "app.delay(task)\n", True),
             ("wildcard ordinary", "from project.runtime import *\n", "form.delay(task)\n", False),
         )
@@ -2440,6 +2459,8 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 repo.model(system, rules)
                 repo.write_text("project/runtime.py", module_source)
                 repo.write_text("project/forms.py", forms_source)
+                repo.write_text("project/services/runtime.py", module_source)
+                repo.write_text("project/services/forms.py", forms_source)
                 repo.write_text("src/jobs.py", imported)
                 base = repo.commit("base")
                 repo.write_text("src/jobs.py", imported + operation)
