@@ -372,6 +372,16 @@ class ChangeSpecTests(unittest.TestCase):
         with self.assertRaises(SPEC.SpecError):
             SPEC._schema_preflight({'type': 'object', '$defs': {'unused': {'type': 'string', 'oneOf': []}}})
 
+    def test_schema_type_union_rejects_empty_declaration(self) -> None:
+        with self.assertRaisesRegex(SPEC.SpecError, "schema type array"):
+            SPEC.validate_schema("matched", {"type": []})
+
+    def test_schema_type_union_rejects_unknown_member_after_match(self) -> None:
+        with self.assertRaisesRegex(SPEC.SpecError, "unsupported type not-a-json-type"):
+            SPEC.validate_schema(
+                "matched", {"type": ["string", "not-a-json-type"]}
+            )
+
     def test_cli_validate_summarize_map_and_generate(self) -> None:
         change_id = VALID_SPEC["change_id"]
         yaml_text = SPEC.dump_canonical_spec(VALID_SPEC)
