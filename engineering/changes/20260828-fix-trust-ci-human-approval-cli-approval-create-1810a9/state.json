@@ -1,0 +1,53 @@
+{
+  "change_id": "20260828-fix-trust-ci-human-approval-cli-approval-create-1810a9",
+  "created_at": "2026-08-28T23:17:12+00:00",
+  "history": [
+    {
+      "at": "2026-08-28T23:17:12+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-28T23:25:58+00:00",
+      "from": "draft",
+      "reason": "root cause, frozen contracts, acceptance criteria, test and rollback plans recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-28T23:25:58+00:00",
+      "from": "scoped",
+      "reason": "route has no named human gate; user explicitly requested the signing-path repair",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-28T23:50:16+00:00",
+      "from": "approved",
+      "reason": "single write owner completed the bounded test-first repair",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-28T23:50:17+00:00",
+      "from": "implementing",
+      "reason": "focused and route-selected verification passed",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-28T23:50:17+00:00",
+      "from": "verifying",
+      "reason": "independent code, test and data reviews inspected the final product diff",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-28T23:50:17+00:00",
+      "from": "reviewing",
+      "reason": "review blocker fixed and all final reviews passed; awaiting final fingerprint receipts",
+      "to": "ready"
+    }
+  ],
+  "route_id": "1810a99eee3c",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Fix Trust CI human approval CLI: approval-create and approval-submit must run from a source checkout on a human-controlled host without importing API, worker, PostgreSQL, or other server-only dependencies; add regression tests and reproducible operator setup documentation without weakening signature verification or exposing private keys",
+  "updated_at": "2026-08-28T23:50:17+00:00"
+}

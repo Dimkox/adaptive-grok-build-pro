@@ -166,3 +166,7 @@ Reuse the active route only when `FOLLOW_UP_RE` matches the whole prompt, or the
 ## 2026-08-24 — M0 CI host is claw, not a laptop
 
 The M0 Trust CI host is hostname `claw` (Xeon E5-2680 v4, ~16 GiB ECC, Ubuntu 24.04). Never call it a laptop; SearXNG already owns `127.0.0.1:8080` and co-located n8n/app databases remain residual risk the user accepted. Trust CI therefore publishes another loopback port (`127.0.0.1:18080` by default) with compose project `adaptive-trust-ci`.
+
+## 2026-08-28 — Multi-role CLIs import after command dispatch
+
+A shared CLI that serves human and server roles must keep module scope stdlib-only and load each dependency slice inside the selected command. Fresh-process import guards proved this keeps private-key and envelope submission paths independent of API, worker and PostgreSQL packages.

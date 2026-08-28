@@ -36,3 +36,15 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** First `grok_verify --mode pr` could not be the completion receipt; reports and `state.json` still had to be written.
 **Root cause:** Verification was used as a mid-implementation checkpoint. The receipt fingerprint is the whole dirty tree, so any later change-package or review-report write invalidates it. Evidence must be recorded only after the last file that will remain in that tree.
+
+# 2026-08-28 — Human approval CLI imported the server graph
+
+Root cause: the shared CLI imported API, worker and PostgreSQL modules before command
+dispatch, so human-only approval commands failed on a correctly minimal operator host.
+Command entry points must load only the dependency slice selected by the operator.
+
+# 2026-08-28 — Staged diff check did not stop the commit
+
+Root cause: the staged whitespace check and commit ran as independent newline-separated
+commands without fail-fast shell behavior, so the commit proceeded after the check
+reported Markdown trailing spaces. Commit gates must stop on the first nonzero result.

@@ -1,0 +1,81 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "data_reviewer",
+    "data_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect"
+  ],
+  "base_commit": "1c06299894279a88b881defa3f19b004fa742223",
+  "base_fingerprint": "20e3a26edfc17eba294d9d5df33cbc3940529724e58171bdd906281618d9a818",
+  "complexity": "standard",
+  "created_at": "2026-08-28T23:17:02+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "data",
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=data,api",
+    "repository=generic",
+    "write-owner=data_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "data_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "1810a99eee3c",
+  "schema_version": 1,
+  "session_id": "signing-hotfix",
+  "status": "routed",
+  "task": "Fix Trust CI human approval CLI: approval-create and approval-submit must run from a source checkout on a human-controlled host without importing API, worker, PostgreSQL, or other server-only dependencies; add regression tests and reproducible operator setup documentation without weakening signature verification or exposing private keys",
+  "task_domains": [
+    "data",
+    "api"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change",
+    "data-change"
+  ],
+  "write_agent": "data_implementer"
+}
