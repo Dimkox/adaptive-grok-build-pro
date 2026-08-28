@@ -95,3 +95,57 @@ residual boundary is intentional: secret-bearing data on untyped or
 unauthenticated edges and unpaired package-mirror changes fail closed.
 
 The exact no-record verifier result and commit SHA follow after the final gate.
+
+## Tenant and migration aggregate rereview
+
+The tenant category previously took applicability from repository rules and a
+closed edge-type subset. That allowed rules to hide declared tenant data and
+made deployment or secret-flow edges carrying it return N/A. Applicability now
+comes directly from `tenant_scoped: true` classifications and every edge that
+carries them. Missing rule coverage and required tenant-filter evidence are
+typed unsupported; unauthenticated tenant edges fail. A non-tenant model remains
+true N/A.
+
+Migration evaluation previously recomputed derived roots within nested loops and
+used one Git blob subprocess for each primary/mirror comparison. One bounded
+rule/root/mirror table and root-to-plan index now drive applicability. Aggregate
+root, changed-artifact, inventory, rule, and blob work is capped; required blobs
+are read in deterministic eight-path batches, and published findings have a
+stable ceiling. Mirror-only drift and every existing phase/version/source safety
+check remain enforced in exact and worktree modes.
+
+RED evidence:
+
+```text
+tenant edge/policy matrix: 5 expected failures; affected cases returned N/A
+migration aggregate selectors: 2 expected failures in 0.564s
+- primary/mirror comparison invoked forbidden singleton read_diff_file
+- low work ceiling returned fail instead of typed unsupported
+```
+
+GREEN evidence:
+
+```text
+focused tenant and migration methods
+Ran 8 tests in 5.235s
+OK
+
+python3 -m unittest tests.test_architecture_fitness
+Ran 77 tests in 81.915s
+OK
+
+python3 -m unittest discover -s tests
+Ran 372 tests in 192.014s
+OK
+```
+
+Exact worktree fitness passes with `code_budget=pass` at exactly
+`10000/10000`, `change_separation=pass`, and monotonic risk `green -> red`.
+Ruff, configured Bandit, compileall, typed spec 7/7, architecture validation,
+drift, deterministic diagram check, summary/digests, README K16, documentation
+structure, diff whitespace, and protected-path checks pass. `release.md` already
+describes the current final-repair state and keeps independent reviews,
+receipts, PR, Trust CI, M2-B, and deployment pending, so no chronology edit was
+needed in this rereview.
+
+The exact no-record verifier result and commit SHA follow after the final gate.

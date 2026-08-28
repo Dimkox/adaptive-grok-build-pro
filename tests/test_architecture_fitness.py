@@ -433,9 +433,11 @@ class ArchitectureFitnessTests(unittest.TestCase):
             "require_authorization": True,
             "severity": "error",
         }]
+        tenant_system = _system()
+        tenant_system["data_classifications"][0]["tenant_scoped"] = True
         cases.append((
             "tenant_authorization",
-            _system(),
+            tenant_system,
             tenant_rules,
             lambda system: system["edges"][0].update(authentication="none"),
         ))
@@ -512,6 +514,52 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 result = self._results(self._evaluate(repo, base, head))[category]
                 self.assertEqual(result.status, "fail")
                 self.assertTrue(result.findings)
+
+    def test_tenant_data_governs_every_edge_and_cannot_be_hidden_by_rules(self) -> None:
+        cases = (
+            ("deployment without auth", "deployment", "none", True, "fail"),
+            ("missing policy", "deployment", "local_os", None, "unsupported"),
+            ("secret flow without filter evidence", "secret_flow", "local_os", True, "unsupported"),
+            ("authenticated governed flow", "deployment", "local_os", False, "pass"),
+        )
+        for label, edge_type, authentication, tenant_filter, expected in cases:
+            with self.subTest(label=label):
+                system = _system()
+                rules = _rules()
+                repo, base = self._repo(system=system, rules=rules)
+                system["data_classifications"][0].update(
+                    classification="restricted",
+                    tenant_scoped=True,
+                )
+                system["edges"][0].update(
+                    type=edge_type,
+                    authentication=authentication,
+                )
+                if tenant_filter is not None:
+                    rules["tenant_authorization_policies"] = [{
+                        "id": "FIT-TENANT",
+                        "data_classifications": ["DATA-INTERNAL"],
+                        "require_tenant_filter": tenant_filter,
+                        "require_authorization": True,
+                        "severity": "error",
+                    }]
+                repo.model(system, rules)
+                head = repo.commit(label)
+                report = self._evaluate(repo, base, head)
+                result = self._results(report)["tenant_authorization"]
+                self.assertEqual(result.status, expected)
+                self.assertIn("EDGE-A-B", result.applicability.scanned_scope)
+                self.assertEqual(report.status, "pass" if expected == "pass" else "fail")
+
+        system = _system()
+        rules = _rules()
+        repo, base = self._repo(system=system, rules=rules)
+        system["nodes"][0]["owner"] = "platform"
+        repo.model(system, rules)
+        head = repo.commit("ordinary architecture edit")
+        result = self._results(self._evaluate(repo, base, head))["tenant_authorization"]
+        self.assertEqual(result.status, "not_applicable")
+        self.assertEqual(result.applicability.reason_code, "no_tenant_scoped_data")
 
     def test_source_analyzers_reject_boundaries_network_and_production_imports(self) -> None:
         cases = (
@@ -3387,6 +3435,79 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "fail")
         self.assertIn("package/resources/001_expand.sql", result.applicability.scanned_scope)
         self.assertIn("mirror differs", " ".join(result.findings))
+
+    def test_migration_planning_and_blob_comparison_are_aggregate_bounded(self) -> None:
+        system = _system()
+        system["nodes"][0]["repository_paths"] = ["migrations", "package/resources"]
+        rules = _rules()
+        rules["migration_policies"] = [{
+            "id": "FIT-MIGRATION",
+            "path_prefixes": ["migrations"],
+            "required_phases": ["expand", "migrate", "contract"],
+            "immutable_history": False,
+            "severity": "error",
+        }]
+        repo, _initial = self._repo(system=system, rules=rules)
+        sources = {
+            "001_expand.sql": "CREATE TABLE item(id integer);\n",
+            "001_migrate.sql": "UPDATE item SET id = id WHERE id BETWEEN 1 AND 100;\n",
+            "001_contract.sql": "ALTER TABLE item DROP COLUMN legacy;\n",
+        }
+        for name, source in sources.items():
+            repo.write_text(f"migrations/{name}", source)
+            repo.write_text(f"package/resources/{name}", source)
+        base = repo.commit("migration batch base")
+        updated = {
+            **sources,
+            "001_expand.sql": "CREATE TABLE item(id bigint);\n",
+        }
+        for name, source in updated.items():
+            repo.write_text(f"migrations/{name}", source)
+            repo.write_text(f"package/resources/{name}", source)
+        head = repo.commit("paired migration update")
+
+        with patch.object(FIT, "_migration_roots", wraps=FIT._migration_roots) as roots, \
+             patch.object(FIT, "read_diff_file", side_effect=AssertionError("singleton migration read")), \
+             patch.object(FIT, "read_diff_files", wraps=FIT.read_diff_files) as batches:
+            exact = self._results(self._evaluate(repo, base, head))["migration_safety"]
+            worktree_diff = FIT.diff_architecture(repo.root, base_sha=base, worktree=True)
+            worktree = self._results(FIT.evaluate_fitness(
+                repo.root,
+                FIT.load_architecture(repo.root),
+                worktree_diff,
+                worktree_diff.changed_paths,
+                pre_risk="green",
+            ))["migration_safety"]
+        self.assertEqual((exact.status, worktree.status), ("pass", "pass"))
+        self.assertLessEqual(roots.call_count, 4)
+        self.assertLessEqual(batches.call_count, 4)
+
+    def test_migration_work_and_published_findings_have_explicit_limits(self) -> None:
+        rules = _rules()
+        rules["migration_policies"] = [{
+            "id": "FIT-MIGRATION",
+            "path_prefixes": ["migrations"],
+            "required_phases": ["expand", "migrate", "contract"],
+            "immutable_history": False,
+            "severity": "error",
+        }]
+        repo, base = self._repo(rules=rules)
+        for version in range(1, 7):
+            repo.write_text(
+                f"migrations/{version:03d}_expand.sql",
+                "ALTER TABLE item ADD COLUMN value text NOT NULL;\n",
+            )
+        head = repo.commit("migration limit stress")
+        with patch.object(FIT, "MAX_MIGRATION_WORK", 4, create=True):
+            limited = self._results(self._evaluate(repo, base, head))["migration_safety"]
+        self.assertEqual(limited.status, "unsupported")
+        self.assertIn("work limit", " ".join(limited.findings))
+
+        with patch.object(FIT, "MAX_MIGRATION_FINDINGS", 3, create=True):
+            capped = self._results(self._evaluate(repo, base, head))["migration_safety"]
+        self.assertEqual(capped.status, "unsupported")
+        self.assertEqual(len(capped.findings), 3)
+        self.assertIn("finding limit", capped.findings[-1])
 
     def test_migration_content_and_versions_are_conservative_for_every_status(self) -> None:
         cases = (
