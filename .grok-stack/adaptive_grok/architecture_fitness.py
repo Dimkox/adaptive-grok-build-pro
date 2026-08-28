@@ -155,16 +155,14 @@ class FitnessReport:
     evidence_digest: str
 
 
-@dataclass(frozen=True)
-class _QueueProvenanceResult:
+class _QueueProvenanceResult(NamedTuple):
     state: str
     reason: str
     signals: tuple[str, ...]
     paths: tuple[str, ...] = ()
 
 
-@dataclass(frozen=True)
-class _QueueAdapterResolution:
+class _QueueAdapterResolution(NamedTuple):
     state: str
     reason: str
     exports: tuple[str, ...] = ()

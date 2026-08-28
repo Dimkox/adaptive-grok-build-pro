@@ -3,7 +3,7 @@ from __future__ import annotations
 import ast
 import math
 from dataclasses import dataclass
-from typing import AbstractSet, Literal, TypeAlias
+from typing import AbstractSet, Literal, NamedTuple, TypeAlias
 
 LiteralKey: TypeAlias = tuple[str, object]
 QueueState = Literal[
@@ -239,8 +239,7 @@ def _called_imports(tree: ast.AST) -> set[tuple[str, str]]:
     return called
 
 
-@dataclass(frozen=True)
-class _ScopeNames:
+class _ScopeNames(NamedTuple):
     locals: frozenset[str]
     globals: frozenset[str]
     nonlocals: frozenset[str]
@@ -875,9 +874,12 @@ class _Interpreter:
             for alias in statement.names:
                 local = alias.asname or alias.name.split(".")[0]
                 value = self.module_values.get(alias.asname or alias.name, QUEUE if alias.name.split(".")[0] in _QUEUE_IMPORTS else NON_QUEUE)
-                if not alias.asname and value != NON_QUEUE:
+                if not alias.asname:
                     for part in reversed(alias.name.split(".")[1:]):
                         value = _structured("object", {("string", part): value})
+                    current = environment.values.get(local)
+                    if current is not None and current.state == value.state == "object":
+                        value = _structured("object", {**_entry_map(current), **_entry_map(value)})
                 self._bind(ast.Name(id=local), value, environment)
             return environment
         if isinstance(statement, ast.ImportFrom):

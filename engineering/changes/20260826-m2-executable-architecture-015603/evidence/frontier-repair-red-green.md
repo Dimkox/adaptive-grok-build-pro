@@ -357,3 +357,58 @@ Exact worktree fitness passes with background-job findings empty, monotonic risk
 Bandit, compileall, typed spec 7/7, architecture validate/drift/diagram, README
 K16, diff whitespace, protected paths, and exact change separation all pass.
 Text-verifier, commit, and exact-SHA evidence follow after the final gates.
+
+## Count-only cap and dotted sibling rereview
+
+The test rereview found that the prior count-cap input also exceeded the default
+encoded-byte ceiling. The code rereview found an order-dependent namespace
+overwrite: `import project.runtime` followed by ordinary `import project.forms`
+replaced the shared `project` object and hid the queue-derived runtime member.
+
+RED evidence:
+
+```text
+test_exact_batch_blob_reader_is_bounded_and_validates_entries
+Ran 1 test in 0.962s
+FAILED (missing patchable MAX_BATCH_INPUT_BYTES boundary)
+
+test_mixed_local_module_exports_are_member_specific
+Ran 1 test in 2.252s
+FAILED (dotted sibling queue-first was not_applicable)
+```
+
+The batch-input ceiling is now the named, unchanged 65,536-byte constant. The
+count-only test raises that ceiling above the real `MAX_CHANGED_PATHS + 1`
+request and proves no worktree read occurs; the separate under-count input still
+exceeds the default byte ceiling and independently proves the other branch.
+Unaliased dotted imports now augment existing object members at their shared
+package root instead of replacing the root. Both import orders preserve runtime
+queue provenance, while both ordinary sibling operations remain N/A.
+
+GREEN evidence:
+
+```text
+2 focused cap and sibling selectors
+Ran 2 tests in 3.388s
+OK
+
+python3 -m unittest -v -k queue tests.test_architecture_fitness
+Ran 23 tests in 30.347s
+OK
+
+python3 -m unittest -q tests.test_architecture_fitness
+Ran 70 tests in 79.142s
+OK
+elapsed=79.33 exit=0
+
+python3 -m unittest discover -q
+Ran 364 tests in 186.996s
+OK
+elapsed=187.23 exit=0
+```
+
+Exact worktree fitness passes with background-job findings empty, monotonic risk
+`green -> red`, and the changed-code budget at `10000/10000`. Ruff, configured
+Bandit, compileall, typed spec 7/7, architecture validate/drift/diagram, README
+K16, diff whitespace, protected paths, and exact separation all pass. The text
+verifier, commit, and exact-SHA evidence follow after final gates.

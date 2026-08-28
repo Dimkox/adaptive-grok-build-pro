@@ -30,6 +30,7 @@ from .architecture import (
 ADOPTION_BASE_SHA = "25bfbe59ea188d9687b20a9caad19e7db3d031f8"
 MAX_GIT_OUTPUT_BYTES = 20_000_000
 MAX_CHANGED_PATHS = 20_000
+MAX_BATCH_INPUT_BYTES = 65_536
 MAX_ANALYZED_FILE_BYTES = 10_000_000
 MAX_DIFF_ARTIFACT_BYTES = 50_000_000
 MAX_LINE_STAT_LINES = 100_000
@@ -674,7 +675,7 @@ def _git_blobs(root: Path, sha: str, paths: tuple[str, ...]) -> dict[str, bytes 
     if not requested:
         return {}
     encoded = tuple(os.fsencode(path) for path in requested)
-    if any(b"\0" in path for path in encoded) or sum(map(len, encoded)) > 65_536:
+    if any(b"\0" in path for path in encoded) or sum(map(len, encoded)) > MAX_BATCH_INPUT_BYTES:
         raise ArchitectureError("diff file batch path input limit exceeded", code="limit")
     raw = _required_output(
         _git(
@@ -750,7 +751,7 @@ def read_diff_files(
         raise ArchitectureError("diff file side must be base or head", code="invalid")
     requested = tuple(sorted(set(paths)))
     encoded = tuple(os.fsencode(path) for path in requested)
-    if len(requested) > MAX_CHANGED_PATHS or sum(map(len, encoded)) > 65_536:
+    if len(requested) > MAX_CHANGED_PATHS or sum(map(len, encoded)) > MAX_BATCH_INPUT_BYTES:
         raise ArchitectureError("diff file batch path limit exceeded", code="limit")
     if side == "head" and diff.head_kind == "worktree":
         values: dict[str, bytes | None] = {}

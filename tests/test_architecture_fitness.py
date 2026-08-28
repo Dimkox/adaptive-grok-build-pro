@@ -2299,12 +2299,13 @@ class ArchitectureFitnessTests(unittest.TestCase):
 
         worktree = replace(diff, head_sha=None, head_kind="worktree")
         with patch.object(DIFF, "_worktree_blob") as worktree_blob:
-            with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "batch path limit"):
-                DIFF.read_diff_files(
-                    repo.root,
-                    worktree,
-                    tuple(f"src/{index}.py" for index in range(DIFF.MAX_CHANGED_PATHS + 1)),
-                )
+            count_paths = tuple(
+                f"src/{index}.py" for index in range(DIFF.MAX_CHANGED_PATHS + 1)
+            )
+            count_bytes = sum(len(os.fsencode(path)) for path in count_paths)
+            with patch.object(DIFF, "MAX_BATCH_INPUT_BYTES", count_bytes + 1):
+                with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "batch path limit"):
+                    DIFF.read_diff_files(repo.root, worktree, count_paths)
             with self.assertRaisesRegex(ARCHITECTURE.ArchitectureError, "batch path limit"):
                 DIFF.read_diff_files(
                     repo.root,
@@ -2420,11 +2421,16 @@ class ArchitectureFitnessTests(unittest.TestCase):
             "class Form: pass\n"
             "form = Form()\n"
         )
+        forms_source = "class Form: pass\nform = Form()\n"
         cases = (
             ("module queue", "import project.runtime as runtime\n", "runtime.app.delay(task)\n", True),
             ("module ordinary", "import project.runtime as runtime\n", "runtime.form.delay(task)\n", False),
             ("dotted queue", "import project.runtime\n", "project.runtime.app.delay(task)\n", True),
             ("dotted ordinary", "import project.runtime\n", "project.runtime.form.delay(task)\n", False),
+            ("dotted sibling queue first", "import project.runtime\nimport project.forms\n", "project.runtime.app.delay(task)\n", True),
+            ("dotted sibling queue last", "import project.forms\nimport project.runtime\n", "project.runtime.app.delay(task)\n", True),
+            ("dotted sibling ordinary first", "import project.runtime\nimport project.forms\n", "project.forms.form.delay(task)\n", False),
+            ("dotted sibling ordinary last", "import project.forms\nimport project.runtime\n", "project.forms.form.delay(task)\n", False),
             ("wildcard queue", "from project.runtime import *\n", "app.delay(task)\n", True),
             ("wildcard ordinary", "from project.runtime import *\n", "form.delay(task)\n", False),
         )
@@ -2433,6 +2439,7 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 repo = GitArchitectureRepo(self)
                 repo.model(system, rules)
                 repo.write_text("project/runtime.py", module_source)
+                repo.write_text("project/forms.py", forms_source)
                 repo.write_text("src/jobs.py", imported)
                 base = repo.commit("base")
                 repo.write_text("src/jobs.py", imported + operation)
