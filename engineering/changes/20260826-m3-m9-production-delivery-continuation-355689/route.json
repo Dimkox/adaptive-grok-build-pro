@@ -1,0 +1,87 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "ai_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "ai_architect"
+  ],
+  "base_commit": "069fe8226addb8a1922dde3db4e753434baa3a3d",
+  "base_fingerprint": "f15666fb78deb2780ebc7ce62fffd485f6af7e08f7d69e0f7a3de1ae606450a6",
+  "change_id": "20260826-model-agnostic-autonomous-factory-355689",
+  "complexity": "high-risk",
+  "created_at": "2026-08-26T02:06:00+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "ai",
+    "security"
+  ],
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "ai"
+  ],
+  "rationale": [
+    "high-risk signal: secret",
+    "intent=feature",
+    "domains=ai,security",
+    "repository=generic",
+    "write-owner=ai_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "35568941ae59",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "approved",
+  "task": "Architect and implement an AI/LLM model-agnostic autonomous local software factory with Codex as the first provider adapter, prompt-injection-resistant immutable task packets, secret and network isolation, a persistent systemd supervisor, durable bounded leases/retries, up to 20 read-note agents, exactly one application-code writer, and no autonomous external writes",
+  "task_domains": [
+    "ai",
+    "security"
+  ],
+  "updated_at": "2026-08-26T02:45:49+00:00",
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "ai-rag-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "ai_implementer"
+}
