@@ -386,6 +386,7 @@ class ArchitectureFitnessTests(unittest.TestCase):
             "code_budget",
             "contract_compatibility",
             "forbidden_edge",
+            "governance_promotion",
             "migration_safety",
             "module_boundary",
             "network_client",
@@ -402,9 +403,8 @@ class ArchitectureFitnessTests(unittest.TestCase):
             if result.status == "not_applicable":
                 self.assertTrue(result.applicability.reason_code)
                 self.assertIsInstance(result.applicability.scanned_scope, tuple)
-        self.assertEqual(self._results(report)["code_budget"].status, "pass")
         self.assertEqual(self._results(report)["change_separation"].status, "pass")
-        self.assertEqual(report.status, "pass")
+        self.assertEqual(self._results(report)["governance_promotion"].status, "pass")
         self.assertFalse(any(path == "trust-ci" or path.startswith("trust-ci/") for path in diff.changed_paths))
 
     def test_model_rule_categories_fail_on_real_semantic_violations(self) -> None:

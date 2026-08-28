@@ -32,6 +32,14 @@
       "path": "engineering/contracts/schemas/github-pull-request-projection.v1.json",
       "role": "consumer",
       "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-GOVERNANCE-HANDOFF-V1",
+      "kind": "json_schema",
+      "path": "schemas/governance-handoff-v1.schema.json",
+      "role": "producer",
+      "version": "1"
     }
   ],
   "data_classifications": [
@@ -81,6 +89,12 @@
       "classification": "internal",
       "contains_secret": false,
       "id": "DATA-CHECK-STATUS",
+      "tenant_scoped": false
+    },
+    {
+      "classification": "internal",
+      "contains_secret": false,
+      "id": "DATA-GOVERNANCE-EVIDENCE",
       "tenant_scoped": false
     },
     {
@@ -135,6 +149,52 @@
       "network_policy": "no_network",
       "protocol": "filesystem",
       "sync_or_async": "batch",
+      "to": "NODE-LOCAL-VERIFIER",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-GOVERNANCE-REGISTRIES",
+      "id": "EDGE-GOVERNANCE-REGISTRIES-VALIDATOR",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "synchronous",
+      "to": "NODE-GOVERNANCE-VALIDATOR",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-GOVERNANCE-EVIDENCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-GOVERNANCE-VALIDATOR",
+      "id": "EDGE-GOVERNANCE-VALIDATOR-LOCAL-VERIFIER",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "synchronous",
       "to": "NODE-LOCAL-VERIFIER",
       "type": "data_flow"
     },
@@ -440,6 +500,49 @@
       "secrets": [],
       "trust_domain": "TD-LOCAL-PREFLIGHT",
       "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-GOVERNANCE-EVIDENCE",
+      "id": "NODE-GOVERNANCE-VALIDATOR",
+      "owner": "repository engineering",
+      "public_contracts": [
+        "CONTRACT-GOVERNANCE-HANDOFF-V1"
+      ],
+      "repository_paths": [
+        ".grok-stack/adaptive_grok/governance.py",
+        "schemas/canonical-example.schema.json",
+        "schemas/debt-entry.schema.json",
+        "schemas/governance-handoff-v1.schema.json",
+        "schemas/governance-rule.schema.json",
+        "scripts/grok_governance.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-LOCAL-PREFLIGHT",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-GOVERNANCE-EVIDENCE",
+      "id": "NODE-GOVERNANCE-REGISTRIES",
+      "owner": "repository engineering",
+      "public_contracts": [],
+      "repository_paths": [
+        "governance"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "none",
+        "lifecycle": "none",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-REPOSITORY",
+      "type": "repository"
     },
     {
       "data_classification": "DATA-JOB-STATE",

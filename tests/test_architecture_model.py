@@ -979,6 +979,24 @@ class ArchitectureModelTests(unittest.TestCase):
                 "NODE-HUMAN-APPROVAL",
             }.issubset(node_ids)
         )
+        self.assertIn("NODE-GOVERNANCE-VALIDATOR", node_ids)
+        self.assertIn("NODE-GOVERNANCE-REGISTRIES", node_ids)
+        self.assertNotIn("NODE-FACTORY-CONTROL-PLANE", node_ids)
+        governance_validator = next(
+            node
+            for node in snapshot.system["nodes"]
+            if node["id"] == "NODE-GOVERNANCE-VALIDATOR"
+        )
+        governance_registries = next(
+            node
+            for node in snapshot.system["nodes"]
+            if node["id"] == "NODE-GOVERNANCE-REGISTRIES"
+        )
+        self.assertEqual(governance_validator["runtime"]["network"], "none")
+        self.assertEqual(governance_registries["runtime"]["kind"], "none")
+        self.assertEqual(governance_registries["runtime"]["network"], "none")
+        self.assertEqual(governance_validator["secrets"], [])
+        self.assertEqual(governance_registries["secrets"], [])
         docker_edge = next(
             edge
             for edge in snapshot.system["edges"]
@@ -1022,10 +1040,33 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 4)
+        self.assertEqual(len(records), 5)
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
+        governance_handoff = next(
+            record
+            for record in records
+            if record.id == "CONTRACT-GOVERNANCE-HANDOFF-V1"
+        )
+        self.assertEqual(governance_handoff.kind, "json_schema")
+        self.assertEqual(governance_handoff.role, "producer")
+        self.assertEqual(
+            governance_handoff.compatibility,
+            "producer_accepted_by_old",
+        )
+        self.assertEqual(governance_handoff.version, "1")
+        self.assertEqual(
+            set(documents["CONTRACT-GOVERNANCE-HANDOFF-V1"]["required"]),
+            {
+                "architecture_digest",
+                "exact_base_sha",
+                "exact_head_sha",
+                "governance_contract_version",
+                "governance_digest",
+                "governance_evidence_digest",
+            },
+        )
         self.assertEqual(
             set(documents["CONTRACT-TRUST-CI-OPENAPI"]["paths"]),
             {

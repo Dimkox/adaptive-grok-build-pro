@@ -36,6 +36,7 @@ FITNESS_CATEGORIES = (
     "code_budget",
     "contract_compatibility",
     "forbidden_edge",
+    "governance_promotion",
     "migration_safety",
     "module_boundary",
     "network_client",
@@ -112,6 +113,28 @@ _QUEUE_ADAPTER_MODULE_TOKENS = {
 _FRAMEWORK_IMPORTS = {"django", "fastapi", "flask", "litestar", "starlette"}
 _GOVERNANCE_IMPORTS = {"adaptive_grok", "architecture", "engineering", "scripts", "tests"}
 _GOVERNANCE_PATHS = (".grok", ".grok-stack", "architecture", "docs", "engineering", "scripts", "tests")
+_GOVERNANCE_FITNESS_PATHS = (
+    ".grok-stack/adaptive_grok/governance.py",
+    "schemas/canonical-example.schema.json",
+    "schemas/debt-entry.schema.json",
+    "schemas/governance-rule.schema.json",
+    "scripts/grok_governance.py",
+)
+_GOVERNANCE_REGISTRIES = (
+    ("governance/canonical-examples/index.json", "examples"),
+    ("governance/debt/index.json", "entries"),
+    ("governance/rules/index.json", "rules"),
+)
+_GOVERNANCE_SCHEMA_PATHS = (
+    "schemas/canonical-example.schema.json",
+    "schemas/debt-entry.schema.json",
+    "schemas/governance-rule.schema.json",
+)
+_GOVERNANCE_HANDOFF_SCHEMA = "schemas/governance-handoff-v1.schema.json"
+_GOVERNANCE_PROJECTIONS = {"decisions.md", "mistakes.md"}
+_GOVERNANCE_VERSION = 1
+_MAX_GOVERNANCE_NODES = 100_000
+_MAX_GOVERNANCE_DEPTH = 64
 _MIGRATION_CANONICAL = re.compile(r"^(?P<group>00(?:1_schema|2_operational_indexes|3_database_roles))$")
 _MIGRATION_PHASE = re.compile(r"^(?P<group>.+?)[_-](?P<phase>expand|migrate|contract)(?:[_-].*)?$")
 
@@ -245,6 +268,278 @@ def _not_applicable(
 
 def _model_changed(diff: ArchitectureDiff) -> bool:
     return diff.baseline_introduced or bool(diff.changes)
+
+
+def _governance_path(path: str) -> bool:
+    return _matches(path, ("governance",)) or path in _GOVERNANCE_FITNESS_PATHS
+
+
+def _parse_governance_json(value: bytes | None, *, path: str) -> dict[str, Any]:
+    if value is None:
+        raise ArchitectureError(f"required governance document is missing: {path}", code="missing")
+
+    def pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, item in items:
+            if key in result:
+                raise ArchitectureError(
+                    f"duplicate JSON key in governance document {path}: {key}",
+                    code="schema",
+                )
+            result[key] = item
+        return result
+
+    def invalid_constant(constant: str) -> None:
+        raise ArchitectureError(
+            f"non-finite number in governance document {path}: {constant}",
+            code="schema",
+        )
+
+    try:
+        text = value.decode("utf-8")
+        if text.startswith("\ufeff"):
+            raise ArchitectureError(
+                f"UTF-8 BOM is forbidden in governance document {path}", code="schema"
+            )
+        document = json.loads(
+            text,
+            object_pairs_hook=pairs,
+            parse_constant=invalid_constant,
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ArchitectureError(
+            f"invalid governance JSON document {path}: {exc}", code="schema"
+        ) from exc
+    if not isinstance(document, dict):
+        raise ArchitectureError(f"governance document must be an object: {path}", code="schema")
+
+    nodes = 0
+    stack: list[tuple[Any, int]] = [(document, 1)]
+    while stack:
+        item, depth = stack.pop()
+        nodes += 1
+        if nodes > _MAX_GOVERNANCE_NODES or depth > _MAX_GOVERNANCE_DEPTH:
+            raise ArchitectureError(f"governance document exceeds limits: {path}", code="limit")
+        if isinstance(item, dict):
+            stack.extend((child, depth + 1) for child in item.values())
+        elif isinstance(item, list):
+            stack.extend((child, depth + 1) for child in item)
+    return document
+
+
+def _governance_registry(
+    document: dict[str, Any], *, path: str, collection: str
+) -> tuple[int, dict[str, dict[str, Any]]]:
+    if set(document) != {"schema_version", "governance_id", collection}:
+        raise ArchitectureError(f"unsupported governance registry shape: {path}", code="schema")
+    version = document["schema_version"]
+    if not isinstance(version, int) or isinstance(version, bool):
+        raise ArchitectureError(f"unsupported governance schema version: {path}", code="version")
+    if document["governance_id"] != "GOV-ADAPTIVE-GROK-M3":
+        raise ArchitectureError(f"unsupported governance identity: {path}", code="version")
+    records = document[collection]
+    if not isinstance(records, list):
+        raise ArchitectureError(f"unsupported governance registry collection: {path}", code="schema")
+    identity_key = {
+        "rules": "rule_id",
+        "entries": "debt_id",
+        "examples": "example_id",
+    }[collection]
+    indexed: dict[str, dict[str, Any]] = {}
+    for record in records:
+        if not isinstance(record, dict) or not isinstance(record.get(identity_key), str):
+            raise ArchitectureError(f"unsupported governance record shape: {path}", code="schema")
+        identity = record[identity_key]
+        if identity in indexed:
+            raise ArchitectureError(f"duplicate governance record identity: {identity}", code="schema")
+        indexed[identity] = record
+    return version, indexed
+
+
+def _schema_version(document: dict[str, Any], *, path: str) -> int:
+    try:
+        value = document["properties"]["schema_version"]["const"]
+    except (KeyError, TypeError) as exc:
+        raise ArchitectureError(f"unsupported governance schema contract: {path}", code="schema") from exc
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ArchitectureError(f"unsupported governance schema contract: {path}", code="schema")
+    return value
+
+
+def _handoff_shape_matches(document: dict[str, Any]) -> bool:
+    fields = {
+        "architecture_digest",
+        "exact_base_sha",
+        "exact_head_sha",
+        "governance_contract_version",
+        "governance_digest",
+        "governance_evidence_digest",
+    }
+    properties = document.get("properties")
+    required = document.get("required")
+    return (
+        document.get("type") == "object"
+        and document.get("additionalProperties") is False
+        and isinstance(properties, dict)
+        and set(properties) == fields
+        and isinstance(required, list)
+        and len(required) == len(fields)
+        and set(required) == fields
+        and properties.get("governance_contract_version")
+        == {"const": 1, "type": "integer"}
+    )
+
+
+def _activation_findings(
+    before: dict[str, dict[str, Any]], head: dict[str, dict[str, Any]]
+) -> tuple[str, ...]:
+    findings: list[str] = []
+    for rule_id, prior in before.items():
+        current = head.get(rule_id)
+        if prior.get("status") == "active" and current is None:
+            findings.append(f"{rule_id}: active rule deletion requires an explicit revocation")
+
+    for rule_id, rule in head.items():
+        prior = before.get(rule_id)
+        promoted = rule.get("status") == "active" and (
+            prior is None or prior.get("status") != "active" or prior != rule
+        )
+        if not promoted:
+            continue
+        author = rule.get("author")
+        author_id = author.get("actor_id") if isinstance(author, dict) else None
+        reviewers = rule.get("reviewed_by")
+        independent_review = isinstance(reviewers, list) and any(
+            isinstance(reviewer, dict)
+            and reviewer.get("actor_kind") in {"human", "system"}
+            and reviewer.get("actor_id") != author_id
+            for reviewer in reviewers
+        )
+        approvals = rule.get("approved_by")
+        independent_approval = isinstance(approvals, list) and any(
+            isinstance(approval, dict)
+            and approval.get("actor_kind") == "human"
+            and approval.get("scope") == "governance"
+            and approval.get("actor_id") != author_id
+            for approval in approvals
+        )
+        evidence = rule.get("evidence")
+        evidence_paths = {
+            item.get("path")
+            for item in evidence
+            if isinstance(item, dict) and isinstance(item.get("path"), str)
+        } if isinstance(evidence, list) else set()
+        if not independent_review or not independent_approval or not evidence_paths:
+            findings.append(
+                f"{rule_id}: activation requires independent review, human governance approval, and evidence"
+            )
+        if evidence_paths and evidence_paths <= _GOVERNANCE_PROJECTIONS:
+            findings.append(f"{rule_id}: projection-only evidence cannot supply governance authority")
+        findings.append(f"{rule_id}: external exact-record governance authority is required")
+    return tuple(sorted(findings))
+
+
+def _governance_promotion(root: Path, diff: ArchitectureDiff) -> FitnessResult:
+    predicate = (
+        "governance/**, the three governance registry schemas, governance.py, or "
+        "grok_governance.py changed"
+    )
+    governed_scope = (*_GOVERNANCE_FITNESS_PATHS, "governance/**")
+    applicable = tuple(path for path in diff.changed_paths if _governance_path(path))
+    if not applicable:
+        return _not_applicable(
+            "governance_promotion",
+            predicate,
+            governed_scope,
+            "governance_paths_unchanged",
+            ("FIT-GOVERNANCE-PROMOTION",),
+        )
+
+    required_paths = tuple(
+        sorted(
+            {
+                *(path for path, _collection in _GOVERNANCE_REGISTRIES),
+                *_GOVERNANCE_SCHEMA_PATHS,
+                _GOVERNANCE_HANDOFF_SCHEMA,
+            }
+        )
+    )
+    try:
+        base_values = read_diff_files(root, diff, required_paths, side="base")
+        head_values = read_diff_files(root, diff, required_paths, side="head")
+        base_rules: dict[str, dict[str, Any]] = {}
+        head_rules: dict[str, dict[str, Any]] = {}
+        findings: list[str] = []
+        for path, collection in _GOVERNANCE_REGISTRIES:
+            head_version, head_records = _governance_registry(
+                _parse_governance_json(head_values[path], path=path),
+                path=path,
+                collection=collection,
+            )
+            if base_values[path] is None:
+                base_version, base_records = head_version, {}
+            else:
+                base_version, base_records = _governance_registry(
+                    _parse_governance_json(base_values[path], path=path),
+                    path=path,
+                    collection=collection,
+                )
+            if head_version < base_version:
+                findings.append(
+                    f"{path}: governance schema downgrade {base_version} -> {head_version}"
+                )
+            elif base_version != _GOVERNANCE_VERSION or head_version != _GOVERNANCE_VERSION:
+                raise ArchitectureError(
+                    f"unknown governance schema version in {path}", code="version"
+                )
+            if collection == "rules":
+                base_rules = base_records
+                head_rules = head_records
+
+        for path in _GOVERNANCE_SCHEMA_PATHS:
+            head_version = _schema_version(
+                _parse_governance_json(head_values[path], path=path), path=path
+            )
+            base_version = (
+                head_version
+                if base_values[path] is None
+                else _schema_version(
+                    _parse_governance_json(base_values[path], path=path), path=path
+                )
+            )
+            if head_version < base_version:
+                findings.append(
+                    f"{path}: governance schema downgrade {base_version} -> {head_version}"
+                )
+            elif base_version != _GOVERNANCE_VERSION or head_version != _GOVERNANCE_VERSION:
+                raise ArchitectureError(
+                    f"unknown governance schema version in {path}", code="version"
+                )
+
+        handoff = _parse_governance_json(
+            head_values[_GOVERNANCE_HANDOFF_SCHEMA], path=_GOVERNANCE_HANDOFF_SCHEMA
+        )
+        if not _handoff_shape_matches(handoff):
+            findings.append("governance handoff does not match the frozen v1 contract")
+        findings.extend(_activation_findings(base_rules, head_rules))
+    except ArchitectureError as exc:
+        return _result(
+            "governance_promotion",
+            status="unsupported",
+            rules=("FIT-GOVERNANCE-PROMOTION",),
+            findings=(f"unsupported governance analysis: {exc}",),
+            predicate=predicate,
+            scope=(*governed_scope, *applicable),
+            reason="unsupported_governance_semantics",
+        )
+    return _result(
+        "governance_promotion",
+        status="fail" if findings else "pass",
+        rules=("FIT-GOVERNANCE-PROMOTION",),
+        findings=findings,
+        predicate=predicate,
+        scope=(*governed_scope, *applicable),
+    )
 
 
 def _forbidden_edges(snapshot: ArchitectureSnapshot, diff: ArchitectureDiff) -> FitnessResult:
@@ -1933,6 +2228,7 @@ def evaluate_fitness(
                 _code_budget(snapshot, diff, python),
                 _contract_compatibility(snapshot, diff),
                 _forbidden_edges(snapshot, diff),
+                _governance_promotion(repository, diff),
                 _migration_safety(repository, snapshot, diff),
                 _module_boundaries(snapshot, diff, python),
                 _network_clients(snapshot, diff, python),
