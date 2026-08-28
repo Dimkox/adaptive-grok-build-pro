@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-08-28 — Freeze governance transitions as canonical values
+
+Represent rule transitions as immutable canonical-byte `RuleRecord` values and append only typed review or approval records supplied at the transition boundary. This preserved rule identity across revisions and prevented callers from mutating a returned record through nested dictionaries.
+
 Patterns that paid for themselves. Each entry is at most three sentences.
 
 ## 2026-08-26 — Provider-neutral factory core with explicit adapter boundary
