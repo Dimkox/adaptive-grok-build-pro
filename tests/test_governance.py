@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / ".grok-stack"))
 
 import adaptive_grok.governance as governance
-from adaptive_grok.architecture import architecture_digests, load_architecture
+from adaptive_grok.architecture_fitness import architecture_evidence
 from adaptive_grok.spec import SpecError, load_schema, validate_schema
 from adaptive_grok.governance import (
     ActorRef,
@@ -287,6 +287,7 @@ def _git_commit_fixture(root: Path) -> str:
 
 def _materialize_architecture(root: Path) -> None:
     shutil.copytree(ROOT / "architecture", root / "architecture")
+    shutil.copytree(ROOT / "engineering" / "contracts", root / "engineering" / "contracts")
     for schema_name in (
         "architecture-system.schema.json",
         "architecture-rules.schema.json",
@@ -297,61 +298,12 @@ def _materialize_architecture(root: Path) -> None:
 def _architecture_evidence(
     root: Path, base_sha: str, head_sha: str
 ) -> dict[str, object]:
-    digests = architecture_digests(load_architecture(root))
-    component_digests = {
-        "schema_digest": digests["schema_digest"],
-        "system_digest": digests["system_digest"],
-        "rules_digest": digests["rules_digest"],
-    }
-    architecture_digest = hashlib.sha256(
-        json.dumps(
-            {
-                "contract": "adaptive-grok.architecture",
-                "contract_version": 1,
-                **component_digests,
-            },
-            ensure_ascii=False,
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode("utf-8")
-    ).hexdigest()
-    evidence: dict[str, object] = {
-        "architecture_contract_version": 1,
-        "architecture_digest": architecture_digest,
-        "base_adoption_digest": "4" * 64,
-        "base_adoption_state": "adopted",
-        "baseline_introduced": False,
-        "contract_inventory_digest": "5" * 64,
-        "diff_digest": "6" * 64,
-        "exact_base_sha": base_sha,
-        "exact_head_sha": head_sha,
-        "exemption_state": "revoked",
-        "fitness_results": [],
-        "fitness_status": "pass",
-        "head_adoption_digest": "7" * 64,
-        "head_adoption_state": "adopted",
-        "head_kind": "commit",
-        "overall_status": "pass",
-        "repository_inventory_digest": "8" * 64,
-        "required_scopes": [],
-        "risk_escalation": "green",
-        "risk_post": "green",
-        "risk_pre": "green",
-        "risk_triggers": [],
-        **component_digests,
-    }
-    evidence["architecture_evidence_digest"] = hashlib.sha256(
-        (
-            json.dumps(
-                evidence,
-                ensure_ascii=True,
-                sort_keys=True,
-                separators=(",", ":"),
-            )
-            + "\n"
-        ).encode("ascii")
-    ).hexdigest()
-    return evidence
+    return architecture_evidence(
+        root,
+        base_sha=base_sha,
+        head_sha=head_sha,
+        pre_risk="red",
+    )
 
 
 class GovernanceSchemaTests(unittest.TestCase):
@@ -1676,7 +1628,7 @@ class GovernanceHandoffTests(unittest.TestCase):
                 **architecture,
                 "architecture_digest": "e" * 64,
             },
-            "architecture model": {
+            "independently derived M2 architecture evidence": {
                 **architecture,
                 "architecture_digest": hashlib.sha256(
                     json.dumps(
@@ -1700,7 +1652,7 @@ class GovernanceHandoffTests(unittest.TestCase):
                 "worktree",
                 "base SHA",
                 "architecture digest",
-                "architecture model",
+                "independently derived M2 architecture evidence",
             }:
                 evidence = dict(evidence)
                 evidence.pop("architecture_evidence_digest", None)
@@ -1747,6 +1699,53 @@ class GovernanceHandoffTests(unittest.TestCase):
                 head_sha=head,
                 now=self.NOW,
             )
+
+    def test_handoff_rejects_self_hashed_forged_m2_fitness_risk_and_scope(self) -> None:
+        _, snapshot, head, architecture = self._clean_fixture()
+        mutations = {
+            "fitness_results": [],
+            "risk_pre": "green",
+            "risk_escalation": "yellow",
+            "risk_post": "green",
+            "risk_triggers": ["forged_trigger"],
+            "required_scopes": ["security"],
+            "diff_digest": "0" * 64,
+            "repository_inventory_digest": "0" * 64,
+            "contract_inventory_digest": "0" * 64,
+            "base_adoption_state": "forged",
+            "head_adoption_state": "forged",
+            "base_adoption_digest": "0" * 64,
+            "head_adoption_digest": "0" * 64,
+            "baseline_introduced": not architecture["baseline_introduced"],
+            "exemption_state": "eligible",
+        }
+        for field, value in mutations.items():
+            with self.subTest(field=field):
+                forged = json.loads(json.dumps(architecture))
+                forged[field] = value
+                forged.pop("architecture_evidence_digest")
+                forged["architecture_evidence_digest"] = hashlib.sha256(
+                    (
+                        json.dumps(
+                            forged,
+                            ensure_ascii=True,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                        )
+                        + "\n"
+                    ).encode("ascii")
+                ).hexdigest()
+
+                with self.assertRaisesRegex(
+                    GovernanceError, "independently derived M2 architecture evidence"
+                ):
+                    build_governance_handoff(
+                        snapshot,
+                        architecture=forged,
+                        base_sha=head,
+                        head_sha=head,
+                        now=self.NOW,
+                    )
 
     def test_handoff_preserves_external_authority_findings_as_a_hard_gate(self) -> None:
         example = _valid_example()

@@ -263,3 +263,7 @@ When a closed schema requires a value or `null`, support the standard JSON Schem
 ## 2026-08-28 — Normalize only declared governance sets
 
 Sort registry records by stable identity and sort only fields whose governance contract defines set semantics; preserve every other array in source order. This makes equivalent registries digest-identical without silently erasing meaning from ordered schema or future record fields.
+
+## 2026-08-28 — Derive handoff inputs at the trust boundary
+
+Recompute the complete M2 architecture evidence from the clean exact Git base/head with conservative trusted risk, then compare every canonical field to the supplied envelope. A caller file is transport only; its self-hash and aggregate architecture digest do not grant authority.

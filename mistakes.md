@@ -146,3 +146,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Handoff-schema aliases and cycles named existing object definitions but caused the one-hop validator to drop the referenced digest constraints.
 **Root cause:** Reference-graph existence was checked independently of the shared validator's supported one-hop subset. A schema gate must either reject aliases or implement the same bounded transitive resolution and cycle policy as its evaluator.
+
+## 2026-08-28 — Trusted a self-hashed architecture evidence envelope
+
+**Symptom:** A caller could erase adverse fitness, risk, scope, diff, inventory, and adoption evidence, recompute the unkeyed self-hash, and still receive a governance handoff.
+**Root cause:** The handoff checked caller-controlled status and aggregate model identity instead of independently deriving the complete exact-state M2 evidence with a trusted risk input and comparing every canonical field.

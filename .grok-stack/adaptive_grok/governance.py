@@ -18,10 +18,10 @@ from typing import Any, Callable, Literal
 
 from .architecture import (
     ArchitectureError,
-    architecture_digests,
     contract_inventory,
     load_architecture,
 )
+from .architecture_fitness import architecture_evidence as derive_architecture_evidence
 from .spec import SpecError, _schema_preflight, validate_schema
 
 
@@ -2267,25 +2267,35 @@ def build_governance_handoff(
     now: datetime | None = None,
 ) -> GovernanceHandoffV1:
     evaluated_at = now or datetime.now(timezone.utc)
-    architecture_digest = _validate_architecture_evidence(
+    _validate_architecture_evidence(
         architecture,
         base_sha=base_sha,
         head_sha=head_sha,
     )
     _, root, evaluation = _governance_evaluation(snapshot, now=evaluated_at)
+    _require_clean_exact_git_state(root, base_sha=base_sha, head_sha=head_sha)
     try:
-        current_architecture_digest = architecture_digests(load_architecture(root))[
-            "architecture_digest"
-        ]
+        derived_architecture = derive_architecture_evidence(
+            root,
+            base_sha=base_sha,
+            head_sha=head_sha,
+            pre_risk="red",
+        )
     except (ArchitectureError, OSError, ValueError) as exc:
         raise GovernanceError(
-            "current architecture model cannot be validated", code="architecture"
+            "M2 architecture evidence cannot be independently derived",
+            code="architecture",
         ) from exc
-    if current_architecture_digest != architecture_digest:
+    architecture_digest = _validate_architecture_evidence(
+        derived_architecture,
+        base_sha=base_sha,
+        head_sha=head_sha,
+    )
+    if _canonical_bytes(architecture) != _canonical_bytes(derived_architecture):
         raise GovernanceError(
-            "architecture model digest mismatch", code="architecture"
+            "architecture evidence does not match independently derived M2 architecture evidence",
+            code="architecture",
         )
-    _require_clean_exact_git_state(root, base_sha=base_sha, head_sha=head_sha)
     evidence_core = {
         "contract": "adaptive-grok.governance-evidence/v1",
         "rules_digest": evaluation["digests"]["rules_digest"],
