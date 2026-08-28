@@ -112,6 +112,7 @@ _QUEUE_ADAPTER_MODULE_TOKENS = {
 _FRAMEWORK_IMPORTS = {"django", "fastapi", "flask", "litestar", "starlette"}
 _GOVERNANCE_IMPORTS = {"adaptive_grok", "architecture", "engineering", "scripts", "tests"}
 _GOVERNANCE_PATHS = (".grok", ".grok-stack", "architecture", "docs", "engineering", "scripts", "tests")
+_MIGRATION_CANONICAL = re.compile(r"^(?P<group>00(?:1_schema|2_operational_indexes|3_database_roles))$")
 _MIGRATION_PHASE = re.compile(r"^(?P<group>.+?)[_-](?P<phase>expand|migrate|contract)(?:[_-].*)?$")
 
 
@@ -500,8 +501,8 @@ def _repository_paths(root: Path, diff: ArchitectureDiff, prefixes: tuple[str, .
 
 
 def _migration_phase(path: str) -> tuple[str, str] | None:
-    match = _MIGRATION_PHASE.fullmatch(Path(path).stem.lower())
-    return None if match is None else (match.group("group"), match.group("phase"))
+    match = _MIGRATION_PHASE.fullmatch(Path(path).stem.lower()) or _MIGRATION_CANONICAL.fullmatch(Path(path).stem.lower())
+    return None if match is None else (match.group("group"), match.groupdict().get("phase") or "legacy")
 
 
 def _migration_roots(snapshot: ArchitectureSnapshot, prefixes: tuple[str, ...]) -> tuple[str, ...]:

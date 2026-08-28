@@ -373,3 +373,56 @@ elapsed=192.84 exit=0
 This wave changes tests and evidence only: production is identical to
 `13022f2b85ea2b5be056ea7c8337780e4bfa3fef`, including the 9,999/10,000
 architecture budget and both staged fanout charges.
+
+## Canonical migration version-history repair
+
+The exact data review found that history parsing recognized only phased names,
+so it omitted the immutable canonical seeds `001_schema.sql`,
+`002_operational_indexes.sql`, and `003_database_roles.sql`. As a result, a
+proper mirrored phased version 004 appeared non-contiguous, while a phased
+artifact could reuse canonical versions 001–003 without a duplicate finding.
+
+RED and GREEN evidence:
+
+```text
+python3 -m unittest \
+  tests.test_architecture_fitness.ArchitectureFitnessTests.test_canonical_migrations_seed_phased_version_history -v
+Ran 1 test in 0.997s
+FAILED (failures=4)
+- mirrored phased version 004: false non-contiguous finding
+- phased versions 001, 002, and 003: absent or incorrect duplicate findings
+
+same selector after repair
+Ran 1 test in 1.126s
+OK
+
+python3 -m unittest tests.test_architecture_fitness -k migration -v
+Ran 11 tests in 6.901s
+OK
+
+python3 -m unittest tests.test_architecture_model tests.test_architecture_fitness
+Ran 125 tests in 86.041s
+OK
+
+python3 -m unittest discover
+Ran 377 tests in 194.763s
+OK
+```
+
+The repair uses an exact closed matcher for the three established canonical
+names and feeds those names into the existing logical-version inventory as
+legacy history. The expand/migrate/contract parser and SQL safety semantics are
+unchanged and continue to apply only to new phased artifacts. Table coverage
+proves the mirrored 004 successor passes, each canonical version reuse fails,
+and the existing mirror, immutable-history, phase-order, statement, byte,
+finding, and aggregate-work tests remain green.
+
+Ruff, configured Bandit, compileall, typed spec 7/7, architecture validate,
+drift, deterministic diagram check, README K16, exact-range whitespace, and
+protected-path checks pass. Exact worktree fitness passes with code budget
+`10000/10000`, migration `not_applicable` evidence for the unchanged real
+repository, change separation, and monotonic risk `green -> red`. Changed files
+are `architecture_fitness.py`, `test_architecture_fitness.py`, this evidence
+ledger, and `decisions.md`; no migration bytes, runtime behavior, dependency,
+Trust CI source, or workflow changed. Rollback is a normal revert of this source
+commit; rollout is the standard exact-head review and external Trust CI path.

@@ -3389,6 +3389,56 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "fail")
         self.assertIn("immutable", " ".join(result.findings))
 
+    def test_canonical_migrations_seed_phased_version_history(self) -> None:
+        system = _system()
+        system["nodes"][0]["repository_paths"] = ["migrations", "package/resources"]
+        rules = _rules()
+        rules["migration_policies"] = [{
+            "id": "FIT-MIGRATION",
+            "path_prefixes": ["migrations"],
+            "required_phases": ["expand", "migrate", "contract"],
+            "immutable_history": True,
+            "severity": "error",
+        }]
+        canonical = (
+            "001_schema.sql",
+            "002_operational_indexes.sql",
+            "003_database_roles.sql",
+        )
+
+        def seeded_repo() -> tuple[GitArchitectureRepo, str]:
+            repo = GitArchitectureRepo(self)
+            repo.model(system, rules)
+            for name in canonical:
+                for prefix in ("migrations", "package/resources"):
+                    repo.write_text(f"{prefix}/{name}", f"-- canonical {name}\n")
+            return repo, repo.commit("canonical migration history")
+
+        phased = {
+            "expand": "CREATE TABLE item(id integer);\n",
+            "migrate": "UPDATE item SET id = id WHERE id BETWEEN 1 AND 100;\n",
+            "contract": "ALTER TABLE item DROP COLUMN legacy;\n",
+        }
+        repo, base = seeded_repo()
+        for phase, source in phased.items():
+            for prefix in ("migrations", "package/resources"):
+                repo.write_text(f"{prefix}/004_{phase}.sql", source)
+        successor = repo.commit("phased successor")
+        result = self._results(self._evaluate(repo, base, successor))["migration_safety"]
+        with self.subTest(successor="004"):
+            self.assertEqual(result.status, "pass", result.findings)
+
+        for version in ("001", "002", "003"):
+            with self.subTest(duplicate=version):
+                repo, base = seeded_repo()
+                for phase, source in phased.items():
+                    for prefix in ("migrations", "package/resources"):
+                        repo.write_text(f"{prefix}/{version}_{phase}.sql", source)
+                duplicate = repo.commit(f"duplicate canonical version {version}")
+                result = self._results(self._evaluate(repo, base, duplicate))["migration_safety"]
+                self.assertEqual(result.status, "fail", result.findings)
+                self.assertIn("duplicate migration version", " ".join(result.findings))
+
     def test_migration_history_requires_declared_resource_mirror(self) -> None:
         system = _system()
         system["nodes"][0]["repository_paths"] = ["migrations", "package/resources"]

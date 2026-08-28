@@ -222,3 +222,7 @@ Treat packaged migration mirrors as applicability and inventory roots, not as ch
 ## 2026-08-28 — Bound migration work before crossing expensive stages
 
 Charge conservative schema, derived-root, matching, inventory, semantic-plan, and blob-read work before each stage, and consume SQL statements lazily. This makes every exhausted budget a typed unsupported result without first performing the work the budget is meant to bound.
+
+## 2026-08-28 — Canonical migrations seed phased history
+
+Treat the immutable `001_schema`, `002_operational_indexes`, and `003_database_roles` names as exact logical versions in history while reserving expand/migrate/contract semantics for new phased artifacts. This preserves the repository's established convention while making version 004 contiguous and rejecting phased reuse of versions 001–003.
