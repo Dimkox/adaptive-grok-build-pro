@@ -3533,8 +3533,8 @@ class ArchitectureFitnessTests(unittest.TestCase):
              patch.object(FIT, "_matches", side_effect=AssertionError("matching after zero work")), \
              patch.object(FIT, "_repository_paths", side_effect=AssertionError("inventory after zero work")):
             zero = FIT._migration_safety(repo.root, snapshot, diff)
-        cheap_work = sum(len(rule["path_prefixes"]) for rule in rules["migration_policies"]) * max(
-            1, sum(len(node["repository_paths"]) for node in snapshot.system["nodes"])
+        cheap_work = sum(len(rule["path_prefixes"]) for rule in rules["migration_policies"]) * sum(
+            max(1, len(node["repository_paths"])) for node in snapshot.system["nodes"]
         )
         with patch.object(FIT, "MAX_MIGRATION_WORK", cheap_work), \
              patch.object(FIT, "_migration_roots", wraps=FIT._migration_roots) as roots, \
@@ -3560,6 +3560,34 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(capped.status, "unsupported")
         self.assertEqual(len(capped.findings), 3)
         self.assertIn("finding limit", capped.findings[-1])
+
+    def test_migration_shared_root_memberships_are_charged_before_matching(self) -> None:
+        rules = _rules()
+        template = {
+            "path_prefixes": ["migrations"],
+            "required_phases": ["expand", "migrate", "contract"],
+            "immutable_history": False,
+            "severity": "error",
+        }
+        rules["migration_policies"] = [
+            {"id": f"FIT-MIGRATION-{index:03d}", **template} for index in range(256)
+        ]
+        repo, base = self._repo(rules=rules)
+        repo.write_text("migrations/0001_expand.sql", "CREATE TABLE item(id integer);\n")
+        head = repo.commit("shared migration policy root")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        sample = diff.artifacts[0]
+        paths = tuple(f"migrations/{index:04d}_expand.sql" for index in range(3_328))
+        bounded_diff = replace(
+            diff,
+            changed_paths=paths,
+            artifacts=tuple(replace(sample, path=path) for path in paths),
+        )
+        with patch.object(FIT, "_matches", side_effect=AssertionError("matching after membership limit")), \
+             patch.object(FIT, "_repository_paths", side_effect=AssertionError("inventory after membership limit")):
+            result = FIT._migration_safety(repo.root, diff._head_state.snapshot, bounded_diff)
+        self.assertEqual(result.status, "unsupported")
+        self.assertIn("work limit", " ".join(result.findings))
 
     def test_migration_blob_statement_and_finding_limits_stop_early(self) -> None:
         rules = _rules()

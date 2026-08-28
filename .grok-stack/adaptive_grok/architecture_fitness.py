@@ -661,8 +661,8 @@ def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: Architec
         return _not_applicable("migration_safety", predicate, (), "no_declared_rules")
     analysis = _MigrationAnalysis()
     try:
-        analysis.bound(sum(len(rule["path_prefixes"]) for rule in rules) * max(1, sum(
-            len(node["repository_paths"]) for node in snapshot.system["nodes"])))
+        analysis.bound(sum(len(rule["path_prefixes"]) for rule in rules) * sum(
+            max(1, len(node["repository_paths"])) for node in snapshot.system["nodes"]))
         seeds = []
         for rule in rules:
             mirrors = tuple(
@@ -673,16 +673,16 @@ def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: Architec
             for migration_root in roots:
                 analysis.root_plans.setdefault(migration_root, []).append(len(seeds) - 1)
         sql = tuple(item for item in diff.artifacts if Path(item.path).suffix.lower() == ".sql")
-        analysis.bound(len(sql) * max(1, len(analysis.root_plans)))
+        analysis.bound(len(sql) * max(1, root_memberships := sum(len(v) for v in analysis.root_plans.values())))
         matches = {item.path: {index for prefix, indices in analysis.root_plans.items()
                                if _matches(item.path, (prefix,)) for index in indices}
                    for item in sql}
         applicable = tuple(item for item in sql if matches[item.path])
-        analysis.bound(len(seeds))
+        analysis.bound(root_memberships)
         inventory = _repository_paths(root, diff, tuple(analysis.root_plans))
         analysis.scope = (*analysis.root_plans, *inventory, *(item.path for item in applicable))
-        analysis.bound(len(inventory) * len(seeds)
-                       + 2 * len(applicable) * len(seeds) * max(1, len(analysis.root_plans)))
+        analysis.bound(len(inventory) * sum(len(rule["path_prefixes"]) for rule in rules)
+                       + 2 * len(applicable) * max(1, root_memberships))
         if not applicable:
             return _not_applicable("migration_safety", predicate, analysis.scope,
                                    "no_matching_sql_change", (rule["id"] for rule in rules))

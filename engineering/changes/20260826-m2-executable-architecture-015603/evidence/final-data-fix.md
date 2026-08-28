@@ -259,3 +259,40 @@ Exact worktree fitness passes with `code_budget=pass` at `10000/10000`,
 `change_separation=pass`, and monotonic risk `green -> red`. The repair adds no
 runtime dependency, migration artifact, service, external action, or Trust CI
 source change.
+
+## Shared migration-root membership rereview
+
+The final security review found that matching work used the number of distinct
+root keys even though each root can map to every migration policy. A valid
+256-policy model sharing one root and 3,328 changed SQL artifacts therefore
+reached match-set construction after charging only 3,328 units for 851,968
+policy memberships.
+
+RED and GREEN evidence:
+
+```text
+shared-root membership selector before repair
+Ran 1 test in 0.234s
+FAILED: matching after membership limit
+
+shared-root membership and prior work-limit selectors after repair
+Ran 2 tests in 0.957s
+OK
+
+python3 -m unittest -q tests.test_architecture_fitness
+Ran 79 tests in 83.002s
+OK
+elapsed=83.17 exit=0
+
+python3 -m unittest discover -s tests -p 'test_*.py' -q
+Ran 374 tests in 193.376s
+OK
+elapsed=193.59 exit=0
+```
+
+Migration matching now charges the sum of policy memberships across every root
+before constructing match sets and reuses that actual cardinality for later
+plan work. The cheap node traversal factor also charges a minimum unit for each
+declared node rather than only for the aggregate path total. The production
+replacement is line-neutral, exact worktree fitness passes at `10000/10000`,
+and no authority, migration, runtime, dependency, or Trust CI source changed.
