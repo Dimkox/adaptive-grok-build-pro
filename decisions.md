@@ -235,3 +235,7 @@ Legacy versus phased identity is tracked independently of the free-form group te
 ## 2026-08-28 — Authenticate authority outside agent-authored records
 
 Treat `actor_kind`, approver names, timestamps, and authority observations inside task/governance JSON as untrusted claims until an independently verifiable receipt binds the exact subject, digest, scope, action, resource, and expiry. This keeps model/provider output proposal-only and prevents evidence-shaped data from minting governance, control-plane, or delivery authority.
+
+## 2026-08-28 — Preserve nullable contracts with typed schema unions
+
+When a closed schema requires a value or `null`, support the standard JSON Schema type array and test both the allowed null and a rejected non-member type. This preserves fail-closed typing instead of weakening the field to an unconstrained value.
