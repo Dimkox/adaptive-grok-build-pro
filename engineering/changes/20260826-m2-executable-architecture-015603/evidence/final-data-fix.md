@@ -335,3 +335,41 @@ traversal, so bypassed validation still fails closed. The product replacement
 is net-negative by one line, exact worktree fitness passes at `9999/10000`, and
 no schema, authority, migration, runtime, dependency, or Trust CI source was
 changed.
+
+## Inventory fanout mutation oracle
+
+The final test review found that the empty-selector regression exhausted the
+applicable-artifact fanout before repository inventory, so it could not detect
+removal of the separate inventory-by-policy charge. The strengthened case keeps
+one applicable artifact, supplies sixteen inventory entries across 256 bypassed
+policies, and forbids plan construction, blob reads, and SQL source analysis.
+
+Mutation-sensitive evidence:
+
+```text
+inventory multiplier temporarily removed
+Ran 1 test in 0.179s
+FAILED: plan after inventory limit
+
+production restored byte-for-byte
+Ran 1 test in 0.177s
+OK
+
+focused semantic and migration-limit matrix
+Ran 4 tests in 1.076s
+OK
+
+python3 -m unittest -q tests.test_architecture_model tests.test_architecture_fitness
+Ran 124 tests in 84.660s
+OK
+elapsed=84.84 exit=0
+
+python3 -m unittest discover -s tests -p 'test_*.py' -q
+Ran 376 tests in 192.596s
+OK
+elapsed=192.84 exit=0
+```
+
+This wave changes tests and evidence only: production is identical to
+`13022f2b85ea2b5be056ea7c8337780e4bfa3fef`, including the 9,999/10,000
+architecture budget and both staged fanout charges.

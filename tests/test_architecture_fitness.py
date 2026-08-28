@@ -3621,6 +3621,19 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "unsupported")
         self.assertIn("work limit", " ".join(result.findings))
 
+        bounded_inventory = tuple(f"migrations/{index:04d}_expand.sql" for index in range(16))
+        small_diff = replace(diff, changed_paths=(sample.path,), artifacts=(sample,))
+        with patch.object(FIT, "_repository_paths", return_value=bounded_inventory), \
+             patch.object(FIT, "_MigrationPlan", side_effect=AssertionError("plan after inventory limit")) as plans, \
+             patch.object(FIT, "read_diff_files", side_effect=AssertionError("read after inventory limit")) as reads, \
+             patch.object(FIT._MigrationAnalysis, "source", side_effect=AssertionError("source after inventory limit")) as sources:
+            inventory_limited = FIT._migration_safety(repo.root, snapshot, small_diff)
+        self.assertEqual(inventory_limited.status, "unsupported")
+        self.assertIn("work limit", " ".join(inventory_limited.findings))
+        plans.assert_not_called()
+        reads.assert_not_called()
+        sources.assert_not_called()
+
     def test_migration_blob_statement_and_finding_limits_stop_early(self) -> None:
         rules = _rules()
         rules["migration_policies"] = [{
