@@ -1,6 +1,51 @@
 # M3 Task 7 implementation report
 
-Status: READY FOR INDEPENDENT REVIEW
+Status: READY FOR INDEPENDENT RE-REVIEW
+
+## Independent-review remediation
+
+- Made governance adoption durable through exact reachable Git history of the three canonical registries. A repository with no live registries and no such history remains compatible; complete deletion after adoption, partial deletion, unsafe paths, and ambiguous shallow history fail closed before a direct receipt can replace governed evidence.
+- Made governance consume the exact successful architecture digest/base/head tuple emitted by the preceding architecture check. Governance independently rederives the live architecture and rejects an A/B mismatch before evaluating or returning evidence.
+- Added a final repository-fingerprint comparison after verifier checks and an expected-fingerprint guard at receipt publication. A source mutation after semantic checks produces a failing `source-stability` check and no verification receipt; a later race at the write boundary raises before publication.
+- The independent review commit already recorded the shared root cause in `mistakes.md`; this remediation does not duplicate that entry or invent a separate decision.
+
+Review RED evidence:
+
+```text
+python3 -m unittest -v \
+  tests.test_change_receipts.ReceiptTests.test_complete_governance_deletion_cannot_downgrade_a_governed_receipt \
+  tests.test_verification_doctor.VerificationTests.test_governance_rejects_a_different_architecture_snapshot
+2/2 failed as intended: complete deletion did not raise, and architecture A / governance B returned pass.
+```
+
+Review GREEN and bounded regression evidence:
+
+```text
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest -v <8 exact Task 7 governance/receipt methods>
+8/8 passed, including the two review repros, final fingerprint mutation rejection,
+and the nearest existing governance binding/failure/order/receipt cases.
+
+ruff check .grok-stack/adaptive_grok/receipts.py \
+  .grok-stack/adaptive_grok/verification.py \
+  tests/test_change_receipts.py tests/test_verification_doctor.py
+All checks passed!
+
+bandit -q -c bandit.yaml -r \
+  .grok-stack/adaptive_grok/receipts.py \
+  .grok-stack/adaptive_grok/verification.py
+exit 0
+
+PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile \
+  .grok-stack/adaptive_grok/receipts.py \
+  .grok-stack/adaptive_grok/verification.py \
+  tests/test_change_receipts.py tests/test_verification_doctor.py
+exit 0
+
+git diff --check
+exit 0
+```
+
+An attempted two-module run was stopped on controller instruction after exceeding the focused time boundary and is not claimed as completion evidence. No broad suite and no `grok_verify` run were performed; Task 8 retains the final broad verification scope.
 
 ## Scope completed
 

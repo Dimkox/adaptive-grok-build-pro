@@ -299,6 +299,34 @@ class ReceiptTests(unittest.TestCase):
             )
             self.assertFalse(receipt_path.exists())
 
+    def test_complete_governance_deletion_cannot_downgrade_a_governed_receipt(self) -> None:
+        with project_copy(git=True) as root:
+            self._adopt_architecture(root)
+            self._adopt_governance(root)
+            route = build_route(root, 'Review governed code', 's1').to_dict()
+            route['required_evidence'] = ['verification']
+            set_active_route(root, route)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(
+                ['git', 'commit', '-qm', 'adopt governed architecture'],
+                cwd=root,
+                check=True,
+            )
+
+            receipt_path = write_receipt(root, 'verification', 'pass')
+            governed_receipt = receipt_path.read_bytes()
+            self.assertIn('governance_digest', json.loads(governed_receipt))
+            for relative in (
+                'governance/rules/index.json',
+                'governance/debt/index.json',
+                'governance/canonical-examples/index.json',
+            ):
+                (root / relative).unlink()
+
+            with self.assertRaisesRegex(RuntimeError, 'adopted governance.*missing'):
+                write_receipt(root, 'verification', 'pass')
+            self.assertEqual(receipt_path.read_bytes(), governed_receipt)
+
     def test_governance_evidence_rotates_with_architecture_digest(self) -> None:
         with project_copy(git=True) as root:
             self._adopt_architecture(root)

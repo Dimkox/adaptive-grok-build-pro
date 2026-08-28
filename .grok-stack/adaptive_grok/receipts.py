@@ -277,6 +277,53 @@ def _canonical_digest(value: object) -> str:
     return hashlib.sha256(raw.encode("ascii")).hexdigest()
 
 
+def _governance_history_has_authority(root: Path) -> bool:
+    head = _exact_head(root)
+    if head is None:
+        return False
+    if any(_git_blob(root, head, path.as_posix()) is not None for path in _GOVERNANCE_PATHS):
+        return True
+    raw = _git(
+        root,
+        [
+            "rev-list",
+            "--full-history",
+            "--max-count=64",
+            head,
+            "--",
+            *(path.as_posix() for path in _GOVERNANCE_PATHS),
+        ],
+        limit=64 * 41,
+    )
+    if raw is None:
+        raise RuntimeError("cannot inspect bounded governance history")
+    commits = raw.decode("ascii", "strict").splitlines()
+    if len(commits) > 64 or any(
+        len(value) != 40
+        or any(character not in "0123456789abcdef" for character in value)
+        for value in commits
+    ):
+        raise RuntimeError("governance history inventory is invalid")
+    if commits:
+        return True
+    if _history_is_shallow(root):
+        raise RuntimeError(
+            "governance adoption history is incomplete in a shallow repository"
+        )
+    return False
+
+
+def _require_legacy_governance_absence(root: Path) -> None:
+    if _governance_history_has_authority(root):
+        raise RuntimeError("adopted governance registries are missing")
+    for path in _GOVERNANCE_PATHS:
+        try:
+            os.lstat(root / path)
+        except FileNotFoundError:
+            continue
+        raise RuntimeError("governance authority appeared during absence inspection")
+
+
 def _governance_is_configured(root: Path) -> bool:
     resolved = root.resolve(strict=True)
     root_before = os.lstat(resolved)
@@ -292,6 +339,7 @@ def _governance_is_configured(root: Path) -> bool:
                 raise RuntimeError(
                     "repository root changed during governance absence inspection"
                 )
+            _require_legacy_governance_absence(root)
             return False
         raise RuntimeError("governance authority appeared during absence inspection")
     if not stat.S_ISDIR(authority_before.st_mode) or stat.S_ISLNK(
@@ -333,6 +381,7 @@ def _governance_is_configured(root: Path) -> bool:
     if _metadata_identity(os.lstat(resolved)) != _metadata_identity(root_before):
         raise RuntimeError("repository root changed during governance inspection")
     if not any(present):
+        _require_legacy_governance_absence(root)
         return False
     if not all(present):
         raise RuntimeError("governance registries are partially configured")
@@ -347,9 +396,21 @@ def active_governance_binding(
     if not _governance_is_configured(root):
         return None
     try:
-        architecture_binding = architecture or active_architecture_binding(root, route)
-        if architecture_binding is None:
+        current_architecture = active_architecture_binding(root, route)
+        if current_architecture is None:
             raise RuntimeError("governance requires adopted executable architecture")
+        if architecture is not None and any(
+            architecture.get(field) != current_architecture[field]
+            for field in (
+                "architecture_digest",
+                "architecture_base_sha",
+                "architecture_head_commit",
+            )
+        ):
+            raise RuntimeError(
+                "governance architecture binding differs from the checked snapshot"
+            )
+        architecture_binding = current_architecture
         snapshot = load_governance(root)
         summary = governance_summary(snapshot, now=datetime.now(timezone.utc))
         if not summary["ok"]:
@@ -433,11 +494,17 @@ def write_receipt(
     criterion_ids: list[str] | tuple[str, ...] | None = None,
     spec_digest: str | None = None,
     spec_fingerprint: str | None = None,
+    expected_tree_fingerprint: str | None = None,
 ) -> Path:
     route = get_active_route(root)
     if not route:
         raise RuntimeError('no active route')
     before_tree = tree_fingerprint(root)
+    if (
+        expected_tree_fingerprint is not None
+        and before_tree != expected_tree_fingerprint
+    ):
+        raise RuntimeError("repository changed after verification checks")
     current = _active_spec_binding(root, route, kind)
     current_architecture = active_architecture_binding(root, route)
     current_governance = active_governance_binding(

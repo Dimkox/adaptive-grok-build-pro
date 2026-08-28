@@ -98,6 +98,8 @@ def _architecture_check(
             "adoption_digest": binding["architecture_adoption_digest"],
             "architecture_digest": binding["architecture_digest"],
             "architecture_fingerprint": binding["architecture_fingerprint"],
+            "architecture_base_sha": binding["architecture_base_sha"],
+            "architecture_head_commit": binding["architecture_head_commit"],
             "architecture_base_kind": binding["architecture_base_kind"],
             "architecture_bootstrap_baseline": binding[
                 "architecture_bootstrap_baseline"
@@ -181,11 +183,40 @@ def _governance_check(
     architecture: dict[str, object],
 ) -> tuple[CheckResult, dict[str, object]]:
     try:
-        binding = active_governance_binding(root, route or {})
+        checked_architecture: dict[str, object] | None = None
+        if architecture.get("status") == "pass" and architecture.get("configured") is True:
+            checked_architecture = {
+                field: architecture[field]
+                for field in (
+                    "architecture_digest",
+                    "architecture_base_sha",
+                    "architecture_head_commit",
+                )
+            }
+        binding = active_governance_binding(
+            root,
+            route or {},
+            checked_architecture,
+        )
         if binding is None:
             return (
                 CheckResult("governance", "skip", "governance is not configured"),
                 {"configured": False, "status": "not_configured"},
+            )
+        if checked_architecture is None:
+            raise RuntimeError(
+                "governance requires a complete successful architecture check"
+            )
+        if (
+            binding["governance_architecture_digest"]
+            != checked_architecture["architecture_digest"]
+            or binding["governance_applicable_base_sha"]
+            != checked_architecture["architecture_base_sha"]
+            or binding["governance_applicable_head_sha"]
+            != checked_architecture["architecture_head_commit"]
+        ):
+            raise RuntimeError(
+                "governance evidence does not match the checked architecture binding"
             )
         metadata = {
             "architecture_status": architecture.get("status", "unknown"),
@@ -201,7 +232,7 @@ def _governance_check(
             ),
             metadata,
         )
-    except (RuntimeError, OSError, TypeError, ValueError) as exc:
+    except (KeyError, RuntimeError, OSError, TypeError, ValueError) as exc:
         details = [
             {
                 "severity": "error",
@@ -543,6 +574,7 @@ def _python(root: Path, mode: str = 'fast') -> list[CheckResult]:
 
 
 def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, record: bool = True) -> dict[str, object]:
+    checked_fingerprint = tree_fingerprint(root)
     route = get_active_route(root)
     active_profiles = profiles or (route.get('quality_profiles', ['base']) if route else ['base'])
     base = route.get('base_commit') if route else None
@@ -578,6 +610,20 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
         results.append(trivy)
     results.extend(_python(root, mode))
 
+    final_fingerprint = tree_fingerprint(root)
+    source_stable = final_fingerprint == checked_fingerprint
+    results.append(
+        CheckResult(
+            "source-stability",
+            "pass" if source_stable else "fail",
+            (
+                "repository fingerprint remained stable"
+                if source_stable
+                else "repository changed during verification checks"
+            ),
+        )
+    )
+
     failures = [result for result in results if result.status == 'fail']
     report = {
         'schema_version': 1,
@@ -585,7 +631,7 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
         'mode': mode,
         'profiles': active_profiles,
         'route_id': route.get('route_id') if route else None,
-        'tree_fingerprint': tree_fingerprint(root),
+        'tree_fingerprint': final_fingerprint,
         'changed_files': files,
         'spec': spec_metadata,
         'architecture': architecture_metadata,
@@ -593,6 +639,12 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
         'status': 'pass' if not failures else 'fail',
         'checks': [item.to_dict() for item in results],
     }
-    if record and route and governance_check.status != 'fail':
-        write_receipt(root, 'verification', report['status'], details=report)
+    if record and route and governance_check.status != 'fail' and source_stable:
+        write_receipt(
+            root,
+            'verification',
+            report['status'],
+            details=report,
+            expected_tree_fingerprint=final_fingerprint,
+        )
     return report
