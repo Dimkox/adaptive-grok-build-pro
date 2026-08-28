@@ -390,6 +390,11 @@ def _schema_preflight_checked(schema: dict[str, Any], *, label: str) -> None:
             )
         reference = node.get("$ref")
         if reference is not None:
+            if definition:
+                raise GovernanceError(
+                    f"{label}: {path}: schema reference aliases are unsupported",
+                    code="schema",
+                )
             prefix = "#/$defs/"
             if (
                 not isinstance(reference, str)

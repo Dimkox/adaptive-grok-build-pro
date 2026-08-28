@@ -476,6 +476,46 @@ class GovernanceLoaderTests(unittest.TestCase):
                 with self.assertRaisesRegex(GovernanceError, "schema reference"):
                     load_governance(root)
 
+    def test_loader_rejects_self_referential_schema_definition(self) -> None:
+        root = self._fixture()
+        path = root / "schemas" / "governance-handoff-v1.schema.json"
+        schema = json.loads(path.read_text(encoding="utf-8"))
+        schema["$defs"]["BROKEN"] = {"$ref": "#/$defs/BROKEN"}
+        schema["properties"]["architecture_digest"] = {
+            "$ref": "#/$defs/BROKEN"
+        }
+        path.write_bytes(_canonical_bytes(schema))
+
+        with self.assertRaisesRegex(GovernanceError, "reference aliases are unsupported"):
+            load_governance(root)
+
+    def test_loader_rejects_mutually_referential_schema_definitions(self) -> None:
+        root = self._fixture()
+        path = root / "schemas" / "governance-handoff-v1.schema.json"
+        schema = json.loads(path.read_text(encoding="utf-8"))
+        schema["$defs"]["BROKEN_A"] = {"$ref": "#/$defs/BROKEN_B"}
+        schema["$defs"]["BROKEN_B"] = {"$ref": "#/$defs/BROKEN_A"}
+        schema["properties"]["architecture_digest"] = {
+            "$ref": "#/$defs/BROKEN_A"
+        }
+        path.write_bytes(_canonical_bytes(schema))
+
+        with self.assertRaisesRegex(GovernanceError, "reference aliases are unsupported"):
+            load_governance(root)
+
+    def test_loader_rejects_reference_alias_that_drops_target_constraints(self) -> None:
+        root = self._fixture()
+        path = root / "schemas" / "governance-handoff-v1.schema.json"
+        schema = json.loads(path.read_text(encoding="utf-8"))
+        schema["$defs"]["BROKEN"] = {"$ref": "#/$defs/sha256"}
+        schema["properties"]["architecture_digest"] = {
+            "$ref": "#/$defs/BROKEN"
+        }
+        path.write_bytes(_canonical_bytes(schema))
+
+        with self.assertRaisesRegex(GovernanceError, "reference aliases are unsupported"):
+            load_governance(root)
+
     def test_loader_enforces_record_and_evidence_limits(self) -> None:
         fixtures = (
             ("MAX_RULES", self._fixture(rules=[_valid_rule()]), "rule limit"),

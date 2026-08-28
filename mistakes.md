@@ -111,3 +111,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Task 2 initially allowed a replacement repository root to splice schemas and registries, accepted zero-valued `O_NONBLOCK`, and digested a handoff schema with unresolved references.
 **Root cause:** The loader treated per-file identity checks, partially symmetric flag checks, and keyword-only schema preflight as substitutes for their enclosing contracts: one pinned root identity, every required nonzero capability, and whole-schema reference validation.
+
+## 2026-08-28 — Validated reference targets without matching evaluator depth
+
+**Symptom:** Handoff-schema aliases and cycles named existing object definitions but caused the one-hop validator to drop the referenced digest constraints.
+**Root cause:** Reference-graph existence was checked independently of the shared validator's supported one-hop subset. A schema gate must either reject aliases or implement the same bounded transitive resolution and cycle policy as its evaluator.
