@@ -263,18 +263,14 @@ class ReceiptTests(unittest.TestCase):
                 json.dumps(schema, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
                 encoding='utf-8',
             )
-            changed = active_governance_binding(root, route)
-            self.assertIsNotNone(changed)
-            assert changed is not None
-            self.assertNotEqual(original['governance_digest'], changed['governance_digest'])
-            self.assertNotEqual(
-                original['governance_evidence_digest'],
-                changed['governance_evidence_digest'],
-            )
+            with self.assertRaisesRegex(RuntimeError, 'frozen v1'):
+                active_governance_binding(root, route)
+            gaps = validate_evidence(root, route)
             self.assertTrue(
                 any(
                     'governance binding stale' in gap
-                    for gap in validate_evidence(root, route)
+                    or 'active spec invalid' in gap
+                    for gap in gaps
                 )
             )
 
