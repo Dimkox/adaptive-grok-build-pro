@@ -167,3 +167,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Removing every governance registry downgraded an adopted repository to unconfigured, and governance could validate a different architecture snapshot from the preceding architecture check.
 **Root cause:** The integration treated independent current-state probes as one continuous authority chain; optional authority needs durable adoption evidence and every downstream gate must consume the exact upstream binding it follows.
+
+## 2026-08-28 — Carried a program base into a stacked milestone verifier
+
+**Symptom:** Final M3 fitness charged the cumulative pre-M2-to-M3 change as 14,611 lines and rejected the frozen governance handoff during contract self-comparison.
+**Root cause:** The continuation route retained the program's pre-M2 base instead of exact reviewed M2, while the bounded schema comparator assumed `type` was scalar and had no exact allowance for the already-frozen closed handoff schema.

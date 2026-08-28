@@ -1337,6 +1337,56 @@ class ArchitectureModelTests(unittest.TestCase):
             "compatible",
         )
 
+    def test_governance_handoff_closed_schema_is_supported_in_self_comparison(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        record = next(
+            item
+            for item in ARCH.contract_inventory(ROOT, snapshot)
+            if item.id == "CONTRACT-GOVERNANCE-HANDOFF-V1"
+        )
+
+        result = ARCH.compare_contracts(record, record, record.compatibility)
+
+        self.assertEqual(result.status, "compatible")
+        self.assertEqual(result.reasons, ())
+
+    def test_schema_type_arrays_are_bounded_sets_with_directional_semantics(self) -> None:
+        string = {"type": "string"}
+        nullable = {"type": ["string", "null"]}
+        reordered = {"type": ["null", "string"]}
+        cases = (
+            ("consumer reordered", nullable, reordered, "consumer_accepts_old", "compatible"),
+            ("consumer widened", string, nullable, "consumer_accepts_old", "compatible"),
+            ("consumer narrowed", nullable, string, "consumer_accepts_old", "incompatible"),
+            ("producer narrowed", nullable, string, "producer_accepted_by_old", "compatible"),
+            ("producer widened", string, nullable, "producer_accepted_by_old", "incompatible"),
+        )
+        for label, base, head, policy, status in cases:
+            with self.subTest(label=label):
+                self.assertEqual(
+                    ARCH.compare_contracts(
+                        self._record(base), self._record(head), policy
+                    ).status,
+                    status,
+                )
+
+        for malformed in (
+            {"type": []},
+            {"type": ["string", "string"]},
+            {"type": ["string", "future"]},
+            {"type": ["string", 1]},
+            {"$ref": "#/$defs/string"},
+        ):
+            with self.subTest(malformed=malformed):
+                self.assertEqual(
+                    ARCH.compare_contracts(
+                        self._record(malformed),
+                        self._record(malformed),
+                        "consumer_accepts_old",
+                    ).status,
+                    "unsupported",
+                )
+
     def test_contract_comparison_rejects_directional_breaks(self) -> None:
         self.assertTrue(hasattr(ARCH, "compare_contracts"), "compare_contracts is not implemented")
         cases = (
@@ -1601,7 +1651,6 @@ class ArchitectureModelTests(unittest.TestCase):
 
     def test_contract_comparison_malformed_unknown_and_event_meaning_fail_typed(self) -> None:
         malformed_cases = (
-            {"type": ["string", "null"]},
             {"type": "string", "minLength": "2"},
             {"type": "string", "minLength": -1},
             {"type": "array", "minItems": True},

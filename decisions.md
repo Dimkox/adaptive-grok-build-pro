@@ -271,3 +271,7 @@ Recompute the complete M2 architecture evidence from the clean exact Git base/he
 ## 2026-08-28 — Separate worktree governance receipts from committed handoffs
 
 Use a distinct `adaptive-grok.governance-receipt-evidence/v1` digest domain for local receipts and bind it to the worktree fingerprint, applicable Git commits, M2 architecture digest, and all effective M3 state. This prevents a local preflight digest from being mistaken for the clean exact-SHA `GovernanceHandoffV1` consumed by later milestones.
+
+## 2026-08-28 — Bind stacked verification to the immediate reviewed predecessor
+
+Set each stacked milestone route's base commit and clean fingerprint to its exact reviewed predecessor, not the program's inception commit. This keeps code budgets, contract deltas, architecture evidence, and rollback scope local to the milestone while preserving the unchanged route identity and approved scope.
