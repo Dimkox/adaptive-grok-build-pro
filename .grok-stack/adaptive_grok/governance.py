@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import dataclasses
 import errno
 import hashlib
 import json
 import math
 import os
+import re
 import stat
+import subprocess
 import unicodedata
 import weakref
 from dataclasses import dataclass
@@ -13,7 +16,12 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Literal
 
-from .architecture import ArchitectureError, contract_inventory, load_architecture
+from .architecture import (
+    ArchitectureError,
+    architecture_digests,
+    contract_inventory,
+    load_architecture,
+)
 from .spec import SpecError, _schema_preflight, validate_schema
 
 
@@ -33,6 +41,41 @@ DEBT_SCHEMA_PATH = Path("schemas/debt-entry.schema.json")
 EXAMPLES_SCHEMA_PATH = Path("schemas/canonical-example.schema.json")
 HANDOFF_SCHEMA_PATH = Path("schemas/governance-handoff-v1.schema.json")
 
+_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+_SHA40_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+_ARCHITECTURE_EVIDENCE_FIELDS = frozenset(
+    {
+        "architecture_contract_version",
+        "architecture_digest",
+        "architecture_evidence_digest",
+        "base_adoption_digest",
+        "base_adoption_state",
+        "baseline_introduced",
+        "contract_inventory_digest",
+        "diff_digest",
+        "exact_base_sha",
+        "exact_head_sha",
+        "exemption_state",
+        "fitness_results",
+        "fitness_status",
+        "head_adoption_digest",
+        "head_adoption_state",
+        "head_kind",
+        "overall_status",
+        "repository_inventory_digest",
+        "required_scopes",
+        "risk_escalation",
+        "risk_post",
+        "risk_pre",
+        "risk_triggers",
+        "rules_digest",
+        "schema_digest",
+        "system_digest",
+    }
+)
+_PROJECTION_BEGIN = "<!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: {name} -->"
+_PROJECTION_END = "<!-- END ADAPTIVE GROK GOVERNANCE PROJECTION: {name} -->"
+
 
 class GovernanceError(ValueError):
     def __init__(self, message: str, *, code: str = "invalid") -> None:
@@ -46,6 +89,19 @@ class GovernanceFinding:
     message: str
     path: str
     severity: str = "error"
+
+
+@dataclass(frozen=True)
+class GovernanceHandoffV1:
+    governance_contract_version: int
+    governance_digest: str
+    governance_evidence_digest: str
+    architecture_digest: str
+    exact_base_sha: str
+    exact_head_sha: str
+
+    def to_dict(self) -> dict[str, object]:
+        return dataclasses.asdict(self)
 
 
 ActorKind = Literal["human", "agent", "system"]
@@ -1377,6 +1433,51 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
     example_bindings = weakref.WeakKeyDictionary()
     debt_bindings: weakref.WeakKeyDictionary[DebtRecord, Binding]
     debt_bindings = weakref.WeakKeyDictionary()
+    snapshot_bindings: dict[
+        int,
+        tuple[
+            weakref.ReferenceType[GovernanceSnapshot],
+            Path,
+            tuple[int, int],
+        ],
+    ] = {}
+
+    def bind_snapshot(
+        snapshot: GovernanceSnapshot,
+        repository_path: Path,
+        repository_identity: tuple[int, int],
+    ) -> None:
+        key = id(snapshot)
+
+        def discard(reference: weakref.ReferenceType[GovernanceSnapshot]) -> None:
+            current = snapshot_bindings.get(key)
+            if current is not None and current[0] is reference:
+                snapshot_bindings.pop(key, None)
+
+        snapshot_bindings[key] = (
+            weakref.ref(snapshot, discard),
+            repository_path,
+            repository_identity,
+        )
+
+    def snapshot_repository(snapshot: GovernanceSnapshot) -> Path | None:
+        binding = snapshot_bindings.get(id(snapshot))
+        if binding is None or binding[0]() is not snapshot:
+            return None
+        repository_path, repository_identity = binding[1], binding[2]
+        try:
+            repository = _open_repository(repository_path)
+        except GovernanceError:
+            return None
+        try:
+            if repository.identity != repository_identity:
+                return None
+            _verify_repository(repository)
+            return repository_path
+        except GovernanceError:
+            return None
+        finally:
+            os.close(repository.descriptor)
 
     def bind(
         record: RuleRecord,
@@ -1447,6 +1548,7 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
             bind_other(example_bindings, record, repository_path, repository_identity)
         for record in snapshot.debt_records:
             bind_other(debt_bindings, record, repository_path, repository_identity)
+        bind_snapshot(snapshot, repository_path, repository_identity)
         return snapshot
 
     def transition(
@@ -1601,7 +1703,15 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
             f"examples[{category}]",
         )
 
-    return load, transition, effective, effective_example_records, open_debt_records, validate_deviation
+    return (
+        load,
+        transition,
+        effective,
+        effective_example_records,
+        open_debt_records,
+        validate_deviation,
+        snapshot_repository,
+    )
 
 
 (
@@ -1611,6 +1721,7 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
     effective_examples,
     open_debt,
     validate_example_deviation,
+    _snapshot_repository,
 ) = _build_rule_lifecycle_api()
 
 
@@ -1864,4 +1975,430 @@ def governance_digests(snapshot: GovernanceSnapshot) -> dict[str, str]:
         "debt_digest": debt_digest,
         "examples_digest": examples_digest,
         "governance_digest": governance_digest,
+    }
+
+
+def _architecture_evidence_digest(value: dict[str, Any]) -> str:
+    try:
+        raw = (
+            json.dumps(
+                value,
+                ensure_ascii=True,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            )
+            + "\n"
+        ).encode("ascii")
+    except (TypeError, ValueError, UnicodeEncodeError) as exc:
+        raise GovernanceError(
+            "architecture evidence is not canonical JSON", code="architecture"
+        ) from exc
+    return hashlib.sha256(raw).hexdigest()
+
+
+def load_architecture_evidence(path: Path | str) -> dict[str, Any]:
+    evidence_path = Path(os.path.abspath(Path(path)))
+    if not evidence_path.name or evidence_path.name in {".", ".."}:
+        raise GovernanceError("architecture evidence path is invalid", code="path")
+    repository = _open_repository(evidence_path.parent)
+    try:
+        data = _read_regular_bytes(
+            repository.descriptor,
+            evidence_path.name,
+            label="architecture evidence",
+        )
+        document = load_bytes(data, label="architecture evidence")
+        _verify_repository(repository)
+        return document
+    finally:
+        os.close(repository.descriptor)
+
+
+def _validate_architecture_evidence(
+    architecture: dict[str, Any],
+    *,
+    base_sha: str,
+    head_sha: str,
+) -> str:
+    if not isinstance(architecture, dict):
+        raise GovernanceError("architecture evidence must be an object", code="architecture")
+    fields = frozenset(architecture)
+    if fields != _ARCHITECTURE_EVIDENCE_FIELDS:
+        unknown = sorted(fields - _ARCHITECTURE_EVIDENCE_FIELDS)
+        missing = sorted(_ARCHITECTURE_EVIDENCE_FIELDS - fields)
+        details = []
+        if missing:
+            details.append(f"missing fields: {', '.join(missing)}")
+        if unknown:
+            details.append(f"unknown fields: {', '.join(unknown)}")
+        raise GovernanceError(
+            f"architecture evidence shape mismatch ({'; '.join(details)})",
+            code="architecture",
+        )
+    if architecture["architecture_contract_version"] != 1:
+        raise GovernanceError(
+            "architecture evidence contract version is unsupported",
+            code="architecture",
+        )
+    if architecture["head_kind"] != "commit":
+        raise GovernanceError(
+            "architecture worktree evidence cannot produce a governance handoff",
+            code="architecture",
+        )
+    if architecture["exact_base_sha"] != base_sha:
+        raise GovernanceError(
+            "architecture evidence base SHA mismatch", code="architecture"
+        )
+    if architecture["exact_head_sha"] != head_sha:
+        raise GovernanceError(
+            "architecture evidence head SHA mismatch", code="architecture"
+        )
+    for label, value in (("base", base_sha), ("head", head_sha)):
+        if not isinstance(value, str) or _SHA40_PATTERN.fullmatch(value) is None:
+            raise GovernanceError(f"exact {label} SHA is invalid", code="sha")
+    digest_fields = (
+        "architecture_digest",
+        "contract_inventory_digest",
+        "diff_digest",
+        "repository_inventory_digest",
+        "rules_digest",
+        "schema_digest",
+        "system_digest",
+    )
+    for field in digest_fields:
+        value = architecture[field]
+        if not isinstance(value, str) or _SHA256_PATTERN.fullmatch(value) is None:
+            raise GovernanceError(
+                f"architecture evidence {field} is invalid", code="architecture"
+            )
+    for field in ("base_adoption_digest", "head_adoption_digest"):
+        value = architecture[field]
+        if value is not None and (
+            not isinstance(value, str) or _SHA256_PATTERN.fullmatch(value) is None
+        ):
+            raise GovernanceError(
+                f"architecture evidence {field} is invalid", code="architecture"
+            )
+    claimed_evidence_digest = architecture["architecture_evidence_digest"]
+    if (
+        not isinstance(claimed_evidence_digest, str)
+        or _SHA256_PATTERN.fullmatch(claimed_evidence_digest) is None
+    ):
+        raise GovernanceError(
+            "architecture evidence digest is invalid", code="architecture"
+        )
+    evidence_core = dict(architecture)
+    evidence_core.pop("architecture_evidence_digest")
+    if _architecture_evidence_digest(evidence_core) != claimed_evidence_digest:
+        raise GovernanceError(
+            "architecture evidence digest mismatch", code="architecture"
+        )
+    expected_architecture_digest = _sha256(
+        {
+            "contract": "adaptive-grok.architecture",
+            "contract_version": 1,
+            "schema_digest": architecture["schema_digest"],
+            "system_digest": architecture["system_digest"],
+            "rules_digest": architecture["rules_digest"],
+        }
+    )
+    if architecture["architecture_digest"] != expected_architecture_digest:
+        raise GovernanceError(
+            "architecture digest mismatch", code="architecture"
+        )
+    if (
+        architecture["fitness_status"] != "pass"
+        or architecture["overall_status"] != "pass"
+    ):
+        raise GovernanceError(
+            "architecture evidence status is not pass", code="architecture"
+        )
+    return str(architecture["architecture_digest"])
+
+
+def _git_output(root: Path, arguments: list[str], *, label: str) -> bytes:
+    environment = dict(os.environ)
+    environment["GIT_OPTIONAL_LOCKS"] = "0"
+    environment["LC_ALL"] = "C"
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), *arguments],
+            check=False,
+            capture_output=True,
+            timeout=30,
+            env=environment,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise GovernanceError(f"{label} failed", code="git") from exc
+    if result.returncode != 0:
+        raise GovernanceError(f"{label} failed", code="git")
+    if len(result.stdout) > MAX_DOCUMENT_BYTES:
+        raise GovernanceError(f"{label} output limit exceeded", code="limit")
+    return result.stdout
+
+
+def _require_clean_exact_git_state(
+    root: Path,
+    *,
+    base_sha: str,
+    head_sha: str,
+) -> None:
+    for label, value in (("base", base_sha), ("head", head_sha)):
+        if _SHA40_PATTERN.fullmatch(value) is None:
+            raise GovernanceError(f"exact {label} SHA is invalid", code="sha")
+    current_head = _git_output(
+        root,
+        ["rev-parse", "--verify", "HEAD^{commit}"],
+        label="resolve exact Git head",
+    ).decode("ascii", "strict").strip()
+    if current_head != head_sha:
+        raise GovernanceError("exact head SHA mismatch", code="sha")
+    _git_output(
+        root,
+        ["cat-file", "-e", f"{base_sha}^{{commit}}"],
+        label="resolve exact Git base",
+    )
+    dirty = _git_output(
+        root,
+        ["status", "--porcelain=v1", "-z", "--untracked-files=all"],
+        label="inspect Git worktree",
+    )
+    if dirty:
+        raise GovernanceError(
+            "dirty worktree cannot produce exact governance evidence", code="dirty"
+        )
+
+
+def _finding_payload(findings: tuple[GovernanceFinding, ...]) -> list[dict[str, str]]:
+    return [dataclasses.asdict(finding) for finding in findings]
+
+
+def _governance_evaluation(
+    snapshot: GovernanceSnapshot,
+    *,
+    now: datetime,
+) -> tuple[GovernanceSnapshot, Path, dict[str, Any]]:
+    evaluated_at = _require_aware(now, label="now")
+    root = _snapshot_repository(snapshot)
+    if root is None:
+        raise GovernanceError(
+            "governance snapshot lacks loader provenance", code="provenance"
+        )
+    current = load_governance(root)
+    supplied_digests = governance_digests(snapshot)
+    current_digests = governance_digests(current)
+    if supplied_digests != current_digests:
+        raise GovernanceError(
+            "governance snapshot digest mismatch", code="digest"
+        )
+    findings = validate_governance(current, root, now=evaluated_at)
+    active_rules = tuple(rule.rule_id for rule in effective_rules(current, now=evaluated_at))
+    active_examples = tuple(
+        {
+            "example_id": record.example_id,
+            "version": record.to_dict()["version"],
+        }
+        for record in effective_examples(current)
+    )
+    open_debt_ids = tuple(
+        sorted(
+            entry["debt_id"]
+            for entry in current.debt["entries"]
+            if entry["status"] in {"open", "repaying"}
+        )
+    )
+    overdue_debt_ids = tuple(
+        sorted(
+            entry["debt_id"]
+            for entry in current.debt["entries"]
+            if entry["status"] in {"open", "repaying"}
+            and _parse_timestamp(
+                entry["deadline"], label=f"debt {entry['debt_id']} deadline"
+            )
+            <= evaluated_at
+        )
+    )
+    status = "fail" if findings else "pass"
+    return current, root, {
+        "active_example_ids_versions": list(active_examples),
+        "active_rule_ids": list(active_rules),
+        "digests": current_digests,
+        "findings": _finding_payload(findings),
+        "open_debt_ids": list(open_debt_ids),
+        "overall_status": status,
+        "overdue_debt_ids": list(overdue_debt_ids),
+    }
+
+
+def governance_summary(
+    snapshot: GovernanceSnapshot,
+    *,
+    now: datetime,
+) -> dict[str, Any]:
+    current, _, evaluation = _governance_evaluation(snapshot, now=now)
+    return {
+        "active_example_ids_versions": evaluation["active_example_ids_versions"],
+        "active_rule_ids": evaluation["active_rule_ids"],
+        "candidate_rule_ids": sorted(
+            rule["rule_id"]
+            for rule in current.rules["rules"]
+            if rule["status"] == "candidate"
+        ),
+        "debt_count": len(current.debt["entries"]),
+        **evaluation["digests"],
+        "example_count": len(current.examples["examples"]),
+        "findings": evaluation["findings"],
+        "governance_id": current.rules["governance_id"],
+        "ok": evaluation["overall_status"] == "pass",
+        "open_debt_ids": evaluation["open_debt_ids"],
+        "overall_status": evaluation["overall_status"],
+        "overdue_debt_ids": evaluation["overdue_debt_ids"],
+        "rule_count": len(current.rules["rules"]),
+    }
+
+
+def build_governance_handoff(
+    snapshot: GovernanceSnapshot,
+    *,
+    architecture: dict[str, Any],
+    base_sha: str,
+    head_sha: str,
+    now: datetime | None = None,
+) -> GovernanceHandoffV1:
+    evaluated_at = now or datetime.now(timezone.utc)
+    architecture_digest = _validate_architecture_evidence(
+        architecture,
+        base_sha=base_sha,
+        head_sha=head_sha,
+    )
+    _, root, evaluation = _governance_evaluation(snapshot, now=evaluated_at)
+    try:
+        current_architecture_digest = architecture_digests(load_architecture(root))[
+            "architecture_digest"
+        ]
+    except (ArchitectureError, OSError, ValueError) as exc:
+        raise GovernanceError(
+            "current architecture model cannot be validated", code="architecture"
+        ) from exc
+    if current_architecture_digest != architecture_digest:
+        raise GovernanceError(
+            "architecture model digest mismatch", code="architecture"
+        )
+    _require_clean_exact_git_state(root, base_sha=base_sha, head_sha=head_sha)
+    evidence_core = {
+        "contract": "adaptive-grok.governance-evidence/v1",
+        "rules_digest": evaluation["digests"]["rules_digest"],
+        "debt_digest": evaluation["digests"]["debt_digest"],
+        "examples_digest": evaluation["digests"]["examples_digest"],
+        "schema_digest": evaluation["digests"]["schema_digest"],
+        "active_rule_ids": evaluation["active_rule_ids"],
+        "active_example_ids_versions": evaluation[
+            "active_example_ids_versions"
+        ],
+        "open_debt_ids": evaluation["open_debt_ids"],
+        "overdue_debt_ids": evaluation["overdue_debt_ids"],
+        "findings": evaluation["findings"],
+        "architecture_digest": architecture_digest,
+        "exact_base_sha": base_sha,
+        "exact_head_sha": head_sha,
+        "overall_status": evaluation["overall_status"],
+    }
+    governance_evidence_digest = _sha256(evidence_core)
+    if evaluation["findings"]:
+        codes = ", ".join(item["code"] for item in evaluation["findings"])
+        raise GovernanceError(
+            f"governance findings block handoff: {codes}", code="findings"
+        )
+    _require_clean_exact_git_state(root, base_sha=base_sha, head_sha=head_sha)
+    handoff = GovernanceHandoffV1(
+        governance_contract_version=1,
+        governance_digest=evaluation["digests"]["governance_digest"],
+        governance_evidence_digest=governance_evidence_digest,
+        architecture_digest=architecture_digest,
+        exact_base_sha=base_sha,
+        exact_head_sha=head_sha,
+    )
+    _validate_schema_checked(
+        handoff.to_dict(), snapshot.handoff_schema, label="governance handoff"
+    )
+    return handoff
+
+
+def _projection_banner(name: str) -> tuple[str, str]:
+    return _PROJECTION_BEGIN.format(name=name), _PROJECTION_END.format(name=name)
+
+
+def _projection_list(values: list[str], *, empty: str) -> list[str]:
+    return [f"- `{value}`" for value in values] if values else [f"_{empty}_"]
+
+
+def render_markdown_projections(
+    snapshot: GovernanceSnapshot,
+    *,
+    now: datetime,
+) -> dict[str, str]:
+    evaluated_at = _require_aware(now, label="now")
+    active_rules = sorted(
+        rule["rule_id"]
+        for rule in snapshot.rules["rules"]
+        if rule["status"] == "active"
+    )
+    candidate_rules = sorted(
+        rule["rule_id"]
+        for rule in snapshot.rules["rules"]
+        if rule["status"] == "candidate"
+    )
+    open_debt_ids = sorted(
+        entry["debt_id"]
+        for entry in snapshot.debt["entries"]
+        if entry["status"] in {"open", "repaying"}
+    )
+    overdue_debt_ids = sorted(
+        entry["debt_id"]
+        for entry in snapshot.debt["entries"]
+        if entry["status"] in {"open", "repaying"}
+        and _parse_timestamp(
+            entry["deadline"], label=f"debt {entry['debt_id']} deadline"
+        )
+        <= evaluated_at
+    )
+    notice = (
+        "> **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records "
+        "remain authority; this Markdown cannot approve, activate, repay, or accept "
+        "any record."
+    )
+    decisions_begin, decisions_end = _projection_banner("decisions.md")
+    mistakes_begin, mistakes_end = _projection_banner("mistakes.md")
+    decisions = [
+        decisions_begin,
+        notice,
+        "",
+        "## Active governance rules",
+        "",
+        *_projection_list(active_rules, empty="No active governance rules."),
+        "",
+        "## Candidate governance rules",
+        "",
+        *_projection_list(candidate_rules, empty="No candidate governance rules."),
+        decisions_end,
+        "",
+    ]
+    mistakes = [
+        mistakes_begin,
+        notice,
+        "",
+        "## Open governance debt",
+        "",
+        *_projection_list(open_debt_ids, empty="No open governance debt."),
+        "",
+        "## Overdue governance debt",
+        "",
+        *_projection_list(overdue_debt_ids, empty="No overdue governance debt."),
+        mistakes_end,
+        "",
+    ]
+    return {
+        "decisions.md": "\n".join(decisions),
+        "mistakes.md": "\n".join(mistakes),
     }

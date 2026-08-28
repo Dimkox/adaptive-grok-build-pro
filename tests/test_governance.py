@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import json
 import hashlib
 import hmac
@@ -7,6 +8,7 @@ import inspect
 import os
 import runpy
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -20,12 +22,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / ".grok-stack"))
 
 import adaptive_grok.governance as governance
+from adaptive_grok.architecture import architecture_digests, load_architecture
 from adaptive_grok.spec import SpecError, load_schema, validate_schema
 from adaptive_grok.governance import (
     ActorRef,
     DebtRecord,
     ExampleRecord,
     GovernanceError,
+    GovernanceHandoffV1,
     MAX_DEBT_ENTRIES,
     MAX_DEPTH,
     MAX_DOCUMENT_BYTES,
@@ -34,12 +38,14 @@ from adaptive_grok.governance import (
     MAX_PARSED_NODES,
     MAX_RULES,
     RuleRecord,
+    build_governance_handoff,
     effective_examples,
     effective_rules,
     governance_digests,
     load_bytes,
     load_governance,
     open_debt,
+    render_markdown_projections,
     transition_rule,
     validate_example_deviation,
     validate_governance,
@@ -252,6 +258,100 @@ def _make_fixture(
         rules_path.unlink()
         rules_path.symlink_to(outside)
     return root
+
+
+def _git_commit_fixture(root: Path) -> str:
+    commands = (
+        ("init", "-q"),
+        ("config", "user.email", "governance-tests@example.invalid"),
+        ("config", "user.name", "Governance Tests"),
+        ("add", "."),
+        ("commit", "-q", "-m", "fixture"),
+    )
+    for command in commands:
+        subprocess.run(
+            ["git", *command],
+            cwd=root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _materialize_architecture(root: Path) -> None:
+    shutil.copytree(ROOT / "architecture", root / "architecture")
+    for schema_name in (
+        "architecture-system.schema.json",
+        "architecture-rules.schema.json",
+    ):
+        shutil.copy2(ROOT / "schemas" / schema_name, root / "schemas" / schema_name)
+
+
+def _architecture_evidence(
+    root: Path, base_sha: str, head_sha: str
+) -> dict[str, object]:
+    digests = architecture_digests(load_architecture(root))
+    component_digests = {
+        "schema_digest": digests["schema_digest"],
+        "system_digest": digests["system_digest"],
+        "rules_digest": digests["rules_digest"],
+    }
+    architecture_digest = hashlib.sha256(
+        json.dumps(
+            {
+                "contract": "adaptive-grok.architecture",
+                "contract_version": 1,
+                **component_digests,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    evidence: dict[str, object] = {
+        "architecture_contract_version": 1,
+        "architecture_digest": architecture_digest,
+        "base_adoption_digest": "4" * 64,
+        "base_adoption_state": "adopted",
+        "baseline_introduced": False,
+        "contract_inventory_digest": "5" * 64,
+        "diff_digest": "6" * 64,
+        "exact_base_sha": base_sha,
+        "exact_head_sha": head_sha,
+        "exemption_state": "revoked",
+        "fitness_results": [],
+        "fitness_status": "pass",
+        "head_adoption_digest": "7" * 64,
+        "head_adoption_state": "adopted",
+        "head_kind": "commit",
+        "overall_status": "pass",
+        "repository_inventory_digest": "8" * 64,
+        "required_scopes": [],
+        "risk_escalation": "green",
+        "risk_post": "green",
+        "risk_pre": "green",
+        "risk_triggers": [],
+        **component_digests,
+    }
+    evidence["architecture_evidence_digest"] = hashlib.sha256(
+        (
+            json.dumps(
+                evidence,
+                ensure_ascii=True,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n"
+        ).encode("ascii")
+    ).hexdigest()
+    return evidence
 
 
 class GovernanceSchemaTests(unittest.TestCase):
@@ -1495,6 +1595,266 @@ class GovernanceKnowledgeTests(unittest.TestCase):
                 }
                 self.assertIn("debt-evidence-document-invalid", codes)
                 self.assertIn("debt-acceptance-authority-required", codes)
+
+
+class GovernanceHandoffTests(unittest.TestCase):
+    NOW = datetime(2026, 8, 28, 13, 0, tzinfo=timezone.utc)
+
+    def _clean_fixture(self) -> tuple[Path, object, str, dict[str, object]]:
+        root = _make_fixture(self)
+        _materialize_architecture(root)
+        shutil.copy2(ROOT / "decisions.md", root / "decisions.md")
+        shutil.copy2(ROOT / "mistakes.md", root / "mistakes.md")
+        head = _git_commit_fixture(root)
+        return root, load_governance(root), head, _architecture_evidence(root, head, head)
+
+    def _invoke(self, root: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "grok_governance.py"),
+                "--root",
+                str(root),
+                *arguments,
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    def test_handoff_has_exact_closed_immutable_v1_shape(self) -> None:
+        _, snapshot, head, architecture = self._clean_fixture()
+
+        handoff = build_governance_handoff(
+            snapshot,
+            architecture=architecture,
+            base_sha=head,
+            head_sha=head,
+            now=self.NOW,
+        )
+
+        self.assertIsInstance(handoff, GovernanceHandoffV1)
+        self.assertEqual(
+            tuple(field.name for field in dataclasses.fields(handoff)),
+            (
+                "governance_contract_version",
+                "governance_digest",
+                "governance_evidence_digest",
+                "architecture_digest",
+                "exact_base_sha",
+                "exact_head_sha",
+            ),
+        )
+        self.assertEqual(
+            handoff.to_dict(),
+            {
+                "governance_contract_version": 1,
+                "governance_digest": governance_digests(snapshot)[
+                    "governance_digest"
+                ],
+                "governance_evidence_digest": handoff.governance_evidence_digest,
+                "architecture_digest": architecture["architecture_digest"],
+                "exact_base_sha": head,
+                "exact_head_sha": head,
+            },
+        )
+        self.assertRegex(handoff.governance_evidence_digest, r"^[0-9a-f]{64}$")
+        with self.assertRaises(dataclasses.FrozenInstanceError):
+            handoff.exact_head_sha = "f" * 40
+
+    def test_handoff_rejects_dirty_worktree_sha_and_digest_mismatches(self) -> None:
+        root, snapshot, head, architecture = self._clean_fixture()
+        invalid_cases = {
+            "worktree": {**architecture, "head_kind": "worktree"},
+            "base SHA": {**architecture, "exact_base_sha": "a" * 40},
+            "evidence digest": {
+                **architecture,
+                "architecture_evidence_digest": "f" * 64,
+            },
+            "architecture digest": {
+                **architecture,
+                "architecture_digest": "e" * 64,
+            },
+            "architecture model": {
+                **architecture,
+                "architecture_digest": hashlib.sha256(
+                    json.dumps(
+                        {
+                            "contract": "adaptive-grok.architecture",
+                            "contract_version": 1,
+                            "rules_digest": "9" * 64,
+                            "schema_digest": architecture["schema_digest"],
+                            "system_digest": architecture["system_digest"],
+                        },
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                ).hexdigest(),
+                "rules_digest": "9" * 64,
+            },
+        }
+        for message, evidence in invalid_cases.items():
+            if message in {
+                "worktree",
+                "base SHA",
+                "architecture digest",
+                "architecture model",
+            }:
+                evidence = dict(evidence)
+                evidence.pop("architecture_evidence_digest", None)
+                evidence["architecture_evidence_digest"] = hashlib.sha256(
+                    (
+                        json.dumps(
+                            evidence,
+                            ensure_ascii=True,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                        )
+                        + "\n"
+                    ).encode("ascii")
+                ).hexdigest()
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(GovernanceError, message):
+                    build_governance_handoff(
+                        snapshot,
+                        architecture=evidence,
+                        base_sha=head,
+                        head_sha=head,
+                        now=self.NOW,
+                    )
+
+        (root / "untracked.txt").write_text("dirty\n", encoding="utf-8")
+        with self.assertRaisesRegex(GovernanceError, "dirty"):
+            build_governance_handoff(
+                snapshot,
+                architecture=architecture,
+                base_sha=head,
+                head_sha=head,
+                now=self.NOW,
+            )
+
+    def test_handoff_rejects_non_json_architecture_values_as_typed_error(self) -> None:
+        _, snapshot, head, architecture = self._clean_fixture()
+        architecture["fitness_results"] = [float("nan")]
+
+        with self.assertRaisesRegex(GovernanceError, "canonical JSON"):
+            build_governance_handoff(
+                snapshot,
+                architecture=architecture,
+                base_sha=head,
+                head_sha=head,
+                now=self.NOW,
+            )
+
+    def test_handoff_preserves_external_authority_findings_as_a_hard_gate(self) -> None:
+        example = _valid_example()
+        example.update(
+            {
+                "approved_by": [
+                    {
+                        "actor_id": "repository-claim",
+                        "actor_kind": "human",
+                        "approved_at": "2026-08-28T12:30:00Z",
+                        "scope": "governance",
+                    }
+                ],
+                "reviewed_by": [
+                    {
+                        "actor_id": "repository-review-claim",
+                        "actor_kind": "system",
+                        "reviewed_at": "2026-08-28T12:00:00Z",
+                    }
+                ],
+                "status": "active",
+            }
+        )
+        root = _make_fixture(self, examples=[example])
+        _materialize_architecture(root)
+        head = _git_commit_fixture(root)
+        snapshot = load_governance(root)
+
+        with self.assertRaisesRegex(
+            GovernanceError, "example-external-authority-required"
+        ):
+            build_governance_handoff(
+                snapshot,
+                architecture=_architecture_evidence(root, head, head),
+                base_sha=head,
+                head_sha=head,
+                now=self.NOW,
+            )
+
+    def test_projection_is_deterministic_and_explicitly_non_authoritative(self) -> None:
+        _, snapshot, _, _ = self._clean_fixture()
+
+        rendered = render_markdown_projections(snapshot, now=self.NOW)
+
+        self.assertEqual(rendered, render_markdown_projections(snapshot, now=self.NOW))
+        self.assertEqual(tuple(rendered), ("decisions.md", "mistakes.md"))
+        for content in rendered.values():
+            self.assertIn("NON-AUTHORITATIVE PROJECTION", content)
+            self.assertIn("cannot approve, activate, repay, or accept", content)
+        self.assertIn("## Active governance rules", rendered["decisions.md"])
+        self.assertIn("## Candidate governance rules", rendered["decisions.md"])
+        self.assertIn("## Open governance debt", rendered["mistakes.md"])
+        self.assertIn("## Overdue governance debt", rendered["mistakes.md"])
+
+    def test_cli_is_deterministic_and_project_never_mutates_files(self) -> None:
+        root, _, head, architecture = self._clean_fixture()
+        evidence_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(evidence_directory.cleanup)
+        evidence_file = Path(evidence_directory.name) / "architecture-evidence.json"
+        evidence_file.write_bytes(_canonical_bytes(architecture))
+
+        for command in ("validate", "summary"):
+            first = self._invoke(root, command, "--now", "2026-08-28T13:00:00Z", "--json")
+            second = self._invoke(root, command, "--now", "2026-08-28T13:00:00Z", "--json")
+            self.assertEqual(first.returncode, 0, first.stderr)
+            self.assertEqual(first.stdout, second.stdout)
+            self.assertTrue(json.loads(first.stdout)["ok"])
+
+        handoff = self._invoke(
+            root,
+            "handoff",
+            "--base",
+            head,
+            "--head",
+            head,
+            "--architecture-evidence",
+            str(evidence_file),
+            "--now",
+            "2026-08-28T13:00:00Z",
+            "--json",
+        )
+        self.assertEqual(handoff.returncode, 0, handoff.stderr)
+        self.assertEqual(tuple(json.loads(handoff.stdout)), (
+            "architecture_digest",
+            "exact_base_sha",
+            "exact_head_sha",
+            "governance_contract_version",
+            "governance_digest",
+            "governance_evidence_digest",
+        ))
+
+        paths = (root / "decisions.md", root / "mistakes.md")
+        before = {path: path.read_bytes() for path in paths}
+        first_project = self._invoke(root, "project")
+        second_project = self._invoke(root, "project")
+        self.assertEqual(first_project.returncode, 0, first_project.stderr)
+        self.assertEqual(first_project.stdout, second_project.stdout)
+        self.assertEqual(before, {path: path.read_bytes() for path in paths})
+        project_payload = json.loads(first_project.stdout)
+        self.assertEqual(tuple(project_payload["projections"]), ("decisions.md", "mistakes.md"))
+        self.assertEqual(
+            tuple(project_payload["digests"]), ("decisions.md", "mistakes.md")
+        )
+
+        checked = self._invoke(root, "check-projections")
+        self.assertEqual(checked.returncode, 0, checked.stdout + checked.stderr)
+        self.assertTrue(json.loads(checked.stdout)["ok"])
+        self.assertEqual(before, {path: path.read_bytes() for path in paths})
 
 
 if __name__ == "__main__":

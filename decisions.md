@@ -1,5 +1,21 @@
 # Decisions
 
+<!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
+> **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
+
+## Active governance rules
+
+_No active governance rules._
+
+## Candidate governance rules
+
+_No candidate governance rules._
+<!-- END ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
+
+## 2026-08-28 — Bind governance handoffs to fresh exact state
+
+Reopen the loader-bound governance root, recompute every component digest and finding, validate the complete M2 evidence envelope, and prove the Git head is exact and clean immediately before publishing the six-field handoff. Keeping projections in marked read-only blocks makes them reviewable without giving Markdown mutation or authority capability.
+
 ## 2026-08-28 — Freeze governance transitions as canonical values
 
 Represent rule transitions as immutable canonical-byte `RuleRecord` values and append only typed review or approval records supplied at the transition boundary. This preserved rule identity across revisions and prevented callers from mutating a returned record through nested dictionaries.

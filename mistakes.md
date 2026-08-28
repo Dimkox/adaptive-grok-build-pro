@@ -1,6 +1,24 @@
 # Mistakes
 
+<!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: mistakes.md -->
+> **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
+
+## Open governance debt
+
+_No open governance debt._
+
+## Overdue governance debt
+
+_No overdue governance debt._
+<!-- END ADAPTIVE GROK GOVERNANCE PROJECTION: mistakes.md -->
+
 Root causes, not symptoms. Record only mistakes that caused a real problem.
+
+## 2026-08-28 — Let a direct evidence mapping bypass strict JSON parsing
+
+**Symptom:** A direct caller could put `NaN` into an architecture evidence mapping and receive a raw serialization `ValueError` instead of a typed governance rejection.
+**Root cause:** File-backed evidence passed the bounded strict JSON parser, but the in-process builder reached digest serialization without applying the same canonical-JSON failure boundary.
+**Durable rule:** Every authority input path, including direct typed APIs, must convert canonicalization failures into the same fail-closed domain error before digest or status evaluation.
 
 ## 2026-08-28 — Treated evidence-shaped claims as live governance evidence
 
