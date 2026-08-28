@@ -10,6 +10,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -869,6 +870,47 @@ class GovernanceLifecycleTests(unittest.TestCase):
         candidate = RuleRecord.from_dict(_valid_rule())
         with self.assertRaises(TypeError):
             RuleRecord(candidate._canonical_document, object())
+
+    def test_caller_cannot_rebind_candidate_content_as_active(self) -> None:
+        candidate = _valid_rule()
+        root = self._fixture(rules=[candidate], materialize_evidence=True)
+        snapshot = load_governance(root)
+        bound = snapshot.rule_records[0]
+        forged_document = bound.to_dict()
+        forged_document.update(
+            {
+                "approved_by": [
+                    {
+                        "actor_id": "forged-human",
+                        "actor_kind": "human",
+                        "approved_at": "2026-08-28T12:30:00Z",
+                        "scope": "governance",
+                    }
+                ],
+                "reviewed_by": [
+                    {
+                        "actor_id": "forged-reviewer",
+                        "actor_kind": "system",
+                        "reviewed_at": "2026-08-28T12:00:00Z",
+                    }
+                ],
+                "revision": 4,
+                "status": "active",
+            }
+        )
+        rebind = getattr(bound, "_with_document", None)
+        forged = (
+            rebind(forged_document)
+            if rebind is not None
+            else RuleRecord.from_dict(forged_document)
+        )
+        forged_snapshot = replace(
+            snapshot,
+            rules={**snapshot.rules, "rules": [forged_document]},
+            rule_records=(forged,),
+        )
+
+        self.assertEqual(effective_rules(forged_snapshot, now=self.NOW), ())
 
     def test_effective_rules_reject_missing_and_mismatched_evidence(self) -> None:
         for case, materialize in (("missing", False), ("mismatch", True)):
