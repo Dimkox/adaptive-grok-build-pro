@@ -634,6 +634,12 @@ class ReceiptTests(unittest.TestCase):
             path = write_receipt(root, 'code_review', 'pass')
             invalidate_receipts(root, route['route_id'], 'changed')
             self.assertIn('"stale": true', path.read_text(encoding='utf-8'))
+            self.assertTrue(
+                any(
+                    'explicitly invalidated' in gap
+                    for gap in validate_evidence(root, route)
+                )
+            )
 
 
 class ContourTests(unittest.TestCase):

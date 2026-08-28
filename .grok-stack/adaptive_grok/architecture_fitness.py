@@ -130,6 +130,11 @@ _GOVERNANCE_SCHEMA_PATHS = (
     "schemas/debt-entry.schema.json",
     "schemas/governance-rule.schema.json",
 )
+_GOVERNANCE_SCHEMA_DIGESTS = {
+    "schemas/canonical-example.schema.json": "1b32818fae37b2f6fbab1855d90e7edefb90f28c6491b661b47afcf4d438a846",
+    "schemas/debt-entry.schema.json": "6eec2d5a9d1f465be38796c08cb5639c27452aa717d0e3eada5706904d533f42",
+    "schemas/governance-rule.schema.json": "4c5f7c11d37aa330c3596ab423762c71c7eb259e7cfea3aba3f506cc4525382f",
+}
 _GOVERNANCE_HANDOFF_SCHEMA = "schemas/governance-handoff-v1.schema.json"
 _GOVERNANCE_HANDOFF_SCHEMA_DIGEST = (
     "3527385869bc73f628e1dc0e22025d3e54b7e3972aba3703f9b579146a8c80ba"
@@ -422,6 +427,32 @@ def _activation_findings(
     return tuple(sorted(findings))
 
 
+def _governance_record_deletion_findings(
+    base_debt: dict[str, dict[str, Any]],
+    head_debt: dict[str, dict[str, Any]],
+    base_examples: dict[str, dict[str, Any]],
+    head_examples: dict[str, dict[str, Any]],
+) -> tuple[str, ...]:
+    findings: list[str] = []
+    for debt_id, prior in base_debt.items():
+        if debt_id in head_debt:
+            continue
+        if prior.get("status") in {"open", "repaying"}:
+            findings.append(
+                f"{debt_id}: live debt deletion requires an explicit terminal record"
+            )
+        else:
+            findings.append(
+                f"{debt_id}: terminal debt history must remain explicitly represented"
+            )
+    for example_id, prior in base_examples.items():
+        if prior.get("status") == "active" and example_id not in head_examples:
+            findings.append(
+                f"{example_id}: active example deletion requires an explicit deprecated or revoked record"
+            )
+    return tuple(sorted(findings))
+
+
 def _governance_promotion(root: Path, diff: ArchitectureDiff) -> FitnessResult:
     predicate = (
         "governance/**, the three governance registry schemas, governance.py, or "
@@ -452,6 +483,10 @@ def _governance_promotion(root: Path, diff: ArchitectureDiff) -> FitnessResult:
         head_values = read_diff_files(root, diff, required_paths, side="head")
         base_rules: dict[str, dict[str, Any]] = {}
         head_rules: dict[str, dict[str, Any]] = {}
+        base_debt: dict[str, dict[str, Any]] = {}
+        head_debt: dict[str, dict[str, Any]] = {}
+        base_examples: dict[str, dict[str, Any]] = {}
+        head_examples: dict[str, dict[str, Any]] = {}
         findings: list[str] = []
         for path, collection in _GOVERNANCE_REGISTRIES:
             head_version, head_records = _governance_registry(
@@ -478,18 +513,22 @@ def _governance_promotion(root: Path, diff: ArchitectureDiff) -> FitnessResult:
             if collection == "rules":
                 base_rules = base_records
                 head_rules = head_records
+            elif collection == "entries":
+                base_debt = base_records
+                head_debt = head_records
+            elif collection == "examples":
+                base_examples = base_records
+                head_examples = head_records
 
         for path in _GOVERNANCE_SCHEMA_PATHS:
-            head_version = _schema_version(
-                _parse_governance_json(head_values[path], path=path), path=path
-            )
-            base_version = (
-                head_version
+            head_schema = _parse_governance_json(head_values[path], path=path)
+            base_schema = (
+                head_schema
                 if base_values[path] is None
-                else _schema_version(
-                    _parse_governance_json(base_values[path], path=path), path=path
-                )
+                else _parse_governance_json(base_values[path], path=path)
             )
+            head_version = _schema_version(head_schema, path=path)
+            base_version = _schema_version(base_schema, path=path)
             if head_version < base_version:
                 findings.append(
                     f"{path}: governance schema downgrade {base_version} -> {head_version}"
@@ -498,6 +537,11 @@ def _governance_promotion(root: Path, diff: ArchitectureDiff) -> FitnessResult:
                 raise ArchitectureError(
                     f"unknown governance schema version in {path}", code="version"
                 )
+            expected_digest = _GOVERNANCE_SCHEMA_DIGESTS[path]
+            if _digest(base_schema) != expected_digest:
+                findings.append(f"{path}: base does not match the frozen v1 contract")
+            if _digest(head_schema) != expected_digest:
+                findings.append(f"{path}: head does not match the frozen v1 contract")
 
         handoff = _parse_governance_json(
             head_values[_GOVERNANCE_HANDOFF_SCHEMA], path=_GOVERNANCE_HANDOFF_SCHEMA
@@ -505,6 +549,11 @@ def _governance_promotion(root: Path, diff: ArchitectureDiff) -> FitnessResult:
         if not _handoff_shape_matches(handoff):
             findings.append("governance handoff does not match the frozen v1 contract")
         findings.extend(_activation_findings(base_rules, head_rules))
+        findings.extend(
+            _governance_record_deletion_findings(
+                base_debt, head_debt, base_examples, head_examples
+            )
+        )
     except ArchitectureError as exc:
         return _result(
             "governance_promotion",

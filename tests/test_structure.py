@@ -14,11 +14,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class StructureTests(unittest.TestCase):
     def test_m3_route_binds_exact_reviewed_m2_fingerprint(self) -> None:
+        route_path = (
+            ROOT
+            / "engineering/changes/20260826-m3-m9-production-delivery-continuation-355689/route.json"
+        )
         route = json.loads(
-            (
-                ROOT
-                / "engineering/changes/20260826-m3-m9-production-delivery-continuation-355689/route.json"
-            ).read_text(encoding="utf-8")
+            route_path.read_text(encoding="utf-8")
         )
         expected_commit = "635c9ddf2d63c1ea823074106976a8f3de6299a9"
         expected_fingerprint = (
@@ -31,6 +32,25 @@ class StructureTests(unittest.TestCase):
         self.assertEqual(
             route["base_fingerprint"],
             hashlib.sha256(expected_commit.encode("ascii")).hexdigest(),
+        )
+        package = route_path.parent
+        state = json.loads((package / "state.json").read_text(encoding="utf-8"))
+        change_spec = json.loads(
+            (package / "change-spec.yaml").read_text(encoding="utf-8")
+        )
+        expected_change_id = package.name
+        self.assertEqual(route["change_id"], expected_change_id)
+        self.assertEqual(state["change_id"], expected_change_id)
+        self.assertEqual(change_spec["change_id"], expected_change_id)
+
+        roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
+        self.assertIn(
+            "Require independent review and explicit human approval before promotion to `active`.",
+            roadmap,
+        )
+        self.assertNotIn(
+            "Require independent review or explicit human approval before promotion to `active`.",
+            roadmap,
         )
 
     def test_frozen_m2_handoff_digests_match_canonical_summary(self) -> None:

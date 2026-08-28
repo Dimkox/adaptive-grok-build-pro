@@ -567,6 +567,8 @@ def validate_evidence(root: Path, route: dict[str, Any]) -> list[str]:
             continue
         if receipt.get('status') != 'pass':
             missing.append(f'{kind}: status={receipt.get("status")}')
+        if receipt.get('stale') is True:
+            missing.append(f'{kind}: explicitly invalidated')
         if receipt.get('tree_fingerprint') != current:
             missing.append(f'{kind}: stale after repository changes')
         try:

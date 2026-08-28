@@ -275,3 +275,7 @@ Use a distinct `adaptive-grok.governance-receipt-evidence/v1` digest domain for 
 ## 2026-08-28 — Bind stacked verification to the immediate reviewed predecessor
 
 Set each stacked milestone route's base commit and clean fingerprint to its exact reviewed predecessor, not the program's inception commit. This keeps code budgets, contract deltas, architecture evidence, and rollback scope local to the milestone while preserving the unchanged route identity and approved scope.
+
+## 2026-08-28 — Evaluate exact handoff inputs against immutable Git objects
+
+Bind every authority and consumed evidence byte to the requested exact-head Git blob before emitting a governance handoff. Clean-worktree sampling remains a diagnostic because a nested rename or content swap can be restored between samples.

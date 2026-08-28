@@ -517,25 +517,37 @@ class GovernanceLoaderTests(unittest.TestCase):
             load_governance(self._fixture(rules_symlink=True))
 
         root = self._fixture()
-        real_fstat = os.fstat
-        calls = 0
+        real_read = governance._read_pinned_authority_bytes
 
-        def changed_identity(descriptor: int) -> object:
-            nonlocal calls
-            calls += 1
-            info = real_fstat(descriptor)
-            if calls != 2:
-                return info
-            return SimpleNamespace(
-                st_ctime_ns=info.st_ctime_ns,
-                st_dev=info.st_dev,
-                st_ino=info.st_ino,
-                st_mode=info.st_mode,
-                st_mtime_ns=info.st_mtime_ns + 1,
-                st_size=info.st_size,
-            )
+        def changed_read(item: object) -> bytes:
+            real_fstat = os.fstat
+            calls = 0
 
-        with mock.patch("adaptive_grok.governance.os.fstat", side_effect=changed_identity):
+            def changed_identity(descriptor: int) -> object:
+                nonlocal calls
+                calls += 1
+                info = real_fstat(descriptor)
+                if calls != 2:
+                    return info
+                return SimpleNamespace(
+                    st_ctime_ns=info.st_ctime_ns,
+                    st_dev=info.st_dev,
+                    st_ino=info.st_ino,
+                    st_mode=info.st_mode,
+                    st_mtime_ns=info.st_mtime_ns + 1,
+                    st_size=info.st_size,
+                )
+
+            with mock.patch(
+                "adaptive_grok.governance.os.fstat",
+                side_effect=changed_identity,
+            ):
+                return real_read(item)
+
+        with mock.patch(
+            "adaptive_grok.governance._read_pinned_authority_bytes",
+            side_effect=changed_read,
+        ):
             with self.assertRaisesRegex(GovernanceError, "changed while reading"):
                 load_governance(root)
 
@@ -555,7 +567,7 @@ class GovernanceLoaderTests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, original, True)
         self.addCleanup(shutil.rmtree, replacement, True)
 
-        real_read = governance._read_regular_bytes
+        real_read = governance._read_pinned_authority_bytes
         reads = 0
 
         def swap_after_four_reads(*args: object, **kwargs: object) -> bytes:
@@ -568,11 +580,71 @@ class GovernanceLoaderTests(unittest.TestCase):
             return data
 
         with mock.patch(
-            "adaptive_grok.governance._read_regular_bytes",
+            "adaptive_grok.governance._read_pinned_authority_bytes",
             side_effect=swap_after_four_reads,
         ):
             with self.assertRaisesRegex(GovernanceError, "repository root changed"):
                 load_governance(root)
+
+    def test_loader_rejects_nested_authority_directory_replacement(self) -> None:
+        for directory, swap_after in (("schemas", 1), ("governance", 4)):
+            with self.subTest(directory=directory):
+                root = self._fixture()
+                authority = root / directory
+                original = root / f"{directory}-original"
+                replacement = root / f"{directory}-replacement"
+                shutil.copytree(authority, replacement)
+                real_read = governance._read_pinned_authority_bytes
+                reads = 0
+
+                def swap_nested(*args: object, **kwargs: object) -> bytes:
+                    nonlocal reads
+                    data = real_read(*args, **kwargs)
+                    reads += 1
+                    if reads == swap_after:
+                        authority.rename(original)
+                        replacement.rename(authority)
+                    return data
+
+                with mock.patch(
+                    "adaptive_grok.governance._read_pinned_authority_bytes",
+                    side_effect=swap_nested,
+                ):
+                    with self.assertRaisesRegex(
+                        GovernanceError, "authority directory changed"
+                    ):
+                        load_governance(root)
+
+    def test_loader_freezes_complete_v1_governance_schema_identities(self) -> None:
+        cases = (
+            (
+                "governance-rule.schema.json",
+                lambda schema: schema["$defs"]["rule"]["properties"]["status"].update(
+                    enum=["candidate", "active", "unreviewed"]
+                ),
+            ),
+            (
+                "debt-entry.schema.json",
+                lambda schema: schema["$defs"]["entry"].update(
+                    additionalProperties=True
+                ),
+            ),
+            (
+                "canonical-example.schema.json",
+                lambda schema: schema["properties"]["examples"].update(
+                    uniqueItems=False
+                ),
+            ),
+        )
+        for name, mutate in cases:
+            with self.subTest(schema=name):
+                root = self._fixture()
+                path = root / "schemas" / name
+                schema = json.loads(path.read_text(encoding="utf-8"))
+                mutate(schema)
+                path.write_bytes(_canonical_bytes(schema))
+                with self.assertRaisesRegex(GovernanceError, "frozen v1"):
+                    load_governance(root)
 
     def test_loader_requires_nonzero_nonblocking_open_before_any_read(self) -> None:
         root = self._fixture()
@@ -1614,6 +1686,30 @@ class GovernanceHandoffTests(unittest.TestCase):
         self.assertRegex(handoff.governance_evidence_digest, r"^[0-9a-f]{64}$")
         with self.assertRaises(dataclasses.FrozenInstanceError):
             handoff.exact_head_sha = "f" * 40
+
+    def test_exact_head_binding_rejects_swap_restore_authority_bytes(self) -> None:
+        root, _, head, _ = self._clean_fixture()
+        path = root / "governance/rules/index.json"
+        original = path.read_bytes()
+        path.write_bytes(
+            _canonical_bytes(
+                {
+                    "governance_id": "GOV-ADAPTIVE-GROK-M3",
+                    "rules": [_valid_rule()],
+                    "schema_version": 1,
+                }
+            )
+        )
+        swapped = load_governance(root)
+        path.write_bytes(original)
+
+        with self.assertRaisesRegex(GovernanceError, "exact Git head"):
+            governance._require_exact_head_governance_inputs(
+                swapped,
+                root,
+                head_sha=head,
+                consumed_input_digests={},
+            )
 
     def test_handoff_rejects_dirty_worktree_sha_and_digest_mismatches(self) -> None:
         root, snapshot, head, architecture = self._clean_fixture()

@@ -517,7 +517,7 @@ status
 ## Work items
 
 - [ ] Convert agent-written lessons into `candidate` records rather than immediate standing policy.
-- [x] Require independent review or explicit human approval before promotion to `active`.
+- [x] Require independent review and explicit human approval before promotion to `active`.
 - [x] Generate human-readable `decisions.md` and `mistakes.md` views from approved/candidate records, or clearly mark Markdown as a non-authoritative projection.
 - [x] Add expiration and revalidation for context-sensitive rules.
 - [x] Add revocation and provenance audit.

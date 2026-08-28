@@ -8,7 +8,7 @@ from pathlib import Path
 
 from tests.test_architecture_fitness import GitArchitectureRepo
 from tests.test_architecture_model import _rules, _system
-from tests.test_governance import _valid_rule
+from tests.test_governance import _valid_debt, _valid_example, _valid_rule
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / ".grok-stack"))
@@ -43,11 +43,16 @@ class GovernanceFitnessTests(unittest.TestCase):
         repo: GitArchitectureRepo,
         *,
         rules: list[dict] | None = None,
+        debt: list[dict] | None = None,
+        examples: list[dict] | None = None,
         version: int = 1,
     ) -> None:
         repo.write_json(RULES_PATH, self._registry("rules", rules or [], version=version))
-        repo.write_json(DEBT_PATH, self._registry("entries", [], version=version))
-        repo.write_json(EXAMPLES_PATH, self._registry("examples", [], version=version))
+        repo.write_json(DEBT_PATH, self._registry("entries", debt or [], version=version))
+        repo.write_json(
+            EXAMPLES_PATH,
+            self._registry("examples", examples or [], version=version),
+        )
         for name in (
             "governance-rule.schema.json",
             "debt-entry.schema.json",
@@ -58,10 +63,16 @@ class GovernanceFitnessTests(unittest.TestCase):
         repo.write_text(".grok-stack/adaptive_grok/governance.py", "VERSION = 1\n")
         repo.write_text("scripts/grok_governance.py", "VERSION = 1\n")
 
-    def _repo(self, *, rules: list[dict] | None = None):
+    def _repo(
+        self,
+        *,
+        rules: list[dict] | None = None,
+        debt: list[dict] | None = None,
+        examples: list[dict] | None = None,
+    ):
         repo = GitArchitectureRepo(self)
         repo.model(_system(), _rules())
-        self._seed(repo, rules=rules)
+        self._seed(repo, rules=rules, debt=debt, examples=examples)
         base = repo.commit("governance base")
         return repo, base
 
@@ -161,6 +172,69 @@ class GovernanceFitnessTests(unittest.TestCase):
 
         self.assertEqual(result.status, "fail")
         self.assertIn("revocation", " ".join(result.findings))
+
+    def test_deleting_live_debt_or_active_example_fails(self) -> None:
+        for status, deadline in (
+            ("open", "2026-09-28T11:30:00Z"),
+            ("repaying", "2026-08-01T11:30:00Z"),
+        ):
+            with self.subTest(record="debt", status=status):
+                debt = _valid_debt()
+                debt.update(status=status, deadline=deadline)
+                repo, base = self._repo(debt=[debt])
+                repo.write_json(DEBT_PATH, self._registry("entries", []))
+                head = repo.commit(f"delete {status} debt")
+                result = self._results(self._evaluate(repo, base, head))[
+                    "governance_promotion"
+                ]
+                self.assertEqual(result.status, "fail")
+                self.assertIn("debt", " ".join(result.findings))
+
+        example = _valid_example()
+        example["status"] = "active"
+        repo, base = self._repo(examples=[example])
+        repo.write_json(EXAMPLES_PATH, self._registry("examples", []))
+        head = repo.commit("delete active example")
+        result = self._results(self._evaluate(repo, base, head))[
+            "governance_promotion"
+        ]
+        self.assertEqual(result.status, "fail")
+        self.assertIn("example", " ".join(result.findings))
+
+    def test_registry_schemas_are_exact_frozen_v1_contracts(self) -> None:
+        cases = (
+            ("governance-rule.schema.json", ("$defs", "rule", "properties", "status", "enum"), ["candidate", "active"]),
+            ("debt-entry.schema.json", ("$defs", "entry", "required"), ["debt_id"]),
+            ("canonical-example.schema.json", ("$defs", "example", "properties", "category", "type"), "integer"),
+            ("governance-rule.schema.json", ("$defs", "id", "pattern"), ".*"),
+            ("debt-entry.schema.json", ("$defs", "entry", "properties", "revision", "maximum"), 10_000_000),
+            ("canonical-example.schema.json", ("properties", "examples", "uniqueItems"), False),
+            ("governance-rule.schema.json", ("$defs", "rule", "additionalProperties"), True),
+        )
+        for name, path, replacement in cases:
+            with self.subTest(schema=name, keyword=path[-1]):
+                repo, base = self._repo()
+                schema_path = repo.root / "schemas" / name
+                schema = json.loads(schema_path.read_text(encoding="utf-8"))
+                parent = schema
+                for key in path[:-1]:
+                    parent = parent[key]
+                parent[path[-1]] = replacement
+                repo.write_json(f"schemas/{name}", schema)
+                head = repo.commit(f"weaken {name} {path[-1]}")
+                result = self._results(self._evaluate(repo, base, head))[
+                    "governance_promotion"
+                ]
+                self.assertEqual(result.status, "fail")
+                self.assertIn("frozen v1", " ".join(result.findings))
+
+        repo, base = self._repo()
+        repo.write_text("governance/README.md", "governance change\n")
+        head = repo.commit("exact frozen schemas")
+        result = self._results(self._evaluate(repo, base, head))[
+            "governance_promotion"
+        ]
+        self.assertEqual(result.status, "pass")
 
     def test_schema_downgrade_fails_and_unknown_version_is_unsupported(self) -> None:
         for label, version, status in (

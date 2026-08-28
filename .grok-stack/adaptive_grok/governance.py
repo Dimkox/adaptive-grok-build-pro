@@ -22,6 +22,7 @@ from .architecture import (
     load_architecture,
 )
 from .architecture_fitness import architecture_evidence as derive_architecture_evidence
+from .architecture_diff import _git_blobs as _read_exact_git_blobs
 from .spec import SpecError, _schema_preflight, validate_schema
 
 
@@ -40,6 +41,12 @@ RULES_SCHEMA_PATH = Path("schemas/governance-rule.schema.json")
 DEBT_SCHEMA_PATH = Path("schemas/debt-entry.schema.json")
 EXAMPLES_SCHEMA_PATH = Path("schemas/canonical-example.schema.json")
 HANDOFF_SCHEMA_PATH = Path("schemas/governance-handoff-v1.schema.json")
+_GOVERNANCE_SCHEMA_DIGESTS = {
+    RULES_SCHEMA_PATH: "01ca6b3e0516fc6b050611f7e6e72c0d07ee5d0db8a4a622da5bf25631d10bb7",
+    DEBT_SCHEMA_PATH: "f28a3077f26e6d30fc2df8de517ca23796aaedabbe566cdde0dbfec84a8728a0",
+    EXAMPLES_SCHEMA_PATH: "f2170ae6dd739c16bcb251f60637a51bf2a4401e1be4e0414a0a57a1a56096c6",
+    HANDOFF_SCHEMA_PATH: "f3cd912607444a1a2a40333f523d586e96947050d94ee7591dd3a273963fd71f",
+}
 
 _SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _SHA40_PATTERN = re.compile(r"^[0-9a-f]{40}$")
@@ -299,7 +306,31 @@ class GovernanceSnapshot:
 class _RepositoryHandle:
     path: Path
     descriptor: int
-    identity: tuple[int, int]
+    identity: tuple[int, int, int, int]
+
+
+@dataclass(frozen=True)
+class _PinnedDirectory:
+    path: Path
+    descriptor: int
+    parent_descriptor: int
+    name: str
+    identity: tuple[int, int, int, int]
+
+
+@dataclass(frozen=True)
+class _PinnedAuthorityFile:
+    path: Path
+    descriptor: int
+    parent_descriptor: int
+    name: str
+    identity: tuple[int, int, int, int, int]
+
+
+@dataclass(frozen=True)
+class _AuthorityTopology:
+    directories: tuple[_PinnedDirectory, ...]
+    files: dict[Path, _PinnedAuthorityFile]
 
 
 def _unsafe_text(value: str) -> bool:
@@ -396,10 +427,21 @@ def _open_repository(root: Path | str) -> _RepositoryHandle:
         )
         try:
             opened = os.fstat(descriptor)
-            identity = (opened.st_dev, opened.st_ino)
+            identity = (
+                opened.st_dev,
+                opened.st_ino,
+                opened.st_mtime_ns,
+                opened.st_ctime_ns,
+            )
             if (
                 not stat.S_ISDIR(opened.st_mode)
-                or identity != (named.st_dev, named.st_ino)
+                or identity
+                != (
+                    named.st_dev,
+                    named.st_ino,
+                    named.st_mtime_ns,
+                    named.st_ctime_ns,
+                )
             ):
                 raise GovernanceError("repository root changed while opening", code="io")
         except BaseException:
@@ -422,10 +464,244 @@ def _verify_repository(handle: _RepositoryHandle) -> None:
         not stat.S_ISDIR(opened.st_mode)
         or stat.S_ISLNK(named.st_mode)
         or not stat.S_ISDIR(named.st_mode)
-        or (opened.st_dev, opened.st_ino) != handle.identity
-        or (named.st_dev, named.st_ino) != handle.identity
+        or (
+            opened.st_dev,
+            opened.st_ino,
+            opened.st_mtime_ns,
+            opened.st_ctime_ns,
+        )
+        != handle.identity
+        or (
+            named.st_dev,
+            named.st_ino,
+            named.st_mtime_ns,
+            named.st_ctime_ns,
+        )
+        != handle.identity
     ):
         raise GovernanceError("repository root changed while loading", code="io")
+
+
+def _file_identity(info: os.stat_result) -> tuple[int, int, int, int, int]:
+    return (
+        info.st_dev,
+        info.st_ino,
+        info.st_size,
+        info.st_mtime_ns,
+        info.st_ctime_ns,
+    )
+
+
+def _directory_identity(info: os.stat_result) -> tuple[int, int, int, int]:
+    return (info.st_dev, info.st_ino, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def _open_authority_topology(repository: _RepositoryHandle) -> _AuthorityTopology:
+    no_follow, directory_flag, nonblock = _secure_open_flags(
+        label="governance authority topology"
+    )
+    directory_specs = (
+        (Path("schemas"), repository.descriptor, "schemas"),
+        (Path("governance"), repository.descriptor, "governance"),
+    )
+    directories: list[_PinnedDirectory] = []
+    files: dict[Path, _PinnedAuthorityFile] = {}
+    try:
+        for path, parent_descriptor, name in directory_specs:
+            descriptor = os.open(
+                name,
+                os.O_RDONLY | directory_flag | no_follow | nonblock,
+                dir_fd=parent_descriptor,
+            )
+            info = os.fstat(descriptor)
+            if not stat.S_ISDIR(info.st_mode):
+                os.close(descriptor)
+                raise GovernanceError(
+                    f"{path.as_posix()}: authority directory is invalid", code="io"
+                )
+            directories.append(
+                _PinnedDirectory(
+                    path,
+                    descriptor,
+                    parent_descriptor,
+                    name,
+                    _directory_identity(info),
+                )
+            )
+        governance_descriptor = directories[1].descriptor
+        for name in ("rules", "debt", "canonical-examples"):
+            path = Path("governance") / name
+            descriptor = os.open(
+                name,
+                os.O_RDONLY | directory_flag | no_follow | nonblock,
+                dir_fd=governance_descriptor,
+            )
+            info = os.fstat(descriptor)
+            if not stat.S_ISDIR(info.st_mode):
+                os.close(descriptor)
+                raise GovernanceError(
+                    f"{path.as_posix()}: authority directory is invalid", code="io"
+                )
+            directories.append(
+                _PinnedDirectory(
+                    path,
+                    descriptor,
+                    governance_descriptor,
+                    name,
+                    _directory_identity(info),
+                )
+            )
+        directory_by_path = {item.path: item for item in directories}
+        for path in (
+            RULES_SCHEMA_PATH,
+            DEBT_SCHEMA_PATH,
+            EXAMPLES_SCHEMA_PATH,
+            HANDOFF_SCHEMA_PATH,
+            RULES_PATH,
+            DEBT_PATH,
+            EXAMPLES_PATH,
+        ):
+            parent = directory_by_path[path.parent]
+            try:
+                descriptor = os.open(
+                    path.name,
+                    os.O_RDONLY | no_follow | nonblock,
+                    dir_fd=parent.descriptor,
+                )
+            except OSError as exc:
+                if exc.errno in {errno.ELOOP, errno.EMLINK}:
+                    raise GovernanceError(
+                        f"{path.as_posix()}: must be a regular non-symlink file",
+                        code="io",
+                    ) from exc
+                raise
+            info = os.fstat(descriptor)
+            if not stat.S_ISREG(info.st_mode):
+                os.close(descriptor)
+                raise GovernanceError(
+                    f"{path.as_posix()}: authority file is invalid", code="io"
+                )
+            files[path] = _PinnedAuthorityFile(
+                path,
+                descriptor,
+                parent.descriptor,
+                path.name,
+                _file_identity(info),
+            )
+        return _AuthorityTopology(tuple(directories), files)
+    except GovernanceError:
+        for item in files.values():
+            os.close(item.descriptor)
+        for item in reversed(directories):
+            os.close(item.descriptor)
+        raise
+    except OSError as exc:
+        for item in files.values():
+            os.close(item.descriptor)
+        for item in reversed(directories):
+            os.close(item.descriptor)
+        raise GovernanceError(
+            f"governance authority topology is unavailable: {exc}", code="io"
+        ) from exc
+
+
+def _close_authority_topology(topology: _AuthorityTopology) -> None:
+    for item in topology.files.values():
+        os.close(item.descriptor)
+    for item in reversed(topology.directories):
+        os.close(item.descriptor)
+
+
+def _reopen_identity(
+    parent_descriptor: int,
+    name: str,
+    *,
+    directory: bool,
+) -> os.stat_result:
+    no_follow, directory_flag, nonblock = _secure_open_flags(
+        label="governance authority topology"
+    )
+    flags = os.O_RDONLY | no_follow | nonblock
+    if directory:
+        flags |= directory_flag
+    descriptor = os.open(name, flags, dir_fd=parent_descriptor)
+    try:
+        return os.fstat(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _verify_authority_topology(topology: _AuthorityTopology) -> None:
+    try:
+        for item in topology.directories:
+            opened = os.fstat(item.descriptor)
+            named = _reopen_identity(
+                item.parent_descriptor, item.name, directory=True
+            )
+            if (
+                not stat.S_ISDIR(opened.st_mode)
+                or not stat.S_ISDIR(named.st_mode)
+                or _directory_identity(opened) != item.identity
+                or _directory_identity(named) != item.identity
+            ):
+                raise GovernanceError(
+                    f"{item.path.as_posix()}: authority directory changed while loading",
+                    code="io",
+                )
+        for item in topology.files.values():
+            opened = os.fstat(item.descriptor)
+            named = _reopen_identity(
+                item.parent_descriptor, item.name, directory=False
+            )
+            if (
+                not stat.S_ISREG(opened.st_mode)
+                or not stat.S_ISREG(named.st_mode)
+                or _file_identity(opened) != item.identity
+                or _file_identity(named) != item.identity
+            ):
+                raise GovernanceError(
+                    f"{item.path.as_posix()}: authority file changed while loading",
+                    code="io",
+                )
+    except GovernanceError:
+        raise
+    except OSError as exc:
+        raise GovernanceError(
+            f"governance authority topology changed while loading: {exc}", code="io"
+        ) from exc
+
+
+def _read_pinned_authority_bytes(item: _PinnedAuthorityFile) -> bytes:
+    before = os.fstat(item.descriptor)
+    if _file_identity(before) != item.identity or not stat.S_ISREG(before.st_mode):
+        raise GovernanceError(
+            f"{item.path.as_posix()}: authority file changed while reading", code="io"
+        )
+    if before.st_size > MAX_DOCUMENT_BYTES:
+        raise GovernanceError(
+            f"{item.path.as_posix()}: document byte limit exceeded", code="limit"
+        )
+    os.lseek(item.descriptor, 0, os.SEEK_SET)
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = os.read(
+            item.descriptor, min(65_536, MAX_DOCUMENT_BYTES + 1 - total)
+        )
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > MAX_DOCUMENT_BYTES:
+            raise GovernanceError(
+                f"{item.path.as_posix()}: document byte limit exceeded", code="limit"
+            )
+        chunks.append(chunk)
+    after = os.fstat(item.descriptor)
+    if total != before.st_size or _file_identity(after) != item.identity:
+        raise GovernanceError(
+            f"{item.path.as_posix()}: authority file changed while reading", code="io"
+        )
+    return b"".join(chunks)
 
 
 def _read_regular_bytes(root_descriptor: int, relative: str, *, label: str) -> bytes:
@@ -600,13 +876,13 @@ def _require_canonical_source(data: bytes, value: dict[str, Any], *, label: str)
 
 
 def _load_document(
-    root_descriptor: int,
+    topology: _AuthorityTopology,
     relative: Path,
     *,
     counter: list[int],
 ) -> tuple[bytes, dict[str, Any]]:
     label = relative.as_posix()
-    data = _read_regular_bytes(root_descriptor, label, label=label)
+    data = _read_pinned_authority_bytes(topology.files[relative])
     return data, load_bytes(data, label=label, _counter=counter)
 
 
@@ -797,10 +1073,18 @@ def _normalize_root(
 
 def _load_governance_snapshot(
     root: Path | str,
-) -> tuple[GovernanceSnapshot, Path, tuple[int, int]]:
+) -> tuple[
+    GovernanceSnapshot,
+    Path,
+    tuple[int, int, int, int],
+    tuple[tuple[str, str], ...],
+]:
     repository = _open_repository(root)
+    topology: _AuthorityTopology | None = None
     try:
+        topology = _open_authority_topology(repository)
         counter = [0]
+        authority_source_digests: dict[str, str] = {}
         schema_documents: dict[Path, dict[str, Any]] = {}
         for relative in (
             RULES_SCHEMA_PATH,
@@ -808,10 +1092,16 @@ def _load_governance_snapshot(
             EXAMPLES_SCHEMA_PATH,
             HANDOFF_SCHEMA_PATH,
         ):
-            _, schema = _load_document(
-                repository.descriptor, relative, counter=counter
-            )
+            data, schema = _load_document(topology, relative, counter=counter)
+            authority_source_digests[relative.as_posix()] = hashlib.sha256(
+                data
+            ).hexdigest()
             _schema_preflight_checked(schema, label=relative.as_posix())
+            if _sha256(schema) != _GOVERNANCE_SCHEMA_DIGESTS[relative]:
+                raise GovernanceError(
+                    f"{relative.as_posix()}: schema does not match the frozen v1 contract",
+                    code="schema",
+                )
             schema_documents[relative] = schema
 
         _validate_schema_checked(
@@ -829,9 +1119,10 @@ def _load_governance_snapshot(
 
         registry_documents: dict[Path, dict[str, Any]] = {}
         for relative in (RULES_PATH, DEBT_PATH, EXAMPLES_PATH):
-            data, document = _load_document(
-                repository.descriptor, relative, counter=counter
-            )
+            data, document = _load_document(topology, relative, counter=counter)
+            authority_source_digests[relative.as_posix()] = hashlib.sha256(
+                data
+            ).hexdigest()
             _require_canonical_source(data, document, label=relative.as_posix())
             registry_documents[relative] = document
 
@@ -894,9 +1185,17 @@ def _load_governance_snapshot(
             ),
         )
         _validate_structural_semantics(snapshot, repository.descriptor)
+        _verify_authority_topology(topology)
         _verify_repository(repository)
-        return snapshot, repository.path, repository.identity
+        return (
+            snapshot,
+            repository.path,
+            repository.identity,
+            tuple(sorted(authority_source_digests.items())),
+        )
     finally:
+        if topology is not None:
+            _close_authority_topology(topology)
         os.close(repository.descriptor)
 
 
@@ -996,6 +1295,7 @@ def _evidence_contents(
     *,
     owner: str,
     prefix: str,
+    consumed_input_digests: dict[str, str] | None = None,
 ) -> tuple[list[GovernanceFinding], list[bytes]]:
     findings: list[GovernanceFinding] = []
     contents: list[bytes] = []
@@ -1012,6 +1312,8 @@ def _evidence_contents(
         if hashlib.sha256(content).hexdigest() != item.get("sha256"):
             findings.append(GovernanceFinding(f"{prefix}-evidence-digest-mismatch", f"{owner} evidence digest does not match", path))
             continue
+        if consumed_input_digests is not None:
+            consumed_input_digests[path] = hashlib.sha256(content).hexdigest()
         contents.append(content)
     return findings, contents
 
@@ -1039,6 +1341,7 @@ def _m2_contract_ids(root: Path) -> frozenset[str]:
 def _example_findings(
     examples: tuple[ExampleRecord, ...],
     repository: _RepositoryHandle,
+    consumed_input_digests: dict[str, str] | None = None,
 ) -> list[GovernanceFinding]:
     findings: list[GovernanceFinding] = []
     all_documents = [record.to_dict() for record in examples]
@@ -1066,7 +1369,13 @@ def _example_findings(
                 path,
             )
         )
-        evidence_findings, _ = _evidence_contents(repository, document.get("evidence", []), owner=path, prefix="example")
+        evidence_findings, _ = _evidence_contents(
+            repository,
+            document.get("evidence", []),
+            owner=path,
+            prefix="example",
+            consumed_input_digests=consumed_input_digests,
+        )
         findings.extend(evidence_findings)
         files: list[tuple[str, bytes]] = []
         repository_paths = document.get("repository_paths", [])
@@ -1075,7 +1384,16 @@ def _example_findings(
         for relative in repository_paths:
             try:
                 _safe_relative_path(repository.descriptor, relative, label=f"example {example_id} path")
-                files.append((relative, _read_regular_bytes(repository.descriptor, relative, label=f"example {example_id} path")))
+                content = _read_regular_bytes(
+                    repository.descriptor,
+                    relative,
+                    label=f"example {example_id} path",
+                )
+                if consumed_input_digests is not None:
+                    consumed_input_digests[relative] = hashlib.sha256(
+                        content
+                    ).hexdigest()
+                files.append((relative, content))
             except GovernanceError:
                 findings.append(GovernanceFinding("example-path-unavailable", f"example {example_id} path is unavailable", relative))
         if files and len(files) == len(document.get("repository_paths", [])) and _example_content_digest(files) != document.get("digest"):
@@ -1245,6 +1563,7 @@ def _debt_findings(
     repository: _RepositoryHandle,
     *,
     now: datetime,
+    consumed_input_digests: dict[str, str] | None = None,
 ) -> list[GovernanceFinding]:
     findings: list[GovernanceFinding] = []
     for record in debts:
@@ -1271,10 +1590,24 @@ def _debt_findings(
         for relative in tests:
             try:
                 _safe_relative_path(repository.descriptor, relative, label=f"debt {debt_id} test")
-                _read_regular_bytes(repository.descriptor, relative, label=f"debt {debt_id} test")
+                content = _read_regular_bytes(
+                    repository.descriptor,
+                    relative,
+                    label=f"debt {debt_id} test",
+                )
+                if consumed_input_digests is not None:
+                    consumed_input_digests[relative] = hashlib.sha256(
+                        content
+                    ).hexdigest()
             except GovernanceError:
                 findings.append(GovernanceFinding("debt-test-unavailable", f"debt {debt_id} test is unavailable", relative))
-        evidence_findings, contents = _evidence_contents(repository, document.get("evidence", []), owner=path, prefix="debt")
+        evidence_findings, contents = _evidence_contents(
+            repository,
+            document.get("evidence", []),
+            owner=path,
+            prefix="debt",
+            consumed_input_digests=consumed_input_digests,
+        )
         findings.extend(evidence_findings)
         evidence_document_findings, evidence_claims = (
             _parse_debt_evidence_documents(
@@ -1424,7 +1757,7 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
     @dataclass(frozen=True)
     class Binding:
         repository_path: Path
-        repository_identity: tuple[int, int]
+        repository_identity: tuple[int, int, int, int]
         rule_digest: str
 
     bindings: weakref.WeakKeyDictionary[RuleRecord, Binding]
@@ -1438,14 +1771,16 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
         tuple[
             weakref.ReferenceType[GovernanceSnapshot],
             Path,
-            tuple[int, int],
+            tuple[int, int, int, int],
+            tuple[tuple[str, str], ...],
         ],
     ] = {}
 
     def bind_snapshot(
         snapshot: GovernanceSnapshot,
         repository_path: Path,
-        repository_identity: tuple[int, int],
+        repository_identity: tuple[int, int, int, int],
+        authority_source_digests: tuple[tuple[str, str], ...],
     ) -> None:
         key = id(snapshot)
 
@@ -1458,6 +1793,7 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
             weakref.ref(snapshot, discard),
             repository_path,
             repository_identity,
+            authority_source_digests,
         )
 
     def snapshot_repository(snapshot: GovernanceSnapshot) -> Path | None:
@@ -1470,7 +1806,7 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
         except GovernanceError:
             return None
         try:
-            if repository.identity != repository_identity:
+            if repository.identity[:2] != repository_identity[:2]:
                 return None
             _verify_repository(repository)
             return repository_path
@@ -1479,10 +1815,18 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
         finally:
             os.close(repository.descriptor)
 
+    def snapshot_authority_source_digests(
+        snapshot: GovernanceSnapshot,
+    ) -> tuple[tuple[str, str], ...] | None:
+        binding = snapshot_bindings.get(id(snapshot))
+        if binding is None or binding[0]() is not snapshot:
+            return None
+        return binding[3]
+
     def bind(
         record: RuleRecord,
         repository_path: Path,
-        repository_identity: tuple[int, int],
+        repository_identity: tuple[int, int, int, int],
     ) -> None:
         bindings[record] = Binding(
             repository_path=repository_path,
@@ -1494,7 +1838,7 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
         mapping: weakref.WeakKeyDictionary[Any, Binding],
         record: ExampleRecord | DebtRecord,
         repository_path: Path,
-        repository_identity: tuple[int, int],
+        repository_identity: tuple[int, int, int, int],
     ) -> None:
         mapping[record] = Binding(
             repository_path=repository_path,
@@ -1539,16 +1883,24 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
             os.close(repository.descriptor)
 
     def load(root: Path | str) -> GovernanceSnapshot:
-        snapshot, repository_path, repository_identity = _load_governance_snapshot(
-            root
-        )
+        (
+            snapshot,
+            repository_path,
+            repository_identity,
+            authority_source_digests,
+        ) = _load_governance_snapshot(root)
         for record in snapshot.rule_records:
             bind(record, repository_path, repository_identity)
         for record in snapshot.example_records:
             bind_other(example_bindings, record, repository_path, repository_identity)
         for record in snapshot.debt_records:
             bind_other(debt_bindings, record, repository_path, repository_identity)
-        bind_snapshot(snapshot, repository_path, repository_identity)
+        bind_snapshot(
+            snapshot,
+            repository_path,
+            repository_identity,
+            authority_source_digests,
+        )
         return snapshot
 
     def transition(
@@ -1711,6 +2063,7 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
         open_debt_records,
         validate_deviation,
         snapshot_repository,
+        snapshot_authority_source_digests,
     )
 
 
@@ -1722,6 +2075,7 @@ def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
     open_debt,
     validate_example_deviation,
     _snapshot_repository,
+    _snapshot_authority_source_digests,
 ) = _build_rule_lifecycle_api()
 
 
@@ -1828,6 +2182,7 @@ def validate_governance(
     root: Path | str,
     *,
     now: datetime,
+    _consumed_input_digests: dict[str, str] | None = None,
 ) -> tuple[GovernanceFinding, ...]:
     validated_at = _require_aware(now, label="now")
     repository = _open_repository(root)
@@ -1880,6 +2235,10 @@ def validate_governance(
                                 evidence.path,
                             )
                         )
+                    elif _consumed_input_digests is not None:
+                        _consumed_input_digests[evidence.path] = hashlib.sha256(
+                            content
+                        ).hexdigest()
             if rule.status == "active" and not _rule_is_unexpired(rule, validated_at):
                 findings.append(
                     GovernanceFinding(
@@ -1896,8 +2255,21 @@ def validate_governance(
         debts = tuple(
             DebtRecord.from_dict(document) for document in snapshot.debt["entries"]
         )
-        findings.extend(_example_findings(examples, repository))
-        findings.extend(_debt_findings(debts, repository, now=validated_at))
+        findings.extend(
+            _example_findings(
+                examples,
+                repository,
+                consumed_input_digests=_consumed_input_digests,
+            )
+        )
+        findings.extend(
+            _debt_findings(
+                debts,
+                repository,
+                now=validated_at,
+                consumed_input_digests=_consumed_input_digests,
+            )
+        )
         _verify_repository(repository)
         return tuple(
             sorted(
@@ -2170,6 +2542,74 @@ def _require_clean_exact_git_state(
         )
 
 
+def _exact_git_blob_digests(
+    root: Path, head_sha: str, paths: tuple[str, ...]
+) -> dict[str, str]:
+    results: dict[str, str] = {}
+    pending: list[str] = []
+    pending_bytes = 0
+
+    def flush() -> None:
+        nonlocal pending, pending_bytes
+        if not pending:
+            return
+        try:
+            values = _read_exact_git_blobs(root, head_sha, tuple(pending))
+        except ArchitectureError as exc:
+            raise GovernanceError(
+                "exact Git governance inputs cannot be read", code="git"
+            ) from exc
+        for path in pending:
+            value = values.get(path)
+            if value is None:
+                raise GovernanceError(
+                    f"exact Git governance input is missing: {path}", code="git"
+                )
+            results[path] = hashlib.sha256(value).hexdigest()
+        pending = []
+        pending_bytes = 0
+
+    for path in sorted(set(paths)):
+        encoded_size = len(os.fsencode(path))
+        if pending and (len(pending) >= 128 or pending_bytes + encoded_size > 60_000):
+            flush()
+        pending.append(path)
+        pending_bytes += encoded_size
+    flush()
+    return results
+
+
+def _require_exact_head_governance_inputs(
+    snapshot: GovernanceSnapshot,
+    root: Path,
+    *,
+    head_sha: str,
+    consumed_input_digests: dict[str, str],
+) -> None:
+    authority_digests = _snapshot_authority_source_digests(snapshot)
+    if authority_digests is None:
+        raise GovernanceError(
+            "governance snapshot lacks exact authority provenance", code="provenance"
+        )
+    expected = dict(authority_digests)
+    for path, digest in consumed_input_digests.items():
+        existing = expected.get(path)
+        if existing is not None and existing != digest:
+            raise GovernanceError(
+                f"governance input changed during evaluation: {path}", code="digest"
+            )
+        expected[path] = digest
+    exact = _exact_git_blob_digests(root, head_sha, tuple(expected))
+    mismatches = sorted(
+        path for path, digest in expected.items() if exact.get(path) != digest
+    )
+    if mismatches:
+        raise GovernanceError(
+            "governance inputs do not match exact Git head: " + ", ".join(mismatches),
+            code="digest",
+        )
+
+
 def _finding_payload(findings: tuple[GovernanceFinding, ...]) -> list[dict[str, str]]:
     return [dataclasses.asdict(finding) for finding in findings]
 
@@ -2178,7 +2618,7 @@ def _governance_evaluation(
     snapshot: GovernanceSnapshot,
     *,
     now: datetime,
-) -> tuple[GovernanceSnapshot, Path, dict[str, Any]]:
+) -> tuple[GovernanceSnapshot, Path, dict[str, Any], dict[str, str]]:
     evaluated_at = _require_aware(now, label="now")
     root = _snapshot_repository(snapshot)
     if root is None:
@@ -2192,7 +2632,13 @@ def _governance_evaluation(
         raise GovernanceError(
             "governance snapshot digest mismatch", code="digest"
         )
-    findings = validate_governance(current, root, now=evaluated_at)
+    consumed_input_digests: dict[str, str] = {}
+    findings = validate_governance(
+        current,
+        root,
+        now=evaluated_at,
+        _consumed_input_digests=consumed_input_digests,
+    )
     active_rules = tuple(rule.rule_id for rule in effective_rules(current, now=evaluated_at))
     active_examples = tuple(
         {
@@ -2228,7 +2674,7 @@ def _governance_evaluation(
         "open_debt_ids": list(open_debt_ids),
         "overall_status": status,
         "overdue_debt_ids": list(overdue_debt_ids),
-    }
+    }, consumed_input_digests
 
 
 def governance_summary(
@@ -2236,7 +2682,7 @@ def governance_summary(
     *,
     now: datetime,
 ) -> dict[str, Any]:
-    current, _, evaluation = _governance_evaluation(snapshot, now=now)
+    current, _, evaluation, _ = _governance_evaluation(snapshot, now=now)
     return {
         "active_example_ids_versions": evaluation["active_example_ids_versions"],
         "active_rule_ids": evaluation["active_rule_ids"],
@@ -2272,8 +2718,16 @@ def build_governance_handoff(
         base_sha=base_sha,
         head_sha=head_sha,
     )
-    _, root, evaluation = _governance_evaluation(snapshot, now=evaluated_at)
+    current, root, evaluation, consumed_input_digests = _governance_evaluation(
+        snapshot, now=evaluated_at
+    )
     _require_clean_exact_git_state(root, base_sha=base_sha, head_sha=head_sha)
+    _require_exact_head_governance_inputs(
+        current,
+        root,
+        head_sha=head_sha,
+        consumed_input_digests=consumed_input_digests,
+    )
     try:
         derived_architecture = derive_architecture_evidence(
             root,
@@ -2330,7 +2784,7 @@ def build_governance_handoff(
         exact_head_sha=head_sha,
     )
     _validate_schema_checked(
-        handoff.to_dict(), snapshot.handoff_schema, label="governance handoff"
+        handoff.to_dict(), current.handoff_schema, label="governance handoff"
     )
     return handoff
 
