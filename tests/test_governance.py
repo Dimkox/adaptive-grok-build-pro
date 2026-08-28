@@ -14,6 +14,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / ".grok-stack"))
 
+import adaptive_grok.governance as governance
 from adaptive_grok.spec import SpecError, load_schema, validate_schema
 from adaptive_grok.governance import (
     GovernanceError,
@@ -398,6 +399,82 @@ class GovernanceLoaderTests(unittest.TestCase):
         with mock.patch("adaptive_grok.governance.os.fstat", side_effect=changed_identity):
             with self.assertRaisesRegex(GovernanceError, "changed while reading"):
                 load_governance(root)
+
+    def test_loader_pins_one_root_identity_for_the_complete_snapshot(self) -> None:
+        root = self._fixture()
+        original = root.with_name(f"{root.name}-original")
+        replacement = root.with_name(f"{root.name}-replacement")
+        shutil.copytree(root, replacement)
+        replacement_rules = {
+            "governance_id": "GOV-ADAPTIVE-GROK-M3",
+            "rules": [_valid_rule()],
+            "schema_version": 1,
+        }
+        (replacement / "governance" / "rules" / "index.json").write_bytes(
+            _canonical_bytes(replacement_rules)
+        )
+        self.addCleanup(shutil.rmtree, original, True)
+        self.addCleanup(shutil.rmtree, replacement, True)
+
+        real_read = governance._read_regular_bytes
+        reads = 0
+
+        def swap_after_four_reads(*args: object, **kwargs: object) -> bytes:
+            nonlocal reads
+            data = real_read(*args, **kwargs)
+            reads += 1
+            if reads == 4:
+                root.rename(original)
+                replacement.rename(root)
+            return data
+
+        with mock.patch(
+            "adaptive_grok.governance._read_regular_bytes",
+            side_effect=swap_after_four_reads,
+        ):
+            with self.assertRaisesRegex(GovernanceError, "repository root changed"):
+                load_governance(root)
+
+    def test_loader_requires_nonzero_nonblocking_open_before_any_read(self) -> None:
+        root = self._fixture()
+        real_open = os.open
+        open_call = mock.Mock(wraps=real_open)
+        supports_dir_fd = set(os.supports_dir_fd)
+        supports_dir_fd.discard(real_open)
+        supports_dir_fd.add(open_call)
+        with (
+            mock.patch.object(governance.os, "O_NONBLOCK", 0),
+            mock.patch.object(governance.os, "open", open_call),
+            mock.patch.object(governance.os, "supports_dir_fd", supports_dir_fd),
+        ):
+            with self.assertRaisesRegex(GovernanceError, "no-follow reads are unavailable"):
+                load_governance(root)
+        open_call.assert_not_called()
+
+    def test_loader_rejects_invalid_handoff_schema_references(self) -> None:
+        mutations = {
+            "missing": lambda schema: schema["properties"].__setitem__(
+                "architecture_digest", {"$ref": "#/$defs/DOES_NOT_EXIST"}
+            ),
+            "external": lambda schema: schema["properties"].__setitem__(
+                "architecture_digest", {"$ref": "https://example.invalid/schema.json"}
+            ),
+            "non-object": lambda schema: (
+                schema["$defs"].__setitem__("BROKEN", "not-an-object"),
+                schema["properties"].__setitem__(
+                    "architecture_digest", {"$ref": "#/$defs/BROKEN"}
+                ),
+            ),
+        }
+        for case, mutate in mutations.items():
+            with self.subTest(case=case):
+                root = self._fixture()
+                path = root / "schemas" / "governance-handoff-v1.schema.json"
+                schema = json.loads(path.read_text(encoding="utf-8"))
+                mutate(schema)
+                path.write_bytes(_canonical_bytes(schema))
+                with self.assertRaisesRegex(GovernanceError, "schema reference"):
+                    load_governance(root)
 
     def test_loader_enforces_record_and_evidence_limits(self) -> None:
         fixtures = (

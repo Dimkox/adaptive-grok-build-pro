@@ -60,6 +60,13 @@ class GovernanceSnapshot:
     examples_path: str
 
 
+@dataclass(frozen=True)
+class _RepositoryHandle:
+    path: Path
+    descriptor: int
+    identity: tuple[int, int]
+
+
 def _unsafe_text(value: str) -> bool:
     return any(
         unicodedata.category(character) in {"Cc", "Cf", "Cs", "Zl", "Zp"}
@@ -67,7 +74,7 @@ def _unsafe_text(value: str) -> bool:
     )
 
 
-def _safe_relative_path(root: Path, value: str, *, label: str) -> str:
+def _safe_relative_path(root_descriptor: int, value: str, *, label: str) -> str:
     if not isinstance(value, str):
         raise GovernanceError(f"{label}: path must be a string", code="path")
     raw_parts = value.split("/")
@@ -84,31 +91,38 @@ def _safe_relative_path(root: Path, value: str, *, label: str) -> str:
         raise GovernanceError(
             f"{label}: unsafe repository-relative path {value!r}", code="path"
         )
+    no_follow, directory_flag, nonblock = _secure_open_flags(label=label)
+    descriptors: list[int] = []
+    current = root_descriptor
     try:
-        root_real = root.resolve(strict=True)
-        candidate = (root_real / pure.as_posix()).resolve(strict=False)
-    except (OSError, RuntimeError) as exc:
-        raise GovernanceError(
-            f"{label}: path cannot resolve safely", code="path"
-        ) from exc
-    try:
-        candidate.relative_to(root_real)
-    except ValueError as exc:
-        raise GovernanceError(f"{label}: path escapes repository", code="path") from exc
-    return pure.as_posix()
-
-
-def _repository_root(root: Path | str) -> Path:
-    repository = Path(os.path.abspath(Path(root)))
-    try:
-        info = os.lstat(repository)
+        for index, part in enumerate(raw_parts):
+            final = index == len(raw_parts) - 1
+            flags = os.O_RDONLY | no_follow | nonblock
+            if not final:
+                flags |= directory_flag
+            try:
+                current = os.open(part, flags, dir_fd=current)
+            except FileNotFoundError:
+                return pure.as_posix()
+            descriptors.append(current)
+            info = os.fstat(current)
+            if not (stat.S_ISREG(info.st_mode) or stat.S_ISDIR(info.st_mode)):
+                raise GovernanceError(
+                    f"{label}: path resolves to an unsafe file type", code="path"
+                )
+        return pure.as_posix()
+    except GovernanceError:
+        raise
     except OSError as exc:
-        raise GovernanceError(f"repository root is unavailable: {exc}", code="io") from exc
-    if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
-        raise GovernanceError(
-            "repository root must be a regular non-symlink directory", code="io"
-        )
-    return repository
+        if exc.errno in {errno.ELOOP, errno.EMLINK, errno.ENOTDIR}:
+            raise GovernanceError(
+                f"{label}: path cannot resolve safely; path escapes repository boundary or is not a directory",
+                code="path",
+            ) from exc
+        raise GovernanceError(f"{label}: path cannot resolve safely", code="path") from exc
+    finally:
+        for descriptor in reversed(descriptors):
+            os.close(descriptor)
 
 
 def _secure_open_flags(*, label: str) -> tuple[int, int, int]:
@@ -122,6 +136,7 @@ def _secure_open_flags(*, label: str) -> tuple[int, int, int]:
         or not isinstance(directory, int)
         or directory == 0
         or not isinstance(nonblock, int)
+        or nonblock == 0
         or os.open not in supports_dir_fd
     ):
         raise GovernanceError(
@@ -130,17 +145,64 @@ def _secure_open_flags(*, label: str) -> tuple[int, int, int]:
     return no_follow, directory, nonblock
 
 
-def _read_regular_bytes(root: Path, relative: str, *, label: str) -> bytes:
+def _open_repository(root: Path | str) -> _RepositoryHandle:
+    label = "repository root"
+    no_follow, directory_flag, nonblock = _secure_open_flags(label=label)
+    repository = Path(os.path.abspath(Path(root)))
+    try:
+        named = os.lstat(repository)
+        if stat.S_ISLNK(named.st_mode) or not stat.S_ISDIR(named.st_mode):
+            raise GovernanceError(
+                "repository root must be a regular non-symlink directory", code="io"
+            )
+        descriptor = os.open(
+            repository,
+            os.O_RDONLY | directory_flag | no_follow | nonblock,
+        )
+        try:
+            opened = os.fstat(descriptor)
+            identity = (opened.st_dev, opened.st_ino)
+            if (
+                not stat.S_ISDIR(opened.st_mode)
+                or identity != (named.st_dev, named.st_ino)
+            ):
+                raise GovernanceError("repository root changed while opening", code="io")
+        except BaseException:
+            os.close(descriptor)
+            raise
+    except GovernanceError:
+        raise
+    except OSError as exc:
+        raise GovernanceError(f"repository root is unavailable: {exc}", code="io") from exc
+    return _RepositoryHandle(repository, descriptor, identity)
+
+
+def _verify_repository(handle: _RepositoryHandle) -> None:
+    try:
+        opened = os.fstat(handle.descriptor)
+        named = os.lstat(handle.path)
+    except OSError as exc:
+        raise GovernanceError("repository root changed while loading", code="io") from exc
+    if (
+        not stat.S_ISDIR(opened.st_mode)
+        or stat.S_ISLNK(named.st_mode)
+        or not stat.S_ISDIR(named.st_mode)
+        or (opened.st_dev, opened.st_ino) != handle.identity
+        or (named.st_dev, named.st_ino) != handle.identity
+    ):
+        raise GovernanceError("repository root changed while loading", code="io")
+
+
+def _read_regular_bytes(root_descriptor: int, relative: str, *, label: str) -> bytes:
     no_follow, directory_flag, nonblock = _secure_open_flags(label=label)
     parts = PurePosixPath(relative).parts
     descriptors: list[int] = []
     try:
-        current = os.open(root, os.O_RDONLY | directory_flag | no_follow)
-        descriptors.append(current)
+        current = root_descriptor
         for part in parts[:-1]:
             current = os.open(
                 part,
-                os.O_RDONLY | directory_flag | no_follow,
+                os.O_RDONLY | directory_flag | no_follow | nonblock,
                 dir_fd=current,
             )
             descriptors.append(current)
@@ -303,13 +365,13 @@ def _require_canonical_source(data: bytes, value: dict[str, Any], *, label: str)
 
 
 def _load_document(
-    root: Path,
+    root_descriptor: int,
     relative: Path,
     *,
     counter: list[int],
 ) -> tuple[bytes, dict[str, Any]]:
     label = relative.as_posix()
-    data = _read_regular_bytes(root, label, label=label)
+    data = _read_regular_bytes(root_descriptor, label, label=label)
     return data, load_bytes(data, label=label, _counter=counter)
 
 
@@ -318,6 +380,50 @@ def _schema_preflight_checked(schema: dict[str, Any], *, label: str) -> None:
         _schema_preflight(schema)
     except SpecError as exc:
         raise GovernanceError(f"{label}: {exc}", code="schema") from exc
+    definitions = schema.get("$defs", {})
+
+    def visit(node: Any, *, path: str, definition: bool = False) -> None:
+        if not isinstance(node, dict):
+            kind = "schema reference target" if definition else "schema declaration"
+            raise GovernanceError(
+                f"{label}: {path}: {kind} must be an object", code="schema"
+            )
+        reference = node.get("$ref")
+        if reference is not None:
+            prefix = "#/$defs/"
+            if (
+                not isinstance(reference, str)
+                or not reference.startswith(prefix)
+                or not reference[len(prefix) :]
+                or "/" in reference[len(prefix) :]
+            ):
+                raise GovernanceError(
+                    f"{label}: {path}: schema reference must be a local #/$defs name",
+                    code="schema",
+                )
+            target = definitions.get(reference[len(prefix) :])
+            if not isinstance(target, dict):
+                raise GovernanceError(
+                    f"{label}: {path}: schema reference target is missing or not an object",
+                    code="schema",
+                )
+        for key in ("properties", "$defs"):
+            children = node.get(key, {})
+            if not isinstance(children, dict):
+                raise GovernanceError(
+                    f"{label}: {path}.{key}: schema declaration must be an object",
+                    code="schema",
+                )
+            for name, child in children.items():
+                visit(
+                    child,
+                    path=f"{path}.{key}.{name}",
+                    definition=key == "$defs",
+                )
+        if "items" in node:
+            visit(node["items"], path=f"{path}.items")
+
+    visit(schema, path="$")
 
 
 def _validate_schema_checked(
@@ -357,7 +463,9 @@ def _record_paths(snapshot: GovernanceSnapshot) -> list[tuple[str, str]]:
     return paths
 
 
-def _validate_structural_semantics(snapshot: GovernanceSnapshot, root: Path) -> None:
+def _validate_structural_semantics(
+    snapshot: GovernanceSnapshot, root_descriptor: int
+) -> None:
     rules = snapshot.rules["rules"]
     debt = snapshot.debt["entries"]
     examples = snapshot.examples["examples"]
@@ -376,7 +484,7 @@ def _validate_structural_semantics(snapshot: GovernanceSnapshot, root: Path) -> 
     _require_unique_ids(debt, field="debt_id", label="governance debt")
     _require_unique_ids(examples, field="example_id", label="governance examples")
     for label, path in _record_paths(snapshot):
-        _safe_relative_path(root, path, label=label)
+        _safe_relative_path(root_descriptor, path, label=label)
 
 
 def _normalize_mapping(value: dict[str, Any]) -> dict[str, Any]:
@@ -448,70 +556,91 @@ def _normalize_root(
 
 
 def load_governance(root: Path | str) -> GovernanceSnapshot:
-    repository = _repository_root(root)
-    counter = [0]
-    schema_documents: dict[Path, dict[str, Any]] = {}
-    for relative in (
-        RULES_SCHEMA_PATH,
-        DEBT_SCHEMA_PATH,
-        EXAMPLES_SCHEMA_PATH,
-        HANDOFF_SCHEMA_PATH,
-    ):
-        _, schema = _load_document(repository, relative, counter=counter)
-        _schema_preflight_checked(schema, label=relative.as_posix())
-        schema_documents[relative] = schema
+    repository = _open_repository(root)
+    try:
+        counter = [0]
+        schema_documents: dict[Path, dict[str, Any]] = {}
+        for relative in (
+            RULES_SCHEMA_PATH,
+            DEBT_SCHEMA_PATH,
+            EXAMPLES_SCHEMA_PATH,
+            HANDOFF_SCHEMA_PATH,
+        ):
+            _, schema = _load_document(
+                repository.descriptor, relative, counter=counter
+            )
+            _schema_preflight_checked(schema, label=relative.as_posix())
+            schema_documents[relative] = schema
 
-    registry_documents: dict[Path, dict[str, Any]] = {}
-    for relative in (RULES_PATH, DEBT_PATH, EXAMPLES_PATH):
-        data, document = _load_document(repository, relative, counter=counter)
-        _require_canonical_source(data, document, label=relative.as_posix())
-        registry_documents[relative] = document
+        _validate_schema_checked(
+            {
+                "architecture_digest": "a" * 64,
+                "exact_base_sha": "b" * 40,
+                "exact_head_sha": "c" * 40,
+                "governance_contract_version": 1,
+                "governance_digest": "d" * 64,
+                "governance_evidence_digest": "e" * 64,
+            },
+            schema_documents[HANDOFF_SCHEMA_PATH],
+            label=HANDOFF_SCHEMA_PATH.as_posix(),
+        )
 
-    _validate_schema_checked(
-        registry_documents[RULES_PATH],
-        schema_documents[RULES_SCHEMA_PATH],
-        label=RULES_PATH.as_posix(),
-    )
-    _validate_schema_checked(
-        registry_documents[DEBT_PATH],
-        schema_documents[DEBT_SCHEMA_PATH],
-        label=DEBT_PATH.as_posix(),
-    )
-    _validate_schema_checked(
-        registry_documents[EXAMPLES_PATH],
-        schema_documents[EXAMPLES_SCHEMA_PATH],
-        label=EXAMPLES_PATH.as_posix(),
-    )
+        registry_documents: dict[Path, dict[str, Any]] = {}
+        for relative in (RULES_PATH, DEBT_PATH, EXAMPLES_PATH):
+            data, document = _load_document(
+                repository.descriptor, relative, counter=counter
+            )
+            _require_canonical_source(data, document, label=relative.as_posix())
+            registry_documents[relative] = document
 
-    snapshot = GovernanceSnapshot(
-        rules=_normalize_root(
+        _validate_schema_checked(
             registry_documents[RULES_PATH],
-            collection="rules",
-            normalize_record=_normalize_rule,
-            stable_fields=("rule_id", "revision"),
-        ),
-        debt=_normalize_root(
+            schema_documents[RULES_SCHEMA_PATH],
+            label=RULES_PATH.as_posix(),
+        )
+        _validate_schema_checked(
             registry_documents[DEBT_PATH],
-            collection="entries",
-            normalize_record=_normalize_debt,
-            stable_fields=("debt_id", "revision"),
-        ),
-        examples=_normalize_root(
+            schema_documents[DEBT_SCHEMA_PATH],
+            label=DEBT_PATH.as_posix(),
+        )
+        _validate_schema_checked(
             registry_documents[EXAMPLES_PATH],
-            collection="examples",
-            normalize_record=_normalize_example,
-            stable_fields=("example_id", "version"),
-        ),
-        rules_schema=_normalize_generic(schema_documents[RULES_SCHEMA_PATH]),
-        debt_schema=_normalize_generic(schema_documents[DEBT_SCHEMA_PATH]),
-        examples_schema=_normalize_generic(schema_documents[EXAMPLES_SCHEMA_PATH]),
-        handoff_schema=_normalize_generic(schema_documents[HANDOFF_SCHEMA_PATH]),
-        rules_path=RULES_PATH.as_posix(),
-        debt_path=DEBT_PATH.as_posix(),
-        examples_path=EXAMPLES_PATH.as_posix(),
-    )
-    _validate_structural_semantics(snapshot, repository)
-    return snapshot
+            schema_documents[EXAMPLES_SCHEMA_PATH],
+            label=EXAMPLES_PATH.as_posix(),
+        )
+
+        snapshot = GovernanceSnapshot(
+            rules=_normalize_root(
+                registry_documents[RULES_PATH],
+                collection="rules",
+                normalize_record=_normalize_rule,
+                stable_fields=("rule_id", "revision"),
+            ),
+            debt=_normalize_root(
+                registry_documents[DEBT_PATH],
+                collection="entries",
+                normalize_record=_normalize_debt,
+                stable_fields=("debt_id", "revision"),
+            ),
+            examples=_normalize_root(
+                registry_documents[EXAMPLES_PATH],
+                collection="examples",
+                normalize_record=_normalize_example,
+                stable_fields=("example_id", "version"),
+            ),
+            rules_schema=_normalize_generic(schema_documents[RULES_SCHEMA_PATH]),
+            debt_schema=_normalize_generic(schema_documents[DEBT_SCHEMA_PATH]),
+            examples_schema=_normalize_generic(schema_documents[EXAMPLES_SCHEMA_PATH]),
+            handoff_schema=_normalize_generic(schema_documents[HANDOFF_SCHEMA_PATH]),
+            rules_path=RULES_PATH.as_posix(),
+            debt_path=DEBT_PATH.as_posix(),
+            examples_path=EXAMPLES_PATH.as_posix(),
+        )
+        _validate_structural_semantics(snapshot, repository.descriptor)
+        _verify_repository(repository)
+        return snapshot
+    finally:
+        os.close(repository.descriptor)
 
 
 def validate_governance(
@@ -521,8 +650,13 @@ def validate_governance(
     now: datetime,
 ) -> tuple[GovernanceFinding, ...]:
     del now
-    _validate_structural_semantics(snapshot, _repository_root(root))
-    return ()
+    repository = _open_repository(root)
+    try:
+        _validate_structural_semantics(snapshot, repository.descriptor)
+        _verify_repository(repository)
+        return ()
+    finally:
+        os.close(repository.descriptor)
 
 
 def _sha256(value: Any) -> str:
