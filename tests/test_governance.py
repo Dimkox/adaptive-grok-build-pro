@@ -23,6 +23,8 @@ import adaptive_grok.governance as governance
 from adaptive_grok.spec import SpecError, load_schema, validate_schema
 from adaptive_grok.governance import (
     ActorRef,
+    DebtRecord,
+    ExampleRecord,
     GovernanceError,
     MAX_DEBT_ENTRIES,
     MAX_DEPTH,
@@ -32,11 +34,14 @@ from adaptive_grok.governance import (
     MAX_PARSED_NODES,
     MAX_RULES,
     RuleRecord,
+    effective_examples,
     effective_rules,
     governance_digests,
     load_bytes,
     load_governance,
+    open_debt,
     transition_rule,
+    validate_example_deviation,
     validate_governance,
 )
 
@@ -1122,6 +1127,260 @@ class GovernanceLifecycleTests(unittest.TestCase):
         self.assertIn("CREATE INDEX CONCURRENTLY IF NOT EXISTS", migration)
         self.assertNotIn("NOT NULL", migration.upper())
         self.assertNotIn("DROP ", migration.upper())
+
+
+class GovernanceKnowledgeTests(unittest.TestCase):
+    NOW = datetime(2026, 8, 28, 13, 0, tzinfo=timezone.utc)
+
+    def _example(self, example_id: str = "EXAMPLE-REPOSITORY-001") -> dict[str, object]:
+        return {
+            "approved_by": [{
+                "actor_id": "governance-owner",
+                "actor_kind": "human",
+                "approved_at": "2026-08-28T12:30:00Z",
+                "scope": "governance",
+            }],
+            "category": "repository",
+            "contract_ids": ["CONTRACT-TRUST-CI-OPENAPI"],
+            "digest": "0" * 64,
+            "evidence": [{
+                "evidence_id": f"EVIDENCE-{example_id}",
+                "path": f"engineering/evidence/{example_id.lower()}.json",
+                "sha256": "0" * 64,
+            }],
+            "example_id": example_id,
+            "repository_paths": [f"examples/{example_id.lower()}.py"],
+            "reviewed_by": [{
+                "actor_id": "independent-reviewer",
+                "actor_kind": "system",
+                "reviewed_at": "2026-08-28T12:00:00Z",
+            }],
+            "status": "active",
+            "supersedes": [],
+            "version": 1,
+        }
+
+    def _debt(self, debt_id: str = "DEBT-REPOSITORY-001") -> dict[str, object]:
+        debt = _valid_debt()
+        debt["debt_id"] = debt_id
+        debt["evidence"] = [{
+            "evidence_id": f"EVIDENCE-{debt_id}",
+            "path": f"engineering/evidence/{debt_id.lower()}.json",
+            "sha256": "0" * 64,
+        }]
+        return debt
+
+    def _fixture(
+        self,
+        *,
+        examples: list[dict[str, object]] | None = None,
+        debt: list[dict[str, object]] | None = None,
+        evidence_documents: dict[str, object] | None = None,
+    ) -> Path:
+        root = _make_fixture(self)
+        shutil.copytree(ROOT / "architecture", root / "architecture")
+        for schema_name in ("architecture-system.schema.json", "architecture-rules.schema.json"):
+            shutil.copy2(ROOT / "schemas" / schema_name, root / "schemas" / schema_name)
+        shutil.copytree(ROOT / "engineering" / "contracts", root / "engineering" / "contracts")
+        for example in examples or []:
+            files = []
+            for relative in example["repository_paths"]:
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                content = f"canonical example {relative}\n".encode()
+                path.write_bytes(content)
+                files.append({"path": relative, "sha256": hashlib.sha256(content).hexdigest()})
+            payload = {
+                "contract": "adaptive-grok.canonical-example-content",
+                "files": sorted(files, key=lambda item: item["path"]),
+                "version": 1,
+            }
+            example["digest"] = hashlib.sha256(
+                json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+        for record in [*(examples or []), *(debt or [])]:
+            for evidence in record["evidence"]:
+                path = root / evidence["path"]
+                path.parent.mkdir(parents=True, exist_ok=True)
+                document = (evidence_documents or {}).get(evidence["path"], {"status": "observed"})
+                content = _canonical_bytes(document)
+                path.write_bytes(content)
+                evidence["sha256"] = hashlib.sha256(content).hexdigest()
+        for entry in debt or []:
+            for relative in entry["behavior_preserving_tests"]:
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("def test_behavior():\n    assert True\n", encoding="utf-8")
+        (root / "governance/canonical-examples/index.json").write_bytes(_canonical_bytes({
+            "examples": examples or [],
+            "governance_id": "GOV-ADAPTIVE-GROK-M3",
+            "schema_version": 1,
+        }))
+        (root / "governance/debt/index.json").write_bytes(_canonical_bytes({
+            "entries": debt or [],
+            "governance_id": "GOV-ADAPTIVE-GROK-M3",
+            "schema_version": 1,
+        }))
+        return root
+
+    def test_active_example_requires_review_approval_live_digest_and_contracts(self) -> None:
+        mutations = {
+            "example-evidence-required": lambda item: item.update(evidence=[]),
+            "example-evidence-digest-mismatch": lambda item: item["evidence"][0].update(sha256="f" * 64),
+            "example-review-required": lambda item: item.update(reviewed_by=[]),
+            "example-approval-required": lambda item: item.update(approved_by=[]),
+            "example-path-unavailable": lambda item: item.update(repository_paths=["examples/missing.py"]),
+            "example-digest-mismatch": lambda item: item.update(digest="f" * 64),
+            "example-contract-unresolved": lambda item: item.update(contract_ids=["CONTRACT-MISSING"]),
+        }
+        for code, mutate in mutations.items():
+            with self.subTest(code=code):
+                example = self._example()
+                root = self._fixture(examples=[example])
+                snapshot = load_governance(root)
+                mutate(example)
+                snapshot = replace(
+                    snapshot,
+                    examples={**snapshot.examples, "examples": [example]},
+                    example_records=(ExampleRecord.from_dict(example),),
+                )
+                findings = validate_governance(snapshot, root, now=self.NOW)
+                self.assertIn(code, {finding.code for finding in findings})
+
+    def test_effective_examples_require_loaded_provenance_and_explicit_supersession(self) -> None:
+        example = self._example()
+        root = self._fixture(examples=[example])
+        snapshot = load_governance(root)
+        effective = effective_examples(snapshot)
+        self.assertEqual([item.example_id for item in effective], [example["example_id"]])
+        clone = ExampleRecord.from_dict(effective[0].to_dict())
+        self.assertEqual(effective_examples(replace(snapshot, example_records=(clone,))), ())
+        (root / example["repository_paths"][0]).write_text("mutated\n", encoding="utf-8")
+        self.assertEqual(effective_examples(snapshot), ())
+
+        older = self._example("EXAMPLE-REPOSITORY-000")
+        older.update(status="deprecated", version=1)
+        newer = self._example("EXAMPLE-REPOSITORY-002")
+        older["repository_paths"] = list(newer["repository_paths"])
+        newer.update(version=2, supersedes=[])
+        root = self._fixture(examples=[older, newer])
+        codes = {item.code for item in validate_governance(load_governance(root), root, now=self.NOW)}
+        self.assertIn("example-supersession-required", codes)
+
+    def test_multiple_active_examples_for_one_category_scope_fail_closed(self) -> None:
+        first = self._example("EXAMPLE-REPOSITORY-001")
+        second = self._example("EXAMPLE-REPOSITORY-002")
+        second["repository_paths"] = list(first["repository_paths"])
+        second.update(version=2, supersedes=[first["example_id"]])
+        root = self._fixture(examples=[first, second])
+        snapshot = load_governance(root)
+        self.assertIn(
+            "example-active-version-conflict",
+            {item.code for item in validate_governance(snapshot, root, now=self.NOW)},
+        )
+        self.assertEqual(effective_examples(snapshot), ())
+
+    def test_deviation_requires_justification_criteria_and_evidence(self) -> None:
+        example = self._example("EXAMPLE-MIGRATION-001")
+        example["category"] = "migration"
+        root = self._fixture(examples=[example])
+        snapshot = load_governance(root)
+        finding = validate_example_deviation(
+            snapshot, category="migration", justification=None
+        )
+        self.assertEqual(finding.code, "canonical-example-deviation")
+        self.assertIsNone(validate_example_deviation(
+            snapshot,
+            category="migration",
+            justification="The approved criterion requires a different table.",
+            criterion_ids=("AC-013",),
+            evidence=(example["evidence"][0]["path"],),
+        ))
+
+    def test_open_debt_requires_complete_live_record_and_overdue_stays_visible(self) -> None:
+        debt = self._debt()
+        debt["deadline"] = "2026-08-27T13:00:00Z"
+        root = self._fixture(debt=[debt])
+        snapshot = load_governance(root)
+        self.assertEqual([item.debt_id for item in open_debt(snapshot, now=self.NOW)], [debt["debt_id"]])
+        self.assertIn(
+            "debt-overdue",
+            {item.code for item in validate_governance(snapshot, root, now=self.NOW)},
+        )
+        clone = DebtRecord.from_dict(open_debt(snapshot, now=self.NOW)[0].to_dict())
+        self.assertEqual(open_debt(replace(snapshot, debt_records=(clone,)), now=self.NOW), ())
+        (root / debt["evidence"][0]["path"]).write_text("mutated\n", encoding="utf-8")
+        self.assertEqual(open_debt(snapshot, now=self.NOW), ())
+
+    def test_open_debt_reports_missing_owner_trigger_deadline_tests_and_evidence(self) -> None:
+        mutations = {
+            "debt-owner-required": lambda item: item.update(owner={"actor_id": " ", "actor_kind": "human"}),
+            "debt-trigger-required": lambda item: item.update(repayment_trigger=" "),
+            "debt-deadline-invalid": lambda item: item.update(deadline="2026-09-28T13:00:00+00:00"),
+            "debt-tests-required": lambda item: item.update(behavior_preserving_tests=[]),
+            "debt-test-unavailable": lambda item: item.update(behavior_preserving_tests=["tests/missing.py"]),
+            "debt-evidence-required": lambda item: item.update(evidence=[]),
+            "debt-evidence-digest-mismatch": lambda item: item["evidence"][0].update(sha256="f" * 64),
+        }
+        for code, mutate in mutations.items():
+            with self.subTest(code=code):
+                debt = self._debt()
+                root = self._fixture(debt=[debt])
+                snapshot = load_governance(root)
+                mutate(debt)
+                snapshot = replace(
+                    snapshot,
+                    debt={**snapshot.debt, "entries": [debt]},
+                    debt_records=(DebtRecord.from_dict(debt),),
+                )
+                self.assertIn(
+                    code,
+                    {item.code for item in validate_governance(snapshot, root, now=self.NOW)},
+                )
+
+    def test_debt_repaid_and_accepted_require_structured_evidence(self) -> None:
+        repaid = self._debt("DEBT-REPAID-001")
+        repaid["status"] = "repaid"
+        accepted = self._debt("DEBT-ACCEPTED-001")
+        accepted.update(status="accepted", deadline="2026-09-28T13:00:00Z")
+        root = self._fixture(debt=[repaid, accepted])
+        codes = {item.code for item in validate_governance(load_governance(root), root, now=self.NOW)}
+        self.assertIn("debt-repayment-evidence-required", codes)
+        self.assertIn("debt-acceptance-approval-required", codes)
+
+    def test_debt_repaid_and_accepted_accept_exact_structured_evidence(self) -> None:
+        repaid = self._debt("DEBT-REPAID-001")
+        repaid["status"] = "repaid"
+        accepted = self._debt("DEBT-ACCEPTED-001")
+        accepted.update(status="accepted", deadline="2026-09-28T13:00:00Z")
+        evidence_documents = {
+            repaid["evidence"][0]["path"]: {
+                "behavior_preserving_tests": list(repaid["behavior_preserving_tests"]),
+                "debt_id": repaid["debt_id"],
+                "revision": repaid["revision"],
+                "status": "pass",
+            },
+            accepted["evidence"][0]["path"]: {
+                "approved_by": {
+                    "actor_id": "governance-owner",
+                    "actor_kind": "human",
+                    "approved_at": "2026-08-28T12:00:00Z",
+                    "scope": "governance",
+                },
+                "debt_id": accepted["debt_id"],
+                "revision": accepted["revision"],
+                "status": "accepted",
+            },
+        }
+        root = self._fixture(
+            debt=[repaid, accepted], evidence_documents=evidence_documents
+        )
+        codes = {
+            item.code
+            for item in validate_governance(load_governance(root), root, now=self.NOW)
+        }
+        self.assertNotIn("debt-repayment-evidence-required", codes)
+        self.assertNotIn("debt-acceptance-approval-required", codes)
 
 
 if __name__ == "__main__":

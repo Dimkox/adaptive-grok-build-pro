@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Literal
 
+from .architecture import ArchitectureError, contract_inventory, load_architecture
 from .spec import SpecError, _schema_preflight, validate_schema
 
 
@@ -83,6 +84,70 @@ class EvidenceRef:
     evidence_id: str
     path: str
     sha256: str
+
+
+@dataclass(frozen=True, init=False, eq=False)
+class ExampleRecord:
+    _canonical_document: bytes
+
+    def __init__(self, canonical_document: bytes) -> None:
+        if not isinstance(canonical_document, bytes):
+            raise TypeError("canonical_document must be bytes")
+        object.__setattr__(self, "_canonical_document", canonical_document)
+
+    @classmethod
+    def from_dict(cls, document: dict[str, Any]) -> ExampleRecord:
+        try:
+            return cls(_canonical_bytes(document))
+        except (KeyError, TypeError, ValueError, UnicodeEncodeError) as exc:
+            raise GovernanceError("example record is invalid", code="example") from exc
+
+    def to_dict(self) -> dict[str, Any]:
+        return json.loads(self._canonical_document)
+
+    @property
+    def example_id(self) -> str:
+        return self.to_dict()["example_id"]
+
+    @property
+    def category(self) -> str:
+        return self.to_dict()["category"]
+
+    @property
+    def status(self) -> str:
+        return self.to_dict()["status"]
+
+    @property
+    def evidence(self) -> tuple[EvidenceRef, ...]:
+        return tuple(EvidenceRef(**item) for item in self.to_dict()["evidence"])
+
+
+@dataclass(frozen=True, init=False, eq=False)
+class DebtRecord:
+    _canonical_document: bytes
+
+    def __init__(self, canonical_document: bytes) -> None:
+        if not isinstance(canonical_document, bytes):
+            raise TypeError("canonical_document must be bytes")
+        object.__setattr__(self, "_canonical_document", canonical_document)
+
+    @classmethod
+    def from_dict(cls, document: dict[str, Any]) -> DebtRecord:
+        try:
+            return cls(_canonical_bytes(document))
+        except (KeyError, TypeError, ValueError, UnicodeEncodeError) as exc:
+            raise GovernanceError("debt record is invalid", code="debt") from exc
+
+    def to_dict(self) -> dict[str, Any]:
+        return json.loads(self._canonical_document)
+
+    @property
+    def debt_id(self) -> str:
+        return self.to_dict()["debt_id"]
+
+    @property
+    def status(self) -> str:
+        return self.to_dict()["status"]
 
 
 @dataclass(frozen=True, init=False, eq=False)
@@ -162,6 +227,8 @@ class GovernanceSnapshot:
     debt_path: str
     examples_path: str
     rule_records: tuple[RuleRecord, ...] = ()
+    example_records: tuple[ExampleRecord, ...] = ()
+    debt_records: tuple[DebtRecord, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -726,20 +793,22 @@ def _load_governance_snapshot(
             normalize_record=_normalize_rule,
             stable_fields=("rule_id", "revision"),
         )
+        normalized_debt = _normalize_root(
+            registry_documents[DEBT_PATH],
+            collection="entries",
+            normalize_record=_normalize_debt,
+            stable_fields=("debt_id", "revision"),
+        )
+        normalized_examples = _normalize_root(
+            registry_documents[EXAMPLES_PATH],
+            collection="examples",
+            normalize_record=_normalize_example,
+            stable_fields=("example_id", "version"),
+        )
         snapshot = GovernanceSnapshot(
             rules=normalized_rules,
-            debt=_normalize_root(
-                registry_documents[DEBT_PATH],
-                collection="entries",
-                normalize_record=_normalize_debt,
-                stable_fields=("debt_id", "revision"),
-            ),
-            examples=_normalize_root(
-                registry_documents[EXAMPLES_PATH],
-                collection="examples",
-                normalize_record=_normalize_example,
-                stable_fields=("example_id", "version"),
-            ),
+            debt=normalized_debt,
+            examples=normalized_examples,
             rules_schema=_normalize_generic(schema_documents[RULES_SCHEMA_PATH]),
             debt_schema=_normalize_generic(schema_documents[DEBT_SCHEMA_PATH]),
             examples_schema=_normalize_generic(schema_documents[EXAMPLES_SCHEMA_PATH]),
@@ -750,6 +819,14 @@ def _load_governance_snapshot(
             rule_records=tuple(
                 RuleRecord.from_dict(rule)
                 for rule in normalized_rules["rules"]
+            ),
+            example_records=tuple(
+                ExampleRecord.from_dict(example)
+                for example in normalized_examples["examples"]
+            ),
+            debt_records=tuple(
+                DebtRecord.from_dict(entry)
+                for entry in normalized_debt["entries"]
             ),
         )
         _validate_structural_semantics(snapshot, repository.descriptor)
@@ -823,6 +900,230 @@ def _snapshot_rule_records(
     ):
         return ()
     return snapshot.rule_records
+
+
+def _snapshot_example_records(snapshot: GovernanceSnapshot) -> tuple[ExampleRecord, ...]:
+    documents = snapshot.examples["examples"]
+    if len(snapshot.example_records) != len(documents):
+        return ()
+    if any(
+        record._canonical_document != _canonical_bytes(document)
+        for record, document in zip(snapshot.example_records, documents)
+    ):
+        return ()
+    return snapshot.example_records
+
+
+def _snapshot_debt_records(snapshot: GovernanceSnapshot) -> tuple[DebtRecord, ...]:
+    documents = snapshot.debt["entries"]
+    if len(snapshot.debt_records) != len(documents):
+        return ()
+    if any(
+        record._canonical_document != _canonical_bytes(document)
+        for record, document in zip(snapshot.debt_records, documents)
+    ):
+        return ()
+    return snapshot.debt_records
+
+
+def _evidence_contents(
+    repository: _RepositoryHandle,
+    evidence: list[dict[str, Any]],
+    *,
+    owner: str,
+    prefix: str,
+) -> tuple[list[GovernanceFinding], list[bytes]]:
+    findings: list[GovernanceFinding] = []
+    contents: list[bytes] = []
+    if not evidence:
+        return [GovernanceFinding(f"{prefix}-evidence-required", f"{owner} requires evidence", owner)], contents
+    for item in evidence:
+        path = item.get("path", "")
+        try:
+            _safe_relative_path(repository.descriptor, path, label=f"{owner} evidence")
+            content = _read_regular_bytes(repository.descriptor, path, label=f"{owner} evidence")
+        except GovernanceError:
+            findings.append(GovernanceFinding(f"{prefix}-evidence-unavailable", f"{owner} evidence is unavailable", path))
+            continue
+        if hashlib.sha256(content).hexdigest() != item.get("sha256"):
+            findings.append(GovernanceFinding(f"{prefix}-evidence-digest-mismatch", f"{owner} evidence digest does not match", path))
+            continue
+        contents.append(content)
+    return findings, contents
+
+
+def _example_content_digest(files: list[tuple[str, bytes]]) -> str:
+    payload = {
+        "contract": "adaptive-grok.canonical-example-content",
+        "files": [
+            {"path": path, "sha256": hashlib.sha256(content).hexdigest()}
+            for path, content in sorted(files)
+        ],
+        "version": 1,
+    }
+    return hashlib.sha256(_canonical_bytes(payload)).hexdigest()
+
+
+def _m2_contract_ids(root: Path) -> frozenset[str]:
+    try:
+        architecture = load_architecture(root)
+        return frozenset(record.id for record in contract_inventory(root, architecture))
+    except (ArchitectureError, OSError, ValueError):
+        return frozenset()
+
+
+def _example_findings(
+    examples: tuple[ExampleRecord, ...],
+    repository: _RepositoryHandle,
+) -> list[GovernanceFinding]:
+    findings: list[GovernanceFinding] = []
+    all_documents = [record.to_dict() for record in examples]
+    contract_ids = (
+        _m2_contract_ids(repository.path)
+        if any(document.get("status") == "active" for document in all_documents)
+        else frozenset()
+    )
+    for document in all_documents:
+        if document.get("status") != "active":
+            continue
+        example_id = document.get("example_id", "unknown")
+        path = f"examples[{example_id}]"
+        approvals = document.get("approved_by", [])
+        approval_ids = {item.get("actor_id") for item in approvals}
+        reviews = document.get("reviewed_by", [])
+        if not reviews or not any(item.get("actor_id") not in approval_ids for item in reviews):
+            findings.append(GovernanceFinding("example-review-required", f"example {example_id} requires independent review", path))
+        if not any(item.get("actor_kind") == "human" and item.get("scope") == "governance" for item in approvals):
+            findings.append(GovernanceFinding("example-approval-required", f"example {example_id} requires human governance approval", path))
+        evidence_findings, _ = _evidence_contents(repository, document.get("evidence", []), owner=path, prefix="example")
+        findings.extend(evidence_findings)
+        files: list[tuple[str, bytes]] = []
+        repository_paths = document.get("repository_paths", [])
+        if not repository_paths:
+            findings.append(GovernanceFinding("example-path-required", f"example {example_id} requires a repository path", path))
+        for relative in repository_paths:
+            try:
+                _safe_relative_path(repository.descriptor, relative, label=f"example {example_id} path")
+                files.append((relative, _read_regular_bytes(repository.descriptor, relative, label=f"example {example_id} path")))
+            except GovernanceError:
+                findings.append(GovernanceFinding("example-path-unavailable", f"example {example_id} path is unavailable", relative))
+        if files and len(files) == len(document.get("repository_paths", [])) and _example_content_digest(files) != document.get("digest"):
+            findings.append(GovernanceFinding("example-digest-mismatch", f"example {example_id} content digest does not match", path))
+        references = document.get("contract_ids", [])
+        if not references:
+            findings.append(GovernanceFinding("example-contract-required", f"example {example_id} requires an M2 contract reference", path))
+        for contract_id in references:
+            if contract_id not in contract_ids:
+                findings.append(GovernanceFinding("example-contract-unresolved", f"example {example_id} contract is unresolved", contract_id))
+
+    for index, current in enumerate(all_documents):
+        if current.get("status") != "active":
+            continue
+        current_paths = tuple(current.get("repository_paths", []))
+        related = [
+            item
+            for item in all_documents
+            if item.get("category") == current.get("category")
+            and any(
+                _path_overlaps(first, second)
+                for first in current_paths
+                for second in item.get("repository_paths", [])
+            )
+        ]
+        for other in all_documents[index + 1 :]:
+            if (
+                other.get("status") == "active"
+                and other.get("category") == current.get("category")
+                and any(
+                    _path_overlaps(first, second)
+                    for first in current_paths
+                    for second in other.get("repository_paths", [])
+                )
+            ):
+                category = current.get("category")
+                findings.append(GovernanceFinding("example-active-version-conflict", f"category/scope {category} has multiple active examples", f"examples[{category}]"))
+        older = [item for item in related if item.get("version", 0) < current.get("version", 0)]
+        missing = sorted(item.get("example_id", "") for item in older if item.get("example_id") not in current.get("supersedes", []))
+        if missing:
+            findings.append(GovernanceFinding("example-supersession-required", f"example {current.get('example_id')} must explicitly supersede older versions: {', '.join(missing)}", f"examples[{current.get('example_id')}]"))
+    return findings
+
+
+def _parse_evidence_documents(contents: list[bytes]) -> list[dict[str, Any]]:
+    documents: list[dict[str, Any]] = []
+    for content in contents:
+        try:
+            document = load_bytes(content, label="governance evidence")
+        except GovernanceError:
+            continue
+        if isinstance(document, dict):
+            documents.append(document)
+    return documents
+
+
+def _debt_findings(
+    debts: tuple[DebtRecord, ...],
+    repository: _RepositoryHandle,
+    *,
+    now: datetime,
+) -> list[GovernanceFinding]:
+    findings: list[GovernanceFinding] = []
+    for record in debts:
+        document = record.to_dict()
+        debt_id = document.get("debt_id", "unknown")
+        path = f"debt[{debt_id}]"
+        owner = document.get("owner", {})
+        if not isinstance(owner, dict) or not str(owner.get("actor_id", "")).strip():
+            findings.append(GovernanceFinding("debt-owner-required", f"debt {debt_id} requires an owner", path))
+        for field, code, limit in (("reason", "debt-reason-required", 4_000), ("interest", "debt-interest-required", 2_000), ("repayment_trigger", "debt-trigger-required", 2_000)):
+            if not isinstance(document.get(field), str) or not document[field].strip() or len(document[field]) > limit:
+                findings.append(GovernanceFinding(code, f"debt {debt_id} requires {field}", path))
+        deadline: datetime | None = None
+        try:
+            raw_deadline = document.get("deadline")
+            if not isinstance(raw_deadline, str) or not raw_deadline.endswith("Z"):
+                raise GovernanceError("deadline must use UTC Z", code="timestamp")
+            deadline = _parse_timestamp(raw_deadline, label=f"debt {debt_id} deadline")
+        except GovernanceError:
+            findings.append(GovernanceFinding("debt-deadline-invalid", f"debt {debt_id} requires a UTC deadline", path))
+        tests = document.get("behavior_preserving_tests", [])
+        if not tests:
+            findings.append(GovernanceFinding("debt-tests-required", f"debt {debt_id} requires behavior-preserving tests", path))
+        for relative in tests:
+            try:
+                _safe_relative_path(repository.descriptor, relative, label=f"debt {debt_id} test")
+                _read_regular_bytes(repository.descriptor, relative, label=f"debt {debt_id} test")
+            except GovernanceError:
+                findings.append(GovernanceFinding("debt-test-unavailable", f"debt {debt_id} test is unavailable", relative))
+        evidence_findings, contents = _evidence_contents(repository, document.get("evidence", []), owner=path, prefix="debt")
+        findings.extend(evidence_findings)
+        evidence_documents = _parse_evidence_documents(contents)
+        status = document.get("status")
+        if status in {"open", "repaying"} and deadline is not None and deadline <= now:
+            findings.append(GovernanceFinding("debt-overdue", f"debt {debt_id} is overdue and remains open", path))
+        if status == "repaid" and not any(
+            item.get("debt_id") == debt_id
+            and item.get("revision") == document.get("revision")
+            and item.get("status") == "pass"
+            and sorted(item.get("behavior_preserving_tests", [])) == sorted(tests)
+            for item in evidence_documents
+        ):
+            findings.append(GovernanceFinding("debt-repayment-evidence-required", f"debt {debt_id} requires passing evidence for every behavior test", path))
+        if status == "accepted":
+            approved = any(
+                item.get("debt_id") == debt_id
+                and item.get("revision") == document.get("revision")
+                and item.get("status") == "accepted"
+                and isinstance(item.get("approved_by"), dict)
+                and item["approved_by"].get("actor_kind") == "human"
+                and item["approved_by"].get("scope") == "governance"
+                for item in evidence_documents
+            )
+            if not approved:
+                findings.append(GovernanceFinding("debt-acceptance-approval-required", f"accepted debt {debt_id} requires human governance approval evidence", path))
+            if deadline is not None and deadline <= now:
+                findings.append(GovernanceFinding("debt-accepted-review-overdue", f"accepted debt {debt_id} requires a future review deadline", path))
+    return findings
 
 
 def _transition_rule(
@@ -922,11 +1223,7 @@ def _rule_is_lifecycle_qualified(rule: RuleRecord, *, live_evidence: bool) -> bo
     )
 
 
-def _build_rule_lifecycle_api() -> tuple[
-    Callable[[Path | str], GovernanceSnapshot],
-    Callable[..., RuleRecord],
-    Callable[..., tuple[RuleRecord, ...]],
-]:
+def _build_rule_lifecycle_api() -> tuple[Callable[..., Any], ...]:
     @dataclass(frozen=True)
     class Binding:
         repository_path: Path
@@ -935,6 +1232,10 @@ def _build_rule_lifecycle_api() -> tuple[
 
     bindings: weakref.WeakKeyDictionary[RuleRecord, Binding]
     bindings = weakref.WeakKeyDictionary()
+    example_bindings: weakref.WeakKeyDictionary[ExampleRecord, Binding]
+    example_bindings = weakref.WeakKeyDictionary()
+    debt_bindings: weakref.WeakKeyDictionary[DebtRecord, Binding]
+    debt_bindings = weakref.WeakKeyDictionary()
 
     def bind(
         record: RuleRecord,
@@ -942,6 +1243,18 @@ def _build_rule_lifecycle_api() -> tuple[
         repository_identity: tuple[int, int],
     ) -> None:
         bindings[record] = Binding(
+            repository_path=repository_path,
+            repository_identity=repository_identity,
+            rule_digest=hashlib.sha256(record._canonical_document).hexdigest(),
+        )
+
+    def bind_other(
+        mapping: weakref.WeakKeyDictionary[Any, Binding],
+        record: ExampleRecord | DebtRecord,
+        repository_path: Path,
+        repository_identity: tuple[int, int],
+    ) -> None:
+        mapping[record] = Binding(
             repository_path=repository_path,
             repository_identity=repository_identity,
             rule_digest=hashlib.sha256(record._canonical_document).hexdigest(),
@@ -989,6 +1302,10 @@ def _build_rule_lifecycle_api() -> tuple[
         )
         for record in snapshot.rule_records:
             bind(record, repository_path, repository_identity)
+        for record in snapshot.example_records:
+            bind_other(example_bindings, record, repository_path, repository_identity)
+        for record in snapshot.debt_records:
+            bind_other(debt_bindings, record, repository_path, repository_identity)
         return snapshot
 
     def transition(
@@ -1035,10 +1352,125 @@ def _build_rule_lifecycle_api() -> tuple[
             )
         )
 
-    return load, transition, effective
+    def effective_example_records(snapshot: GovernanceSnapshot) -> tuple[ExampleRecord, ...]:
+        records = _snapshot_example_records(snapshot)
+        if not records:
+            return ()
+        first_binding = example_bindings.get(records[0])
+        if first_binding is None:
+            return ()
+        for record in records:
+            binding = example_bindings.get(record)
+            if (
+                binding is None
+                or binding.repository_path != first_binding.repository_path
+                or binding.repository_identity != first_binding.repository_identity
+                or binding.rule_digest != hashlib.sha256(record._canonical_document).hexdigest()
+            ):
+                return ()
+        try:
+            repository = _open_repository(first_binding.repository_path)
+        except GovernanceError:
+            return ()
+        try:
+            if repository.identity != first_binding.repository_identity:
+                return ()
+            findings = _example_findings(records, repository)
+            _verify_repository(repository)
+            if findings:
+                return ()
+            return tuple(sorted((record for record in records if record.status == "active"), key=lambda item: item.example_id))
+        except GovernanceError:
+            return ()
+        finally:
+            os.close(repository.descriptor)
+
+    def open_debt_records(
+        snapshot: GovernanceSnapshot,
+        *,
+        now: datetime,
+    ) -> tuple[DebtRecord, ...]:
+        evaluated_at = _require_aware(now, label="now")
+        records = _snapshot_debt_records(snapshot)
+        if not records:
+            return ()
+        first_binding = debt_bindings.get(records[0])
+        if first_binding is None:
+            return ()
+        for record in records:
+            binding = debt_bindings.get(record)
+            if (
+                binding is None
+                or binding.repository_path != first_binding.repository_path
+                or binding.repository_identity != first_binding.repository_identity
+                or binding.rule_digest != hashlib.sha256(record._canonical_document).hexdigest()
+            ):
+                return ()
+        try:
+            repository = _open_repository(first_binding.repository_path)
+        except GovernanceError:
+            return ()
+        try:
+            if repository.identity != first_binding.repository_identity:
+                return ()
+            findings = _debt_findings(records, repository, now=evaluated_at)
+            _verify_repository(repository)
+            if any(item.code != "debt-overdue" for item in findings):
+                return ()
+            return tuple(sorted((record for record in records if record.status in {"open", "repaying"}), key=lambda item: item.debt_id))
+        except GovernanceError:
+            return ()
+        finally:
+            os.close(repository.descriptor)
+
+    def validate_deviation(
+        snapshot: GovernanceSnapshot,
+        *,
+        category: str,
+        justification: str | None,
+        criterion_ids: tuple[str, ...] = (),
+        evidence: tuple[str, ...] = (),
+    ) -> GovernanceFinding | None:
+        applicable = [item for item in effective_example_records(snapshot) if item.category == category]
+        if not applicable:
+            return None
+        valid = bool(isinstance(justification, str) and justification.strip())
+        valid = valid and bool(criterion_ids) and all(isinstance(item, str) and item.strip() for item in criterion_ids)
+        valid = valid and bool(evidence) and all(isinstance(item, str) and item.strip() for item in evidence)
+        binding = example_bindings.get(applicable[0])
+        if valid and binding is not None:
+            try:
+                repository = _open_repository(binding.repository_path)
+                try:
+                    if repository.identity != binding.repository_identity:
+                        valid = False
+                    for relative in evidence:
+                        _safe_relative_path(repository.descriptor, relative, label="example deviation evidence")
+                        _read_regular_bytes(repository.descriptor, relative, label="example deviation evidence")
+                    _verify_repository(repository)
+                finally:
+                    os.close(repository.descriptor)
+            except GovernanceError:
+                valid = False
+        if valid:
+            return None
+        return GovernanceFinding(
+            "canonical-example-deviation",
+            "deviation from an active canonical example requires justification, criterion_ids, and repository-contained evidence",
+            f"examples[{category}]",
+        )
+
+    return load, transition, effective, effective_example_records, open_debt_records, validate_deviation
 
 
-load_governance, transition_rule, effective_rules = _build_rule_lifecycle_api()
+(
+    load_governance,
+    transition_rule,
+    effective_rules,
+    effective_examples,
+    open_debt,
+    validate_example_deviation,
+) = _build_rule_lifecycle_api()
 
 
 def _normalized_statement(statement: str) -> str:
@@ -1205,6 +1637,15 @@ def validate_governance(
                     )
                 )
         findings.extend(_rule_pair_findings(rules, now=validated_at))
+        examples = tuple(
+            ExampleRecord.from_dict(document)
+            for document in snapshot.examples["examples"]
+        )
+        debts = tuple(
+            DebtRecord.from_dict(document) for document in snapshot.debt["entries"]
+        )
+        findings.extend(_example_findings(examples, repository))
+        findings.extend(_debt_findings(debts, repository, now=validated_at))
         _verify_repository(repository)
         return tuple(
             sorted(
