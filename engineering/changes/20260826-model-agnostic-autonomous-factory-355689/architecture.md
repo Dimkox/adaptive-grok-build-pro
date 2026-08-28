@@ -2,11 +2,11 @@
 
 ## Current behavior
 
-M0 Trust CI is live and separate. M1 has a strict schema/parser/CLI/test foundation, but criterion-aware local receipts, external holdout enforcement, signed attestation binding, and complete adoption/staleness rules are not yet evidenced. M2-M6 runtime surfaces do not exist.
+M0 Trust CI remains separate. M1 is the typed-intent authority. Exact M2-A exists at `635c9ddf2d63c1ea823074106976a8f3de6299a9`; M3 and `factory/` do not yet exist on this branch.
 
 ## Proposed behavior
 
-The canonical design is `docs/superpowers/specs/2026-08-26-model-agnostic-autonomous-factory-design.md`. A deterministic provider-neutral factory consumes stable M1-M3 digests, persists tasks and leases in PostgreSQL `factory.*`, dispatches fixed systemd workers into isolated task workspaces, normalizes provider-native output through versioned adapters, and stops with a local human-review bundle through M6.
+The canonical design remains `docs/superpowers/specs/2026-08-26-model-agnostic-autonomous-factory-design.md`. The approved implementation is split into two stacked PRs: M3 publishes reviewed governance/debt/example digests and `GovernanceHandoffV1`; M4 consumes frozen M1/M2/M3 bindings and owns PostgreSQL `factory.*`, intake, scheduling, fencing, limits, kill switches, audit, and reconciliation. Provider/workspace/systemd execution remains M5.
 
 ## Components and boundaries
 
@@ -38,7 +38,7 @@ ready_for_human -> separate Trust CI/human delivery process, not factory authori
 
 ## Repository impact
 
-This gate changes documentation and the durable package only. It does not add `factory/`, database state, dependencies, root packaging markers, GitHub Actions, systemd units, or runtime behavior.
+This planning commit changes documentation and the durable package only. The approved M3 implementation adds governance source; the stacked M4 implementation adds the isolated `factory/` package and migrations, but neither adds a root packaging marker, GitHub Actions, provider execution, systemd activation, or external writes.
 
 ## Decisions
 
@@ -48,6 +48,8 @@ This gate changes documentation and the durable package only. It does not add `f
 - Notes are immutable untrusted assertions and cannot become control events or active governance.
 - systemd provides liveness; PostgreSQL leases/fences provide correctness.
 - Through M6 external-write states are unreachable.
+- The M4 client boundary is authenticated HTTP over an operator-owned Unix socket so a later admin-only `baby-bot.service` adapter can cross its separate VPN network namespace without exposing TCP.
+- The bot adapter, Telegram admin mapping, service changes, deployment, and token rotation are a separate post-M4 slice.
 
 ## Risks and mitigations
 

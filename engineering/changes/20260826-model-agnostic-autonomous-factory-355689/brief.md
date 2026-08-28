@@ -8,11 +8,11 @@ Domains: ai, security
 
 ## Problem
 
-The repository has a partial M1 typed-intent foundation and a roadmap for a durable software factory, but it lacks one approved provider-neutral design that fixes trust boundaries, interfaces, limits, milestone dependencies, and the no-external-write boundary before implementation.
+The repository has an approved provider-neutral design and an exact M2-A implementation at `635c9ddf2d63c1ea823074106976a8f3de6299a9`, but it still lacks controlled machine-readable governance (M3) and the durable PostgreSQL factory control plane (M4).
 
 ## Outcome
 
-A reviewable, internally consistent architecture specification and durable typed package define the factory without implementing it. The artifacts give the user a concrete scope/design gate and make M1 completion the next permitted milestone.
+Deliver two reviewable stacked implementation PRs: M3 controlled knowledge/debt on exact M2, followed by M4 durable intake/scheduling/fencing/capacity/recovery consuming frozen M1/M2/M3 digests. The M4 API also freezes an authenticated Unix-socket submit/status/list/cancel/health contract for a later admin-only `/home/pall/baby-bot` integration.
 
 ## Scope
 
@@ -24,13 +24,19 @@ A reviewable, internally consistent architecture specification and durable typed
 - Fixed systemd topology, isolated worktrees, tool/credential/network isolation, and append-only notes.
 - M1-M6 dependency gates and evidence requirements; M7-M9 remain deferred.
 - Five route-selected analysis reports, typed package completion, design self-review, and one local docs commit.
+- Exact M2-A as the immutable stacked base; no reimplementation or modification of Trust CI.
+- M3 rule/debt/canonical-example lifecycle and exact `GovernanceHandoffV1`.
+- M4 separate `factory/` package, PostgreSQL migrations/store, intake/idempotency, leases/fencing/reclaim/retry/dead, 20/10/1 capacity, budgets, kill switches, audit, reconciliation, and local API/CLI.
+- Versioned Unix-domain-socket factory API for a later admin-only `baby-bot` adapter.
 
 ### Out of scope
 
-- Implementation code or an implementation plan.
+- Reopening or rewriting the already reviewed M2-A implementation.
 - A second change package or any `grok_change.py start` invocation.
-- Provider execution, migrations, `factory/`, systemd units, installation, or deployment.
+- Provider execution, systemd units, installation/activation, or deployment.
 - Push, PR, merge, release, connector call, production mutation, or any external write.
+- Provider adapters, isolated workspaces, note execution broker, systemd installation/activation, and external-write behavior (M5+).
+- Editing, restarting, or deploying `/home/pall/baby-bot`; that is a separate integration slice after M4 API review.
 - M7-M9 behavior.
 
 ## Constraints
@@ -39,3 +45,7 @@ A reviewable, internally consistent architecture specification and durable typed
 - Data/privacy: prompt, repository, notes, logs, and provider output are untrusted; secrets and chain-of-thought are excluded from durable artifacts.
 - Performance: readers are capped at 20 globally and 10 per repository; one global application writer; aggregate task wall time is four hours and cost is USD 25.
 - Operational: no silent provider fallback, no autonomous external writes, fixed systemd processes only after a later operator gate, and Trust CI remains separate merge authority.
+
+## Scope expansion authority
+
+After the original design gate, the user explicitly approved full stacked M2 -> M3 -> M4 implementation without functional cuts and asked to reduce only redundant repeated tests. The user also required the existing `baby-bot.service`, isolated in `/run/netns/vpn`, to consume the future factory through a Unix-domain-socket admin API; only that M4 contract is in this scope, while bot code/deployment and Telegram-token rotation remain separate human/operator-controlled work.

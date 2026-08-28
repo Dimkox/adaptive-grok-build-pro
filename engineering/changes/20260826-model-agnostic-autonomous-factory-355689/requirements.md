@@ -13,7 +13,21 @@
 - [x] AC-009: The active typed spec is red-risk, evidence-mapped, schema-valid, and placeholder-free.
 - [x] AC-010: All five route-selected read-only analysis reports are present and synthesized.
 - [x] AC-011: Self-review checks placeholders, contradictions, security boundaries, and scope leakage.
-- [x] AC-012: The package stops at `scope_and_design_approval`; no implementation or external action is implied.
+- [x] AC-012: At the original design gate, the package stopped at `scope_and_design_approval`; later implementation authority is recorded separately below and still implies no external action.
+
+## Approved implementation acceptance criteria
+
+- [ ] AC-013: M3 strict schemas and bounded loader make rule, debt, and canonical-example records machine-readable, canonical, path-safe, versioned, and digest-bound.
+- [ ] AC-014: Agent output can create only candidate rules; independent review plus explicit human governance approval is required for activation, and expired/deprecated/revoked rules are ineffective.
+- [ ] AC-015: M3 detects conflicting/duplicate patterns, enforces intentional-debt ownership/triggers/tests, keeps Markdown non-authoritative, and publishes the exact six-field `GovernanceHandoffV1` specified by the M3 plan.
+- [ ] AC-016: M2 executable architecture models M3/M4 boundaries without weakening M1/M2 evidence or changing `trust-ci/**`.
+- [ ] AC-017: M4 accepts only valid immutable M1/M2/M3 handoffs, deduplicates identical intake, and supersedes stale source/base/spec/architecture/governance/policy variants.
+- [ ] AC-018: Real PostgreSQL tests prove SKIP LOCKED ownership, monotonic fencing, late-result rejection, lease reclaim, initial-plus-two retries, dead-letter, and restart-safe reconciliation.
+- [ ] AC-019: PostgreSQL enforces at most 20 global readers, 10 readers per repository, and one global application writer, plus four-hour/USD-25 aggregate ceilings.
+- [ ] AC-020: Global/repository kill switches stop new claims without deleting evidence, and every transition/actor is append-only audited.
+- [ ] AC-021: M4 exposes authenticated versioned Unix-socket submit/status/list/cancel/health operations with idempotency/correlation and a least-privilege admin-client scope suitable for a later `baby-bot` adapter.
+- [ ] AC-022: No factory endpoint or credential enables provider execution, systemd activation, GitHub/external write, Trust CI state access, or production mutation.
+- [ ] AC-023: Bot integration is blocked until a human rotates the exposed Telegram token outside the agent and the later bot slice proves admin allowlisting plus request-URL redaction/log-level guards.
 
 ## Failure and edge cases
 
@@ -23,6 +37,9 @@
 - Unknown, malformed, oversized, reasoning-bearing, or ambiguous adapter output fails closed.
 - Path/symlink/shared-Git escape, credential probe, or network escape is a release-blocking isolation failure.
 - A fourth repair cycle, repeated unresolved finding, architecture change, or risk increase requires a human.
+- Duplicate intake returns the existing task; a conflicting reuse of an idempotency key fails.
+- An expired fence, killed worker, budget/accounting gap, active kill switch, or stale M1/M2/M3 digest blocks dispatch/commit.
+- The `baby-bot` network namespace cannot reach host loopback, so the integration contract uses an operator-owned Unix socket with scoped bearer authentication and never a token in a URL.
 
 ## Non-functional requirements
 
