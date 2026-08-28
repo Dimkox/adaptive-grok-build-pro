@@ -434,12 +434,11 @@ def _validate_rule_semantics(rules: dict[str, Any], system: dict[str, Any]) -> N
     data_types = {item["id"] for item in system["data_classifications"]}
     secret_classes = {item["id"] for item in system["secret_classes"]}
     for rule in rules["forbidden_edges"]:
-        _require_references(
-            rule["from_trust_domains"], trust_domains, label=f"rule {rule['id']}"
-        )
-        _require_references(
-            rule["to_trust_domains"], trust_domains, label=f"rule {rule['id']}"
-        )
+        for field in ("from_trust_domains", "to_trust_domains"):
+            _require_references(rule[field], trust_domains, label=f"rule {rule['id']}")
+    for rule in rules["migration_policies"]:
+        if not rule["path_prefixes"]:
+            raise ArchitectureError(f"rule {rule['id']}: path_prefixes must not be empty", code="rules")
     for rule in rules["tenant_authorization_policies"]:
         _require_references(rule["data_classifications"], data_types, label=f"rule {rule['id']}")
     for rule in rules["secret_flow_policies"]:

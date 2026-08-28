@@ -3589,6 +3589,38 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "unsupported")
         self.assertIn("work limit", " ".join(result.findings))
 
+    def test_migration_empty_selector_amplification_is_bounded_after_validation_bypass(self) -> None:
+        rules = _rules()
+        rooted = {
+            "id": "FIT-MIGRATION-ROOTED",
+            "path_prefixes": ["migrations"],
+            "required_phases": ["expand", "migrate", "contract"],
+            "immutable_history": False,
+            "severity": "error",
+        }
+        rules["migration_policies"] = [rooted]
+        repo, base = self._repo(rules=rules)
+        repo.write_text("migrations/0001_expand.sql", "CREATE TABLE item(id integer);\n")
+        head = repo.commit("rooted migration policy")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        sample = diff.artifacts[0]
+        paths = tuple(f"migrations/{index:04d}_expand.sql" for index in range(1_000))
+        bypassed_rules = copy.deepcopy(diff._head_state.snapshot.rules)
+        bypassed_rules["migration_policies"] = [
+            {**rooted, "id": f"FIT-MIGRATION-EMPTY-{index:03d}", "path_prefixes": []}
+            for index in range(255)
+        ] + [rooted]
+        snapshot = replace(diff._head_state.snapshot, rules=bypassed_rules)
+        bounded_diff = replace(
+            diff,
+            changed_paths=paths,
+            artifacts=tuple(replace(sample, path=path) for path in paths),
+        )
+        with patch.object(FIT, "_repository_paths", side_effect=AssertionError("inventory after plan limit")):
+            result = FIT._migration_safety(repo.root, snapshot, bounded_diff)
+        self.assertEqual(result.status, "unsupported")
+        self.assertIn("work limit", " ".join(result.findings))
+
     def test_migration_blob_statement_and_finding_limits_stop_early(self) -> None:
         rules = _rules()
         rules["migration_policies"] = [{

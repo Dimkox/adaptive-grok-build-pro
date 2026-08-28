@@ -296,3 +296,42 @@ plan work. The cheap node traversal factor also charges a minimum unit for each
 declared node rather than only for the aggregate path total. The production
 replacement is line-neutral, exact worktree fitness passes at `10000/10000`,
 and no authority, migration, runtime, dependency, or Trust CI source changed.
+
+## Empty migration-selector defense-in-depth rereview
+
+The final security rereview found that schema-valid empty migration
+`path_prefixes` could amplify the later per-policy plan loop while contributing
+no root membership to the earlier charge. The canonical loader also accepted
+that selector even though it cannot govern an artifact.
+
+RED and GREEN evidence:
+
+```text
+semantic loader and bypassed-fitness selectors before repair
+Ran 2 tests in 0.182s
+FAILED (failures=2)
+- empty path_prefixes loaded successfully
+- bypassed fitness reached repository inventory before its work ceiling
+
+semantic, bypass, shared-root, and prior work-limit selectors after repair
+Ran 4 tests in 1.130s
+OK
+
+python3 -m unittest -q tests.test_architecture_fitness
+Ran 80 tests in 83.882s
+OK
+elapsed=84.05 exit=0
+
+python3 -m unittest discover -s tests -p 'test_*.py' -q
+Ran 376 tests in 195.386s
+OK
+elapsed=195.62 exit=0
+```
+
+Semantic validation now rejects a migration policy without path prefixes.
+Fitness independently charges applicable artifacts across every declared policy
+before inventory and charges inventory across every policy before semantic plan
+traversal, so bypassed validation still fails closed. The product replacement
+is net-negative by one line, exact worktree fitness passes at `9999/10000`, and
+no schema, authority, migration, runtime, dependency, or Trust CI source was
+changed.

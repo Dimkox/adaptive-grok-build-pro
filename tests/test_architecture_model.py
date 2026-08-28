@@ -611,6 +611,18 @@ class ArchitectureModelTests(unittest.TestCase):
             with self.subTest(label=label), self.assertRaises(ARCH.ArchitectureError):
                 ARCH.load_architecture(self._repo(_system(), rules))
 
+    def test_migration_policy_rejects_empty_path_prefixes_semantically(self) -> None:
+        rules = _rules()
+        rules["migration_policies"] = [{
+            "id": "FIT-MIGRATION-EMPTY",
+            "path_prefixes": [],
+            "required_phases": ["expand", "migrate", "contract"],
+            "immutable_history": True,
+            "severity": "error",
+        }]
+        with self.assertRaisesRegex(ARCH.ArchitectureError, "path_prefixes must not be empty"):
+            ARCH.load_architecture(self._repo(_system(), rules))
+
     def test_model_paths_reject_absolute_backslash_parent_and_controls(self) -> None:
         for raw in (
             "/absolute",

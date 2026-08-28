@@ -678,10 +678,10 @@ def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: Architec
                                if _matches(item.path, (prefix,)) for index in indices}
                    for item in sql}
         applicable = tuple(item for item in sql if matches[item.path])
-        analysis.bound(root_memberships)
+        analysis.bound(root_memberships + len(applicable) * len(seeds))
         inventory = _repository_paths(root, diff, tuple(analysis.root_plans))
         analysis.scope = (*analysis.root_plans, *inventory, *(item.path for item in applicable))
-        analysis.bound(len(inventory) * sum(len(rule["path_prefixes"]) for rule in rules)
+        analysis.bound(len(inventory) * max(len(seeds), sum(len(rule["path_prefixes"]) for rule in rules))
                        + 2 * len(applicable) * max(1, root_memberships))
         if not applicable:
             return _not_applicable("migration_safety", predicate, analysis.scope,
