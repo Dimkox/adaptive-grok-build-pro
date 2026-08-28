@@ -103,11 +103,29 @@
       "from": "blocked",
       "reason": "User explicitly approved the bounded unresolved-frontier repair: retain exact reachable local-import frontier, resolve neutral queue and queue-named nonqueue exports, and preserve unrelated N/A.",
       "to": "implementing"
+    },
+    {
+      "at": "2026-08-28T05:39:21+00:00",
+      "from": "implementing",
+      "reason": "Exact product SHA 72927ee2407cff98f9c2162fc069e4a07b5afb43 passed focused, architecture, full-suite, static, spec, diagram, protected-path, and no-record PR verification; begin exact review closure.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-28T05:39:26+00:00",
+      "from": "verifying",
+      "reason": "All five route-selected reviews PASS on exact product SHA 72927ee2407cff98f9c2162fc069e4a07b5afb43 with zero Critical, Important, or Minor findings; exact reports are materialized for final local closure.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-28T05:39:32+00:00",
+      "from": "reviewing",
+      "reason": "Five exact product-SHA PASS reports are present with zero findings; local M2-A source is ready for coordinator-owned final fingerprint receipts and PR/external gates, with no merge, release, M2-B, or deployment claim.",
+      "to": "ready"
     }
   ],
   "route_id": "0156034c05bd",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "ready",
   "title": "m2-executable-architecture",
-  "updated_at": "2026-08-27T20:18:07+00:00"
+  "updated_at": "2026-08-28T05:39:32+00:00"
 }
