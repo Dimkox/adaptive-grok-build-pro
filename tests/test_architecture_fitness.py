@@ -34,6 +34,7 @@ def _fitness_module():
 FIT = _fitness_module()
 DIFF = importlib.import_module("adaptive_grok.architecture_diff")
 ARCHITECTURE = importlib.import_module("adaptive_grok.architecture")
+QUEUE_PROVENANCE = importlib.import_module("adaptive_grok.queue_provenance")
 
 
 class GitArchitectureRepo:
@@ -1660,6 +1661,83 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 deep_adapters,
                 value_limit=16,
             )
+
+    def test_dotted_import_object_construction_charges_low_value_limit(self) -> None:
+        low_limit_module = ".".join(
+            ("project", *(f"layer{index}" for index in range(200)), "runtime")
+        )
+        with self.assertRaisesRegex(FIT.QueueAnalysisLimit, "value"):
+            FIT.analyze_queue_tree(
+                ast.parse(
+                    f"import {low_limit_module}\n"
+                    f"{low_limit_module}.app.delay(task)\n"
+                ),
+                {f"{low_limit_module}.app"},
+                value_limit=1,
+            )
+
+    def test_dotted_import_object_depth_is_bounded_before_merge(self) -> None:
+        accepted_module = ".".join(
+            (
+                "project",
+                *(f"layer{index}" for index in range(QUEUE_PROVENANCE.MAX_DOTTED_IMPORT_DEPTH - 1)),
+                "runtime",
+            )
+        )
+        accepted = FIT.analyze_queue_tree(
+            ast.parse(
+                f"import {accepted_module}\n"
+                f"{accepted_module}.app.delay(task)\n"
+            ),
+            {f"{accepted_module}.app"},
+        )
+        self.assertTrue(accepted.signals)
+
+        rejected_module = ".".join(
+            (
+                "project",
+                *(f"layer{index}" for index in range(QUEUE_PROVENANCE.MAX_DOTTED_IMPORT_DEPTH)),
+                "runtime",
+            )
+        )
+        with self.assertRaisesRegex(FIT.QueueAnalysisLimit, "depth"):
+            FIT.analyze_queue_tree(
+                ast.parse(f"import {rejected_module}\n"),
+                {f"{rejected_module}.app"},
+            )
+
+        hostile_prefix = ".".join(
+            ("project", *(f"layer{index}" for index in range(1100)))
+        )
+        with self.assertRaisesRegex(FIT.QueueAnalysisLimit, "depth"):
+            FIT.analyze_queue_tree(
+                ast.parse(
+                    f"import {hostile_prefix}.runtime\n"
+                    f"import {hostile_prefix}.forms\n"
+                    f"{hostile_prefix}.runtime.app.delay(task)\n"
+                ),
+                {f"{hostile_prefix}.runtime.app"},
+            )
+
+    def test_normal_deep_dotted_imports_preserve_disjoint_siblings(self) -> None:
+        normal_prefix = ".".join(
+            ("project", *(f"layer{index}" for index in range(16)))
+        )
+        for imports in (
+            f"import {normal_prefix}.runtime\nimport {normal_prefix}.forms\n",
+            f"import {normal_prefix}.forms\nimport {normal_prefix}.runtime\n",
+        ):
+            with self.subTest(imports=imports):
+                queue = FIT.analyze_queue_tree(
+                    ast.parse(imports + f"{normal_prefix}.runtime.app.delay(task)\n"),
+                    {f"{normal_prefix}.runtime.app"},
+                )
+                ordinary = FIT.analyze_queue_tree(
+                    ast.parse(imports + f"{normal_prefix}.forms.form.delay(task)\n"),
+                    {f"{normal_prefix}.runtime.app"},
+                )
+                self.assertTrue(queue.signals)
+                self.assertEqual(ordinary.signals, ())
 
     def test_unrelated_semantic_method_names_remain_background_not_applicable(self) -> None:
         system = _system()

@@ -43,6 +43,7 @@ _CONTAINER_MUTATORS = {
     "union_update",
     "update",
 }
+MAX_DOTTED_IMPORT_DEPTH = 256
 
 
 class QueueAnalysisLimit(RuntimeError):
@@ -309,9 +310,7 @@ def _function_scope_names(
     for item in statement.body:
         visitor.visit(item)
     arguments = (
-        *statement.args.posonlyargs,
-        *statement.args.args,
-        *statement.args.kwonlyargs,
+        statement.args.posonlyargs + statement.args.args + statement.args.kwonlyargs
     )
     visitor.names.update(argument.arg for argument in arguments)
     if statement.args.vararg is not None:
@@ -816,9 +815,7 @@ class _Interpreter:
                 record_scope=False,
             )
         arguments = (
-            *statement.args.posonlyargs,
-            *statement.args.args,
-            *statement.args.kwonlyargs,
+            statement.args.posonlyargs + statement.args.args + statement.args.kwonlyargs
         )
         for argument in arguments:
             self._bind(ast.Name(id=argument.arg), NON_QUEUE, captured)
@@ -876,8 +873,11 @@ class _Interpreter:
                 local = alias.asname or alias.name.split(".")[0]
                 value = self.module_values.get(alias.asname or alias.name, QUEUE if alias.name.split(".")[0] in _QUEUE_IMPORTS else NON_QUEUE)
                 if not alias.asname:
-                    for part in reversed(alias.name.split(".")[1:]):
-                        value = _structured("object", {("string", part): value})
+                    parts = alias.name.split(".")[1:]
+                    if len(parts) > MAX_DOTTED_IMPORT_DEPTH:
+                        raise QueueAnalysisLimit("queue object depth limit exceeded")
+                    for part in reversed(parts):
+                        value = self._value(_structured("object", {("string", part): value}))
                     current = environment.values.get(local)
                     if current is not None and current.state == value.state == "object":
                         value = self._join(current, value, augment_objects=True)

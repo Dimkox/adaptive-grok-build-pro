@@ -413,6 +413,59 @@ Bandit, compileall, typed spec 7/7, architecture validate/drift/diagram, README
 K16, diff whitespace, protected paths, and exact separation all pass. The text
 verifier, commit, and exact-SHA evidence follow after final gates.
 
+## Dotted-provenance boundedness rereview
+
+The rereview found two ways the recursive dotted-object representation escaped
+its declared value-work bound. Initial unaliased dotted-import wrappers were
+constructed without `_value`, and a pair of imports with a roughly 1,100-member
+shared prefix entered recursive merge before any depth guard could run.
+
+RED evidence:
+
+```text
+test_dotted_import_object_construction_charges_low_value_limit
+FAILED: QueueAnalysisLimit not raised
+
+test_dotted_import_object_depth_is_bounded_before_merge
+ERROR: RecursionError after 978 repeated _join frames
+```
+
+Unaliased dotted imports now validate a named 256-component tail-depth ceiling
+before constructing or merging provenance. Each wrapper is charged through the
+existing value-work counter, including the first import. The exact depth limit
+is accepted and produces a queue signal; limit + 1 and the 1,100-prefix hostile
+case raise structured `QueueAnalysisLimit`, while both import orders at an
+ordinary 16-level depth preserve queue and nonqueue siblings.
+
+GREEN evidence:
+
+```text
+3 focused dotted-depth selectors
+Ran 3 tests in 0.021s
+OK
+
+python3 -m unittest -q -k queue tests.test_architecture_fitness
+Ran 23 tests in 30.702s
+OK
+
+python3 -m unittest -q tests.test_architecture_fitness
+Ran 73 tests in 79.779s
+OK
+elapsed=79.95 exit=0
+
+python3 -m unittest discover -s tests -p 'test_*.py' -q
+Ran 367 tests in 188.887s
+OK
+elapsed=189.12 exit=0
+```
+
+Exact worktree fitness and change separation pass with risk monotonic
+`green -> red`; the changed-code budget remains exactly `10000/10000` because
+the production repair is line-neutral. Ruff, configured Bandit, compileall,
+typed spec 7/7, architecture validate/drift/diagram, README K16, diff whitespace,
+and protected-path checks pass. The text verifier, commit, and exact-SHA evidence
+follow after the final gate.
+
 ## Recursive dotted-branch rereview
 
 The rereview found that shallow package-root augmentation still replaced a
