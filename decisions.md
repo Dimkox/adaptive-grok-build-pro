@@ -218,3 +218,7 @@ Bind cleanup identity from the descriptor returned by the original create/open s
 ## 2026-08-28 — Derived data artifacts are first-class fitness inputs
 
 Treat packaged migration mirrors as applicability and inventory roots, not as checks reached only through a primary-path change. Secret-bearing data classifications require an explicitly authenticated `secret_flow`, while source ownership and allowed-data edges describe the credentialed process that actually performs the read or write.
+
+## 2026-08-28 — Bound migration work before crossing expensive stages
+
+Charge conservative schema, derived-root, matching, inventory, semantic-plan, and blob-read work before each stage, and consume SQL statements lazily. This makes every exhausted budget a typed unsupported result without first performing the work the budget is meant to bound.

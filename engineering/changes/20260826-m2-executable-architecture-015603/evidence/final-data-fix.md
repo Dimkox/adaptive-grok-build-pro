@@ -201,3 +201,61 @@ Unchanged exact and worktree migration evaluation is specifically N/A with
 drift fails in both modes.
 
 The final verifier and exact commit SHA follow after the evidence-bound gate.
+
+## Final migration early-stop rereview
+
+The final test and code reviews found that the migration work ceiling was
+checked only after derived-root, path-matching, and repository-inventory work,
+and that SQL analysis eagerly materialized every semicolon-delimited statement.
+The original mutation oracle also proved only the typed result, not that blob
+reads and SQL analysis were skipped after the aggregate limit.
+
+RED evidence:
+
+```text
+focused migration work/scanner selectors
+Ran 2 tests in 0.829s
+FAILED (failures=2)
+- zero work still called _migration_roots
+- the 8 MiB separator fixture reached the prohibited eager split
+
+mutation proof with both work checks disabled
+Ran 1 test in 0.232s
+FAILED: blob read after work limit
+```
+
+One staged `_MigrationAnalysis` work counter now rejects a cheap schema-count
+upper bound before root discovery, charges the derived-root index before SQL
+matching, charges changed SQL against the root index before matching, and
+charges inventory, semantic-plan, and blob-read work before the corresponding
+downstream operations. SQL statements are consumed incrementally with bounded
+comment-aware matching; statement and finding limits stop before the next
+predicate evaluation or finding publication. Every ceiling remains typed
+unsupported.
+
+GREEN evidence on the final tracked tree:
+
+```text
+focused final-review selectors
+Ran 2 tests in 1.244s
+OK
+
+focused migration regression matrix
+Ran 4 tests in 2.210s
+OK
+
+python3 -m unittest -q tests.test_architecture_fitness
+Ran 78 tests in 82.514s
+OK
+elapsed=82.69 exit=0
+
+python3 -m unittest discover -s tests -p 'test_*.py' -q
+Ran 373 tests in 192.841s
+OK
+elapsed=193.07 exit=0
+```
+
+Exact worktree fitness passes with `code_budget=pass` at `10000/10000`,
+`change_separation=pass`, and monotonic risk `green -> red`. The repair adds no
+runtime dependency, migration artifact, service, external action, or Trust CI
+source change.

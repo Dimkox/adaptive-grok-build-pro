@@ -3526,10 +3526,34 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 "ALTER TABLE item ADD COLUMN value text NOT NULL;\n",
             )
         head = repo.commit("migration limit stress")
-        with patch.object(FIT, "MAX_MIGRATION_WORK", 4, create=True):
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        snapshot = diff._head_state.snapshot
+        with patch.object(FIT, "MAX_MIGRATION_WORK", 0), \
+             patch.object(FIT, "_migration_roots", side_effect=AssertionError("roots after zero work")), \
+             patch.object(FIT, "_matches", side_effect=AssertionError("matching after zero work")), \
+             patch.object(FIT, "_repository_paths", side_effect=AssertionError("inventory after zero work")):
+            zero = FIT._migration_safety(repo.root, snapshot, diff)
+        cheap_work = sum(len(rule["path_prefixes"]) for rule in rules["migration_policies"]) * max(
+            1, sum(len(node["repository_paths"]) for node in snapshot.system["nodes"])
+        )
+        with patch.object(FIT, "MAX_MIGRATION_WORK", cheap_work), \
+             patch.object(FIT, "_migration_roots", wraps=FIT._migration_roots) as roots, \
+             patch.object(FIT, "_matches", side_effect=AssertionError("matching after root limit")), \
+             patch.object(FIT, "_repository_paths", side_effect=AssertionError("inventory after root limit")):
+            root_limited = FIT._migration_safety(repo.root, snapshot, diff)
+        for result in (zero, root_limited):
+            self.assertEqual(result.status, "unsupported")
+            self.assertIn("work limit", " ".join(result.findings))
+        self.assertEqual(roots.call_count, 1)
+
+        with patch.object(FIT, "MAX_MIGRATION_WORK", 4, create=True), \
+             patch.object(FIT, "read_diff_files", side_effect=AssertionError("blob read after work limit")) as reads, \
+             patch.object(FIT._MigrationAnalysis, "source", side_effect=AssertionError("SQL analysis after work limit")) as sources:
             limited = self._results(self._evaluate(repo, base, head))["migration_safety"]
         self.assertEqual(limited.status, "unsupported")
         self.assertIn("work limit", " ".join(limited.findings))
+        reads.assert_not_called()
+        sources.assert_not_called()
 
         with patch.object(FIT, "MAX_MIGRATION_FINDINGS", 3, create=True):
             capped = self._results(self._evaluate(repo, base, head))["migration_safety"]
@@ -3589,6 +3613,25 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertEqual(result.status, "unsupported")
                 self.assertIn(marker, " ".join(result.findings))
                 self.assertEqual(calls, 1 if label == "bytes" else 2)
+
+        class NoSplit(str):
+            def split(self, *args, **kwargs):
+                raise AssertionError("eager SQL split")
+
+        bounded_statement = "UPDATE item SET id=id WHERE id BETWEEN 1 AND 2;"
+        huge_source = bounded_statement * 3 + ";" * (8 * 1024 * 1024)
+        original_sub = FIT.re.sub
+
+        def no_split_sub(*args, **kwargs):
+            return NoSplit(original_sub(*args, **kwargs))
+
+        analysis = FIT._MigrationAnalysis()
+        with patch.object(FIT, "MAX_MIGRATION_STATEMENTS", 2), \
+             patch.object(FIT.re, "sub", side_effect=no_split_sub), \
+             patch.object(FIT, "_bounded_migrate_predicate", wraps=FIT._bounded_migrate_predicate) as predicates, \
+             self.assertRaisesRegex(FIT.ArchitectureError, "statement work limit"):
+            analysis.source("FIT-MIGRATION", "migrations/001_migrate.sql", "migrate", huge_source)
+        self.assertEqual((analysis.statements, predicates.call_count), (2, 2))
 
     def test_migration_content_and_versions_are_conservative_for_every_status(self) -> None:
         cases = (

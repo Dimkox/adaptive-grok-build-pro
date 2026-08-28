@@ -540,7 +540,12 @@ class _MigrationAnalysis:
         self.root_plans: dict[str, list[int]] = {}
         self.scope: tuple[str, ...] = ()
         self.issues: list[tuple[bool, str]] = []
-        self.statements = 0
+        self.statements = self.work = 0
+
+    def bound(self, amount: int) -> None:
+        self.work += amount
+        if self.work > MAX_MIGRATION_WORK:
+            raise ArchitectureError("migration aggregate work limit exceeded", code="limit")
 
     def record(self, unsupported: bool, message: str) -> None:
         if len(self.issues) >= MAX_MIGRATION_FINDINGS - 1:
@@ -560,13 +565,12 @@ class _MigrationAnalysis:
         return values
 
     def source(self, rule_id: str, path: str, phase: str, source: str) -> None:
-        if not (statements := [item.strip() for item in re.sub(r"--[^\n]*", "", source).split(";") if item.strip()]):
-            self.record(True, f"{rule_id}: migration contains no analyzable SQL: {path}")
-            return
-        for statement in statements:
-            if self.statements >= MAX_MIGRATION_STATEMENTS or len(self.issues) >= MAX_MIGRATION_FINDINGS - 1:
-                message = "migration statement work limit exceeded" if self.statements >= MAX_MIGRATION_STATEMENTS else "migration finding limit exceeded"
-                raise ArchitectureError(message, code="limit")
+        found = False
+        statements = (re.sub(r"--[^\n]*", "", part[0]).strip() for part in re.finditer(r"(?m)(?:--[^\n]*(?:\n|$)|[^;])+", source))
+        for statement in filter(None, statements):
+            found = True
+            if (statement_limit := self.statements >= MAX_MIGRATION_STATEMENTS) or len(self.issues) >= MAX_MIGRATION_FINDINGS - 1:
+                raise ArchitectureError("migration statement work limit exceeded" if statement_limit else "migration finding limit exceeded", code="limit")
             self.statements += 1
             normalized = " ".join(statement.upper().split())
             verb = normalized.split()[0]
@@ -586,10 +590,10 @@ class _MigrationAnalysis:
                 (phase == "contract" and re.match(r"^ALTER TABLE\b.*\bADD\b", normalized), False, "expansive SQL in contract phase"),
                 (phase == "contract" and not re.match(r"^(ALTER TABLE .* DROP|DROP|TRUNCATE)\b", normalized), True, "unsupported contract SQL semantics"),
             )
-            for applies, unsupported, message in checks:
-                if applies:
-                    self.record(unsupported, f"{rule_id}: {message}: {path}")
-                    break
+            if issue := next(((unsupported, message) for applies, unsupported, message in checks if applies), None):
+                self.record(issue[0], f"{rule_id}: {issue[1]}: {path}")
+        if not found:
+            self.record(True, f"{rule_id}: migration contains no analyzable SQL: {path}")
 
     def check(self, plan: _MigrationPlan, blobs: dict[str, bytes | None]) -> None:
         rule, rule_id = plan.rule, plan.rule["id"]
@@ -657,30 +661,28 @@ def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: Architec
         return _not_applicable("migration_safety", predicate, (), "no_declared_rules")
     analysis = _MigrationAnalysis()
     try:
-        work = sum(len(rule["path_prefixes"]) for rule in rules) * sum(
-            len(node["repository_paths"]) for node in snapshot.system["nodes"])
+        analysis.bound(sum(len(rule["path_prefixes"]) for rule in rules) * max(1, sum(
+            len(node["repository_paths"]) for node in snapshot.system["nodes"])))
         seeds = []
         for rule in rules:
-            primary = tuple(rule["path_prefixes"])
             mirrors = tuple(
                 (prefix, tuple(path for path in _migration_roots(snapshot, (prefix,)) if path != prefix))
-                for prefix in primary)
-            roots = tuple(sorted(set(primary).union(*(items for _, items in mirrors))))
+                for prefix in rule["path_prefixes"])
+            analysis.bound(len(roots := tuple(sorted(set(rule["path_prefixes"]).union(*(paths for _, paths in mirrors))))))
             seeds.append((rule, roots, mirrors))
             for migration_root in roots:
                 analysis.root_plans.setdefault(migration_root, []).append(len(seeds) - 1)
         sql = tuple(item for item in diff.artifacts if Path(item.path).suffix.lower() == ".sql")
-        def matched_plans(path: str) -> set[int]:
-            return {index for prefix, indices in analysis.root_plans.items()
-                    if _matches(path, (prefix,)) for index in indices}
-        matches = {artifact.path: matched_plans(artifact.path) for artifact in sql}
+        analysis.bound(len(sql) * max(1, len(analysis.root_plans)))
+        matches = {item.path: {index for prefix, indices in analysis.root_plans.items()
+                               if _matches(item.path, (prefix,)) for index in indices}
+                   for item in sql}
         applicable = tuple(item for item in sql if matches[item.path])
+        analysis.bound(len(seeds))
         inventory = _repository_paths(root, diff, tuple(analysis.root_plans))
         analysis.scope = (*analysis.root_plans, *inventory, *(item.path for item in applicable))
-        work += len(sql) * max(1, len(analysis.root_plans)) + len(inventory) * len(seeds)
-        work += 2 * len(applicable) * len(seeds) * max(1, len(analysis.root_plans))
-        if work > MAX_MIGRATION_WORK:
-            raise ArchitectureError("migration aggregate work limit exceeded", code="limit")
+        analysis.bound(len(inventory) * len(seeds)
+                       + 2 * len(applicable) * len(seeds) * max(1, len(analysis.root_plans)))
         if not applicable:
             return _not_applicable("migration_safety", predicate, analysis.scope,
                                    "no_matching_sql_change", (rule["id"] for rule in rules))
@@ -699,8 +701,7 @@ def _migration_safety(root: Path, snapshot: ArchitectureSnapshot, diff: Architec
                     if _matches(item.path, (prefix,)) for mirror in mirror_roots)
                 reads.update(copies[item.path])
             analysis.plans.append(_MigrationPlan(rule, roots, relevant, primary, head_paths, copies))
-        if work + len(reads) > MAX_MIGRATION_WORK:
-            raise ArchitectureError("migration aggregate work limit exceeded", code="limit")
+        analysis.bound(len(reads))
         blobs = analysis.read(root, diff, reads)
         for plan in analysis.plans:
             analysis.check(plan, blobs)
