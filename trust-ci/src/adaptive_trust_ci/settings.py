@@ -50,6 +50,19 @@ def _immutable_image(name: str) -> str:
     return value
 
 
+def _trusted_root(name: str, value: str) -> Path:
+    raw = value.strip()
+    if not raw:
+        raise SettingsError(f'{name} cannot be empty')
+    path = Path(raw)
+    if not path.is_absolute():
+        raise SettingsError(f'{name} must be absolute')
+    resolved = path.resolve()
+    if resolved == Path('/'):
+        raise SettingsError(f'{name} must not be filesystem root')
+    return resolved
+
+
 @dataclass(frozen=True)
 class CommonSettings:
     database_url: str
@@ -110,9 +123,9 @@ class WorkerSettings:
     def load(cls) -> 'WorkerSettings':
         workspace_root = Path(os.environ.get('TRUST_CI_WORKSPACE_ROOT', '/var/lib/adaptive-trust-ci/workspaces')).resolve()
         workspace_host_root = Path(_required('TRUST_CI_WORKSPACE_HOST_ROOT'))
-        holdout_host_path = Path(_required('TRUST_CI_HOLDOUT_HOST_PATH'))
-        holdout_path = Path(_required('TRUST_CI_HOLDOUT_PATH'))
-        if not workspace_host_root.is_absolute() or not holdout_host_path.is_absolute() or not holdout_path.is_absolute():
+        holdout_host_path = _trusted_root('TRUST_CI_HOLDOUT_HOST_PATH', _required('TRUST_CI_HOLDOUT_HOST_PATH'))
+        holdout_path = _trusted_root('TRUST_CI_HOLDOUT_PATH', _required('TRUST_CI_HOLDOUT_PATH'))
+        if not workspace_host_root.is_absolute():
             raise SettingsError('Docker daemon paths must be absolute')
         worker_id = os.environ.get('TRUST_CI_WORKER_ID', f'{socket.gethostname()}-{os.getpid()}').strip()
         if not worker_id:

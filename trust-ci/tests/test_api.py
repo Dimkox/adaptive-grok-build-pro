@@ -85,27 +85,29 @@ class ApiTests(unittest.TestCase):
         signature = hmac.new(self.settings.webhook_secret.encode(), body, hashlib.sha256).hexdigest()
         return {'X-Hub-Signature-256': f'sha256={signature}', 'X-GitHub-Event': 'pull_request'}
 
-    def catalog(self, *, changed=False) -> PolicyCatalog:
+    def catalog(self, *, changed=False, include_platform=True) -> PolicyCatalog:
         common = policy_data()
         common.pop('allowed_repositories')
         common.pop('commands')
         common.pop('holdout')
-        data = {
-            **common,
-            'repository_profiles': [
+        profiles = [
                 {
                     'repository': 'Dimkox/adaptive-grok-build-pro',
                     'commands': policy_data()['commands'],
                     'holdout': {**policy_data(holdout_digest='a' * 64)['holdout'], 'host_path': '/srv/holdouts/adaptive-grok-build-pro'},
                 },
-                {
+        ]
+        if include_platform:
+            profiles.append({
                     'repository': 'Dimkox/ii-tonya-platform',
                     'commands': [
                         {'name': 'platform-unit', 'argv': ['pytest', '-q'], 'timeout_seconds': 120, 'required': True},
                     ],
                     'holdout': {**policy_data(holdout_digest='b' * 64)['holdout'], 'host_path': '/srv/holdouts/ii-tonya-platform'},
-                },
-            ],
+                })
+        data = {
+            **common,
+            'repository_profiles': profiles,
         }
         if changed:
             data['repository_profiles'][0]['commands'][0]['name'] = 'unit-v2'
@@ -180,11 +182,22 @@ class ApiTests(unittest.TestCase):
             self.assertEqual(response.status_code, 403)
         self.assertEqual(self.store.get_job_for_sha('Dimkox/adaptive-grok-build-pro', sha('b')).status, 'queued')
 
+    def test_catalog_unknown_and_case_variant_closed_events_cannot_cancel_job(self) -> None:
+        catalog = self.catalog()
+        store = MemoryStore()
+        client = TestClient(create_app(self.settings, store=store, policy=catalog, trust_store=self.trust_store))
+        opened = self.webhook_body(repository='Dimkox/adaptive-grok-build-pro')
+        client.post('/webhooks/github', content=opened, headers=self.headers(opened))
+        for repository in ('attacker/repo', 'dimkox/adaptive-grok-build-pro'):
+            closed = self.webhook_body('closed', repository=repository)
+            self.assertEqual(client.post('/webhooks/github', content=closed, headers=self.headers(closed)).status_code, 403)
+        self.assertEqual(store.get_job_for_sha('Dimkox/adaptive-grok-build-pro', sha('b')).status, 'queued')
+
     def test_catalog_approval_fails_closed_when_bound_profile_is_removed(self) -> None:
         catalog = self.catalog()
         store = MemoryStore()
         first_client = TestClient(create_app(self.settings, store=store, policy=catalog, trust_store=self.trust_store))
-        body = self.webhook_body(repository='Dimkox/adaptive-grok-build-pro')
+        body = self.webhook_body(repository='Dimkox/ii-tonya-platform')
         job = store.get_job(first_client.post('/webhooks/github', content=body, headers=self.headers(body)).json()['job_id'])
         assert job is not None
         claimed = store.claim('worker', catalog.lease_seconds, now=now())
@@ -195,10 +208,43 @@ class ApiTests(unittest.TestCase):
             pr_number=job.pr_number, base_sha=job.base_sha, head_sha=job.head_sha,
             policy_digest=job.policy_digest, scope='governance', reason='reviewed', now=utc_now(),
         )
-        changed_client = TestClient(create_app(self.settings, store=store, policy=self.catalog(changed=True), trust_store=self.trust_store))
+        changed_client = TestClient(create_app(self.settings, store=store, policy=self.catalog(include_platform=False), trust_store=self.trust_store))
         response = changed_client.post('/approvals', json=sign_approval(payload, self.human).to_dict())
         self.assertEqual(response.status_code, 409)
         self.assertEqual(store.get_job(job.job_id).status, 'needs_approval')
+
+    def test_catalog_valid_approval_requeues_bound_job(self) -> None:
+        catalog = self.catalog()
+        store = MemoryStore()
+        client = TestClient(create_app(self.settings, store=store, policy=catalog, trust_store=self.trust_store))
+        request = JobRequest('Dimkox/adaptive-grok-build-pro', 15, sha('a'), sha('b'), 'feat/x', 'main')
+        profile = catalog.resolve_repository(request.repository)
+        job, _ = store.enqueue(request, profile.digest, profile.max_attempts, now=now())
+        claimed = store.claim('worker', profile.lease_seconds, now=now())
+        assert claimed is not None
+        store.finish(job.job_id, 'worker', 'needs_approval', {'missing_scopes': ['governance']}, failure_code='approval-required', now=now())
+        payload = ApprovalPayload.new(
+            actor='dmitry', key_id=self.human.key_id, repository=job.repository,
+            pr_number=job.pr_number, base_sha=job.base_sha, head_sha=job.head_sha,
+            policy_digest=profile.digest, scope='governance', reason='reviewed', now=utc_now(),
+        )
+        response = client.post('/approvals', json=sign_approval(payload, self.human).to_dict())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(store.get_job(job.job_id).status, 'queued')
+
+    def test_catalog_digest_epoch_creates_distinct_job_and_preserves_old_binding(self) -> None:
+        store = MemoryStore()
+        first = self.catalog()
+        second = self.catalog(changed=True)
+        first_client = TestClient(create_app(self.settings, store=store, policy=first, trust_store=self.trust_store))
+        second_client = TestClient(create_app(self.settings, store=store, policy=second, trust_store=self.trust_store))
+        body = self.webhook_body(repository='Dimkox/adaptive-grok-build-pro')
+        old_job = store.get_job(first_client.post('/webhooks/github', content=body, headers=self.headers(body)).json()['job_id'])
+        new_job = store.get_job(second_client.post('/webhooks/github', content=body, headers=self.headers(body)).json()['job_id'])
+        assert old_job is not None and new_job is not None
+        self.assertNotEqual(old_job.job_id, new_job.job_id)
+        self.assertNotEqual(old_job.policy_digest, new_job.policy_digest)
+        self.assertNotEqual(first.resolve_repository(old_job.repository).check_name, second.resolve_repository(new_job.repository).check_name)
 
     def test_kill_switch_blocks_new_jobs_without_needing_github_credentials(self) -> None:
         self.common.kill_switch_path.write_text('stop')

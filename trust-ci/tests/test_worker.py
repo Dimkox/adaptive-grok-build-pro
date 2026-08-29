@@ -7,8 +7,8 @@ from types import SimpleNamespace
 
 from _support import now, policy_data, sha
 from adaptive_trust_ci.models import JobRequest
-from adaptive_trust_ci.policy import PolicyCatalog
-from adaptive_trust_ci.settings import CommonSettings, WorkerSettings
+from adaptive_trust_ci.policy import PolicyCatalog, PolicyError
+from adaptive_trust_ci.settings import CommonSettings, SettingsError, WorkerSettings, _trusted_root
 from adaptive_trust_ci.store import MemoryStore
 from adaptive_trust_ci.worker import Worker
 
@@ -105,12 +105,18 @@ class WorkerTests(unittest.TestCase):
         Worker._validate_catalog_paths(settings, valid)
         for local, host in (
             ('/srv/local-holdouts', '/srv/daemon-holdouts/adaptive-grok-build-pro'),
-            ('/srv/local-holdouts/../other/adaptive-grok-build-pro', '/srv/daemon-holdouts/adaptive-grok-build-pro'),
             ('/srv/local-holdouts/adaptive-grok-build-pro', '/srv/other/adaptive-grok-build-pro'),
         ):
-            with self.assertRaisesRegex(Exception, 'holdout'):
+            with self.assertRaisesRegex(SettingsError, 'holdout'):
                 data = self.catalog_data_with_paths(local, host)
                 Worker._validate_catalog_paths(settings, data)
+        with self.assertRaisesRegex(PolicyError, 'parent traversal'):
+            self.catalog_data_with_paths('/srv/local-holdouts/../other/adaptive-grok-build-pro', '/srv/daemon-holdouts/adaptive-grok-build-pro')
+
+    def test_configured_holdout_roots_reject_filesystem_root(self) -> None:
+        for name in ('TRUST_CI_HOLDOUT_PATH', 'TRUST_CI_HOLDOUT_HOST_PATH'):
+            with self.assertRaisesRegex(SettingsError, name):
+                _trusted_root(name, '/')
 
     def catalog_data_with_paths(self, local: str, host: str) -> PolicyCatalog:
         data = {
