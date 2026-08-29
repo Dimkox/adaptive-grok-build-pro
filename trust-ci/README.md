@@ -10,6 +10,18 @@ adaptive-trust-ci/verified@<first-12-hex-of-policy-sha256>
 
 The suffix is a policy epoch. A green check produced under an older policy or holdout digest cannot satisfy the current protected-branch requirement.
 
+## Repository-scoped policy profiles
+
+Schema version 1 supports two mutually exclusive policy shapes. Legacy mode uses `allowed_repositories`, root `commands`, and root `holdout`; it preserves the existing policy digest and Check Run name. Catalog mode uses `repository_profiles`, with one exact case-sensitive `repository` plus profile-specific `commands` and `holdout`, while status, pipeline, retry/lease limits, sandbox, environment, and approval rules remain common. The complete effective profile is hashed, so its digest remains the durable job binding and produces its own `adaptive-trust-ci/verified@<policy-sha12>` Check Run.
+
+Catalog lookup has no wildcard, alias, normalization, or default fallback. Unknown or case-variant repositories are rejected before enqueue; a worker resolves the durable `(repository, policy_digest)` pair before checkout and finishes stale or unavailable bindings as non-success. A change to one profile rotates only that profile’s epoch; a common-field change rotates every profile.
+
+Repository profiles are a code/config capability in this repository, pending a separately reviewed and approved server-side policy and external holdout installation. The example at `config/policy.example.json` contains placeholders only; it is not a deployed policy and does not claim that either repository has been enabled.
+
+### Profile rollout and rollback
+
+Roll out compatible API and worker binaries first while the legacy policy remains active. Separately review the server-mounted catalog and each external holdout, drain workers, install the catalog atomically for API and workers, then verify each repository’s App-owned exact-SHA Check Run and signed attestation before changing branch protection. On failure, drain workers and restore the previous reviewed binaries plus legacy policy as one unit; preserve PostgreSQL jobs and attestations, and re-enqueue unavailable-digest work only at the exact SHA under the restored epoch.
+
 Local Grok hooks, prompt files, change packages, delegated local grants and `.grok-stack/runtime` remain useful workflow inputs. They are not merge authority.
 
 ## Trust boundary

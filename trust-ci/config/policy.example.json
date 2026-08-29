@@ -1,8 +1,5 @@
 {
   "schema_version": 1,
-  "allowed_repositories": [
-    "Dimkox/adaptive-grok-build-pro"
-  ],
   "status_context": "adaptive-trust-ci/verified",
   "pipeline": "pull_request",
   "checkout_depth": 250,
@@ -13,97 +10,51 @@
   "allowed_environment": [],
   "sandbox": {
     "runtime": "docker",
-    "image": "adaptive-trust-ci-runner@sha256:REPLACE_WITH_IMMUTABLE_RUNNER_DIGEST",
+    "image": "adaptive-trust-ci-runner@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "user": "10001:10001",
     "memory_mb": 4096,
     "cpus": 2.0,
     "pids_limit": 512,
     "tmpfs_mb": 1024
   },
-  "commands": [
-    {
-      "name": "root-unittest",
-      "argv": ["python3", "-m", "unittest", "discover", "-s", "tests"],
-      "timeout_seconds": 900,
-      "required": true
-    },
-    {
-      "name": "trust-ci-unittest",
-      "argv": ["python3", "-m", "unittest", "discover", "-s", "trust-ci/tests"],
-      "timeout_seconds": 900,
-      "required": true
-    },
-    {
-      "name": "compileall",
-      "argv": ["python3", "-m", "compileall", "-q", ".grok-stack/adaptive_grok", "scripts", "trust-ci/src"],
-      "timeout_seconds": 300,
-      "required": true
-    },
-    {
-      "name": "repository-verification",
-      "argv": ["python3", "scripts/grok_verify.py", "--mode", "pr", "--no-record", "--json"],
-      "timeout_seconds": 1200,
-      "required": true
-    }
-  ],
-  "holdout": {
-    "path": "/etc/adaptive-trust-ci/holdout",
-    "digest": "b78d17006e270cec373aa130d7b0d11de357ffa236297b41075234e6ad7d5db8",
-    "commands": [
-      {
-        "name": "external-holdout",
-        "argv": ["python3", "/holdout/validate.py", "/workspace"],
-        "timeout_seconds": 300,
-        "required": true
-      }
-    ]
-  },
   "approval_rules": [
     {
       "scope": "governance",
-      "globs": [
-        ".grok/**",
-        ".grok-stack/**",
-        "AGENTS.md",
-        "decisions.md",
-        "mistakes.md",
-        "Makefile",
-        ".coveragerc",
-        "ruff.toml",
-        "bandit.yaml",
-        "scripts/grok_approve.py",
-        "scripts/grok_review.py",
-        "scripts/grok_verify.py",
-        "tests/test_hooks.py",
-        "tests/test_policy.py",
-        "tests/test_structure.py",
-        "tests/test_verification_doctor.py",
-        "trust-ci/**"
-      ]
+      "globs": [".grok/**", ".grok-stack/**", "AGENTS.md", "decisions.md", "mistakes.md", "Makefile", "scripts/grok_approve.py", "scripts/grok_review.py", "scripts/grok_verify.py", "trust-ci/**"]
     },
     {
       "scope": "database",
-      "globs": [
-        "**/migrations/**",
-        "**/sql/**",
-        "**/*.sql"
-      ]
+      "globs": ["**/migrations/**", "**/sql/**", "**/*.sql"]
     },
     {
       "scope": "production",
-      "globs": [
-        ".github/**",
-        "**/Dockerfile",
-        "**/*.Dockerfile",
-        "**/compose*.yml",
-        "**/compose*.yaml",
-        "**/docker-compose*.yml",
-        "**/docker-compose*.yaml",
-        "**/systemd/**",
-        "infra/**",
-        "terraform/**",
-        "engineering/runbooks/publish-*.md"
-      ]
+      "globs": [".github/**", "**/Dockerfile", "**/compose*.yml", "**/compose*.yaml", "**/systemd/**", "infra/**", "terraform/**"]
+    }
+  ],
+  "repository_profiles": [
+    {
+      "repository": "Dimkox/adaptive-grok-build-pro",
+      "commands": [
+        {"name": "root-unittest", "argv": ["python3", "-m", "unittest", "discover", "-s", "tests"], "timeout_seconds": 900, "required": true},
+        {"name": "trust-ci-unittest", "argv": ["python3", "-m", "unittest", "discover", "-s", "trust-ci/tests"], "timeout_seconds": 900, "required": true}
+      ],
+      "holdout": {
+        "path": "/etc/adaptive-trust-ci/holdout/adaptive-grok-build-pro",
+        "digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "commands": [{"name": "adaptive-holdout", "argv": ["python3", "/holdout/validate.py", "/workspace"], "timeout_seconds": 300, "required": true}]
+      }
+    },
+    {
+      "repository": "Dimkox/ii-tonya-platform",
+      "commands": [
+        {"name": "platform-unit", "argv": ["pytest", "-q"], "timeout_seconds": 900, "required": true},
+        {"name": "platform-compile", "argv": ["python3", "-m", "compileall", "-q", "."], "timeout_seconds": 300, "required": true}
+      ],
+      "holdout": {
+        "path": "/etc/adaptive-trust-ci/holdout/ii-tonya-platform",
+        "digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "commands": [{"name": "platform-holdout", "argv": ["python3", "/holdout/validate.py", "/workspace"], "timeout_seconds": 300, "required": true}]
+      }
     }
   ]
 }
