@@ -2,6 +2,11 @@
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-08-29 — Editable install polluted the source tree
+
+**Symptom:** Baseline dependency setup created an untracked `trust-ci/src/adaptive_trust_ci.egg-info/` directory.
+**Root cause:** `pip install -e trust-ci[test]` was run from the repository instead of building/installing non-editably into the temporary virtual environment. Use a non-editable install or direct `PYTHONPATH` for disposable verification environments.
+
 ## 2026-08-24 — Misread «приложуха» as a public website
 
 **Symptom:** Agents treated «приложуха» as a public website instead of GitHub App `https://github.com/apps/adaptive-trust-ci`.

@@ -1,0 +1,79 @@
+schema_version: 1
+change_id: "20260829-add-repository-scoped-immutable-policy-profiles-f778c6"
+objective:
+  id: OBJ-001
+  statement: "Verify multiple exact GitHub repositories with isolated immutable Trust CI profiles while preserving the legacy schema-v1 trust contract."
+  success_metric: "Automated compatibility, isolation, fail-closed, retry, and replay scenarios passing"
+  target: "100% of specified P0 scenarios"
+risk:
+  tier: "yellow"
+  domains:
+    - "api"
+    - "event"
+    - "security"
+acceptance_criteria:
+  - id: AC-001
+    statement: "Legacy schema-v1 digest and check name are unchanged"
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_policy.py
+  - id: AC-002
+    statement: "Exact repository selection persists the effective profile digest"
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_api.py
+  - id: AC-003
+    statement: "Unknown or stale bindings fail before checkout or commands"
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_runner.py
+  - id: AC-004
+    statement: "Repository-specific changes do not rotate unrelated profile epochs"
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_policy.py
+invariants:
+  - id: INV-001
+    statement: "Policy and holdout remain immutable server-mounted inputs"
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260829-add-repository-scoped-immutable-policy-profiles-f778c6/evidence/code-review.md
+  - id: INV-002
+    statement: "Approvals, attestations, checks, retries, and replay bind exact repository head and profile digest"
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_runner.py
+  - id: INV-003
+    statement: "Only an App-owned exact-SHA success can satisfy the configured epoch gate"
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_m0_invariants.py
+forbidden_outcomes:
+  - id: FORBID-001
+    statement: "Wildcard default case-normalized or cross-repository profile fallback"
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_policy.py
+  - id: FORBID-002
+    statement: "Database history rewritten or rebound to a new profile"
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260829-add-repository-scoped-immutable-policy-profiles-f778c6/evidence/code-review.md
+  - id: FORBID-003
+    statement: "Deployed policy secrets GitHub App or branch protection modified by this change"
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260829-add-repository-scoped-immutable-policy-profiles-f778c6/evidence/test-review.md
+contracts:
+  openapi: []
+  json_schema: []
+  events: []
+observability:
+  - metric: "repository_profile_contract_tests_pass"
+    proves:
+      - OBJ-001
+rollback:
+  strategy: "restore"
+  maximum_steps: 4
+approvals:
+  required_scopes: []
