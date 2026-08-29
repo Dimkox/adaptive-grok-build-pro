@@ -332,6 +332,72 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(second_github.completed[-1][2]['conclusion'], 'success')
         self.assertIn('replayed', second_github.completed[-1][2]['summary'])
 
+    def test_catalog_old_job_replay_keeps_old_epoch_and_does_not_reexecute_after_profile_change(self) -> None:
+        common = policy_data()
+        common.pop('allowed_repositories')
+        common.pop('commands')
+        common.pop('holdout')
+        catalog_data = {
+            **common,
+            'repository_profiles': [{
+                'repository': 'Dimkox/adaptive-grok-build-pro',
+                'commands': policy_data()['commands'],
+                'holdout': {
+                    **policy_data(holdout_path=str(self.holdout), holdout_digest=self.holdout_digest)['holdout'],
+                    'host_path': '/host/catalog/old',
+                },
+            }],
+        }
+        old_catalog = PolicyCatalog.from_dict(catalog_data)
+        old_policy = old_catalog.resolve_repository('Dimkox/adaptive-grok-build-pro')
+        request = JobRequest('Dimkox/adaptive-grok-build-pro', 19, sha('c'), sha('d'), 'feat/catalog', 'main')
+        old_job, _ = self.store.enqueue(request, old_policy.digest, old_policy.max_attempts, now=now())
+        old_claimed = self.store.claim('catalog-worker-1', old_policy.lease_seconds, now=now())
+        assert old_claimed is not None
+        self.policy = old_policy
+        first_github = FakeGitHub(fail_success_once=True)
+        first_runner, first_executor, _, _ = self.build_runner(
+            changed_files=['docs/x.md'], github=first_github, holdout_host_path=old_policy.holdout.host_path,
+        )
+        with self.assertRaisesRegex(RuntimeError, 'GitHub unavailable'):
+            first_runner.process(old_claimed, 'catalog-worker-1')
+        self.assertEqual(len(first_executor.calls), 3)
+        attestation = self.store.get_attestation(old_job.job_id)
+        assert attestation is not None
+        old_payload = verify_attestation(attestation, self.signer.public_key_pem())
+        self.assertEqual(old_payload.policy_digest, old_policy.digest)
+        self.store.retry(old_job.job_id, 'catalog-worker-1', 'GitHub unavailable', now=now())
+
+        changed_data = dict(catalog_data)
+        changed_data['repository_profiles'] = [dict(catalog_data['repository_profiles'][0])]
+        changed_data['repository_profiles'][0]['commands'] = [dict(item) for item in policy_data()['commands']]
+        changed_data['repository_profiles'][0]['commands'][0]['name'] = 'unit-v2'
+        new_catalog = PolicyCatalog.from_dict(changed_data)
+        new_policy = new_catalog.resolve_repository(request.repository)
+        new_job, created = self.store.enqueue(request, new_policy.digest, new_policy.max_attempts, now=now())
+        self.assertTrue(created)
+        self.assertNotEqual(new_job.job_id, old_job.job_id)
+        self.assertNotEqual(new_policy.check_name, old_policy.check_name)
+
+        replayed = self.store.claim('catalog-worker-2', old_policy.lease_seconds, now=now())
+        assert replayed is not None
+        self.policy = old_policy
+        second_github = FakeGitHub()
+        replay_runner, replay_executor, workspaces, tokens = self.build_runner(
+            changed_files=['should-not-checkout'], results=[], github=second_github,
+            holdout_host_path=old_policy.holdout.host_path,
+        )
+        outcome = replay_runner.process(replayed, 'catalog-worker-2')
+        self.assertEqual(outcome.status, 'passed')
+        self.assertEqual(replay_executor.calls, [])
+        self.assertEqual(workspaces, [])
+        self.assertEqual(tokens, [])
+        self.assertEqual(second_github.ensured[0][1], old_job.head_sha)
+        self.assertEqual(second_github.ensured[0][2]['name'], old_policy.check_name)
+        self.assertEqual(second_github.ensured[0][2]['external_id'], old_job.job_id)
+        replayed_payload = verify_attestation(self.store.get_attestation(old_job.job_id), self.signer.public_key_pem())
+        self.assertEqual(replayed_payload.policy_digest, old_policy.digest)
+
     def test_policy_digest_mismatch_fails_without_checkout(self) -> None:
         self.job.policy_digest = 'd' * 64
         github = FakeGitHub()
