@@ -40,7 +40,8 @@
       ],
       "holdout": {
         "path": "/etc/adaptive-trust-ci/holdout/adaptive-grok-build-pro",
-        "digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "host_path": "/etc/adaptive-trust-ci/holdout/adaptive-grok-build-pro",
+        "digest": "b78d17006e270cec373aa130d7b0d11de357ffa236297b41075234e6ad7d5db8",
         "commands": [{"name": "adaptive-holdout", "argv": ["python3", "/holdout/validate.py", "/workspace"], "timeout_seconds": 300, "required": true}]
       }
     },
@@ -52,6 +53,7 @@
       ],
       "holdout": {
         "path": "/etc/adaptive-trust-ci/holdout/ii-tonya-platform",
+        "host_path": "/etc/adaptive-trust-ci/holdout/ii-tonya-platform",
         "digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         "commands": [{"name": "platform-holdout", "argv": ["python3", "/holdout/validate.py", "/workspace"], "timeout_seconds": 300, "required": true}]
       }

@@ -16,7 +16,7 @@ Schema version 1 supports two mutually exclusive policy shapes. Legacy mode uses
 
 Catalog lookup has no wildcard, alias, normalization, or default fallback. Unknown or case-variant repositories are rejected before enqueue; a worker resolves the durable `(repository, policy_digest)` pair before checkout and finishes stale or unavailable bindings as non-success. A change to one profile rotates only that profile’s epoch; a common-field change rotates every profile.
 
-Repository profiles are a code/config capability in this repository, pending a separately reviewed and approved server-side policy and external holdout installation. The example at `config/policy.example.json` contains placeholders only; it is not a deployed policy and does not claim that either repository has been enabled.
+Repository profiles are a code/config capability in this repository, pending a separately reviewed and approved server-side policy and external holdout installation. The example at `config/policy.example.json` is illustrative only: the adaptive example digest matches the checked-in example bundle, while the second profile’s digest is a shape-valid placeholder; it is not a deployed policy and does not claim that either repository has been enabled.
 
 ### Profile rollout and rollback
 

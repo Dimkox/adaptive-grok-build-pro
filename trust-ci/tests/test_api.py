@@ -96,14 +96,14 @@ class ApiTests(unittest.TestCase):
                 {
                     'repository': 'Dimkox/adaptive-grok-build-pro',
                     'commands': policy_data()['commands'],
-                    'holdout': policy_data(holdout_digest='a' * 64)['holdout'],
+                    'holdout': {**policy_data(holdout_digest='a' * 64)['holdout'], 'host_path': '/srv/holdouts/adaptive-grok-build-pro'},
                 },
                 {
                     'repository': 'Dimkox/ii-tonya-platform',
                     'commands': [
                         {'name': 'platform-unit', 'argv': ['pytest', '-q'], 'timeout_seconds': 120, 'required': True},
                     ],
-                    'holdout': policy_data(holdout_digest='b' * 64)['holdout'],
+                    'holdout': {**policy_data(holdout_digest='b' * 64)['holdout'], 'host_path': '/srv/holdouts/ii-tonya-platform'},
                 },
             ],
         }

@@ -33,12 +33,12 @@ class WorkerTests(unittest.TestCase):
                 {
                     'repository': 'Dimkox/adaptive-grok-build-pro',
                     'commands': policy_data()['commands'],
-                    'holdout': policy_data(holdout_digest='a' * 64)['holdout'],
+                    'holdout': {**policy_data(holdout_digest='a' * 64)['holdout'], 'host_path': '/srv/holdouts/adaptive-grok-build-pro'},
                 },
                 {
                     'repository': 'Dimkox/ii-tonya-platform',
                     'commands': [{'name': 'platform-unit', 'argv': ['pytest'], 'timeout_seconds': 120, 'required': True}],
-                    'holdout': policy_data(holdout_digest='b' * 64)['holdout'],
+                    'holdout': {**policy_data(holdout_digest='b' * 64)['holdout'], 'host_path': '/srv/holdouts/ii-tonya-platform'},
                 },
             ],
         }
@@ -85,6 +85,15 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(result.status, 'failed')
         self.assertEqual(result.failure_code, 'policy-binding-unavailable')
         self.assertEqual(result.result['job_policy_digest'], job.policy_digest)
+
+    def test_runner_factory_receives_profile_host_path(self) -> None:
+        paths = []
+        def factory(policy):
+            paths.append(policy.holdout.host_path)
+            return RecordingRunner(policy, [])
+        store, _ = self._job('Dimkox/ii-tonya-platform', self.catalog.resolve_repository('Dimkox/ii-tonya-platform').digest)
+        Worker(self.settings, store, self.catalog, factory, threading.Event()).run(once=True)
+        self.assertEqual(paths, [Path('/srv/holdouts/ii-tonya-platform')])
 
 
 if __name__ == '__main__':

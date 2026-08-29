@@ -18,7 +18,7 @@ def catalog_data() -> dict:
             {
                 'repository': 'Dimkox/adaptive-grok-build-pro',
                 'commands': policy_data()['commands'],
-                'holdout': policy_data(holdout_digest='a' * 64)['holdout'],
+                'holdout': {**policy_data(holdout_digest='a' * 64)['holdout'], 'host_path': '/srv/holdouts/adaptive-grok-build-pro'},
             },
             {
                 'repository': 'Dimkox/ii-tonya-platform',
@@ -30,7 +30,7 @@ def catalog_data() -> dict:
                         'required': True,
                     },
                 ],
-                'holdout': policy_data(holdout_digest='b' * 64)['holdout'],
+                'holdout': {**policy_data(holdout_digest='b' * 64)['holdout'], 'host_path': '/srv/holdouts/ii-tonya-platform'},
             },
         ],
     }
@@ -86,6 +86,12 @@ class PolicyTests(unittest.TestCase):
         data = catalog_data()
         data['commands'] = []
         with self.assertRaisesRegex(PolicyError, 'mixed'):
+            PolicyCatalog.from_dict(data)
+
+    def test_catalog_requires_absolute_host_path(self) -> None:
+        data = catalog_data()
+        del data['repository_profiles'][0]['holdout']['host_path']
+        with self.assertRaisesRegex(PolicyError, 'host_path'):
             PolicyCatalog.from_dict(data)
     def test_digest_is_stable_for_equivalent_objects(self) -> None:
         first = policy_data()

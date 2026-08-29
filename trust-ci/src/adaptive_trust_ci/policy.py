@@ -128,6 +128,7 @@ class HoldoutSpec:
     path: Path
     digest: str
     commands: tuple[CommandSpec, ...]
+    host_path: Path | None = None
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> 'HoldoutSpec':
@@ -141,6 +142,10 @@ class HoldoutSpec:
             digest = require_digest(str(data.get('digest', '')), 'holdout.digest')
         except ValueError as exc:
             raise PolicyError(str(exc)) from exc
+        raw_host_path = data.get('host_path')
+        host_path = None if raw_host_path is None else Path(str(raw_host_path).strip())
+        if host_path is not None and not host_path.is_absolute():
+            raise PolicyError('holdout.host_path must be absolute on the Docker daemon host')
         commands_raw = data.get('commands')
         if not isinstance(commands_raw, list) or not commands_raw:
             raise PolicyError('holdout.commands must be non-empty')
@@ -149,14 +154,17 @@ class HoldoutSpec:
             raise PolicyError('every holdout command must be an object')
         if len({item.name for item in commands}) != len(commands):
             raise PolicyError('holdout command names must be unique')
-        return cls(path=path, digest=digest, commands=commands)
+        return cls(path=path, digest=digest, commands=commands, host_path=host_path)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        result = {
             'path': str(self.path),
             'digest': self.digest,
             'commands': [item.to_dict() for item in self.commands],
         }
+        if self.host_path is not None:
+            result['host_path'] = str(self.host_path)
+        return result
 
 
 @dataclass(frozen=True)
@@ -345,6 +353,8 @@ class PolicyCatalog:
                 'holdout': profile_raw['holdout'],
             }
             repositories.append(repository)
+            if 'host_path' not in profile_raw['holdout']:
+                raise PolicyError('repository profile holdout.host_path is required')
             profiles.append(Policy.from_dict(effective))
 
         ordered = sorted(zip(repositories, profiles), key=lambda item: item[0])

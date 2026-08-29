@@ -50,7 +50,7 @@ class Worker:
                 public_base_url=settings.common.public_base_url,
                 workspace_root=settings.workspace_root,
                 workspace_host_root=settings.workspace_host_root,
-                holdout_host_path=settings.holdout_host_path,
+                holdout_host_path=policy.holdout.host_path or settings.holdout_host_path,
             )
         return cls(settings=settings, store=store, catalog=catalog, runner_factory=runner_factory, stop_event=threading.Event())
 
