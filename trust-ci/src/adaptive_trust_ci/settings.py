@@ -102,6 +102,7 @@ class WorkerSettings:
     workspace_root: Path
     workspace_host_root: Path
     holdout_host_path: Path
+    holdout_path: Path
     worker_id: str
     poll_interval_seconds: float
 
@@ -110,7 +111,8 @@ class WorkerSettings:
         workspace_root = Path(os.environ.get('TRUST_CI_WORKSPACE_ROOT', '/var/lib/adaptive-trust-ci/workspaces')).resolve()
         workspace_host_root = Path(_required('TRUST_CI_WORKSPACE_HOST_ROOT'))
         holdout_host_path = Path(_required('TRUST_CI_HOLDOUT_HOST_PATH'))
-        if not workspace_host_root.is_absolute() or not holdout_host_path.is_absolute():
+        holdout_path = Path(_required('TRUST_CI_HOLDOUT_PATH'))
+        if not workspace_host_root.is_absolute() or not holdout_host_path.is_absolute() or not holdout_path.is_absolute():
             raise SettingsError('Docker daemon paths must be absolute')
         worker_id = os.environ.get('TRUST_CI_WORKER_ID', f'{socket.gethostname()}-{os.getpid()}').strip()
         if not worker_id:
@@ -125,6 +127,7 @@ class WorkerSettings:
             workspace_root=workspace_root,
             workspace_host_root=workspace_host_root,
             holdout_host_path=holdout_host_path,
+            holdout_path=holdout_path,
             worker_id=worker_id,
             poll_interval_seconds=_float('TRUST_CI_POLL_INTERVAL_SECONDS', 2.0, 0.1, 300.0),
         )

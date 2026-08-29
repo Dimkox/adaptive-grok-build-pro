@@ -9,7 +9,7 @@ from pathlib import Path
 from _support import now, policy_data, sha
 from adaptive_trust_ci.holdout import bundle_digest
 from adaptive_trust_ci.models import ApprovalPayload, Checkout, CommandResult, JobRequest
-from adaptive_trust_ci.policy import Policy
+from adaptive_trust_ci.policy import Policy, PolicyCatalog
 from adaptive_trust_ci.runner import JobRunner
 from adaptive_trust_ci.signing import Signer, sign_approval, verify_attestation
 from adaptive_trust_ci.store import MemoryStore
@@ -121,7 +121,7 @@ class RunnerTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp.cleanup()
 
-    def build_runner(self, *, changed_files=(), results=None, github=None, mutate_on=()):
+    def build_runner(self, *, changed_files=(), results=None, github=None, mutate_on=(), holdout_host_path=None):
         executor = FakeExecutor(
             results or [result('external-holdout'), result('unit'), result('compile')],
             mutate_on=mutate_on,
@@ -147,7 +147,7 @@ class RunnerTests(unittest.TestCase):
             public_base_url='https://ci.example.com',
             workspace_root=Path(tempfile.gettempdir()),
             workspace_host_root=Path('/host/trust-ci-workspaces'),
-            holdout_host_path=Path('/host/trust-ci-holdout'),
+            holdout_host_path=holdout_host_path or Path('/host/trust-ci-holdout'),
             now_fn=now,
             workspace_factory=workspace_factory,
             executor_factory=lambda _sandbox: executor,
@@ -197,6 +197,53 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(payload.command_results[0]['name'], 'holdout-bundle-integrity')
         self.assertEqual(payload.command_results[0]['output_sha256'], self.holdout_digest)
         self.assertTrue(workspaces[0].cleaned)
+
+    def test_catalog_profiles_reach_executor_with_isolated_commands_mounts_and_attestations(self) -> None:
+        second_holdout = Path(self.temp.name) / 'second-holdout'
+        second_holdout.mkdir()
+        (second_holdout / 'validate.py').write_text('print("second")\n', encoding='utf-8')
+        common = policy_data()
+        common.pop('allowed_repositories')
+        common.pop('commands')
+        common.pop('holdout')
+        catalog = PolicyCatalog.from_dict({
+            **common,
+            'repository_profiles': [
+                {'repository': 'Dimkox/adaptive-grok-build-pro', 'commands': policy_data()['commands'],
+                 'holdout': {**policy_data(holdout_path=str(self.holdout), holdout_digest=self.holdout_digest)['holdout'],
+                             'host_path': '/host/holdouts/a'}},
+                {'repository': 'Dimkox/ii-tonya-platform',
+                 'commands': [{'name': 'platform-unit', 'argv': ['pytest'], 'timeout_seconds': 120, 'required': True}],
+                 'holdout': {**policy_data(holdout_path=str(second_holdout), holdout_digest=bundle_digest(second_holdout))['holdout'],
+                             'host_path': '/host/holdouts/b'}},
+            ],
+        })
+        observations = []
+        for index, repository in enumerate(('Dimkox/adaptive-grok-build-pro', 'Dimkox/ii-tonya-platform')):
+            policy = catalog.resolve_repository(repository)
+            request = JobRequest(repository, 20 + index, sha('c'), sha(str(index + 3)), 'feat/catalog', 'main')
+            job, _ = self.store.enqueue(request, policy.digest, policy.max_attempts, now=now())
+            claimed = self.store.claim(f'worker-{index}', policy.lease_seconds, now=now())
+            assert claimed is not None
+            self.policy = policy
+            github = FakeGitHub()
+            runner, executor, _, _ = self.build_runner(
+                changed_files=['docs/x.md'], github=github, holdout_host_path=policy.holdout.host_path,
+            )
+            outcome = runner.process(claimed, f'worker-{index}')
+            self.assertEqual(outcome.status, 'passed')
+            observations.append((policy, job, executor, github))
+        first, second = observations
+        self.assertEqual([call[0] for call in first[2].calls], ['external-holdout', 'unit', 'compile'])
+        self.assertEqual([call[0] for call in second[2].calls], ['external-holdout', 'platform-unit'])
+        self.assertEqual(first[2].calls[0][5], self.holdout)
+        self.assertEqual(second[2].calls[0][5], second_holdout)
+        self.assertEqual(first[2].calls[0][6], Path('/host/holdouts/a'))
+        self.assertEqual(second[2].calls[0][6], Path('/host/holdouts/b'))
+        for policy, job, _, github in observations:
+            self.assertEqual(github.ensured[0][2]['name'], policy.check_name)
+            payload = verify_attestation(self.store.get_attestation(job.job_id), self.signer.public_key_pem())
+            self.assertEqual(payload.policy_digest, policy.digest)
 
     def test_protected_path_waits_for_signed_approval_and_completes_action_required(self) -> None:
         github = FakeGitHub()

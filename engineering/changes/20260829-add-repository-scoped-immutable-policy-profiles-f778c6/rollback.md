@@ -18,3 +18,5 @@ No schema rollback is required. Jobs whose digest is unavailable remain non-succ
 ## Verification after rollback
 
 Confirm `/health/ready` reports the restored legacy digest/check name, run a signed dry-run webhook against the original repository, observe the App-owned exact-SHA check, and only then alter branch protection if it had been switched.
+
+If paired-root validation blocks startup, restore the reviewed binaries and legacy policy together; never bypass validation by remapping a profile to another daemon root.

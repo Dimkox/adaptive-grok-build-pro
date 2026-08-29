@@ -15,7 +15,7 @@ The effective profile digest is SHA-256 over canonical normalized JSON containin
 Schema-v1 has two mutually exclusive input modes:
 
 1. Legacy mode retains `allowed_repositories`, global `commands`, and global `holdout`. It uses the current parser and canonical representation so existing digest and Check Run names remain bit-for-bit unchanged.
-2. Catalog mode declares exact repository profiles for commands and holdout while retaining one common execution envelope. Each catalog holdout has a mandatory absolute, profile-scoped `host_path` for the Docker daemon; its value and digest are bound into the effective profile, while legacy mode omits `host_path` and uses `TRUST_CI_HOLDOUT_HOST_PATH`.
+2. Catalog mode declares exact repository profiles for commands and holdout while retaining one common execution envelope. Each catalog holdout has a mandatory absolute, profile-scoped `host_path` for the Docker daemon; both local and daemon paths must be strict descendants of independently configured trusted roots with identical relative suffixes, and their values plus digest are bound into the effective profile. Legacy mode omits `host_path` and uses `TRUST_CI_HOLDOUT_HOST_PATH`.
 
 Mixed forms are invalid. Code is rolled out under the legacy policy before a catalog is installed. Approval, attestation, webhook, job, and PostgreSQL schemas remain unchanged.
 

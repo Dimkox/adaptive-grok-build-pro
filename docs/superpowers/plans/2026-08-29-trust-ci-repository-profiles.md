@@ -16,6 +16,7 @@
 - Do not add or edit SQL migrations; `Job.repository` plus `Job.policy_digest` is the durable profile binding.
 - Exact repository matching only: no wildcard, default, aliases, trimming of webhook identity, or case normalization.
 - Catalog profile objects contain exactly `repository`, `commands`, and `holdout`; catalog `holdout.host_path` is mandatory, absolute, profile-scoped, and digest-bound. Legacy policies omit it and use `TRUST_CI_HOLDOUT_HOST_PATH`.
+- Catalog local and daemon holdout paths must be strict descendants of independently configured trusted roots and share the same relative suffix; reject roots, traversal, outside-root paths, and mismatches before constructing dependencies.
 - Catalog mode and legacy `allowed_repositories`/global `commands`/global `holdout` mode are mutually exclusive.
 - `status_context`, `pipeline`, checkout/lease/retry/output limits, allowed environment, sandbox, and approval rules remain common in catalog mode.
 - Repository commands and holdout definitions are profile-scoped.

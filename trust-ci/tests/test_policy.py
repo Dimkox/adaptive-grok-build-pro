@@ -111,6 +111,30 @@ class PolicyTests(unittest.TestCase):
         with self.assertRaisesRegex(PolicyError, 'repository profile keys'):
             PolicyCatalog.from_dict(data)
 
+    def test_catalog_digest_binds_canonical_profile_holdout_paths(self) -> None:
+        first = catalog_data()
+        second = copy.deepcopy(first)
+        second['repository_profiles'][0]['holdout']['path'] = '/opt/adaptive-trust-ci/./holdout'
+        second['repository_profiles'][0]['holdout']['host_path'] = '/srv/holdouts/./adaptive-grok-build-pro'
+        self.assertEqual(
+            PolicyCatalog.from_dict(first).resolve_repository('Dimkox/adaptive-grok-build-pro').digest,
+            PolicyCatalog.from_dict(second).resolve_repository('Dimkox/adaptive-grok-build-pro').digest,
+        )
+
+    def test_catalog_rejects_duplicate_and_wildcard_repositories(self) -> None:
+        for repository in ('Dimkox/adaptive-grok-build-pro', 'Dimkox/*'):
+            data = catalog_data()
+            data['repository_profiles'][1]['repository'] = repository
+            with self.assertRaisesRegex(PolicyError, 'repository'):
+                PolicyCatalog.from_dict(data)
+
+    def test_catalog_requires_common_fields(self) -> None:
+        for field in ('schema_version', 'status_context', 'pipeline', 'sandbox'):
+            data = catalog_data()
+            data.pop(field, None)
+            with self.assertRaises(PolicyError):
+                PolicyCatalog.from_dict(data)
+
     def test_legacy_digest_and_check_name_remain_exact_without_host_path(self) -> None:
         legacy = Policy.from_dict(policy_data())
         catalog = PolicyCatalog.from_dict(policy_data())

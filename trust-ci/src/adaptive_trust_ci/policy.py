@@ -353,11 +353,20 @@ class PolicyCatalog:
                 raise PolicyError('repository profile names must be unique')
             if not isinstance(profile_raw.get('commands'), list) or not isinstance(profile_raw.get('holdout'), Mapping):
                 raise PolicyError('repository profile commands and holdout are required')
+            holdout_input = profile_raw['holdout']
+            for path_key in ('path', 'host_path'):
+                raw_path = holdout_input.get(path_key)
+                if isinstance(raw_path, str) and '..' in Path(raw_path).parts:
+                    raise PolicyError('repository profile holdout paths must not contain parent traversal')
+            canonical_holdout = dict(holdout_input)
+            for path_key in ('path', 'host_path'):
+                if isinstance(canonical_holdout.get(path_key), str):
+                    canonical_holdout[path_key] = str(Path(canonical_holdout[path_key]).resolve())
             effective = {
                 **common,
                 'allowed_repositories': [repository],
                 'commands': profile_raw['commands'],
-                'holdout': profile_raw['holdout'],
+                'holdout': canonical_holdout,
             }
             repositories.append(repository)
             host_path = profile_raw['holdout'].get('host_path')

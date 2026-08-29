@@ -5,6 +5,7 @@
 - [ ] A legacy schema-v1 policy loads unchanged and retains its exact digest and Check Run name.
 - [ ] A profile catalog resolves each configured repository by exact, case-sensitive `owner/name` and rejects unknown/case-variant repositories with HTTP 403 before enqueue.
 - [ ] Catalog profiles require exactly `repository`, `commands`, and `holdout`; `holdout.host_path` is mandatory, absolute, profile-scoped, and included in the effective digest. Legacy policies omit it and use `TRUST_CI_HOLDOUT_HOST_PATH`.
+- [ ] Worker startup requires catalog local/daemon holdout paths to be strict descendants of independently configured trusted roots with identical relative suffixes; root, `..` traversal, outside-root, and mismatch values fail closed before store, key, or GitHub construction.
 - [ ] Mixed legacy/profile forms, duplicate repositories, wildcard/default profiles, invalid holdout roots, and incompatible per-profile execution envelopes are rejected at startup.
 - [ ] Repository A and B may use different repository commands and holdout bundles; changing A does not rotate B's effective profile digest.
 - [ ] Common security/execution-envelope changes rotate every affected effective profile digest.

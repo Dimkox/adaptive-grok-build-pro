@@ -85,7 +85,7 @@ class ApiTests(unittest.TestCase):
         signature = hmac.new(self.settings.webhook_secret.encode(), body, hashlib.sha256).hexdigest()
         return {'X-Hub-Signature-256': f'sha256={signature}', 'X-GitHub-Event': 'pull_request'}
 
-    def catalog(self) -> PolicyCatalog:
+    def catalog(self, *, changed=False) -> PolicyCatalog:
         common = policy_data()
         common.pop('allowed_repositories')
         common.pop('commands')
@@ -107,6 +107,8 @@ class ApiTests(unittest.TestCase):
                 },
             ],
         }
+        if changed:
+            data['repository_profiles'][0]['commands'][0]['name'] = 'unit-v2'
         return PolicyCatalog.from_dict(data)
 
     def test_health_reports_policy_digest_and_worker_publisher(self) -> None:
@@ -168,6 +170,35 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(payload['policy_mode'], 'catalog')
         self.assertEqual(payload['profile_count'], 2)
         self.assertNotIn('Dimkox/ii-tonya-platform', health.text)
+
+    def test_unknown_and_case_variant_closed_events_cannot_cancel_configured_jobs(self) -> None:
+        opened = self.webhook_body()
+        self.client.post('/webhooks/github', content=opened, headers=self.headers(opened))
+        for repository in ('attacker/repo', 'dimkox/adaptive-grok-build-pro'):
+            closed = self.webhook_body('closed', repository=repository)
+            response = self.client.post('/webhooks/github', content=closed, headers=self.headers(closed))
+            self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.store.get_job_for_sha('Dimkox/adaptive-grok-build-pro', sha('b')).status, 'queued')
+
+    def test_catalog_approval_fails_closed_when_bound_profile_is_removed(self) -> None:
+        catalog = self.catalog()
+        store = MemoryStore()
+        first_client = TestClient(create_app(self.settings, store=store, policy=catalog, trust_store=self.trust_store))
+        body = self.webhook_body(repository='Dimkox/adaptive-grok-build-pro')
+        job = store.get_job(first_client.post('/webhooks/github', content=body, headers=self.headers(body)).json()['job_id'])
+        assert job is not None
+        claimed = store.claim('worker', catalog.lease_seconds, now=now())
+        assert claimed is not None
+        store.finish(job.job_id, 'worker', 'needs_approval', {'missing_scopes': ['governance']}, failure_code='approval-required', now=now())
+        payload = ApprovalPayload.new(
+            actor='dmitry', key_id=self.human.key_id, repository=job.repository,
+            pr_number=job.pr_number, base_sha=job.base_sha, head_sha=job.head_sha,
+            policy_digest=job.policy_digest, scope='governance', reason='reviewed', now=utc_now(),
+        )
+        changed_client = TestClient(create_app(self.settings, store=store, policy=self.catalog(changed=True), trust_store=self.trust_store))
+        response = changed_client.post('/approvals', json=sign_approval(payload, self.human).to_dict())
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(store.get_job(job.job_id).status, 'needs_approval')
 
     def test_kill_switch_blocks_new_jobs_without_needing_github_credentials(self) -> None:
         self.common.kill_switch_path.write_text('stop')

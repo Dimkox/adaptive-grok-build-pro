@@ -6,6 +6,8 @@ This PR does not deploy. After merge, first roll out compatible binaries while t
 
 Repository-profile support is currently a code/config capability pending a separately approved server-mounted catalog and external holdout installation. The checked-in example is illustrative only and does not enable either repository in deployed Trust CI.
 
+Before atomic rollout, configure `TRUST_CI_HOLDOUT_PATH` and `TRUST_CI_HOLDOUT_HOST_PATH` as paired trusted roots and verify identical profile suffixes. Deploy compatible worker binaries first so root validation runs before dependency construction.
+
 ## Feature flags / staged rollout
 
 The policy shape is the control: legacy mode remains unchanged until a reviewed catalog is installed. Prove each repository's new App-owned check before binding branch protection to its epoch; keep the previous policy/images available for coherent rollback.

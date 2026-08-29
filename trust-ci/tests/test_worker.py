@@ -3,6 +3,7 @@ from __future__ import annotations
 import threading
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 from _support import now, policy_data, sha
 from adaptive_trust_ci.models import JobRequest
@@ -48,7 +49,7 @@ class WorkerTests(unittest.TestCase):
             ci_signing_key_path=Path('/tmp/signing'), github_app_id=1, github_installation_id=2,
             github_app_private_key_path=Path('/tmp/app'), runner_image='runner@sha256:' + 'a' * 64,
             workspace_root=Path('/tmp/workspaces'), workspace_host_root=Path('/tmp/host'),
-            holdout_host_path=Path('/tmp/holdout'), worker_id='worker', poll_interval_seconds=0.1,
+            holdout_host_path=Path('/tmp/holdout'), holdout_path=Path('/tmp/holdout'), worker_id='worker', poll_interval_seconds=0.1,
         )
 
     def _job(self, repository: str, digest: str):
@@ -94,6 +95,35 @@ class WorkerTests(unittest.TestCase):
         store, _ = self._job('Dimkox/ii-tonya-platform', self.catalog.resolve_repository('Dimkox/ii-tonya-platform').digest)
         Worker(self.settings, store, self.catalog, factory, threading.Event()).run(once=True)
         self.assertEqual(paths, [Path('/srv/holdouts/ii-tonya-platform')])
+
+    def test_catalog_holdouts_must_match_strict_paired_trusted_roots(self) -> None:
+        settings = SimpleNamespace(
+            holdout_path=Path('/srv/local-holdouts'),
+            holdout_host_path=Path('/srv/daemon-holdouts'),
+        )
+        valid = self.catalog_data_with_paths('/srv/local-holdouts/adaptive-grok-build-pro', '/srv/daemon-holdouts/adaptive-grok-build-pro')
+        Worker._validate_catalog_paths(settings, valid)
+        for local, host in (
+            ('/srv/local-holdouts', '/srv/daemon-holdouts/adaptive-grok-build-pro'),
+            ('/srv/local-holdouts/../other/adaptive-grok-build-pro', '/srv/daemon-holdouts/adaptive-grok-build-pro'),
+            ('/srv/local-holdouts/adaptive-grok-build-pro', '/srv/other/adaptive-grok-build-pro'),
+        ):
+            with self.assertRaisesRegex(Exception, 'holdout'):
+                data = self.catalog_data_with_paths(local, host)
+                Worker._validate_catalog_paths(settings, data)
+
+    def catalog_data_with_paths(self, local: str, host: str) -> PolicyCatalog:
+        data = {
+            'schema_version': 1, 'status_context': 'adaptive-trust-ci/verified', 'pipeline': 'pull_request',
+            'checkout_depth': 100, 'lease_seconds': 90, 'max_attempts': 3,
+            'max_approval_ttl_seconds': 1800, 'max_output_bytes': 20000, 'allowed_environment': [],
+            'sandbox': {'runtime': 'docker', 'image': 'runner@sha256:' + 'a' * 64, 'user': '10001:10001', 'memory_mb': 1024, 'cpus': 1.0, 'pids_limit': 128, 'tmpfs_mb': 256},
+            'approval_rules': [], 'repository_profiles': [
+                {'repository': 'Dimkox/adaptive-grok-build-pro', 'commands': policy_data()['commands'],
+                 'holdout': {**policy_data()['holdout'], 'path': local, 'host_path': host}},
+            ],
+        }
+        return PolicyCatalog.from_dict(data)
 
 
 if __name__ == '__main__':

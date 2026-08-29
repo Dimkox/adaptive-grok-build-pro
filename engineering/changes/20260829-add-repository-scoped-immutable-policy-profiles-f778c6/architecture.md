@@ -13,6 +13,7 @@ Legacy schema-v1 remains a supported input mode and is parsed through the existi
 ## Components and boundaries
 
 - `PolicyCatalog`: validates configuration, including exact repository-profile keys and mandatory absolute profile-scoped holdout host paths, computes catalog diagnostics, and resolves exact repositories and immutable job bindings.
+- Worker startup additionally requires paired local/daemon holdout paths to be strict descendants of independently configured trusted roots with equal relative suffixes; root, traversal, outside-root, and mismatched pairs fail before external dependency construction.
 - `PolicyProfile`: preserves the current runner-facing policy contract and full effective digest.
 - Webhook API: verifies HMAC, parses event, resolves profile, rejects unknown repository, enqueues selected digest.
 - Store: unchanged; persists exact repository and selected digest using existing fields and idempotency key.

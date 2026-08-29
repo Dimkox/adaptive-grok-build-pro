@@ -26,6 +26,7 @@ class Worker:
     @classmethod
     def build(cls, settings: WorkerSettings) -> 'Worker':
         catalog = PolicyCatalog.load(settings.common.policy_path)
+        cls._validate_catalog_paths(settings, catalog)
         for policy in catalog.profiles:
             if policy.sandbox.image != settings.runner_image:
                 raise SettingsError(
@@ -53,6 +54,30 @@ class Worker:
                 holdout_host_path=policy.holdout.host_path or settings.holdout_host_path,
             )
         return cls(settings=settings, store=store, catalog=catalog, runner_factory=runner_factory, stop_event=threading.Event())
+
+    @staticmethod
+    def _validate_catalog_paths(settings: WorkerSettings, catalog: PolicyCatalog) -> None:
+        if catalog.mode == 'legacy':
+            return
+        local_root = settings.holdout_path.resolve()
+        host_root = settings.holdout_host_path.resolve()
+        for policy in catalog.profiles:
+            local = policy.holdout.path
+            host = policy.holdout.host_path
+            if host is None:
+                raise SettingsError('catalog profile holdout.host_path is required')
+            if any(part == '..' for part in local.parts + host.parts):
+                raise SettingsError('catalog holdout paths must not contain parent traversal')
+            local_resolved = local.resolve()
+            host_resolved = host.resolve()
+            try:
+                local_suffix = local_resolved.relative_to(local_root)
+                host_suffix = host_resolved.relative_to(host_root)
+            except ValueError as exc:
+                raise SettingsError('catalog holdout paths must be strict descendants of trusted roots') from exc
+            if not local_suffix.parts or not host_suffix.parts or local_suffix != host_suffix:
+                raise SettingsError('catalog holdout local and host path suffixes must match')
+
 
     def run(self, *, once: bool = False) -> int:
         self.store.ping()

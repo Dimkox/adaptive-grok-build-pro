@@ -12,6 +12,7 @@
 | P1 | Duplicate webhook remains idempotent; changed digest creates new identity | API/store tests |
 | P1 | Holdout root traversal and digest mismatch fail closed | Policy/runner tests |
 | P1 | Missing, null, empty, relative, or unknown catalog profile fields fail closed; profile host paths remain digest-bound | Policy/worker tests |
+| P0 | Paired local and daemon holdout roots reject root, traversal, outside-root, and suffix mismatch before dependencies | Worker startup tests |
 
 ## Automated checks
 
