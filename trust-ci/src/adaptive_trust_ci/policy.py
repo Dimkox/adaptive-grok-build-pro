@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from .models import canonical_json, require_digest
+from .models import canonical_json, require_digest, require_repository
 
 _IMAGE_DIGEST_RE = re.compile(r"^(?:sha256:[0-9a-f]{64}|.+@sha256:[0-9a-f]{64})$")
 
@@ -128,6 +128,7 @@ class HoldoutSpec:
     path: Path
     digest: str
     commands: tuple[CommandSpec, ...]
+    host_path: Path | None = None
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> 'HoldoutSpec':
@@ -141,6 +142,10 @@ class HoldoutSpec:
             digest = require_digest(str(data.get('digest', '')), 'holdout.digest')
         except ValueError as exc:
             raise PolicyError(str(exc)) from exc
+        raw_host_path = data.get('host_path')
+        host_path = None if raw_host_path is None else Path(str(raw_host_path).strip())
+        if host_path is not None and not host_path.is_absolute():
+            raise PolicyError('holdout.host_path must be absolute on the Docker daemon host')
         commands_raw = data.get('commands')
         if not isinstance(commands_raw, list) or not commands_raw:
             raise PolicyError('holdout.commands must be non-empty')
@@ -149,14 +154,17 @@ class HoldoutSpec:
             raise PolicyError('every holdout command must be an object')
         if len({item.name for item in commands}) != len(commands):
             raise PolicyError('holdout command names must be unique')
-        return cls(path=path, digest=digest, commands=commands)
+        return cls(path=path, digest=digest, commands=commands, host_path=host_path)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        result = {
             'path': str(self.path),
             'digest': self.digest,
             'commands': [item.to_dict() for item in self.commands],
         }
+        if self.host_path is not None:
+            result['host_path'] = str(self.host_path)
+        return result
 
 
 @dataclass(frozen=True)
@@ -281,6 +289,127 @@ class Policy:
             if any(_glob_match(path, pattern) for path in normalized for pattern in rule.globs):
                 scopes.add(rule.scope)
         return scopes
+
+
+@dataclass(frozen=True)
+class PolicyCatalog:
+    profiles: tuple[Policy, ...]
+    digest: str
+    status_context: str
+    lease_seconds: int
+    mode: str
+
+    @classmethod
+    def load(cls, path: Path) -> 'PolicyCatalog':
+        try:
+            data = json.loads(path.read_text(encoding='utf-8'))
+        except FileNotFoundError as exc:
+            raise PolicyError(f'policy file does not exist: {path}') from exc
+        except (OSError, json.JSONDecodeError) as exc:
+            raise PolicyError(f'cannot load policy file {path}: {exc}') from exc
+        if not isinstance(data, Mapping):
+            raise PolicyError('policy root must be an object')
+        return cls.from_dict(data)
+
+    @classmethod
+    def from_policy(cls, policy: Policy) -> 'PolicyCatalog':
+        return cls(
+            profiles=(policy,),
+            digest=policy.digest,
+            status_context=policy.status_context,
+            lease_seconds=policy.lease_seconds,
+            mode='legacy',
+        )
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> 'PolicyCatalog':
+        if 'repository_profiles' not in data:
+            return cls.from_policy(Policy.from_dict(data))
+
+        if any(key in data for key in ('allowed_repositories', 'commands', 'holdout')):
+            raise PolicyError('mixed legacy and repository profile policy forms are forbidden')
+        profiles_raw = data.get('repository_profiles')
+        if not isinstance(profiles_raw, list) or not profiles_raw:
+            raise PolicyError('repository_profiles must be non-empty')
+
+        common = dict(data)
+        del common['repository_profiles']
+        repositories: list[str] = []
+        profiles: list[Policy] = []
+        for profile_raw in profiles_raw:
+            if not isinstance(profile_raw, Mapping):
+                raise PolicyError('every repository profile must be an object')
+            if set(profile_raw) != {'repository', 'commands', 'holdout'}:
+                raise PolicyError('repository profile keys must be exactly repository, commands, and holdout')
+            repository_raw = profile_raw.get('repository')
+            repository = str(repository_raw)
+            if not isinstance(repository_raw, str) or repository.strip() != repository or '*' in repository:
+                raise PolicyError('repository profile repository must be an exact owner/name')
+            try:
+                require_repository(repository)
+            except ValueError as exc:
+                raise PolicyError(f'repository profile repository is invalid: {exc}') from exc
+            if repository in repositories:
+                raise PolicyError('repository profile names must be unique')
+            if not isinstance(profile_raw.get('commands'), list) or not isinstance(profile_raw.get('holdout'), Mapping):
+                raise PolicyError('repository profile commands and holdout are required')
+            holdout_input = profile_raw['holdout']
+            for path_key in ('path', 'host_path'):
+                raw_path = holdout_input.get(path_key)
+                if isinstance(raw_path, str) and '..' in Path(raw_path).parts:
+                    raise PolicyError('repository profile holdout paths must not contain parent traversal')
+            canonical_holdout = dict(holdout_input)
+            for path_key in ('path', 'host_path'):
+                if isinstance(canonical_holdout.get(path_key), str):
+                    canonical_holdout[path_key] = str(Path(canonical_holdout[path_key]).resolve())
+            effective = {
+                **common,
+                'allowed_repositories': [repository],
+                'commands': profile_raw['commands'],
+                'holdout': canonical_holdout,
+            }
+            repositories.append(repository)
+            host_path = profile_raw['holdout'].get('host_path')
+            if not isinstance(host_path, str) or not host_path or host_path.strip() != host_path or not Path(host_path).is_absolute():
+                raise PolicyError('repository profile holdout.host_path is required')
+            profiles.append(Policy.from_dict(effective))
+
+        ordered = sorted(zip(repositories, profiles), key=lambda item: item[0])
+        digest_data = {
+            'schema_version': 1,
+            'profiles': [
+                {'repository': repository, 'policy_digest': policy.digest}
+                for repository, policy in ordered
+            ],
+        }
+        first = profiles[0]
+        return cls(
+            profiles=tuple(policy for _, policy in ordered),
+            digest=hashlib.sha256(canonical_json(digest_data)).hexdigest(),
+            status_context=first.status_context,
+            lease_seconds=first.lease_seconds,
+            mode='catalog',
+        )
+
+    @property
+    def profile_count(self) -> int:
+        return len(self.profiles)
+
+    def resolve_repository(self, repository: str) -> Policy:
+        matches = [profile for profile in self.profiles if profile.allows_repository(repository)]
+        if len(matches) != 1:
+            raise PolicyError(f'repository {repository!r} is not configured')
+        return matches[0]
+
+    def resolve_bound(self, repository: str, policy_digest: str) -> Policy:
+        profile = self.resolve_repository(repository)
+        try:
+            expected = require_digest(policy_digest, 'policy_digest')
+        except ValueError as exc:
+            raise PolicyError(str(exc)) from exc
+        if profile.digest != expected:
+            raise PolicyError('job policy binding is not active')
+        return profile
 
 
 def _glob_match(path: str, pattern: str) -> bool:

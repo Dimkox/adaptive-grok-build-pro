@@ -7,7 +7,7 @@ from pathlib import Path
 from _support import policy_data
 from adaptive_trust_ci.github import branch_protection_payload
 from adaptive_trust_ci.holdout import bundle_digest
-from adaptive_trust_ci.policy import Policy
+from adaptive_trust_ci.policy import Policy, PolicyCatalog
 from adaptive_trust_ci.sandbox import ContainerExecutor
 
 
@@ -137,12 +137,20 @@ class OperationsTests(unittest.TestCase):
         self.assertIn('setuptools==84.0.0', pyproject)
         self.assertNotIn('setuptools>=', pyproject)
 
-    def test_example_holdout_digest_matches_example_bundle(self) -> None:
+    def test_example_catalog_profiles_have_bound_holdouts(self) -> None:
         import json
 
-        policy = json.loads((ROOT / 'trust-ci/config/policy.example.json').read_text(encoding='utf-8'))
-        self.assertEqual(policy['holdout']['digest'], bundle_digest(ROOT / 'trust-ci/holdout.example'))
-        self.assertEqual(policy['holdout']['path'], '/etc/adaptive-trust-ci/holdout')
+        raw = json.loads((ROOT / 'trust-ci/config/policy.example.json').read_text(encoding='utf-8'))
+        catalog = PolicyCatalog.from_dict(raw)
+        self.assertEqual(catalog.profile_count, 2)
+        paths = {profile.holdout.host_path for profile in catalog.profiles}
+        self.assertEqual(len(paths), 2)
+        for profile in catalog.profiles:
+            self.assertTrue(profile.holdout.path.is_absolute())
+            self.assertTrue(profile.holdout.host_path.is_absolute())
+            self.assertRegex(profile.holdout.digest, r'^[0-9a-f]{64}$')
+        adaptive = catalog.resolve_repository('Dimkox/adaptive-grok-build-pro')
+        self.assertEqual(adaptive.holdout.digest, bundle_digest(ROOT / 'trust-ci/holdout.example'))
 
     def test_branch_protection_is_app_bound_and_actions_independent(self) -> None:
         payload = branch_protection_payload('adaptive-trust-ci/verified', app_id=12345)

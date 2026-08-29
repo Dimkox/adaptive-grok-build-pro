@@ -11,6 +11,8 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 - Independent Trust CI: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
 - M0 Live Trust Authority is complete on `main`. PR #7 repaired the Trust CI workspace/runtime path, PR #6 fixed target-aware shell policy/denial loops, and PR #5 consolidated the live authority milestone.
 - Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. Bootstrap merge exceptions are revoked.
+- Repository-scoped immutable Trust CI profiles are implemented in code and documented by the example catalog; capability is pending a separately reviewed and approved server-side policy/holdout installation. No deployed policy or branch protection was changed here.
+- The worker uses `TRUST_CI_HOLDOUT_PATH` and `TRUST_CI_HOLDOUT_HOST_PATH` as independently configured trusted roots; binary-first rollout validates the pair before dependency construction.
 - Active development milestone: **M1 — Typed Intent, Acceptance Criteria, and Evidence Traceability**, tracked in draft PR #8 on branch `milestone/m1-typed-intent-evidence`. Its design and implementation plan are committed there; implementation has not started.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
 

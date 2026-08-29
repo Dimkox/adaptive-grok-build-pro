@@ -140,7 +140,15 @@ class StructureTests(unittest.TestCase):
             image,
         )
         self.assertEqual(policy["sandbox"]["runtime"], "docker")
-        self.assertTrue(all(command.get("required") is True for command in policy["commands"]))
+        if "repository_profiles" in policy:
+            commands = [
+                command
+                for profile in policy["repository_profiles"]
+                for command in profile["commands"]
+            ]
+        else:
+            commands = policy["commands"]
+        self.assertTrue(all(command.get("required") is True for command in commands))
 
     def test_hook_registration_has_required_lifecycle_events(self) -> None:
         hooks = json.loads((ROOT / ".grok/hooks/adaptive.json").read_text(encoding="utf-8"))["hooks"]
