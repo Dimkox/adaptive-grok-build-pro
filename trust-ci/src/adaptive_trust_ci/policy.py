@@ -283,6 +283,108 @@ class Policy:
         return scopes
 
 
+@dataclass(frozen=True)
+class PolicyCatalog:
+    profiles: tuple[Policy, ...]
+    digest: str
+    status_context: str
+    lease_seconds: int
+    mode: str
+
+    @classmethod
+    def load(cls, path: Path) -> 'PolicyCatalog':
+        try:
+            data = json.loads(path.read_text(encoding='utf-8'))
+        except FileNotFoundError as exc:
+            raise PolicyError(f'policy file does not exist: {path}') from exc
+        except (OSError, json.JSONDecodeError) as exc:
+            raise PolicyError(f'cannot load policy file {path}: {exc}') from exc
+        if not isinstance(data, Mapping):
+            raise PolicyError('policy root must be an object')
+        return cls.from_dict(data)
+
+    @classmethod
+    def from_policy(cls, policy: Policy) -> 'PolicyCatalog':
+        return cls(
+            profiles=(policy,),
+            digest=policy.digest,
+            status_context=policy.status_context,
+            lease_seconds=policy.lease_seconds,
+            mode='legacy',
+        )
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> 'PolicyCatalog':
+        if 'repository_profiles' not in data:
+            return cls.from_policy(Policy.from_dict(data))
+
+        if any(key in data for key in ('allowed_repositories', 'commands', 'holdout')):
+            raise PolicyError('mixed legacy and repository profile policy forms are forbidden')
+        profiles_raw = data.get('repository_profiles')
+        if not isinstance(profiles_raw, list) or not profiles_raw:
+            raise PolicyError('repository_profiles must be non-empty')
+
+        common = dict(data)
+        del common['repository_profiles']
+        repositories: list[str] = []
+        profiles: list[Policy] = []
+        for profile_raw in profiles_raw:
+            if not isinstance(profile_raw, Mapping):
+                raise PolicyError('every repository profile must be an object')
+            repository = str(profile_raw.get('repository', ''))
+            if not repository or repository.strip() != repository or '*' in repository:
+                raise PolicyError('repository profile names must be exact and non-wildcard')
+            if repository in repositories:
+                raise PolicyError('repository profile names must be unique')
+            if not isinstance(profile_raw.get('commands'), list) or not isinstance(profile_raw.get('holdout'), Mapping):
+                raise PolicyError('repository profile commands and holdout are required')
+            effective = {
+                **common,
+                'allowed_repositories': [repository],
+                'commands': profile_raw['commands'],
+                'holdout': profile_raw['holdout'],
+            }
+            repositories.append(repository)
+            profiles.append(Policy.from_dict(effective))
+
+        ordered = sorted(zip(repositories, profiles), key=lambda item: item[0])
+        digest_data = {
+            'schema_version': 1,
+            'profiles': [
+                {'repository': repository, 'policy_digest': policy.digest}
+                for repository, policy in ordered
+            ],
+        }
+        first = profiles[0]
+        return cls(
+            profiles=tuple(policy for _, policy in ordered),
+            digest=hashlib.sha256(canonical_json(digest_data)).hexdigest(),
+            status_context=first.status_context,
+            lease_seconds=first.lease_seconds,
+            mode='catalog',
+        )
+
+    @property
+    def profile_count(self) -> int:
+        return len(self.profiles)
+
+    def resolve_repository(self, repository: str) -> Policy:
+        matches = [profile for profile in self.profiles if profile.allows_repository(repository)]
+        if len(matches) != 1:
+            raise PolicyError(f'repository {repository!r} is not configured')
+        return matches[0]
+
+    def resolve_bound(self, repository: str, policy_digest: str) -> Policy:
+        profile = self.resolve_repository(repository)
+        try:
+            expected = require_digest(policy_digest, 'policy_digest')
+        except ValueError as exc:
+            raise PolicyError(str(exc)) from exc
+        if profile.digest != expected:
+            raise PolicyError('job policy binding is not active')
+        return profile
+
+
 def _glob_match(path: str, pattern: str) -> bool:
     if fnmatch.fnmatchcase(path, pattern):
         return True
