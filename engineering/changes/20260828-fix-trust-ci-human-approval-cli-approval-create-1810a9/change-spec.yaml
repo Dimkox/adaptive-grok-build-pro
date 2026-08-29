@@ -1,0 +1,35 @@
+schema_version: 1
+change_id: "20260828-fix-trust-ci-human-approval-cli-approval-create-1810a9"
+objective:
+  id: OBJ-001
+  statement: "Make human approval CLI commands runnable without server-only imports while preserving Trust CI approval semantics"
+  success_metric: "isolated human-command regressions and unchanged approval contract tests"
+  target: "all pass"
+risk:
+  tier: "medium"
+  domains: [api, data, security]
+acceptance_criteria:
+  - id: AC-001
+    statement: "approval-create and approval-submit parse without FastAPI, psycopg or uvicorn"
+  - id: AC-002
+    statement: "approval-create preserves exact policy, SHA, scope, TTL and signature semantics"
+  - id: AC-003
+    statement: "operator setup is reproducible from a reviewed source checkout"
+invariants:
+  - "Human private keys remain unreadable by agents, API and worker"
+  - "POST /approvals and PostgreSQL schema remain unchanged"
+  - "No approval scope or exact-SHA check is weakened"
+forbidden_outcomes:
+  - "automatic or simulated human approval"
+  - "private-key discovery or submission by an agent"
+  - "deployed policy, trust store, holdout, image or database mutation"
+contracts:
+  openapi: []
+  json_schema: []
+  events: []
+observability: []
+rollback:
+  strategy: "revert the CLI-only commit; no data recovery"
+  maximum_steps: 1
+approvals:
+  required_scopes: []
