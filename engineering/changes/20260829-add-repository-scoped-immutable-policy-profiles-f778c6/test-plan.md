@@ -11,6 +11,7 @@
 | P1 | A-only change leaves B digest stable; common change rotates both | Canonical digest tests |
 | P1 | Duplicate webhook remains idempotent; changed digest creates new identity | API/store tests |
 | P1 | Holdout root traversal and digest mismatch fail closed | Policy/runner tests |
+| P1 | Missing, null, empty, relative, or unknown catalog profile fields fail closed; profile host paths remain digest-bound | Policy/worker tests |
 
 ## Automated checks
 

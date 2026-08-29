@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from .models import canonical_json, require_digest
+from .models import canonical_json, require_digest, require_repository
 
 _IMAGE_DIGEST_RE = re.compile(r"^(?:sha256:[0-9a-f]{64}|.+@sha256:[0-9a-f]{64})$")
 
@@ -339,9 +339,16 @@ class PolicyCatalog:
         for profile_raw in profiles_raw:
             if not isinstance(profile_raw, Mapping):
                 raise PolicyError('every repository profile must be an object')
-            repository = str(profile_raw.get('repository', ''))
-            if not repository or repository.strip() != repository or '*' in repository:
-                raise PolicyError('repository profile names must be exact and non-wildcard')
+            if set(profile_raw) != {'repository', 'commands', 'holdout'}:
+                raise PolicyError('repository profile keys must be exactly repository, commands, and holdout')
+            repository_raw = profile_raw.get('repository')
+            repository = str(repository_raw)
+            if not isinstance(repository_raw, str) or repository.strip() != repository or '*' in repository:
+                raise PolicyError('repository profile repository must be an exact owner/name')
+            try:
+                require_repository(repository)
+            except ValueError as exc:
+                raise PolicyError(f'repository profile repository is invalid: {exc}') from exc
             if repository in repositories:
                 raise PolicyError('repository profile names must be unique')
             if not isinstance(profile_raw.get('commands'), list) or not isinstance(profile_raw.get('holdout'), Mapping):
@@ -353,7 +360,8 @@ class PolicyCatalog:
                 'holdout': profile_raw['holdout'],
             }
             repositories.append(repository)
-            if 'host_path' not in profile_raw['holdout']:
+            host_path = profile_raw['holdout'].get('host_path')
+            if not isinstance(host_path, str) or not host_path or host_path.strip() != host_path or not Path(host_path).is_absolute():
                 raise PolicyError('repository profile holdout.host_path is required')
             profiles.append(Policy.from_dict(effective))
 

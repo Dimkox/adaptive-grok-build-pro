@@ -89,10 +89,33 @@ class PolicyTests(unittest.TestCase):
             PolicyCatalog.from_dict(data)
 
     def test_catalog_requires_absolute_host_path(self) -> None:
+        for value in ('missing', None, '', 'relative/holdout'):
+            data = catalog_data()
+            if value == 'missing':
+                del data['repository_profiles'][0]['holdout']['host_path']
+            else:
+                data['repository_profiles'][0]['holdout']['host_path'] = value
+            with self.assertRaisesRegex(PolicyError, 'host_path'):
+                PolicyCatalog.from_dict(data)
+
+    def test_catalog_rejects_invalid_or_trimmed_repository_names(self) -> None:
+        for repository in ('bad', ' Dimkox/example', 'Dimkox/example '):
+            data = catalog_data()
+            data['repository_profiles'][0]['repository'] = repository
+            with self.assertRaisesRegex(PolicyError, 'repository profile'):
+                PolicyCatalog.from_dict(data)
+
+    def test_catalog_rejects_unknown_profile_keys(self) -> None:
         data = catalog_data()
-        del data['repository_profiles'][0]['holdout']['host_path']
-        with self.assertRaisesRegex(PolicyError, 'host_path'):
+        data['repository_profiles'][0]['unexpected'] = True
+        with self.assertRaisesRegex(PolicyError, 'repository profile keys'):
             PolicyCatalog.from_dict(data)
+
+    def test_legacy_digest_and_check_name_remain_exact_without_host_path(self) -> None:
+        legacy = Policy.from_dict(policy_data())
+        catalog = PolicyCatalog.from_dict(policy_data())
+        self.assertEqual(catalog.digest, legacy.digest)
+        self.assertEqual(catalog.resolve_repository(legacy.allowed_repositories[0]).check_name, legacy.check_name)
     def test_digest_is_stable_for_equivalent_objects(self) -> None:
         first = policy_data()
         second = copy.deepcopy(first)
