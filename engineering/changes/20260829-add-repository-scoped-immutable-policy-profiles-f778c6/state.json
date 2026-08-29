@@ -13,11 +13,17 @@
       "from": "draft",
       "reason": "scope, compatibility contract, architecture, tests, rollout and rollback written after user design approval",
       "to": "scoped"
+    },
+    {
+      "at": "2026-08-29T09:39:42+00:00",
+      "from": "scoped",
+      "reason": "user approved written architecture specification",
+      "to": "approved"
     }
   ],
   "route_id": "f778c6ffc84c",
   "schema_version": 1,
-  "status": "scoped",
+  "status": "approved",
   "title": "Add repository-scoped immutable policy profiles to the Python trust-ci webhook API and worker, selecting commands and holdout by exact repository, binding jobs to the selected profile digest, rejecting unknown repositories, and preserving schema-version-1 behavior with automated tests",
-  "updated_at": "2026-08-29T09:25:20+00:00"
+  "updated_at": "2026-08-29T09:39:42+00:00"
 }
