@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from _support import now, policy_data, sha
 from adaptive_trust_ci.api import create_app
 from adaptive_trust_ci.models import ApprovalPayload, JobRequest, utc_now
-from adaptive_trust_ci.policy import Policy
+from adaptive_trust_ci.policy import Policy, PolicyCatalog
 from adaptive_trust_ci.settings import ApiSettings, CommonSettings
 from adaptive_trust_ci.signing import Signer, TrustStore, sign_approval
 from adaptive_trust_ci.store import MemoryStore
@@ -85,6 +85,30 @@ class ApiTests(unittest.TestCase):
         signature = hmac.new(self.settings.webhook_secret.encode(), body, hashlib.sha256).hexdigest()
         return {'X-Hub-Signature-256': f'sha256={signature}', 'X-GitHub-Event': 'pull_request'}
 
+    def catalog(self) -> PolicyCatalog:
+        common = policy_data()
+        common.pop('allowed_repositories')
+        common.pop('commands')
+        common.pop('holdout')
+        data = {
+            **common,
+            'repository_profiles': [
+                {
+                    'repository': 'Dimkox/adaptive-grok-build-pro',
+                    'commands': policy_data()['commands'],
+                    'holdout': policy_data(holdout_digest='a' * 64)['holdout'],
+                },
+                {
+                    'repository': 'Dimkox/ii-tonya-platform',
+                    'commands': [
+                        {'name': 'platform-unit', 'argv': ['pytest', '-q'], 'timeout_seconds': 120, 'required': True},
+                    ],
+                    'holdout': policy_data(holdout_digest='b' * 64)['holdout'],
+                },
+            ],
+        }
+        return PolicyCatalog.from_dict(data)
+
     def test_health_reports_policy_digest_and_worker_publisher(self) -> None:
         response = self.client.get('/health/ready')
         self.assertEqual(response.status_code, 200)
@@ -119,6 +143,31 @@ class ApiTests(unittest.TestCase):
         body = self.webhook_body(repository='attacker/repo')
         response = self.client.post('/webhooks/github', content=body, headers=self.headers(body))
         self.assertEqual(response.status_code, 403)
+
+    def test_catalog_webhook_binds_selected_repository_digest(self) -> None:
+        catalog = self.catalog()
+        store = MemoryStore()
+        client = TestClient(create_app(self.settings, store=store, policy=catalog, trust_store=self.trust_store))
+        for repository in ('Dimkox/adaptive-grok-build-pro', 'Dimkox/ii-tonya-platform'):
+            body = self.webhook_body(repository=repository)
+            response = client.post('/webhooks/github', content=body, headers=self.headers(body))
+            self.assertEqual(response.status_code, 200)
+            job = store.get_job(response.json()['job_id'])
+            self.assertEqual(job.policy_digest, catalog.resolve_repository(job.repository).digest)
+
+    def test_catalog_case_variant_is_rejected_and_health_is_low_cardinality(self) -> None:
+        catalog = self.catalog()
+        store = MemoryStore()
+        client = TestClient(create_app(self.settings, store=store, policy=catalog, trust_store=self.trust_store))
+        body = self.webhook_body(repository='dimkox/ii-tonya-platform')
+        self.assertEqual(client.post('/webhooks/github', content=body, headers=self.headers(body)).status_code, 403)
+        health = client.get('/health/ready')
+        self.assertEqual(health.status_code, 200)
+        payload = health.json()
+        self.assertEqual(payload['catalog_digest'], catalog.digest)
+        self.assertEqual(payload['policy_mode'], 'catalog')
+        self.assertEqual(payload['profile_count'], 2)
+        self.assertNotIn('Dimkox/ii-tonya-platform', health.text)
 
     def test_kill_switch_blocks_new_jobs_without_needing_github_credentials(self) -> None:
         self.common.kill_switch_path.write_text('stop')
