@@ -30,6 +30,15 @@ class DatabaseRoleTests(unittest.TestCase):
         self.assertIn('GRANT CREATE ON SCHEMA public TO trust_ci_migrator', script)
         self.assertIn('GRANT USAGE ON SCHEMA public TO trust_ci_deployer', script)
         self.assertIn('TRUST_CI_DEPLOYER_DB_PASSWORD', script)
+        self.assertNotIn("PASSWORD :'", script)
+        self.assertIn("PASSWORD %L', :'deployer_pw'", script)
+
+    def test_upgrade_bootstrap_passes_password_as_a_quoted_runtime_parameter(self) -> None:
+        script = (ROOT / 'trust-ci/postgres/upgrade/004_deployer_role.sh').read_text(
+            encoding='utf-8'
+        )
+        self.assertNotIn("PASSWORD :'", script)
+        self.assertIn("PASSWORD %L', :'deployer_pw'", script)
 
     def test_grant_migration_separates_api_worker_migrator_and_backup_capabilities(self) -> None:
         sql = (ROOT / 'trust-ci/sql/003_database_roles.sql').read_text(encoding='utf-8')

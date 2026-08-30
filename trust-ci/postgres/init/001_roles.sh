@@ -39,11 +39,16 @@ SELECT format('CREATE ROLE trust_ci_deployer LOGIN PASSWORD %L', :'deployer_pw')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'trust_ci_deployer')
 \gexec
 
-ALTER ROLE trust_ci_api PASSWORD :'api_pw';
-ALTER ROLE trust_ci_worker PASSWORD :'worker_pw';
-ALTER ROLE trust_ci_migrator PASSWORD :'migrator_pw';
-ALTER ROLE trust_ci_backup PASSWORD :'backup_pw';
-ALTER ROLE trust_ci_deployer PASSWORD :'deployer_pw';
+SELECT format('ALTER ROLE trust_ci_api PASSWORD %L', :'api_pw')
+\gexec
+SELECT format('ALTER ROLE trust_ci_worker PASSWORD %L', :'worker_pw')
+\gexec
+SELECT format('ALTER ROLE trust_ci_migrator PASSWORD %L', :'migrator_pw')
+\gexec
+SELECT format('ALTER ROLE trust_ci_backup PASSWORD %L', :'backup_pw')
+\gexec
+SELECT format('ALTER ROLE trust_ci_deployer PASSWORD %L', :'deployer_pw')
+\gexec
 
 ALTER ROLE trust_ci_api NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOINHERIT CONNECTION LIMIT 20;
 ALTER ROLE trust_ci_worker NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOINHERIT CONNECTION LIMIT 50;

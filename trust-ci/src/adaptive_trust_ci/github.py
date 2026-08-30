@@ -79,9 +79,27 @@ def branch_protection_payload(
         raise ValueError('app_id must be positive')
     if isinstance(required_reviews, bool) or not 0 <= required_reviews <= 6:
         raise ValueError('required_reviews must be between 0 and 6')
-    return branch_protection_payload_for_checks(
-        ((status_context, app_id),), required_reviews=required_reviews
-    )
+    return {
+        'required_status_checks': {
+            'strict': True,
+            'checks': [{'context': status_context, 'app_id': app_id}],
+        },
+        'enforce_admins': True,
+        'required_pull_request_reviews': {
+            'dismiss_stale_reviews': True,
+            'require_code_owner_reviews': False,
+            'required_approving_review_count': required_reviews,
+            'require_last_push_approval': False,
+        },
+        'restrictions': None,
+        'required_linear_history': True,
+        'allow_force_pushes': False,
+        'allow_deletions': False,
+        'block_creations': False,
+        'required_conversation_resolution': True,
+        'lock_branch': False,
+        'allow_fork_syncing': False,
+    }
 
 
 def branch_protection_payload_for_checks(
