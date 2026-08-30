@@ -166,3 +166,52 @@ Reuse the active route only when `FOLLOW_UP_RE` matches the whole prompt, or the
 ## 2026-08-24 — M0 CI host is claw, not a laptop
 
 The M0 Trust CI host is hostname `claw` (Xeon E5-2680 v4, ~16 GiB ECC, Ubuntu 24.04). Never call it a laptop; SearXNG already owns `127.0.0.1:8080` and co-located n8n/app databases remain residual risk the user accepted. Trust CI therefore publishes another loopback port (`127.0.0.1:18080` by default) with compose project `adaptive-trust-ci`.
+
+## 2026-08-30 — Resolve policy at the promotion authority boundary
+
+Promotion acceptance requires the mounted policy and the database-owned singleton active epoch to agree, then the acceptance transaction locks and compares that singleton before reserving idempotency or creating authority. Only the migration role may activate an epoch; the API can read the bounded epoch function but cannot activate or directly mutate the authority row, so activation and acceptance have one linearizable boundary.
+
+## 2026-08-30 — Consume locally before any production effect
+
+The internal consume endpoint authenticates a dedicated deployer bearer, re-hashes the server-mounted signed-bundle artifact, and uses the isolated deployer database role only for atomic consume/audit state; it contains no deployment credential or effect adapter. Only an exact stored `(promotion_id, operation_id)` replay is identified for reconciliation, while every other uniqueness conflict remains generic so a caller-selected operation cannot be mistaken for the original.
+
+## 2026-08-30 — Bind consume to deployment-verified manifest bytes
+
+The boot verifier compares the Cosign-verified manifest bytes to one deployment-owned SHA-256 that Compose injects into the API; each consume hashes its stable manifest read against that immutable value before parsing policy or artifact metadata. Ambiguous commit recovery is a separate authenticated exact-pair read and can neither consume authority nor replay an external effect.
+
+## 2026-08-30 — Keep promotion authority separate from change approval
+
+Promotion environments and maximum lifetime are policy-owned controls that contribute to the full policy epoch independently of `approval_rules`. An empty approval rule set removes only the interactive change-validation wait; mandatory commands, external holdout, exact checkout, source integrity and signed attestations remain terminal automated controls.
+
+## 2026-08-30 — Promotion signing is an explicit offline file boundary
+
+The promotion CLI accepts every signed field explicitly, reads only a named private-key file and creates one non-overwriting `0600` envelope without network access. Submission accepts only that existing strict envelope plus explicit idempotency/correlation values, refuses redirects, and emits only a bounded response allowlist.
+
+## 2026-08-30 — Runtime promotion settings may only narrow the active policy
+
+The database-confirmed mounted policy owns promotion environments and maximum TTL because those controls contribute to its full epoch. Runtime environment/TTL selectors may choose a subset and shorter lifetime, but readiness and acceptance fail closed if either setting would widen the current policy.
+
+## 2026-08-30 — Protected validation metrics use durable terminal facts
+
+Protected validation `passed` counts immutable protected-branch evidence rows; `failed` counts only merge facts exhausted into the durable `dead` state. Pending and leased work remains in pending age/count metrics, so a transient retry is never mislabeled as a terminal failure.
+
+## 2026-08-30 — One signature means production promotion only
+
+Development validation, PR delivery and merge use the automated App-owned exact-SHA gate and never request a human signature; a live legacy `needs_approval` is an external policy-cutover blocker, not a workaround path. This keeps one unambiguous human decision bound to the exact merged artifact immediately before consume/deploy.
+
+## 2026-08-30 — Preserve database ACLs in portable recovery backups
+
+Custom-format backups retain ACL entries while omitting ownership, so a restore into pre-created least-privilege roles preserves the API/worker/deployer execution boundary. The disposable restore drill verifies those role capabilities after manifest and SHA-256 validation instead of treating table presence as recovery success.
+
+## 2026-08-30 — Persist merge retry time and rotate checks add-before-remove
+
+Merge dependency failures persist bounded `next_attempt_at` backoff, while permanent provenance mismatches remain dead and only retry-exhausted facts are reconciliation-requeueable. Policy rotation uses the production GitHub adapter's verified `old → old+new → new` sequence, with `old+new` as the safe rollback state, so neither restart nor cutover creates an unguarded interval.
+
+## 2026-08-30 — Reuse exact evidence and separate runner/host capabilities
+
+Protected evidence get-or-insert returns the original envelope for a fully matching exact tuple, allowing success publication and lease completion to recover after any intervening crash. Repository verification is explicitly `repository-sandbox` capability with installed Python and no Docker authority; real database/recovery drills remain separately recorded `trusted-host` evidence at the same fingerprint.
+## 2026-08-30 — Bootstrap cluster roles before schema migration
+
+Persistent volumes need an isolated idempotent administrator step because image
+init scripts run only once. Running it before migration closes rollout safely
+without granting `CREATEROLE` to runtime identities.

@@ -2,9 +2,9 @@
 
 ## Deployment
 
-Keep M2–M9 stacked and unmerged while all local and isolated automated evidence is produced. Freeze one final integration PR and artifact input set; no external migration, service rollout, approval or policy change occurs before the final production go/no-go.
+Produce all local and isolated automated evidence without signatures. The external Trust CI operator automation must first activate and prove the reviewed `approval_rules: []` epoch and atomically bind branch protection to its App-owned check; repository code does not perform that cutover. Development PR delivery and merge then proceed automatically.
 
-The single final ceremony is ordered: automated-green exact PR head; human old-policy approval for that PR; deterministic merge; authoritative merged-commit/artifact attestation; human `promotion:production` envelope; atomic consume and exact-artifact deploy; successful deployment evidence; activation and proof of the new no-interactive-change-validation policy epoch. The two cryptographic envelopes are sequential actions in one human gate/session.
+The single final ceremony begins only after automated merge and authoritative merged-commit/artifact attestation. It contains exactly one human signature: a fresh `promotion:production` envelope for that exact tuple, followed by atomic one-time consume, exact-artifact deploy, and terminal deployment/reconciliation evidence. There is no PR approval signature.
 
 Repository changes do not execute that ceremony. Operators record exact base/head/merged SHAs, image/artifact digests, migration checksums, old/new policy digests and App check identities, promotion/operation/audit IDs, command results and rollback evidence.
 
@@ -21,7 +21,7 @@ Monitor pending merge age, reconciliation lag, validation outcomes, accepted/rej
 - All P0 evidence and five route reviews pass on one fingerprint.
 - Ephemeral migration, roles, query plans, restart/restore, local shadow/deny-only and rollback drills pass.
 - Final integration PR and deployment artifact inputs are immutable and automated-green.
-- The human explicitly starts the one final ceremony; there are no earlier human/chat gates.
+- The human explicitly starts the one final production ceremony; there are no earlier human/chat gates or signatures.
 - New App-owned epoch check is observed after successful deploy and before protection replacement.
 - No-go on mutable provenance/artifact, missing audit, replay, key exposure or weakened automated controls.
 

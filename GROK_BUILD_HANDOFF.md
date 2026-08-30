@@ -1,5 +1,7 @@
 # Grok Build handoff — self-hosted Trust CI
 
+> Current production-gate invariant supersedes legacy approval exercises below: development validation, PR delivery and merge are automated with `approval_rules: []`; exactly one human signature exists only at final `promotion:production` consume/deploy. Legacy `needs_approval` material is retained as historical/rollback context, not the steady-state procedure. See `engineering/runbooks/production-promotion.md`.
+
 ## Working branch
 
 ```text
@@ -49,7 +51,7 @@ engineering/reviews/trust-ci-p0-local-verification.md
 - Keep exact-SHA checkout and policy-digest binding.
 - Keep the no-network isolated runner and the external digest-pinned holdout validator.
 - A command that exits `0` after modifying tracked source must still fail the job.
-- Human Trust CI approvals remain Ed25519-signed outside the agent environment.
+- The sole human Trust CI authorization is the Ed25519 production promotion, signed outside the agent environment at final deploy.
 - Final GitHub verdicts are GitHub App-owned Checks API runs.
 - Branch protection must bind the required policy-epoch check to the trusted GitHub App ID.
 - Direct push to `main`, workflow dispatch, merge, tag, release, and production mutation remain prohibited unless the user has explicitly delegated the exact operational action.

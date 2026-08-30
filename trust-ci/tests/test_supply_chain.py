@@ -29,6 +29,25 @@ class SupplyChainTests(unittest.TestCase):
         self.assertIn('docker pull', script)
         self.assertIn('policy.json', script)
         self.assertIn('runner_image', script)
+        self.assertIn('TRUST_CI_PROMOTION_MANIFEST_SHA256', script)
+        self.assertIn("sha(manifest_path) != expected_manifest_sha256", script)
+
+    def test_api_contract_requires_the_boot_verified_manifest_digest(self) -> None:
+        settings = (ROOT / 'trust-ci/src/adaptive_trust_ci/settings.py').read_text(
+            encoding='utf-8'
+        )
+        example = (ROOT / 'trust-ci/env/api.env.example').read_text(encoding='utf-8')
+        boot_environment = (
+            ROOT / 'trust-ci/env/supply-chain.env.example'
+        ).read_text(encoding='utf-8')
+        compose = (ROOT / 'trust-ci/compose.yaml').read_text(encoding='utf-8')
+        self.assertIn("'TRUST_CI_PROMOTION_MANIFEST_SHA256'", settings)
+        self.assertIn('TRUST_CI_PROMOTION_MANIFEST_SHA256=', example)
+        self.assertIn('TRUST_CI_PROMOTION_MANIFEST_SHA256=', boot_environment)
+        self.assertIn(
+            'TRUST_CI_PROMOTION_MANIFEST_SHA256: ${TRUST_CI_PROMOTION_MANIFEST_SHA256:',
+            compose,
+        )
 
     def test_systemd_requires_supply_chain_verification_before_start(self) -> None:
         service = (ROOT / 'trust-ci/systemd/adaptive-trust-ci-compose.service').read_text(encoding='utf-8')

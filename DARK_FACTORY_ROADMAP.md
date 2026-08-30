@@ -1,5 +1,7 @@
 # Adaptive Grok Build Pro — Dark Factory Roadmap
 
+> Current autonomy target: all development validation, PR delivery and merge are automated under the App-owned exact-SHA gate. Exactly one human signature remains only at final production promotion/consume/deploy. Older milestone text about human merge or protected-path PR signatures is historical and must not be used as the steady-state workflow.
+
 > **Execution handoff for Claw / Grok Build CLI.** This is the canonical consolidated roadmap derived from the current `main` tree, the Trust CI work, and the reviewed dark-factory videos. Implement it milestone by milestone. Do not treat a video claim, a prompt, a local receipt, or this document alone as merge authority.
 
 ## 1. Program goal

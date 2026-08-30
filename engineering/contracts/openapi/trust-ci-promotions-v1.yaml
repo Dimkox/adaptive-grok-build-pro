@@ -1,0 +1,218 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Adaptive Trust CI Promotion Acceptance API",
+    "version": "1.0.0",
+    "description": "Frozen V1 contract for accepting a human-signed production promotion. This endpoint records authorization only and performs no deployment or other external side effect."
+  },
+  "servers": [{"url": "https://trust-ci.invalid", "description": "Operator-configured Trust CI origin"}],
+  "paths": {
+    "/promotions": {
+      "post": {
+        "operationId": "acceptPromotionV1",
+        "summary": "Verify and atomically accept one production promotion",
+        "security": [],
+        "x-max-body-bytes": 16384,
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Exactly one field is required; comma-combined or repeated values are rejected.",
+            "schema": {"type": "string", "minLength": 16, "maxLength": 128, "pattern": "^(?!\\s)(?!.*\\s$)[^,\\u0000-\\u001f\\u007f]+$"}
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "description": "Exactly one field is required; comma-combined or repeated values are rejected.",
+            "schema": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^(?!\\s)(?!.*\\s$)[^,\\u0000-\\u001f\\u007f]+$"}
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Content-Type must be one unambiguous application/json value. Content-Encoding must be absent or the single value identity; repeated, comma-combined and unsupported encodings are rejected.",
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "../schemas/promotion-envelope-v1.schema.json"}
+            }
+          }
+        },
+        "responses": {
+          "201": {"description": "New immutable promotion accepted", "headers": {"X-Correlation-ID": {"schema": {"type": "string"}}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PromotionRepresentation"}}}},
+          "200": {"description": "Exact idempotent retry returned the stored promotion without extending authority", "headers": {"X-Correlation-ID": {"schema": {"type": "string"}}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PromotionRepresentation"}}}},
+          "400": {"$ref": "#/components/responses/Problem"},
+          "401": {"$ref": "#/components/responses/Problem"},
+          "403": {"$ref": "#/components/responses/Problem"},
+          "409": {"$ref": "#/components/responses/Problem"},
+          "422": {"$ref": "#/components/responses/Problem"},
+          "429": {"$ref": "#/components/responses/Problem"},
+          "503": {"$ref": "#/components/responses/Problem"}
+        }
+      }
+    },
+    "/promotions/{promotion_id}/consume": {
+      "post": {
+        "operationId": "consumePromotionV1",
+        "summary": "Atomically consume one exact production promotion",
+        "description": "Authorization and audit state only. This endpoint has no production credential and performs no deployment, publish or other external side effect.",
+        "security": [{"deployerBearer": []}],
+        "x-max-body-bytes": 4096,
+        "parameters": [
+          {"name": "promotion_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"}},
+          {"name": "X-Correlation-ID", "in": "header", "required": true, "description": "Exactly one field is required; comma-combined or repeated values are rejected.", "schema": {"type": "string", "minLength": 1, "maxLength": 128}}
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Content-Type must be one unambiguous application/json value. Content-Encoding must be absent or identity.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["repository", "merged_commit_sha", "artifact_sha256", "target_environment", "policy_epoch", "source_attestation_id", "operation_id"],
+                "properties": {
+                  "repository": {"type": "string", "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"},
+                  "merged_commit_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+                  "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                  "target_environment": {"const": "production"},
+                  "policy_epoch": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                  "source_attestation_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"},
+                  "operation_id": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Promotion atomically consumed; external effect has not started",
+            "headers": {"X-Correlation-ID": {"schema": {"type": "string"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PromotionConsumptionRepresentation"}}}
+          },
+          "400": {"$ref": "#/components/responses/Problem"},
+          "401": {"$ref": "#/components/responses/Problem"},
+          "403": {"$ref": "#/components/responses/Problem"},
+          "409": {"$ref": "#/components/responses/Problem"},
+          "429": {"$ref": "#/components/responses/Problem"},
+          "503": {"$ref": "#/components/responses/Problem"}
+        }
+      }
+    },
+    "/promotions/{promotion_id}/consume/{operation_id}": {
+      "get": {
+        "operationId": "reconcilePromotionConsumptionV1",
+        "summary": "Read the exact durable consumption result after an ambiguous commit",
+        "description": "Authenticated read-only reconciliation. This operation cannot consume a promotion or authorize or replay an external effect.",
+        "security": [{"deployerBearer": []}],
+        "parameters": [
+          {"name": "promotion_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"}},
+          {"name": "operation_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"}},
+          {"name": "X-Correlation-ID", "in": "header", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128}}
+        ],
+        "responses": {
+          "200": {"description": "The exact operation is durably recorded", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PromotionConsumptionRepresentation"}}}},
+          "400": {"$ref": "#/components/responses/Problem"},
+          "401": {"$ref": "#/components/responses/Problem"},
+          "404": {"$ref": "#/components/responses/Problem"},
+          "429": {"$ref": "#/components/responses/Problem"},
+          "503": {"$ref": "#/components/responses/Problem"}
+        }
+      }
+    },
+    "/promotions/{promotion_id}/consume/{operation_id}/terminal": {
+      "post": {
+        "operationId": "recordDeploymentTerminalV1",
+        "summary": "Append the one terminal deployment result for an exact consumption",
+        "description": "Dedicated deployer-only append boundary. It cannot consume, reauthorize, or perform the production effect.",
+        "security": [{"deployerBearer": []}],
+        "x-max-body-bytes": 8192,
+        "parameters": [
+          {"name": "promotion_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}},
+          {"name": "operation_id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}},
+          {"name": "X-Correlation-ID", "in": "header", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128}}
+        ],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {
+          "type": "object", "additionalProperties": false,
+          "required": ["event_type", "reason_code", "details"],
+          "properties": {
+            "event_type": {"enum": ["deployment.completed", "deployment.failed", "deployment.reconciled"]},
+            "reason_code": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,127}$"},
+            "details": {"type": "object", "maxProperties": 16}
+          }
+        }}}},
+        "responses": {
+          "201": {"description": "Terminal event appended", "content": {"application/json": {"schema": {"type": "object"}}}},
+          "400": {"$ref": "#/components/responses/Problem"},
+          "401": {"$ref": "#/components/responses/Problem"},
+          "409": {"$ref": "#/components/responses/Problem"},
+          "429": {"$ref": "#/components/responses/Problem"},
+          "503": {"$ref": "#/components/responses/Problem"}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "deployerBearer": {"type": "http", "scheme": "bearer", "description": "Dedicated deployer identity; distinct from read/API credentials."}
+    },
+    "schemas": {
+      "PromotionRepresentation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["promotion_id", "repository", "merged_commit_sha", "artifact_sha256", "target_environment", "policy_epoch", "source_attestation_id", "expires_at", "consumed", "idempotent_replay", "correlation_id"],
+        "properties": {
+          "promotion_id": {"type": "string", "format": "uuid"},
+          "repository": {"type": "string"},
+          "merged_commit_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "target_environment": {"const": "production"},
+          "policy_epoch": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "source_attestation_id": {"type": "string", "format": "uuid"},
+          "expires_at": {"type": "string", "format": "date-time"},
+          "consumed": {"const": false},
+          "idempotent_replay": {"type": "boolean"},
+          "correlation_id": {"type": "string", "minLength": 1, "maxLength": 128}
+        }
+      },
+      "PromotionConsumptionRepresentation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["promotion_id", "operation_id", "repository", "merged_commit_sha", "artifact_sha256", "target_environment", "policy_epoch", "source_attestation_id", "consumed_at", "consumed", "correlation_id"],
+        "properties": {
+          "promotion_id": {"type": "string", "format": "uuid"},
+          "operation_id": {"type": "string", "format": "uuid"},
+          "repository": {"type": "string"},
+          "merged_commit_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "target_environment": {"const": "production"},
+          "policy_epoch": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "source_attestation_id": {"type": "string", "format": "uuid"},
+          "consumed_at": {"type": "string", "format": "date-time"},
+          "consumed": {"const": true},
+          "correlation_id": {"type": "string", "minLength": 1, "maxLength": 128},
+          "reconciled": {"const": true}
+        }
+      },
+      "Problem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "title", "status", "code", "correlation_id"],
+        "properties": {
+          "type": {"type": "string", "format": "uri"},
+          "title": {"const": "Promotion request rejected"},
+          "status": {"type": "integer", "minimum": 400, "maximum": 599},
+          "code": {"enum": ["malformed_envelope", "unsupported_contract", "signature_invalid", "target_forbidden", "policy_mismatch", "provenance_mismatch", "idempotency_conflict", "promotion_replay", "envelope_not_current", "rate_limited", "authorization_unavailable", "promotion_disabled", "consume_malformed", "deployer_unauthorized", "consume_forbidden", "promotion_consumed", "consume_rate_limited", "consume_unavailable", "consumption_not_found", "terminal_malformed", "terminal_conflict"]},
+          "correlation_id": {"type": "string", "minLength": 1, "maxLength": 128}
+        }
+      }
+    },
+    "responses": {
+      "Problem": {
+        "description": "Stable fail-closed promotion rejection. Unknown, inactive, revoked and wrong-scope keys share signature_invalid.",
+        "headers": {"X-Correlation-ID": {"schema": {"type": "string"}}},
+        "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/Problem"}}}
+      }
+    }
+  }
+}

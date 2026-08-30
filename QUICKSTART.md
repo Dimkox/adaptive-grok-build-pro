@@ -40,6 +40,8 @@
 
 Local `python3 scripts/grok_verify.py --mode pr` is preflight evidence. It is **not merge authority**. Merge trust, when deployed, is the GitHub App-owned check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 
+Under the automated-only policy, development validation, PR delivery and merge need no human signature. Exactly one human signature is used only for the final production promotion immediately before consume/deploy; see [`engineering/runbooks/production-promotion.md`](engineering/runbooks/production-promotion.md).
+
 This repository is **PR-only**. Do not `git push origin main`. Ship product changes on an isolated branch and a pull request.
 
 Optional local quality tools used by `grok_verify --mode pr` (not required in `toolchain.json`): ruff, bandit, coverage (`fail_under` 74).
@@ -58,7 +60,7 @@ Dedicated Linux CI host with Docker Engine and Compose v2. Do not colocate privi
 
 ### PostgreSQL
 
-One logical database `trust_ci`. Four login roles (`trust_ci_api`, `trust_ci_worker`, `trust_ci_migrator`, `trust_ci_backup`) are created by `trust-ci/postgres/init/001_roles.sh`. Schema is `sql/001_schema.sql` + `002_operational_indexes.sql` + `003_database_roles.sql`, applied by the `migrate` oneshot. The admin password is not the API/worker/migrator/backup password. The server is the Compose image `postgres:17.6-bookworm` (digest pinned at deploy), not a host `postgresql` package. Durable volume: `trust-ci-postgres`.
+One logical database `trust_ci`. Five login roles (`trust_ci_api`, `trust_ci_worker`, `trust_ci_migrator`, `trust_ci_backup`, `trust_ci_deployer`) are created by `trust-ci/postgres/init/001_roles.sh`. Schema is `sql/001_schema.sql` through additive `004_production_promotions.sql`, applied by the `migrate` oneshot. The deployer can execute only constrained consume/reconciliation functions and has no authority to mint evidence or promotions. The admin password is distinct from every runtime role. The server is the Compose image `postgres:17.6-bookworm` (digest pinned at deploy), not a host `postgresql` package. Durable volume: `trust-ci-postgres`.
 
 Copy templates. Do not commit filled files:
 
@@ -72,6 +74,7 @@ cp env/worker.env.example env/worker.env
 cp env/migration.env.example env/migration.env
 cp env/postgres.env.example env/postgres.env
 cp env/backup.env.example env/backup.env
+cp env/deployer.env.example env/deployer.env
 cp config/policy.example.json runtime/policy.json
 cp config/trust-store.example.json runtime/trust-store.json
 chmod 600 env/*.env .env 2>/dev/null || true
@@ -110,7 +113,7 @@ Keep the split. Never commit private keys.
 
 - CI attestation key: worker-only (`adaptive-trust-ci keygen`).
 - GitHub App RSA key: worker-only. The API must not receive App ID, installation ID, or the App private key.
-- Human Ed25519 approval key: human workstation only. An agent must not generate, read, or submit it.
+- Human Ed25519 production-promotion key: human workstation only. An agent must not generate, read, request, submit or simulate it.
 
 ```bash
 adaptive-trust-ci keygen \

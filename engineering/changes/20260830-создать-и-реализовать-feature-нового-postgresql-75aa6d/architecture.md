@@ -32,8 +32,10 @@ OpenAPI and JSON/event schemas are added as versioned repository contracts. `POS
 - Keep signed promotion immutable and model consumption as a separate insert, making replay history append-only.
 - Exact duplicate HTTP retry is idempotent retrieval; all cryptographic reuse under another key is conflict.
 - Migration is additive and forward-recovered; legacy approvals remain for rollback.
-- Policy self-transition: keep the old policy unchanged through implementation, then perform legacy PR approval, merge, artifact-bound promotion/deploy and new-policy activation in one final production session.
+- Policy transition: development validation, PR delivery and merge never require a human signature. External control-plane automation activates and proves `approval_rules: []`, then the production GitHub adapter verifies exact App-bound `old → old+new → new` protection and rolls failures back to `old+new`. If the deployed legacy epoch still asks for approval, that cutover is blocked rather than bypassed with a PR signature. Exactly one human-signed `promotion:production` envelope remains at final production consume/deploy.
 - Webhook loss/spoofing: HMAC intake, immutable digest, independent API corroboration and bounded reconciliation.
+- Crash window after protected validation: exact-tuple get-or-insert returns the original matching envelope; success publication follows durable evidence and lease-owned completion is replayable.
+- Verification boundary: clean exact-SHA repository checks run with installed Python in the read-only/no-network sandbox; Docker-backed PostgreSQL/recovery drills remain Trust-CI-owned trusted-host evidence at the same fingerprint with no socket mount.
 - Replay/race: global database uniqueness plus one-row consumption insert in one transaction.
 - External-effect atomicity gap: consume-before-effect, unique operation ID, fail-closed crash semantics and reconciliation.
 - Control-plane outage: kill switch and deny, never local/in-memory authority.

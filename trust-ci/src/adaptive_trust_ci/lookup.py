@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 from .models import Job
 from .store import MemoryStore, PostgresStore, Store, _job_from_row
 

@@ -6,10 +6,14 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Callable, Protocol
+from typing import Any, Callable, Mapping, Protocol
 
 
 class GitHubError(RuntimeError):
+    pass
+
+
+class GitHubTransportError(GitHubError):
     pass
 
 
@@ -20,7 +24,7 @@ class Transport(Protocol):
         url: str,
         headers: dict[str, str],
         body: dict[str, Any] | None = None,
-    ) -> tuple[int, dict[str, Any] | str]: ...
+    ) -> tuple[int, dict[str, Any] | str] | tuple[int, dict[str, Any] | str, Mapping[str, str]]: ...
 
 
 class UrllibTransport:
@@ -30,16 +34,26 @@ class UrllibTransport:
         url: str,
         headers: dict[str, str],
         body: dict[str, Any] | None = None,
-    ) -> tuple[int, dict[str, Any] | str]:
+    ) -> tuple[int, dict[str, Any] | str, Mapping[str, str]]:
         raw = json.dumps(body).encode('utf-8') if body is not None else None
         request = urllib.request.Request(url, data=raw, method=method, headers=headers)
         try:
             with urllib.request.urlopen(request, timeout=30) as response:
-                return response.status, _decode_response(response.read())
+                return response.status, _decode_response(response.read()), dict(response.headers.items())
         except urllib.error.HTTPError as exc:
-            return exc.code, _decode_response(exc.read())
+            return exc.code, _decode_response(exc.read()), dict(exc.headers.items())
         except OSError as exc:
-            raise GitHubError(f'GitHub request failed: {exc}') from exc
+            raise GitHubTransportError(f'GitHub request failed: {exc}') from exc
+
+
+def unpack_transport_response(response):
+    if not isinstance(response, tuple) or len(response) not in (2, 3):
+        raise GitHubTransportError('GitHub transport returned a malformed response')
+    status, payload = response[:2]
+    headers = response[2] if len(response) == 3 else {}
+    if type(status) is not int or not isinstance(headers, Mapping):
+        raise GitHubTransportError('GitHub transport returned a malformed response')
+    return status, payload, {str(key).lower(): str(value) for key, value in headers.items()}
 
 
 def _decode_response(payload: bytes) -> dict[str, Any] | str:
@@ -65,10 +79,33 @@ def branch_protection_payload(
         raise ValueError('app_id must be positive')
     if isinstance(required_reviews, bool) or not 0 <= required_reviews <= 6:
         raise ValueError('required_reviews must be between 0 and 6')
+    return branch_protection_payload_for_checks(
+        ((status_context, app_id),), required_reviews=required_reviews
+    )
+
+
+def branch_protection_payload_for_checks(
+    checks: tuple[tuple[str, int], ...], *, required_reviews: int = 0
+) -> dict[str, Any]:
+    if not checks:
+        raise ValueError('at least one App-bound required check is required')
+    normalized = []
+    seen = set()
+    for context, app_id in checks:
+        context = context.strip()
+        if not context or isinstance(app_id, bool) or app_id <= 0:
+            raise ValueError('each required check needs a context and positive app_id')
+        pair = (context, app_id)
+        if pair in seen:
+            raise ValueError('required checks must be unique')
+        seen.add(pair)
+        normalized.append({'context': context, 'app_id': app_id})
+    if isinstance(required_reviews, bool) or not 0 <= required_reviews <= 6:
+        raise ValueError('required_reviews must be between 0 and 6')
     return {
         'required_status_checks': {
             'strict': True,
-            'checks': [{'context': status_context, 'app_id': app_id}],
+            'checks': normalized,
         },
         'enforce_admins': True,
         'required_pull_request_reviews': {
@@ -122,7 +159,9 @@ class GitHubClient:
 
     def _request(self, method: str, path: str, body: dict[str, Any] | None = None) -> dict[str, Any] | str:
         assert self.transport is not None
-        status, payload = self.transport.request(method, f'{self.api_url}{path}', self._headers(), body)
+        status, payload, _headers = unpack_transport_response(
+            self.transport.request(method, f'{self.api_url}{path}', self._headers(), body)
+        )
         if status < 200 or status >= 300:
             raise GitHubError(f'GitHub API {method} {path} returned {status}: {payload}')
         return payload
@@ -224,3 +263,71 @@ class GitHubClient:
             f'/repos/{repository}/branches/{encoded_branch}/protection',
             branch_protection_payload(check_name, app_id=app_id, required_reviews=required_reviews),
         )
+
+    def cutover_branch_protection(
+        self,
+        repository: str,
+        branch: str,
+        *,
+        old_check_name: str,
+        old_app_id: int,
+        new_check_name: str,
+        new_app_id: int,
+        required_reviews: int = 0,
+    ) -> dict[str, Any] | str:
+        """Replace an App-bound epoch check without an unprotected interval."""
+        old = (old_check_name.strip(), old_app_id)
+        new = (new_check_name.strip(), new_app_id)
+        if old == new:
+            raise ValueError('old and new required checks must differ')
+        encoded_branch = urllib.parse.quote(branch, safe='')
+        path = f'/repos/{repository}/branches/{encoded_branch}/protection'
+        current = self._request('GET', path)
+        self._verify_required_checks(current, (old,))
+        intermediate = (old, new)
+        try:
+            self._request(
+                'PUT', path,
+                branch_protection_payload_for_checks(
+                    intermediate, required_reviews=required_reviews
+                ),
+            )
+            self._verify_required_checks(self._request('GET', path), intermediate)
+            result = self._request(
+                'PUT', path,
+                branch_protection_payload_for_checks((new,), required_reviews=required_reviews),
+            )
+            self._verify_required_checks(self._request('GET', path), (new,))
+            return result
+        except Exception as exc:
+            try:
+                self._request(
+                    'PUT', path,
+                    branch_protection_payload_for_checks(
+                        intermediate, required_reviews=required_reviews
+                    ),
+                )
+                self._verify_required_checks(self._request('GET', path), intermediate)
+            except Exception as rollback_exc:
+                raise GitHubError(
+                    f'branch protection cutover failed and rollback could not be verified: {rollback_exc}'
+                ) from exc
+            raise GitHubError('branch protection cutover failed and was rolled back to both trusted checks') from exc
+
+    @staticmethod
+    def _verify_required_checks(
+        protection: dict[str, Any] | str, expected: tuple[tuple[str, int], ...]
+    ) -> None:
+        if not isinstance(protection, dict):
+            raise GitHubError('branch protection response is not an object')
+        required = protection.get('required_status_checks')
+        checks = required.get('checks') if isinstance(required, dict) else None
+        if not isinstance(required, dict) or required.get('strict') is not True or not isinstance(checks, list):
+            raise GitHubError('branch protection does not expose strict App-bound checks')
+        actual = []
+        for check in checks:
+            if not isinstance(check, dict) or type(check.get('context')) is not str or type(check.get('app_id')) is not int:
+                raise GitHubError('branch protection contains a malformed required check')
+            actual.append((check['context'], check['app_id']))
+        if set(actual) != set(expected) or len(actual) != len(expected):
+            raise GitHubError(f'branch protection verification mismatch: expected={expected!r} actual={actual!r}')

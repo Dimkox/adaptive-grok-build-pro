@@ -11,7 +11,8 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 from _support import now
-from adaptive_trust_ci.github_app import GitHubAppAuth, generate_app_jwt
+from adaptive_trust_ci.github import GitHubTransportError
+from adaptive_trust_ci.github_app import GitHubAppAuth, RetryableGitHubError, generate_app_jwt
 
 
 def decode_segment(value: str) -> dict:
@@ -83,6 +84,7 @@ class GitHubAppTests(unittest.TestCase):
                 body,
                 {
                     'permissions': {
+                        'administration': 'read',
                         'checks': 'write',
                         'contents': 'read',
                         'pull_requests': 'read',
@@ -102,6 +104,39 @@ class GitHubAppTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(RuntimeError, '403'):
                 auth.installation_token()
+
+    def test_installation_token_transient_failures_preserve_retry_after(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            key_path = Path(directory) / 'app.pem'
+            key_path.write_bytes(self.private_pem)
+            auth = GitHubAppAuth(
+                app_id=1,
+                installation_id=2,
+                private_key_path=key_path,
+                transport=FakeTransport([(429, {'message': 'slow down'}, {'Retry-After': '11'})]),
+            )
+            with self.assertRaises(RetryableGitHubError) as caught:
+                auth.installation_token()
+            self.assertEqual(caught.exception.retry_after_seconds, 11)
+
+    def test_installation_token_network_and_server_failures_are_retryable(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            key_path = Path(directory) / 'app.pem'
+            key_path.write_bytes(self.private_pem)
+
+            class NetworkTransport:
+                def request(self, *args, **kwargs):
+                    raise GitHubTransportError('temporary network failure')
+
+            for transport in (NetworkTransport(), FakeTransport([(503, {'message': 'unavailable'})])):
+                auth = GitHubAppAuth(
+                    app_id=1,
+                    installation_id=2,
+                    private_key_path=key_path,
+                    transport=transport,
+                )
+                with self.assertRaises(RetryableGitHubError):
+                    auth.installation_token()
 
 
 if __name__ == '__main__':

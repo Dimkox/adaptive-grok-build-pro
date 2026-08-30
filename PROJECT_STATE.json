@@ -8,7 +8,7 @@
   "completed_milestones": [
     "M0"
   ],
-  "active_milestone": "M1",
+  "active_milestone": "production-only-promotion-gate",
   "last_completed_milestone_merge": {
     "pull_request": 5,
     "commit": "069fe8226addb8a1922dde3db4e753434baa3a3d",
@@ -27,12 +27,13 @@
     }
   ],
   "active_work": {
-    "pull_request": 8,
-    "branch": "milestone/m1-typed-intent-evidence",
-    "status": "design_and_plan_committed_implementation_not_started",
-    "design": "docs/superpowers/specs/2026-08-26-m1-typed-intent-evidence-design.md",
-    "plan": "docs/superpowers/plans/2026-08-26-m1-typed-intent-evidence.md",
-    "next_action": "Implement Task 1 from the M1 plan with TDD: strict typed schema and zero-dependency validator"
+    "pull_request": null,
+    "branch": "policy/production-only-human-approvals",
+    "status": "implementation_and_local_verification_in_progress",
+    "design": "docs/superpowers/specs/2026-08-30-production-only-human-approvals-design.md",
+    "plan": "docs/superpowers/plans/2026-08-30-production-only-human-approvals.md",
+    "change_package": "engineering/changes/20260830-создать-и-реализовать-feature-нового-postgresql-75aa6d",
+    "next_action": "Finish PostgreSQL and full route verification, collect five independent reviews, then deliver automatically after external automated-only policy cutover; no development signature"
   },
   "trust_ci": {
     "required_check": "adaptive-trust-ci/verified@6737355947c2",
@@ -41,7 +42,8 @@
     "service_identity": "2.1.0",
     "no_github_actions": true,
     "source_directory": "trust-ci",
-    "operator_runbooks": "engineering/runbooks"
+    "operator_runbooks": "engineering/runbooks",
+    "target_approval_model": "automated_validation_pr_merge_and_one_human_signature_only_at_final_production_promotion"
   },
   "fresh_clone": {
     "active_route_may_be_absent": true,
@@ -52,7 +54,7 @@
   "intentionally_untracked": [
     "environment files and credentials",
     "GitHub App private keys",
-    "human approval private keys",
+    "human production-promotion private keys",
     "Trust CI signing private keys",
     "PostgreSQL runtime state",
     "runtime approvals and receipts",

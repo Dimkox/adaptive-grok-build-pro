@@ -36,10 +36,21 @@ The worker has Docker-socket access and is therefore a privileged component. Pul
 
 ## Components
 
+### Persistent PostgreSQL upgrade to migration 004
+
+`role-bootstrap` runs as an isolated one-shot administrator container before
+`migrate`. It idempotently creates or repairs only `trust_ci_deployer`; the
+migrator stays `NOCREATEROLE`. The exact repaired role is `LOGIN NOINHERIT
+NOBYPASSRLS` with no superuser, database, role, or replication administration;
+unexpected parent-role membership fails closed. Require bootstrap exit 0 before migration. On
+failure, fix administrator configuration and rerun bootstrap, then migration.
+Rollback keeps the additive role/schema and restores the prior services; never
+grant role-management capability to an application identity.
+
 ```text
 GitHub pull-request webhook
     -> API: HMAC validation, repository allowlist, idempotent enqueue
-    -> PostgreSQL: jobs, leases, attempts, approvals, attestations
+    -> PostgreSQL: jobs, leases, merge facts, protected evidence, promotions, consumptions, audit
     -> trusted worker: GitHub App installation token + exact-SHA checkout
     -> external holdout digest verification
     -> isolated runner container: network=none, cap-drop=ALL, read-only .git
@@ -49,7 +60,7 @@ GitHub pull-request webhook
     -> app-bound protected main branch
 ```
 
-The API image has no Docker client, GitHub credentials or CI private key. It can enqueue work and accept signed approvals, but it cannot publish a successful GitHub check. The worker has no webhook secret or human trust store. Human approval private keys remain on a separate human-controlled machine.
+The API image has no Docker client, GitHub credentials or CI private key. It can enqueue work and accept a production promotion envelope, but it cannot publish a successful GitHub check or deploy. The worker has no webhook secret or human promotion trust store. Human production-promotion private keys remain on a separate human-controlled machine.
 
 ## Prerequisites
 
@@ -78,6 +89,7 @@ cp env/worker.env.example env/worker.env
 cp env/migration.env.example env/migration.env
 cp env/postgres.env.example env/postgres.env
 cp env/backup.env.example env/backup.env
+cp env/deployer.env.example env/deployer.env
 cp config/policy.example.json runtime/policy.json
 cp config/trust-store.example.json runtime/trust-store.json
 chmod 600 env/*.env .env 2>/dev/null || true
@@ -133,7 +145,7 @@ Pull requests: Read-only
 
 Store its RSA private key at the worker-only path configured by `TRUST_CI_GITHUB_APP_PRIVATE_KEY_PATH`. Configure `TRUST_CI_GITHUB_APP_ID` and `TRUST_CI_GITHUB_INSTALLATION_ID`. The API service must not receive these values or the private key.
 
-### Generate a human approval key
+### Provision the human production-promotion key
 
 Generate this key on the human-controlled workstation, not on the CI server and not inside an agent workspace:
 
@@ -153,7 +165,7 @@ docker compose ps
 curl -fsS http://127.0.0.1:18080/health/ready
 ```
 
-Terminate TLS in a reverse proxy. Expose `/webhooks/github` and `/approvals`; expose `/jobs/*` and `/attestations/*` only according to the repository privacy model. Command output tails are stored in PostgreSQL but omitted from the public job endpoint.
+Terminate TLS in a reverse proxy. Expose `/webhooks/github` and `POST /promotions` according to the operator network policy. Restrict `POST /promotions/{promotion_id}/consume` to the dedicated authenticated deployer identity; expose `/jobs/*` and `/attestations/*` only according to the repository privacy model. Legacy `/approvals` is rollback compatibility and is inactive when `approval_rules: []`. Command output tails are stored in PostgreSQL but omitted from the public job endpoint.
 
 ## GitHub configuration
 
@@ -189,19 +201,36 @@ adaptive-trust-ci branch-protect \
   --required-reviews 0
 ```
 
+For policy-epoch rotation, always name the currently required App-bound check so the production adapter performs and verifies add-before-remove (`old+new`, then `new`):
+
+```bash
+adaptive-trust-ci branch-protect \
+  --policy "$PWD/runtime/policy.json" \
+  --repository Dimkox/adaptive-grok-build-pro \
+  --branch main \
+  --previous-context 'adaptive-trust-ci/verified@<old-epoch12>' \
+  --previous-app-id '<old-app-id>' \
+  --app-id '<new-app-id>' \
+  --required-reviews 0
+```
+
+The adapter reads the current protection, requires the exact old `(context, app_id)`, writes and reads back exact `old+new`, then writes and reads back exact `new`. Any failure triggers a verified rollback to `old+new`, preserving at least one trusted gate. This command is an external operator action; repository verification uses only a fake transport and never mutates GitHub.
+
 The configurator uses `required_status_checks.checks` with both the exact policy-epoch check name and the GitHub App ID. A status or check with the same text from another actor does not satisfy the requirement. Protection also requires a pull request, strict up-to-date checks, conversation resolution and linear history, enforces administrators, and blocks force pushes and branch deletion.
 
-## Human security approvals
+## Production-only human signature
 
-The runner derives external approval scopes from the actual base/head diff. An approval binds:
+The automated-only policy has `approval_rules: []`: ordinary validation, pull requests and protected merge never request a human signature. Legacy `approval-create` / `approval-submit` commands remain for rollback compatibility only and are inactive in the steady-state change-validation policy.
+
+Production authority uses a separate `PromotionEnvelopeV1` that binds:
 
 ```text
 repository
-pull_request
-base_sha
-head_sha
-policy_digest
-scope
+merged_commit_sha
+artifact_sha256
+target_environment
+policy_epoch
+source_attestation_id
 actor
 key_id
 nonce
@@ -210,30 +239,19 @@ expires_at
 signature
 ```
 
-Any new commit, base change, holdout change or policy change invalidates it.
+`POST /promotions` accepts authorization data only. A dedicated deployer atomically consumes the exact tuple once immediately before the first production side effect. Any commit, artifact, attestation, environment or policy change invalidates the envelope.
 
-Create and submit an approval from the human workstation:
+At final production go/no-go, the human workstation creates, verifies and submits exactly one promotion envelope. See [`../engineering/runbooks/production-promotion.md`](../engineering/runbooks/production-promotion.md). Neither an agent nor any service reads or generates the human private key or signature.
 
-```bash
-adaptive-trust-ci approval-create \
-  --private-key ~/.config/adaptive-trust-ci/dmitry.pem \
-  --policy ./policy.downloaded-from-server.json \
-  --actor dmitry \
-  --repository Dimkox/adaptive-grok-build-pro \
-  --pr-number 123 \
-  --base-sha '<40-hex-base-sha>' \
-  --head-sha '<40-hex-head-sha>' \
-  --scope governance \
-  --reason 'Reviewed the exact governance diff and deployed policy epoch' \
-  --ttl 900 \
-  --output approval.json
+If the deployed policy still returns `needs_approval`, the automated-policy cutover is incomplete. Do not create a PR approval envelope as a workaround; keep delivery blocked and complete the external policy/App-check/branch-protection transition without an unprotected interval.
 
-adaptive-trust-ci approval-submit \
-  --approval approval.json \
-  --url https://ci.example.com
-```
+## Verification execution boundaries
 
-The API verifies the signature against its server-mounted public-key store, rejects ID/nonce replay, and requeues only the matching exact SHA. The worker restarts the same durable App-owned Check Run rather than creating a duplicate.
+The exact-SHA repository runner uses the installed `python3` in its immutable image. `ContainerExecutor` sets `GROK_VERIFY_CAPABILITY=repository-sandbox`; the checkout remains read-only, networkless and receives neither Docker CLI authority nor a Docker socket. Repository verification runs source/contracts/unit/static checks there and never references the ignored `trust-ci/.venv` or starts nested containers.
+
+Real PostgreSQL, restart, separate restore and policy-transition drills are Trust-CI-owned trusted-host evidence. Local/host `grok_verify` records that heavy bundle at the same tree fingerprint with `execution_capability=trusted-host`; it is not executed from untrusted repository code inside the sandbox. `trust-ci/scripts/clean-runner-simulation.sh` copies the current tree without `.venv`, replaces Docker with a failing sentinel, and proves repository verification still passes without leaking the heavy stage.
+
+Protected validation leaves its Check Run in progress until the worker has durably inserted or recovered the exact evidence tuple. A retry with a fresh signed envelope receives the existing envelope when merge fact, repository/ref/SHA, policy, artifact, runner, holdout, image and signer identity match; any mismatch is rejected. Only then is success published and the leased merge fact completed, so a crash between evidence and completion is safely replayable.
 
 ## Delegated local operational consent
 
@@ -285,4 +303,4 @@ After database recovery, expired leases are reclaimed with `FOR UPDATE SKIP LOCK
 
 ## Deliberate non-features
 
-The first production contour does not auto-merge, auto-deploy or mutate production. Merge remains human-owned. Release operations may be explicitly delegated by the user through exact local grants, but they never alter merge trust. GitHub Actions are not installed or required.
+The first production contour never auto-deploys or mutates production. Validation and protected merge may be automated only after the automated-only App-owned policy epoch is externally deployed and proven. Release operations may be explicitly delegated through exact local grants, but those grants never authorize production; production needs the one consume-once human promotion. GitHub Actions are not installed or required.

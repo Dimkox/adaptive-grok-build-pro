@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dimkox.github.io/adaptive-grok-build-pro/contracts/promotion-event-v1.schema.json",
+  "title": "PromotionEventV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "event_type",
+    "occurred_at",
+    "promotion_id",
+    "correlation_id",
+    "operation_id",
+    "actor",
+    "key_id",
+    "repository",
+    "merged_commit_sha",
+    "artifact_sha256",
+    "target_environment",
+    "policy_epoch",
+    "outcome",
+    "reason_code",
+    "details"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "event_type": {
+      "enum": [
+        "promotion.accepted",
+        "promotion.rejected",
+        "promotion.consumed",
+        "deployment.completed",
+        "deployment.failed",
+        "deployment.reconciled"
+      ]
+    },
+    "occurred_at": {"type": "string", "format": "date-time", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"},
+    "promotion_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        {"type": "null"}
+      ]
+    },
+    "correlation_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "operation_id": {"anyOf": [{"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"}, {"type": "null"}]},
+    "actor": {"type": ["string", "null"], "minLength": 1, "maxLength": 128},
+    "key_id": {"type": ["string", "null"], "minLength": 1, "maxLength": 128},
+    "repository": {"type": ["string", "null"], "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"},
+    "merged_commit_sha": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+    "artifact_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "target_environment": {"type": ["string", "null"], "pattern": "^[a-z][a-z0-9-]{0,62}$"},
+    "policy_epoch": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "outcome": {"enum": ["accepted", "rejected", "consumed", "completed", "failed", "reconciled"]},
+    "reason_code": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-z][a-z0-9_]*$"},
+    "details": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [{"type": "string", "minLength": 1, "maxLength": 512, "x-maxUtf8Bytes": 512, "pattern": "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001f\\u007f]+$"}, {"type": "integer", "minimum": -9223372036854775808, "maximum": 9223372036854775807}, {"type": "boolean"}, {"type": "null"}]
+      },
+      "maxProperties": 16,
+      "propertyNames": {"pattern": "^[a-z][a-z0-9_]{0,63}$"}
+    }
+  }
+}

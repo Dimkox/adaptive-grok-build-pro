@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from dataclasses import asdict, dataclass, field
@@ -107,11 +108,25 @@ def _contracts(root: Path, files: list[str]) -> CheckResult:
         if lower.endswith(('.yaml', '.yml')) and any(token in lower for token in ('openapi', 'asyncapi', 'contract')):
             checked += 1
             text = read_text_limited(path)
-            if 'openapi:' not in text and 'asyncapi:' not in text:
+            try:
+                json_document = json.loads(text)
+            except json.JSONDecodeError:
+                json_document = None
+            if isinstance(json_document, dict):
+                has_openapi = 'openapi' in json_document
+                has_asyncapi = 'asyncapi' in json_document
+                has_paths = 'paths' in json_document
+                has_channels = 'channels' in json_document
+            else:
+                has_openapi = 'openapi:' in text
+                has_asyncapi = 'asyncapi:' in text
+                has_paths = 'paths:' in text
+                has_channels = 'channels:' in text
+            if not has_openapi and not has_asyncapi:
                 findings.append({'severity': 'error', 'code': 'contract-version', 'path': rel, 'message': 'Missing openapi: or asyncapi: top-level version.'})
-            if 'asyncapi:' in text and 'channels:' not in text:
+            if has_asyncapi and not has_channels:
                 findings.append({'severity': 'error', 'code': 'asyncapi-channels', 'path': rel, 'message': 'AsyncAPI document has no channels.'})
-            if 'openapi:' in text and 'paths:' not in text:
+            if has_openapi and not has_paths:
                 findings.append({'severity': 'error', 'code': 'openapi-paths', 'path': rel, 'message': 'OpenAPI document has no paths.'})
     return CheckResult('contract-structure', 'fail' if findings else 'pass', f'{checked} contracts checked', details=findings)
 
@@ -325,11 +340,27 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
     if trivy is not None:
         results.append(trivy)
     results.extend(_python(root, mode))
+    if (
+        mode in {'pr', 'release'}
+        and 'data' in active_profiles
+        and any(path.startswith('trust-ci/') for path in files)
+        and (root / 'trust-ci/scripts/verify-production-promotion.sh').is_file()
+        and os.environ.get('GROK_VERIFY_CAPABILITY') != 'repository-sandbox'
+    ):
+        results.append(
+            _command_check(
+                root,
+                'trust-ci-production-promotion',
+                ['bash', 'trust-ci/scripts/verify-production-promotion.sh'],
+                3600,
+            )
+        )
 
     failures = [result for result in results if result.status == 'fail']
     report = {
         'schema_version': 1,
         'created_at': now_utc(),
+        'execution_capability': os.environ.get('GROK_VERIFY_CAPABILITY', 'trusted-host'),
         'mode': mode,
         'profiles': active_profiles,
         'route_id': route.get('route_id') if route else None,

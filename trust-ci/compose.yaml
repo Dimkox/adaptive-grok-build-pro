@@ -26,6 +26,22 @@ services:
       - ./runtime/policy.json:/etc/adaptive-trust-ci/policy.json:ro
     command: ["migrate"]
     depends_on:
+      role-bootstrap:
+        condition: service_completed_successfully
+    networks:
+      - trust-ci
+    restart: "no"
+
+  role-bootstrap:
+    image: ${TRUST_CI_POSTGRES_IMAGE:?set immutable postgres image name@sha256 digest}
+    env_file:
+      - ./env/postgres.env
+    environment:
+      PGHOST: postgres
+    volumes:
+      - ./postgres/upgrade:/opt/adaptive-trust-ci/postgres-upgrade:ro
+    command: ["bash", "/opt/adaptive-trust-ci/postgres-upgrade/004_deployer_role.sh"]
+    depends_on:
       postgres:
         condition: service_healthy
     networks:
@@ -44,10 +60,13 @@ services:
     env_file:
       - ./env/common.env
       - ./env/api.env
+    environment:
+      TRUST_CI_PROMOTION_MANIFEST_SHA256: ${TRUST_CI_PROMOTION_MANIFEST_SHA256:?set boot-verified signed manifest SHA-256}
     volumes:
       - ./runtime/policy.json:/etc/adaptive-trust-ci/policy.json:ro
       - ./runtime/trust-store.json:/etc/adaptive-trust-ci/trust-store.json:ro
       - ./runtime/control:/run/adaptive-trust-ci
+      - ${TRUST_CI_SUPPLY_CHAIN_DIR:?set signed supply-chain directory}:/opt/adaptive-trust-ci/supply-chain:ro
     ports:
       - "127.0.0.1:${TRUST_CI_API_HOST_PORT:-18080}:8080"
     depends_on:
@@ -121,6 +140,9 @@ services:
     environment:
       DOCKER_HOST: tcp://docker-engine:2375
       TRUST_CI_RUNNER_IMAGE: ${TRUST_CI_RUNNER_IMAGE:?set immutable runner image name@sha256 digest}
+      TRUST_CI_SUPPLY_CHAIN_DIR: /opt/adaptive-trust-ci/supply-chain
+      TRUST_CI_PROTECTED_ARTIFACT_PATH: /opt/adaptive-trust-ci/supply-chain/artifact.zip
+      TRUST_CI_COSIGN_PUBLIC_KEY_PATH: /run/secrets/cosign-public-key.pem
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=256m
       - /home/trustci:rw,noexec,nosuid,nodev,size=32m
@@ -132,8 +154,10 @@ services:
       - ${TRUST_CI_HOLDOUT_SOURCE_PATH:?set absolute reviewed holdout source path}:/etc/adaptive-trust-ci/holdout:ro
       - ./runtime/trust-ci-signing-key.pem:/run/secrets/trust-ci-signing-key.pem:ro
       - ./runtime/github-app-private-key.pem:/run/secrets/github-app-private-key.pem:ro
+      - ${COSIGN_PUBLIC_KEY:?set cosign public key path}:/run/secrets/cosign-public-key.pem:ro
       - ./runtime/control:/run/adaptive-trust-ci
       - trust-ci-workspaces:/var/lib/adaptive-trust-ci/workspaces
+      - ${TRUST_CI_SUPPLY_CHAIN_DIR:?set signed supply-chain directory}:/opt/adaptive-trust-ci/supply-chain:ro
     depends_on:
       migrate:
         condition: service_completed_successfully

@@ -169,6 +169,20 @@ class _PathTools:
 
 
 class VerificationTests(unittest.TestCase):
+    def test_repository_sandbox_capability_skips_host_postgres_bundle(self) -> None:
+        with project_copy(git=True) as root:
+            script = root / 'trust-ci/scripts/verify-production-promotion.sh'
+            script.parent.mkdir(parents=True)
+            script.write_text('#!/bin/sh\nexit 99\n', encoding='utf-8')
+            route = build_route(root, 'change postgres', 's1').to_dict()
+            route['quality_profiles'] = ['base', 'data']
+            set_active_route(root, route)
+            with patch('adaptive_grok.verification.changed_files', return_value=['trust-ci/x.py']), \
+                    patch.dict(os.environ, {'GROK_VERIFY_CAPABILITY': 'repository-sandbox'}):
+                report = verify(root, mode='pr', record=False)
+            self.assertEqual(report['execution_capability'], 'repository-sandbox')
+            self.assertNotIn('trust-ci-production-promotion', {item['name'] for item in report['checks']})
+
     def test_invalid_json_contract_fails(self) -> None:
         with project_copy() as root:
             path = root / 'engineering/contracts/schemas/bad.schema.json'
@@ -182,6 +196,25 @@ class VerificationTests(unittest.TestCase):
             path = root / 'engineering/contracts/openapi/test.yaml'
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text('openapi: 3.1.0\ninfo: {}\n')
+            result = _contracts(root, ['engineering/contracts/openapi/test.yaml'])
+            self.assertEqual(result.status, 'fail')
+            self.assertTrue(any(item['code'] == 'openapi-paths' for item in result.details))
+
+    def test_json_form_openapi_yaml_uses_top_level_contract_keys(self) -> None:
+        with project_copy() as root:
+            path = root / 'engineering/contracts/openapi/test.yaml'
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(
+                json.dumps({'openapi': '3.1.0', 'info': {}, 'paths': {}}),
+                encoding='utf-8',
+            )
+            result = _contracts(root, ['engineering/contracts/openapi/test.yaml'])
+            self.assertEqual(result.status, 'pass', result.details)
+
+            path.write_text(
+                json.dumps({'openapi': '3.1.0', 'info': {}}),
+                encoding='utf-8',
+            )
             result = _contracts(root, ['engineering/contracts/openapi/test.yaml'])
             self.assertEqual(result.status, 'fail')
             self.assertTrue(any(item['code'] == 'openapi-paths' for item in result.details))

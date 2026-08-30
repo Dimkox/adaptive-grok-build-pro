@@ -9,10 +9,10 @@ Deploy the self-hosted exact-SHA GitHub App Check Run `adaptive-trust-ci/verifie
 - dedicated CI host without production workloads;
 - reviewed `trust-ci/runtime/policy.json` with immutable runner image digest;
 - reviewed external holdout bundle outside the repository checkout, with its exact digest in policy;
-- API-only webhook secret and human public-key trust store;
+- API-only webhook secret and production-promotion public-key trust store;
 - worker-only CI attestation key;
 - worker-only GitHub App ID, installation ID and RSA private key;
-- separate human security-approval private key stored off-server;
+- separate human production-promotion private key stored off-server;
 - temporary human administration token available only for branch protection;
 - HTTPS reverse proxy and PostgreSQL backup destination.
 
@@ -59,10 +59,16 @@ Configure an HTTPS GitHub pull-request webhook at `/webhooks/github` with the AP
 6. Fetch `/attestations/<job_id>` and verify it offline with the CI public key.
 7. Update the same PR. Confirm the old SHA and old Check Run cannot satisfy the new SHA.
 8. Change any deployed policy or holdout input. Confirm the policy digest and required check name change.
-9. Change a `trust-ci/**` file. Confirm the Check Run enters `action_required` until an exact Ed25519 human approval is submitted, then restarts the same durable Check Run.
+9. Change a `trust-ci/**` file. Under the automated-only epoch, confirm it reaches terminal success or failure from automated evidence and never enters `needs_approval`/`action_required` for a missing human signature.
 10. Run a fixture that changes a tracked source file and exits `0`. Confirm Trust CI still fails with a source-integrity result.
 
 Do not continue if any step is ambiguous.
+
+## Automated-only policy transition
+
+The reviewed policy example has `approval_rules: []`. Deploying that epoch and updating branch protection are external control-plane operations: repository code and local receipts cannot perform or authorize them. Operator automation must deploy the exact reviewed policy, prove the new App-owned check on a disposable PR, then replace the required context with the same GitHub App ID and no unprotected interval.
+
+This transition is not a human-signature ceremony. If the previous deployed epoch still requests PR approvals, stop delivery and complete the cutover; do not submit a legacy PR approval envelope. After cutover, development validation, PR delivery and merge remain automated. The only human signature is the `promotion:production` envelope at final production consume/deploy.
 
 ## Protect main
 
@@ -146,7 +152,8 @@ Never replace the external gate with a local receipt, delegated local grant, rep
 - tracked source mutation is a deterministic failure;
 - job state survives API/worker/PostgreSQL restart;
 - expired leases are reclaimed exactly once and attempt-limited;
-- approvals are bound to repository, PR, base SHA, head SHA, policy digest and scope;
+- automated-only policy has no interactive approval rules and protected-path PRs never wait for a signature;
+- every production promotion is bound to repository, exact merged SHA, artifact digest, environment, policy epoch and source attestation, then consumed once;
 - Check Run success is backed by a stored signed attestation;
 - branch protection requires the exact policy-epoch check from the configured GitHub App ID;
 - `main` requires a pull request plus that App-owned check.

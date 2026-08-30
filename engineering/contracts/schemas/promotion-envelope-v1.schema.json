@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dimkox.github.io/adaptive-grok-build-pro/contracts/promotion-envelope-v1.schema.json",
+  "title": "PromotionEnvelopeV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["payload", "algorithm", "signature"],
+  "properties": {
+    "payload": {"$ref": "#/$defs/promotionPayload"},
+    "algorithm": {"const": "Ed25519"},
+    "signature": {"type": "string", "pattern": "^[A-Za-z0-9_-]{85}[AQgw]$"}
+  },
+  "$defs": {
+    "promotionPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "promotion_id",
+        "nonce",
+        "actor",
+        "key_id",
+        "repository",
+        "merged_commit_sha",
+        "artifact_sha256",
+        "target_environment",
+        "policy_epoch",
+        "source_attestation_id",
+        "reason",
+        "issued_at",
+        "expires_at"
+      ],
+      "properties": {
+        "schema_version": {"type": "integer", "const": 1},
+        "promotion_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "nonce": {"type": "string", "pattern": "^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$"},
+        "actor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "x-maxUtf8Bytes": 128,
+          "pattern": "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001f\\u007f]+$"
+        },
+        "key_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "x-maxUtf8Bytes": 128,
+          "pattern": "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001f\\u007f]+$"
+        },
+        "repository": {"type": "string", "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"},
+        "merged_commit_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "target_environment": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,62}$"},
+        "policy_epoch": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "source_attestation_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "x-maxUtf8Bytes": 512,
+          "pattern": "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001f\\u007f]+$"
+        },
+        "issued_at": {"type": "string", "format": "date-time", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"},
+        "expires_at": {"type": "string", "format": "date-time", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"}
+      }
+    }
+  }
+}

@@ -160,6 +160,48 @@ class HoldoutSpec:
 
 
 @dataclass(frozen=True)
+class PromotionSpec:
+    environments: tuple[str, ...]
+    max_ttl_seconds: int
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> 'PromotionSpec':
+        if not isinstance(data, Mapping) or set(data) != {
+            'environments', 'max_ttl_seconds'
+        }:
+            raise PolicyError('promotion controls must contain exact fields')
+        raw_environments = data.get('environments')
+        if not isinstance(raw_environments, list) or not raw_environments:
+            raise PolicyError('promotion environments must be a non-empty list')
+        if (
+            any(
+                not isinstance(item, str)
+                or re.fullmatch(r'[a-z][a-z0-9-]{0,62}', item) is None
+                for item in raw_environments
+            )
+        ):
+            raise PolicyError('promotion environments must be unique lowercase identifiers')
+        environments = tuple(sorted(set(raw_environments)))
+        if len(environments) != len(raw_environments):
+            raise PolicyError('promotion environments must be unique lowercase identifiers')
+        maximum = data.get('max_ttl_seconds')
+        if type(maximum) is not int or not 60 <= maximum <= 3600:
+            raise PolicyError('promotion max_ttl_seconds must be between 60 and 3600')
+        return cls(environments=environments, max_ttl_seconds=maximum)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            'environments': list(self.environments),
+            'max_ttl_seconds': self.max_ttl_seconds,
+        }
+
+    def scope_for(self, environment: str) -> str:
+        if environment not in self.environments:
+            raise PolicyError('promotion environment is not allowed')
+        return f'promotion:{environment}'
+
+
+@dataclass(frozen=True)
 class Policy:
     schema_version: int
     allowed_repositories: tuple[str, ...]
@@ -174,6 +216,7 @@ class Policy:
     sandbox: SandboxSpec
     commands: tuple[CommandSpec, ...]
     holdout: HoldoutSpec
+    promotion: PromotionSpec
     approval_rules: tuple[ApprovalRule, ...]
     digest: str
 
@@ -198,6 +241,10 @@ class Policy:
         rules_raw = data.get('approval_rules', [])
         sandbox_raw = data.get('sandbox')
         holdout_raw = data.get('holdout')
+        promotion_raw = data.get(
+            'promotion',
+            {'environments': ['production'], 'max_ttl_seconds': 900},
+        )
         if not isinstance(repositories, list) or not repositories:
             raise PolicyError('allowed_repositories must be non-empty')
         if not isinstance(commands_raw, list) or not commands_raw:
@@ -218,6 +265,7 @@ class Policy:
         if len(parsed_rules) != len(rules_raw):
             raise PolicyError('every approval rule must be an object')
         holdout = HoldoutSpec.from_dict(holdout_raw)
+        promotion = PromotionSpec.from_dict(promotion_raw)
         all_names = [item.name for item in parsed_commands] + [item.name for item in holdout.commands]
         if len(set(all_names)) != len(all_names):
             raise PolicyError('repository and holdout command names must be globally unique')
@@ -241,6 +289,7 @@ class Policy:
             'sandbox': SandboxSpec.from_dict(sandbox_raw).to_dict(),
             'commands': [item.to_dict() for item in parsed_commands],
             'holdout': holdout.to_dict(),
+            'promotion': promotion.to_dict(),
             'approval_rules': [item.to_dict() for item in parsed_rules],
         }
         digest = hashlib.sha256(canonical_json(normalized)).hexdigest()
@@ -258,6 +307,7 @@ class Policy:
             sandbox=SandboxSpec.from_dict(normalized['sandbox']),
             commands=parsed_commands,
             holdout=holdout,
+            promotion=promotion,
             approval_rules=parsed_rules,
             digest=digest,
         )

@@ -6,13 +6,18 @@ Any incorrect acceptance/consumption, provenance mismatch, replay, missing audit
 
 ## Application rollback
 
-Before the final ceremony, abandon or revise the unmerged stack; production and old policy are unchanged. During the ceremony, failure before consume aborts all remaining steps. After consume, activate the kill switch, reconcile the unique operation ID, and restore the reviewed prior image/data path; do not activate the new policy unless deployment is proven successful.
+Before the final ceremony, revise or revert development through the automated PR workflow. If the automated-only policy cutover fails, retain or restore the previous App-owned required check without an unprotected interval and report the external cutover blocker; never request a PR signature. During the production ceremony, failure before consume aborts all remaining steps. After consume, activate the kill switch, reconcile the unique operation ID, and restore the reviewed prior image/data path.
 
 If the new policy was activated, restore the old PR-approval policy, prove its App-owned exact check on a disposable PR, then restore the required context without an unprotected interval.
 
 ## Data recovery / forward-fix
 
 Retain migration 004 and every evidence, nonce, consumption and audit row. Never down-migrate or edit applied SQL; forward-fix with migration 005+ and reconcile operation IDs against external deployment history after restore.
+
+If upgrade stops before 004 because the deployer role is absent, leave the
+transaction rollback intact, repair administrator configuration, rerun the
+idempotent `role-bootstrap`, then rerun `migrate`. Never grant `CREATEROLE` to
+the migrator as compensation.
 
 ## Verification after rollback
 

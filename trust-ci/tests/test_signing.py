@@ -4,8 +4,15 @@ import unittest
 from datetime import timedelta
 
 from _support import digest, now, sha
-from adaptive_trust_ci.models import ApprovalEnvelope, ApprovalPayload
-from adaptive_trust_ci.signing import ApprovalError, Signer, TrustStore, sign_approval, verify_approval
+from adaptive_trust_ci.models import ApprovalEnvelope, ApprovalPayload, PromotionPayload, canonical_json
+from adaptive_trust_ci.signing import (
+    ApprovalError,
+    Signer,
+    TrustStore,
+    sign_approval,
+    sign_promotion,
+    verify_approval,
+)
 from adaptive_trust_ci.store import MemoryStore, ReplayError
 
 
@@ -119,6 +126,29 @@ class SigningTests(unittest.TestCase):
         memory.record_approval(self.payload, self.envelope, now=now())
         with self.assertRaises(ReplayError):
             memory.record_approval(self.payload, self.envelope, now=now())
+
+    def test_promotion_signature_uses_canonical_payload_bytes(self) -> None:
+        payload = PromotionPayload(
+            schema_version=1,
+            promotion_id="12345678-1234-4234-8234-123456789abc",
+            nonce="bm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm4",
+            actor="dmitry",
+            key_id=self.signer.key_id,
+            repository="dimkox/adaptive-grok-build-pro",
+            merged_commit_sha=sha("a"),
+            artifact_sha256=digest("b"),
+            target_environment="production",
+            policy_epoch=digest("c"),
+            source_attestation_id="abcdefab-1234-4234-8234-abcdefabcdef",
+            reason="Reviewed exact artifact",
+            issued_at="2026-08-23T12:00:00Z",
+            expires_at="2026-08-23T12:15:00Z",
+        )
+        envelope = sign_promotion(payload, self.signer)
+        self.signer._private_key.public_key().verify(
+            __import__("base64").urlsafe_b64decode(envelope.signature + "=="),
+            canonical_json(payload.to_dict()),
+        )
 
 
 if __name__ == "__main__":

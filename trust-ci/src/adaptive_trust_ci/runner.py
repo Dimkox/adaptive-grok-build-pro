@@ -12,10 +12,21 @@ from typing import Callable, Protocol
 from .github import GitHubClient
 from .holdout import HoldoutError, verify_bundle
 from .lease import LeaseKeeper
-from .models import AttestationPayload, CommandResult, Job, RunOutcome, utc_now
+from .models import (
+    AttestationPayload,
+    Checkout,
+    CommandResult,
+    Job,
+    ProtectedBranchAttestationEnvelope,
+    ProtectedBranchAttestationPayload,
+    RunOutcome,
+    parse_datetime,
+    utc_now,
+)
 from .policy import CommandSpec, Policy
+from .provenance import ProtectedBranchJobRequest, verify_supply_chain_artifact
 from .sandbox import ContainerExecutor
-from .signing import Signer, sign_attestation, verify_attestation
+from .signing import Signer, sign_attestation, sign_protected_branch_attestation, verify_attestation
 from .store import Store
 from .workspace import GitWorkspace, WorkspaceMutationError
 
@@ -31,6 +42,33 @@ class Workspace(Protocol):
     def cleanup(self) -> None: ...
 
 
+class ExactCommitWorkspace(GitWorkspace):
+    """Fetch only the corroborated immutable merge object, never a mutable ref."""
+
+    def checkout(self, request: ProtectedBranchJobRequest) -> Checkout:
+        if request.job_id != self.job.job_id:
+            raise ValueError('workspace job mismatch')
+        self._git('init', '--quiet')
+        self._git('remote', 'add', 'origin', f'https://github.com/{request.repository}.git')
+        self._git(
+            'fetch',
+            '--quiet',
+            '--no-tags',
+            f'--depth={self.checkout_depth}',
+            'origin',
+            request.merged_commit_sha,
+            authenticated=True,
+        )
+        if not self._commit_exists(request.merged_commit_sha):
+            raise RuntimeError('exact merged commit is unavailable after fetch')
+        self._git('checkout', '--quiet', '--detach', request.merged_commit_sha)
+        if self._git_output('rev-parse', 'HEAD') != request.merged_commit_sha:
+            raise RuntimeError('checked-out HEAD does not match corroborated merge SHA')
+        self.reset()
+        self.assert_unchanged()
+        return Checkout(path=self.path, changed_files=())
+
+
 @dataclass
 class JobRunner:
     store: Store
@@ -44,7 +82,140 @@ class JobRunner:
     holdout_host_path: Path
     now_fn: Callable[[], datetime] = utc_now
     workspace_factory: Callable[..., Workspace] = GitWorkspace
+    protected_workspace_factory: Callable[..., Workspace] = ExactCommitWorkspace
     executor_factory: Callable[..., ContainerExecutor] = ContainerExecutor
+    protected_ref: str | None = None
+    github_app_id: int | None = None
+    supply_chain_verifier: Callable[[Path], bool] | None = None
+
+    def run_protected_branch(
+        self,
+        request: ProtectedBranchJobRequest,
+    ) -> ProtectedBranchAttestationEnvelope:
+        if request.repository not in {repository.lower() for repository in self.policy.allowed_repositories}:
+            raise RuntimeError('protected job repository is not allowed by server policy')
+        if self.protected_ref is None or request.protected_ref != self.protected_ref:
+            raise RuntimeError('protected job does not target the configured protected ref')
+        if (
+            type(self.github_app_id) is not int
+            or request.merge.required_check_name != self.policy.check_name
+            or request.merge.required_check_app_id != self.github_app_id
+        ):
+            raise RuntimeError('protected branch required App check is not verified')
+        if request.policy_epoch != self.policy.digest:
+            raise RuntimeError('protected job policy epoch mismatch')
+        if self.supply_chain_verifier is None:
+            raise RuntimeError('supply-chain signature verifier is not configured')
+        supply_chain = verify_supply_chain_artifact(request, self.policy, self.supply_chain_verifier)
+        verified_holdout_digest = verify_bundle(self.policy.holdout.path, self.policy.holdout.digest)
+        check_run_id = self.github.ensure_check_run(
+            request.repository,
+            request.merged_commit_sha,
+            name=self.policy.check_name,
+            external_id=request.job_id,
+            details_url=f'{self.public_base_url.rstrip("/")}/jobs/{request.job_id}',
+            started_at=request.started_at,
+        )
+        token = self.github_token_provider().strip()
+        if not token:
+            raise RuntimeError('GitHub App installation token provider returned empty token')
+        workspace = self.protected_workspace_factory(
+            request,
+            github_token=token,
+            checkout_depth=self.policy.checkout_depth,
+            base_directory=self.workspace_root,
+        )
+        try:
+            checkout = workspace.checkout(request)
+            try:
+                relative = checkout.path.resolve().relative_to(self.workspace_root.resolve())
+            except ValueError as exc:
+                raise RuntimeError('checkout escaped configured workspace root') from exc
+            command_results: list[CommandResult] = []
+            environment = self._command_environment(request)
+            for command in self.policy.holdout.commands:
+                if not self._run_command(
+                    workspace,
+                    command,
+                    environment,
+                    command_results,
+                    workspace_host_path=self.workspace_host_root / relative,
+                    holdout_path=self.policy.holdout.path,
+                    holdout_host_path=self.holdout_host_path,
+                ):
+                    break
+            if all(item.status == 'pass' for item in command_results):
+                for command in self.policy.commands:
+                    if not self._run_command(
+                        workspace,
+                        command,
+                        environment,
+                        command_results,
+                        workspace_host_path=self.workspace_host_root / relative,
+                        holdout_path=None,
+                        holdout_host_path=None,
+                    ):
+                        break
+            expected_count = len(self.policy.holdout.commands) + len(self.policy.commands)
+            if len(command_results) != expected_count or any(item.status != 'pass' for item in command_results):
+                self.github.complete_check_run(
+                    request.repository,
+                    check_run_id,
+                    conclusion='failure',
+                    title='Protected branch exact SHA failed',
+                    summary='One or more mandatory checks failed.',
+                    completed_at=self.now_fn(),
+                )
+                raise RuntimeError('protected branch verification failed')
+            final_supply_chain = verify_supply_chain_artifact(request, self.policy, lambda _root: True)
+            if final_supply_chain != supply_chain:
+                raise RuntimeError('protected artifact digest changed during verification')
+            payload = ProtectedBranchAttestationPayload(
+                schema_version=1,
+                source_attestation_id=str(uuid.uuid4()),
+                merge_fact_id=request.merge.merge_fact_id,
+                repository=request.repository,
+                protected_ref=request.protected_ref,
+                merged_commit_sha=request.merged_commit_sha,
+                policy_epoch=request.policy_epoch,
+                runner_digest=supply_chain.runner_digest,
+                holdout_digest=verified_holdout_digest,
+                image_digest=supply_chain.image_digest,
+                artifact_sha256=supply_chain.artifact_sha256,
+                result='passed',
+                issued_at=self.now_fn().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                key_id=self.signer.key_id,
+            )
+            envelope = sign_protected_branch_attestation(payload, self.signer)
+            return envelope
+        finally:
+            workspace.cleanup()
+
+    def publish_protected_success(
+        self, envelope: ProtectedBranchAttestationEnvelope
+    ) -> None:
+        """Publish success only after evidence has a recoverable durable identity."""
+        payload = envelope.payload
+        job_id = str(uuid.uuid5(
+            uuid.NAMESPACE_URL,
+            'adaptive-trust-ci:protected:' + payload.merge_fact_id,
+        ))
+        check_run_id = self.github.ensure_check_run(
+            payload.repository,
+            payload.merged_commit_sha,
+            name=self.policy.check_name,
+            external_id=job_id,
+            details_url=f'{self.public_base_url.rstrip("/")}/jobs/{job_id}',
+            started_at=parse_datetime(payload.issued_at),
+        )
+        self.github.complete_check_run(
+            payload.repository,
+            check_run_id,
+            conclusion='success',
+            title='Protected branch exact SHA passed',
+            summary=f'attestation={payload.source_attestation_id}; signer={payload.key_id}',
+            completed_at=self.now_fn(),
+        )
 
     def process(self, job: Job, worker_id: str) -> RunOutcome:
         started_at = self.now_fn()
@@ -390,7 +561,7 @@ class JobRunner:
         ):
             raise RuntimeError('stored attestation does not match the leased job')
 
-    def _command_environment(self, job: Job) -> dict[str, str]:
+    def _command_environment(self, job: Job | ProtectedBranchJobRequest) -> dict[str, str]:
         environment = {
             'CI': 'true',
             'TRUST_CI': '1',

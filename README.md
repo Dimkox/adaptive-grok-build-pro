@@ -8,10 +8,10 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 - Identity: **2.0.12** (`VERSION`, README H1). Published GitHub Release is `v2.0.12`.
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
-- Independent Trust CI: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
+- Independent Trust CI: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs and production promotions, Ed25519 attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
 - M0 Live Trust Authority is complete on `main`. PR #7 repaired the Trust CI workspace/runtime path, PR #6 fixed target-aware shell policy/denial loops, and PR #5 consolidated the live authority milestone.
 - Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. Bootstrap merge exceptions are revoked.
-- Active development milestone: **M1 — Typed Intent, Acceptance Criteria, and Evidence Traceability**, tracked in draft PR #8 on branch `milestone/m1-typed-intent-evidence`. Its design and implementation plan are committed there; implementation has not started.
+- Active development: **production-only promotion gate** on `policy/production-only-human-approvals`. It adds PostgreSQL-backed exact merged-commit/artifact provenance, crash-idempotent protected evidence, durable merge-fact retry/reconciliation, `POST /promotions`, consume-once deploy authorization, and a deployer-only terminal outcome API. Route verification binds a clean read-only/no-network repository-runner simulation plus Trust CI-owned host evidence for real disposable PostgreSQL integration/restart, backup/restore and production-adapter policy transition. Validation/PR/merge have no human signatures; exactly one human `promotion:production` signature is required only at final production consume/deploy. Repository code cannot activate deployed policy or branch protection; operator automation must prove the automated-only policy epoch with verified add-before-remove first.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
 
 ## Read first
@@ -30,7 +30,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## How work runs
 
-Source-of-truth order is in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Local loop: route → change package → one write owner → if the product changed, `grok_verify --mode pr` and independent local reviews → `ready` → branch and pull request. The deployed Trust CI service verifies the exact PR SHA under server-side policy, executes an external holdout bundle before repository checks, rejects source mutation, checks signed human approval scopes, signs the attestation, and publishes `adaptive-trust-ci/verified@<policy-sha12>` through its GitHub App. A human owns merge, tag and production promotion.
+Source-of-truth order is in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Local loop: route → change package → one write owner → if the product changed, `grok_verify --mode pr` and independent local reviews → `ready` → branch and pull request. Under the automated-only deployed policy, Trust CI verifies the exact PR SHA, runs the external holdout and repository checks, rejects source mutation, signs the attestation, publishes `adaptive-trust-ci/verified@<policy-sha12>` through its GitHub App, and permits normal protected merge without a human signature. Production remains fail-closed until one human-signed exact promotion is consumed immediately before deploy.
 
 For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.json` first. Runtime route files are not expected to be committed; when no route exists, continue the explicitly named active PR/branch or route a new task before implementation.
 
@@ -58,6 +58,7 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - [`scripts/install_into.py`](scripts/install_into.py)
 - [`trust-ci/`](trust-ci/) — external merge trust, deployed independently
 - [`engineering/runbooks/`](engineering/runbooks/)
+- [`engineering/runbooks/production-promotion.md`](engineering/runbooks/production-promotion.md) — automated delivery cutover and sole final human production ceremony
 - [`packages/`](packages/)
 - [`examples/bitrix-module/`](examples/bitrix-module/)
 - [LICENSE](LICENSE)

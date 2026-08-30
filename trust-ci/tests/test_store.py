@@ -1,12 +1,29 @@
 from __future__ import annotations
 
 import unittest
+import base64
+import threading
+import uuid
+from dataclasses import replace
 from datetime import timedelta
 
 from _support import digest, now, sha
-from adaptive_trust_ci.models import ApprovalPayload, JobRequest
-from adaptive_trust_ci.signing import Signer, sign_approval
-from adaptive_trust_ci.store import MemoryStore
+from adaptive_trust_ci.models import (
+    ApprovalPayload,
+    JobRequest,
+    PromotionExpectedBinding,
+    PromotionEvent,
+    PromotionPayload,
+    ProtectedBranchAttestationPayload,
+)
+from adaptive_trust_ci.provenance import DeliveryConflict, MergedPullRequestFact, ReconciliationWatermark
+from adaptive_trust_ci.signing import (
+    Signer,
+    sign_approval,
+    sign_promotion,
+    sign_protected_branch_attestation,
+)
+from adaptive_trust_ci.store import MemoryStore, ProvenanceMismatch, ReplayError
 
 
 class StoreTests(unittest.TestCase):
@@ -19,6 +36,65 @@ class StoreTests(unittest.TestCase):
             head_sha=sha("b"),
             head_ref="feat/test",
             base_ref="main",
+        )
+        self.signer = Signer.generate()
+        self.merge_fact = MergedPullRequestFact.create(
+            delivery_id="delivery-store-1",
+            payload_sha256=digest("d"),
+            repository_id=123,
+            repository="dimkox/adaptive-grok-build-pro",
+            installation_id=456,
+            pr_number=701,
+            head_sha=sha("e"),
+            base_sha=sha("f"),
+            protected_ref="refs/heads/main",
+            merged_commit_sha=sha("a"),
+            merged_at="2026-08-23T11:59:00Z",
+            received_at=now(),
+        )
+        self.attestation_payload = ProtectedBranchAttestationPayload(
+            schema_version=1,
+            source_attestation_id="abcdefab-1234-4234-8234-abcdefabcdef",
+            merge_fact_id=self.merge_fact.merge_fact_id,
+            repository=self.merge_fact.repository,
+            protected_ref=self.merge_fact.protected_ref,
+            merged_commit_sha=self.merge_fact.merged_commit_sha,
+            policy_epoch=digest("c"),
+            runner_digest=digest("1"),
+            holdout_digest=digest("2"),
+            image_digest=digest("3"),
+            artifact_sha256=digest("b"),
+            result="passed",
+            issued_at="2026-08-23T12:00:00Z",
+            key_id=self.signer.key_id,
+        )
+        self.protected_evidence = sign_protected_branch_attestation(
+            self.attestation_payload, self.signer
+        )
+        self.promotion_payload = PromotionPayload(
+            schema_version=1,
+            promotion_id="12345678-1234-4234-8234-123456789abc",
+            nonce=base64.urlsafe_b64encode(b"n" * 32).decode("ascii").rstrip("="),
+            actor="dmitry",
+            key_id=self.signer.key_id,
+            repository=self.attestation_payload.repository,
+            merged_commit_sha=self.attestation_payload.merged_commit_sha,
+            artifact_sha256=self.attestation_payload.artifact_sha256,
+            target_environment="production",
+            policy_epoch=self.attestation_payload.policy_epoch,
+            source_attestation_id=self.attestation_payload.source_attestation_id,
+            reason="Deploy the immutable reviewed artifact",
+            issued_at="2026-08-23T12:00:00Z",
+            expires_at="2026-08-23T12:15:00Z",
+        )
+        self.promotion_envelope = sign_promotion(self.promotion_payload, self.signer)
+        self.expected_promotion = PromotionExpectedBinding(
+            repository=self.promotion_payload.repository,
+            merged_commit_sha=self.promotion_payload.merged_commit_sha,
+            artifact_sha256=self.promotion_payload.artifact_sha256,
+            target_environment=self.promotion_payload.target_environment,
+            policy_epoch=self.promotion_payload.policy_epoch,
+            source_attestation_id=self.promotion_payload.source_attestation_id,
         )
 
     def enqueue(self, request=None, *, max_attempts=3):
@@ -152,6 +228,204 @@ class StoreTests(unittest.TestCase):
         count = self.store.requeue_for_approval(job.repository, job.head_sha, now=now() + timedelta(seconds=2))
         self.assertEqual(count, 1)
         self.assertEqual(self.store.get_job(job.job_id).status, "queued")
+
+    def seed_protected_evidence(self) -> None:
+        self.store.activate_policy(self.promotion_payload.policy_epoch)
+        self.assertTrue(self.store.record_merge_fact(self.merge_fact))
+        self.assertTrue(self.store.record_protected_branch_evidence(self.protected_evidence))
+
+    def test_merge_fact_delivery_conflict_lease_retry_and_watermark_are_durable_style(self) -> None:
+        self.assertTrue(self.store.record_merge_fact(self.merge_fact))
+        self.assertFalse(self.store.record_merge_fact(self.merge_fact))
+        with self.assertRaises(DeliveryConflict):
+            self.store.record_merge_fact(
+                replace(self.merge_fact, payload_sha256=digest("e"))
+            )
+
+        claimed = self.store.claim_merge_fact("worker-1", 60, now=now())
+        self.assertIsNotNone(claimed)
+        assert claimed is not None
+        self.assertEqual(claimed.fact, self.merge_fact)
+        self.assertEqual(claimed.attempt, 1)
+        self.store.retry_merge_fact(claimed, "github unavailable", now=now())
+        self.assertIsNone(self.store.claim_merge_fact("worker-2", 60, now=now()))
+        reclaimed = self.store.claim_merge_fact(
+            "worker-2", 60, now=now() + timedelta(seconds=5)
+        )
+        self.assertIsNotNone(reclaimed)
+        assert reclaimed is not None
+        self.assertEqual(reclaimed.attempt, 2)
+        self.store.complete_merge_fact(reclaimed, now=now())
+        self.assertIsNone(self.store.claim_merge_fact("worker-3", 60, now=now()))
+
+        first = ReconciliationWatermark("2026-08-23T12:00:00Z", 4)
+        later = ReconciliationWatermark("2026-08-23T12:00:00Z", 5)
+        self.store.save_reconciliation_watermark(self.merge_fact.repository, first)
+        self.store.save_reconciliation_watermark(self.merge_fact.repository, later)
+        self.assertEqual(
+            self.store.load_reconciliation_watermark(self.merge_fact.repository), later
+        )
+        with self.assertRaises(ValueError):
+            self.store.save_reconciliation_watermark(self.merge_fact.repository, first)
+
+    def test_reconciliation_can_requeue_an_exhausted_merge_fact(self) -> None:
+        self.store.record_merge_fact(self.merge_fact)
+        queue = self.store._merge_queue[self.merge_fact.merge_fact_id]
+        queue.update({"status": "dead", "attempt": 20, "last_error": "retry-exhausted:outage"})
+
+        self.assertTrue(self.store.requeue_merge_fact(self.merge_fact.merge_fact_id, now=now()))
+        reclaimed = self.store.claim_merge_fact("worker-recovery", 60, now=now())
+        self.assertIsNotNone(reclaimed)
+        assert reclaimed is not None
+        self.assertEqual(reclaimed.attempt, 1)
+
+    def test_protected_evidence_exact_tuple_reuses_existing_identity_and_rejects_mismatch(self) -> None:
+        self.store.record_merge_fact(self.merge_fact)
+        self.assertTrue(self.store.record_protected_branch_evidence(self.protected_evidence))
+        replay_payload = replace(
+            self.attestation_payload,
+            source_attestation_id=str(uuid.uuid4()),
+            issued_at="2026-08-23T12:00:01Z",
+        )
+        replay = sign_protected_branch_attestation(replay_payload, self.signer)
+        stored = self.store.record_or_get_protected_branch_evidence(replay)
+        self.assertEqual(stored, self.protected_evidence)
+
+        mismatch = sign_protected_branch_attestation(
+            replace(replay_payload, runner_digest=digest("9")), self.signer
+        )
+        with self.assertRaises(ReplayError):
+            self.store.record_or_get_protected_branch_evidence(mismatch)
+
+    def test_protected_evidence_acceptance_and_consumption_append_atomic_events(self) -> None:
+        self.seed_protected_evidence()
+        record, created = self.store.accept_promotion(
+            self.promotion_envelope, "request-00000001", "correlation-1", now(),
+        )
+        self.assertTrue(created)
+        self.assertEqual(record.promotion_id, self.promotion_payload.promotion_id)
+        replay, replay_created = self.store.accept_promotion(
+            self.promotion_envelope, "request-00000001", "correlation-2", now(),
+        )
+        self.assertFalse(replay_created)
+        self.assertEqual(replay, record)
+        with self.assertRaises(ReplayError):
+            self.store.accept_promotion(
+                self.promotion_envelope, "request-00000002", "correlation-3", now(),
+            )
+
+        operation_id = str(uuid.uuid4())
+        consumption = self.store.consume_promotion(
+            record.promotion_id, self.expected_promotion, operation_id, now()
+        )
+        self.assertEqual(consumption.operation_id, operation_id)
+        with self.assertRaises(ReplayError):
+            self.store.consume_promotion(
+                record.promotion_id,
+                self.expected_promotion,
+                str(uuid.uuid4()),
+                now(),
+            )
+        events = self.store.list_promotion_events(record.promotion_id, limit=10)
+        self.assertEqual(
+            [event.event_type for event in events],
+            ["promotion.accepted", "promotion.consumed"],
+        )
+
+    def test_concurrent_accept_and_consume_have_exactly_one_winner(self) -> None:
+        self.seed_protected_evidence()
+
+        def concurrently(callable_):
+            barrier = threading.Barrier(3)
+            values = []
+
+            def run():
+                barrier.wait(timeout=5)
+                try:
+                    values.append(callable_())
+                except BaseException as exc:
+                    values.append(exc)
+
+            threads = [threading.Thread(target=run) for _ in range(2)]
+            for thread in threads:
+                thread.start()
+            barrier.wait(timeout=5)
+            for thread in threads:
+                thread.join(timeout=10)
+            return values
+
+        accepted = concurrently(
+            lambda: self.store.accept_promotion(
+                self.promotion_envelope, str(uuid.uuid4()), "correlation-race", now(),
+            )
+        )
+        winners = [value for value in accepted if isinstance(value, tuple) and value[1]]
+        self.assertEqual(len(winners), 1)
+        self.assertEqual(sum(isinstance(value, ReplayError) for value in accepted), 1)
+
+        consumed = concurrently(
+            lambda: self.store.consume_promotion(
+                self.promotion_payload.promotion_id,
+                self.expected_promotion,
+                str(uuid.uuid4()),
+                now(),
+            )
+        )
+        self.assertEqual(sum(not isinstance(value, BaseException) for value in consumed), 1)
+        self.assertEqual(sum(isinstance(value, ReplayError) for value in consumed), 1)
+
+    def test_exact_provenance_is_required_before_promotion_acceptance(self) -> None:
+        self.store.activate_policy(self.promotion_payload.policy_epoch)
+        self.store.record_merge_fact(self.merge_fact)
+        with self.assertRaisesRegex(RuntimeError, "provenance"):
+            self.store.accept_promotion(
+                self.promotion_envelope, "request-00000001", "correlation-1", now(),
+            )
+
+    def test_acceptance_requires_an_independently_current_policy_epoch(self) -> None:
+        self.seed_protected_evidence()
+        try:
+            self.store.activate_policy(self.promotion_payload.policy_epoch)
+            self.assertEqual(
+                self.store.get_active_policy_epoch(), self.promotion_payload.policy_epoch
+            )
+            self.store.activate_policy(digest("f"))
+            with self.assertRaises(ProvenanceMismatch):
+                self.store.accept_promotion(
+                    self.promotion_envelope,
+                    "request-00000001",
+                    "correlation-1",
+                    now(),
+                )
+        except (AttributeError, TypeError) as exc:
+            self.fail(f"acceptance lacks a store-owned current-policy boundary: {exc}")
+        self.assertEqual(len(self.store._promotion_idempotency), 0)
+        self.assertEqual(len(self.store._promotions), 0)
+
+    def test_rejected_promotion_audit_accepts_only_bounded_typed_rejection(self) -> None:
+        event = PromotionEvent(
+            schema_version=1,
+            event_id=str(uuid.uuid4()),
+            event_type='promotion.rejected',
+            occurred_at='2026-08-23T12:00:00Z',
+            promotion_id=None,
+            correlation_id='correlation-rejected',
+            operation_id=None,
+            actor='dmitry',
+            key_id=self.signer.key_id,
+            repository='dimkox/adaptive-grok-build-pro',
+            merged_commit_sha=sha('a'),
+            artifact_sha256=digest('b'),
+            target_environment='production',
+            policy_epoch=digest('c'),
+            outcome='rejected',
+            reason_code='signature_invalid',
+            details={'http_status': 401},
+        )
+        self.store.record_promotion_rejection(event)
+        self.assertEqual(self.store._promotion_events, [event])
+        with self.assertRaises(ValueError):
+            self.store.record_promotion_rejection(replace(event, event_type='promotion.accepted'))
 
 
 if __name__ == "__main__":

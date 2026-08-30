@@ -96,6 +96,7 @@ class ContainerExecutor:
             'GIT_CONFIG_COUNT': '1',
             'GIT_CONFIG_KEY_0': 'safe.directory',
             'GIT_CONFIG_VALUE_0': '/workspace',
+            'GROK_VERIFY_CAPABILITY': 'repository-sandbox',
         }
         for key, value in sorted(container_env.items()):
             argv.extend(('--env', f'{key}={value}'))

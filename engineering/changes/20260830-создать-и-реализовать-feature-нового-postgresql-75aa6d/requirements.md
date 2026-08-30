@@ -9,7 +9,7 @@
 - [ ] AC-005: one exact promotion can be consumed once; mismatch, expiry, policy rotation, dependency failure or concurrent replay causes zero production writes.
 - [ ] AC-006: audit events are append-only, correlated, bounded and secret-free; metrics and alerts cover every denial and reconciliation gap.
 - [ ] AC-007: the complete M2–M9 stack passes unit, contract, ephemeral PostgreSQL, restart/restore, role, concurrency, provenance, local shadow/deny-only and rollback evidence without any intermediate human gate or external write.
-- [ ] AC-008: one final production ceremony performs exact old-policy PR approval, deterministic merge, protected-branch/artifact attestation, fresh `promotion:production` signing, consume-once deployment, and only then automated-only policy activation while preserving App-owned exact-SHA branch protection.
+- [ ] AC-008: an externally deployed automated-only policy makes development validation, PR delivery and merge signature-free while preserving App-owned exact-SHA branch protection; after automated merge and protected-branch/artifact attestation, exactly one human `promotion:production` signature gates consume-once production deployment.
 
 ## Failure and edge cases
 

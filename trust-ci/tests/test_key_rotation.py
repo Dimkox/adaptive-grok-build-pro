@@ -4,13 +4,16 @@ import unittest
 from datetime import timedelta
 
 from _support import digest, now, sha
-from adaptive_trust_ci.models import ApprovalPayload
+from adaptive_trust_ci.models import ApprovalPayload, PromotionExpectedBinding, PromotionPayload
 from adaptive_trust_ci.signing import (
     ApprovalError,
+    PromotionError,
     Signer,
     TrustStore,
     sign_approval,
+    sign_promotion,
     verify_approval,
+    verify_promotion,
 )
 
 
@@ -68,6 +71,17 @@ def verify(envelope, store, *, current=None):
         expected_policy_digest=digest('c'),
         now=current or now() + timedelta(seconds=1),
         max_ttl_seconds=1800,
+    )
+
+
+def promotion_expected(payload: PromotionPayload) -> PromotionExpectedBinding:
+    return PromotionExpectedBinding(
+        repository=payload.repository,
+        merged_commit_sha=payload.merged_commit_sha,
+        artifact_sha256=payload.artifact_sha256,
+        target_environment=payload.target_environment,
+        policy_epoch=payload.policy_epoch,
+        source_attestation_id=payload.source_attestation_id,
     )
 
 
@@ -145,6 +159,108 @@ class KeyRotationTests(unittest.TestCase):
                         )
                     ],
                 }
+            )
+
+    def test_promotion_requires_key_active_at_issue_and_verification_time(self) -> None:
+        signer = Signer.generate()
+        payload = PromotionPayload(
+            schema_version=1,
+            promotion_id="12345678-1234-4234-8234-123456789abc",
+            nonce="bm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm4",
+            actor="dmitry",
+            key_id=signer.key_id,
+            repository="dimkox/adaptive-grok-build-pro",
+            merged_commit_sha=sha("a"),
+            artifact_sha256=digest("b"),
+            target_environment="production",
+            policy_epoch=digest("c"),
+            source_attestation_id="abcdefab-1234-4234-8234-abcdefabcdef",
+            reason="Reviewed exact artifact",
+            issued_at="2026-08-23T12:00:00Z",
+            expires_at="2026-08-23T12:15:00Z",
+        )
+        envelope = sign_promotion(payload, signer)
+        expected = promotion_expected(payload)
+        stores = (
+            TrustStore.from_dict({
+                "schema_version": 2,
+                "keys": [key_record(
+                    signer,
+                    scopes=["promotion:production"],
+                    not_before="2026-08-23T12:00:01+00:00",
+                )],
+            }),
+            TrustStore.from_dict({
+                "schema_version": 2,
+                "keys": [key_record(
+                    signer,
+                    scopes=["promotion:production"],
+                    not_after="2026-08-23T12:00:01+00:00",
+                )],
+            }),
+            TrustStore.from_dict({
+                "schema_version": 2,
+                "keys": [key_record(
+                    signer,
+                    scopes=["promotion:production"],
+                    revoked_at="2026-08-23T12:00:01+00:00",
+                )],
+            }),
+        )
+        for store in stores:
+            with self.subTest(store=store), self.assertRaisesRegex(
+                PromotionError, "^promotion authorization invalid$"
+            ):
+                verify_promotion(
+                    envelope,
+                    store,
+                    expected,
+                    now() + timedelta(seconds=2),
+                    900,
+                )
+
+    def test_promotion_issued_at_revocation_during_future_skew_is_rejected(self) -> None:
+        signer = Signer.generate()
+        issued_at = now()
+        payload = PromotionPayload(
+            schema_version=1,
+            promotion_id="12345678-1234-4234-8234-123456789abc",
+            nonce="bm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubm4",
+            actor="dmitry",
+            key_id=signer.key_id,
+            repository="dimkox/adaptive-grok-build-pro",
+            merged_commit_sha=sha("a"),
+            artifact_sha256=digest("b"),
+            target_environment="production",
+            policy_epoch=digest("c"),
+            source_attestation_id="abcdefab-1234-4234-8234-abcdefabcdef",
+            reason="Reviewed exact artifact",
+            issued_at="2026-08-23T12:00:00Z",
+            expires_at="2026-08-23T12:15:00Z",
+        )
+        envelope = sign_promotion(payload, signer)
+        expected = promotion_expected(payload)
+        store = TrustStore.from_dict(
+            {
+                "schema_version": 2,
+                "keys": [
+                    key_record(
+                        signer,
+                        scopes=["promotion:production"],
+                        revoked_at=issued_at.isoformat(),
+                    )
+                ],
+            }
+        )
+        with self.assertRaisesRegex(
+            PromotionError, "^promotion authorization invalid$"
+        ):
+            verify_promotion(
+                envelope,
+                store,
+                expected,
+                issued_at - timedelta(seconds=1),
+                900,
             )
 
 

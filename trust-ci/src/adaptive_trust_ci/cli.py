@@ -3,9 +3,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import stat
 import sys
+import tempfile
 import urllib.error
+import urllib.parse
 import urllib.request
+from datetime import timedelta
 from pathlib import Path
 
 from .api import create_app
@@ -14,12 +18,37 @@ from .github import GitHubClient
 from .github_app import generate_app_jwt
 from .holdout import bundle_digest, verify_bundle
 from .migrations import PostgresMigrator
-from .models import ApprovalEnvelope, ApprovalPayload, AttestationEnvelope, utc_now
+from .models import (
+    ApprovalEnvelope,
+    ApprovalPayload,
+    AttestationEnvelope,
+    PromotionEnvelope,
+    PromotionExpectedBinding,
+    PromotionPayload,
+    parse_datetime,
+    utc_now,
+)
 from .policy import Policy
 from .settings import ApiSettings, CommonSettings, WorkerSettings
-from .signing import Signer, TrustStore, sign_approval, verify_approval, verify_attestation
+from .signing import (
+    PromotionError,
+    Signer,
+    TrustStore,
+    sign_approval,
+    sign_promotion,
+    verify_approval,
+    verify_attestation,
+    verify_promotion,
+)
 from .store import PostgresStore
 from .worker import Worker, install_signal_handlers
+
+
+class NoPromotionRedirects(urllib.request.HTTPRedirectHandler):
+    """Never forward a signed envelope or idempotency key to a redirect target."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -74,6 +103,48 @@ def build_parser() -> argparse.ArgumentParser:
     submit.add_argument('--approval', required=True, type=Path)
     submit.add_argument('--url', required=True, help='Base URL, for example https://ci.example.com')
 
+    promotion = sub.add_parser(
+        'promotion-create', help='Create an offline human-signed production promotion'
+    )
+    promotion.add_argument('--private-key', required=True, type=Path)
+    promotion.add_argument('--output', required=True, type=Path)
+    promotion.add_argument('--schema-version', required=True, type=int)
+    promotion.add_argument('--promotion-id', required=True)
+    promotion.add_argument('--nonce', required=True)
+    promotion.add_argument('--actor', required=True)
+    promotion.add_argument('--key-id', required=True)
+    promotion.add_argument('--repository', required=True)
+    promotion.add_argument('--merged-commit-sha', required=True)
+    promotion.add_argument('--artifact-sha256', required=True)
+    promotion.add_argument('--target-environment', required=True)
+    promotion.add_argument('--policy-epoch', required=True)
+    promotion.add_argument('--source-attestation-id', required=True)
+    promotion.add_argument('--reason', required=True)
+    promotion.add_argument('--issued-at', required=True)
+    promotion.add_argument('--expires-at', required=True)
+
+    promotion_verify = sub.add_parser(
+        'promotion-verify', help='Verify a promotion envelope entirely offline'
+    )
+    promotion_verify.add_argument('--promotion', required=True, type=Path)
+    promotion_verify.add_argument('--trust-store', required=True, type=Path)
+    promotion_verify.add_argument('--repository', required=True)
+    promotion_verify.add_argument('--merged-commit-sha', required=True)
+    promotion_verify.add_argument('--artifact-sha256', required=True)
+    promotion_verify.add_argument('--target-environment', required=True)
+    promotion_verify.add_argument('--policy-epoch', required=True)
+    promotion_verify.add_argument('--source-attestation-id', required=True)
+    promotion_verify.add_argument('--max-ttl-seconds', required=True, type=int)
+
+    promotion_submit = sub.add_parser(
+        'promotion-submit', help='Submit one existing promotion envelope without refreshing it'
+    )
+    promotion_submit.add_argument('--promotion', required=True, type=Path)
+    promotion_submit.add_argument('--url', required=True)
+    promotion_submit.add_argument('--idempotency-key', required=True)
+    promotion_submit.add_argument('--correlation-id', required=True)
+    promotion_submit.add_argument('--timeout-seconds', type=int, default=10)
+
     attest = sub.add_parser('attestation-verify', help='Verify a signed CI attestation offline')
     attest.add_argument('--attestation', required=True, type=Path)
     attest.add_argument('--public-key', required=True, type=Path)
@@ -85,6 +156,8 @@ def build_parser() -> argparse.ArgumentParser:
     protect.add_argument('--context', help='Exact policy-epoch check name; defaults to policy.check_name')
     protect.add_argument('--policy', type=Path)
     protect.add_argument('--app-id', type=int)
+    protect.add_argument('--previous-context', help='Current exact policy-epoch check name for add-before-remove cutover')
+    protect.add_argument('--previous-app-id', type=int, help='GitHub App ID owning --previous-context')
 
     backup = sub.add_parser('backup-create', help='Create an integrity-checked custom-format PostgreSQL backup')
     backup.add_argument('--output-dir', type=Path)
@@ -218,6 +291,15 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         return 0
 
+    if args.command == 'promotion-create':
+        return _promotion_create(args)
+
+    if args.command == 'promotion-verify':
+        return _promotion_verify(args)
+
+    if args.command == 'promotion-submit':
+        return _promotion_submit(args)
+
     if args.command == 'attestation-verify':
         envelope = AttestationEnvelope.from_dict(_read_json(args.attestation))
         verified = verify_attestation(envelope, args.public_key.read_bytes())
@@ -234,13 +316,21 @@ def main(argv: list[str] | None = None) -> int:
         admin_token = os.environ.get('TRUST_CI_GITHUB_ADMIN_TOKEN', '').strip()
         if not admin_token:
             raise SystemExit('TRUST_CI_GITHUB_ADMIN_TOKEN is required only for this administration command')
-        result = GitHubClient(token=admin_token).configure_branch_protection(
-            args.repository,
-            args.branch,
-            check_name=check_name,
-            app_id=app_id,
-            required_reviews=args.required_reviews,
-        )
+        github = GitHubClient(token=admin_token)
+        if bool(args.previous_context) != bool(args.previous_app_id):
+            raise SystemExit('--previous-context and --previous-app-id must be provided together')
+        if args.previous_context:
+            result = github.cutover_branch_protection(
+                args.repository, args.branch,
+                old_check_name=args.previous_context, old_app_id=args.previous_app_id,
+                new_check_name=check_name, new_app_id=app_id,
+                required_reviews=args.required_reviews,
+            )
+        else:
+            result = github.configure_branch_protection(
+                args.repository, args.branch, check_name=check_name, app_id=app_id,
+                required_reviews=args.required_reviews,
+            )
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return 0
 
@@ -415,6 +505,291 @@ def _write_new_json(path: Path, data: dict, *, mode: int) -> None:
         handle.write('\n')
         handle.flush()
         os.fsync(handle.fileno())
+
+
+def _promotion_create(args: argparse.Namespace) -> int:
+    try:
+        if '\n' in str(args.private_key) or 'PRIVATE KEY' in str(args.private_key).upper():
+            raise ValueError
+        signer = Signer.from_private_pem(
+            _read_secure_regular_file(args.private_key, 16 * 1024, private=True)
+        )
+        payload = PromotionPayload(
+            schema_version=args.schema_version,
+            promotion_id=args.promotion_id,
+            nonce=args.nonce,
+            actor=args.actor,
+            key_id=args.key_id,
+            repository=args.repository,
+            merged_commit_sha=args.merged_commit_sha,
+            artifact_sha256=args.artifact_sha256,
+            target_environment=args.target_environment,
+            policy_epoch=args.policy_epoch,
+            source_attestation_id=args.source_attestation_id,
+            reason=args.reason,
+            issued_at=args.issued_at,
+            expires_at=args.expires_at,
+        )
+        issued = parse_datetime(payload.issued_at)
+        expires = parse_datetime(payload.expires_at)
+        current = utc_now()
+        if (
+            issued - current > timedelta(seconds=60)
+            or current >= expires
+            or (expires - issued).total_seconds() > 3600
+        ):
+            raise ValueError
+        envelope = sign_promotion(payload, signer)
+        _write_atomic_new_json(args.output, envelope.to_dict())
+    except (Exception, SystemExit):
+        print('promotion-create failed: invalid local input', file=sys.stderr)
+        return 2
+    print(
+        json.dumps(
+            {
+                'promotion_id': payload.promotion_id,
+                'key_id': payload.key_id,
+                'output': str(args.output),
+            },
+            separators=(',', ':'),
+        )
+    )
+    return 0
+
+
+def _promotion_verify(args: argparse.Namespace) -> int:
+    try:
+        envelope = PromotionEnvelope.from_dict(_read_bounded_json(args.promotion, 16 * 1024))
+        expected = PromotionExpectedBinding(
+            repository=args.repository,
+            merged_commit_sha=args.merged_commit_sha,
+            artifact_sha256=args.artifact_sha256,
+            target_environment=args.target_environment,
+            policy_epoch=args.policy_epoch,
+            source_attestation_id=args.source_attestation_id,
+        )
+        trust_store = TrustStore.load(args.trust_store)
+        verified = verify_promotion(
+            envelope,
+            trust_store,
+            expected,
+            utc_now(),
+            args.max_ttl_seconds,
+        )
+    except PromotionError:
+        print('promotion-verify failed: authorization rejected', file=sys.stderr)
+        return 3
+    except (Exception, SystemExit):
+        print('promotion-verify failed: invalid local input', file=sys.stderr)
+        return 2
+    print(
+        json.dumps(
+            {'promotion_id': verified.promotion_id, 'key_id': verified.key_id, 'valid': True},
+            separators=(',', ':'),
+        )
+    )
+    return 0
+
+
+def _promotion_submit(args: argparse.Namespace) -> int:
+    try:
+        payload = _read_bounded_bytes(args.promotion, 16 * 1024)
+        PromotionEnvelope.from_dict(
+            json.loads(payload.decode('utf-8'), object_pairs_hook=_strict_cli_object)
+        )
+        _require_cli_header(args.idempotency_key, 16, 128)
+        _require_cli_header(args.correlation_id, 1, 128)
+        if type(args.timeout_seconds) is not int or not 1 <= args.timeout_seconds <= 30:
+            raise ValueError
+        parsed = urllib.parse.urlsplit(args.url)
+        if (
+            parsed.scheme != 'https'
+            or not parsed.netloc
+            or parsed.username is not None
+            or parsed.password is not None
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError
+        endpoint = args.url.rstrip('/') + '/promotions'
+        request = urllib.request.Request(
+            endpoint,
+            data=payload,
+            method='POST',
+            headers={
+                'Content-Type': 'application/json',
+                'Idempotency-Key': args.idempotency_key,
+                'X-Correlation-ID': args.correlation_id,
+                'User-Agent': 'adaptive-trust-ci-human/2.1.0',
+            },
+        )
+    except (Exception, SystemExit):
+        print('promotion-submit failed: invalid local input', file=sys.stderr)
+        return 2
+    try:
+        with _open_promotion_request(request, timeout=args.timeout_seconds) as response:
+            raw = _read_bounded_response(response)
+            status = int(getattr(response, 'status', 0))
+    except urllib.error.HTTPError as exc:
+        status = exc.code
+        try:
+            raw = _read_bounded_response(exc)
+        except ValueError:
+            raw = b''
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+        print('promotion-submit failed: dependency unavailable', file=sys.stderr)
+        return 5
+    if status in {200, 201}:
+        _print_bounded_response(status, raw)
+        return 0
+    if status == 409:
+        _print_bounded_response(status, raw, stream=sys.stderr)
+        return 4
+    if status in {400, 401, 403, 422}:
+        _print_bounded_response(status, raw, stream=sys.stderr)
+        return 3
+    _print_bounded_response(status, raw, stream=sys.stderr)
+    return 5
+
+
+def _read_bounded_bytes(path: Path, maximum: int) -> bytes:
+    raw = _read_secure_regular_file(path, maximum)
+    if not raw or len(raw) > maximum:
+        raise ValueError
+    return raw
+
+
+def _open_promotion_request(request: urllib.request.Request, *, timeout: int):
+    opener = urllib.request.build_opener(
+        NoPromotionRedirects(), urllib.request.ProxyHandler({})
+    )
+    return opener.open(request, timeout=timeout)
+
+
+def _read_secure_regular_file(
+    path: Path, maximum: int, *, private: bool = False
+) -> bytes:
+    if type(maximum) is not int or maximum <= 0:
+        raise ValueError
+    required_flags = ('O_NOFOLLOW', 'O_CLOEXEC', 'O_NONBLOCK')
+    if any(not hasattr(os, name) for name in required_flags):
+        raise OSError('secure file-open flags are unavailable')
+    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK
+    descriptor = os.open(os.fspath(path), flags)
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > maximum:
+            raise ValueError
+        if private and (
+            metadata.st_uid != os.geteuid()
+            or stat.S_IMODE(metadata.st_mode) != 0o600
+        ):
+            raise ValueError
+        chunks: list[bytes] = []
+        remaining = maximum + 1
+        while remaining > 0:
+            chunk = os.read(descriptor, min(remaining, 64 * 1024))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        raw = b''.join(chunks)
+        if len(raw) > maximum:
+            raise ValueError
+        return raw
+    finally:
+        os.close(descriptor)
+
+
+def _read_bounded_json(path: Path, maximum: int) -> dict:
+    raw = _read_bounded_bytes(path, maximum)
+    data = json.loads(raw.decode('utf-8'), object_pairs_hook=_strict_cli_object)
+    if not isinstance(data, dict):
+        raise ValueError
+    return data
+
+
+def _require_cli_header(value: str, minimum: int, maximum: int) -> None:
+    if (
+        not isinstance(value, str)
+        or value != value.strip()
+        or not minimum <= len(value.encode('utf-8')) <= maximum
+        or ',' in value
+        or any(ord(character) < 33 or ord(character) > 126 for character in value)
+    ):
+        raise ValueError
+
+
+def _read_bounded_response(response: object) -> bytes:
+    raw = response.read(64 * 1024 + 1)
+    if len(raw) > 64 * 1024:
+        raise ValueError
+    return raw
+
+
+def _print_bounded_response(status: int, raw: bytes, *, stream=None) -> None:
+    allowed = {
+        'promotion_id', 'operation_id', 'correlation_id', 'code', 'status',
+        'consumed', 'idempotent_replay', 'expires_at', 'policy_epoch',
+        'repository', 'merged_commit_sha', 'artifact_sha256',
+        'target_environment', 'source_attestation_id',
+    }
+    try:
+        parsed = (
+            json.loads(raw.decode('utf-8'), object_pairs_hook=_strict_cli_object)
+            if raw
+            else {}
+        )
+        if not isinstance(parsed, dict):
+            raise ValueError
+        bounded = {
+            key: value
+            for key, value in parsed.items()
+            if key in allowed
+            and isinstance(value, (str, int, bool))
+            and len(str(value).encode('utf-8')) <= 512
+        }
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
+        bounded = {}
+    print(
+        json.dumps({'http_status': status, **bounded}, separators=(',', ':')),
+        file=stream or sys.stdout,
+    )
+
+
+def _strict_cli_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError('duplicate JSON key')
+        result[key] = value
+    return result
+
+
+def _write_atomic_new_json(path: Path, data: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f'.{path.name}.', suffix='.tmp', dir=path.parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        os.fchmod(descriptor, 0o600)
+        with os.fdopen(descriptor, 'w', encoding='utf-8') as handle:
+            descriptor = -1
+            json.dump(data, handle, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+            handle.write('\n')
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.link(temporary, path)
+        directory_descriptor = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_descriptor)
+        finally:
+            os.close(directory_descriptor)
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+        temporary.unlink(missing_ok=True)
 
 
 if __name__ == '__main__':

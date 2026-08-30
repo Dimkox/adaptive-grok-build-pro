@@ -21,7 +21,7 @@ Ordinary PRs complete App-owned exact-SHA Trust CI without interactive signature
 - Separate frozen promotion and protected-branch provenance contracts.
 - Mirrored additive PostgreSQL migration 004, append-only audit and atomic consume-once authority.
 - `POST /promotions`, internal consumption boundary, offline CLI, metrics and runbooks.
-- Local shadow/deny-only proof followed by one consolidated final production ceremony; M2–M9 may remain stacked and unmerged until then.
+- Local shadow/deny-only proof, externally operated automated-only policy cutover, autonomous PR delivery/merge, then exactly one human-signed production promotion at final deploy.
 
 ### Out of scope
 

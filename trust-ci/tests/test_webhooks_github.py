@@ -5,10 +5,17 @@ import hmac
 import json
 import unittest
 from datetime import datetime, timezone
+from pathlib import Path
 
 from _support import sha
 from adaptive_trust_ci.github import GitHubClient, GitHubError, branch_protection_payload
-from adaptive_trust_ci.webhooks import WebhookError, parse_pull_request_event, verify_webhook_signature
+from adaptive_trust_ci.webhooks import (
+    WebhookError,
+    ingest_merged_pull_request,
+    parse_merged_pull_request,
+    parse_pull_request_event,
+    verify_webhook_signature,
+)
 
 
 class FakeTransport:
@@ -71,6 +78,76 @@ class WebhookTests(unittest.TestCase):
         event = parse_pull_request_event('pull_request', pull_request_payload('closed', draft=True))
         assert event is not None
         self.assertTrue(event.closed)
+        self.assertIsNone(parse_merged_pull_request(pull_request_payload('closed', draft=True), 'delivery-close'))
+
+    def test_merged_parser_rejects_duplicate_json_keys(self) -> None:
+        body = b'{"action":"closed","action":"closed"}'
+        with self.assertRaisesRegex(WebhookError, 'duplicate'):
+            parse_merged_pull_request(body, 'delivery-1')
+
+    def test_merge_ingress_cannot_record_before_hmac_and_delivery_validation(self) -> None:
+        body = json.dumps(
+            {
+                'action': 'closed',
+                'installation': {'id': 42},
+                'repository': {'id': 101, 'full_name': 'Dimkox/adaptive-grok-build-pro'},
+                'pull_request': {
+                    'number': 12,
+                    'merged': True,
+                    'merged_at': '2026-08-30T11:59:00Z',
+                    'merge_commit_sha': sha('c'),
+                    'head': {'sha': sha('b'), 'ref': 'feat/x'},
+                    'base': {'sha': sha('a'), 'ref': 'main'},
+                },
+            }
+        ).encode()
+        recorded = []
+        with self.assertRaises(WebhookError):
+            ingest_merged_pull_request(
+                secret='secret', signature_header='sha256=' + '0' * 64,
+                event_name='pull_request', delivery_id='delivery-1', body=body,
+                allowed_repositories=('Dimkox/adaptive-grok-build-pro',),
+                protected_ref='refs/heads/main', record_fact=recorded.append,
+            )
+        self.assertEqual(recorded, [])
+
+        signature = 'sha256=' + hmac.new(b'secret', body, hashlib.sha256).hexdigest()
+        fact = ingest_merged_pull_request(
+            secret='secret', signature_header=signature,
+            event_name='pull_request', delivery_id='delivery-1', body=body,
+            allowed_repositories=('Dimkox/adaptive-grok-build-pro',),
+            protected_ref='refs/heads/main', record_fact=recorded.append,
+        )
+        self.assertIsNotNone(fact)
+        self.assertEqual(recorded, [fact])
+
+    def test_merge_ingress_requires_server_protected_ref_and_delivery_id(self) -> None:
+        body = json.dumps(
+            {
+                'action': 'closed', 'installation': {'id': 42},
+                'repository': {'id': 101, 'full_name': 'Dimkox/adaptive-grok-build-pro'},
+                'pull_request': {
+                    'number': 12, 'merged': True, 'merged_at': '2026-08-30T11:59:00Z',
+                    'merge_commit_sha': sha('c'), 'head': {'sha': sha('b')},
+                    'base': {'sha': sha('a'), 'ref': 'main'},
+                },
+            }
+        ).encode()
+        signature = 'sha256=' + hmac.new(b'secret', body, hashlib.sha256).hexdigest()
+        for delivery_id, protected_ref in ((None, 'refs/heads/main'), ('delivery-1', None)):
+            with self.subTest(delivery_id=delivery_id, protected_ref=protected_ref):
+                with self.assertRaises(WebhookError):
+                    ingest_merged_pull_request(
+                        secret='secret', signature_header=signature,
+                        event_name='pull_request', delivery_id=delivery_id, body=body,
+                        allowed_repositories=('Dimkox/adaptive-grok-build-pro',),
+                        protected_ref=protected_ref, record_fact=lambda _fact: None,
+                    )
+
+    def test_api_webhook_routes_delivery_through_authenticated_merge_ingress(self) -> None:
+        source = (Path(__file__).resolve().parents[1] / 'src/adaptive_trust_ci/api.py').read_text(encoding='utf-8')
+        self.assertIn('x_github_delivery', source)
+        self.assertIn('ingest_merged_pull_request(', source)
 
     def test_other_events_are_ignored(self) -> None:
         self.assertIsNone(parse_pull_request_event('push', b'{}'))
@@ -200,6 +277,47 @@ class GitHubTests(unittest.TestCase):
         self.assertEqual(method, 'PUT')
         self.assertIn('release%2F2.1/protection', url)
         self.assertEqual(body['required_status_checks']['checks'][0], {'context': check_name, 'app_id': 12345})
+
+    def test_policy_cutover_adds_verifies_then_removes_old_app_bound_context(self) -> None:
+        old = {'context': 'adaptive-trust-ci/verified@old000000000', 'app_id': 12345}
+        new = {'context': 'adaptive-trust-ci/verified@new000000000', 'app_id': 12345}
+        transport = FakeTransport([
+            (200, {'required_status_checks': {'strict': True, 'checks': [old]}}),
+            (200, {}),
+            (200, {'required_status_checks': {'strict': True, 'checks': [old, new]}}),
+            (200, {}),
+            (200, {'required_status_checks': {'strict': True, 'checks': [new]}}),
+        ])
+        client = GitHubClient(token='admin-token', transport=transport, api_url='https://example.test')
+        client.cutover_branch_protection(
+            'Dimkox/adaptive-grok-build-pro', 'main',
+            old_check_name=old['context'], old_app_id=old['app_id'],
+            new_check_name=new['context'], new_app_id=new['app_id'],
+        )
+        self.assertEqual([call[0] for call in transport.calls], ['GET', 'PUT', 'GET', 'PUT', 'GET'])
+        self.assertEqual(transport.calls[1][3]['required_status_checks']['checks'], [old, new])
+        self.assertEqual(transport.calls[3][3]['required_status_checks']['checks'], [new])
+
+    def test_policy_cutover_failure_rolls_back_to_both_trusted_contexts(self) -> None:
+        old = {'context': 'adaptive-trust-ci/verified@old000000000', 'app_id': 12345}
+        new = {'context': 'adaptive-trust-ci/verified@new000000000', 'app_id': 12345}
+        transport = FakeTransport([
+            (200, {'required_status_checks': {'strict': True, 'checks': [old]}}),
+            (200, {}),
+            (200, {'required_status_checks': {'strict': True, 'checks': [old, new]}}),
+            (500, {'message': 'temporary'}),
+            (200, {}),
+            (200, {'required_status_checks': {'strict': True, 'checks': [old, new]}}),
+        ])
+        client = GitHubClient(token='admin-token', transport=transport, api_url='https://example.test')
+        with self.assertRaisesRegex(GitHubError, 'rolled back'):
+            client.cutover_branch_protection(
+                'Dimkox/adaptive-grok-build-pro', 'main',
+                old_check_name=old['context'], old_app_id=old['app_id'],
+                new_check_name=new['context'], new_app_id=new['app_id'],
+            )
+        puts = [call[3]['required_status_checks']['checks'] for call in transport.calls if call[0] == 'PUT']
+        self.assertEqual(puts, [[old, new], [new], [old, new]])
 
 
 if __name__ == '__main__':

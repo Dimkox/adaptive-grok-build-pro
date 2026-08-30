@@ -7,11 +7,10 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 - M0 (Live Trust Authority) is complete and merged into `main`.
 - M0 runtime repair and policy-loop fixes are also merged into `main` through PR #7 and PR #6.
 - The independent App-owned merge gate is live as `adaptive-trust-ci/verified@6737355947c2` and protected `main` binds that check to GitHub App ID `4694114`.
-- The current development milestone is M1: Typed Intent, Acceptance Criteria, and Evidence Traceability.
-- M1 is tracked in draft PR #8 on branch `milestone/m1-typed-intent-evidence`.
-- M1 design: `docs/superpowers/specs/2026-08-26-m1-typed-intent-evidence-design.md` on the PR #8 branch.
-- M1 implementation plan: `docs/superpowers/plans/2026-08-26-m1-typed-intent-evidence.md` on the PR #8 branch.
-- M1 implementation has not started yet. The next implementation action is Task 1 in that plan: strict typed schema and zero-dependency validator, using TDD.
+- The production-gate target moves every human signature out of development: validation, PR delivery and merge are automated under a proven `approval_rules: []` policy epoch; exactly one human `promotion:production` signature remains at final consume/deploy. See `engineering/runbooks/production-promotion.md`. If the live epoch still requests PR approval, external policy cutover is pending; repository code must not bypass or silently mutate it.
+- The current development work is the production-only promotion gate on branch `policy/production-only-human-approvals`.
+- Its design is `docs/superpowers/specs/2026-08-30-production-only-human-approvals-design.md`; its plan is `docs/superpowers/plans/2026-08-30-production-only-human-approvals.md`; its durable package is `engineering/changes/20260830-создать-и-реализовать-feature-нового-postgresql-75aa6d/`.
+- Implementation and local verification are in progress. Next: real PostgreSQL/route verification and five independent reviews, then automated PR delivery after external automated-only policy cutover. No development signature is permitted.
 
 Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
 
@@ -26,7 +25,7 @@ Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
    - `DARK_FACTORY_ROADMAP.md`
    - `README.md`
 2. Run `git fetch --all --prune` before reasoning about active branches or pull requests.
-3. If continuing M1, inspect PR #8 and branch `milestone/m1-typed-intent-evidence`, then read the M1 design and plan before changing code.
+3. If continuing the production gate, inspect branch `policy/production-only-human-approvals`, then read its design, plan and durable package before changing code.
 4. If starting a different software-development task, create/resolve the local route first. `.grok-stack/runtime/active-route.json` is runtime state and may legitimately be absent in a fresh clone; do not fabricate it.
 5. Follow `AGENTS.md`: one write owner, route-selected analysis/review agents, local verification as evidence, pull-request-only delivery, and external Trust CI as merge authority.
 6. Never add GitHub Actions.
@@ -38,7 +37,7 @@ A clean clone contains all source, contracts, roadmap, durable change artifacts,
 
 - `.env` files and credentials;
 - GitHub App private keys;
-- human approval private keys;
+- human production-promotion private keys;
 - Trust CI signing keys or trust-store private material;
 - PostgreSQL runtime state;
 - temporary approvals/receipts under runtime directories;
@@ -52,20 +51,11 @@ The source and runbooks for the independent merge authority are under `trust-ci/
 
 Before changing Trust CI behavior, read the current deployed-policy/holdout constraints in `AGENTS.md` and the activation/rollout runbooks. Repository code cannot itself alter deployed trust material.
 
-## Current M1 handoff
+## Current production-gate handoff
 
-PR #8 contains design and plan only. Treat them as the current approved implementation contract. Do not re-design M1 from chat memory and do not skip directly to M2.
+Treat the 2026-08-30 design, implementation plan and durable change package as the approved contract. The implementation adds strict promotion contracts, merged-SHA/artifact provenance, additive migration 004, acceptance/idempotency/audit API, consume-once authorization, CLI, metrics and automated-only policy preparation.
 
-Implementation order is the six tasks in the M1 plan:
-
-1. strict typed schema and zero-dependency validator;
-2. route-driven spec generation and Markdown authority links;
-3. CLI, verification integration, criterion-bound receipts and staleness;
-4. independent holdout enforcement;
-5. Trust CI attestation spec digest and criterion coverage;
-6. durable M1 package, roadmap evidence, full verification, exact-SHA Trust CI, then merge.
-
-If the PR head moves, use the branch/PR as source of truth rather than copying an old SHA from documentation.
+Finish local and ephemeral verification, collect code/test/security/data/release reviews on one fingerprint, and stop before external mutation. External operator automation must deploy/prove the automated-only policy epoch before signature-free PR delivery. The sole human ceremony is later: one `promotion:production` signature immediately before atomic consume/deploy.
 
 ## No chat dependency
 

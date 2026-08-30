@@ -4,8 +4,9 @@ import base64
 import hashlib
 import json
 import os
+import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -18,6 +19,11 @@ from .models import (
     ApprovalPayload,
     AttestationEnvelope,
     AttestationPayload,
+    PromotionEnvelope,
+    PromotionExpectedBinding,
+    PromotionPayload,
+    ProtectedBranchAttestationEnvelope,
+    ProtectedBranchAttestationPayload,
     canonical_json,
     parse_datetime,
     require_digest,
@@ -27,6 +33,22 @@ from .models import (
 
 class ApprovalError(ValueError):
     pass
+
+
+PROMOTION_VERIFICATION_ERROR = "promotion authorization invalid"
+
+
+class PromotionError(ValueError):
+    def __init__(self) -> None:
+        super().__init__(PROMOTION_VERIFICATION_ERROR)
+
+
+PROTECTED_ATTESTATION_VERIFICATION_ERROR = "protected branch attestation invalid"
+
+
+class ProtectedAttestationError(ValueError):
+    def __init__(self) -> None:
+        super().__init__(PROTECTED_ATTESTATION_VERIFICATION_ERROR)
 
 
 @dataclass(frozen=True)
@@ -102,7 +124,9 @@ class TrustedKey:
     def validate_for_approval(self, *, issued_at: datetime, current: datetime) -> None:
         issued = issued_at.astimezone(timezone.utc)
         now = current.astimezone(timezone.utc)
-        if self.revoked_at is not None and now >= self.revoked_at:
+        if self.revoked_at is not None and (
+            issued >= self.revoked_at or now >= self.revoked_at
+        ):
             raise ApprovalError(f'approval key {self.key_id} is revoked')
         if self.not_before is not None and (issued < self.not_before or now < self.not_before):
             raise ApprovalError(f'approval key {self.key_id} is not valid yet')
@@ -203,6 +227,106 @@ def sign_approval(payload: ApprovalPayload, signer: Signer) -> ApprovalEnvelope:
     if payload.key_id != signer.key_id:
         raise ApprovalError('approval payload key_id does not match signer')
     return ApprovalEnvelope(payload=payload, signature=signer.sign(payload.to_dict()))
+
+
+def sign_promotion(payload: PromotionPayload, private_key: Signer) -> PromotionEnvelope:
+    if payload.key_id != private_key.key_id:
+        raise PromotionError()
+    raw_signature = base64.b64decode(
+        private_key.sign(payload.to_dict()), validate=True
+    )
+    signature = base64.urlsafe_b64encode(raw_signature).decode("ascii").rstrip("=")
+    return PromotionEnvelope(payload=payload, algorithm="Ed25519", signature=signature)
+
+
+def verify_promotion(
+    envelope: PromotionEnvelope | Mapping[str, Any],
+    trust_store: TrustStore,
+    expected: object,
+    now: datetime,
+    maximum_ttl_seconds: int,
+) -> PromotionPayload:
+    try:
+        parsed = envelope if isinstance(envelope, PromotionEnvelope) else PromotionEnvelope.from_dict(envelope)
+        payload = parsed.payload
+        binding_names = {
+            "repository",
+            "merged_commit_sha",
+            "artifact_sha256",
+            "target_environment",
+            "policy_epoch",
+            "source_attestation_id",
+        }
+        if isinstance(expected, Mapping):
+            if set(expected) != binding_names:
+                raise ValueError
+            expected_values = expected
+        elif isinstance(expected, PromotionExpectedBinding):
+            expected_values = {name: getattr(expected, name) for name in binding_names}
+        else:
+            raise ValueError
+        if set(expected_values) != binding_names or any(not isinstance(value, str) or value == "" for value in expected_values.values()):
+            raise ValueError
+        if any(getattr(payload, key) != value for key, value in expected_values.items()):
+            raise ValueError
+        trusted = trust_store.keys.get(payload.key_id)
+        if trusted is None or payload.actor != trusted.actor or f"promotion:{payload.target_environment}" not in trusted.scopes:
+            raise ValueError
+        issued = parse_datetime(payload.issued_at)
+        expires = parse_datetime(payload.expires_at)
+        if not isinstance(now, datetime) or now.tzinfo is None:
+            raise ValueError
+        current = now.astimezone(timezone.utc)
+        if (
+            not isinstance(maximum_ttl_seconds, int)
+            or isinstance(maximum_ttl_seconds, bool)
+            or maximum_ttl_seconds <= 0
+            or maximum_ttl_seconds > 3600
+            or issued - current > timedelta(seconds=60)
+            or current >= expires
+            or (expires - issued).total_seconds() > maximum_ttl_seconds
+        ):
+            raise ValueError
+        trusted.validate_for_approval(issued_at=issued, current=current)
+        if "=" in parsed.signature or not re.fullmatch(r"[A-Za-z0-9_-]+", parsed.signature):
+            raise ValueError
+        signature = base64.b64decode(
+            parsed.signature + "=" * (-len(parsed.signature) % 4),
+            altchars=b"-_",
+            validate=True,
+        )
+        if (
+            len(signature) != 64
+            or base64.urlsafe_b64encode(signature).decode("ascii").rstrip("=")
+            != parsed.signature
+        ):
+            raise ValueError
+        trusted.public_key.verify(signature, payload.canonical_bytes())
+        return payload
+    except Exception as exc:
+        raise PromotionError() from exc
+
+
+def sign_protected_branch_attestation(payload: ProtectedBranchAttestationPayload, signer: Signer) -> ProtectedBranchAttestationEnvelope:
+    if payload.key_id != signer.key_id:
+        raise ProtectedAttestationError()
+    signature = base64.urlsafe_b64encode(signer._private_key.sign(payload.canonical_bytes())).decode("ascii").rstrip("=")
+    return ProtectedBranchAttestationEnvelope(payload=payload, algorithm="Ed25519", signature=signature)
+
+
+def verify_protected_branch_attestation(envelope: ProtectedBranchAttestationEnvelope | Mapping[str, Any], public_key_pem: bytes) -> ProtectedBranchAttestationPayload:
+    try:
+        parsed = envelope if isinstance(envelope, ProtectedBranchAttestationEnvelope) else ProtectedBranchAttestationEnvelope.from_dict(envelope)
+        public_key = serialization.load_pem_public_key(public_key_pem)
+        if not isinstance(public_key, Ed25519PublicKey) or parsed.payload.key_id != hashlib.sha256(public_key.public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)).hexdigest()[:16]:
+            raise ValueError
+        signature = base64.b64decode(parsed.signature + "=" * (-len(parsed.signature) % 4), altchars=b"-_", validate=True)
+        if len(signature) != 64:
+            raise ValueError
+        public_key.verify(signature, parsed.payload.canonical_bytes())
+        return parsed.payload
+    except Exception as exc:
+        raise ProtectedAttestationError() from exc
 
 
 def verify_approval(

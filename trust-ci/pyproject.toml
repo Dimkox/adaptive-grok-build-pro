@@ -17,7 +17,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["httpx==0.28.1"]
+test = [
+  "httpx==0.28.1",
+  "jsonschema==4.25.1",
+]
 
 [project.scripts]
 adaptive-trust-ci = "adaptive_trust_ci.cli:main"

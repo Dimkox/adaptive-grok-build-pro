@@ -10,6 +10,10 @@
 | P0 | Mirrored migration 004, populated upgrade, roles, restart and restore | Compose migration/role tests |
 | P0 | New policy removes interactive PR approval but retains every automatic gate | Disposable PR policy-transition drill |
 | P1 | Lost webhook reconciliation, bounded retries and secret-free observability | Worker/API/runbook tests |
+| P0 | Durable transient merge retry and dead-letter recovery across restart | MemoryStore/Worker cadence plus real PostgreSQL restart tests |
+| P0 | App-bound automated policy cutover has no unprotected interval | Production GitHub adapter fake-transport sequence/rollback drill |
+| P0 | Crash after evidence commit is idempotent across restart | Memory exact-tuple plus real PostgreSQL crash/reclaim/completion tests |
+| P0 | Authoritative repository verification needs no ignored venv or Docker | Clean checkout sandbox-capability simulation with failing Docker sentinel |
 
 ## Automated checks
 

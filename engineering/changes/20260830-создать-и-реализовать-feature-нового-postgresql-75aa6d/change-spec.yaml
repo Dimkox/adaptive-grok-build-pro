@@ -65,7 +65,7 @@ acceptance_criteria:
       - kind: review
         ref: engineering/reviews
   - id: AC-008
-    statement: One final human session orders old-policy integration approval merge exact artifact attestation promotion signing consume-once deploy and only then automated-only policy activation
+    statement: Automated-only policy makes development validation PR delivery and merge signature-free; after automated merge and exact artifact attestation one final human promotion signature gates consume-once production deploy
     evidence:
       - kind: test
         ref: trust-ci/tests/test_policy.py

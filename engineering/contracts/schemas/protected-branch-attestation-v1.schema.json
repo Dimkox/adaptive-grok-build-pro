@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dimkox.github.io/adaptive-grok-build-pro/contracts/protected-branch-attestation-v1.schema.json",
+      "title": "ProtectedBranchAttestationEnvelopeV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["payload", "algorithm", "signature"],
+  "properties": {
+    "payload": {"$ref": "#/$defs/protectedBranchAttestationPayload"},
+    "algorithm": {"const": "Ed25519"},
+    "signature": {"type": "string", "pattern": "^[A-Za-z0-9_-]{85}[AQgw]$"}
+  },
+  "$defs": {
+    "protectedBranchAttestationPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "source_attestation_id",
+        "merge_fact_id",
+        "repository",
+        "protected_ref",
+        "merged_commit_sha",
+        "policy_epoch",
+        "runner_digest",
+        "holdout_digest",
+        "image_digest",
+        "artifact_sha256",
+        "result",
+        "issued_at",
+        "key_id"
+      ],
+      "properties": {
+        "schema_version": {"type": "integer", "const": 1},
+        "source_attestation_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "merge_fact_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "repository": {"type": "string", "pattern": "^[a-z0-9_.-]+/[a-z0-9_.-]+$"},
+        "protected_ref": {"type": "string", "minLength": 12, "maxLength": 255, "pattern": "^refs/heads/.+$"},
+        "merged_commit_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "policy_epoch": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "runner_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "holdout_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "image_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "result": {"const": "passed"},
+        "issued_at": {"type": "string", "format": "date-time", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"},
+        "key_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "x-maxUtf8Bytes": 128,
+          "pattern": "^(?!\\s)(?!.*\\s$)[^\\u0000-\\u001f\\u007f]+$"
+        }
+      }
+    }
+  }
+}

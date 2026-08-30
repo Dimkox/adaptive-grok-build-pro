@@ -9,8 +9,10 @@ services:
       TRUST_CI_WORKER_DB_PASSWORD: trust_ci_worker_test_password
       TRUST_CI_MIGRATOR_DB_PASSWORD: trust_ci_migrator_test_password
       TRUST_CI_BACKUP_DB_PASSWORD: trust_ci_backup_test_password
+      TRUST_CI_DEPLOYER_DB_PASSWORD: trust_ci_deployer_test_password
     volumes:
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./postgres/upgrade:/opt/adaptive-trust-ci/postgres-upgrade:ro
       - trust-ci-pgtest-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U trust_ci_admin_test -d trust_ci_test"]
@@ -32,6 +34,7 @@ services:
       TRUST_CI_TEST_API_DATABASE_URL: postgresql://trust_ci_api:trust_ci_api_test_password@postgres-test:5432/trust_ci_test
       TRUST_CI_TEST_WORKER_DATABASE_URL: postgresql://trust_ci_worker:trust_ci_worker_test_password@postgres-test:5432/trust_ci_test
       TRUST_CI_TEST_BACKUP_DATABASE_URL: postgresql://trust_ci_backup:trust_ci_backup_test_password@postgres-test:5432/trust_ci_test
+      TRUST_CI_TEST_DEPLOYER_DATABASE_URL: postgresql://trust_ci_deployer:trust_ci_deployer_test_password@postgres-test:5432/trust_ci_test
     depends_on:
       postgres-test:
         condition: service_healthy
@@ -39,8 +42,31 @@ services:
     networks:
       - trust-ci-test
 
+  postgres-restore-test:
+    image: ${TRUST_CI_POSTGRES_IMAGE:?set immutable postgres image name@sha256 digest}
+    environment:
+      POSTGRES_DB: trust_ci_restore
+      POSTGRES_USER: trust_ci_restore_admin
+      POSTGRES_PASSWORD: trust_ci_restore_admin_password
+      TRUST_CI_API_DB_PASSWORD: trust_ci_api_test_password
+      TRUST_CI_WORKER_DB_PASSWORD: trust_ci_worker_test_password
+      TRUST_CI_MIGRATOR_DB_PASSWORD: trust_ci_migrator_test_password
+      TRUST_CI_BACKUP_DB_PASSWORD: trust_ci_backup_test_password
+      TRUST_CI_DEPLOYER_DB_PASSWORD: trust_ci_deployer_test_password
+    volumes:
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+      - trust-ci-pgrestore-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trust_ci_restore_admin -d trust_ci_restore"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks:
+      - trust-ci-test
+
 volumes:
   trust-ci-pgtest-data:
+  trust-ci-pgrestore-data:
 
 networks:
   trust-ci-test:

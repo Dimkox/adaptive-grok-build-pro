@@ -107,6 +107,41 @@ class PolicyTests(unittest.TestCase):
         self.assertTrue(policy.allows_repository('Dimkox/adaptive-grok-build-pro'))
         self.assertFalse(policy.allows_repository('dimkox/adaptive-grok-build-pro'))
 
+    def test_promotion_controls_are_policy_owned_and_independent_of_approval_rules(self) -> None:
+        data = policy_data()
+        data['approval_rules'] = []
+        data['promotion'] = {
+            'environments': ['production'],
+            'max_ttl_seconds': 900,
+        }
+        policy = Policy.from_dict(data)
+        self.assertEqual(policy.approval_scopes, frozenset())
+        self.assertEqual(policy.promotion.environments, ('production',))
+        self.assertEqual(policy.promotion.max_ttl_seconds, 900)
+        self.assertEqual(policy.promotion.scope_for('production'), 'promotion:production')
+        self.assertEqual(policy.required_scopes(['trust-ci/src/security.py']), set())
+
+    def test_promotion_controls_change_epoch_and_are_strict(self) -> None:
+        first_data = policy_data()
+        first_data['promotion'] = {'environments': ['production'], 'max_ttl_seconds': 900}
+        second_data = copy.deepcopy(first_data)
+        second_data['promotion']['max_ttl_seconds'] = 901
+        self.assertNotEqual(
+            Policy.from_dict(first_data).check_name,
+            Policy.from_dict(second_data).check_name,
+        )
+        for invalid in (
+            {'environments': [], 'max_ttl_seconds': 900},
+            {'environments': ['Production'], 'max_ttl_seconds': 900},
+            {'environments': ['production'], 'max_ttl_seconds': 59},
+            {'environments': ['production'], 'max_ttl_seconds': True},
+            {'environments': ['production'], 'max_ttl_seconds': 900, 'unknown': True},
+        ):
+            data = policy_data()
+            data['promotion'] = invalid
+            with self.subTest(invalid=invalid), self.assertRaises(PolicyError):
+                Policy.from_dict(data)
+
 
 if __name__ == '__main__':
     unittest.main()

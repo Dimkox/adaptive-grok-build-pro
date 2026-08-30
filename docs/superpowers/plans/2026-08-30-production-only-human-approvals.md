@@ -19,7 +19,8 @@
 - `POST /promotions` and consume record authorization/audit state only; neither possesses production credentials or performs an external production write.
 - Every unavailable policy, trust-store, PostgreSQL, GitHub provenance or artifact-attestation dependency denies authorization.
 - No GitHub Actions, auto-merge, destructive migration or unsigned checkpoint commit.
-- M2–M9 may remain stacked and unmerged. The final external ceremony is a human/operator handoff and is never executed by an agent following this plan.
+- Development validation, PR delivery and merge are fully automated and must never wait for a human signature or chat approval. The only human signature is the final `promotion:production` envelope immediately before production consume/deploy; that external ceremony is never executed by an agent following this plan.
+- Repository code cannot activate deployed Trust CI policy or branch protection. The automated-only policy epoch must be rolled out and proven externally before autonomous PR delivery; a still-active legacy `needs_approval` result is a cutover blocker, not a reason to request a PR signature.
 
 ## Dependency order
 
@@ -396,8 +397,10 @@ Expected: prepared example is visible only as repository diff; no external polic
 ```python
 def test_docs_preserve_single_final_human_ceremony(self):
     text = (ROOT / "engineering/runbooks/production-promotion.md").read_text()
-    self.assertLess(text.index("old-policy PR approval"), text.index("promotion:production"))
-    self.assertLess(text.index("consume once"), text.index("activate automated-only policy"))
+    self.assertIn("exactly one human signature", text)
+    self.assertNotIn("old-policy PR approval envelope", text)
+    self.assertLess(text.index("automated merge"), text.index("promotion:production"))
+    self.assertLess(text.index("promotion:production"), text.index("consume once"))
 ```
 
 Extend structure tests to require mirrored migration, contracts, no GitHub Actions/private material, complete README graph, fail-closed rollback and explicit agent prohibition on the final external ceremony.
@@ -410,14 +413,16 @@ Expected: FAIL because final runbook/current-state text is absent or stale.
 - [ ] **Step 3: Write exact operator and current-state documentation**
 
 ```text
-FINAL CEREMONY ORDER
-1 automated-green exact integration PR
-2 old-policy PR approval envelope
-3 deterministic merge and actual merged SHA
+AUTOMATED DEVELOPMENT ORDER
+1 deploy and prove the automated-only policy epoch externally
+2 automated-green exact integration PR
+3 automated protected merge and actual merged SHA
 4 protected-branch/artifact attestation
-5 promotion:production envelope
+
+FINAL PRODUCTION CEREMONY
+5 exactly one human signature: promotion:production envelope
 6 consume once and deploy exact artifact
-7 activate and prove automated-only policy epoch
+7 record terminal deployment or reconciliation evidence
 ```
 
 Document command names, inputs, expected immutable IDs/digests, abort conditions, kill switch, backup/restore and policy/protection rollback. Do not include private-key material or claim the agent executed external actions. Update README current state and every pairwise core-node graph edge if the node set changes.
@@ -434,7 +439,7 @@ Expected: change spec and route-selected base/contracts/data profiles PASS on on
 
 Run each route-selected code, test, security, data and release review on the exact final diff, record passing reports with `scripts/grok_review.py`, transition the package to `ready`, rerun final verification after the last package write, and run `python3 scripts/grok_status.py`.
 
-Expected: `evidence_gaps=[]`, all receipts match one fingerprint, M2–M9 stack remains unmerged if the old policy still requires approval, and no approval/private key/merge/migration/deploy/policy/branch-protection command has been executed by the agent. Hand the documented seven-step final ceremony to the human only when they initiate final production go/no-go.
+Expected: `evidence_gaps=[]`, all receipts match one fingerprint, and no private-key/signature, external migration, deploy, policy or branch-protection command has been executed by the agent. If the deployed policy still requires interactive PR approval, report the external automated-policy cutover blocker; do not request or fabricate a signature. Hand only the production promotion/consume/deploy ceremony to the human when they initiate final production go/no-go.
 
 ## Plan self-review
 
