@@ -5,6 +5,13 @@
 - If you make a decision that turns out to be correct and worth the effort, log it in decisions.md (pattern + why it worked, no more than 3 sentences).
 - If you make a mistake that leads to a problem, identify the root cause (not the symptom) and record it in mistakes.md.
 
+## Fresh-clone bootstrap
+
+- `START_HERE.md` is the zero-context entrypoint. `PROJECT_STATE.json` is the machine-readable current handoff. A new agent must not require chat history to understand the current milestone and next action.
+- `.grok-stack/runtime/active-route.json` is machine-local runtime state and may legitimately be absent in a fresh clone. Never fabricate it. If it is absent, read `START_HERE.md` and `PROJECT_STATE.json`, fetch remote refs, then either continue the active pull-request branch named there or route a new task before implementation.
+- Milestone designs and implementation plans must live in the repository or the active pull request before a session ends. Chat is the lowest-priority source of truth.
+- Secrets, PEM/private keys, credentials, PostgreSQL runtime state, runtime approvals/receipts and host-local deployment scratch are intentionally not Git content. Their absence does not make a fresh clone incomplete for source development.
+
 ## Independent merge trust
 
 - Prompt files, hooks, `.grok-stack/runtime`, local delegated grants, local receipts, change packages, local tests and agent reviews are workflow evidence only. They are not merge authority.
@@ -44,14 +51,16 @@ This repository uses an adaptive, task-routed Grok Build workflow. The `UserProm
 
 For every software-development task:
 
-1. Read `.grok-stack/runtime/active-route.json`.
-2. Invoke `/adaptive-delivery`.
-3. Use only agents listed in `allowed_agents`.
-4. Run analysis agents in parallel when independent.
-5. Use exactly one `write_agent` as the implementation owner.
-6. Run the listed review agents only after implementation and verification.
-7. Record fingerprint-bound local receipts before declaring local completion.
-8. Deliver the branch through a pull request and wait for external Trust CI.
+1. Read `START_HERE.md`, `PROJECT_STATE.json`, and this contract.
+2. Run `git fetch --all --prune` when remote Git is available so open milestone branches/PRs are not missed.
+3. Read `.grok-stack/runtime/active-route.json` if it exists. On a fresh clone where it does not exist, continue the explicitly named active PR/branch from `PROJECT_STATE.json` or route a new task; never invent runtime state.
+4. Invoke `/adaptive-delivery` once a local route exists for the task.
+5. Use only agents listed in `allowed_agents`.
+6. Run analysis agents in parallel when independent.
+7. Use exactly one `write_agent` as the implementation owner.
+8. Run the listed review agents only after implementation and verification.
+9. Record fingerprint-bound local receipts before declaring local completion.
+10. Deliver the branch through a pull request and wait for external Trust CI.
 
 Do not bypass the route by using the built-in generic worker when a domain-specific write agent is selected.
 
@@ -59,7 +68,7 @@ Do not bypass the route by using the built-in generic worker when a domain-speci
 
 1. User-approved scope, explicit operational delegation and decisions.
 2. Deployed Trust CI policy and holdout, protected-branch rules, signed human security approvals and exact-SHA external attestation.
-3. Active route and durable change package under `engineering/changes/`.
+3. `PROJECT_STATE.json`, active pull-request design/plan, active route and durable change package under `engineering/changes/`.
 4. Machine-readable API/event/data contracts.
 5. ADRs and repository-local instructions.
 6. Existing implementation and tests.
