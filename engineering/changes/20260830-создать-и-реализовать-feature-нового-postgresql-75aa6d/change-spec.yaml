@@ -1,0 +1,169 @@
+schema_version: 1
+change_id: 20260830-создать-и-реализовать-feature-нового-postgresql-75aa6d
+objective:
+  id: OBJ-001
+  statement: Move interactive human authorization from pull-request validation to an exact-merge and exact-artifact consume-once production promotion gate without weakening automated Trust CI merge authority
+  success_metric: production_promotion_gate_and_automated_pr_validation_evidence
+  target: all_p0_and_review_evidence_passes_before_one_final_human_production_ceremony
+risk:
+  tier: red
+  domains:
+    - data
+    - api
+    - event
+    - security
+acceptance_criteria:
+  - id: AC-001
+    statement: Frozen PromotionEnvelopeV1 canonical JSON and Ed25519 verification reject malformed unknown tampered wrong-scope future expired or stale-policy fields
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_promotions.py
+      - kind: test
+        ref: trust-ci/tests/test_signing.py
+  - id: AC-002
+    statement: Acceptance requires an HMAC-ingested merged webhook fact independently corroborated through GitHub App API and a passed exact-SHA artifact attestation
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_merge_provenance.py
+      - kind: test
+        ref: trust-ci/tests/test_runner.py
+  - id: AC-003
+    statement: Mirrored migration 004 is additive checksum-locked least-privilege repeatable and safe on a populated migrations 001 through 003 database
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_migrations.py
+      - kind: test
+        ref: trust-ci/tests/test_database_roles.py
+      - kind: test
+        ref: trust-ci/tests/test_ops.py
+  - id: AC-004
+    statement: Acceptance and exact idempotent retry are atomic while identity nonce payload and idempotency conflicts reject across replicas and restarts
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_api.py
+      - kind: test
+        ref: trust-ci/tests/test_postgres_integration.py
+  - id: AC-005
+    statement: One exact promotion is consumed at most once and tuple mismatch expiry policy rotation race or dependency outage causes zero external writes
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_promotion_consumption.py
+      - kind: test
+        ref: trust-ci/tests/test_postgres_integration.py
+  - id: AC-006
+    statement: Append-only audit and bounded metrics record accepted rejected replayed expired consumed and reconciled outcomes without secrets
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_observability.py
+      - kind: review
+        ref: engineering/reviews
+  - id: AC-007
+    statement: The stacked integration tree passes local shadow deny-only provenance replay restore role separation and rollback evidence without an intermediate human gate or external write
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_promotion_e2e.py
+      - kind: review
+        ref: engineering/reviews
+  - id: AC-008
+    statement: One final human session orders old-policy integration approval merge exact artifact attestation promotion signing consume-once deploy and only then automated-only policy activation
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_policy.py
+      - kind: test
+        ref: trust-ci/tests/test_runner.py
+      - kind: holdout
+        ref: trust-ci/holdout.example
+invariants:
+  - id: INV-001
+    statement: The App-owned policy-epoch Check Run on the exact pull-request head remains the only merge authority
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_runner.py
+  - id: INV-002
+    statement: Human private keys remain outside the repository agent API worker runner and CI host services
+    evidence:
+      - kind: review
+        ref: engineering/reviews
+  - id: INV-003
+    statement: Promotion acceptance and consumption record authorization state only and possess no production deployment credential or side effect
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_promotion_e2e.py
+  - id: INV-004
+    statement: Webhook assertions mutable refs local receipts and delegated grants never establish merge artifact or production authority
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_merge_provenance.py
+  - id: INV-005
+    statement: Historical migrations legacy approvals and append-only promotion evidence are never rewritten or destructively rolled back
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_migrations.py
+  - id: INV-006
+    statement: Policy trust-store provenance PostgreSQL and deployment-control outages always deny authorization and consumption
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_promotion_consumption.py
+forbidden_outcomes:
+  - id: FORBID-001
+    statement: Requesting any intermediate human gate or weakening the old deployed policy before the final automated-green production ceremony
+    evidence:
+      - kind: review
+        ref: engineering/reviews
+  - id: FORBID-002
+    statement: Accepting an uncorroborated merge mutable artifact wrong target wrong policy or failed exact-SHA attestation
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_promotion_e2e.py
+  - id: FORBID-003
+    statement: Reusing a nonce promotion identity payload or consumed authorization to create or repeat production authority
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_postgres_integration.py
+  - id: FORBID-004
+    statement: Auto-merge auto-deploy GitHub Actions production side effects destructive SQL or broad runtime database privileges
+    evidence:
+      - kind: review
+        ref: engineering/reviews
+  - id: FORBID-005
+    statement: An agent or service reads generates requests submits simulates or stores a human private key or signature
+    evidence:
+      - kind: review
+        ref: engineering/reviews
+  - id: FORBID-006
+    statement: Branch protection lacks an observed App-owned exact policy-epoch required check during cutover or rollback
+    evidence:
+      - kind: test
+        ref: trust-ci/tests/test_policy.py
+contracts:
+  openapi:
+    - engineering/contracts/openapi/trust-ci-promotions-v1.yaml
+  json_schema:
+    - engineering/contracts/schemas/promotion-envelope-v1.schema.json
+    - engineering/contracts/schemas/protected-branch-attestation-v1.schema.json
+    - engineering/contracts/schemas/promotion-event-v1.schema.json
+  events:
+    - engineering/contracts/events/promotion-events-v1.md
+    - engineering/contracts/events/merge-provenance-v1.md
+observability:
+  - metric: trust_ci_promotion_authorization_outcomes_total
+    proves:
+      - OBJ-001
+  - metric: trust_ci_promotion_consumption_outcomes_total
+    proves:
+      - OBJ-001
+  - metric: trust_ci_merge_provenance_pending_age_seconds
+    proves:
+      - OBJ-001
+  - metric: trust_ci_promotion_audit_persistence_failures_total
+    proves:
+      - OBJ-001
+  - metric: trust_ci_consumed_without_terminal_event_age_seconds
+    proves:
+      - OBJ-001
+rollback:
+  strategy: feature_flag
+  maximum_steps: 5
+approvals:
+  required_scopes:
+    - release

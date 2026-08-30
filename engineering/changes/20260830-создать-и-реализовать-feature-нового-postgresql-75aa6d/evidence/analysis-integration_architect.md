@@ -1,0 +1,67 @@
+# Integration analysis: merged GitHub SHA to production promotion
+
+Route `75aa6daa89b1`; read-only integration analysis against base `1c06299894279a88b881defa3f19b004fa742223`.
+
+## Finding
+
+The current service has no authoritative merged-commit bridge. `parse_pull_request_event()` accepts `closed`, but models it only as a PR-head `JobRequest`; it does not parse `merged`, `merged_at`, `merge_commit_sha`, repository/installation IDs, or `X-GitHub-Delivery` (`trust-ci/src/adaptive_trust_ci/webhooks.py:15-66`). The API then cancels active jobs and discards the closed payload (`api.py:75-104`). A successful PR-head attestation therefore proves the tested PR head, not the exact commit that landed on the protected base; squash, rebase, and merge commits can all produce a different merged SHA. GitHub documents that after merge `merge_commit_sha` is respectively the merge commit, squashed commit, or updated base commit: [Get a pull request](https://docs.github.com/en/rest/pulls/pulls#get-a-pull-request).
+
+Current installation-token permissions are already the least-privilege set needed for the proposed verification (`checks:write`, `contents:read`, `pull_requests:read`; `github_app.py:75-91`). `contents:read` permits exact commit/ref reads, and `pull_requests:read` permits retrieving the merged PR. No deployment, administration, or contents-write permission is needed. The webhook configuration must additionally subscribe to `pull_request` (`closed`) and `push` for the allowed protected base refs.
+
+## Options
+
+| Option | Strength | Failure |
+|---|---|---|
+| Store the HMAC-verified `pull_request.closed` payload as a signed/merged record and trust it directly | Preserves GitHub's historical merge fact and supports squash/rebase; cheap and event-driven | The webhook HMAC is a shared-secret intake authentication mechanism, not an independently verifiable GitHub signature. A DB row or stored HMAC can be fabricated by the API tier that owns the secret. It also proves no post-merge exact-SHA build, artifact digest, or current policy epoch. Webhook delivery is not automatically retried by GitHub, so an outage can permanently omit the fact unless reconciled. |
+| Run a new exact-main-SHA validation job and sign an attestation | Reuses isolated checkout, external holdout, source-mutation detection, App-owned Check Run, Ed25519 CI signer, leases, retries, and PostgreSQL durability | A current branch-head lookup alone loses the historical fact after `main` advances, and an uncorroborated webhook SHA still trusts intake. The current v1 attestation also lacks artifact digest and protected-branch provenance. |
+| **Recommended: durable merge fact + independently corroborated exact-merged-SHA job/attestation** | Preserves the historical merge event, verifies it through GitHub's installation API, tests the exact landed object, and creates portable Ed25519 evidence | Requires a versioned merge/provenance schema and reconciliation worker, but adds no production-write authority. |
+
+## Recommended authoritative bridge
+
+1. **Ingest, do not authorize.** After HMAC verification, atomically store a normalized immutable `merged_pull_request` fact only when `action=closed`, `pull_request.merged=true`, `merge_commit_sha` is an exact lowercase SHA-1, the repository is allowed, and `base.ref` is a configured protected target. Store repository ID/full name, installation ID, PR number, PR head SHA, pre-merge base SHA, exact merged SHA, base ref, `merged_at`, delivery GUID, payload SHA-256, received timestamp, and status `pending_verification`. Unmerged closures continue only to cancel PR jobs.
+2. **Corroborate outside the webhook/API trust boundary.** A leased worker with the existing GitHub App key obtains an installation token and calls `GET /repos/{repo}/pulls/{number}`; require `state=closed`, `merged=true`, the expected base ref, and identical post-merge `merge_commit_sha`. Then retrieve the exact Git commit object and require the object SHA to match. Correlate the protected-ref `push` event (`ref=refs/heads/<base>`, exact `after`) when available; its absence is recoverable by reconciliation, not grounds to trust an unverified event. Keep the App private key out of the API image.
+3. **Create a separate `protected_branch` validation job.** Its identity is `(repository, pr_number, merged_sha, pipeline="protected_branch", policy_digest)`. Checkout and verify the exact merged SHA, never a mutable branch name. Emit an App-owned Check Run on that SHA and a new versioned Ed25519 attestation that explicitly binds `source_event_id`, `base_ref`, `merged_sha`, `policy_digest`, holdout/runner image digests, and immutable build `artifact_sha256`. Do not reinterpret the frozen PR attestation v1.
+4. **Authorize, do not deploy.** `POST /promotions` accepts a human Ed25519 envelope bound to repository, exact merged SHA, exact artifact SHA-256, target environment, promotion-policy epoch, nonce, issued/expiry times and key ID. In one PostgreSQL transaction it verifies the signature/TTL/key state, requires a matching successful `protected_branch` attestation and artifact digest, consumes the unique nonce, creates an immutable authorization, and appends an audit/outbox event. It never calls a cloud, host, deployment, GitHub release, or production API. A separately controlled deployer may consume that authorization only through an explicit, one-time state transition; invalid, expired, ambiguous, missing, or stale evidence fails closed.
+
+The exact merged SHA need not remain the current tip forever: it must be proven as the commit GitHub says landed on the configured protected base. Requiring `main == merged_sha` at promotion time creates needless races as later PRs merge. If policy requires “latest main only,” make that an explicit environment policy checked immediately before authorization consumption, not an accidental property of webhook timing.
+
+## Contracts and durability
+
+- Use immutable tables rather than `trust_ci_events.details` as authority: `trust_ci_merge_facts`, `trust_ci_promotions`, `trust_ci_promotion_nonces`, and an outbox/audit table. Existing jobs/attestations can be referenced, but their current schemas bind only a PR-style positive `pr_number` and lack artifact/merge provenance (`models.py:58-89, 227-287`; `sql/001_schema.sql:1-95`).
+- Merge-fact uniqueness: `(repository_id, pr_number, merge_commit_sha, base_ref)` and unique delivery GUID. Duplicate GUID + identical payload digest is a no-op; duplicate GUID + different digest is a security failure and audit event.
+- Validation-job uniqueness: `(repository, merged_sha, pipeline, policy_digest)`. One event may safely enqueue the same job many times.
+- Promotion request: require an `Idempotency-Key`. Same key + same canonical request digest returns the stored response; same key + different digest is `409`. A previously consumed cryptographic nonce is always `409`, even under a new idempotency key. Signature verification, nonce insert, authorization insert and audit/outbox insert must commit atomically.
+- A promotion may transition only `authorized -> consumed` once via compare-and-swap; terminal `expired`, `revoked`, and `consumed` records are never reused. There is no automatic transition to a deployed state.
+- Preserve raw webhook bodies only under bounded retention if operationally required; durable authority is the validated normalized fact plus hashes. Do not log bearer tokens, webhook HMAC, private keys, complete signed request bodies, or user-supplied reasons.
+
+## Retries, reconciliation, and operations
+
+- Return webhook `2xx` only after the merge fact and enqueue/outbox record commit. The existing global kill switch must prevent new validation and promotion authorization while continuing to allow health/read-only audit access.
+- Worker/API transient failures (`429`, rate-limit exhaustion, network errors, `5xx`) use bounded exponential backoff with full jitter and honor `Retry-After`/rate-limit reset. `401/403`, repository/installation mismatch, malformed facts, and confirmed `404` after a bounded consistency retry are terminal and alerting. Existing lease expiry, `FOR UPDATE SKIP LOCKED`, attempt limits, and `dead` state should be reused.
+- GitHub does not automatically redeliver failed webhooks and only exposes recent deliveries for a limited window ([Redelivering webhooks](https://docs.github.com/en/webhooks/testing-and-troubleshooting-webhooks/redelivering-webhooks)). Run a bounded scheduled reconciliation per allowed repository using a durable `(updated_at, pr_number)` watermark: list recently updated closed PRs, fetch candidates, and upsert missing merged facts. Independently reconcile pending merge facts to validation jobs and expired authorizations to `expired`. Use ETags/conditional requests, pagination caps and a per-installation request budget.
+- App-level delivery inspection/redelivery requires an App JWT rather than an installation token ([GitHub App webhook deliveries](https://docs.github.com/en/rest/apps/webhooks)); therefore any optional delivery reconciler belongs with the worker/App-auth boundary, never the webhook API. REST reconciliation of PR and commit state can use the existing installation token.
+- Correlation chain in every structured audit event and metric: `X-GitHub-Delivery -> merge_fact_id -> job_id -> attestation_id -> promotion_id -> idempotency_key`, plus repository, PR, exact SHA, artifact digest, environment and policy epoch. High-cardinality IDs belong in logs/audit, not Prometheus labels.
+- Metrics/alerts: merge facts pending verification age/count; reconciliation lag/watermark; validation pass/fail/dead by bounded code; GitHub rate-limit remaining; promotion accepted/rejected/replay/expired/consumed; outbox age; authorization-to-consumption latency. Alert on any production authorization without an exact attestation match (should be impossible), nonce conflicts, delivery GUID hash conflicts, or stalled reconciliation.
+
+## No autonomous production write
+
+The API and worker remain incapable of production deployment. The API owns webhook secret, promotion public-key trust store and narrowly scoped inserts; it has neither the human private key nor GitHub App/deployer credentials. The CI worker owns GitHub App and CI attestation signing material but cannot accept or consume promotion approvals. The deployer owns production credentials but must be unable to mint approvals or attestations. PostgreSQL roles must enforce these separations, and the production promotion remains the only human-signature boundary.
+
+## Staged rollout and removal of PR-time human gates
+
+1. **Schema/ingest shadow:** deploy additive tables and merged-event ingestion; keep all current PR approval rules and branch protection unchanged. Reconcile historical merged PRs in a bounded test window. No endpoint response can authorize deployment.
+2. **Exact-SHA shadow validation:** enable `protected_branch` jobs and v2 attestations for a disposable/canary repository or branch. Prove duplicate delivery, webhook loss/reconciliation, squash/rebase/merge SHA mapping, worker death, policy change, artifact mismatch, signer rotation, nonce replay and PostgreSQL restart. Keep PR gates.
+3. **Promotion deny-only:** expose `POST /promotions` to an isolated production-like target with no production credentials, then production in deny-only/shadow mode. Compare decisions with the existing manual process. Required evidence: zero false accepts, replay/expiry fail closed, reconciliation SLO met, restore test passed, and operator runbook exercised.
+4. **One reviewed policy epoch change:** only after the promotion path is proven, a human approves the deployed Trust CI policy change that removes interactive `governance`/`database` change-validation approval rules. Publish and observe the new App-owned exact-SHA check, then atomically update branch protection to the new exact check name/App ID. The automatic PR checks, isolated runner, external holdout, signed attestations and protected branch remain mandatory.
+5. **Enforce production-only human approval:** enable deployer consumption of accepted, unexpired production promotions. Canary one production release, verify audit continuity and rollback, then expand. Non-production may use a separately configured automation identity; production envelopes must remain human-signed and environment-specific.
+
+Rollback is monotonic and fail-closed: disable promotion acceptance/consumption, restore the previous deployed Trust CI policy epoch and required App-owned check, and retain all merge/promotion/audit rows. Never roll back by deleting nonces or authorizations, weakening exact-SHA matching, or accepting old-policy envelopes.
+
+## Required integration tests
+
+- merged vs merely closed PR; each merge strategy; disallowed repository/base ref; malformed/null SHA; repository/installation ID mismatch;
+- duplicate and conflicting delivery GUIDs; `push` before/after `closed`; lost webhook recovered by reconciliation; branch advancing after merge;
+- exact SHA/API mismatch, missing commit, force-push/deleted branch, policy epoch change, artifact digest mismatch;
+- bounded `429`/`5xx`, worker crash/lease reclaim, outbox replay, PostgreSQL restart;
+- valid/invalid/retired Ed25519 key, expiry boundaries, nonce replay under concurrent requests, idempotency-key replay/conflict, transaction rollback;
+- proof that API and worker cannot perform a production write and deployer cannot mint promotion/CI evidence.

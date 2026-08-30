@@ -1,0 +1,97 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer",
+    "data_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect"
+  ],
+  "base_commit": "1c06299894279a88b881defa3f19b004fa742223",
+  "base_fingerprint": "20e3a26edfc17eba294d9d5df33cbc3940529724e58171bdd906281618d9a818",
+  "complexity": "high-risk",
+  "created_at": "2026-08-30T09:48:21+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "data",
+    "api",
+    "event",
+    "security"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval"
+  ],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data"
+  ],
+  "rationale": [
+    "high-risk intent/domain: feature",
+    "intent=feature",
+    "domains=data,api,event,security",
+    "repository=generic",
+    "write-owner=data_implementer",
+    "analysis-wave=6/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "data_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "75aa6daa89b1",
+  "schema_version": 1,
+  "session_id": "promotion-authorization-v5",
+  "status": "routed",
+  "task": "Создать и реализовать feature нового PostgreSQL-backed POST /promotions и immutable promotion envelope: exact merged commit, artifact sha256, target environment, policy epoch, nonce, issued/expires; Ed25519 verification, replay rejection, audit events и fail-closed authorization. После готовности endpoint отключить интерактивные human gates в change-validation pipeline, сохранив App-owned exact-SHA автоматические проверки.",
+  "task_domains": [
+    "data",
+    "api",
+    "event",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "data-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "data_implementer"
+}
