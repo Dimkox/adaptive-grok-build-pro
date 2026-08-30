@@ -4142,6 +4142,48 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 DIFF._git(repo.root, arguments)
         self.assertFalse(sentinel.exists())
 
+    def test_repo_git_commands_trust_only_the_exact_root_under_different_owner(self) -> None:
+        repo, base = self._repo()
+        repo.write_text("src/app.py", "VALUE = 1\n")
+        head = repo.commit("head")
+        real_environment = DIFF._git_environment
+        real_run_capped = DIFF._run_capped
+        commands: list[tuple[tuple[str, ...], Path]] = []
+
+        def different_owner_environment() -> dict[str, str]:
+            return {
+                **real_environment(),
+                "GIT_TEST_ASSUME_DIFFERENT_OWNER": "1",
+            }
+
+        def capture_command(command, **kwargs):
+            commands.append((tuple(command), Path(kwargs["cwd"])))
+            return real_run_capped(command, **kwargs)
+
+        with (
+            patch.object(DIFF, "_git_environment", side_effect=different_owner_environment),
+            patch.object(DIFF, "_run_capped", side_effect=capture_command),
+        ):
+            exact = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+            worktree = FIT.diff_architecture(repo.root, base_sha=base, worktree=True)
+
+        canonical_root = repo.root.resolve()
+        repo_commands = [command for command, cwd in commands if cwd == canonical_root]
+        self.assertTrue(repo_commands)
+        for command in repo_commands:
+            with self.subTest(command=command):
+                trust_entries = [
+                    argument for argument in command if argument.startswith("safe.directory=")
+                ]
+                self.assertEqual(trust_entries, [f"safe.directory={canonical_root}"])
+        no_index_commands = [command for command, _cwd in commands if "--no-index" in command]
+        self.assertTrue(no_index_commands)
+        for command in no_index_commands:
+            with self.subTest(command=command):
+                self.assertFalse(any(argument.startswith("safe.directory=") for argument in command))
+        self.assertEqual(exact.head_sha, head)
+        self.assertEqual(worktree.head_kind, "worktree")
+
     def test_line_stats_are_linear_and_have_an_explicit_line_ceiling(self) -> None:
         self.assertTrue(hasattr(DIFF, "MAX_LINE_STAT_LINES"), "line-stat ceiling is absent")
         before = (b"x\n" * 6_000) + b"before\n"

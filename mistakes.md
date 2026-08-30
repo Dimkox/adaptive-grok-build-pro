@@ -2,6 +2,41 @@
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-08-29 — Opened derived checksum metadata at its authority name
+
+**Symptom:** A pre-existing sidecar hardlink overwrote an external sentinel, while a FIFO blocked package completion after the archive was already published.
+**Root cause:** Sidecar publication used `O_TRUNC` directly on the final pathname instead of constructing and validating a separate exclusive inode before atomic replacement.
+
+## 2026-08-29 — Validated only the output-parent leaf
+
+**Symptom:** Common umask `0002` created `dist/` as `0775` and self-rejected it, while an unrelated writer on a non-sticky ancestor could relocate an otherwise private parent outside the requested path.
+**Root cause:** Parent creation inherited ambient permissions and the threat boundary ignored ancestor ownership/sticky rename authority.
+
+## 2026-08-29 — Treated a pathname check as publication authority
+
+**Symptom:** A swap after the final successful temporary-name validation could publish an unrelated inode and checksum its bytes, while later post-replace validation still implied an unattainable portable zero-transient guarantee in a mutable shared directory.
+**Root cause:** Validation and pathname replacement were separate operations, success was not conditioned on the published name matching the still-held archive descriptor, and the output-parent trust boundary was not explicit or descriptor-bound.
+
+## 2026-08-29 — Evaluated packaging-only POSIX capabilities at shared-module import
+
+**Symptom:** Manifest consumers could raise raw `AttributeError` on platforms without `O_DIRECTORY`, `O_NOFOLLOW`, or `O_CLOEXEC`, before doctor or explicit legacy helpers could run.
+**Root cause:** Security capability discovery was placed in module initialization instead of the secure descriptor operation that requires it.
+
+## 2026-08-29 — Discarded exclusive temporary-file authority before publication
+
+**Symptom:** A same-directory pathname swap redirected ZIP writes into an external sentinel, and atomic replacement published archives as `0600` instead of normal or preserved permissions.
+**Root cause:** The secure `mkstemp` fd was closed and its lexical name was reopened, while the replacement design treated atomicity as sufficient without preserving inode authority or filesystem mode compatibility.
+
+## 2026-08-29 — Treated lexical package paths as stable file authority
+
+**Symptom:** A benign-looking source symlink archived external sentinel bytes, a replacement could make manifest and ZIP content disagree, and final checksum calculation buffered the complete archive.
+**Root cause:** Enumeration, hashing, metadata, and streaming used separate path-following opens without descriptor identity/digest binding, while bounded-memory reasoning stopped before the output checksum.
+
+## 2026-08-29 — Assumed isolated tests could trust and mutate the checkout
+
+**Symptom:** The pinned non-root runner produced five architecture Git ownership failures, a receipt clone child-process ownership failure, and a package failure while writing `MANIFEST.sha256` under `/workspace:ro`.
+**Root cause:** Local same-owner/writable-checkout behavior was treated as part of the test contract, so architecture isolation discarded the runner's exact trust, the clone's child lacked process-scoped trust, and packaging used an explicit source-writing API for derived archive metadata.
+
 ## 2026-08-26 — Parallelized a bytecode-mutating holdout command with its digest test
 
 **Symptom:** Exact holdout validation ran without `PYTHONDONTWRITEBYTECODE=1` beside the Trust suite, created ignored `holdout.example/__pycache__`, and raced the measured-bundle assertion into one failure out of 200; the cache was moved recoverably to `/tmp/adaptive-grok-holdout-pycache-20260826-final`.
@@ -101,3 +136,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The final queue fix closed the former 64-round truncation but could still return N/A for a real local queue adapter in a neutral-named module after the 4,096-item worklist exhausted.
 **Root cause:** Exhaustion preserved only a boolean and then guessed relevance from module-name tokens instead of retaining the precise unresolved dependency frontier and resolving its local imports.
+
+## 2026-08-29 — Assumed requested mkdir mode survives every umask
+
+**Symptom:** Under restrictive umasks, packaging created a mode-`0000` output parent, then rejected its own default output path and left the directory behind.
+**Root cause:** Missing-parent creation trusted `mkdir(mode=0700)` as the final mode instead of binding the new inode, applying exact permissions through its held descriptor, and retaining cleanup ownership across the next validation step.

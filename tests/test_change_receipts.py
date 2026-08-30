@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import json
 import subprocess
@@ -321,9 +322,32 @@ class ReceiptTests(unittest.TestCase):
     def test_route_base_remains_a_separate_architecture_staleness_binding(self) -> None:
         with tempfile.TemporaryDirectory(prefix='adaptive-grok-receipt-base-') as tmp:
             root = Path(tmp) / 'project'
+            git_config = Path(tmp) / 'gitconfig'
+            isolated_environment = {
+                'PATH': os.environ.get('PATH', '/usr/local/bin:/usr/bin:/bin'),
+                'HOME': tmp,
+                'LANG': 'C',
+                'LC_ALL': 'C',
+                'GIT_CONFIG_NOSYSTEM': '1',
+                'GIT_CONFIG_GLOBAL': os.devnull,
+                'GIT_TERMINAL_PROMPT': '0',
+            }
+            subprocess.run(
+                [
+                    'git', 'config', '--file', str(git_config), '--add',
+                    'safe.directory', str(ROOT / '.git'),
+                ],
+                check=True,
+                env=isolated_environment,
+            )
+            clone_environment = {
+                **isolated_environment,
+                'GIT_CONFIG_GLOBAL': str(git_config),
+            }
             subprocess.run(
                 ['git', 'clone', '-q', '--no-local', str(ROOT), str(root)],
                 check=True,
+                env=clone_environment,
             )
             route = {
                 'base_commit': _PRE_ADOPTION_ROUTE_BASE,
