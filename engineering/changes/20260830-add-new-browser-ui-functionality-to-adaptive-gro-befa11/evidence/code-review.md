@@ -157,3 +157,59 @@ None introduced by the remediation. The pre-existing local-demo residual notes i
 ### Authority boundary
 
 This PASS is local code-review evidence for the exact product HEAD only. The App-owned policy-epoch check on the exact current PR SHA, required human-signed approvals, merge, release publication, and deployment remain separate pending operator-controlled gates.
+
+---
+
+## Final Trust CI root-unittest remediation review
+
+### Verdict
+
+**PASS**
+
+No Critical or Important issue was found in commits `cdbdd5f3930f0e7cf5d41e87cdf2524e24271f07..8d8bd3e2119105af1510423cc85ba493c857f88f`.
+
+### Exact inspected identity
+
+- Product HEAD: `8d8bd3e2119105af1510423cc85ba493c857f88f`.
+- Remediation commits: `088ff0ec8877d4b9bda9fa81c3cd5c2476e5222d` (`test: build investor artifact in isolation`) and `8d8bd3e2119105af1510423cc85ba493c857f88f` (`docs: record clean-checkout fixture lesson`).
+- Inspected clean pre-report tree fingerprint: `0a706c272c40d57c82a23bc7938e957c3eb4d99d5f3186cd307409a766d75fd3`.
+- The tracked remediation delta contains only `tests/test_manifest_package.py` and `mistakes.md`. Appending this report is the reviewer's only subsequent worktree mutation.
+
+### Prior external failure and root-cause closure
+
+The external clean-checkout Trust CI `root-unittest` failure exposed that `test_investor_demo_local_release_artifact_is_complete_and_checksum_bound` treated the gitignored `dist/adaptive-grok-build-pro-v2.1.0.zip` and sidecar as pre-existing fixtures. A developer checkout with a previously built archive passed, while a clean checkout correctly had no `dist/` artifact.
+
+The test now creates a `TemporaryDirectory`, calls the real `scripts/package_stack.py` module's `write_archive(ROOT, archive_path)`, and lets writer failures propagate. It independently checks all three digest views: the writer's returned digest, the generated sidecar value, and a fresh SHA-256 over the archive bytes. It opens the generated archive and verifies the complete required member set, preserving the original product-content assertion.
+
+The temporary archive and sidecar are deleted with their temporary directory. The source root is asserted to have no leftover `MANIFEST.sha256`; independent before/after checks confirmed that condition and a clean Git worktree. The test contains no reference to `ROOT / "dist"`, a packaged release fixture, or conditional skip/fallback, so it no longer depends on ignored local build state and does not hide clean-checkout failures.
+
+Production packaging behavior is unchanged: only the test and the root-cause learning record changed. The existing writer remains exercised directly, including its manifest generation, archive construction, checksum sidecar, and source-root manifest cleanup.
+
+`mistakes.md` accurately records the symptom, root cause, and durable rule: clean-checkout tests must construct ignored artifacts in isolated temporary storage and leave no persistent source mutation.
+
+### Verification evidence
+
+- Fresh full `python3 scripts/grok_verify.py --mode pr --json` receipt: `status=pass`, created `2026-08-31T10:35:38+00:00`, bound to fingerprint `0a706c272c40d57c82a23bc7938e957c3eb4d99d5f3186cd307409a766d75fd3`.
+- Independently reran the remediated test: **1/1 passed** using the real package writer.
+- `MANIFEST.sha256` was absent before and after the test.
+- Git status remained clean after the test.
+- The independently recomputed tree fingerprint remained exactly `0a706c272c40d57c82a23bc7938e957c3eb4d99d5f3186cd307409a766d75fd3`.
+- `git diff --check cdbdd5f3930f0e7cf5d41e87cdf2524e24271f07..8d8bd3e2119105af1510423cc85ba493c857f88f` passed.
+
+### Severity-classified findings
+
+#### Critical
+
+None.
+
+#### Important
+
+None.
+
+#### Minor
+
+None introduced by this remediation.
+
+### Authority boundary
+
+This PASS closes the local test-fixture defect only. It does not convert local verification or review evidence into the App-owned exact-SHA Trust CI check, human-signed approval, merge, release, or deployment authority.
