@@ -1,0 +1,25 @@
+{
+  "envelope": {
+    "payload": {
+      "approved_scopes": [],
+      "attestation_id": "pre-m1-golden-attestation",
+      "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "changed_files": [
+        "docs/pre-m1.md"
+      ],
+      "command_results": [],
+      "completed_at": "2026-08-01T00:01:00+00:00",
+      "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "job_id": "pre-m1-golden-job",
+      "key_id": "56475aa75463474c",
+      "policy_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "pr_number": 42,
+      "repository": "Dimkox/adaptive-grok-build-pro",
+      "schema_version": 1,
+      "started_at": "2026-08-01T00:00:00+00:00",
+      "status": "passed"
+    },
+    "signature": "CmI2ThvnYnU0r1TK0hQ5BdngMia6AzJ1qsCK4RLgFHO1Wan6OHXStxF7OPvqUFcPgf8Yb8LB+rn80cZ1p2ocDQ=="
+  },
+  "public_key_pem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAA6EHv/POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg=\n-----END PUBLIC KEY-----\n"
+}

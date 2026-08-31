@@ -1,0 +1,239 @@
+{
+  "architecture_id": "ARCH-ADAPTIVE-GROK-M2",
+  "background_job_policies": [
+    {
+      "id": "FIT-BOUNDED-WORKER-JOBS",
+      "max_retries": 3,
+      "node_types": [
+        "worker",
+        "runner"
+      ],
+      "require_correlation_id": true,
+      "require_idempotency": true,
+      "severity": "error",
+      "terminal_actions": [
+        "dead_letter",
+        "manual_recovery",
+        "reject"
+      ]
+    }
+  ],
+  "change_separation_policies": [
+    {
+      "id": "FIT-TRUST-CI-SEPARATION",
+      "implementation_prefixes": [
+        ".grok",
+        ".grok-stack",
+        "architecture",
+        "engineering/contracts",
+        "scripts"
+      ],
+      "severity": "error",
+      "trust_ci_prefixes": [
+        "trust-ci"
+      ]
+    }
+  ],
+  "code_budgets": [
+    {
+      "id": "FIT-BOUNDED-ARCHITECTURE-CHANGE",
+      "max_ast_complexity": 5000,
+      "max_changed_bytes": 1000000,
+      "max_changed_lines": 10820,
+      "path_prefixes": [
+        ".grok-stack/adaptive_grok",
+        "architecture",
+        "engineering/contracts",
+        "scripts"
+      ],
+      "severity": "error"
+    }
+  ],
+  "contract_policies": [
+    {
+      "compatibility": "bidirectional",
+      "contract_kinds": [
+        "openapi"
+      ],
+      "id": "FIT-OPENAPI-BIDIRECTIONAL",
+      "severity": "error"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "contract_kinds": [
+        "event",
+        "json_schema"
+      ],
+      "id": "FIT-CONSUMER-CONTRACTS",
+      "severity": "error"
+    },
+    {
+      "compatibility": "exact",
+      "contract_kinds": [
+        "signed_payload"
+      ],
+      "id": "FIT-SIGNED-PAYLOAD-EXACT",
+      "severity": "error"
+    }
+  ],
+  "forbidden_edges": [
+    {
+      "edge_types": [
+        "control",
+        "data_flow",
+        "dependency",
+        "deployment",
+        "publication",
+        "secret_flow"
+      ],
+      "from_trust_domains": [
+        "TD-LOCAL-PREFLIGHT",
+        "TD-REPOSITORY"
+      ],
+      "id": "FIT-NO-LOCAL-PRODUCTION-AUTHORITY",
+      "severity": "error",
+      "to_trust_domains": [
+        "TD-PRODUCTION-TRUST"
+      ]
+    }
+  ],
+  "migration_policies": [
+    {
+      "id": "FIT-TRUST-CI-SQL-HISTORY",
+      "immutable_history": true,
+      "path_prefixes": [
+        "trust-ci/sql"
+      ],
+      "required_phases": [
+        "contract",
+        "expand",
+        "migrate"
+      ],
+      "severity": "error"
+    }
+  ],
+  "network_policies": [
+    {
+      "allowed_protocols": [
+        "docker_api",
+        "filesystem",
+        "https",
+        "postgresql"
+      ],
+      "id": "FIT-DECLARED-NETWORK-ONLY",
+      "node_types": [
+        "service",
+        "worker"
+      ],
+      "require_declared_edge": true,
+      "severity": "error"
+    },
+    {
+      "allowed_protocols": [
+        "filesystem"
+      ],
+      "id": "FIT-RUNNER-NO-NETWORK",
+      "node_types": [
+        "runner"
+      ],
+      "require_declared_edge": true,
+      "severity": "error"
+    }
+  ],
+  "path_boundaries": [
+    {
+      "forbidden_dependency_prefixes": [
+        "trust-ci"
+      ],
+      "id": "FIT-LOCAL-CANNOT-DEFINE-TRUST-CI",
+      "severity": "error",
+      "source_prefixes": [
+        ".grok",
+        ".grok-stack",
+        "architecture",
+        "engineering/contracts",
+        "scripts"
+      ]
+    }
+  ],
+  "risk_escalations": [
+    {
+      "id": "FIT-ARCHITECTURE-EXPANSION-RISK",
+      "risk": "red",
+      "severity": "error",
+      "triggers": [
+        "new_datastore",
+        "new_edge",
+        "new_external_integration",
+        "new_framework",
+        "new_network_client",
+        "new_queue",
+        "new_secret",
+        "new_service",
+        "new_trust_crossing"
+      ]
+    },
+    {
+      "id": "FIT-CONTRACT-OR-JOB-RISK",
+      "risk": "yellow",
+      "severity": "error",
+      "triggers": [
+        "new_contract",
+        "new_job"
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "secret_flow_policies": [
+    {
+      "allowed_trust_domains": [
+        "TD-PRODUCTION-TRUST",
+        "TD-TRUST-CI-CONTROL",
+        "TD-TRUST-CI-EXECUTION"
+      ],
+      "id": "FIT-TRUST-MATERIAL-BOUNDARY",
+      "secret_classes": [
+        "SECRET-CI-SIGNING",
+        "SECRET-DATABASE",
+        "SECRET-GITHUB-APP",
+        "SECRET-HUMAN-APPROVAL",
+        "SECRET-READ-TOKEN",
+        "SECRET-WEBHOOK"
+      ],
+      "severity": "error"
+    }
+  ],
+  "tenant_authorization_policies": [
+    {
+      "data_classifications": [
+        "DATA-APPROVAL",
+        "DATA-ATTESTATION",
+        "DATA-HOLDOUT",
+        "DATA-JOB-STATE",
+        "DATA-TRUST-MATERIAL"
+      ],
+      "id": "FIT-RESTRICTED-DATA-AUTHORIZATION",
+      "require_authorization": true,
+      "require_tenant_filter": false,
+      "severity": "error"
+    }
+  ],
+  "workspace_trust_policies": [
+    {
+      "forbidden_secret_classes": [
+        "SECRET-CI-SIGNING",
+        "SECRET-DATABASE",
+        "SECRET-GITHUB-APP",
+        "SECRET-HUMAN-APPROVAL",
+        "SECRET-READ-TOKEN",
+        "SECRET-WEBHOOK"
+      ],
+      "id": "FIT-UNTRUSTED-RUNNER-NO-SECRETS",
+      "node_types": [
+        "repository",
+        "runner"
+      ],
+      "severity": "error"
+    }
+  ]
+}

@@ -285,9 +285,10 @@ def verify_attestation(
     if parsed.payload.key_id != key_id:
         raise ApprovalError('attestation key_id mismatch')
     try:
+        signed_payload = parsed._signed_payload if parsed._signed_payload is not None else parsed.payload.to_dict()
         public_key.verify(
             base64.b64decode(parsed.signature, validate=True),
-            canonical_json(parsed.payload.to_dict()),
+            canonical_json(signed_payload),
         )
     except (ValueError, InvalidSignature) as exc:
         raise ApprovalError('invalid attestation signature') from exc

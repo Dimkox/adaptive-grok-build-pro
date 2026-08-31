@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import stat
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -14,9 +15,13 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.doctor import run_doctor
+from adaptive_grok import architecture as architecture_module
+from adaptive_grok import receipts as receipts_module
+from adaptive_grok.change import start_change
 from adaptive_grok.router import build_route
-from adaptive_grok.state import set_active_route
-from adaptive_grok.verification import CheckResult, _contracts, _node, _python, _secret_scan, _sql_safety, verify
+from adaptive_grok.spec import dump_canonical_spec
+from adaptive_grok.state import get_active_change, set_active_route
+from adaptive_grok.verification import CheckResult, _change_specs, _contracts, _node, _python, _secret_scan, _sql_safety, verify
 from tests._support import project_copy
 
 _PASSING_UNITTEST = (
@@ -35,6 +40,13 @@ _FAILING_UNITTEST = (
     '        self.fail("expected failure")\n'
 )
 
+_ADOPTION_MARKER = '''{
+  "architecture_id": "ARCH-ADAPTIVE-GROK-M2",
+  "schema_version": 1,
+  "state": "adopted"
+}
+'''
+
 
 def _check(report: dict, name: str) -> dict | None:
     for item in report.get('checks', []):
@@ -45,6 +57,19 @@ def _check(report: dict, name: str) -> dict | None:
 
 def _names(items) -> list[str]:
     return [item.name if hasattr(item, 'name') else item.get('name') for item in items]
+
+
+def _valid_change_spec(change_id: str) -> dict:
+    return {
+        'schema_version': 2, 'change_id': change_id,
+        'objective': {'id': 'OBJ-001', 'statement': 'verify selection', 'success_metric': 'selected', 'target': 'all'},
+        'risk': {'tier': 'green', 'domains': []},
+        'acceptance_criteria': [{'id': 'AC-001', 'statement': 'selected', 'evidence': [{'receipt': 'verification'}]}],
+        'invariants': [], 'forbidden_outcomes': [],
+        'contracts': {'openapi': [], 'json_schema': [], 'events': []},
+        'observability': [], 'rollback': {'strategy': 'forward_fix', 'maximum_steps': 1},
+        'approvals': {'required_scopes': []},
+    }
 
 
 def _which_except(*blocked: str):
@@ -169,6 +194,16 @@ class _PathTools:
 
 
 class VerificationTests(unittest.TestCase):
+    @staticmethod
+    def _adopt_architecture(root: Path) -> None:
+        for rel in ('architecture', 'schemas', 'engineering/contracts'):
+            source = ROOT / rel
+            target = root / rel
+            if target.exists():
+                shutil.rmtree(target)
+            shutil.copytree(source, target)
+        (root / 'architecture/adoption.json').write_text(_ADOPTION_MARKER, encoding='utf-8')
+
     def test_invalid_json_contract_fails(self) -> None:
         with project_copy() as root:
             path = root / 'engineering/contracts/schemas/bad.schema.json'
@@ -211,6 +246,318 @@ class VerificationTests(unittest.TestCase):
             self.assertEqual(report['status'], 'pass')
             receipt = root / f".grok-stack/runtime/receipts/{route['route_id']}/verification.json"
             self.assertTrue(receipt.is_file())
+
+    def test_verify_reports_architecture_metadata_without_exact_worktree_sha(self) -> None:
+        with project_copy(git=True) as root:
+            self._adopt_architecture(root)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=root, check=True)
+            route = build_route(root, 'Review current architecture', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            report = verify(root, mode='fast', record=False)
+            metadata = report['architecture']
+            self.assertEqual(metadata['head_kind'], 'worktree')
+            self.assertNotIn('exact_head_sha', metadata)
+            for key in ('schema_digest', 'system_digest', 'rules_digest', 'architecture_digest', 'architecture_evidence_digest'):
+                self.assertRegex(metadata[key], r'^[0-9a-f]{64}$')
+            self.assertEqual(len(metadata['generated_artifact_digests']), 5)
+
+    def test_verify_unconfigured_is_compatible_but_adopted_deletion_fails(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current code', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            self.assertEqual(verify(root, mode='fast', record=False)['architecture']['status'], 'not_configured')
+            self._adopt_architecture(root)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=root, check=True)
+            (root / 'architecture/system.yaml').unlink()
+            report = verify(root, mode='fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertEqual(_check(report, 'architecture')['status'], 'fail')
+
+    def test_verify_fails_after_committed_deletion_of_both_adopted_models(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current architecture', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            self._adopt_architecture(root)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=root, check=True)
+            (root / 'architecture/system.yaml').unlink()
+            (root / 'architecture/rules.yaml').unlink()
+            subprocess.run(['git', 'add', '-u'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'delete architecture'], cwd=root, check=True)
+
+            report = verify(root, mode='fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertEqual(report['architecture']['status'], 'fail')
+            architecture = _check(report, 'architecture')
+            self.assertIsNotNone(architecture)
+            self.assertEqual(architecture['status'], 'fail')
+            self.assertIn('missing', architecture['summary'])
+
+    def test_missing_adoption_marker_cannot_disable_architecture_checks(self) -> None:
+        for delete_models, committed in ((False, False), (True, False), (False, True), (True, True)):
+            with self.subTest(delete_models=delete_models, committed=committed), project_copy(git=True) as root:
+                route = build_route(root, 'Review current architecture', 's1').to_dict()
+                route['quality_profiles'] = ['base']
+                set_active_route(root, route)
+                self._adopt_architecture(root)
+                subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+                subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=root, check=True)
+                (root / 'architecture/adoption.json').unlink()
+                if delete_models:
+                    (root / 'architecture/system.yaml').unlink()
+                    (root / 'architecture/rules.yaml').unlink()
+                if committed:
+                    subprocess.run(['git', 'add', '-u'], cwd=root, check=True)
+                    subprocess.run(['git', 'commit', '-qm', 'delete architecture authority'], cwd=root, check=True)
+                report = verify(root, mode='fast', record=False)
+                self.assertEqual(report['status'], 'fail')
+                self.assertEqual(_check(report, 'architecture')['status'], 'fail')
+                self.assertIn('missing', _check(report, 'architecture')['summary'])
+
+    def test_adopted_deletion_remains_invalid_after_unrelated_descendants(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current architecture', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            self._adopt_architecture(root)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=root, check=True)
+            (root / 'architecture/adoption.json').unlink()
+            (root / 'architecture/system.yaml').unlink()
+            (root / 'architecture/rules.yaml').unlink()
+            subprocess.run(['git', 'add', '-u'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'delete architecture'], cwd=root, check=True)
+            for index in range(3):
+                (root / 'unrelated.txt').write_text(f'{index}\n', encoding='utf-8')
+                subprocess.run(['git', 'add', 'unrelated.txt'], cwd=root, check=True)
+                subprocess.run(
+                    ['git', 'commit', '-qm', f'unrelated descendant {index}'],
+                    cwd=root,
+                    check=True,
+                )
+
+            report = verify(root, mode='fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertIn('missing', _check(report, 'architecture')['summary'])
+
+    def test_abandoned_unmarked_model_draft_does_not_establish_adoption(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current code', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            architecture = root / 'architecture'
+            architecture.mkdir(exist_ok=True)
+            for name in ('system.yaml', 'rules.yaml'):
+                (architecture / name).write_bytes((ROOT / 'architecture' / name).read_bytes())
+            subprocess.run(['git', 'add', 'architecture'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'unadopted architecture draft'], cwd=root, check=True)
+            (architecture / 'system.yaml').unlink()
+            (architecture / 'rules.yaml').unlink()
+            subprocess.run(['git', 'add', '-u'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'abandon architecture draft'], cwd=root, check=True)
+            (root / 'unrelated.txt').write_text('later\n', encoding='utf-8')
+            subprocess.run(['git', 'add', 'unrelated.txt'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'later descendant'], cwd=root, check=True)
+
+            report = verify(root, mode='fast', record=False)
+            self.assertEqual(report['status'], 'pass')
+            self.assertEqual(report['architecture']['status'], 'not_configured')
+
+    def test_adoption_marker_read_fails_when_nofollow_is_unavailable(self) -> None:
+        with project_copy(git=True) as root:
+            self._adopt_architecture(root)
+            route = build_route(root, 'Review current architecture', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            with patch.object(architecture_module.os, 'O_NOFOLLOW', 0):
+                report = verify(root, mode='fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertIn('no-follow', _check(report, 'architecture')['summary'])
+
+    def test_clean_legacy_repository_remains_unconfigured_without_nofollow(self) -> None:
+        with project_copy(git=False) as root:
+            (root / 'architecture').mkdir(exist_ok=True)
+            route = build_route(root, 'Review current code', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            with patch.object(architecture_module.os, 'O_NOFOLLOW', 0):
+                report = verify(root, mode='fast', record=False)
+            self.assertEqual(report['architecture']['status'], 'not_configured')
+
+    def test_clean_legacy_without_architecture_avoids_descriptor_only_metadata(self) -> None:
+        with project_copy(git=False) as root:
+            architecture = root / 'architecture'
+            if architecture.exists():
+                shutil.rmtree(architecture)
+            route = build_route(root, 'Review current code', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            real_stat = receipts_module.os.stat
+            real_open = receipts_module.os.open
+
+            def legacy_stat(path, *args, **kwargs):
+                if kwargs.get('dir_fd') is not None:
+                    raise NotImplementedError('dir_fd unavailable')
+                return real_stat(path, *args, **kwargs)
+
+            def legacy_open(path, flags, *args, **kwargs):
+                if Path(path) == root and flags & getattr(os, 'O_DIRECTORY', 0):
+                    raise NotImplementedError('descriptor directory open unavailable')
+                if kwargs.get('dir_fd') is not None:
+                    raise NotImplementedError('descriptor-relative open unavailable')
+                return real_open(path, flags, *args, **kwargs)
+
+            with (
+                patch.object(architecture_module.os, 'O_NOFOLLOW', 0),
+                patch.object(receipts_module.os, 'stat', side_effect=legacy_stat),
+                patch.object(receipts_module.os, 'open', side_effect=legacy_open),
+            ):
+                try:
+                    binding = receipts_module.active_architecture_binding(root, route)
+                except NotImplementedError as exc:
+                    self.fail(f'legacy absence leaked unsupported metadata primitive: {exc}')
+            self.assertIsNone(binding)
+
+    def test_legacy_absence_cannot_hide_authority_created_during_probe(self) -> None:
+        with project_copy(git=False) as root:
+            architecture = root / 'architecture'
+            if architecture.exists():
+                shutil.rmtree(architecture)
+            real_lstat = receipts_module.os.lstat
+            created = False
+
+            def create_after_missing(path):
+                nonlocal created
+                try:
+                    return real_lstat(path)
+                except FileNotFoundError as exc:
+                    if Path(path) == architecture and not created:
+                        created = True
+                        self._adopt_architecture(root)
+                    raise exc
+
+            with patch.object(receipts_module.os, 'lstat', side_effect=create_after_missing):
+                with self.assertRaises((architecture_module.ArchitectureError, RuntimeError)):
+                    receipts_module.active_architecture_binding(root, {})
+            self.assertTrue(created)
+            self.assertTrue((architecture / 'adoption.json').is_file())
+
+    def test_marker_backed_merge_deletion_fails_without_history_inference(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current architecture', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            legacy = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+            ).strip()
+            main_branch = subprocess.check_output(
+                ['git', 'branch', '--show-current'], cwd=root, text=True, encoding='utf-8'
+            ).strip()
+            self._adopt_architecture(root)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=root, check=True)
+            subprocess.run(['git', 'checkout', '-qb', 'legacy-side', legacy], cwd=root, check=True)
+            (root / 'side.txt').write_text('side\n', encoding='utf-8')
+            subprocess.run(['git', 'add', 'side.txt'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'legacy side'], cwd=root, check=True)
+            subprocess.run(['git', 'checkout', '-q', main_branch], cwd=root, check=True)
+            subprocess.run(['git', 'merge', '--no-commit', '--no-ff', 'legacy-side'], cwd=root, check=True)
+            (root / 'architecture/adoption.json').unlink()
+            (root / 'architecture/system.yaml').unlink()
+            (root / 'architecture/rules.yaml').unlink()
+            subprocess.run(['git', 'add', '-u'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'merge with architecture deletion'], cwd=root, check=True)
+
+            report = verify(root, mode='fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertIn('missing', _check(report, 'architecture')['summary'])
+
+    def test_marker_backed_shallow_deletion_fails_at_depth_one(self) -> None:
+        with project_copy(git=True) as source, tempfile.TemporaryDirectory() as tmp:
+            self._adopt_architecture(source)
+            subprocess.run(['git', 'add', '.'], cwd=source, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=source, check=True)
+            adopted = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=source, text=True, encoding='utf-8'
+            ).strip()
+            (source / 'architecture/adoption.json').unlink()
+            (source / 'architecture/system.yaml').unlink()
+            (source / 'architecture/rules.yaml').unlink()
+            subprocess.run(['git', 'add', '-u'], cwd=source, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'delete architecture'], cwd=source, check=True)
+            clone = Path(tmp) / 'shallow'
+            subprocess.run(
+                ['git', 'clone', '-q', '--depth=1', f'file://{source}', str(clone)],
+                check=True,
+            )
+            subprocess.run(
+                ['git', 'fetch', '-q', '--depth=1', 'origin', f'{adopted}:refs/architecture/adoption-base'],
+                cwd=clone,
+                check=True,
+            )
+            set_active_route(clone, {
+                'base_commit': adopted,
+                'quality_profiles': ['base'],
+                'route_id': 'shallow-adoption-deletion',
+            })
+
+            report = verify(clone, mode='fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertIn('missing', _check(report, 'architecture')['summary'])
+
+    def test_shallow_descendant_cannot_hide_prior_adoption_from_legacy_route(self) -> None:
+        with project_copy(git=True) as source, tempfile.TemporaryDirectory() as tmp:
+            legacy = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=source, text=True, encoding='utf-8'
+            ).strip()
+            self._adopt_architecture(source)
+            subprocess.run(['git', 'add', '.'], cwd=source, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt architecture'], cwd=source, check=True)
+            for name in ('adoption.json', 'system.yaml', 'rules.yaml'):
+                (source / 'architecture' / name).unlink()
+            subprocess.run(['git', 'add', '-u'], cwd=source, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'delete architecture'], cwd=source, check=True)
+            (source / 'unrelated.txt').write_text('later\n', encoding='utf-8')
+            subprocess.run(['git', 'add', 'unrelated.txt'], cwd=source, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'later descendant'], cwd=source, check=True)
+
+            clone = Path(tmp) / 'shallow'
+            subprocess.run(
+                ['git', 'clone', '-q', '--depth=1', f'file://{source}', str(clone)],
+                check=True,
+            )
+            subprocess.run(
+                ['git', 'fetch', '-q', '--depth=1', 'origin', f'{legacy}:refs/architecture/route-base'],
+                cwd=clone,
+                check=True,
+            )
+            set_active_route(clone, {
+                'base_commit': legacy,
+                'quality_profiles': ['base'],
+                'route_id': 'shallow-legacy-route-after-deletion',
+            })
+            report = verify(clone, mode='fast', record=False)
+            self.assertEqual(report['status'], 'fail')
+            self.assertIn('history', _check(report, 'architecture')['summary'])
+
+    def test_malformed_adoption_marker_fails_closed(self) -> None:
+        malformed = (
+            '{}\n',
+            '{"architecture_id":"ARCH-ADAPTIVE-GROK-M2","schema_version":1,"state":"adopted"}\n',
+        )
+        for marker in malformed:
+            with self.subTest(marker=marker), project_copy(git=True) as root:
+                path = root / 'architecture/adoption.json'
+                path.parent.mkdir(parents=True)
+                path.write_text(marker, encoding='utf-8')
+                report = verify(root, mode='fast', record=False)
+                self.assertEqual(report['status'], 'fail')
+                self.assertEqual(_check(report, 'architecture')['status'], 'fail')
 
     def test_python_runs_unittest_without_project_marker(self) -> None:
         with project_copy(git=True) as root:
@@ -282,6 +629,73 @@ class VerificationTests(unittest.TestCase):
             names = _names(results)
             self.assertIn('pytest', names)
             self.assertNotIn('python-unittest', names)
+
+
+class TypedSpecVerificationTests(unittest.TestCase):
+    def test_pr_selects_active_and_every_changed_spec(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            set_active_route(root, route)
+            start_change(root)
+            active = get_active_change(root) or {}
+            active_rel = f"{active['path']}/change-spec.yaml"
+            (root / active_rel).write_text(dump_canonical_spec(_valid_change_spec(active['change_id'])), encoding='utf-8')
+            other_rel = 'engineering/changes/20260826-other/change-spec.yaml'
+            other = root / other_rel
+            other.parent.mkdir(parents=True)
+            other.write_text(dump_canonical_spec(_valid_change_spec('20260826-other')), encoding='utf-8')
+            check, metadata = _change_specs(root, [other_rel], route, 'pr')
+            self.assertEqual(check.status, 'pass')
+            self.assertEqual([item['path'] for item in metadata['specs']], sorted([active_rel, other_rel]))
+
+    def test_changed_v1_and_missing_selected_spec_fail(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            set_active_route(root, route)
+            start_change(root)
+            active = get_active_change(root) or {}
+            active_path = root / str(active['path']) / 'change-spec.yaml'
+            active_path.write_text(dump_canonical_spec(_valid_change_spec(active['change_id'])), encoding='utf-8')
+            legacy_rel = 'engineering/changes/20260826-legacy/change-spec.yaml'
+            legacy = root / legacy_rel
+            legacy.parent.mkdir(parents=True)
+            legacy.write_text('schema_version: 1\nchange_id: 20260826-legacy\n', encoding='utf-8')
+            check, _ = _change_specs(root, [legacy_rel], route, 'pr')
+            self.assertEqual(check.status, 'fail')
+            missing_rel = 'engineering/changes/20260826-missing/change-spec.yaml'
+            check, _ = _change_specs(root, [missing_rel], route, 'pr')
+            self.assertEqual(check.status, 'fail')
+            self.assertTrue(any(item['code'] == 'spec-missing' for item in check.details))
+
+    def test_fast_is_draft_but_pr_is_gate(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            set_active_route(root, route)
+            start_change(root)
+            active = get_active_change(root) or {}
+            rel = f"{active['path']}/change-spec.yaml"
+            draft = _valid_change_spec(active['change_id'])
+            draft['objective']['success_metric'] = 'UNKNOWN'
+            draft['objective']['target'] = 'UNKNOWN'
+            draft['acceptance_criteria'][0]['evidence'] = []
+            (root / rel).write_text(dump_canonical_spec(draft), encoding='utf-8')
+            fast, fast_metadata = _change_specs(root, [], route, 'fast')
+            gate, gate_metadata = _change_specs(root, [], route, 'pr')
+            self.assertEqual(fast.status, 'pass', fast.details)
+            self.assertEqual(fast_metadata['specs'][0]['profile'], 'draft')
+            self.assertEqual(gate.status, 'fail')
+            self.assertEqual(gate_metadata['specs'][0]['profile'], 'gate')
+
+    def test_docs_micro_exemption_is_exact(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Исправить документацию', 's1').to_dict()
+            route.update({'complexity': 'micro', 'risk': 'low', 'delivery_expected': True})
+            docs_check, docs_metadata = _change_specs(root, ['docs/x.md'], route, 'pr')
+            code_check, code_metadata = _change_specs(root, ['src/x.py'], route, 'pr')
+            self.assertEqual(docs_check.status, 'skip')
+            self.assertTrue(docs_metadata['exempt'])
+            self.assertEqual(code_check.status, 'fail')
+            self.assertFalse(code_metadata['exempt'])
 
 
 class QualityContourTests(unittest.TestCase):

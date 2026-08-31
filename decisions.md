@@ -2,6 +2,18 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-08-26 — Isolate local PostgreSQL proof in a dedicated database
+
+Use `adaptive_grok_build_pro_test` with four bounded `NOLOGIN` Trust CI roles inside the already-running local PostgreSQL service. Dedicated data and least-privilege roles prove migration/store behavior without touching application schemas or representing the run as deployment.
+
+## 2026-08-26 — Version the strict typed contract as change-spec v2
+
+Freeze schema v1 and its YAML-subset reader for explicit unchanged-history compatibility only; every new or modified spec is canonical JSON using schema v2. This prevents malformed canonical input from downgrading into legacy parsing and gives the exactly-one-key evidence model a new contract identity.
+
+## 2026-08-26 — Rebuild M1 from the approved branch, not the stale baseline
+
+The user explicitly approved rebuilding from the roadmap and its M1 design; preserve merged M0 and later repairs because the roadmap forbids discarding newer work. Treat the existing M1 prototype as characterization input, use dual-read/single-write migration, and deliver trusted-runtime deployment as a separate externally approved operation.
+
 ## 2026-08-24 — M0.3 bind main; revoke bootstrap exceptions
 
 Live App-owned check `adaptive-trust-ci/verified@6737355947c2` is bound to GitHub App ID `4694114` on protected `main`. Revoke the 2026-08-23 M1-start / PR #2 / PR #4 bootstrap exceptions because that live App-owned check exists (never by forging one). PR #5 stays unmerged while Check Run `97529209576` is `action_required`.
@@ -166,3 +178,73 @@ Reuse the active route only when `FOLLOW_UP_RE` matches the whole prompt, or the
 ## 2026-08-24 — M0 CI host is claw, not a laptop
 
 The M0 Trust CI host is hostname `claw` (Xeon E5-2680 v4, ~16 GiB ECC, Ubuntu 24.04). Never call it a laptop; SearXNG already owns `127.0.0.1:8080` and co-located n8n/app databases remain residual risk the user accepted. Trust CI therefore publishes another loopback port (`127.0.0.1:18080` by default) with compose project `adaptive-trust-ci`.
+
+## 2026-08-26 — Qualify aggregate criterion identity by spec path
+
+Acceptance-criterion IDs are local to one change spec, so multi-spec attestation coverage uses `engineering/changes/<change>/change-spec.yaml#AC-NNN` while single-spec coverage keeps the historical bare ID. This preserves deterministic, unambiguous aggregation without inventing a repository-global criterion namespace.
+
+## 2026-08-26 — Git path identity is NUL-delimited data
+
+Trusted changed-file and mutation discovery consumes byte-oriented `git ... -z` output, decodes each path as strict UTF-8, and preserves Unicode, whitespace, and backslash characters exactly. Display-oriented line output and slash rewriting are never approval or provenance inputs.
+
+## 2026-08-26 — Architecture adoption is explicit target state
+
+Use a strict, target-owned `architecture/adoption.json` marker as the adoption switch; diagrams, model drafts, and receipts are evidence rather than durable adoption authority. Marker/model absence preserves legacy `not_configured` only when current/route-base trees contain no authority and bounded history contains no canonical adoption marker; incomplete shallow history fails closed because it cannot prove legacy absence.
+
+## 2026-08-26 — Install architecture tools, never target authority
+
+The installer manages architecture modules, CLI, strict schemas, and non-authoritative examples, while an explicit denylist protects `architecture/adoption.json`, `architecture/system.yaml`, and `architecture/rules.yaml` even if a future managed list includes them accidentally. Repository owners adapt and validate the examples, then create the canonical marker manually as the final adoption step.
+
+## 2026-08-27 — Projection rendering is read-only
+
+Return deterministic Mermaid artifacts on stdout and keep checked-in projection updates in the normal reviewed source-edit path; removing the in-place writer eliminated unnecessary repository mutation capability. Queue applicability uses one bounded package-aware provenance result for both fitness and risk so uncertainty fails closed without turning unrelated method names into queue signals.
+
+## 2026-08-27 — Preserve provenance identity and installer mutation ownership
+
+Queue provenance retains tuple/list positions and dictionary keys so only the changed operation's dependency can trigger fitness/risk; ambiguous selection over queue and non-queue values is explicitly unsupported. Installer-created directories remain transaction-owned until complete-path identity is reproved, allowing relocation failure to remove only operation-created entries and restore exact file mode under umask.
+
+## 2026-08-27 — Replace patch accumulation with semantic joins and single-publication install
+
+After repeated adjacent review failures, model queue provenance with bounded monotone abstract values and control-flow joins instead of syntax-specific overwrites. Make installation read-only for existing repositories and publish only a fully prepared new target with one atomic rename, eliminating the impossible promise that a failed rollback can always restore already-mutated external bytes.
+
+## 2026-08-27 — Charge alias components before copying or merging
+
+Represent may-alias state as one member set per component plus a name-to-component map, union smaller components into larger ones, and charge create, merge, fork, and mutation work before performing it. This removes duplicated per-name closure state and makes the configured value ceiling bound alias analysis as well as abstract values.
+
+## 2026-08-27 — Created names are not cleanup ownership proof
+
+Bind cleanup identity from the descriptor returned by the original create/open sequence and compare the current no-follow name before removal. If the directory-create gap or descriptor identity failure leaves ownership unresolved, preserve the entry and emit an exact manual-cleanup diagnostic instead of adopting a later same-name occupant.
+
+## 2026-08-28 — Derived data artifacts are first-class fitness inputs
+
+Treat packaged migration mirrors as applicability and inventory roots, not as checks reached only through a primary-path change. Secret-bearing data classifications require an explicitly authenticated `secret_flow`, while source ownership and allowed-data edges describe the credentialed process that actually performs the read or write.
+
+## 2026-08-28 — Bound migration work before crossing expensive stages
+
+Charge conservative schema, derived-root, matching, inventory, semantic-plan, and blob-read work before each stage, and consume SQL statements lazily. This makes every exhausted budget a typed unsupported result without first performing the work the budget is meant to bound.
+
+## 2026-08-28 — Canonical migrations seed phased history
+
+Treat the immutable `001_schema`, `002_operational_indexes`, and `003_database_roles` names as exact logical versions in history while reserving expand/migrate/contract semantics for new phased artifacts. This preserves the repository's established convention while making version 004 contiguous and rejecting phased reuse of versions 001–003.
+Legacy versus phased identity is tracked independently of the free-form group text, so a phased group cannot evade the reservation by copying a canonical stem.
+
+## 2026-08-29 — Scope build trust and metadata to the operation
+
+Read-only CI helpers pass the exact canonical repository as command-scoped Git trust while continuing to ignore host configuration. Archive metadata is rendered in memory, leaving explicit generation as the only operation allowed to write the source manifest.
+The final measured compatibility diff is 10,739 lines, so the repository-owned architecture ceiling moves narrowly from 10,000 to 10,820 instead of weakening the security or streaming implementation.
+
+## 2026-08-29 — Bind package bytes at the repository descriptor boundary
+
+Exclude symlinks/non-regular entries and open every source component root-relative with `O_NOFOLLOW`, then require the same identity and digest during manifest hashing and ZIP streaming. Create the random sibling with `O_EXCL|O_NOFOLLOW`, retain its fd and digest authority through publication, accept success only after the output name matches that inode, and resolve POSIX-only capabilities lazily so explicit legacy manifest helpers remain portable. Bind all output operations to one effective-UID-owned private parent fd beneath trusted/non-renamable ancestors, no-follow-bind and `fchmod` every newly created parent to exact `0700`, and publish the sidecar from its own exclusive verified fd so pre-existing names are never opened or followed.
+
+## 2026-08-31 — Classify only proven zombie-only post-KILL groups as cleaned up
+
+Retain TERM/KILL/reap, reserve a bounded tail of KILL grace for one read-only procfs scan, and preserve the original command error only if every observed matching PGID member is positively `Z`. Live or incomplete procfs evidence remains fail-closed, avoiding both container zombie error masking and cleanup weakening.
+
+## 2026-08-31 — Keep frozen-adoption receipt tests scoped to their binding contract
+
+The receipt regression proves selected base, route-base, fingerprint, and evidence consistency; it must not assert a global fitness pass for every later stacked worktree. Architecture fitness continues to run independently against the active route base and retains the mixed-change policy.
+
+## 2026-08-31 — Test bounded procfs classification without the host procfs
+
+Mocking `scandir`, stat-file open/read, and monotonic time directly exercises parser and fail-closed branches deterministically while the existing runner regression continues to prove real descendant cleanup. This separates host-dependent process behavior from the security decision over procfs evidence.

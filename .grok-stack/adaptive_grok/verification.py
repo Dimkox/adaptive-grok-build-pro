@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sys
@@ -7,8 +8,13 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from .bitrix_checks import check_bitrix
-from .receipts import write_receipt
-from .state import get_active_route
+from .architecture import ArchitectureError, load_architecture, validate_repository_drift
+from .architecture_diagrams import artifact_digests, compare_generated, render_diagrams
+from .architecture_diff import select_architecture_comparison_base
+from .architecture_fitness import diff_architecture, evaluate_fitness
+from .receipts import active_architecture_binding, write_receipt
+from .spec import canonical_spec_digest, criterion_coverage, load_spec, spec_fingerprint, validate_spec
+from .state import get_active_change, get_active_route
 from .util import changed_files, command_exists, now_utc, read_text_limited, run, tree_fingerprint
 
 
@@ -25,6 +31,144 @@ class CheckResult:
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
+
+
+def _canonical_digest(value: object) -> str:
+    raw = json.dumps(value, ensure_ascii=True, sort_keys=True, separators=(",", ":")) + "\n"
+    return hashlib.sha256(raw.encode("ascii")).hexdigest()
+
+
+def _architecture_base(root: Path, route: dict[str, object] | None) -> str:
+    return select_architecture_comparison_base(root, route).comparison_base_sha
+
+
+def _risk_level(route: dict[str, object] | None) -> str:
+    risk = str((route or {}).get("risk") or "low")
+    fallback = risk if risk in {"green", "yellow", "red"} else "red"
+    return {"low": "green", "medium": "yellow", "high": "red"}.get(risk, fallback)
+
+
+def _architecture_check(
+    root: Path,
+    route: dict[str, object] | None,
+) -> tuple[CheckResult, dict[str, object]]:
+    try:
+        binding = active_architecture_binding(root, route or {})
+        if binding is None:
+            return (
+                CheckResult("architecture", "skip", "architecture is not configured"),
+                {"configured": False, "status": "not_configured"},
+            )
+        snapshot = load_architecture(root)
+        base_selection = select_architecture_comparison_base(root, route)
+        base = base_selection.comparison_base_sha
+        if (
+            binding["architecture_base_sha"] != base
+            or binding["architecture_base_kind"] != base_selection.base_kind
+            or binding["architecture_bootstrap_baseline"]
+            != base_selection.bootstrap_baseline
+            or binding["architecture_route_base_sha"] != base_selection.route_base_sha
+        ):
+            raise ArchitectureError("architecture base binding is inconsistent", code="git")
+        diff = diff_architecture(
+            root,
+            base_sha=base,
+            worktree=True,
+            _trusted_base_selection=base_selection,
+        )
+        fitness = evaluate_fitness(
+            root,
+            snapshot,
+            diff,
+            diff.changed_paths,
+            pre_risk=_risk_level(route),
+        )
+        drift = validate_repository_drift(root, snapshot)
+        rendered = render_diagrams(snapshot)
+        mismatches = compare_generated(root, rendered)
+        drift_status = "fail" if drift else "pass"
+        diagram_status = "fail" if mismatches else "pass"
+        failed = fitness.status != "pass" or bool(drift) or bool(mismatches)
+        core: dict[str, object] = {
+            "architecture_contract_version": 1,
+            "adoption_digest": binding["architecture_adoption_digest"],
+            "architecture_digest": binding["architecture_digest"],
+            "architecture_fingerprint": binding["architecture_fingerprint"],
+            "architecture_base_kind": binding["architecture_base_kind"],
+            "architecture_bootstrap_baseline": binding[
+                "architecture_bootstrap_baseline"
+            ],
+            "architecture_route_base_sha": binding["architecture_route_base_sha"],
+            "baseline_introduced": diff.baseline_introduced,
+            "base_adoption_state": diff.base_adoption_state,
+            "head_adoption_state": diff.head_adoption_state,
+            "base_adoption_digest": diff.base_adoption_digest,
+            "head_adoption_digest": diff.head_adoption_digest,
+            "contract_inventory_digest": binding["architecture_contract_inventory_digest"],
+            "diff_digest": diff.digest,
+            "drift_status": drift_status,
+            "exact_base_sha": diff.base_sha,
+            "base_kind": "commit",
+            "fitness_evidence_digest": fitness.evidence_digest,
+            "fitness_status": fitness.status,
+            "generated_artifact_digests": artifact_digests(rendered),
+            "head_kind": "worktree",
+            "repository_inventory_digest": diff.repository_inventory_digest,
+            "risk_escalation": fitness.escalation,
+            "risk_post": fitness.post_risk,
+            "risk_pre": fitness.pre_risk,
+            "rules_digest": binding["architecture_rules_digest"],
+            "schema_digest": binding["architecture_schema_digest"],
+            "system_digest": binding["architecture_system_digest"],
+        }
+        core["architecture_evidence_digest"] = _canonical_digest(core)
+        metadata = {
+            "configured": True,
+            "diagram_status": diagram_status,
+            "diagram_mismatches": list(mismatches),
+            "drift_findings": [asdict(item) for item in drift],
+            "status": "fail" if failed else "pass",
+            **core,
+        }
+        details = [asdict(item) for item in drift]
+        details.extend(
+            {
+                "severity": "error",
+                "code": "generated-diagram-drift",
+                "path": path,
+                "message": "generated Mermaid projection differs from the architecture model",
+            }
+            for path in mismatches
+        )
+        if fitness.status != "pass":
+            details.append(
+                {
+                    "severity": "error",
+                    "code": "architecture-fitness",
+                    "path": "architecture/rules.yaml",
+                    "message": f"architecture fitness status is {fitness.status}",
+                }
+            )
+        return (
+            CheckResult(
+                "architecture",
+                "fail" if failed else "pass",
+                f"drift={drift_status}; fitness={fitness.status}; diagrams={diagram_status}",
+                details=details,
+            ),
+            metadata,
+        )
+    except (ArchitectureError, RuntimeError, OSError, ValueError) as exc:
+        details = [{
+            "severity": "error",
+            "code": getattr(exc, "code", "architecture-invalid"),
+            "path": "architecture",
+            "message": str(exc),
+        }]
+        return (
+            CheckResult("architecture", "fail", str(exc), details=details),
+            {"configured": True, "error": str(exc), "status": "fail"},
+        )
 
 
 def _command_check(root: Path, name: str, command: list[str], timeout: int = 300) -> CheckResult:
@@ -131,6 +275,60 @@ def _sql_safety(root: Path, files: list[str]) -> CheckResult:
             if re.search(pattern, text):
                 findings.append({'severity': 'error', 'code': code, 'path': rel, 'message': 'Potentially destructive or unbounded SQL requires explicit migration approval.'})
     return CheckResult('sql-safety', 'fail' if findings else 'pass', f'{len(findings)} unsafe SQL findings', details=findings)
+
+
+def _docs_micro_exempt(route: dict[str, object] | None, files: list[str]) -> bool:
+    if not route or route.get('complexity') != 'micro' or route.get('risk') != 'low':
+        return False
+    product = [rel for rel in files if not rel.startswith('engineering/changes/')]
+    return bool(product) and all(
+        rel.startswith('docs/') or Path(rel).suffix.lower() in {'.md', '.txt', '.rst'}
+        for rel in product
+    )
+
+
+def _change_specs(root: Path, files: list[str], route: dict[str, object] | None, mode: str) -> tuple[CheckResult, dict[str, object]]:
+    gate = mode in {'pr', 'release'}
+    exempt = _docs_micro_exempt(route, files)
+    selected = {
+        rel for rel in files
+        if rel.startswith('engineering/changes/') and rel.endswith('/change-spec.yaml')
+    }
+    active = get_active_change(root) or {}
+    active_rel = None
+    if active.get('path'):
+        active_rel = f"{str(active['path']).rstrip('/')}/change-spec.yaml"
+        selected.add(active_rel)
+    findings: list[dict[str, str]] = []
+    records: list[dict[str, object]] = []
+    if gate and route and route.get('delivery_expected') and not active_rel and not exempt:
+        findings.append({'severity': 'error', 'code': 'active-spec-missing', 'path': '', 'message': 'PR/release validation requires an active typed spec.'})
+    for rel in sorted(selected):
+        path = root / rel
+        if not path.is_file():
+            findings.append({'severity': 'error', 'code': 'spec-missing', 'path': rel, 'message': 'Selected change spec is missing.'})
+            continue
+        errors = validate_spec(root, path, gate=gate and not exempt, route=route)
+        record: dict[str, object] = {'path': rel, 'profile': 'gate' if gate else 'draft', 'valid': not errors, 'errors': errors}
+        if not errors:
+            try:
+                spec = load_spec(path, allow_legacy=False)
+                record.update({
+                    'digest': canonical_spec_digest(spec),
+                    'fingerprint': spec_fingerprint(root, path, spec, route),
+                    'coverage': criterion_coverage(spec),
+                })
+            except (OSError, ValueError) as exc:
+                errors = [str(exc)]
+                record['valid'] = False
+                record['errors'] = errors
+        for error in errors:
+            findings.append({'severity': 'error', 'code': 'change-spec-invalid', 'path': rel, 'message': error})
+        records.append(record)
+    metadata: dict[str, object] = {'exempt': exempt, 'specs': records}
+    if active_rel:
+        metadata['active_path'] = active_rel
+    return CheckResult('change-spec', 'fail' if findings else ('skip' if exempt and not selected else 'pass'), f'{len(records)} specs checked; exempt={exempt}', details=findings), metadata
 
 
 def _composer(root: Path) -> list[CheckResult]:
@@ -305,8 +503,13 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
     base = route.get('base_commit') if route else None
     files = changed_files(root, base)
 
+    spec_check, spec_metadata = _change_specs(root, files, route, mode)
+    architecture_check, architecture_metadata = _architecture_check(root, route)
+
     results: list[CheckResult] = [
         _git_diff_check(root),
+        spec_check,
+        architecture_check,
         _secret_scan(root, files),
         _contracts(root, files),
         _sql_safety(root, files),
@@ -335,6 +538,8 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
         'route_id': route.get('route_id') if route else None,
         'tree_fingerprint': tree_fingerprint(root),
         'changed_files': files,
+        'spec': spec_metadata,
+        'architecture': architecture_metadata,
         'status': 'pass' if not failures else 'fail',
         'checks': [item.to_dict() for item in results],
     }
