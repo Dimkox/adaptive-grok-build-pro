@@ -7,11 +7,10 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 - M0 (Live Trust Authority) is complete and merged into `main`.
 - M0 runtime repair and policy-loop fixes are also merged into `main` through PR #7 and PR #6.
 - The independent App-owned merge gate is live as `adaptive-trust-ci/verified@6737355947c2` and protected `main` binds that check to GitHub App ID `4694114`.
-- The current development milestone is M1: Typed Intent, Acceptance Criteria, and Evidence Traceability.
-- M1 is tracked in draft PR #8 on branch `milestone/m1-typed-intent-evidence`.
-- M1 design: `docs/superpowers/specs/2026-08-26-m1-typed-intent-evidence-design.md` on the PR #8 branch.
-- M1 implementation plan: `docs/superpowers/plans/2026-08-26-m1-typed-intent-evidence.md` on the PR #8 branch.
-- M1 implementation has not started yet. The next implementation action is Task 1 in that plan: strict typed schema and zero-dependency validator, using TDD.
+- The current source identity is v2.1.0. M1, M2, and M3 plus the investor demo MVP are locally complete source candidates on PR #15, branch `mvp/investor-ready`, targeting `main`.
+- PR #15 is open; it is not merged or deployed. No repository prose, local test, receipt, or bundled demo evidence claims that the App-owned Trust CI check passed for its current exact SHA.
+- The pre-fix merge head was `3af0e803c8d763f227f0669e3c614806a90fc75b`. This bootstrap correction creates a newer head, so that SHA is context only and cannot be reused as current verification or approval evidence.
+- The next action is the App-owned exact-SHA external Trust CI check for the new PR #15 head and all required approvals. Merge and deployment remain human/operator-controlled actions after those gates succeed.
 
 Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
 
@@ -26,7 +25,7 @@ Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
    - `DARK_FACTORY_ROADMAP.md`
    - `README.md`
 2. Run `git fetch --all --prune` before reasoning about active branches or pull requests.
-3. If continuing M1, inspect PR #8 and branch `milestone/m1-typed-intent-evidence`, then read the M1 design and plan before changing code.
+3. If continuing the current product candidate, inspect PR #15 and branch `mvp/investor-ready`, then read the v2.1.0 current-state section in `README.md`, the investor demo [design](docs/superpowers/specs/2026-08-30-investor-demo-mvp-design.md), and its [plan](docs/superpowers/plans/2026-08-30-investor-demo-mvp.md) before changing code.
 4. If starting a different software-development task, create/resolve the local route first. `.grok-stack/runtime/active-route.json` is runtime state and may legitimately be absent in a fresh clone; do not fabricate it.
 5. Follow `AGENTS.md`: one write owner, route-selected analysis/review agents, local verification as evidence, pull-request-only delivery, and external Trust CI as merge authority.
 6. Never add GitHub Actions.
@@ -52,20 +51,18 @@ The source and runbooks for the independent merge authority are under `trust-ci/
 
 Before changing Trust CI behavior, read the current deployed-policy/holdout constraints in `AGENTS.md` and the activation/rollout runbooks. Repository code cannot itself alter deployed trust material.
 
-## Current M1 handoff
+## Current candidate handoff
 
-PR #8 contains design and plan only. Treat them as the current approved implementation contract. Do not re-design M1 from chat memory and do not skip directly to M2.
+PR #15 contains the locally complete v2.1.0 source candidates for M1 typed intent, M2 executable architecture, M3 controlled knowledge and debt, and the investor demo MVP. Local completion means the implementations and their focused evidence exist in the branch; it is not external merge authority and does not prove that the current PR SHA passed Trust CI.
 
-Implementation order is the six tasks in the M1 plan:
+The next action is delivery verification, not restarting an obsolete early implementation task:
 
-1. strict typed schema and zero-dependency validator;
-2. route-driven spec generation and Markdown authority links;
-3. CLI, verification integration, criterion-bound receipts and staleness;
-4. independent holdout enforcement;
-5. Trust CI attestation spec digest and criterion coverage;
-6. durable M1 package, roadmap evidence, full verification, exact-SHA Trust CI, then merge.
+1. use the actual current PR #15 head SHA, not the pre-fix `3af0e803c8d763f227f0669e3c614806a90fc75b` context SHA;
+2. require the App-owned `adaptive-trust-ci/verified@6737355947c2` check for that exact SHA;
+3. obtain every required human-signed approval scope outside the agent environment;
+4. merge or deploy only through the separately authorized human/operator workflow after all gates succeed.
 
-If the PR head moves, use the branch/PR as source of truth rather than copying an old SHA from documentation.
+If the PR head moves again, use the branch/PR as source of truth and require fresh exact-SHA evidence rather than copying an older SHA from documentation.
 
 ## No chat dependency
 

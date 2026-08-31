@@ -183,6 +183,61 @@ class StructureTests(unittest.TestCase):
         self.assertEqual(adaptive_grok.__version__, version)
         self.assertIn(f"## {version} — 2026-08-30", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"))
 
+    def test_fresh_agent_bootstrap_tracks_current_v2_candidate(self) -> None:
+        state = json.loads((ROOT / "PROJECT_STATE.json").read_text(encoding="utf-8"))
+        start_here = (ROOT / "START_HERE.md").read_text(encoding="utf-8")
+
+        self.assertEqual(state["source_identity"], "2.1.0")
+        self.assertEqual(
+            state["locally_complete_candidates"],
+            ["M1", "M2", "M3", "investor-demo-mvp"],
+        )
+        active = state["active_work"]
+        self.assertEqual(active["pull_request"], 15)
+        self.assertEqual(active["branch"], "mvp/investor-ready")
+        self.assertEqual(active["target_branch"], "main")
+        self.assertEqual(
+            active["pre_fix_head"],
+            "3af0e803c8d763f227f0669e3c614806a90fc75b",
+        )
+        self.assertEqual(
+            active["delivery_state"],
+            {
+                "external_trust_ci": "pending_exact_sha",
+                "required_approvals": "pending",
+                "merged": False,
+                "deployed": False,
+            },
+        )
+        self.assertIn("exact-SHA", active["next_action"])
+        self.assertIn("required approvals", active["next_action"])
+
+        for current_claim in (
+            "v2.1.0",
+            "PR #15",
+            "mvp/investor-ready",
+            "M1, M2, and M3",
+            "investor demo MVP",
+            "exact-SHA",
+            "required approvals",
+        ):
+            self.assertIn(current_claim, start_here)
+        for stale_claim in (
+            "PR #8",
+            "milestone/m1-typed-intent-evidence",
+            "M1 implementation has not started",
+            "Implement Task 1",
+        ):
+            self.assertNotIn(stale_claim, start_here)
+
+    def test_readme_retains_bitrix_and_license_sections(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("\n## Bitrix\n", readme)
+        self.assertIn("examples/bitrix-module/", readme)
+        self.assertIn("\n## License\n", readme)
+        self.assertIn("**MIT.**", readme)
+        self.assertIn("trust-ci/README.md", readme)
+
     def test_local_demo_is_documented_as_read_only_sample_evidence(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         quickstart = (ROOT / "QUICKSTART.md").read_text(encoding="utf-8")
