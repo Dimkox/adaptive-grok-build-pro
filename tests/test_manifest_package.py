@@ -3,11 +3,13 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import os
+import shutil
 import sys
 import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -203,10 +205,59 @@ class PackageTests(unittest.TestCase):
 
     def test_investor_demo_local_release_artifact_is_complete_and_checksum_bound(self) -> None:
         version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+        root_manifest = ROOT / "MANIFEST.sha256"
+        original_manifest = root_manifest.read_bytes() if root_manifest.exists() else None
+        root_dist = ROOT / "dist"
+
+        def dist_snapshot() -> dict[str, str] | None:
+            if not root_dist.exists():
+                return None
+            return {
+                path.relative_to(root_dist).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+                for path in sorted(root_dist.rglob("*"))
+                if path.is_file()
+            }
+
+        original_dist = dist_snapshot()
         with tempfile.TemporaryDirectory() as tmp:
-            archive_path = Path(tmp) / f"adaptive-grok-build-pro-v{version}.zip"
+            temporary_root = Path(tmp)
+            staging_root = temporary_root / "source"
+            staging_root.mkdir()
+            source_inventory = {
+                path.relative_to(ROOT).as_posix(): path
+                for path in included_files(ROOT)
+                if not path.relative_to(ROOT).as_posix().startswith(".grok-stack/runtime/")
+            }
+            self.assertTrue(source_inventory)
+            for relative, source in source_inventory.items():
+                destination = staging_root / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+
+            self.assertNotEqual(staging_root.resolve(), ROOT.resolve())
+            self.assertFalse((staging_root / ".git").exists())
+            self.assertFalse((staging_root / "dist").exists())
+            self.assertFalse((staging_root / ".grok-stack/runtime").exists())
+            staged_inventory = {
+                path.relative_to(staging_root).as_posix()
+                for path in included_files(staging_root)
+            }
+            self.assertEqual(staged_inventory, set(source_inventory))
+
+            archive_path = temporary_root / f"adaptive-grok-build-pro-v{version}.zip"
             checksum_path = archive_path.with_name(f"{archive_path.name}.sha256")
-            digest = PACKAGE.write_archive(ROOT, archive_path)
+            real_generate_manifest = PACKAGE.generate_manifest
+
+            def deny_original_root_write(root: Path) -> Path:
+                self.assertNotEqual(root.resolve(), ROOT.resolve())
+                return real_generate_manifest(root)
+
+            with mock.patch.object(
+                PACKAGE,
+                "generate_manifest",
+                side_effect=deny_original_root_write,
+            ):
+                digest = PACKAGE.write_archive(staging_root, archive_path)
             self.assertTrue(archive_path.is_file())
             self.assertTrue(checksum_path.is_file())
             expected = checksum_path.read_text(encoding="utf-8").split()[0]
@@ -214,7 +265,9 @@ class PackageTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256(archive_path.read_bytes()).hexdigest(), expected)
             with zipfile.ZipFile(archive_path) as archive:
                 names = set(archive.namelist())
-        self.assertFalse((ROOT / "MANIFEST.sha256").exists())
+        current_manifest = root_manifest.read_bytes() if root_manifest.exists() else None
+        self.assertEqual(current_manifest, original_manifest)
+        self.assertEqual(dist_snapshot(), original_dist)
         prefix = "adaptive-grok-build-pro/"
         required = {
             "VERSION",
