@@ -95,6 +95,180 @@ class GitWorkspaceLifecycleTests(unittest.TestCase):
         self.assertEqual(tuple(self.base_directory.iterdir()), ())
 
 
+class PostKillProcessGroupClassifierTests(unittest.TestCase):
+    process_group_id = 4242
+
+    @staticmethod
+    def _entry(pid: int) -> SimpleNamespace:
+        return SimpleNamespace(name=str(pid), path=f'/proc/{pid}')
+
+    @staticmethod
+    def _entries(*entries: SimpleNamespace) -> object:
+        class ScanEntries:
+            def __enter__(self) -> tuple[SimpleNamespace, ...]:
+                return entries
+
+            def __exit__(self, *_args: object) -> bool:
+                return False
+
+        return ScanEntries()
+
+    def _classify(
+        self,
+        entries: tuple[SimpleNamespace, ...],
+        stats: list[bytes],
+        *,
+        exists: bool = False,
+        deadline: float = 2.0,
+        monotonic: object = None,
+    ) -> str:
+        if monotonic is None:
+            monotonic = [0.0] * (len(entries) + len(stats) + 2)
+        with (
+            mock.patch.object(workspace_module.os, 'getpgrp', return_value=1),
+            mock.patch.object(workspace_module.os, 'scandir', return_value=self._entries(*entries)),
+            mock.patch.object(workspace_module.os, 'open', side_effect=range(100, 100 + len(stats))),
+            mock.patch.object(workspace_module.os, 'read', side_effect=stats),
+            mock.patch.object(workspace_module.os, 'close'),
+            mock.patch.object(workspace_module, '_process_group_exists', return_value=exists),
+            mock.patch.object(workspace_module.time, 'monotonic', side_effect=monotonic),
+        ):
+            return workspace_module._classify_post_kill_process_group(
+                self.process_group_id,
+                deadline=deadline,
+            )
+
+    def test_classifier_accepts_only_all_zombie_members_in_target_group(self) -> None:
+        self.assertEqual(
+            self._classify(
+                (self._entry(101), self._entry(102)),
+                [
+                    b'101 (leader) Z 1 4242 1 1',
+                    b'102 (descendant) Z 1 4242 1 1',
+                ],
+            ),
+            'zombie_only',
+        )
+
+    def test_classifier_treats_every_non_zombie_state_in_target_group_as_live(self) -> None:
+        for state in (b'R', b'S', b'X'):
+            with self.subTest(state=state):
+                self.assertEqual(
+                    self._classify(
+                        (self._entry(101),),
+                        [b'101 (target) ' + state + b' 1 4242 1 1'],
+                    ),
+                    'live',
+                )
+
+    def test_classifier_fails_closed_for_malformed_truncated_or_oversized_stat(self) -> None:
+        cases = {
+            'malformed': b'not a proc stat record',
+            'truncated': b'101 (target) Z 1',
+        }
+        for name, stat in cases.items():
+            with self.subTest(name=name):
+                self.assertEqual(self._classify((self._entry(101),), [stat]), 'unknown')
+        with mock.patch.object(workspace_module, '_MAX_PROCESS_GROUP_STAT_BYTES', 8):
+            self.assertEqual(
+                self._classify((self._entry(101),), [b'101 (target) Z 1 4242 1 1']),
+                'unknown',
+            )
+
+    def test_classifier_tolerates_vanished_pid_but_fails_closed_for_open_or_read_errors(self) -> None:
+        entry = self._entry(101)
+        with (
+            mock.patch.object(workspace_module.os, 'getpgrp', return_value=1),
+            mock.patch.object(workspace_module.os, 'scandir', return_value=self._entries(entry)),
+            mock.patch.object(workspace_module.os, 'open', side_effect=FileNotFoundError),
+            mock.patch.object(workspace_module, '_process_group_exists', return_value=False),
+            mock.patch.object(workspace_module.time, 'monotonic', return_value=0.0),
+        ):
+            self.assertEqual(
+                workspace_module._classify_post_kill_process_group(self.process_group_id, deadline=1.0),
+                'absent',
+            )
+        for operation, patcher in (
+            ('open', mock.patch.object(workspace_module.os, 'open', side_effect=OSError('denied'))),
+            ('read', mock.patch.object(workspace_module.os, 'read', side_effect=OSError('read failed'))),
+        ):
+            with (
+                self.subTest(operation=operation),
+                mock.patch.object(workspace_module.os, 'getpgrp', return_value=1),
+                mock.patch.object(workspace_module.os, 'scandir', return_value=self._entries(entry)),
+                mock.patch.object(workspace_module.time, 'monotonic', return_value=0.0),
+                patcher,
+            ):
+                if operation == 'read':
+                    with mock.patch.object(workspace_module.os, 'open', return_value=101), mock.patch.object(
+                        workspace_module.os, 'close'
+                    ):
+                        result = workspace_module._classify_post_kill_process_group(
+                            self.process_group_id,
+                            deadline=1.0,
+                        )
+                else:
+                    result = workspace_module._classify_post_kill_process_group(
+                        self.process_group_id,
+                        deadline=1.0,
+                    )
+                self.assertEqual(result, 'unknown')
+
+    def test_classifier_fails_closed_at_numeric_entry_cap_and_expired_deadline(self) -> None:
+        with mock.patch.object(workspace_module, '_MAX_PROCESS_GROUP_PROC_ENTRIES', 0):
+            self.assertEqual(self._classify((self._entry(101),), []), 'unknown')
+        self.assertEqual(
+            self._classify(
+                (self._entry(101),),
+                [b'101 (target) Z 1 4242 1 1'],
+                deadline=1.0,
+                monotonic=[0.0, 1.0],
+            ),
+            'unknown',
+        )
+
+    def test_classifier_fails_closed_when_deadline_expires_during_enumeration(self) -> None:
+        self.assertEqual(
+            self._classify(
+                (self._entry(101),),
+                [],
+                deadline=1.0,
+                monotonic=[1.0],
+            ),
+            'unknown',
+        )
+
+    def test_classifier_ignores_non_numeric_proc_entries(self) -> None:
+        entry = SimpleNamespace(name='self', path='/proc/self')
+        self.assertEqual(self._classify((entry,), [], exists=False), 'absent')
+
+    def test_classifier_requires_final_absence_proof_when_no_target_member_is_seen(self) -> None:
+        entry = self._entry(101)
+        stat = b'101 (other-group) Z 1 99 1 1'
+        self.assertEqual(self._classify((entry,), [stat], exists=False), 'absent')
+        self.assertEqual(self._classify((entry,), [stat], exists=True), 'unknown')
+
+    def test_classifier_fails_closed_when_final_group_probe_is_uninspectable(self) -> None:
+        entry = self._entry(101)
+        with (
+            mock.patch.object(workspace_module.os, 'getpgrp', return_value=1),
+            mock.patch.object(workspace_module.os, 'scandir', return_value=self._entries(entry)),
+            mock.patch.object(workspace_module.os, 'open', return_value=101),
+            mock.patch.object(workspace_module.os, 'read', return_value=b'101 (other) Z 1 99 1 1'),
+            mock.patch.object(workspace_module.os, 'close'),
+            mock.patch.object(
+                workspace_module,
+                '_process_group_exists',
+                side_effect=workspace_module.WorkspaceError('cannot inspect'),
+            ),
+            mock.patch.object(workspace_module.time, 'monotonic', return_value=0.0),
+        ):
+            self.assertEqual(
+                workspace_module._classify_post_kill_process_group(self.process_group_id, deadline=1.0),
+                'unknown',
+            )
+
+
 class WorkspaceStreamingTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
@@ -132,12 +306,19 @@ class WorkspaceStreamingTests(unittest.TestCase):
             os.kill(pid, 0)
         except ProcessLookupError:
             return False
-        return True
+        try:
+            state = Path(f'/proc/{pid}/stat').read_text(encoding='ascii').rsplit(') ', 1)[1][0]
+        except (FileNotFoundError, IndexError, OSError):
+            return True
+        return state != 'Z'
 
     def _force_probe_cleanup(self, pid: int | None) -> None:
         if pid is None or not self._pid_exists(pid):
             return
-        os.kill(pid, signal.SIGKILL)
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            return
         deadline = time.monotonic() + 2
         while self._pid_exists(pid) and time.monotonic() < deadline:
             time.sleep(0.01)
@@ -367,7 +548,7 @@ class WorkspaceStreamingTests(unittest.TestCase):
                             [sys.executable, '-c', self._descendant_leader_script(mode), str(pid_file)],
                             cwd=Path(self.temp.name),
                             env=dict(os.environ),
-                            timeout=0.2 if mode == 'timeout' else 5,
+                            timeout=1 if mode == 'timeout' else 5,
                             stdout_limit=128,
                             stderr_limit=128,
                             stdout_consumer=lambda _chunk: None,
@@ -379,6 +560,105 @@ class WorkspaceStreamingTests(unittest.TestCase):
                     )
                 finally:
                     self._force_probe_cleanup(descendant_pid)
+
+    @staticmethod
+    def _bounded_failure_script(mode: str) -> str:
+        return {
+            'stdout': 'import os\nwhile True: os.write(1, b"x" * 4096)\n',
+            'stderr': 'import os\nwhile True: os.write(2, b"e" * 4096)\n',
+            'timeout': 'import os,time\nos.close(1); os.close(2); time.sleep(60)\n',
+        }[mode]
+
+    def test_bounded_process_preserves_every_original_error_for_zombie_only_group(self) -> None:
+        for mode, error in (
+            ('stdout', 'stdout byte limit'),
+            ('stderr', 'stderr byte limit'),
+            ('timeout', 'timeout'),
+        ):
+            with self.subTest(mode=mode):
+                with (
+                    mock.patch.object(workspace_module, '_process_group_exists', return_value=True),
+                    mock.patch.object(
+                        workspace_module,
+                        '_classify_post_kill_process_group',
+                        return_value='zombie_only',
+                        create=True,
+                    ),
+                    mock.patch.object(workspace_module, '_PROCESS_TERM_GRACE_SECONDS', 0.01),
+                    mock.patch.object(workspace_module, '_PROCESS_KILL_GRACE_SECONDS', 0.01),
+                ):
+                    with self.assertRaisesRegex(workspace_module.WorkspaceError, error):
+                        workspace_module._run_bounded_process(
+                            [sys.executable, '-c', self._bounded_failure_script(mode)],
+                            cwd=Path(self.temp.name),
+                            env=dict(os.environ),
+                            timeout=0.1 if mode == 'timeout' else 5,
+                            stdout_limit=128,
+                            stderr_limit=128,
+                            stdout_consumer=lambda _chunk: None,
+                        )
+
+    def test_bounded_process_fails_closed_for_live_post_kill_group(self) -> None:
+        with (
+            mock.patch.object(workspace_module, '_process_group_exists', return_value=True),
+            mock.patch.object(
+                workspace_module,
+                '_classify_post_kill_process_group',
+                return_value='live',
+                create=True,
+            ),
+            mock.patch.object(workspace_module, '_PROCESS_TERM_GRACE_SECONDS', 0.01),
+            mock.patch.object(workspace_module, '_PROCESS_KILL_GRACE_SECONDS', 0.01),
+        ):
+            with self.assertRaisesRegex(
+                workspace_module.WorkspaceError,
+                'bounded process group survived SIGKILL',
+            ):
+                workspace_module._run_bounded_process(
+                    [sys.executable, '-c', self._bounded_failure_script('stdout')],
+                    cwd=Path(self.temp.name),
+                    env=dict(os.environ),
+                    timeout=5,
+                    stdout_limit=128,
+                    stderr_limit=128,
+                    stdout_consumer=lambda _chunk: None,
+                )
+
+    def test_bounded_process_fails_closed_for_uncertain_post_kill_group(self) -> None:
+        with (
+            mock.patch.object(workspace_module, '_process_group_exists', return_value=True),
+            mock.patch.object(
+                workspace_module,
+                '_classify_post_kill_process_group',
+                return_value='unknown',
+                create=True,
+            ),
+            mock.patch.object(workspace_module, '_PROCESS_TERM_GRACE_SECONDS', 0.01),
+            mock.patch.object(workspace_module, '_PROCESS_KILL_GRACE_SECONDS', 0.01),
+        ):
+            with self.assertRaisesRegex(
+                workspace_module.WorkspaceError,
+                'bounded process group survived SIGKILL',
+            ):
+                workspace_module._run_bounded_process(
+                    [sys.executable, '-c', self._bounded_failure_script('stdout')],
+                    cwd=Path(self.temp.name),
+                    env=dict(os.environ),
+                    timeout=5,
+                    stdout_limit=128,
+                    stderr_limit=128,
+                    stdout_consumer=lambda _chunk: None,
+                )
+
+    def test_post_kill_classifier_marks_unavailable_procfs_unknown(self) -> None:
+        with mock.patch.object(workspace_module.os, 'scandir', side_effect=OSError('unavailable')):
+            self.assertEqual(
+                workspace_module._classify_post_kill_process_group(
+                    os.getpid() + 1,
+                    deadline=time.monotonic() + 1,
+                ),
+                'unknown',
+            )
 
     def test_process_group_cleanup_refuses_own_group_and_tolerates_esrch(self) -> None:
         with self.assertRaisesRegex(workspace_module.WorkspaceError, 'worker process group'):

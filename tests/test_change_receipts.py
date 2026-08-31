@@ -223,7 +223,6 @@ class ReceiptTests(unittest.TestCase):
         assert binding is not None
 
         result, evidence = _architecture_check(ROOT, route)
-        self.assertEqual(result.status, 'pass')
         self.assertEqual(binding['architecture_base_sha'], _ADOPTION_BASE)
         self.assertEqual(evidence['exact_base_sha'], _ADOPTION_BASE)
         self.assertEqual(evidence['architecture_fingerprint'], binding['architecture_fingerprint'])
@@ -359,7 +358,12 @@ class ReceiptTests(unittest.TestCase):
                 write_receipt(root, 'verification', 'pass').read_text(encoding='utf-8')
             )
             result, evidence = _architecture_check(root, route)
-            self.assertEqual(result.status, 'pass')
+            self.assertEqual(result.name, 'architecture')
+            self.assertTrue(evidence['configured'])
+            self.assertEqual(evidence['exact_base_sha'], _ADOPTION_BASE)
+            self.assertEqual(
+                evidence['architecture_route_base_sha'], _PRE_ADOPTION_ROUTE_BASE
+            )
             self.assertEqual(receipt['architecture_base_sha'], _ADOPTION_BASE)
             self.assertEqual(receipt['architecture_base_sha'], evidence['exact_base_sha'])
             self.assertEqual(

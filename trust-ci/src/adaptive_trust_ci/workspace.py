@@ -18,8 +18,11 @@ _MAX_GIT_PATHS = 100_000
 _MAX_GIT_PATH_OUTPUT_BYTES = 100_000_000
 _MAX_GIT_COMMAND_OUTPUT_BYTES = 65_536
 _MAX_GIT_STDERR_BYTES = 1_000_000
+_MAX_PROCESS_GROUP_PROC_ENTRIES = 100_000
+_MAX_PROCESS_GROUP_STAT_BYTES = 4096
 _PROCESS_TERM_GRACE_SECONDS = 0.25
 _PROCESS_KILL_GRACE_SECONDS = 1.0
+_PROCESS_GROUP_SCAN_RESERVE_SECONDS = 0.05
 
 
 class WorkspaceError(RuntimeError):
@@ -99,6 +102,61 @@ def _signal_process_group(process_group_id: int, sig: signal.Signals) -> None:
         pass
 
 
+def _classify_post_kill_process_group(process_group_id: int, *, deadline: float) -> str:
+    """Return absent, zombie_only, live, or unknown from bounded procfs evidence."""
+    if process_group_id <= 0 or process_group_id == os.getpgrp():
+        return 'unknown'
+    seen_member = False
+    entries_seen = 0
+    try:
+        with os.scandir('/proc') as entries:
+            for entry in entries:
+                if time.monotonic() >= deadline:
+                    return 'unknown'
+                if not entry.name.isdecimal():
+                    continue
+                entries_seen += 1
+                if entries_seen > _MAX_PROCESS_GROUP_PROC_ENTRIES:
+                    return 'unknown'
+                try:
+                    descriptor = os.open(
+                        str(Path(entry.path) / 'stat'),
+                        os.O_RDONLY | getattr(os, 'O_CLOEXEC', 0),
+                    )
+                except FileNotFoundError:
+                    continue
+                except OSError:
+                    return 'unknown'
+                try:
+                    try:
+                        stat = os.read(descriptor, _MAX_PROCESS_GROUP_STAT_BYTES + 1)
+                    finally:
+                        os.close(descriptor)
+                except OSError:
+                    return 'unknown'
+                if time.monotonic() >= deadline or len(stat) > _MAX_PROCESS_GROUP_STAT_BYTES:
+                    return 'unknown'
+                try:
+                    fields = stat.rsplit(b') ', 1)[1].split()
+                    state = fields[0]
+                    group_id = int(fields[2])
+                except (IndexError, ValueError):
+                    return 'unknown'
+                if group_id != process_group_id:
+                    continue
+                seen_member = True
+                if state != b'Z':
+                    return 'live'
+    except OSError:
+        return 'unknown'
+    if seen_member:
+        return 'zombie_only'
+    try:
+        return 'absent' if not _process_group_exists(process_group_id) else 'unknown'
+    except WorkspaceError:
+        return 'unknown'
+
+
 def _wait_for_process_group(
     process: subprocess.Popen[bytes],
     process_group_id: int,
@@ -116,6 +174,23 @@ def _wait_for_process_group(
         time.sleep(min(0.01, remaining))
 
 
+def _wait_for_post_kill_process_group(
+    process: subprocess.Popen[bytes],
+    process_group_id: int,
+    *,
+    timeout: float,
+) -> str:
+    deadline = time.monotonic() + timeout
+    while True:
+        process.poll()
+        if not _process_group_exists(process_group_id):
+            return 'absent'
+        remaining = deadline - time.monotonic()
+        if remaining <= _PROCESS_GROUP_SCAN_RESERVE_SECONDS:
+            return _classify_post_kill_process_group(process_group_id, deadline=deadline)
+        time.sleep(min(0.01, remaining - _PROCESS_GROUP_SCAN_RESERVE_SECONDS))
+
+
 def _terminate_process(process: subprocess.Popen[bytes], process_group_id: int) -> None:
     _signal_process_group(process_group_id, signal.SIGTERM)
     if not _wait_for_process_group(
@@ -124,11 +199,12 @@ def _terminate_process(process: subprocess.Popen[bytes], process_group_id: int) 
         timeout=_PROCESS_TERM_GRACE_SECONDS,
     ):
         _signal_process_group(process_group_id, signal.SIGKILL)
-        if not _wait_for_process_group(
+        post_kill_state = _wait_for_post_kill_process_group(
             process,
             process_group_id,
             timeout=_PROCESS_KILL_GRACE_SECONDS,
-        ):
+        )
+        if post_kill_state not in {'absent', 'zombie_only'}:
             raise WorkspaceError('bounded process group survived SIGKILL')
     if process.poll() is None:
         try:
