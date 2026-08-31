@@ -1,0 +1,76 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [{"test": "trust-ci/tests/test_workspace.py"}, {"receipt": "verification"}],
+      "id": "AC-001",
+      "statement": "After SIGKILL, a classifier directly exercised with bounded procfs records accepts only all-Z target-PGID membership and preserves the original bounded stdout, stderr, or timeout WorkspaceError."
+    },
+    {
+      "evidence": [{"test": "trust-ci/tests/test_workspace.py"}, {"receipt": "test_review"}],
+      "id": "AC-002",
+      "statement": "A matching non-Z member (including X) or malformed, inaccessible, unavailable, over-limit, deadline-expired, or final-probe-uncertain procfs observation remains a fail-closed bounded-process cleanup failure."
+    },
+    {
+      "evidence": [{"test": "tests/test_change_receipts.py"}, {"receipt": "verification"}],
+      "id": "AC-003",
+      "statement": "The frozen-adoption receipt regression validates exact comparison-base, binding, fingerprint, and evidence invariants without asserting cumulative branch-global fitness."
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260831-fix-trust-ci-bounded-workspace-process-cleanup-i-fa3ae6",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [{"test": "trust-ci/tests/test_workspace.py"}, {"receipt": "code_review"}],
+      "id": "FORBID-001",
+      "statement": "The repair never skips SIGTERM, SIGKILL, the bounded cleanup waits, original process-group guards, or direct leader reaping."
+    },
+    {
+      "evidence": [{"test": "trust-ci/tests/test_workspace.py"}, {"receipt": "test_review"}],
+      "id": "FORBID-002",
+      "statement": "Unknown, malformed, inaccessible, unavailable, or over-limit procfs observations are never accepted as zombie-only cleanup."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [{"test": "trust-ci/tests/test_workspace.py"}, {"receipt": "code_review"}],
+      "id": "INV-001",
+      "statement": "Process inspection is bounded, read-only, scoped to the spawned original process group, and signals no process outside that group."
+    },
+    {
+      "evidence": [{"receipt": "verification"}],
+      "id": "INV-002",
+      "statement": "Public API, event, schema, policy, holdout, runner-image, deployment, and authority contracts remain unchanged."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix Trust CI bounded workspace process cleanup in the immutable read-only runner: zombie-only descendants after SIGKILL must not mask the original stdout/stderr/timeout failure, while live or uncertain survivors remain fail-closed. Deliver as an isolated stacked Trust-CI-only bugfix on M2 with regression tests.",
+    "success_metric": "bounded_workspace_cleanup_regressions_pass",
+    "target": "original_errors_preserved_only_after_proven_zombie_cleanup_and_live_or_unknown_survivors_fail_closed"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "bounded_workspace_failure_classification",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

@@ -141,3 +141,18 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Under restrictive umasks, packaging created a mode-`0000` output parent, then rejected its own default output path and left the directory behind.
 **Root cause:** Missing-parent creation trusted `mkdir(mode=0700)` as the final mode instead of binding the new inode, applying exact permissions through its held descriptor, and retaining cleanup ownership across the next validation step.
+
+## 2026-08-31 — Chose the split-hotfix base before checking code lineage
+
+**Symptom:** The first split-hotfix attempt used M1, where `sandbox.py` did not match the failing M2 `workspace.py` implementation.
+**Root cause:** The PR base was selected before verifying the failure's code-version lineage; the repair is now based on the exact single-branch M2 stacked base.
+
+## 2026-08-31 — Composed multiple test patch contexts as a tuple
+
+**Symptom:** The first direct classifier test run errored because parenthesized context managers were written as a tuple rather than a parenthesized `with` item list.
+**Root cause:** Tuple grouping was used instead of validating the multi-context statement; corrected before behavioral verification.
+
+## 2026-08-31 — Launched root verification during focused remediation
+
+**Symptom:** Two full root verifiers were launched during the focused TR-001 remediation and had to be terminated by their exact PIDs after entering unrelated root coverage discovery.
+**Root cause:** The remediation instruction was misread as requiring route/full verification despite the parent retaining final verifier ownership; focused Trust-CI checks were the assigned verification scope.

@@ -236,3 +236,15 @@ The final measured compatibility diff is 10,739 lines, so the repository-owned a
 ## 2026-08-29 — Bind package bytes at the repository descriptor boundary
 
 Exclude symlinks/non-regular entries and open every source component root-relative with `O_NOFOLLOW`, then require the same identity and digest during manifest hashing and ZIP streaming. Create the random sibling with `O_EXCL|O_NOFOLLOW`, retain its fd and digest authority through publication, accept success only after the output name matches that inode, and resolve POSIX-only capabilities lazily so explicit legacy manifest helpers remain portable. Bind all output operations to one effective-UID-owned private parent fd beneath trusted/non-renamable ancestors, no-follow-bind and `fchmod` every newly created parent to exact `0700`, and publish the sidecar from its own exclusive verified fd so pre-existing names are never opened or followed.
+
+## 2026-08-31 — Classify only proven zombie-only post-KILL groups as cleaned up
+
+Retain TERM/KILL/reap, reserve a bounded tail of KILL grace for one read-only procfs scan, and preserve the original command error only if every observed matching PGID member is positively `Z`. Live or incomplete procfs evidence remains fail-closed, avoiding both container zombie error masking and cleanup weakening.
+
+## 2026-08-31 — Keep frozen-adoption receipt tests scoped to their binding contract
+
+The receipt regression proves selected base, route-base, fingerprint, and evidence consistency; it must not assert a global fitness pass for every later stacked worktree. Architecture fitness continues to run independently against the active route base and retains the mixed-change policy.
+
+## 2026-08-31 — Test bounded procfs classification without the host procfs
+
+Mocking `scandir`, stat-file open/read, and monotonic time directly exercises parser and fail-closed branches deterministically while the existing runner regression continues to prove real descendant cleanup. This separates host-dependent process behavior from the security decision over procfs evidence.

@@ -223,7 +223,6 @@ class ReceiptTests(unittest.TestCase):
         assert binding is not None
 
         result, evidence = _architecture_check(ROOT, route)
-        self.assertEqual(result.status, 'pass')
         self.assertEqual(binding['architecture_base_sha'], _ADOPTION_BASE)
         self.assertEqual(evidence['exact_base_sha'], _ADOPTION_BASE)
         self.assertEqual(evidence['architecture_fingerprint'], binding['architecture_fingerprint'])
