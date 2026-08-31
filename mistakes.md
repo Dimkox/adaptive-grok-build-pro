@@ -1,6 +1,52 @@
 # Mistakes
 
+<!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: mistakes.md -->
+> **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
+
+## Open governance debt
+
+_No open governance debt._
+
+## Overdue governance debt
+
+_No overdue governance debt._
+<!-- END ADAPTIVE GROK GOVERNANCE PROJECTION: mistakes.md -->
+
 Root causes, not symptoms. Record only mistakes that caused a real problem.
+
+## 2026-08-31 — Ran the restack verifier with its inherited divergent route base
+
+**Symptom:** The first full verifier passed tests and coverage but failed architecture and governance because it compared the merge against unrelated `1c06299894279a88b881defa3f19b004fa742223`.
+**Root cause:** The active route was created from a different worktree lineage and its base was not corrected to exact accepted M2 before verification; stacked verification must bind the immediate accepted predecessor before the first full run.
+
+## 2026-08-31 — Invoked the scoped Trust-CI test without its package root
+
+**Symptom:** The first focused workspace test command failed during import with `ModuleNotFoundError: adaptive_trust_ci`.
+**Root cause:** The repository-root unittest invocation omitted the service's `trust-ci/src` import root; scoped service tests must run with their package path configured or from the service environment.
+
+## 2026-08-28 — Froze a contract shell instead of the complete schema
+
+**Symptom:** Governance fitness accepted handoff schemas whose five digest/SHA fields were booleans and whose `$defs` or draft identity had been removed.
+**Root cause:** `_handoff_shape_matches()` compared selected root names and only the version field, treating a familiar outer shape as equivalent to the complete frozen v1 contract.
+**Durable rule:** Frozen contracts must be bound to a trusted canonical semantic digest or compared exhaustively; unknown and additive schema mutations fail closed.
+
+## 2026-08-28 — Let a direct evidence mapping bypass strict JSON parsing
+
+**Symptom:** A direct caller could put `NaN` into an architecture evidence mapping and receive a raw serialization `ValueError` instead of a typed governance rejection.
+**Root cause:** File-backed evidence passed the bounded strict JSON parser, but the in-process builder reached digest serialization without applying the same canonical-JSON failure boundary.
+**Durable rule:** Every authority input path, including direct typed APIs, must convert canonicalization failures into the same fail-closed domain error before digest or status evaluation.
+
+## 2026-08-28 — Treated evidence-shaped claims as live governance evidence
+
+**Symptom:** Task 3 review showed that a direct rule with `../outside` could transition to reviewed and active rules with missing or mutated evidence could become effective.
+**Root cause:** `RuleRecord.from_dict()` erased repository provenance, while transition and effectiveness treated a non-empty path plus lowercase hex as equivalent to descriptor-relative containment and an exact live content hash.
+**Durable rule:** Authority-bearing lifecycle values must carry a non-caller-constructible, digest-bound repository identity and reverify evidence through the pinned no-follow boundary at every promotion or effect decision.
+
+## 2026-08-28 — Stored governance authority on a caller-visible object
+
+**Symptom:** The first live-evidence repair could be bypassed by calling `_with_document()` on a loaded candidate and pairing the rebound active record with a replaced snapshot.
+**Root cause:** An underscore method, private dataclass, and object-identity sentinel were treated as a capability boundary even though ordinary in-process callers could read and invoke all three.
+**Durable rule:** Keep authorization provenance outside caller-held values in closure-owned identity state; copied or reconstructed values receive no authority, and public effects consult only that state.
 
 ## 2026-08-29 — Opened derived checksum metadata at its authority name
 
@@ -136,6 +182,56 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The final queue fix closed the former 64-round truncation but could still return N/A for a real local queue adapter in a neutral-named module after the 4,096-item worklist exhausted.
 **Root cause:** Exhaustion preserved only a boolean and then guessed relevance from module-name tokens instead of retaining the precise unresolved dependency frontier and resolving its local imports.
+
+## 2026-08-28 — Restored provenance over evolved same-path evidence
+
+**Symptom:** Restoring design commit `d3b49b7` produced add/add conflicts and briefly replaced newer M2-stack package files before the local commit was amended.
+**Root cause:** The restoration ruling was applied to every historical path without first comparing the target lineage for evolved same-path content. Provenance recovery must restore only missing blobs and merge genuinely absent decisions unless replacement of newer files is explicitly required.
+
+## 2026-08-28 — Secured each governance file without binding the whole snapshot
+
+**Symptom:** Task 2 initially allowed a replacement repository root to splice schemas and registries, accepted zero-valued `O_NONBLOCK`, and digested a handoff schema with unresolved references.
+**Root cause:** The loader treated per-file identity checks, partially symmetric flag checks, and keyword-only schema preflight as substitutes for their enclosing contracts: one pinned root identity, every required nonzero capability, and whole-schema reference validation.
+
+## 2026-08-28 — Validated reference targets without matching evaluator depth
+
+**Symptom:** Handoff-schema aliases and cycles named existing object definitions but caused the one-hop validator to drop the referenced digest constraints.
+**Root cause:** Reference-graph existence was checked independently of the shared validator's supported one-hop subset. A schema gate must either reject aliases or implement the same bounded transitive resolution and cycle policy as its evaluator.
+
+## 2026-08-28 — Trusted a self-hashed architecture evidence envelope
+
+**Symptom:** A caller could erase adverse fitness, risk, scope, diff, inventory, and adoption evidence, recompute the unkeyed self-hash, and still receive a governance handoff.
+**Root cause:** The handoff checked caller-controlled status and aggregate model identity instead of independently deriving the complete exact-state M2 evidence with a trusted risk input and comparing every canonical field.
+
+## 2026-08-28 — Patched a helper at an ambiguous internal context
+
+**Symptom:** The first Task 7 edit temporarily nested the architecture-check body beneath the new governance helper and made the intended path unreachable.
+**Root cause:** The patch anchor ended at a repeated inner call instead of the complete function boundary; structural helpers must be inserted against an unambiguous top-level boundary and compiled immediately.
+
+## 2026-08-28 — Bound optional governance by current presence instead of adoption continuity
+
+**Symptom:** Removing every governance registry downgraded an adopted repository to unconfigured, and governance could validate a different architecture snapshot from the preceding architecture check.
+**Root cause:** The integration treated independent current-state probes as one continuous authority chain; optional authority needs durable adoption evidence and every downstream gate must consume the exact upstream binding it follows.
+
+## 2026-08-28 — Carried a program base into a stacked milestone verifier
+
+**Symptom:** Final M3 fitness charged the cumulative pre-M2-to-M3 change as 14,611 lines and rejected the frozen governance handoff during contract self-comparison.
+**Root cause:** The continuation route retained the program's pre-M2 base instead of exact reviewed M2, while the bounded schema comparator assumed `type` was scalar and had no exact allowance for the already-frozen closed handoff schema.
+
+## 2026-08-28 — Scoped exact exceptions to inputs instead of the compared pair
+
+**Symptom:** A manually truncated base fingerprint broke exact route provenance, while the frozen-schema digest exception classified removal of `$defs`, `$ref`, and `const` constraints as compatible.
+**Root cause:** Exact identities were transcribed instead of derived, and the compatibility exception trusted either matching input digest rather than requiring one unchanged reviewed pair.
+
+## 2026-08-28 — Pinned the repository but rewalked nested authority
+
+**Symptom:** A governance snapshot could combine schema and registry files from different nested-directory generations while the repository root remained unchanged.
+**Root cause:** Each authority read independently reopened its ancestor directories, so root-only identity checks did not bind the fixed authority topology or the bytes consumed by exact-head evaluation.
+
+## 2026-08-28 — Let repeated evidence overwrite its first observation
+
+**Symptom:** Alternating bytes for one shared evidence path could validate separate rules while only the final exact-HEAD-matching digest survived.
+**Root cause:** Evaluation stored path digests with last-write-wins assignment and then reread evidence during liveness checks instead of binding and reusing one immutable first observation.
 
 ## 2026-08-29 — Assumed requested mkdir mode survives every umask
 

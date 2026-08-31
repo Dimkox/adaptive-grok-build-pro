@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import itertools
 import json
 import re
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -11,18 +13,88 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class StructureTests(unittest.TestCase):
+    def test_m3_route_binds_exact_reviewed_m2_fingerprint(self) -> None:
+        route_path = (
+            ROOT
+            / "engineering/changes/20260826-m3-m9-production-delivery-continuation-355689/route.json"
+        )
+        route = json.loads(
+            route_path.read_text(encoding="utf-8")
+        )
+        expected_commit = "635c9ddf2d63c1ea823074106976a8f3de6299a9"
+        expected_fingerprint = (
+            "6b4212f06a6c095db1a9e9c6eeb8c51d731dfa900e596bc915f98c012a4ac59c"
+        )
+
+        self.assertEqual(route["base_commit"], expected_commit)
+        self.assertEqual(len(route["base_fingerprint"]), 64)
+        self.assertEqual(route["base_fingerprint"], expected_fingerprint)
+        self.assertEqual(
+            route["base_fingerprint"],
+            hashlib.sha256(expected_commit.encode("ascii")).hexdigest(),
+        )
+        package = route_path.parent
+        state = json.loads((package / "state.json").read_text(encoding="utf-8"))
+        change_spec = json.loads(
+            (package / "change-spec.yaml").read_text(encoding="utf-8")
+        )
+        expected_change_id = package.name
+        self.assertEqual(route["change_id"], expected_change_id)
+        self.assertEqual(state["change_id"], expected_change_id)
+        self.assertEqual(change_spec["change_id"], expected_change_id)
+
+        roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
+        self.assertIn(
+            "Require independent review and explicit human approval before promotion to `active`.",
+            roadmap,
+        )
+        self.assertNotIn(
+            "Require independent review or explicit human approval before promotion to `active`.",
+            roadmap,
+        )
+
     def test_frozen_m2_handoff_digests_match_canonical_summary(self) -> None:
-        result = subprocess.run(
-            ['python3', 'scripts/grok_architecture.py', 'summary', '--json'],
+        base = '635c9ddf2d63c1ea823074106976a8f3de6299a9'
+        with tempfile.TemporaryDirectory(prefix='adaptive-grok-frozen-m2-') as tmp:
+            archive = subprocess.Popen(
+                ['git', 'archive', base],
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+            )
+            extracted = subprocess.run(
+                ['tar', '-x', '-C', tmp],
+                stdin=archive.stdout,
+                check=True,
+            )
+            self.assertEqual(extracted.returncode, 0)
+            assert archive.stdout is not None
+            archive.stdout.close()
+            self.assertEqual(archive.wait(), 0)
+            result = subprocess.run(
+                [
+                    'python3',
+                    'scripts/grok_architecture.py',
+                    '--root',
+                    tmp,
+                    'summary',
+                    '--json',
+                ],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+        summary = json.loads(result.stdout)
+        requirements = subprocess.check_output(
+            [
+                'git',
+                'show',
+                f'{base}:engineering/changes/20260826-m2-executable-architecture-015603/requirements.md',
+            ],
             cwd=ROOT,
             text=True,
-            capture_output=True,
-            check=True,
+            encoding='utf-8',
         )
-        summary = json.loads(result.stdout)
-        requirements = (
-            ROOT / 'engineering/changes/20260826-m2-executable-architecture-015603/requirements.md'
-        ).read_text(encoding='utf-8')
         labels = {
             'architecture_digest': 'Composite architecture digest',
             'system_digest': 'System digest',
@@ -68,6 +140,14 @@ class StructureTests(unittest.TestCase):
             "schemas/architecture-system.schema.json",
             "schemas/architecture-rules.schema.json",
             "scripts/grok_architecture.py",
+            "governance/rules/index.json",
+            "governance/debt/index.json",
+            "governance/canonical-examples/index.json",
+            "schemas/governance-rule.schema.json",
+            "schemas/debt-entry.schema.json",
+            "schemas/canonical-example.schema.json",
+            "schemas/governance-handoff-v1.schema.json",
+            "scripts/grok_governance.py",
         )
         for relative in required:
             self.assertTrue((ROOT / relative).exists(), relative)

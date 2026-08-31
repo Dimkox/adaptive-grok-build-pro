@@ -10,6 +10,14 @@
 
 - 
 
+## Governance context
+
+{{GOVERNANCE_AUTHORITY_NOTICE}}
+
+- Applicable rule IDs:
+- Canonical-example deviations and evidence:
+- Intentional debt created, repaid, or accepted:
+
 ## Non-functional requirements
 
 - Security:

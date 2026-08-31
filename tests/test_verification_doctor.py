@@ -21,7 +21,17 @@ from adaptive_grok.change import start_change
 from adaptive_grok.router import build_route
 from adaptive_grok.spec import dump_canonical_spec
 from adaptive_grok.state import get_active_change, set_active_route
-from adaptive_grok.verification import CheckResult, _change_specs, _contracts, _node, _python, _secret_scan, _sql_safety, verify
+from adaptive_grok.verification import (
+    CheckResult,
+    _change_specs,
+    _contracts,
+    _governance_check,
+    _node,
+    _python,
+    _secret_scan,
+    _sql_safety,
+    verify,
+)
 from tests._support import project_copy
 
 _PASSING_UNITTEST = (
@@ -204,6 +214,17 @@ class VerificationTests(unittest.TestCase):
             shutil.copytree(source, target)
         (root / 'architecture/adoption.json').write_text(_ADOPTION_MARKER, encoding='utf-8')
 
+    @staticmethod
+    def _adopt_governance(root: Path) -> None:
+        shutil.copytree(ROOT / 'governance', root / 'governance')
+        for name in (
+            'canonical-example.schema.json',
+            'debt-entry.schema.json',
+            'governance-handoff-v1.schema.json',
+            'governance-rule.schema.json',
+        ):
+            shutil.copy2(ROOT / 'schemas' / name, root / 'schemas' / name)
+
     def test_invalid_json_contract_fails(self) -> None:
         with project_copy() as root:
             path = root / 'engineering/contracts/schemas/bad.schema.json'
@@ -246,6 +267,91 @@ class VerificationTests(unittest.TestCase):
             self.assertEqual(report['status'], 'pass')
             receipt = root / f".grok-stack/runtime/receipts/{route['route_id']}/verification.json"
             self.assertTrue(receipt.is_file())
+
+    def test_governance_runs_after_spec_and_architecture_and_failure_is_not_receipted(self) -> None:
+        with project_copy(git=True) as root:
+            self._adopt_architecture(root)
+            self._adopt_governance(root)
+            route = build_route(root, 'Review governed architecture', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt governance'], cwd=root, check=True)
+            (root / 'governance/rules/index.json').write_text('{', encoding='utf-8')
+
+            report = verify(root, mode='fast', record=True)
+            names = [item['name'] for item in report['checks']]
+            self.assertLess(names.index('change-spec'), names.index('architecture'))
+            self.assertLess(names.index('architecture'), names.index('governance'))
+            governance = _check(report, 'governance')
+            self.assertIsNotNone(governance)
+            self.assertEqual(governance['status'], 'fail')
+            self.assertEqual(report['governance']['status'], 'fail')
+            receipt = root / f".grok-stack/runtime/receipts/{route['route_id']}/verification.json"
+            self.assertFalse(receipt.exists())
+
+    def test_governance_rejects_a_different_architecture_snapshot(self) -> None:
+        with project_copy(git=True) as root:
+            self._adopt_architecture(root)
+            self._adopt_governance(root)
+            route = build_route(root, 'Review governed architecture', 's1').to_dict()
+            set_active_route(root, route)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt governance'], cwd=root, check=True)
+            checked = receipts_module.active_architecture_binding(root, route)
+            self.assertIsNotNone(checked)
+            assert checked is not None
+            architecture = {
+                'configured': True,
+                'status': 'pass',
+                'architecture_digest': checked['architecture_digest'],
+                'architecture_base_sha': checked['architecture_base_sha'],
+                'architecture_head_commit': checked['architecture_head_commit'],
+            }
+
+            system_path = root / 'architecture/system.yaml'
+            system = json.loads(system_path.read_text(encoding='utf-8'))
+            system['nodes'][0]['owner'] = 'architecture state B'
+            system_path.write_text(
+                json.dumps(system, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+                encoding='utf-8',
+            )
+
+            result, metadata = _governance_check(root, route, architecture)
+            self.assertEqual(result.status, 'fail')
+            self.assertEqual(metadata['status'], 'fail')
+            self.assertIn('architecture', result.summary)
+
+    def test_verify_does_not_receipt_checks_from_an_older_fingerprint(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Review current code', 's1').to_dict()
+            route['quality_profiles'] = ['base']
+            set_active_route(root, route)
+
+            def mutate_after_governance(*args, **kwargs):
+                result = _governance_check(*args, **kwargs)
+                (root / 'changed-during-verification.txt').write_text(
+                    'changed\n', encoding='utf-8'
+                )
+                return result
+
+            with patch(
+                'adaptive_grok.verification._governance_check',
+                side_effect=mutate_after_governance,
+            ):
+                report = verify(root, mode='fast', record=True)
+
+            self.assertEqual(report['status'], 'fail')
+            stability = _check(report, 'source-stability')
+            self.assertIsNotNone(stability)
+            self.assertEqual(stability['status'], 'fail')
+            receipt = (
+                root
+                / '.grok-stack/runtime/receipts'
+                / route['route_id']
+                / 'verification.json'
+            )
+            self.assertFalse(receipt.exists())
 
     def test_verify_reports_architecture_metadata_without_exact_worktree_sha(self) -> None:
         with project_copy(git=True) as root:

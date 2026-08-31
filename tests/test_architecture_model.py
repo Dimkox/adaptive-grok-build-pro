@@ -979,6 +979,24 @@ class ArchitectureModelTests(unittest.TestCase):
                 "NODE-HUMAN-APPROVAL",
             }.issubset(node_ids)
         )
+        self.assertIn("NODE-GOVERNANCE-VALIDATOR", node_ids)
+        self.assertIn("NODE-GOVERNANCE-REGISTRIES", node_ids)
+        self.assertNotIn("NODE-FACTORY-CONTROL-PLANE", node_ids)
+        governance_validator = next(
+            node
+            for node in snapshot.system["nodes"]
+            if node["id"] == "NODE-GOVERNANCE-VALIDATOR"
+        )
+        governance_registries = next(
+            node
+            for node in snapshot.system["nodes"]
+            if node["id"] == "NODE-GOVERNANCE-REGISTRIES"
+        )
+        self.assertEqual(governance_validator["runtime"]["network"], "none")
+        self.assertEqual(governance_registries["runtime"]["kind"], "none")
+        self.assertEqual(governance_registries["runtime"]["network"], "none")
+        self.assertEqual(governance_validator["secrets"], [])
+        self.assertEqual(governance_registries["secrets"], [])
         docker_edge = next(
             edge
             for edge in snapshot.system["edges"]
@@ -1022,10 +1040,33 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 4)
+        self.assertEqual(len(records), 5)
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
+        governance_handoff = next(
+            record
+            for record in records
+            if record.id == "CONTRACT-GOVERNANCE-HANDOFF-V1"
+        )
+        self.assertEqual(governance_handoff.kind, "json_schema")
+        self.assertEqual(governance_handoff.role, "producer")
+        self.assertEqual(
+            governance_handoff.compatibility,
+            "producer_accepted_by_old",
+        )
+        self.assertEqual(governance_handoff.version, "1")
+        self.assertEqual(
+            set(documents["CONTRACT-GOVERNANCE-HANDOFF-V1"]["required"]),
+            {
+                "architecture_digest",
+                "exact_base_sha",
+                "exact_head_sha",
+                "governance_contract_version",
+                "governance_digest",
+                "governance_evidence_digest",
+            },
+        )
         self.assertEqual(
             set(documents["CONTRACT-TRUST-CI-OPENAPI"]["paths"]),
             {
@@ -1296,6 +1337,102 @@ class ArchitectureModelTests(unittest.TestCase):
             "compatible",
         )
 
+    def test_governance_handoff_closed_schema_is_supported_in_self_comparison(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        record = next(
+            item
+            for item in ARCH.contract_inventory(ROOT, snapshot)
+            if item.id == "CONTRACT-GOVERNANCE-HANDOFF-V1"
+        )
+
+        result = ARCH.compare_contracts(record, record, record.compatibility)
+
+        self.assertEqual(result.status, "compatible")
+        self.assertEqual(result.reasons, ())
+
+    def test_governance_handoff_exception_rejects_changed_supported_copies(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        frozen = next(
+            item
+            for item in ARCH.contract_inventory(ROOT, snapshot)
+            if item.id == "CONTRACT-GOVERNANCE-HANDOFF-V1"
+        )
+        supported_copy = copy.deepcopy(frozen.document)
+        supported_copy.pop("$defs")
+        for property_schema in supported_copy["properties"].values():
+            if "$ref" in property_schema:
+                property_schema.clear()
+                property_schema["type"] = "string"
+            property_schema.pop("const", None)
+        altered_supported_copy = copy.deepcopy(supported_copy)
+        altered_supported_copy["properties"]["architecture_digest"]["type"] = [
+            "string",
+            "null",
+        ]
+
+        for label, changed_document in (
+            ("constraints removed", supported_copy),
+            ("supported copy altered", altered_supported_copy),
+        ):
+            changed = self._record(changed_document)
+            changed = ARCH.ContractRecord(
+                id=frozen.id,
+                kind=frozen.kind,
+                path=frozen.path,
+                version=frozen.version,
+                role=frozen.role,
+                compatibility=frozen.compatibility,
+                digest=changed.digest,
+                document=changed.document,
+            )
+            for direction, base, head in (
+                ("frozen base", frozen, changed),
+                ("frozen head", changed, frozen),
+            ):
+                with self.subTest(label=label, direction=direction):
+                    result = ARCH.compare_contracts(
+                        base, head, "consumer_accepts_old"
+                    )
+                    self.assertEqual(result.status, "unsupported")
+                    self.assertEqual(result.reasons, ("unsupported_schema_keyword",))
+
+    def test_schema_type_arrays_are_bounded_sets_with_directional_semantics(self) -> None:
+        string = {"type": "string"}
+        nullable = {"type": ["string", "null"]}
+        reordered = {"type": ["null", "string"]}
+        cases = (
+            ("consumer reordered", nullable, reordered, "consumer_accepts_old", "compatible"),
+            ("consumer widened", string, nullable, "consumer_accepts_old", "compatible"),
+            ("consumer narrowed", nullable, string, "consumer_accepts_old", "incompatible"),
+            ("producer narrowed", nullable, string, "producer_accepted_by_old", "compatible"),
+            ("producer widened", string, nullable, "producer_accepted_by_old", "incompatible"),
+        )
+        for label, base, head, policy, status in cases:
+            with self.subTest(label=label):
+                self.assertEqual(
+                    ARCH.compare_contracts(
+                        self._record(base), self._record(head), policy
+                    ).status,
+                    status,
+                )
+
+        for malformed in (
+            {"type": []},
+            {"type": ["string", "string"]},
+            {"type": ["string", "future"]},
+            {"type": ["string", 1]},
+            {"$ref": "#/$defs/string"},
+        ):
+            with self.subTest(malformed=malformed):
+                self.assertEqual(
+                    ARCH.compare_contracts(
+                        self._record(malformed),
+                        self._record(malformed),
+                        "consumer_accepts_old",
+                    ).status,
+                    "unsupported",
+                )
+
     def test_contract_comparison_rejects_directional_breaks(self) -> None:
         self.assertTrue(hasattr(ARCH, "compare_contracts"), "compare_contracts is not implemented")
         cases = (
@@ -1560,7 +1697,6 @@ class ArchitectureModelTests(unittest.TestCase):
 
     def test_contract_comparison_malformed_unknown_and_event_meaning_fail_typed(self) -> None:
         malformed_cases = (
-            {"type": ["string", "null"]},
             {"type": "string", "minLength": "2"},
             {"type": "string", "minLength": -1},
             {"type": "array", "minItems": True},

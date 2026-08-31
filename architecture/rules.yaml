@@ -26,6 +26,8 @@
         ".grok-stack",
         "architecture",
         "engineering/contracts",
+        "governance",
+        "schemas",
         "scripts"
       ],
       "severity": "error",
@@ -44,6 +46,8 @@
         ".grok-stack/adaptive_grok",
         "architecture",
         "engineering/contracts",
+        "governance",
+        "schemas",
         "scripts"
       ],
       "severity": "error"
@@ -65,6 +69,14 @@
         "json_schema"
       ],
       "id": "FIT-CONSUMER-CONTRACTS",
+      "severity": "error"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "contract_kinds": [
+        "json_schema"
+      ],
+      "id": "FIT-GOVERNANCE-HANDOFF-COMPATIBILITY",
       "severity": "error"
     },
     {
@@ -152,6 +164,8 @@
         ".grok-stack",
         "architecture",
         "engineering/contracts",
+        "governance",
+        "schemas",
         "scripts"
       ]
     }

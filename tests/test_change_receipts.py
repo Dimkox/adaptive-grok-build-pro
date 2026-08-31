@@ -22,6 +22,7 @@ from adaptive_grok.architecture_diff import (
 )
 from adaptive_grok.receipts import (
     active_architecture_binding,
+    active_governance_binding,
     invalidate_receipts,
     validate_evidence,
     write_receipt,
@@ -62,6 +63,11 @@ class ChangeTests(unittest.TestCase):
             self.assertIsNotNone(active)
             change = root / str(active['path'])
             self.assertTrue((change / 'requirements.md').is_file())
+            for name in ('requirements.md', 'architecture.md'):
+                text = (change / name).read_text(encoding='utf-8')
+                self.assertIn('Canonical governance JSON', text)
+                self.assertIn('non-authoritative context', text)
+                self.assertNotIn('{{GOVERNANCE_AUTHORITY_NOTICE}}', text)
             self.assertIn('bitrix', (change / 'route.json').read_text(encoding='utf-8'))
             self.assertEqual(get_active_route(root)['change_id'], state['change_id'])
 
@@ -90,6 +96,19 @@ class ReceiptTests(unittest.TestCase):
             if target.exists():
                 shutil.rmtree(target)
             shutil.copytree(source, target)
+
+    @staticmethod
+    def _adopt_governance(root: Path) -> None:
+        shutil.copytree(ROOT / "governance", root / "governance")
+        schemas = root / "schemas"
+        schemas.mkdir(exist_ok=True)
+        for name in (
+            "canonical-example.schema.json",
+            "debt-entry.schema.json",
+            "governance-handoff-v1.schema.json",
+            "governance-rule.schema.json",
+        ):
+            shutil.copy2(ROOT / "schemas" / name, schemas / name)
 
     def _install_spec(self, root: Path, active: dict, evidence_by_id: dict[str, dict], *, contracts=None) -> Path:
         path = root / str(active['path']) / 'change-spec.yaml'
@@ -215,6 +234,127 @@ class ReceiptTests(unittest.TestCase):
             receipt.pop('architecture_fingerprint')
             receipt_path.write_text(json.dumps(receipt), encoding='utf-8')
             self.assertTrue(any('architecture binding stale' in gap for gap in validate_evidence(root, route)))
+
+    def test_receipt_binds_governance_and_stales_when_its_schema_changes(self) -> None:
+        with project_copy(git=True) as root:
+            self._adopt_architecture(root)
+            self._adopt_governance(root)
+            route = build_route(root, 'Review governed code', 's1').to_dict()
+            route['required_evidence'] = ['verification']
+            set_active_route(root, route)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt governed architecture'], cwd=root, check=True)
+
+            receipt_path = write_receipt(root, 'verification', 'pass')
+            receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
+            original = active_governance_binding(root, route)
+            self.assertIsNotNone(original)
+            assert original is not None
+            self.assertEqual(receipt['governance_contract_version'], 1)
+            self.assertEqual(receipt['governance_digest'], original['governance_digest'])
+            self.assertEqual(
+                receipt['governance_evidence_digest'],
+                original['governance_evidence_digest'],
+            )
+
+            schema_path = root / 'schemas/governance-rule.schema.json'
+            schema = json.loads(schema_path.read_text(encoding='utf-8'))
+            schema['properties']['rules']['maxItems'] = 511
+            schema_path.write_text(
+                json.dumps(schema, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+                encoding='utf-8',
+            )
+            with self.assertRaisesRegex(RuntimeError, 'frozen v1'):
+                active_governance_binding(root, route)
+            gaps = validate_evidence(root, route)
+            self.assertTrue(
+                any(
+                    'governance binding stale' in gap
+                    or 'active spec invalid' in gap
+                    for gap in gaps
+                )
+            )
+
+    def test_governance_failure_blocks_receipt_recording(self) -> None:
+        with project_copy(git=True) as root:
+            self._adopt_architecture(root)
+            self._adopt_governance(root)
+            route = build_route(root, 'Review governed code', 's1').to_dict()
+            route['required_evidence'] = ['verification']
+            set_active_route(root, route)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt governed architecture'], cwd=root, check=True)
+            (root / 'governance/rules/index.json').write_text('{', encoding='utf-8')
+
+            with self.assertRaisesRegex(RuntimeError, 'governance'):
+                write_receipt(root, 'verification', 'pass')
+            receipt_path = (
+                root
+                / '.grok-stack/runtime/receipts'
+                / route['route_id']
+                / 'verification.json'
+            )
+            self.assertFalse(receipt_path.exists())
+
+    def test_complete_governance_deletion_cannot_downgrade_a_governed_receipt(self) -> None:
+        with project_copy(git=True) as root:
+            self._adopt_architecture(root)
+            self._adopt_governance(root)
+            route = build_route(root, 'Review governed code', 's1').to_dict()
+            route['required_evidence'] = ['verification']
+            set_active_route(root, route)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(
+                ['git', 'commit', '-qm', 'adopt governed architecture'],
+                cwd=root,
+                check=True,
+            )
+
+            receipt_path = write_receipt(root, 'verification', 'pass')
+            governed_receipt = receipt_path.read_bytes()
+            self.assertIn('governance_digest', json.loads(governed_receipt))
+            for relative in (
+                'governance/rules/index.json',
+                'governance/debt/index.json',
+                'governance/canonical-examples/index.json',
+            ):
+                (root / relative).unlink()
+
+            with self.assertRaisesRegex(RuntimeError, 'adopted governance.*missing'):
+                write_receipt(root, 'verification', 'pass')
+            self.assertEqual(receipt_path.read_bytes(), governed_receipt)
+
+    def test_governance_evidence_rotates_with_architecture_digest(self) -> None:
+        with project_copy(git=True) as root:
+            self._adopt_architecture(root)
+            self._adopt_governance(root)
+            route = build_route(root, 'Review governed architecture', 's1').to_dict()
+            set_active_route(root, route)
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'adopt governed architecture'], cwd=root, check=True)
+            original = active_governance_binding(root, route)
+            self.assertIsNotNone(original)
+            assert original is not None
+
+            system_path = root / 'architecture/system.yaml'
+            system = json.loads(system_path.read_text(encoding='utf-8'))
+            system['nodes'][0]['owner'] = 'changed architecture owner'
+            system_path.write_text(
+                json.dumps(system, ensure_ascii=False, indent=2, sort_keys=True) + '\n',
+                encoding='utf-8',
+            )
+            changed = active_governance_binding(root, route)
+            self.assertIsNotNone(changed)
+            assert changed is not None
+            self.assertEqual(original['governance_digest'], changed['governance_digest'])
+            self.assertNotEqual(
+                original['governance_architecture_digest'],
+                changed['governance_architecture_digest'],
+            )
+            self.assertNotEqual(
+                original['governance_evidence_digest'],
+                changed['governance_evidence_digest'],
+            )
 
     def test_pre_adoption_route_base_uses_one_architecture_comparison_base(self) -> None:
         route = {'base_commit': _PRE_ADOPTION_ROUTE_BASE}
@@ -518,6 +658,12 @@ class ReceiptTests(unittest.TestCase):
             path = write_receipt(root, 'code_review', 'pass')
             invalidate_receipts(root, route['route_id'], 'changed')
             self.assertIn('"stale": true', path.read_text(encoding='utf-8'))
+            self.assertTrue(
+                any(
+                    'explicitly invalidated' in gap
+                    for gap in validate_evidence(root, route)
+                )
+            )
 
 
 class ContourTests(unittest.TestCase):

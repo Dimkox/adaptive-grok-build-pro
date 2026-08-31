@@ -4,6 +4,8 @@ flowchart LR
   node_2e8a7072de3f3743["NODE-EXACT-SHA-WORKSPACE | repository | Trust CI operators"]
   node_0a0fe2f046a648e9["NODE-EXTERNAL-HOLDOUT | policy_bundle | external Trust CI policy operators"]
   node_8b8a8cd21b180532["NODE-GITHUB | external_system | GitHub"]
+  node_dfd1104494c6ab8f["NODE-GOVERNANCE-REGISTRIES | repository | repository engineering"]
+  node_23677f8757246623["NODE-GOVERNANCE-VALIDATOR | local_component | repository engineering"]
   node_e4e37173e410ad23["NODE-HUMAN-APPROVAL | actor | human security approvers"]
   node_1c3a10ba26a8e80d["NODE-ISOLATED-RUNNER | runner | Trust CI operators"]
   node_770cf3a1783e8525["NODE-LOCAL-ROUTE-POLICY | local_component | repository engineering"]
@@ -15,6 +17,8 @@ flowchart LR
   node_8938bd3db1932751 -->|"EDGE-CHANGE-LOCAL-VERIFIER | data_flow | filesystem"| node_23bed8fcbfc79861
   node_4e78270f61d78ed8 -->|"EDGE-DOCKER-ISOLATED-RUNNER | deployment | docker_api"| node_1c3a10ba26a8e80d
   node_8b8a8cd21b180532 -->|"EDGE-GITHUB-TRUST-CI-API | data_flow | https"| node_d0e570b2fbe52f98
+  node_dfd1104494c6ab8f -->|"EDGE-GOVERNANCE-REGISTRIES-VALIDATOR | data_flow | filesystem"| node_23677f8757246623
+  node_23677f8757246623 -->|"EDGE-GOVERNANCE-VALIDATOR-LOCAL-VERIFIER | data_flow | filesystem"| node_23bed8fcbfc79861
   node_e4e37173e410ad23 -->|"EDGE-HUMAN-TRUST-CI-API | data_flow | https"| node_d0e570b2fbe52f98
   node_770cf3a1783e8525 -->|"EDGE-ROUTE-CHANGE-EVIDENCE | control | filesystem"| node_8938bd3db1932751
   node_1c3a10ba26a8e80d -->|"EDGE-RUNNER-EXTERNAL-HOLDOUT | data_flow | filesystem"| node_0a0fe2f046a648e9

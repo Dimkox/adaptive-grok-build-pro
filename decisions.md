@@ -1,6 +1,30 @@
 # Decisions
 
+<!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
+> **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
+
+## Active governance rules
+
+_No active governance rules._
+
+## Candidate governance rules
+
+_No candidate governance rules._
+<!-- END ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
+
+## 2026-08-28 — Bind governance handoffs to fresh exact state
+
+Reopen the loader-bound governance root, recompute every component digest and finding, validate the complete M2 evidence envelope, and prove the Git head is exact and clean immediately before publishing the six-field handoff. Keeping projections in marked read-only blocks makes them reviewable without giving Markdown mutation or authority capability.
+
+## 2026-08-28 — Freeze governance transitions as canonical values
+
+Represent rule transitions as immutable canonical-byte `RuleRecord` values and append only typed review or approval records supplied at the transition boundary. This preserved rule identity across revisions and prevented callers from mutating a returned record through nested dictionaries.
+
 Patterns that paid for themselves. Each entry is at most three sentences.
+
+## 2026-08-26 — Provider-neutral factory core with explicit adapter boundary
+
+Keep deterministic policy, state, leases, budgets, and capabilities in a PostgreSQL-backed provider-neutral core; make Codex, Grok, and future providers explicit versioned JSON/JSONL translators with no silent fallback. This preserves one-writer and trust boundaries across provider changes while allowing model-native streams to evolve behind conformance-tested adapters.
 
 ## 2026-08-26 — Isolate local PostgreSQL proof in a dedicated database
 
@@ -228,6 +252,34 @@ Charge conservative schema, derived-root, matching, inventory, semantic-plan, an
 Treat the immutable `001_schema`, `002_operational_indexes`, and `003_database_roles` names as exact logical versions in history while reserving expand/migrate/contract semantics for new phased artifacts. This preserves the repository's established convention while making version 004 contiguous and rejecting phased reuse of versions 001–003.
 Legacy versus phased identity is tracked independently of the free-form group text, so a phased group cannot evade the reservation by copying a canonical stem.
 
+## 2026-08-28 — Authenticate authority outside agent-authored records
+
+Treat `actor_kind`, approver names, timestamps, and authority observations inside task/governance JSON as untrusted claims until an independently verifiable receipt binds the exact subject, digest, scope, action, resource, and expiry. This keeps model/provider output proposal-only and prevents evidence-shaped data from minting governance, control-plane, or delivery authority.
+
+## 2026-08-28 — Preserve nullable contracts with typed schema unions
+
+When a closed schema requires a value or `null`, support the standard JSON Schema type array and test both the allowed null and a rejected non-member type. This preserves fail-closed typing instead of weakening the field to an unconstrained value.
+
+## 2026-08-28 — Normalize only declared governance sets
+
+Sort registry records by stable identity and sort only fields whose governance contract defines set semantics; preserve every other array in source order. This makes equivalent registries digest-identical without silently erasing meaning from ordered schema or future record fields.
+
+## 2026-08-28 — Derive handoff inputs at the trust boundary
+
+Recompute the complete M2 architecture evidence from the clean exact Git base/head with conservative trusted risk, then compare every canonical field to the supplied envelope. A caller file is transport only; its self-hash and aggregate architecture digest do not grant authority.
+
+## 2026-08-28 — Separate worktree governance receipts from committed handoffs
+
+Use a distinct `adaptive-grok.governance-receipt-evidence/v1` digest domain for local receipts and bind it to the worktree fingerprint, applicable Git commits, M2 architecture digest, and all effective M3 state. This prevents a local preflight digest from being mistaken for the clean exact-SHA `GovernanceHandoffV1` consumed by later milestones.
+
+## 2026-08-28 — Bind stacked verification to the immediate reviewed predecessor
+
+Set each stacked milestone route's base commit and clean fingerprint to its exact reviewed predecessor, not the program's inception commit. This keeps code budgets, contract deltas, architecture evidence, and rollback scope local to the milestone while preserving the unchanged route identity and approved scope.
+
+## 2026-08-28 — Evaluate exact handoff inputs against immutable Git objects
+
+Bind every authority and consumed evidence byte to the requested exact-head Git blob before emitting a governance handoff. Clean-worktree sampling remains a diagnostic because a nested rename or content swap can be restored between samples.
+
 ## 2026-08-29 — Scope build trust and metadata to the operation
 
 Read-only CI helpers pass the exact canonical repository as command-scoped Git trust while continuing to ignore host configuration. Archive metadata is rendered in memory, leaving explicit generation as the only operation allowed to write the source manifest.
@@ -248,3 +300,7 @@ The receipt regression proves selected base, route-base, fingerprint, and eviden
 ## 2026-08-31 — Test bounded procfs classification without the host procfs
 
 Mocking `scandir`, stat-file open/read, and monotonic time directly exercises parser and fail-closed branches deterministically while the existing runner regression continues to prove real descendant cleanup. This separates host-dependent process behavior from the security decision over procfs evidence.
+
+## 2026-08-31 — Restack M3 on the exact accepted M2 predecessor
+
+Consume accepted M2 `022411b05924618cfde0cb97b8c8aff4955e6013` through a true two-parent merge and regenerate architecture, governance, and receipt evidence for the resulting exact M3 head. This preserves both reviewed lineages while preventing historical exact-state artifacts from being reused as current authority.

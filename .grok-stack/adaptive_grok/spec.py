@@ -41,6 +41,9 @@ ALLOWED_SCHEMA_KEYS = {
     "minProperties",
     "maxProperties",
 }
+JSON_SCHEMA_TYPE_NAMES = frozenset(
+    {"object", "array", "string", "integer", "boolean", "null"}
+)
 
 RISK_MAP = {"low": "green", "medium": "yellow", "high": "red"}
 
@@ -56,6 +59,8 @@ def _schema_preflight(schema: Any, path: str = "$") -> None:
         extra = set(schema) - ALLOWED_SCHEMA_KEYS
         if extra:
             raise SpecError(f"{path}: unsupported schema keywords: {sorted(extra)}", code="schema")
+        if "type" in schema:
+            _validate_type_declaration(schema["type"])
         for key, value in schema.items():
             if key in {"properties", "$defs"}:
                 if not isinstance(value, dict):
@@ -335,8 +340,9 @@ def validate_schema(
     if "enum" in schema and instance not in schema["enum"]:
         raise SpecError(f"{path}: value {instance!r} not in enum")
     expected = schema.get("type")
-    if expected and not _type_matches(instance, expected):
-        raise SpecError(f"{path}: expected type {expected}")
+    if "type" in schema:
+        if not _type_matches(instance, expected):
+            raise SpecError(f"{path}: expected type {expected}")
     if expected == "object" or ("properties" in schema and isinstance(instance, dict)):
         if not isinstance(instance, dict):
             raise SpecError(f"{path}: expected object")
@@ -384,7 +390,23 @@ def validate_schema(
             raise SpecError(f"{path}: above maximum")
 
 
-def _type_matches(instance: Any, expected: str) -> bool:
+def _validate_type_declaration(expected: Any) -> None:
+    if isinstance(expected, list):
+        if not expected or any(not isinstance(item, str) for item in expected):
+            raise SpecError("schema type array must contain type names")
+        for item in expected:
+            _validate_type_declaration(item)
+        return
+    if not isinstance(expected, str):
+        raise SpecError("schema type must be a string or array of strings")
+    if expected not in JSON_SCHEMA_TYPE_NAMES:
+        raise SpecError(f"unsupported type {expected}")
+
+
+def _type_matches(instance: Any, expected: Any) -> bool:
+    _validate_type_declaration(expected)
+    if isinstance(expected, list):
+        return any(_type_matches(instance, item) for item in expected)
     mapping = {
         "object": dict,
         "array": list,
@@ -393,9 +415,7 @@ def _type_matches(instance: Any, expected: str) -> bool:
         "boolean": bool,
         "null": type(None),
     }
-    cls = mapping.get(expected)
-    if cls is None:
-        raise SpecError(f"unsupported type {expected}")
+    cls = mapping[expected]
     if expected == "integer":
         return isinstance(instance, int) and not isinstance(instance, bool)
     return isinstance(instance, cls)

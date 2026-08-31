@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANAGED_DIRS = (".grok", ".agents", ".grok-stack")
 MANAGED_FILES = (
     "scripts/grok_architecture.py",
+    "scripts/grok_governance.py",
     "scripts/grok_route.py",
     "scripts/grok_change.py",
     "scripts/grok_spec.py",
@@ -42,6 +43,10 @@ MANAGED_FILES = (
     "schemas/change-spec-v1.schema.json",
     "schemas/architecture-system.schema.json",
     "schemas/architecture-rules.schema.json",
+    "schemas/governance-rule.schema.json",
+    "schemas/debt-entry.schema.json",
+    "schemas/canonical-example.schema.json",
+    "schemas/governance-handoff-v1.schema.json",
 )
 SKIP_PREFIXES = (".grok-stack/runtime/",)
 TARGET_OWNED_ARCHITECTURE = frozenset(
@@ -49,6 +54,13 @@ TARGET_OWNED_ARCHITECTURE = frozenset(
         "architecture/adoption.json",
         "architecture/rules.yaml",
         "architecture/system.yaml",
+    }
+)
+TARGET_OWNED_GOVERNANCE = frozenset(
+    {
+        "governance/rules/index.json",
+        "governance/debt/index.json",
+        "governance/canonical-examples/index.json",
     }
 )
 EMPTY_DIRECTORIES = (
@@ -519,6 +531,8 @@ def _source_entry(
     _path_parts(relative)
     if relative in TARGET_OWNED_ARCHITECTURE:
         raise UnsafeInstallTarget(f"target-owned architecture cannot be managed: {relative}")
+    if relative in TARGET_OWNED_GOVERNANCE:
+        raise UnsafeInstallTarget(f"target-owned governance cannot be managed: {relative}")
     content, mode = tree.read(relative, MAX_SOURCE_FILE_BYTES, expected_identity)
     return InstallEntry(relative, content, mode)
 
