@@ -17,3 +17,8 @@ Each vertical records its RED command/result before production source is added, 
 - RED: `python3 -m unittest factory.tests.test_contracts -v` failed with `ModuleNotFoundError: adaptive_factory`; the package/contract behavior was absent.
 - GREEN: the same command passed 5 tests after closed immutable handoffs/intake/limits, canonical digests, M0 freshness/exception and bounds were implemented.
 - Focused repair: the first GREEN exposed that a valid App check name contains `@`; the existing failing contract test drove a bounded check-name grammar repair, after which all 5 passed.
+
+### State and retry policy
+
+- RED: `python3 -m unittest factory.tests.test_state -v` failed because `adaptive_factory.state` did not exist.
+- GREEN: the same command passed 6 tests covering every state pair, terminality, operator requeue evidence, provider denial, rejected future delivery states and the initial-plus-two closed retry policy.
