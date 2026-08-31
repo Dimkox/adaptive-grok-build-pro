@@ -5,6 +5,16 @@
    python3 scripts/grok_doctor.py --offer-install
    ```
 
+### Try the local browser demo
+
+From this checkout, start the Python-only dashboard with no install or frontend build:
+
+```bash
+python3 scripts/grok_demo.py --open
+```
+
+It prints and serves `http://127.0.0.1:8765/` on loopback only. The tour uses bundled sample evidence, a fixed non-authoritative route seed, in-memory computed previews, and read-only summaries from this checkout; server/application initialization invokes no Git command or subprocess and makes no external request or write. `--open` may ask the operating system to open the configured local browser. Bundled and local evidence is not merge authority and is not the App-owned exact-SHA Trust CI check. Press `Ctrl-C` to stop. See [docs/INVESTOR_DEMO.md](docs/INVESTOR_DEMO.md) for the five-minute walkthrough and port troubleshooting.
+
 1. Install Grok Build:
    - Windows: `irm https://x.ai/cli/install.ps1 | iex`
    - macOS/Linux: `curl -fsSL https://x.ai/cli/install.sh | bash`

@@ -1,18 +1,19 @@
-# Adaptive Grok Build Pro v2.0.12
+# Adaptive Grok Build Pro v2.1.0
 
 A commercial-grade product for **Grok Build** — free of charge, public, and MIT-licensed.
 
 ## Current state
 
-- Identity: **2.0.12** (`VERSION`, README H1). Published GitHub Release is `v2.0.12`.
+- Source identity: **2.1.0** (`VERSION`, README H1). The latest published GitHub Release remains `v2.0.12`; this checkout and its local ZIP are not published release evidence.
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
+- Local browser demo candidate: `python3 scripts/grok_demo.py --open` serves a polished loopback dashboard at `http://127.0.0.1:8765/` with real read-only routing, typed-spec, architecture, and governance projections plus bundled sample verification evidence. It performs no external requests or writes; local and bundled evidence is not merge authority. See [the five-minute investor guide](docs/INVESTOR_DEMO.md).
 - M1 typed intent is locally source-ready: canonical schema-v2 specs, route-driven generation, strict bounded validation, criterion-bound receipts, and `scripts/grok_spec.py` summary/coverage commands passed full local verification and all four route-selected wave-7 reviews on exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a`. A later authorized local database run passed PostgreSQL integration 10/10 and the full Trust CI suite 200/200 with no skips, validating six Trust CI tables, three migrations through version 3, and four bounded `NOLOGIN` roles; this is [local test evidence](engineering/changes/20260826-m1-typed-intent-evidence-rebuild-a4f882/evidence/postgres-integration-local.md), not deployed proof. PR update, the App-owned exact-SHA check, signed approvals, merge, and deployment of the new holdout, worker reader, policy, and attestation emitter remain incomplete operator-controlled steps. Historical schema-v1 YAML is explicit unchanged-history compatibility only.
 - M2-A executable architecture is a local source candidate: strict target-owned model/rules/adoption state, bounded deterministic parsing, exact Git-object diff, repository/contract drift, mandatory fitness evidence including a package-aware bounded abstract interpreter for queue provenance, monotonic risk, five read-only Mermaid text projections, architecture-bound local verification/receipts, and a read-only/new-target installer boundary are implemented. Passing final route reviews, current fingerprint-bound receipts, PR delivery, the external exact-SHA check, M2-B independent enforcement, and deployment remain pending; local architecture output is not merge authority.
 - M3 controlled knowledge and debt is a local source candidate: strict target-owned governance registries, bounded no-follow loading, reviewed rule lifecycle, conflict detection, canonical-example/debt semantics, non-authoritative Markdown projections, exact `GovernanceHandoffV1`, executable architecture fitness, governance-bound local receipts, and safe installer distribution are implemented. The shipped registries are empty, repository-authored approval-looking fields are not external authority, and no active rule/example or closed debt is fabricated. Task 8 final verification/reviews, PR delivery, the App-owned exact-SHA check, signed approvals, merge, and any deployment remain pending.
 - M4 durable factory control-plane implementation is pending and cannot start from local M3 prose or receipts. It must consume current exact M1/M2/M3 handoffs and separately verified external authority on its own branch and pull request.
 - Independent CI candidate: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
-- Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. The PR #2 bootstrap exception is revoked. PR #5 is not mergeable while that Check Run is `action_required`.
+- Trust CI service identity is also **2.1.0** (`trust-ci/pyproject.toml`) but remains a separately deployed service, not this product source identity. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. The PR #2 bootstrap exception is revoked. PR #5 is not mergeable while that Check Run is `action_required`.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
 
 ## Read first
@@ -64,6 +65,10 @@ Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, execu
 - [`scripts/grok_review.py`](scripts/grok_review.py)
 - [`scripts/grok_approve.py`](scripts/grok_approve.py) — exact action/resource delegated local grant only
 - [`scripts/grok_deploy.py`](scripts/grok_deploy.py)
+- [`scripts/grok_demo.py`](scripts/grok_demo.py)
+- [local demo assets and fixtures](.grok-stack/demo/index.html)
+- [local demo OpenAPI v1 contract](engineering/contracts/openapi/adaptive-demo.v1.json)
+- [investor demo guide](docs/INVESTOR_DEMO.md)
 - [`scripts/grok_doctor.py`](scripts/grok_doctor.py)
 - [`scripts/install_into.py`](scripts/install_into.py)
 - [`trust-ci/`](trust-ci/) — external merge trust, deployed independently
@@ -84,6 +89,7 @@ Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, execu
 - `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`
 - Optional independently deployed Trust CI that removes merge trust from prompts, agents and local runtime
 - GitHub App-owned policy-epoch Checks, external holdout validation and signed exact-SHA attestations
+- One-command local browser tour backed by the same read-only route/spec/architecture/governance logic
 
 ## Stack graph
 
@@ -286,6 +292,20 @@ python3 scripts/grok_governance.py handoff --base <40-char-sha> --head <40-char-
 
 `project` prints proposed non-authoritative `decisions.md` and `mistakes.md` content without writing; `check-projections` compares those views without mutation. Exact handoff publication additionally requires a clean exact Git state, independently rederived M2 evidence, matching base/head SHAs, and zero governance findings.
 
+## Local browser demo
+
+Start the dependency-free local product tour from a source or packaged checkout:
+
+```bash
+python3 scripts/grok_demo.py --open
+```
+
+The command binds only `127.0.0.1`, prints `http://127.0.0.1:8765/`, and needs no frontend build, package installation, database, credential, Git query, or network connection. Demo route IDs use a fixed non-authoritative seed, so server/application initialization does not invoke Git or another subprocess; `--open` may ask the operating system to open the configured local browser. Press `Ctrl-C` to stop it; use `python3 scripts/grok_demo.py --port 8766` if the default port is occupied. The dashboard and API are documented by [`engineering/contracts/openapi/adaptive-demo.v1.json`](engineering/contracts/openapi/adaptive-demo.v1.json), while the static shell and bounded fixtures live under [`.grok-stack/demo/`](.grok-stack/demo/index.html).
+
+Every panel states its provenance: `bundled_sample` is reviewed illustrative data, `computed_preview` is an in-memory route/draft-spec result, `live_repository` is a read-only model summary from this checkout, and `not_run` means verification was not executed for an entered prompt. The dashboard cannot activate a route, run the verifier, write a receipt, access secrets, contact GitHub or Trust CI, approve, merge, publish, or deploy. Local and bundled evidence is not merge authority; the App-owned policy-epoch exact-SHA check and any required signed approvals remain separate operator-controlled gates.
+
+See [docs/INVESTOR_DEMO.md](docs/INVESTOR_DEMO.md) for the truthful five-minute narrative, expected states, and troubleshooting.
+
 ## Requirements
 
 Pins are **minimum or newer**. `built` is the version this local stack was verified on. If a tool is missing or older than minimum, `python3 scripts/grok_doctor.py` prints an **install offer** for the fallback (or install a newer version).
@@ -376,6 +396,7 @@ Local loop: route → change → verify → independent reviews → `ready` → 
 | `scripts/grok_review.py` | Record local review receipt |
 | `scripts/grok_approve.py` | Delegated local action/resource grant bound to repository, route, change, exact HEAD and tree fingerprint; not accepted by Trust CI |
 | `scripts/grok_deploy.py` | Prepare-only human last mile |
+| `scripts/grok_demo.py` | Start the loopback-only read-only product tour using bundled sample and checkout-derived evidence |
 | `scripts/grok_doctor.py` | Local health check |
 | `scripts/install_into.py` | Plan an existing repository read-only or atomically materialize an absent new target |
 | `adaptive-trust-ci` | External API, worker, migration, signed approvals, holdout verification, attestation verification and app-bound branch protection |

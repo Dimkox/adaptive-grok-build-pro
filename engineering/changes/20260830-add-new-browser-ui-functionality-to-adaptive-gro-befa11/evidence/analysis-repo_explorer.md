@@ -1,6 +1,6 @@
 # Repository analysis — investor-ready local browser demo
 
-Route: `befa117340b9`  
+Route: `befa117340b9`
 Inspected branch/head: `mvp/investor-ready` at `d4cc01fe8d6ec82cce93106191774fc32e8dbb46`
 
 ## Existing read-only product APIs the demo can call

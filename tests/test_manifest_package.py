@@ -62,6 +62,25 @@ class ManifestTests(unittest.TestCase):
         }
         self.assertEqual(required - rels, set())
 
+    def test_local_demo_engine_assets_contract_and_guide_are_packaged(self) -> None:
+        rels = {path.relative_to(ROOT).as_posix() for path in included_files(ROOT)}
+        required = {
+            ".grok-stack/adaptive_grok/demo.py",
+            ".grok-stack/adaptive_grok/demo_http.py",
+            ".grok-stack/demo/index.html",
+            ".grok-stack/demo/assets/app.css",
+            ".grok-stack/demo/assets/api.js",
+            ".grok-stack/demo/assets/render.js",
+            ".grok-stack/demo/assets/app.js",
+            ".grok-stack/demo/sample/task.json",
+            ".grok-stack/demo/sample/change-spec.json",
+            ".grok-stack/demo/sample/verification-report.json",
+            "scripts/grok_demo.py",
+            "engineering/contracts/openapi/adaptive-demo.v1.json",
+            "docs/INVESTOR_DEMO.md",
+        }
+        self.assertEqual(required - rels, set())
+
 
 class PackageTests(unittest.TestCase):
     def test_packaged_installer_materializes_new_target_without_authority(self) -> None:
@@ -165,7 +184,7 @@ class PackageTests(unittest.TestCase):
 
     def test_included_files_and_shipped_zip_have_no_github_actions(self) -> None:
         version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
-        self.assertEqual(version, '2.0.12')
+        self.assertEqual(version, '2.1.0')
         rels = [path.relative_to(ROOT).as_posix() for path in included_files(ROOT)]
         self.assertFalse(any(rel.startswith('.github/workflows/') for rel in rels))
         self.assertNotIn('.github/dependabot.yml', rels)
@@ -176,10 +195,40 @@ class PackageTests(unittest.TestCase):
                 names = archive.namelist()
                 member = 'adaptive-grok-build-pro/VERSION'
                 self.assertIn(member, names)
-                self.assertEqual(archive.read(member).decode('utf-8').strip(), '2.0.12')
+                self.assertEqual(archive.read(member).decode('utf-8').strip(), '2.1.0')
                 self.assertFalse(any('.github/workflows/' in name for name in names))
                 self.assertFalse(any(name.endswith('dependabot.yml') for name in names))
                 self.assertFalse(any(name.endswith('github-actions.yml') for name in names))
+
+    def test_investor_demo_local_release_artifact_is_complete_and_checksum_bound(self) -> None:
+        version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+        archive_path = ROOT / "dist" / f"adaptive-grok-build-pro-v{version}.zip"
+        checksum_path = ROOT / "dist" / f"adaptive-grok-build-pro-v{version}.zip.sha256"
+        self.assertTrue(archive_path.is_file())
+        self.assertTrue(checksum_path.is_file())
+        expected = checksum_path.read_text(encoding="utf-8").split()[0]
+        import hashlib
+        self.assertEqual(hashlib.sha256(archive_path.read_bytes()).hexdigest(), expected)
+        with zipfile.ZipFile(archive_path) as archive:
+            names = set(archive.namelist())
+        prefix = "adaptive-grok-build-pro/"
+        required = {
+            "VERSION",
+            "AGENTS.md",
+            ".grok/hooks/adaptive.json",
+            ".agents/skills/adaptive-delivery/SKILL.md",
+            ".grok-stack/adaptive_grok/spec.py",
+            ".grok-stack/adaptive_grok/architecture.py",
+            ".grok-stack/adaptive_grok/governance.py",
+            ".grok-stack/adaptive_grok/demo.py",
+            ".grok-stack/demo/index.html",
+            "scripts/grok_demo.py",
+            "engineering/contracts/openapi/adaptive-demo.v1.json",
+            "trust-ci/README.md",
+            "examples/bitrix-module/README.md",
+            "docs/INVESTOR_DEMO.md",
+        }
+        self.assertEqual({prefix + item for item in required} - names, set())
 
     def test_write_archive_unlinks_root_manifest_but_embeds_it(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

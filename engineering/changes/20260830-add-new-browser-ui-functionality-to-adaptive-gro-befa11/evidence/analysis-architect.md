@@ -1,7 +1,7 @@
 # Architecture analysis — local investor demo dashboard
 
-Route: `befa117340b9`  
-Base inspected: `d4cc01fe8d6ec82cce93106191774fc32e8dbb46` (`mvp/investor-ready`)  
+Route: `befa117340b9`
+Base inspected: `d4cc01fe8d6ec82cce93106191774fc32e8dbb46` (`mvp/investor-ready`)
 Role: read-only `architect`
 
 ## Recommendation

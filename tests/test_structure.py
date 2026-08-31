@@ -5,6 +5,7 @@ import itertools
 import json
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -148,6 +149,12 @@ class StructureTests(unittest.TestCase):
             "schemas/canonical-example.schema.json",
             "schemas/governance-handoff-v1.schema.json",
             "scripts/grok_governance.py",
+            "scripts/grok_demo.py",
+            ".grok-stack/adaptive_grok/demo.py",
+            ".grok-stack/adaptive_grok/demo_http.py",
+            ".grok-stack/demo/index.html",
+            "engineering/contracts/openapi/adaptive-demo.v1.json",
+            "docs/INVESTOR_DEMO.md",
         )
         for relative in required:
             self.assertTrue((ROOT / relative).exists(), relative)
@@ -171,6 +178,25 @@ class StructureTests(unittest.TestCase):
         version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertTrue(readme.startswith(f"# Adaptive Grok Build Pro v{version}\n"))
+        sys.path.insert(0, str(ROOT / ".grok-stack"))
+        import adaptive_grok
+        self.assertEqual(adaptive_grok.__version__, version)
+        self.assertIn(f"## {version} — 2026-08-30", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"))
+
+    def test_local_demo_is_documented_as_read_only_sample_evidence(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        quickstart = (ROOT / "QUICKSTART.md").read_text(encoding="utf-8")
+        guide = (ROOT / "docs/INVESTOR_DEMO.md").read_text(encoding="utf-8")
+        for text in (readme, quickstart, guide):
+            self.assertIn("python3 scripts/grok_demo.py --open", text)
+            self.assertIn("127.0.0.1:8765", text)
+            self.assertIn("bundled sample", text.lower())
+            self.assertIn("not merge authority", text.lower())
+        self.assertIn("Ctrl-C", guide)
+        self.assertIn("--port 8766", guide)
+        self.assertIn("five-minute", guide.lower())
+        self.assertIn("scripts/grok_demo.py", readme)
+        self.assertIn("engineering/contracts/openapi/adaptive-demo.v1.json", readme)
 
     def test_readme_stack_graph_is_complete(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

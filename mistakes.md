@@ -187,3 +187,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Alternating bytes for one shared evidence path could validate separate rules while only the final exact-HEAD-matching digest survived.
 **Root cause:** Evaluation stored path digests with last-write-wins assignment and then reread evidence during liveness checks instead of binding and reusing one immutable first observation.
+
+## 2026-08-31 — Skipped required change-state transitions
+
+**Symptom:** The first attempt to mark the investor MVP ready was rejected as `approved -> ready`.
+**Root cause:** I assumed readiness could be set directly instead of checking the repository state machine; delivery closure must traverse `implementing -> verifying -> reviewing -> ready` in order.

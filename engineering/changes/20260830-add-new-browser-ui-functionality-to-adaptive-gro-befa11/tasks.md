@@ -4,6 +4,6 @@
 - [x] RED: real-logic, no-write, HTTP/security, and frontend-state tests.
 - [x] GREEN: service, HTTP adapter, dashboard, fixtures, OpenAPI, launcher.
 - [x] Architecture, installer/package, README, Quickstart, and investor guide.
-- [ ] Focused checks and full verification.
-- [ ] Independent reviews and final fingerprint receipts.
+- [x] Focused checks and full verification.
+- [x] Independent reviews completed; final fingerprint receipts are recorded after the release commit.
 - [x] Product identity and notes; final local ZIP is produced after the implementation report.

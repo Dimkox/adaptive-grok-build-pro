@@ -2,7 +2,7 @@
 
 ## Deployment
 
-No external deployment in this change. Source identity is `2.1.0`; produce only `dist/adaptive-grok-build-pro-v2.1.0.zip` and its checksum locally. Exact-SHA external Trust CI, signed scopes, merge, tag, GitHub Release publication, and production activation remain separate gates.
+No external deployment in this change. Source identity is `2.1.0`; the local deliverables are `dist/adaptive-grok-build-pro-v2.1.0.zip` and its adjacent SHA-256 checksum. Exact-SHA external Trust CI, signed scopes, merge, tag, GitHub Release publication, and production activation remain separate gates.
 
 ## Feature flags / staged rollout
 

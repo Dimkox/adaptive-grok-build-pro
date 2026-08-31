@@ -42,6 +42,50 @@ def _canonical_digest(value: object) -> str:
     return hashlib.sha256(raw.encode("ascii")).hexdigest()
 
 
+def summarize_verification_report(report: dict[str, object]) -> dict[str, object]:
+    """Validate and summarize a bounded, explicitly sample-labelled report.
+
+    This function is deliberately pure: it does not run checks, inspect Git, write a
+    receipt, or infer merge authority.
+    """
+    allowed = {"schema_version", "sample_id", "status", "checks"}
+    unknown = set(report) - allowed
+    if unknown:
+        raise ValueError(f"verification report has unknown fields: {sorted(unknown)}")
+    if set(report) != allowed:
+        raise ValueError("verification report is missing required fields")
+    if report.get("schema_version") != 1 or report.get("status") != "sample_evidence":
+        raise ValueError("verification report version or sample status is invalid")
+    sample_id = report.get("sample_id")
+    checks = report.get("checks")
+    if not isinstance(sample_id, str) or not sample_id or len(sample_id) > 128:
+        raise ValueError("verification report sample_id is invalid")
+    if not isinstance(checks, list) or len(checks) > 64:
+        raise ValueError("verification report checks are invalid")
+    normalized: list[dict[str, str]] = []
+    counts = {status: 0 for status in ("pass", "fail", "skip")}
+    for index, item in enumerate(checks):
+        if not isinstance(item, dict) or set(item) != {"name", "status", "summary"}:
+            raise ValueError(f"verification check {index} has unknown or missing fields")
+        name, status, summary = item["name"], item["status"], item["summary"]
+        if not isinstance(name, str) or not name or len(name) > 128:
+            raise ValueError(f"verification check {index} name is invalid")
+        if status not in counts:
+            raise ValueError(f"verification check {index} status is invalid")
+        if not isinstance(summary, str) or not summary or len(summary) > 512:
+            raise ValueError(f"verification check {index} summary is invalid")
+        counts[status] += 1
+        normalized.append({"name": name, "status": status, "summary": summary})
+    overall = "fail" if counts["fail"] else "pass"
+    return {
+        "sample_id": sample_id,
+        "status": overall,
+        **counts,
+        "checks": normalized,
+        "digest": _canonical_digest(report),
+    }
+
+
 def _architecture_base(root: Path, route: dict[str, object] | None) -> str:
     return select_architecture_comparison_base(root, route).comparison_base_sha
 

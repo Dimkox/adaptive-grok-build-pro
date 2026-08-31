@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Adaptive Grok Build Pro — Local Product Tour</title>
+  <link rel="stylesheet" href="/assets/app.css">
+  <script type="module" src="/assets/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to the product tour</a>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="#main" aria-label="Adaptive Grok Build Pro home">
+      <span class="brand-mark" aria-hidden="true">AG</span>
+      <span><strong>Adaptive Grok</strong><small>Build Pro</small></span>
+    </a>
+    <div class="header-status">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span id="connection-label">Connecting to local engine</span>
+    </div>
+  </header>
+
+  <div id="connection-banner" class="connection-banner" hidden>
+    <strong>Stale — local server unavailable</strong>
+    <span>The last successful result remains visible and is not current.</span>
+    <button id="retry-button" class="button button-quiet" type="button">Retry</button>
+  </div>
+
+  <main id="main" tabindex="-1">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="eyebrow"><span aria-hidden="true">◆</span> Local, read-only product tour</div>
+      <h1 id="hero-title">From intent to evidence.<br><span>Every decision explainable.</span></h1>
+      <p class="hero-copy">See how one reviewed request becomes a deterministic route, typed contract, executable architecture, governed knowledge, and independently inspectable evidence.</p>
+      <div class="trust-strip" role="note">
+        <span class="trust-icon" aria-hidden="true">◎</span>
+        <p><strong>Honest by design.</strong> Route previews are computed locally. Verification is bundled sample evidence—not merge authority or a live Trust CI verdict.</p>
+      </div>
+    </section>
+
+    <section class="workbench" aria-labelledby="preview-title">
+      <div class="section-heading">
+        <div>
+          <p class="kicker">Try the control engine</p>
+          <h2 id="preview-title">Preview a software change</h2>
+        </div>
+        <span id="mode-chip" class="source-chip">Bundled sample</span>
+      </div>
+      <form id="preview-form" novalidate>
+        <label for="prompt">Describe the outcome</label>
+        <div class="prompt-shell">
+          <textarea id="prompt" name="prompt" rows="3" maxlength="4000" aria-describedby="prompt-help prompt-error" placeholder="Example: Add a secure responsive API dashboard…"></textarea>
+          <button id="submit-button" class="button button-primary" type="submit">
+            <span>Compute preview</span><span aria-hidden="true">→</span>
+          </button>
+        </div>
+        <div class="field-meta">
+          <span id="prompt-help">Ctrl+Enter also submits. Nothing is written or sent externally.</span>
+          <span id="prompt-count">0 / 4000</span>
+        </div>
+        <p id="prompt-error" class="field-error" role="alert" hidden>Prompt must contain 1 to 4000 characters.</p>
+      </form>
+      <button id="alternate-button" class="scenario-button" type="button">Use contrasting scenario</button>
+    </section>
+
+    <section id="results" class="results" aria-labelledby="results-heading" aria-busy="true">
+      <div class="section-heading results-heading-row">
+        <div>
+          <p class="kicker">Explainable control path</p>
+          <h2 id="results-heading" tabindex="-1">Loading local evidence</h2>
+        </div>
+        <span id="overall-status" class="status-badge status-pending">Loading</span>
+      </div>
+      <p id="live-status" class="sr-only" aria-live="polite">Loading local evidence</p>
+
+      <ol class="pipeline" aria-label="Intent-to-evidence pipeline">
+        <li><span>01</span><strong>Intent</strong><small>Reviewed outcome</small></li>
+        <li><span>02</span><strong>Route</strong><small>Risk and ownership</small></li>
+        <li><span>03</span><strong>Spec</strong><small>Typed criteria</small></li>
+        <li><span>04</span><strong>Architecture</strong><small>Executable boundaries</small></li>
+        <li><span>05</span><strong>Evidence</strong><small>Scoped proof</small></li>
+      </ol>
+
+      <div class="evidence-grid">
+        <article id="route-panel" class="evidence-card evidence-card-wide">
+          <div class="card-heading"><div class="card-icon" aria-hidden="true">R</div><div><p>Deterministic routing</p><h3>Route & ownership</h3></div><span id="route-status" class="status-badge status-pending">Waiting</span></div>
+          <dl id="route-content" class="metric-grid"></dl>
+          <p id="route-provenance" class="provenance"></p>
+        </article>
+
+        <article id="spec-panel" class="evidence-card">
+          <div class="card-heading"><div class="card-icon" aria-hidden="true">T</div><div><p>Machine-readable intent</p><h3>Typed specification</h3></div><span id="spec-status" class="status-badge status-pending">Waiting</span></div>
+          <dl id="spec-content" class="metric-grid"></dl>
+          <p id="spec-provenance" class="provenance"></p>
+        </article>
+
+        <article id="architecture-panel" class="evidence-card">
+          <div class="card-heading"><div class="card-icon" aria-hidden="true">A</div><div><p>Trust-aware topology</p><h3>Architecture</h3></div><span id="architecture-status" class="status-badge status-pending">Waiting</span></div>
+          <dl id="architecture-content" class="metric-grid"></dl>
+          <p id="architecture-provenance" class="provenance"></p>
+        </article>
+
+        <article id="governance-panel" class="evidence-card">
+          <div class="card-heading"><div class="card-icon" aria-hidden="true">G</div><div><p>Controlled learning</p><h3>Governance</h3></div><span id="governance-status" class="status-badge status-pending">Waiting</span></div>
+          <dl id="governance-content" class="metric-grid"></dl>
+          <p id="governance-provenance" class="provenance"></p>
+        </article>
+
+        <article id="verification-panel" class="evidence-card">
+          <div class="card-heading"><div class="card-icon" aria-hidden="true">V</div><div><p>Bounded proof</p><h3>Verification evidence</h3></div><span id="verification-status" class="status-badge status-pending">Waiting</span></div>
+          <dl id="verification-content" class="metric-grid"></dl>
+          <p id="verification-provenance" class="provenance"></p>
+        </article>
+      </div>
+    </section>
+
+    <section class="boundary" aria-labelledby="boundary-title">
+      <div><p class="kicker">Trust boundary</p><h2 id="boundary-title">Local proof stays local.</h2></div>
+      <p>This dashboard cannot activate routes, run verification, write receipts, access credentials, contact GitHub, approve changes, merge, publish, or deploy. External exact-SHA Trust CI and human approval remain separate operator-controlled gates.</p>
+    </section>
+  </main>
+
+  <footer><span>Adaptive Grok Build Pro</span><span>Loopback · Offline-capable · Zero external writes</span></footer>
+</body>
+</html>

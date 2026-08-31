@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 MANAGED_DIRS = (".grok", ".agents", ".grok-stack")
 MANAGED_FILES = (
+    "scripts/grok_demo.py",
     "scripts/grok_architecture.py",
     "scripts/grok_governance.py",
     "scripts/grok_route.py",
@@ -47,6 +48,7 @@ MANAGED_FILES = (
     "schemas/debt-entry.schema.json",
     "schemas/canonical-example.schema.json",
     "schemas/governance-handoff-v1.schema.json",
+    "engineering/contracts/openapi/adaptive-demo.v1.json",
 )
 SKIP_PREFIXES = (".grok-stack/runtime/",)
 TARGET_OWNED_ARCHITECTURE = frozenset(

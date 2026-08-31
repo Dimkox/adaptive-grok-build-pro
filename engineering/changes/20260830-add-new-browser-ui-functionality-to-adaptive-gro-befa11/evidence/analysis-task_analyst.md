@@ -1,7 +1,7 @@
 # Task analysis — investor-ready browser demo
 
-Route: `befa117340b9`  
-Base: `d4cc01fe8d6ec82cce93106191774fc32e8dbb46` (`mvp/investor-ready`)  
+Route: `befa117340b9`
+Base: `d4cc01fe8d6ec82cce93106191774fc32e8dbb46` (`mvp/investor-ready`)
 Role: `task_analyst` (read-only; no product-code changes)
 
 ## Outcome and product promise
@@ -144,4 +144,3 @@ The implementation/review should require all of the following, not screenshots a
 - **Architecture/governance evaluation depending on wall clock:** inject/freeze the evaluation timestamp and display it so the demo stays reproducible.
 - **Responsive polish untested:** require the four named viewports, keyboard path, focus restoration, and browser evidence.
 - **Scope expansion into an execution product:** keep provider, database, task queue, GitHub, and external actions absent; those need later separately approved milestones.
-

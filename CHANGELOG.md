@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.1.0 — 2026-08-30
+
+Introduced a local, loopback-only browser demo backed by real read-only routing, typed-spec, architecture, and governance logic.
+
+- One command, `python3 scripts/grok_demo.py --open`, serves the dependency-free responsive dashboard.
+- Closed OpenAPI v1 surface with Host/Origin enforcement, bounded prompt input, stable errors, strict security headers, and no mutation or external action endpoint.
+- Explicit `bundled_sample`, `computed_preview`, `live_repository`, and `not_run` provenance; the verification card is bundled/local sample evidence, not the App-owned exact-SHA Trust CI check.
+- Architecture, installer, deterministic package inventory, Quickstart, and the five-minute investor guide include the new local-only surface.
+- This is a source/local artifact identity. Merge, tag, GitHub Release publication, deployment, and external Trust CI evidence remain separate operator-controlled actions.
+
 ## 2.0.12 — 2026-08-23
 
 Self-hosted Trust CI control plane in-tree, K16 README graph, optional docker/syft/trivy/cosign toolchain pins.

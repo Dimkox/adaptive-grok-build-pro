@@ -153,10 +153,15 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(len(generic_paths), len(set(generic_paths)))
         self.assertIn("AGENTS.md", generic_paths)
         for expected in (
+            ".grok-stack/adaptive_grok/demo.py",
+            ".grok-stack/adaptive_grok/demo_http.py",
+            ".grok-stack/demo/index.html",
             ".grok-stack/adaptive_grok/governance.py",
             ".grok-stack/templates/change/architecture.md",
             ".grok-stack/templates/change/requirements.md",
             "scripts/grok_governance.py",
+            "scripts/grok_demo.py",
+            "engineering/contracts/openapi/adaptive-demo.v1.json",
             "schemas/canonical-example.schema.json",
             "schemas/debt-entry.schema.json",
             "schemas/governance-handoff-v1.schema.json",
@@ -208,6 +213,9 @@ class InstallerTests(unittest.TestCase):
 
             self.assertEqual(result, plan)
             self.assertEqual(result["target_state"], "absent")
+            self.assertTrue((target / "scripts/grok_demo.py").is_file())
+            self.assertTrue((target / ".grok-stack/demo/index.html").is_file())
+            self.assertTrue((target / "engineering/contracts/openapi/adaptive-demo.v1.json").is_file())
             for item in result["entries"]:
                 installed = target / item["path"]
                 self.assertTrue(installed.is_file(), item["path"])

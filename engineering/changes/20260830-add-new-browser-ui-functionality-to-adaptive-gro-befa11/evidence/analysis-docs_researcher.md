@@ -1,7 +1,7 @@
 # Documentation research — local investor demo
 
-Route: `befa117340b9`  
-Role: `docs_researcher` (read-only)  
+Route: `befa117340b9`
+Role: `docs_researcher` (read-only)
 Repository state inspected: `mvp/investor-ready` at `d4cc01fe8d6ec82cce93106191774fc32e8dbb46`
 
 ## Finding
