@@ -192,3 +192,9 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The first attempt to mark the investor MVP ready was rejected as `approved -> ready`.
 **Root cause:** I assumed readiness could be set directly instead of checking the repository state machine; delivery closure must traverse `implementing -> verifying -> reviewing -> ready` in order.
+
+## 2026-08-31 — Let a gitignored package artifact become a test fixture
+
+**Symptom:** The local package test passed only because `dist/` already existed, while clean Trust CI root-unittest failed without that gitignored artifact.
+**Root cause:** The test asserted a scratch archive instead of building its own fixture in a temporary directory.
+**Durable rule:** Clean-checkout tests must create and verify every ignored artifact they require, leaving no persistent source-tree mutation.
