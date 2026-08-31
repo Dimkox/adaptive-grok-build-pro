@@ -4,7 +4,7 @@ import copy
 import json
 import threading
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any, Protocol
 
 from .models import ApprovalEnvelope, ApprovalPayload, AttestationEnvelope, Job, JobRequest, parse_datetime
@@ -515,7 +515,7 @@ class PostgresStore:
                         payload.reason,
                         parse_datetime(payload.issued_at),
                         parse_datetime(payload.expires_at),
-                        json.dumps(payload.to_dict()),
+                        json.dumps(envelope.to_dict()["payload"]),
                         envelope.signature,
                         now,
                     ),
@@ -584,7 +584,7 @@ class PostgresStore:
                         payload.head_sha,
                         payload.status,
                         payload.key_id,
-                        json.dumps(payload.to_dict()),
+                        json.dumps(envelope.to_dict()["payload"]),
                         envelope.signature,
                     ),
                 )

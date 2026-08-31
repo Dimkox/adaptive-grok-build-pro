@@ -1,0 +1,128 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {"test": "tests/test_change_spec.py"},
+        {"receipt": "verification"}
+      ],
+      "id": "AC-001",
+      "statement": "Canonical v2 specs are parsed with bounded strict JSON rules and fail closed on ambiguity, unsafe paths, duplicate IDs, or incomplete gate semantics."
+    },
+    {
+      "evidence": [
+        {"test": "tests/test_change_receipts.py"},
+        {"test": "tests/test_installer.py"}
+      ],
+      "id": "AC-002",
+      "statement": "New durable packages serialize deterministic route facts as v2 and installed targets receive the schemas and runnable CLI."
+    },
+    {
+      "evidence": [
+        {"test": "tests/test_change_receipts.py"},
+        {"receipt": "test_review"}
+      ],
+      "id": "AC-003",
+      "statement": "Every receipt kind is centrally bound to its declared criterion IDs, canonical spec digest, and current spec fingerprint, and stale evidence is rejected."
+    },
+    {
+      "evidence": [
+        {"test": "trust-ci/tests/test_change_spec_holdout.py"},
+        {"receipt": "security_review"}
+      ],
+      "id": "AC-004",
+      "statement": "The external holdout source independently validates exact-SHA changed specs without importing the local validator and rejects unsafe file inputs."
+    },
+    {
+      "evidence": [
+        {"test": "trust-ci/tests/test_signing.py"},
+        {"test": "trust-ci/tests/test_runner.py"},
+        {"receipt": "code_review"}
+      ],
+      "id": "AC-005",
+      "statement": "Trust CI source signs deterministic spec provenance and declaration coverage while preserving verification and replay of pre-M1 signed payload mappings."
+    },
+    {
+      "evidence": [
+        {"receipt": "verification"},
+        {"receipt": "release_review"},
+        {"production_signal": "SIG-001"}
+      ],
+      "id": "AC-006",
+      "statement": "The source tree passes root tests, Trust CI tests, compileall, PR verification, and every route-selected independent review on one current fingerprint."
+    }
+  ],
+  "approvals": {
+    "required_scopes": ["governance"]
+  },
+  "change_id": "20260826-m1-typed-intent-evidence-rebuild-a4f882",
+  "contracts": {
+    "events": [],
+    "json_schema": ["schemas/change-spec.schema.json", "schemas/change-spec-v1.schema.json"],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {"test": "tests/test_change_spec.py"},
+        {"receipt": "security_review"}
+      ],
+      "id": "FORBID-001",
+      "statement": "A modified or new spec is never accepted through the historical v1 YAML compatibility decoder."
+    },
+    {
+      "evidence": [
+        {"test": "trust-ci/tests/test_signing.py"},
+        {"receipt": "security_review"}
+      ],
+      "id": "FORBID-002",
+      "statement": "Existing signed attestations are never normalized into a different payload before signature verification or replay."
+    },
+    {
+      "evidence": [
+        {"receipt": "release_review"}
+      ],
+      "id": "FORBID-003",
+      "statement": "Source readiness is never represented as deployment of the new external holdout, worker, policy, or attestation emitter."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {"receipt": "code_review"},
+        {"receipt": "security_review"}
+      ],
+      "id": "INV-001",
+      "statement": "Local receipts and repository code remain advisory and cannot mint merge authority or human approval."
+    },
+    {
+      "evidence": [
+        {"test": "trust-ci/tests/test_change_spec_holdout.py"},
+        {"test": "trust-ci/tests/test_runner.py"}
+      ],
+      "id": "INV-002",
+      "statement": "Trusted extraction reads bounded checkout data only, follows no symlinks, and executes no pull-request module."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Make typed change intent and criterion evidence traceability source-ready across local workflow and independent Trust CI boundaries.",
+    "success_metric": "m1_source_verification_and_review_status",
+    "target": "all_local_checks_and_route_reviews_pass_with_zero_unmapped_acceptance_criteria"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "grok_verify_pr_status",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "risk": {
+    "domains": ["security"],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

@@ -55,6 +55,7 @@ FOLLOW_UP_RE = re.compile(
 CLOSED_ROUTE_STATUSES = frozenset({'ready', 'released', 'completed', 'cancelled', 'archived'})
 FEATURE_LIKE_INTENTS = frozenset({'feature', 'architecture', 'refactor', 'research'})
 DEFAULT_ANALYSIS_CAP = 10
+_ROUTE_STATE_UNSET = object()
 
 DEFAULT_ROUTING: dict[str, Any] = {
     'schema_version': 1,
@@ -289,7 +290,14 @@ def is_development_prompt(prompt: str, repo: RepoProfile) -> bool:
     return technical and len(prompt.strip()) > 12
 
 
-def build_route(root: Path, prompt: str, session_id: str = 'manual') -> Route:
+def build_route(
+    root: Path,
+    prompt: str,
+    session_id: str = 'manual',
+    *,
+    base_commit_override: str | None | object = _ROUTE_STATE_UNSET,
+    base_fingerprint_override: str | object = _ROUTE_STATE_UNSET,
+) -> Route:
     repo = detect_repo(root)
     intent = _best_intent(prompt)
     domains, task_domains = _domains(prompt, repo)
@@ -417,7 +425,17 @@ def build_route(root: Path, prompt: str, session_id: str = 'manual') -> Route:
         human_gates.append('production_action_approval')
 
     delivery_expected = intent != 'research'
-    route_seed = f'{session_id}|{prompt}|{tree_fingerprint(root)}'
+    base_fingerprint = (
+        tree_fingerprint(root)
+        if base_fingerprint_override is _ROUTE_STATE_UNSET
+        else str(base_fingerprint_override)
+    )
+    base_commit = (
+        git_default_base(root)
+        if base_commit_override is _ROUTE_STATE_UNSET
+        else base_commit_override
+    )
+    route_seed = f'{session_id}|{prompt}|{base_fingerprint}'
     route_id = hashlib.sha256(route_seed.encode()).hexdigest()[:12]
     allowed = unique_ordered([*analysis, *(review or []), *([write_agent] if write_agent else [])])
 
@@ -441,8 +459,8 @@ def build_route(root: Path, prompt: str, session_id: str = 'manual') -> Route:
         risk=risk,
         complexity=complexity,
         repo=repo.to_dict(),
-        base_commit=git_default_base(root),
-        base_fingerprint=tree_fingerprint(root),
+        base_commit=base_commit if isinstance(base_commit, str) or base_commit is None else None,
+        base_fingerprint=base_fingerprint,
         primary_skill='adaptive-delivery',
         workflow_skills=unique_ordered(workflow_skills),
         analysis_agents=unique_ordered(analysis),

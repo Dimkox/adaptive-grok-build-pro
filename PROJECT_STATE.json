@@ -5,10 +5,17 @@
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
+  "source_identity": "2.1.0",
   "completed_milestones": [
     "M0"
   ],
-  "active_milestone": "M1",
+  "locally_complete_candidates": [
+    "M1",
+    "M2",
+    "M3",
+    "investor-demo-mvp"
+  ],
+  "active_milestone": "investor-demo-mvp",
   "last_completed_milestone_merge": {
     "pull_request": 5,
     "commit": "069fe8226addb8a1922dde3db4e753434baa3a3d",
@@ -27,12 +34,21 @@
     }
   ],
   "active_work": {
-    "pull_request": 8,
-    "branch": "milestone/m1-typed-intent-evidence",
-    "status": "design_and_plan_committed_implementation_not_started",
-    "design": "docs/superpowers/specs/2026-08-26-m1-typed-intent-evidence-design.md",
-    "plan": "docs/superpowers/plans/2026-08-26-m1-typed-intent-evidence.md",
-    "next_action": "Implement Task 1 from the M1 plan with TDD: strict typed schema and zero-dependency validator"
+    "pull_request": 15,
+    "branch": "mvp/investor-ready",
+    "target_branch": "main",
+    "status": "locally_complete_awaiting_external_trust",
+    "design": "docs/superpowers/specs/2026-08-30-investor-demo-mvp-design.md",
+    "plan": "docs/superpowers/plans/2026-08-30-investor-demo-mvp.md",
+    "pre_fix_head": "3af0e803c8d763f227f0669e3c614806a90fc75b",
+    "pre_fix_head_context": "origin/main merge commit before the bootstrap correction; not an external Trust CI success, merge, or deployment attestation",
+    "delivery_state": {
+      "external_trust_ci": "pending_exact_sha",
+      "required_approvals": "pending",
+      "merged": false,
+      "deployed": false
+    },
+    "next_action": "Run the App-owned exact-SHA external Trust CI check for the new PR #15 head and obtain all required approvals before merge or deployment"
   },
   "trust_ci": {
     "required_check": "adaptive-trust-ci/verified@6737355947c2",

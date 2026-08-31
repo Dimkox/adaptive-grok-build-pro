@@ -1,0 +1,188 @@
+{
+  "$id": "urn:adaptive-trust-ci:attestation-envelope:v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Signed Trust CI result envelope. The optional spec_digest and criterion_coverage fields are emitted and accepted as a pair by the runtime model.",
+  "properties": {
+    "payload": {
+      "additionalProperties": false,
+      "properties": {
+        "approved_scopes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 256,
+          "type": "array"
+        },
+        "attestation_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "base_sha": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "changed_files": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 10000,
+          "type": "array"
+        },
+        "command_results": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "duration_seconds": {
+                "minimum": 0,
+                "type": "number"
+              },
+              "exit_code": {
+                "type": "integer"
+              },
+              "name": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "output_sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "fail",
+                  "pass"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "status",
+              "exit_code",
+              "duration_seconds",
+              "output_sha256"
+            ],
+            "type": "object"
+          },
+          "maxItems": 256,
+          "type": "array"
+        },
+        "completed_at": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "criterion_coverage": {
+          "additionalProperties": false,
+          "properties": {
+            "criterion_mapped": {
+              "maximum": 10000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "criterion_total": {
+              "maximum": 10000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "spec_count": {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "unmapped_ids": {
+              "items": {
+                "maxLength": 512,
+                "minLength": 1,
+                "type": "string"
+              },
+              "maxItems": 500,
+              "type": "array"
+            }
+          },
+          "required": [
+            "spec_count",
+            "criterion_total",
+            "criterion_mapped",
+            "unmapped_ids"
+          ],
+          "type": "object"
+        },
+        "head_sha": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "job_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "key_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "policy_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "pr_number": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "repository": {
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+          "type": "string"
+        },
+        "schema_version": {
+          "enum": [
+            1
+          ],
+          "type": "integer"
+        },
+        "spec_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "started_at": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "failed",
+            "passed"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "attestation_id",
+        "job_id",
+        "repository",
+        "pr_number",
+        "base_sha",
+        "head_sha",
+        "policy_digest",
+        "status",
+        "command_results",
+        "changed_files",
+        "approved_scopes",
+        "started_at",
+        "completed_at",
+        "key_id"
+      ],
+      "type": "object"
+    },
+    "signature": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "payload",
+    "signature"
+  ],
+  "type": "object"
+}

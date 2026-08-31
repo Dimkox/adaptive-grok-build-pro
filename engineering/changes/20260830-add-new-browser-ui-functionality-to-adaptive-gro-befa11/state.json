@@ -1,0 +1,53 @@
+{
+  "change_id": "20260830-add-new-browser-ui-functionality-to-adaptive-gro-befa11",
+  "created_at": "2026-08-30T23:23:12+00:00",
+  "history": [
+    {
+      "at": "2026-08-30T23:23:12+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-30T23:34:06+00:00",
+      "from": "draft",
+      "reason": "Investor MVP scope, API, UX states, trust boundary, tests, rollout and rollback recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-30T23:34:06+00:00",
+      "from": "scoped",
+      "reason": "User explicitly approved full-project implementation through production-ready local delivery",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-31T00:58:10+00:00",
+      "from": "approved",
+      "reason": "Single write owner implemented the approved investor MVP",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-31T00:58:10+00:00",
+      "from": "implementing",
+      "reason": "Focused and full local verification completed",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-31T00:58:10+00:00",
+      "from": "verifying",
+      "reason": "Independent code and test review wave completed",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-31T00:58:10+00:00",
+      "from": "reviewing",
+      "reason": "Implementation and post-remediation reviews passed; local source is ready pending exact-SHA Trust CI and external delivery gates",
+      "to": "ready"
+    }
+  ],
+  "route_id": "befa117340b9",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Add new browser UI functionality to Adaptive Grok Build Pro: create a one-command local HTTP demo application with a polished responsive dashboard using real repository routing, typed-spec, architecture, governance, and verification-summary logic against bundled sample data; add automated tests and user documentation. Do not perform external writes.",
+  "updated_at": "2026-08-31T00:58:10+00:00"
+}

@@ -108,7 +108,7 @@ At the roadmap baseline, the public branch response showed `main` without requir
 | GitHub App registration | Implemented externally | Verify installation, credentials, check ownership, and branch protection |
 | Durable CI jobs | Implemented | Keep separate from implementation task state |
 | Typed business specification | Missing | Build schema, validator, traceability, and evidence mapping |
-| Executable architecture model | Missing | Replace decorative graph as authority with machine-readable architecture and fitness rules |
+| Executable architecture model | M2-A source candidate | Complete final reviews/receipts, then implement the independent M2-B enforcement floor |
 | Agent-loop backpressure | Missing | Add structured findings and bounded repair cycles |
 | Semantic validator/adjudicator | Missing | Add independent requirement-level verdict separate from implementer reasoning |
 | Controlled learning | Missing | Replace automatic Markdown promotion with reviewed rule lifecycle |
@@ -327,18 +327,20 @@ approvals:
 
 ## Work items
 
-- [ ] Define a strict JSON Schema with no ambiguous free-form alternatives for identifiers, risk tiers, evidence references, and approval scopes.
-- [ ] Add `change-spec.yaml` to every durable change package.
-- [ ] Generate an initial spec from the active route without inventing unavailable facts.
-- [ ] Add CLI commands to validate, summarize, and map evidence to criterion IDs.
-- [ ] Require stable IDs for objectives, acceptance criteria, invariants, forbidden outcomes, and production signals.
-- [ ] Link Markdown `brief.md`, `requirements.md`, and `architecture.md` to the typed spec instead of duplicating authority.
-- [ ] Extend local verification receipts with criterion IDs.
-- [ ] Extend Trust CI attestations with the typed spec digest and criterion coverage summary.
-- [ ] Add external holdout checks for missing or malformed specs.
-- [ ] Define exemptions only for explicitly bounded documentation-only micro changes.
-- [ ] Fail standard/high-risk work when a required criterion has no evidence mapping.
-- [ ] Detect stale specs after a change to base/head SHA, contracts, or policy.
+- [x] Define a strict JSON Schema with no ambiguous free-form alternatives for identifiers, risk tiers, evidence references, and approval scopes.
+- [x] Add `change-spec.yaml` to every durable change package.
+- [x] Generate an initial spec from the active route without inventing unavailable facts.
+- [x] Add CLI commands to validate, summarize, and map evidence to criterion IDs.
+- [x] Require stable IDs for objectives, acceptance criteria, invariants, forbidden outcomes, and production signals.
+- [x] Link Markdown `brief.md`, `requirements.md`, and `architecture.md` to the typed spec instead of duplicating authority.
+- [x] Extend local verification receipts with criterion IDs.
+- [x] Extend Trust CI attestation source with the typed spec digest and criterion coverage summary; deployed emission remains a separate rollout.
+- [x] Add independent external holdout source checks for missing or malformed specs; deployed bundle activation remains a separate rollout.
+- [x] Define exemptions only for explicitly bounded documentation-only micro changes.
+- [x] Fail standard/high-risk work when a required criterion has no evidence mapping.
+- [x] Detect stale specs after a change to base/head SHA, contracts, or policy.
+
+The checked work items mean their source and local regression coverage exist. M1 is locally source-ready: exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a` passed full local verification and all four route-selected wave-7 reviews, followed only by evidence/docs/state closure. A later authorized isolated PostgreSQL run passed 10/10 database tests and the full Trust CI suite 200/200 with no skips, validating six Trust CI tables, migrations through version 3, and four bounded `NOLOGIN` roles; it is local evidence, not deployed qualification. PR update, the external App-owned exact-SHA check, signed approvals, merge, and deployed worker/reader/emitter/holdout/policy exit criteria remain open until separately authorized and proven.
 
 ## Exit criteria
 
@@ -364,8 +366,14 @@ The K16 graph may remain as a decorative inventory test. It must not be treated 
 ```text
 architecture/system.yaml
 architecture/rules.yaml
-schemas/architecture.schema.json
+architecture/adoption.json
+architecture/generated/*.mmd
+schemas/architecture-system.schema.json
+schemas/architecture-rules.schema.json
 .grok-stack/adaptive_grok/architecture.py
+.grok-stack/adaptive_grok/architecture_diff.py
+.grok-stack/adaptive_grok/architecture_fitness.py
+.grok-stack/adaptive_grok/architecture_diagrams.py
 scripts/grok_architecture.py
 tests/test_architecture_model.py
 tests/test_architecture_fitness.py
@@ -405,29 +413,31 @@ failure_behavior
 
 ## Mandatory fitness functions
 
-- [ ] forbidden dependency edges;
-- [ ] module/package boundary enforcement;
-- [ ] public API compatibility;
-- [ ] event/schema backward compatibility;
-- [ ] migration expand/contract rules;
-- [ ] tenant-filter and authorization invariants;
-- [ ] no new uncontrolled network clients;
-- [ ] no production imports from test/governance packages;
-- [ ] no implementation change combined with Trust CI/holdout mutation in one factory task;
-- [ ] maximum file/module size and complexity budgets for changed code;
-- [ ] background jobs require idempotency, correlation IDs, observable failure, bounded retries, and dead-letter behavior;
-- [ ] secrets may flow only across declared trusted edges;
-- [ ] runner and factory workspaces may not access production trust material.
+The checked items below mean bounded M2-A repository source and local regression coverage exist. They do not claim independent M2-B enforcement, deployment, merge eligibility, or a live external check.
+
+- [x] forbidden dependency edges;
+- [x] module/package boundary enforcement;
+- [x] public API compatibility;
+- [x] event/schema backward compatibility;
+- [x] migration expand/contract rules;
+- [x] tenant-filter and authorization invariants;
+- [x] no new uncontrolled network clients;
+- [x] no production imports from test/governance packages;
+- [x] no implementation change combined with Trust CI/holdout mutation in one factory task;
+- [x] maximum file/module size and complexity budgets for changed code;
+- [x] background jobs require idempotency, correlation IDs, observable failure, bounded retries, and dead-letter behavior;
+- [x] secrets may flow only across declared trusted edges;
+- [x] runner and factory workspaces may not access production trust material.
 
 ## Work items
 
-- [ ] Create the schema and initial architecture model for the existing local stack and Trust CI.
-- [ ] Generate C4 context, container, deployment, data-flow, and trust-boundary diagrams from the model.
-- [ ] Validate repository paths and declared contracts against the actual tree.
-- [ ] Add architecture-diff output to pull requests.
-- [ ] Add post-diff risk escalation when changed files introduce a new edge, secret, network client, datastore, or trust-domain crossing.
+- [x] Create the schemas and initial architecture model for the existing local stack and Trust CI source boundaries.
+- [x] Generate C4 context, container, deployment, data-flow, and trust-boundary diagrams from the model.
+- [x] Validate repository paths and declared contracts against the actual tree.
+- [x] Add architecture-diff output to the deterministic CLI and local PR preflight evidence.
+- [x] Add post-diff risk escalation when changed files introduce a new edge, secret, network client, datastore, or trust-domain crossing.
 - [ ] Place critical fitness checks in external holdout or server policy, not only in pull-request-controlled tests.
-- [ ] Require explicit architecture approval for new services, databases, queues, frameworks, or external integrations.
+- [x] Emit the explicit local `architecture` approval scope for new services, databases, queues, frameworks, or external integrations; independently trusted approval enforcement remains M2-B.
 
 ## Exit criteria
 
@@ -437,6 +447,8 @@ failure_behavior
 - post-diff risk cannot be lower than pre-diff risk;
 - architecture drift is visible in PR evidence;
 - critical fitness rules are outside implementer control.
+
+M2-A's current source candidate locally proves schema validation, read-only reproducible text projections, a package-aware bounded abstract interpreter for queue provenance, monotonic risk, drift/diff evidence, read-only planning for existing installer targets, and atomic materialization of absent targets. The installer emits dependency advice but never executes it, rejects `--force`, and excludes target-owned architecture authority. Passing final route reviews and current receipts remain pending; prohibited-edge independence and critical rules outside implementer control remain unchecked M2-B/deployed exit work.
 
 ---
 
@@ -505,15 +517,17 @@ status
 ## Work items
 
 - [ ] Convert agent-written lessons into `candidate` records rather than immediate standing policy.
-- [ ] Require independent review or explicit human approval before promotion to `active`.
-- [ ] Generate human-readable `decisions.md` and `mistakes.md` views from approved/candidate records, or clearly mark Markdown as a non-authoritative projection.
-- [ ] Add expiration and revalidation for context-sensitive rules.
-- [ ] Add revocation and provenance audit.
+- [x] Require independent review and explicit human approval before promotion to `active`.
+- [x] Generate human-readable `decisions.md` and `mistakes.md` views from approved/candidate records, or clearly mark Markdown as a non-authoritative projection.
+- [x] Add expiration and revalidation for context-sensitive rules.
+- [x] Add revocation and provenance audit.
 - [ ] Create canonical examples for HTTP adapters, repositories, background jobs, webhook handlers, migrations, authorization checks, and error handling.
 - [ ] Require agents to prefer canonical examples or explicitly justify deviation.
-- [ ] Add duplicate-pattern and conflicting-pattern detection.
-- [ ] Introduce a debt ledger that distinguishes intentional debt from accidental slop.
-- [ ] Prevent a factory task from activating its own governance rule.
+- [x] Add duplicate-pattern and conflicting-pattern detection.
+- [x] Introduce a debt ledger that distinguishes intentional debt from accidental slop.
+- [x] Prevent a factory task from activating its own governance rule.
+
+Checked M3 items denote implemented source behavior with focused regression evidence on the milestone branch. They do not denote merge, deployment, external authority, or active governance. The seven small example source files exist, but the canonical-example registry remains empty until an independent exact-record authority and real human governance approval are available; therefore the two canonical-example work items remain open. M4 remains pending until the final M3 verifier/review gate, PR delivery, external exact-SHA Trust CI check, signed scopes, and merge are complete.
 
 ## Exit criteria
 

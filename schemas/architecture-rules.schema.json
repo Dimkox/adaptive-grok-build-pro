@@ -1,0 +1,275 @@
+{
+  "$defs": {
+    "background_job_policy": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "max_retries": {"maximum": 20, "minimum": 0, "type": "integer"},
+        "node_types": {"$ref": "#/$defs/node_type_set"},
+        "require_correlation_id": {"type": "boolean"},
+        "require_idempotency": {"type": "boolean"},
+        "severity": {"$ref": "#/$defs/severity"},
+        "terminal_actions": {"$ref": "#/$defs/terminal_action_set"}
+      },
+      "required": ["id", "node_types", "max_retries", "require_idempotency", "require_correlation_id", "terminal_actions", "severity"],
+      "type": "object"
+    },
+    "change_separation_policy": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "implementation_prefixes": {"$ref": "#/$defs/path_set"},
+        "severity": {"$ref": "#/$defs/severity"},
+        "trust_ci_prefixes": {"$ref": "#/$defs/path_set"}
+      },
+      "required": ["id", "implementation_prefixes", "trust_ci_prefixes", "severity"],
+      "type": "object"
+    },
+    "code_budget": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "max_ast_complexity": {"maximum": 10000, "minimum": 1, "type": "integer"},
+        "max_changed_bytes": {"maximum": 10000000, "minimum": 1, "type": "integer"},
+        "max_changed_lines": {"maximum": 100000, "minimum": 1, "type": "integer"},
+        "path_prefixes": {"$ref": "#/$defs/path_set"},
+        "severity": {"$ref": "#/$defs/severity"}
+      },
+      "required": ["id", "path_prefixes", "max_changed_bytes", "max_changed_lines", "max_ast_complexity", "severity"],
+      "type": "object"
+    },
+    "contract_kind_set": {
+      "items": {
+        "enum": ["openapi", "asyncapi", "json_schema", "event", "signed_payload", "cli", "migration"],
+        "type": "string"
+      },
+      "maxItems": 7,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "contract_policy": {
+      "additionalProperties": false,
+      "properties": {
+        "compatibility": {
+          "enum": ["consumer_accepts_old", "producer_accepted_by_old", "bidirectional", "exact", "versioned_break"],
+          "type": "string"
+        },
+        "contract_kinds": {"$ref": "#/$defs/contract_kind_set"},
+        "id": {"$ref": "#/$defs/id"},
+        "severity": {"$ref": "#/$defs/severity"}
+      },
+      "required": ["id", "contract_kinds", "compatibility", "severity"],
+      "type": "object"
+    },
+    "edge_type_set": {
+      "items": {
+        "enum": ["dependency", "control", "data_flow", "secret_flow", "deployment", "publication"],
+        "type": "string"
+      },
+      "maxItems": 6,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "forbidden_edge": {
+      "additionalProperties": false,
+      "properties": {
+        "edge_types": {"$ref": "#/$defs/edge_type_set"},
+        "from_trust_domains": {"$ref": "#/$defs/id_set"},
+        "id": {"$ref": "#/$defs/id"},
+        "severity": {"$ref": "#/$defs/severity"},
+        "to_trust_domains": {"$ref": "#/$defs/id_set"}
+      },
+      "required": ["id", "from_trust_domains", "to_trust_domains", "edge_types", "severity"],
+      "type": "object"
+    },
+    "id": {
+      "maxLength": 128,
+      "minLength": 3,
+      "pattern": "^[A-Z][A-Z0-9_-]*$",
+      "type": "string"
+    },
+    "id_set": {
+      "items": {"$ref": "#/$defs/id"},
+      "maxItems": 256,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "migration_policy": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "immutable_history": {"type": "boolean"},
+        "path_prefixes": {"$ref": "#/$defs/path_set"},
+        "required_phases": {"$ref": "#/$defs/migration_phase_set"},
+        "severity": {"$ref": "#/$defs/severity"}
+      },
+      "required": ["id", "path_prefixes", "required_phases", "immutable_history", "severity"],
+      "type": "object"
+    },
+    "migration_phase_set": {
+      "items": {
+        "enum": ["expand", "migrate", "contract"],
+        "type": "string"
+      },
+      "maxItems": 3,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "network_policy": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_protocols": {"$ref": "#/$defs/string_set"},
+        "id": {"$ref": "#/$defs/id"},
+        "node_types": {"$ref": "#/$defs/node_type_set"},
+        "require_declared_edge": {"type": "boolean"},
+        "severity": {"$ref": "#/$defs/severity"}
+      },
+      "required": ["id", "node_types", "allowed_protocols", "require_declared_edge", "severity"],
+      "type": "object"
+    },
+    "node_type_set": {
+      "items": {
+        "enum": ["actor", "local_component", "service", "worker", "runner", "datastore", "repository", "policy_bundle", "external_system"],
+        "type": "string"
+      },
+      "maxItems": 9,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "path": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "type": "string"
+    },
+    "path_boundary": {
+      "additionalProperties": false,
+      "properties": {
+        "forbidden_dependency_prefixes": {"$ref": "#/$defs/path_set"},
+        "id": {"$ref": "#/$defs/id"},
+        "severity": {"$ref": "#/$defs/severity"},
+        "source_prefixes": {"$ref": "#/$defs/path_set"}
+      },
+      "required": ["id", "source_prefixes", "forbidden_dependency_prefixes", "severity"],
+      "type": "object"
+    },
+    "path_set": {
+      "items": {"$ref": "#/$defs/path"},
+      "maxItems": 256,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "risk_escalation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "risk": {"enum": ["green", "yellow", "red"], "type": "string"},
+        "severity": {"$ref": "#/$defs/severity"},
+        "triggers": {
+          "items": {
+            "enum": ["new_edge", "new_contract", "new_job", "new_network_client", "new_secret", "new_datastore", "new_service", "new_queue", "new_framework", "new_external_integration", "new_trust_crossing"],
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": ["id", "triggers", "risk", "severity"],
+      "type": "object"
+    },
+    "secret_flow_policy": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_trust_domains": {"$ref": "#/$defs/id_set"},
+        "id": {"$ref": "#/$defs/id"},
+        "secret_classes": {"$ref": "#/$defs/id_set"},
+        "severity": {"$ref": "#/$defs/severity"}
+      },
+      "required": ["id", "secret_classes", "allowed_trust_domains", "severity"],
+      "type": "object"
+    },
+    "severity": {
+      "enum": ["error", "warning"],
+      "type": "string"
+    },
+    "string_set": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 256,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "terminal_action_set": {
+      "items": {
+        "enum": ["reject", "degrade", "dead_letter", "manual_recovery"],
+        "type": "string"
+      },
+      "maxItems": 4,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "tenant_authorization_policy": {
+      "additionalProperties": false,
+      "properties": {
+        "data_classifications": {"$ref": "#/$defs/id_set"},
+        "id": {"$ref": "#/$defs/id"},
+        "require_authorization": {"type": "boolean"},
+        "require_tenant_filter": {"type": "boolean"},
+        "severity": {"$ref": "#/$defs/severity"}
+      },
+      "required": ["id", "data_classifications", "require_tenant_filter", "require_authorization", "severity"],
+      "type": "object"
+    },
+    "workspace_trust_policy": {
+      "additionalProperties": false,
+      "properties": {
+        "forbidden_secret_classes": {"$ref": "#/$defs/id_set"},
+        "id": {"$ref": "#/$defs/id"},
+        "node_types": {"$ref": "#/$defs/node_type_set"},
+        "severity": {"$ref": "#/$defs/severity"}
+      },
+      "required": ["id", "node_types", "forbidden_secret_classes", "severity"],
+      "type": "object"
+    }
+  },
+  "$id": "urn:adaptive-grok:architecture-rules:v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "architecture_id": {"$ref": "#/$defs/id"},
+    "background_job_policies": {"items": {"$ref": "#/$defs/background_job_policy"}, "maxItems": 256, "type": "array"},
+    "change_separation_policies": {"items": {"$ref": "#/$defs/change_separation_policy"}, "maxItems": 256, "type": "array"},
+    "code_budgets": {"items": {"$ref": "#/$defs/code_budget"}, "maxItems": 256, "type": "array"},
+    "contract_policies": {"items": {"$ref": "#/$defs/contract_policy"}, "maxItems": 256, "type": "array"},
+    "forbidden_edges": {"items": {"$ref": "#/$defs/forbidden_edge"}, "maxItems": 256, "type": "array"},
+    "migration_policies": {"items": {"$ref": "#/$defs/migration_policy"}, "maxItems": 256, "type": "array"},
+    "network_policies": {"items": {"$ref": "#/$defs/network_policy"}, "maxItems": 256, "type": "array"},
+    "path_boundaries": {"items": {"$ref": "#/$defs/path_boundary"}, "maxItems": 256, "type": "array"},
+    "risk_escalations": {"items": {"$ref": "#/$defs/risk_escalation"}, "maxItems": 256, "type": "array"},
+    "schema_version": {"const": 1, "type": "integer"},
+    "secret_flow_policies": {"items": {"$ref": "#/$defs/secret_flow_policy"}, "maxItems": 256, "type": "array"},
+    "tenant_authorization_policies": {"items": {"$ref": "#/$defs/tenant_authorization_policy"}, "maxItems": 256, "type": "array"},
+    "workspace_trust_policies": {"items": {"$ref": "#/$defs/workspace_trust_policy"}, "maxItems": 256, "type": "array"}
+  },
+  "required": [
+    "schema_version",
+    "architecture_id",
+    "forbidden_edges",
+    "path_boundaries",
+    "contract_policies",
+    "migration_policies",
+    "tenant_authorization_policies",
+    "network_policies",
+    "change_separation_policies",
+    "code_budgets",
+    "background_job_policies",
+    "secret_flow_policies",
+    "workspace_trust_policies",
+    "risk_escalations"
+  ],
+  "type": "object"
+}

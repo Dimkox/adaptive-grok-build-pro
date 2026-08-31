@@ -11,6 +11,7 @@ from typing import Any, Iterable, Mapping
 from .models import canonical_json, require_digest
 
 _IMAGE_DIGEST_RE = re.compile(r"^(?:sha256:[0-9a-f]{64}|.+@sha256:[0-9a-f]{64})$")
+_MAX_POLICY_PATH_BYTES = 4096
 
 
 class PolicyError(ValueError):
@@ -65,9 +66,10 @@ class ApprovalRule:
         globs_raw = data.get('globs')
         if not scope or not isinstance(globs_raw, list) or not globs_raw:
             raise PolicyError('approval rule requires a scope and non-empty globs')
-        globs = tuple(str(item).replace('\\', '/').lstrip('./') for item in globs_raw)
-        if any(not item for item in globs):
-            raise PolicyError(f'approval rule {scope!r} contains an empty glob')
+        globs = tuple(
+            _validated_repo_relative(item, label=f'approval rule {scope!r} glob')
+            for item in globs_raw
+        )
         return cls(scope=scope, globs=globs)
 
     def to_dict(self) -> dict[str, Any]:
@@ -183,7 +185,7 @@ class Policy:
             data = json.loads(path.read_text(encoding='utf-8'))
         except FileNotFoundError as exc:
             raise PolicyError(f'policy file does not exist: {path}') from exc
-        except (OSError, json.JSONDecodeError) as exc:
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise PolicyError(f'cannot load policy file {path}: {exc}') from exc
         if not isinstance(data, dict):
             raise PolicyError('policy root must be an object')
@@ -275,10 +277,10 @@ class Policy:
         return repository in self.allowed_repositories
 
     def required_scopes(self, paths: Iterable[str]) -> set[str]:
-        normalized = [str(path).replace('\\', '/').lstrip('./') for path in paths]
+        exact_paths = [_validated_repo_relative(path, label='changed path') for path in paths]
         scopes: set[str] = set()
         for rule in self.approval_rules:
-            if any(_glob_match(path, pattern) for path in normalized for pattern in rule.globs):
+            if any(_glob_match(path, pattern) for path in exact_paths for pattern in rule.globs):
                 scopes.add(rule.scope)
         return scopes
 
@@ -290,6 +292,24 @@ def _glob_match(path: str, pattern: str) -> bool:
         prefix = pattern[:-3].rstrip('/')
         return path == prefix or path.startswith(prefix + '/')
     return False
+
+
+def _validated_repo_relative(value: Any, *, label: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise PolicyError(f'{label} must be a non-empty string')
+    try:
+        encoded = value.encode('utf-8', errors='strict')
+    except UnicodeEncodeError as exc:
+        raise PolicyError(f'{label} must be strict UTF-8') from exc
+    if len(encoded) > _MAX_POLICY_PATH_BYTES:
+        raise PolicyError(f'{label} exceeds the configured byte limit')
+    if value.startswith('/') or re.match(r'^[A-Za-z]:/', value):
+        raise PolicyError(f'{label} must be repository-relative')
+    if any(part in {'', '.', '..'} for part in value.split('/')):
+        raise PolicyError(f'{label} contains an unsafe path component')
+    if any((ord(char) < 32 and char not in {'\t', '\n'}) or ord(char) == 127 for char in value):
+        raise PolicyError(f'{label} contains an unsafe control character')
+    return value
 
 
 def _bounded_int(data: Mapping[str, Any], key: str, minimum: int, maximum: int) -> int:
