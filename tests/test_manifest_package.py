@@ -86,11 +86,44 @@ class ManifestTests(unittest.TestCase):
 
 
 class PackageTests(unittest.TestCase):
+    def _stage_package_source(self, parent: Path) -> Path:
+        staging_root = parent / "source"
+        staging_root.mkdir()
+        source_inventory = {
+            path.relative_to(ROOT).as_posix(): path
+            for path in included_files(ROOT)
+        }
+        self.assertTrue(source_inventory)
+        self.assertEqual(
+            {
+                relative
+                for relative in source_inventory
+                if relative.startswith(".grok-stack/runtime/")
+            },
+            {".grok-stack/runtime/.gitkeep"},
+        )
+        for relative, source in source_inventory.items():
+            destination = staging_root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+
+        self.assertNotEqual(staging_root.resolve(), ROOT.resolve())
+        self.assertFalse((staging_root / ".git").exists())
+        self.assertFalse((staging_root / "dist").exists())
+        staged_inventory = {
+            path.relative_to(staging_root).as_posix()
+            for path in included_files(staging_root)
+        }
+        self.assertEqual(staged_inventory, set(source_inventory))
+        return staging_root
+
     def test_packaged_installer_materializes_new_target_without_authority(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            archive_path = Path(tmp) / "project.zip"
-            PACKAGE.write_archive(ROOT, archive_path)
-            extracted = Path(tmp) / "extracted"
+            temporary_root = Path(tmp)
+            staging_root = self._stage_package_source(temporary_root)
+            archive_path = temporary_root / "project.zip"
+            PACKAGE.write_archive(staging_root, archive_path)
+            extracted = temporary_root / "extracted"
             with zipfile.ZipFile(archive_path) as archive:
                 archive.extractall(extracted)
             source = extracted / "adaptive-grok-build-pro"
@@ -221,34 +254,7 @@ class PackageTests(unittest.TestCase):
         original_dist = dist_snapshot()
         with tempfile.TemporaryDirectory() as tmp:
             temporary_root = Path(tmp)
-            staging_root = temporary_root / "source"
-            staging_root.mkdir()
-            source_inventory = {
-                path.relative_to(ROOT).as_posix(): path
-                for path in included_files(ROOT)
-            }
-            self.assertTrue(source_inventory)
-            self.assertEqual(
-                {
-                    relative
-                    for relative in source_inventory
-                    if relative.startswith(".grok-stack/runtime/")
-                },
-                {".grok-stack/runtime/.gitkeep"},
-            )
-            for relative, source in source_inventory.items():
-                destination = staging_root / relative
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source, destination)
-
-            self.assertNotEqual(staging_root.resolve(), ROOT.resolve())
-            self.assertFalse((staging_root / ".git").exists())
-            self.assertFalse((staging_root / "dist").exists())
-            staged_inventory = {
-                path.relative_to(staging_root).as_posix()
-                for path in included_files(staging_root)
-            }
-            self.assertEqual(staged_inventory, set(source_inventory))
+            staging_root = self._stage_package_source(temporary_root)
 
             archive_path = temporary_root / f"adaptive-grok-build-pro-v{version}.zip"
             checksum_path = archive_path.with_name(f"{archive_path.name}.sha256")
