@@ -981,6 +981,8 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertIn("NODE-GOVERNANCE-VALIDATOR", node_ids)
         self.assertIn("NODE-GOVERNANCE-REGISTRIES", node_ids)
+        self.assertIn("NODE-LOCAL-DEMO-BROWSER", node_ids)
+        self.assertIn("NODE-LOCAL-DEMO-SERVER", node_ids)
         self.assertNotIn("NODE-FACTORY-CONTROL-PLANE", node_ids)
         governance_validator = next(
             node
@@ -1027,10 +1029,36 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertIn("self.store.has_valid_approval", runner_source)
         self.assertIn("self.store.record_attestation", runner_source)
         edges = {edge["id"]: edge for edge in snapshot.system["edges"]}
+        browser_edge = edges["EDGE-DEMO-BROWSER-SERVER"]
+        self.assertEqual(browser_edge["from"], "NODE-LOCAL-DEMO-BROWSER")
+        self.assertEqual(browser_edge["to"], "NODE-LOCAL-DEMO-SERVER")
+        self.assertEqual(browser_edge["protocol"], "http")
+        self.assertEqual(browser_edge["network_policy"], "local_only")
+        engine_edge = edges["EDGE-DEMO-SERVER-LOCAL-PREFLIGHT"]
+        self.assertEqual(engine_edge["to"], "NODE-LOCAL-ROUTE-POLICY")
+        self.assertEqual(engine_edge["network_policy"], "no_network")
+        self.assertFalse(
+            any(
+                edge["from"] in {"NODE-LOCAL-DEMO-BROWSER", "NODE-LOCAL-DEMO-SERVER"}
+                and edge["to"] in {
+                    "NODE-GITHUB", "NODE-TRUST-CI-API", "NODE-TRUST-CI-POSTGRES",
+                    "NODE-TRUST-CI-WORKER", "NODE-HUMAN-APPROVAL",
+                }
+                for edge in snapshot.system["edges"]
+            )
+        )
+        demo_contract = next(
+            contract for contract in snapshot.system["contracts"]
+            if contract["id"] == "CONTRACT-LOCAL-DEMO-OPENAPI"
+        )
+        self.assertEqual(demo_contract["path"], "engineering/contracts/openapi/adaptive-demo.v1.json")
+        self.assertEqual(demo_contract["version"], "1")
+        self.assertEqual(demo_contract["compatibility"], "exact")
         self.assertEqual(
             set(edges["EDGE-API-POSTGRES"]["allowed_data"]),
             {"DATA-APPROVAL", "DATA-ATTESTATION", "DATA-JOB-STATE"},
         )
+
         self.assertEqual(
             set(edges["EDGE-WORKER-POSTGRES"]["allowed_data"]),
             {"DATA-APPROVAL", "DATA-ATTESTATION", "DATA-JOB-STATE"},
@@ -1040,7 +1068,7 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 5)
+        self.assertEqual(len(records), 6)
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
@@ -1157,6 +1185,39 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertEqual(
             ARCH.compare_contracts(openapi_record, openapi_record, "bidirectional").status,
             "compatible",
+        )
+
+    def test_seed_architecture_declares_only_loopback_http_for_demo_tests(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        verifier = next(
+            node for node in snapshot.system["nodes"]
+            if node["id"] == "NODE-LOCAL-VERIFIER"
+        )
+        self.assertEqual(verifier["runtime"]["network"], "local_only")
+        edges = {edge["id"]: edge for edge in snapshot.system["edges"]}
+        self.assertIn("EDGE-LOCAL-VERIFIER-DEMO-SERVER", edges)
+        test_edge = edges["EDGE-LOCAL-VERIFIER-DEMO-SERVER"]
+        self.assertEqual(test_edge["from"], "NODE-LOCAL-VERIFIER")
+        self.assertEqual(test_edge["to"], "NODE-LOCAL-DEMO-SERVER")
+        self.assertEqual(test_edge["protocol"], "http")
+        self.assertEqual(test_edge["network_policy"], "local_only")
+        self.assertEqual(test_edge["authentication"], "local_os")
+        self.assertEqual(test_edge["allowed_data"], ["DATA-REPOSITORY-SOURCE"])
+
+        policies = {rule["id"]: rule for rule in snapshot.rules["network_policies"]}
+        self.assertIn("FIT-LOCAL-COMPONENT-DECLARED-HTTP", policies)
+        local_http = policies["FIT-LOCAL-COMPONENT-DECLARED-HTTP"]
+        self.assertEqual(local_http["node_types"], ["local_component"])
+        self.assertEqual(local_http["allowed_protocols"], ["http"])
+        self.assertTrue(local_http["require_declared_edge"])
+        self.assertEqual(
+            [
+                edge["id"]
+                for edge in snapshot.system["edges"]
+                if edge["from"] == "NODE-LOCAL-VERIFIER"
+                and edge["protocol"] == "http"
+            ],
+            ["EDGE-LOCAL-VERIFIER-DEMO-SERVER"],
         )
 
     def test_repository_drift_reports_undeclared_source_and_contract(self) -> None:

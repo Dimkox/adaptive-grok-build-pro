@@ -12,6 +12,10 @@ _No active governance rules._
 _No candidate governance rules._
 <!-- END ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 
+## 2026-08-31 — Prepare repository route state before serving browser requests
+
+Resolve the route base commit and tree fingerprint once during loopback-server startup, then pass those values into the real router for every in-memory preview. This preserved direct router equivalence while proving that untrusted browser requests cannot trigger Git subprocesses or runtime writes.
+
 ## 2026-08-28 — Bind governance handoffs to fresh exact state
 
 Reopen the loader-bound governance root, recompute every component digest and finding, validate the complete M2 evidence envelope, and prove the Git head is exact and clean immediately before publishing the six-field handoff. Keeping projections in marked read-only blocks makes them reviewable without giving Markdown mutation or authority capability.

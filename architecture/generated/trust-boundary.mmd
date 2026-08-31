@@ -7,6 +7,7 @@ flowchart LR
   end
   subgraph domain_fa5ae843eb45e375["TD-LOCAL-PREFLIGHT"]
     node_23677f8757246623["NODE-GOVERNANCE-VALIDATOR | local_component | repository engineering"]
+    node_b4aa1bbe20eff47c["NODE-LOCAL-DEMO-SERVER | service | repository engineering"]
     node_770cf3a1783e8525["NODE-LOCAL-ROUTE-POLICY | local_component | repository engineering"]
     node_23bed8fcbfc79861["NODE-LOCAL-VERIFIER | local_component | repository engineering"]
   end
@@ -16,6 +17,7 @@ flowchart LR
   subgraph domain_734c10023f9857a2["TD-REPOSITORY"]
     node_8938bd3db1932751["NODE-CHANGE-SPEC-EVIDENCE | repository | repository engineering"]
     node_dfd1104494c6ab8f["NODE-GOVERNANCE-REGISTRIES | repository | repository engineering"]
+    node_51536184f2d69477["NODE-LOCAL-DEMO-BROWSER | actor | local demo operator"]
   end
   subgraph domain_7f80d82d053144ab["TD-TRUST-CI-CONTROL"]
     node_d0e570b2fbe52f98["NODE-TRUST-CI-API | service | Trust CI operators"]
@@ -29,11 +31,14 @@ flowchart LR
   end
   node_d0e570b2fbe52f98 -->|"EDGE-API-POSTGRES | data_flow | postgresql"| node_1a6c7efb2d08591b
   node_8938bd3db1932751 -->|"EDGE-CHANGE-LOCAL-VERIFIER | data_flow | filesystem"| node_23bed8fcbfc79861
+  node_51536184f2d69477 -->|"EDGE-DEMO-BROWSER-SERVER | data_flow | http"| node_b4aa1bbe20eff47c
+  node_b4aa1bbe20eff47c -->|"EDGE-DEMO-SERVER-LOCAL-PREFLIGHT | dependency | filesystem"| node_770cf3a1783e8525
   node_4e78270f61d78ed8 -->|"EDGE-DOCKER-ISOLATED-RUNNER | deployment | docker_api"| node_1c3a10ba26a8e80d
   node_8b8a8cd21b180532 -->|"EDGE-GITHUB-TRUST-CI-API | data_flow | https"| node_d0e570b2fbe52f98
   node_dfd1104494c6ab8f -->|"EDGE-GOVERNANCE-REGISTRIES-VALIDATOR | data_flow | filesystem"| node_23677f8757246623
   node_23677f8757246623 -->|"EDGE-GOVERNANCE-VALIDATOR-LOCAL-VERIFIER | data_flow | filesystem"| node_23bed8fcbfc79861
   node_e4e37173e410ad23 -->|"EDGE-HUMAN-TRUST-CI-API | data_flow | https"| node_d0e570b2fbe52f98
+  node_23bed8fcbfc79861 -->|"EDGE-LOCAL-VERIFIER-DEMO-SERVER | data_flow | http"| node_b4aa1bbe20eff47c
   node_770cf3a1783e8525 -->|"EDGE-ROUTE-CHANGE-EVIDENCE | control | filesystem"| node_8938bd3db1932751
   node_1c3a10ba26a8e80d -->|"EDGE-RUNNER-EXTERNAL-HOLDOUT | data_flow | filesystem"| node_0a0fe2f046a648e9
   node_1c3a10ba26a8e80d -->|"EDGE-RUNNER-WORKSPACE | data_flow | filesystem"| node_2e8a7072de3f3743

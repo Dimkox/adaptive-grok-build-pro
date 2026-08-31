@@ -142,6 +142,17 @@
     },
     {
       "allowed_protocols": [
+        "http"
+      ],
+      "id": "FIT-LOCAL-COMPONENT-DECLARED-HTTP",
+      "node_types": [
+        "local_component"
+      ],
+      "require_declared_edge": true,
+      "severity": "error"
+    },
+    {
+      "allowed_protocols": [
         "filesystem"
       ],
       "id": "FIT-RUNNER-NO-NETWORK",

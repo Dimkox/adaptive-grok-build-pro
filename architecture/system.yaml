@@ -40,6 +40,14 @@
       "path": "schemas/governance-handoff-v1.schema.json",
       "role": "producer",
       "version": "1"
+    },
+    {
+      "compatibility": "exact",
+      "id": "CONTRACT-LOCAL-DEMO-OPENAPI",
+      "kind": "openapi",
+      "path": "engineering/contracts/openapi/adaptive-demo.v1.json",
+      "role": "bidirectional",
+      "version": "1"
     }
   ],
   "data_classifications": [
@@ -431,6 +439,75 @@
       "sync_or_async": "batch",
       "to": "NODE-EXTERNAL-HOLDOUT",
       "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 10000
+      },
+      "from": "NODE-LOCAL-DEMO-BROWSER",
+      "id": "EDGE-DEMO-BROWSER-SERVER",
+      "network_policy": "local_only",
+      "protocol": "http",
+      "sync_or_async": "synchronous",
+      "to": "NODE-LOCAL-DEMO-SERVER",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 10000
+      },
+      "from": "NODE-LOCAL-VERIFIER",
+      "id": "EDGE-LOCAL-VERIFIER-DEMO-SERVER",
+      "network_policy": "local_only",
+      "protocol": "http",
+      "sync_or_async": "synchronous",
+      "to": "NODE-LOCAL-DEMO-SERVER",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-LOCAL-DEMO-SERVER",
+      "id": "EDGE-DEMO-SERVER-LOCAL-PREFLIGHT",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "synchronous",
+      "to": "NODE-LOCAL-ROUTE-POLICY",
+      "type": "dependency"
     }
   ],
   "nodes": [
@@ -495,7 +572,7 @@
         "evidence": "source_described",
         "kind": "python_process",
         "lifecycle": "on_demand",
-        "network": "none"
+        "network": "local_only"
       },
       "secrets": [],
       "trust_domain": "TD-LOCAL-PREFLIGHT",
@@ -737,6 +814,44 @@
       ],
       "trust_domain": "TD-PRODUCTION-TRUST",
       "type": "actor"
+    },
+    {
+      "data_classification": "DATA-REPOSITORY-SOURCE",
+      "id": "NODE-LOCAL-DEMO-BROWSER",
+      "owner": "local demo operator",
+      "public_contracts": [],
+      "repository_paths": [],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "external_managed",
+        "lifecycle": "on_demand",
+        "network": "local_only"
+      },
+      "secrets": [],
+      "trust_domain": "TD-REPOSITORY",
+      "type": "actor"
+    },
+    {
+      "data_classification": "DATA-REPOSITORY-SOURCE",
+      "id": "NODE-LOCAL-DEMO-SERVER",
+      "owner": "repository engineering",
+      "public_contracts": [
+        "CONTRACT-LOCAL-DEMO-OPENAPI"
+      ],
+      "repository_paths": [
+        ".grok-stack/demo",
+        "engineering/contracts/openapi/adaptive-demo.v1.json",
+        "scripts/grok_demo.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "local_only"
+      },
+      "secrets": [],
+      "trust_domain": "TD-LOCAL-PREFLIGHT",
+      "type": "service"
     }
   ],
   "schema_version": 1,
