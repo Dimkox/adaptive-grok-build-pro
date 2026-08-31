@@ -11,3 +11,9 @@
 ## TDD cycles
 
 Each vertical records its RED command/result before production source is added, then GREEN/refactor commands. Final real PostgreSQL and root verifier evidence is appended after the last product change.
+
+### Contracts
+
+- RED: `python3 -m unittest factory.tests.test_contracts -v` failed with `ModuleNotFoundError: adaptive_factory`; the package/contract behavior was absent.
+- GREEN: the same command passed 5 tests after closed immutable handoffs/intake/limits, canonical digests, M0 freshness/exception and bounds were implemented.
+- Focused repair: the first GREEN exposed that a valid App check name contains `@`; the existing failing contract test drove a bounded check-name grammar repair, after which all 5 passed.
