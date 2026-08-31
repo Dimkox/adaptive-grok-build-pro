@@ -28,3 +28,11 @@ Each vertical records its RED command/result before production source is added, 
 - RED: `python3 -m unittest factory.tests.test_migrations -v` failed because `adaptive_factory.migrations` did not exist.
 - GREEN: the same command passed 4 tests for contiguous discovery, immutable checksum planning, drift rejection and factory-only schema markers.
 - Ruling: bootstrap creates only `factory.schema_migrations`; all three packaged migrations apply under one factory-specific advisory transaction and never inspect another migration registry.
+
+### Durable intake, leases, capacity and recovery
+
+- RED: `python3 -m unittest factory.tests.test_service -v` failed because the service boundary did not exist; disposable PostgreSQL tests then exposed the four-hour timestamp-boundary check, repository-capacity starvation and expired-grant reconciliation defects.
+- GREEN unit: service authorization/bounds passed 3 tests; prior contract/state/migration suite passed 15 tests.
+- GREEN PostgreSQL: `FACTORY_TEST_DATABASE_URL=<redacted> ... -m unittest factory.tests.test_postgres_integration -v` passed 4 real PostgreSQL 17 tests in 5.887s after the focused repairs.
+- Database-time ruling: task acceptance/deadline, lease expiry and reconciliation use PostgreSQL time. The restart tests expire only the named disposable run row to avoid a 30-second sleep; production callers cannot supply the database clock.
+- Restart probe: the bounded subprocess holder/reclaim script passed; one expired lease was repaired, a higher fence issued, and the late heartbeat rejected.
