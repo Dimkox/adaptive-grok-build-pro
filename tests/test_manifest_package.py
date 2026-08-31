@@ -226,9 +226,16 @@ class PackageTests(unittest.TestCase):
             source_inventory = {
                 path.relative_to(ROOT).as_posix(): path
                 for path in included_files(ROOT)
-                if not path.relative_to(ROOT).as_posix().startswith(".grok-stack/runtime/")
             }
             self.assertTrue(source_inventory)
+            self.assertEqual(
+                {
+                    relative
+                    for relative in source_inventory
+                    if relative.startswith(".grok-stack/runtime/")
+                },
+                {".grok-stack/runtime/.gitkeep"},
+            )
             for relative, source in source_inventory.items():
                 destination = staging_root / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)
@@ -237,7 +244,6 @@ class PackageTests(unittest.TestCase):
             self.assertNotEqual(staging_root.resolve(), ROOT.resolve())
             self.assertFalse((staging_root / ".git").exists())
             self.assertFalse((staging_root / "dist").exists())
-            self.assertFalse((staging_root / ".grok-stack/runtime").exists())
             staged_inventory = {
                 path.relative_to(staging_root).as_posix()
                 for path in included_files(staging_root)
