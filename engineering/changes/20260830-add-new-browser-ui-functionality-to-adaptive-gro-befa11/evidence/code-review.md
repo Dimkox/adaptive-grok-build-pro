@@ -213,3 +213,60 @@ None introduced by this remediation.
 ### Authority boundary
 
 This PASS closes the local test-fixture defect only. It does not convert local verification or review evidence into the App-owned exact-SHA Trust CI check, human-signed approval, merge, release, or deployment authority.
+
+---
+
+## Final read-only Trust CI workspace review
+
+### Verdict
+
+**PASS**
+
+This verdict supersedes the intermediate `8b7118d7f2a50a4ca034d5401983986a6a80ebb5` review target and binds the complete read-only remediation at exact HEAD `b2126d1b23507a802ed00b860f58102a6b1d8612`. No Critical or Important finding remains.
+
+### Exact inspected identity
+
+- Final product HEAD: `b2126d1b23507a802ed00b860f58102a6b1d8612`.
+- Read-only remediation range: `f063573..b2126d1b23507a802ed00b860f58102a6b1d8612`.
+- Final clean pre-report fingerprint: `4c63e1f67dc3fb4b906930afb419b2fce07e72eeed3fe1441276dcf90c2231ae`.
+- Fresh verification receipt: PASS, created `2026-08-31T11:26:38+00:00`, bound to the same fingerprint.
+- The reviewer changed only this evidence report after capturing that identity.
+
+### Read-only `/workspace:ro` root cause and closure
+
+The external Docker runner mounts the exact source checkout at read-only `/workspace`. The first local fix moved archive output to a temporary directory but still passed the original source root to `write_archive`; the real writer calls `generate_manifest(root)` and therefore attempted `/workspace/MANIFEST.sha256`. The focused investor-artifact test was repaired, but an independent read-only full package-suite run then correctly exposed a second caller: `test_packaged_installer_materializes_new_target_without_authority` also invoked `write_archive(ROOT, ...)` and failed with `PermissionError`.
+
+The final implementation centralizes `_stage_package_source` in the test class. It enumerates the actual canonical `included_files(ROOT)` inventory, copies every included file into a writable temporary source root, and proves that the staged inventory is identical before invoking the real production writer. The canonical inventory contains 1,425 entries; its only runtime entry is `.grok-stack/runtime/.gitkeep`. No runtime filter or synthetic near-production inventory remains.
+
+Both formerly source-writing tests now call `write_archive(staging_root, archive_path)`. Repository-wide inspection finds no `write_archive(ROOT, ...)` call. Other writer tests construct their own writable temporary roots. Thus manifest generation, archive construction, sidecar creation, and manifest cleanup all execute in temporary writable storage while the exact source checkout is read-only input only.
+
+The investor-artifact test still independently verifies the writer-returned digest, sidecar digest, recomputed archive SHA-256, required members, canonical exclusions, unchanged original `MANIFEST.sha256`, and unchanged original `dist/` snapshot. Errors from copying, manifest generation, writing, hashing, opening, or member checks propagate normally; there is no skip, fallback to a prebuilt artifact, or exception suppression.
+
+Production `package_stack.py`, manifest selection, installer, demo, API, and authority boundaries are unchanged. `mistakes.md` now accurately records both failure stages and the durable rule to stage exact-SHA package inventory before running a writer in a read-only sandbox.
+
+### Evidence reproduced or inspected
+
+- External-style read-only detached RED at the intermediate head: package suite **13 passed / 1 error**, with the remaining installer-package caller failing on `/workspace/MANIFEST.sha256`.
+- Exact final-head read-only GREEN: package suite **14/14 passed**.
+- Independent focused final-head reproduction: both ROOT-derived packaging tests **2/2 passed**; no source manifest or Git change remained.
+- Canonical source/staging inventory equality passed with all 1,425 entries and runtime subset exactly `{.grok-stack/runtime/.gitkeep}`.
+- Fresh full `python3 scripts/grok_verify.py --mode pr`: PASS across all profiles and source-stability checks at the exact final fingerprint.
+- `git diff --check f063573..b2126d1b23507a802ed00b860f58102a6b1d8612`: passed.
+
+### Severity-classified findings
+
+#### Critical
+
+None.
+
+#### Important
+
+None.
+
+#### Minor
+
+None introduced by the final sandbox remediation.
+
+### Authority boundary
+
+This PASS verifies local source/test behavior on the exact final HEAD. The App-owned exact-SHA Trust CI check, any required human-signed approvals, merge, release publication, and deployment remain separate operator-controlled authority.
