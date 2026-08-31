@@ -14,6 +14,16 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-08-31 — Ran the restack verifier with its inherited divergent route base
+
+**Symptom:** The first full verifier passed tests and coverage but failed architecture and governance because it compared the merge against unrelated `1c06299894279a88b881defa3f19b004fa742223`.
+**Root cause:** The active route was created from a different worktree lineage and its base was not corrected to exact accepted M2 before verification; stacked verification must bind the immediate accepted predecessor before the first full run.
+
+## 2026-08-31 — Invoked the scoped Trust-CI test without its package root
+
+**Symptom:** The first focused workspace test command failed during import with `ModuleNotFoundError: adaptive_trust_ci`.
+**Root cause:** The repository-root unittest invocation omitted the service's `trust-ci/src` import root; scoped service tests must run with their package path configured or from the service environment.
+
 ## 2026-08-28 — Froze a contract shell instead of the complete schema
 
 **Symptom:** Governance fitness accepted handoff schemas whose five digest/SHA fields were booleans and whose `$defs` or draft identity had been removed.
@@ -37,6 +47,41 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 **Symptom:** The first live-evidence repair could be bypassed by calling `_with_document()` on a loaded candidate and pairing the rebound active record with a replaced snapshot.
 **Root cause:** An underscore method, private dataclass, and object-identity sentinel were treated as a capability boundary even though ordinary in-process callers could read and invoke all three.
 **Durable rule:** Keep authorization provenance outside caller-held values in closure-owned identity state; copied or reconstructed values receive no authority, and public effects consult only that state.
+
+## 2026-08-29 — Opened derived checksum metadata at its authority name
+
+**Symptom:** A pre-existing sidecar hardlink overwrote an external sentinel, while a FIFO blocked package completion after the archive was already published.
+**Root cause:** Sidecar publication used `O_TRUNC` directly on the final pathname instead of constructing and validating a separate exclusive inode before atomic replacement.
+
+## 2026-08-29 — Validated only the output-parent leaf
+
+**Symptom:** Common umask `0002` created `dist/` as `0775` and self-rejected it, while an unrelated writer on a non-sticky ancestor could relocate an otherwise private parent outside the requested path.
+**Root cause:** Parent creation inherited ambient permissions and the threat boundary ignored ancestor ownership/sticky rename authority.
+
+## 2026-08-29 — Treated a pathname check as publication authority
+
+**Symptom:** A swap after the final successful temporary-name validation could publish an unrelated inode and checksum its bytes, while later post-replace validation still implied an unattainable portable zero-transient guarantee in a mutable shared directory.
+**Root cause:** Validation and pathname replacement were separate operations, success was not conditioned on the published name matching the still-held archive descriptor, and the output-parent trust boundary was not explicit or descriptor-bound.
+
+## 2026-08-29 — Evaluated packaging-only POSIX capabilities at shared-module import
+
+**Symptom:** Manifest consumers could raise raw `AttributeError` on platforms without `O_DIRECTORY`, `O_NOFOLLOW`, or `O_CLOEXEC`, before doctor or explicit legacy helpers could run.
+**Root cause:** Security capability discovery was placed in module initialization instead of the secure descriptor operation that requires it.
+
+## 2026-08-29 — Discarded exclusive temporary-file authority before publication
+
+**Symptom:** A same-directory pathname swap redirected ZIP writes into an external sentinel, and atomic replacement published archives as `0600` instead of normal or preserved permissions.
+**Root cause:** The secure `mkstemp` fd was closed and its lexical name was reopened, while the replacement design treated atomicity as sufficient without preserving inode authority or filesystem mode compatibility.
+
+## 2026-08-29 — Treated lexical package paths as stable file authority
+
+**Symptom:** A benign-looking source symlink archived external sentinel bytes, a replacement could make manifest and ZIP content disagree, and final checksum calculation buffered the complete archive.
+**Root cause:** Enumeration, hashing, metadata, and streaming used separate path-following opens without descriptor identity/digest binding, while bounded-memory reasoning stopped before the output checksum.
+
+## 2026-08-29 — Assumed isolated tests could trust and mutate the checkout
+
+**Symptom:** The pinned non-root runner produced five architecture Git ownership failures, a receipt clone child-process ownership failure, and a package failure while writing `MANIFEST.sha256` under `/workspace:ro`.
+**Root cause:** Local same-owner/writable-checkout behavior was treated as part of the test contract, so architecture isolation discarded the runner's exact trust, the clone's child lacked process-scoped trust, and packaging used an explicit source-writing API for derived archive metadata.
 
 ## 2026-08-26 — Parallelized a bytecode-mutating holdout command with its digest test
 
@@ -187,3 +232,23 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Alternating bytes for one shared evidence path could validate separate rules while only the final exact-HEAD-matching digest survived.
 **Root cause:** Evaluation stored path digests with last-write-wins assignment and then reread evidence during liveness checks instead of binding and reusing one immutable first observation.
+
+## 2026-08-29 — Assumed requested mkdir mode survives every umask
+
+**Symptom:** Under restrictive umasks, packaging created a mode-`0000` output parent, then rejected its own default output path and left the directory behind.
+**Root cause:** Missing-parent creation trusted `mkdir(mode=0700)` as the final mode instead of binding the new inode, applying exact permissions through its held descriptor, and retaining cleanup ownership across the next validation step.
+
+## 2026-08-31 — Chose the split-hotfix base before checking code lineage
+
+**Symptom:** The first split-hotfix attempt used M1, where `sandbox.py` did not match the failing M2 `workspace.py` implementation.
+**Root cause:** The PR base was selected before verifying the failure's code-version lineage; the repair is now based on the exact single-branch M2 stacked base.
+
+## 2026-08-31 — Composed multiple test patch contexts as a tuple
+
+**Symptom:** The first direct classifier test run errored because parenthesized context managers were written as a tuple rather than a parenthesized `with` item list.
+**Root cause:** Tuple grouping was used instead of validating the multi-context statement; corrected before behavioral verification.
+
+## 2026-08-31 — Launched root verification during focused remediation
+
+**Symptom:** Two full root verifiers were launched during the focused TR-001 remediation and had to be terminated by their exact PIDs after entering unrelated root coverage discovery.
+**Root cause:** The remediation instruction was misread as requiring route/full verification despite the parent retaining final verifier ownership; focused Trust-CI checks were the assigned verification scope.

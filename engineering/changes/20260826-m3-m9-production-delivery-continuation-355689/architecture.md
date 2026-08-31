@@ -6,6 +6,8 @@
 
 M2-A remains the stacked source base. M3 Tasks 1–7 are implemented and independently task-reviewed through `73a45d1`, with the Task 7 approval recorded at review-only head `e7c903d`. The repository now contains the strict governance engine, schemas, empty target-owned registries, exact handoff builder, executable M3 architecture model/fitness, governance-bound verifier receipts, installer payload, and current documentation. Task 8 final exact-fingerprint verification/reviews remain open. M4 has a plan but no `factory/`; M5–M9 are design/roadmap only.
 
+Restack note (2026-08-31): accepted M2 is now exact commit `022411b05924618cfde0cb97b8c8aff4955e6013`. The current M3 candidate therefore uses that commit as its immediate source predecessor and rederives exact-state architecture/governance evidence; the older checkpoint digests and heads remain audit history, not authority for the restacked tree.
+
 ## Proposed behavior
 
 Complete M3 as a repository-local intent-plane validator and publish a closed, exact-state governance handoff. Continue later milestones only in roadmap order and separate PRs.

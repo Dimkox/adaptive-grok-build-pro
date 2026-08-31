@@ -22,6 +22,8 @@ M3 Tasks 1–7 are implemented and independently task-reviewed through product c
 
 Task 8 final verification and the code/test/security/release review wave remain open and must bind the post-package final fingerprint. M4 is the next separate stacked PR after M3 passes its local and external gates. M5–M9 remain roadmap/design only; no merge, deployment, external authority, or production result is claimed.
 
+Restack note (2026-08-31): the checkpoint identities above remain historical evidence only. Accepted M2 advanced to exact commit `022411b05924618cfde0cb97b8c8aff4955e6013`, so the active restack package must integrate that predecessor and regenerate verification, reviews, architecture/governance evidence, and any handoff for the resulting exact M3 head; none of the earlier exact-state artifacts are reused.
+
 ## Scope
 
 ### In scope

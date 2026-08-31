@@ -6,6 +6,8 @@ M3 is delivered only as a stacked branch and pull request. It performs no runtim
 
 Current order is M3 final verification/review and PR first, then M4 as the next separate stacked PR consuming current exact M1/M2/M3 handoffs. M5–M9 remain roadmap/design only and are not included in either source release.
 
+Accepted M2 advanced to exact commit `022411b05924618cfde0cb97b8c8aff4955e6013`; the M3 restack must contain that predecessor and obtain fresh exact-head evidence before this release order can continue. Historical M3 receipts and handoffs are not reusable after the source merge.
+
 ## Feature flags / staged rollout
 
 Governance records seed empty/candidate-only. No active rule is fabricated. Later M9 delivery uses preview, staging, signed promotion request, canary, and halt/rollback gates.

@@ -279,3 +279,28 @@ Set each stacked milestone route's base commit and clean fingerprint to its exac
 ## 2026-08-28 — Evaluate exact handoff inputs against immutable Git objects
 
 Bind every authority and consumed evidence byte to the requested exact-head Git blob before emitting a governance handoff. Clean-worktree sampling remains a diagnostic because a nested rename or content swap can be restored between samples.
+
+## 2026-08-29 — Scope build trust and metadata to the operation
+
+Read-only CI helpers pass the exact canonical repository as command-scoped Git trust while continuing to ignore host configuration. Archive metadata is rendered in memory, leaving explicit generation as the only operation allowed to write the source manifest.
+The final measured compatibility diff is 10,739 lines, so the repository-owned architecture ceiling moves narrowly from 10,000 to 10,820 instead of weakening the security or streaming implementation.
+
+## 2026-08-29 — Bind package bytes at the repository descriptor boundary
+
+Exclude symlinks/non-regular entries and open every source component root-relative with `O_NOFOLLOW`, then require the same identity and digest during manifest hashing and ZIP streaming. Create the random sibling with `O_EXCL|O_NOFOLLOW`, retain its fd and digest authority through publication, accept success only after the output name matches that inode, and resolve POSIX-only capabilities lazily so explicit legacy manifest helpers remain portable. Bind all output operations to one effective-UID-owned private parent fd beneath trusted/non-renamable ancestors, no-follow-bind and `fchmod` every newly created parent to exact `0700`, and publish the sidecar from its own exclusive verified fd so pre-existing names are never opened or followed.
+
+## 2026-08-31 — Classify only proven zombie-only post-KILL groups as cleaned up
+
+Retain TERM/KILL/reap, reserve a bounded tail of KILL grace for one read-only procfs scan, and preserve the original command error only if every observed matching PGID member is positively `Z`. Live or incomplete procfs evidence remains fail-closed, avoiding both container zombie error masking and cleanup weakening.
+
+## 2026-08-31 — Keep frozen-adoption receipt tests scoped to their binding contract
+
+The receipt regression proves selected base, route-base, fingerprint, and evidence consistency; it must not assert a global fitness pass for every later stacked worktree. Architecture fitness continues to run independently against the active route base and retains the mixed-change policy.
+
+## 2026-08-31 — Test bounded procfs classification without the host procfs
+
+Mocking `scandir`, stat-file open/read, and monotonic time directly exercises parser and fail-closed branches deterministically while the existing runner regression continues to prove real descendant cleanup. This separates host-dependent process behavior from the security decision over procfs evidence.
+
+## 2026-08-31 — Restack M3 on the exact accepted M2 predecessor
+
+Consume accepted M2 `022411b05924618cfde0cb97b8c8aff4955e6013` through a true two-parent merge and regenerate architecture, governance, and receipt evidence for the resulting exact M3 head. This preserves both reviewed lineages while preventing historical exact-state artifacts from being reused as current authority.

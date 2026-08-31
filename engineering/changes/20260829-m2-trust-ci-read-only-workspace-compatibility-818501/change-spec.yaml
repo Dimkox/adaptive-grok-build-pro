@@ -1,0 +1,162 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {"test": "tests/test_architecture_fitness.py"},
+        {"receipt": "verification"}
+      ],
+      "id": "AC-001",
+      "statement": "Architecture Git operations succeed with a different-owned read-only checkout because every repository command trusts only the exact canonical repository root at command scope."
+    },
+    {
+      "evidence": [
+        {"test": "tests/test_manifest_package.py"},
+        {"receipt": "test_review"}
+      ],
+      "id": "AC-002",
+      "statement": "Package creation preserves any source MANIFEST.sha256 byte-for-byte while embedding freshly rendered deterministic manifest bytes in the archive."
+    },
+    {
+      "evidence": [
+        {"test": "tests/test_change_receipts.py"},
+        {"receipt": "code_review"}
+      ],
+      "id": "AC-003",
+      "statement": "The receipt regression keeps git clone --no-local and uses a temporary process-scoped Git config that trusts exactly the source repository Git directory."
+    },
+    {
+      "evidence": [
+        {"test": "tests/test_change_receipts.py"},
+        {"receipt": "verification"}
+      ],
+      "id": "AC-004",
+      "statement": "The explicit repository architecture budget admits the measured 10739-line compatibility change while remaining bounded at 10820 changed lines."
+    },
+    {
+      "evidence": [
+        {"test": "tests/test_manifest_package.py"},
+        {"receipt": "security_review"}
+      ],
+      "id": "AC-005",
+      "statement": "Packaging binds source, archive, checksum, and private output-parent descriptors through publication; rejects untrusted ancestor rename authority; creates missing parents privately; never opens an existing sidecar entry; and preserves bounded deterministic output semantics."
+    }
+  ],
+  "approvals": {
+    "required_scopes": ["architecture", "governance", "security"]
+  },
+  "change_id": "20260829-m2-trust-ci-read-only-workspace-compatibility-818501",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {"test": "tests/test_manifest_package.py"},
+        {"receipt": "release_review"}
+      ],
+      "id": "FORBID-001",
+      "statement": "Packaging never creates, rewrites, or deletes MANIFEST.sha256 in the source checkout."
+    },
+    {
+      "evidence": [
+        {"test": "tests/test_architecture_fitness.py"},
+        {"receipt": "security_review"}
+      ],
+      "id": "FORBID-002",
+      "statement": "The repair never uses wildcard safe.directory, persistent Git configuration, arbitrary host Git configuration, chown, or a writable Git directory."
+    },
+    {
+      "evidence": [
+        {"receipt": "security_review"},
+        {"receipt": "release_review"}
+      ],
+      "id": "FORBID-003",
+      "statement": "Repository changes never modify deployed Trust CI policy, runtime services, signatures, or external systems."
+    },
+    {
+      "evidence": [
+        {"test": "tests/test_manifest_package.py"},
+        {"receipt": "security_review"}
+      ],
+      "id": "FORBID-004",
+      "statement": "Packaging never follows a source symlink, reads through a replaced parent or file identity, or publishes an archive whose embedded digest differs from streamed member bytes."
+    },
+    {
+      "evidence": [
+        {"test": "tests/test_manifest_package.py"},
+        {"receipt": "code_review"}
+      ],
+      "id": "FORBID-005",
+      "statement": "Packaging never returns success, mutates a pre-existing sidecar target through its authority name, or leaves a detected archive/checksum entry whose inode differs from its held verified descriptor; detected mismatches are removed relative to the held private parent and fail closed."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {"test": "tests/test_architecture_fitness.py"},
+        {"receipt": "security_review"}
+      ],
+      "id": "INV-001",
+      "statement": "Git trust is isolated from host configuration and scoped in argv to the exact canonical repository root for each repository command."
+    },
+    {
+      "evidence": [
+        {"test": "tests/test_manifest_package.py"},
+        {"receipt": "code_review"}
+      ],
+      "id": "INV-002",
+      "statement": "Archive ordering, member modes, exclusions, checksum sidecar behavior, and explicit generate_manifest compatibility remain deterministic."
+    },
+    {
+      "evidence": [
+        {"receipt": "code_review"},
+        {"receipt": "release_review"}
+      ],
+      "id": "INV-003",
+      "statement": "Public API and event contracts and the deployed Trust CI trust boundary remain unchanged."
+    },
+    {
+      "evidence": [
+        {"test": "tests/test_change_receipts.py"},
+        {"receipt": "code_review"}
+      ],
+      "id": "INV-004",
+      "statement": "FIT-BOUNDED-ARCHITECTURE-CHANGE remains a finite repository-owned changed-line ceiling with only 81 lines of headroom over the measured compatibility diff."
+    },
+    {
+      "evidence": [
+        {"test": "tests/test_manifest_package.py"},
+        {"receipt": "code_review"}
+      ],
+      "id": "INV-005",
+      "statement": "Archive members, manifest hashing, ZIP output, and checksum use bounded streaming while deterministic ordering, member modes, output permission semantics, exclusions, sidecar format, and source invariance remain stable."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Исправить регрессию PR M2: корневые unittest должны проходить в изолированном Trust CI при read-only исходниках и несовпадающем владельце Git; устранить мутацию исходного дерева упаковщиком и сохранить контроль целостности без изменения deployed Trust CI policy",
+    "success_metric": "focused_read_only_compatibility_regressions",
+    "target": "all_compatibility_and_packaging_boundary_regressions_pass_with_a_finite_architecture_budget_and_without_source_or_trust_boundary_mutation"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "focused_read_only_compatibility_test_status",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

@@ -18,9 +18,9 @@ AC-001 through AC-006 are source-backed by the tests mapped in `change-spec.yaml
 
 - Adoption base: `25bfbe59ea188d9687b20a9caad19e7db3d031f8`.
 - Architecture ID: `ARCH-ADAPTIVE-GROK-M2`.
-- Composite architecture digest: `5ab48dfaac3b649b82c364f05351266979a104ef8420f58e62533d1322805290`.
+- Composite architecture digest: `d2f31484721c02d7ae0dcd2faa8519a6d20cb23da10de7378ed02fd1a293061b`.
 - System digest: `da6453d9bbb291b297a393ff3d63fb68a0f3ec120107b6ed2cac4ee5a2d6e72b`.
-- Rules digest: `b47a0ed9f4f82894ad7b0e713749a349c4b98703cbc6f93f64e8a156d671a4e4`.
+- Rules digest: `2d42ca7373cebd4bf954bcfe1bdb784688df8665d08c4dce2b13de536abee69e`.
 - Composite schema digest: `c702531d97283ba01fdebe79081081b96095631a89cf91e4cf128cc2574456f0`.
 - Contract inventory digest: `039feea9a076516e3dd414c8e59bc2a2eeb522e2ca19a9087438b7ec7314e017`.
 

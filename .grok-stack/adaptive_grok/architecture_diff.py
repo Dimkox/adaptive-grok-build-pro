@@ -170,12 +170,20 @@ def _git_environment() -> dict[str, str]:
     }
 
 
-def _git_command(arguments: list[str]) -> list[str]:
+def _git_command(
+    arguments: list[str],
+    *,
+    safe_directory: Path | None = None,
+) -> list[str]:
     if _GIT_EXECUTABLE is None:
         raise ArchitectureError("Git executable is unavailable", code="git")
-    return [
+    command = [
         _GIT_EXECUTABLE,
         "--no-replace-objects",
+    ]
+    if safe_directory is not None:
+        command.extend(("-c", f"safe.directory={safe_directory}"))
+    command.extend([
         "-c",
         "core.attributesFile=/dev/null",
         "-c",
@@ -195,7 +203,8 @@ def _git_command(arguments: list[str]) -> list[str]:
         "-c",
         "diff.renames=false",
         *arguments,
-    ]
+    ])
+    return command
 
 
 def _git(
@@ -206,9 +215,10 @@ def _git(
     limit: int = MAX_GIT_OUTPUT_BYTES,
     stdin_data: bytes | None = None,
 ) -> bytes | None:
+    repository = Path(root).resolve(strict=True)
     returncode, output, error = _run_capped(
-        _git_command(arguments),
-        cwd=root,
+        _git_command(arguments, safe_directory=repository),
+        cwd=repository,
         env=_git_environment(),
         stdout_limit=limit,
         stderr_limit=65_536,
