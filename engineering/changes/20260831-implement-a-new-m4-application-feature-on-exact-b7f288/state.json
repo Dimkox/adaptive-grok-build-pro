@@ -1,0 +1,29 @@
+{
+  "change_id": "20260831-implement-a-new-m4-application-feature-on-exact-b7f288",
+  "created_at": "2026-08-31T20:22:26+00:00",
+  "history": [
+    {
+      "at": "2026-08-31T20:22:26+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-31T20:42:30+00:00",
+      "from": "draft",
+      "reason": "Exact accepted M3 base, scope, acceptance criteria, architecture, test, release and rollback frozen; user approved scope/design",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-31T20:42:30+00:00",
+      "from": "scoped",
+      "reason": "User explicitly authorized automatic implementation; migration scope restricted to a fresh disposable local PostgreSQL database with no external or production writes",
+      "to": "approved"
+    }
+  ],
+  "route_id": "b7f288f1e81e",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Implement a new M4 application feature on exact base 67714a1f1b87effcfabe55d5ca2770d0a68d17c1: typed immutable task, run, and attempt records; PostgreSQL migrations and durable state; idempotent intake; lease fencing and capacity; bounded retry, dead-letter and budgets; kill switches, audit, reconciliation; authenticated local API and CLI; PostgreSQL integration tests. The feature remains local and has no network side effects.",
+  "updated_at": "2026-08-31T20:42:30+00:00"
+}
