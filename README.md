@@ -4,6 +4,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## Current state
 
+- Fresh-agent bootstrap: start with [`START_HERE.md`](START_HERE.md), then [`PROJECT_STATE.json`](PROJECT_STATE.json). A clean clone must be sufficient to understand the current milestone without chat history.
 - Source identity: **2.1.0** (`VERSION`, README H1). The latest published GitHub Release remains `v2.0.12`; this checkout and its local ZIP are not published release evidence.
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
@@ -12,30 +13,39 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 - M2-A executable architecture is a local source candidate: strict target-owned model/rules/adoption state, bounded deterministic parsing, exact Git-object diff, repository/contract drift, mandatory fitness evidence including a package-aware bounded abstract interpreter for queue provenance, monotonic risk, five read-only Mermaid text projections, architecture-bound local verification/receipts, and a read-only/new-target installer boundary are implemented. Passing final route reviews, current fingerprint-bound receipts, PR delivery, the external exact-SHA check, M2-B independent enforcement, and deployment remain pending; local architecture output is not merge authority.
 - M3 controlled knowledge and debt is a local source candidate: strict target-owned governance registries, bounded no-follow loading, reviewed rule lifecycle, conflict detection, canonical-example/debt semantics, non-authoritative Markdown projections, exact `GovernanceHandoffV1`, executable architecture fitness, governance-bound local receipts, and safe installer distribution are implemented. The shipped registries are empty, repository-authored approval-looking fields are not external authority, and no active rule/example or closed debt is fabricated. Task 8 final verification/reviews, PR delivery, the App-owned exact-SHA check, signed approvals, merge, and any deployment remain pending.
 - M4 durable factory control-plane implementation is pending and cannot start from local M3 prose or receipts. It must consume current exact M1/M2/M3 handoffs and separately verified external authority on its own branch and pull request.
-- Independent CI candidate: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
-- Trust CI service identity is also **2.1.0** (`trust-ci/pyproject.toml`) but remains a separately deployed service, not this product source identity. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. The PR #2 bootstrap exception is revoked. PR #5 is not mergeable while that Check Run is `action_required`.
+- Independent Trust CI: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
+- M0 Live Trust Authority is complete on `main`. PR #7 repaired the Trust CI workspace/runtime path, PR #6 fixed target-aware shell policy/denial loops, and PR #5 consolidated the live authority milestone.
+- Trust CI service identity is also **2.1.0** (`trust-ci/pyproject.toml`) but remains a separately deployed service, not this product source identity. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. Bootstrap merge exceptions are revoked.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
 
 ## Read first
 
-1. [AGENTS.md](AGENTS.md)
-2. [decisions.md](decisions.md)
-3. [mistakes.md](mistakes.md)
-4. [CHANGELOG.md](CHANGELOG.md)
-5. [QUICKSTART.md](QUICKSTART.md)
-6. [`trust-ci/README.md`](trust-ci/README.md)
-7. `.grok-stack/runtime/active-route.json` (live route; not product identity or merge authority)
-8. This README’s stack graph and map
+1. [START_HERE.md](START_HERE.md)
+2. [PROJECT_STATE.json](PROJECT_STATE.json)
+3. [AGENTS.md](AGENTS.md)
+4. [decisions.md](decisions.md)
+5. [mistakes.md](mistakes.md)
+6. [DARK_FACTORY_ROADMAP.md](DARK_FACTORY_ROADMAP.md)
+7. [CHANGELOG.md](CHANGELOG.md)
+8. [QUICKSTART.md](QUICKSTART.md)
+9. [`trust-ci/README.md`](trust-ci/README.md)
+10. `.grok-stack/runtime/active-route.json` if present (machine-local route; it may be absent in a clean clone and is not merge authority)
+11. This README’s stack graph and map
 
 ## How work runs
 
 Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, executable M2 architecture second, and target-owned M3 governance third; local receipts bind all configured layers to one worktree fingerprint but remain preflight evidence. Canonical governance JSON and exact handoffs outrank generated `decisions.md` / `mistakes.md` projections, while external Trust CI policy, holdout, signed approvals, and exact-SHA attestation remain the higher merge authority described in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Local loop: route → change package → one write owner → if the product changed, `grok_verify --mode pr` and independent local reviews → `ready` → branch and pull request. The deployed Trust CI service verifies the exact PR SHA under server-side policy, executes an external holdout bundle before repository checks, rejects source mutation, checks signed human approval scopes, signs the attestation, and publishes `adaptive-trust-ci/verified@<policy-sha12>` through its GitHub App. A human owns merge, tag and production promotion.
 
+For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.json` first. Runtime route files are not expected to be committed; when no route exists, continue the explicitly named active PR/branch or route a new task before implementation.
+
 ## Map
 
+- [START_HERE.md](START_HERE.md) — zero-context agent/human entrypoint
+- [PROJECT_STATE.json](PROJECT_STATE.json) — machine-readable milestone handoff
 - [AGENTS.md](AGENTS.md)
 - [decisions.md](decisions.md)
 - [mistakes.md](mistakes.md)
+- [DARK_FACTORY_ROADMAP.md](DARK_FACTORY_ROADMAP.md)
 - [CHANGELOG.md](CHANGELOG.md)
 - [QUICKSTART.md](QUICKSTART.md)
 - [VERSION](VERSION)
@@ -79,6 +89,7 @@ Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, execu
 
 ## What this is
 
+- Zero-context project handoff through `START_HERE.md` and `PROJECT_STATE.json`
 - Task routing + domain skills (Bitrix, API/events, data, frontend, security, incidents, …)
 - Quality profiles and change packages under `engineering/changes/`
 - Strict typed change intent with stable criterion/evidence IDs and deterministic spec fingerprints
@@ -93,7 +104,7 @@ Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, execu
 
 ## Stack graph
 
-Decorative inventory graph (K16): every listed core node is linked to every other with one of 120 `---` edges. It is an inventory regression only, not architecture authority or architectural evidence. The directed, trust-aware authority is the reviewed model and rules described below; prompts, generated views, local receipts, and delegated grants are not merge authority.
+Decorative inventory graph (K16): every listed core runtime node is linked to every other with one of 120 `---` edges. It is an inventory regression only, not architecture authority or architectural evidence. The directed, trust-aware authority is the reviewed model and rules described below; bootstrap documents (`START_HERE.md`, `PROJECT_STATE.json`), prompts, generated views, local receipts, and delegated grants are not core runtime nodes or merge authority.
 
 ```mermaid
 graph TD
@@ -417,11 +428,3 @@ python3 scripts/package_stack.py
 ```
 
 Default output is `dist/adaptive-grok-build-pro-v<VERSION>.zip` (gitignored scratch). Published copies live in `packages/` and on the GitHub Release. Zip members use the prefix `adaptive-grok-build-pro/`.
-
-## Bitrix
-
-See skills under `.grok/skills/bitrix-development/` and example module in `examples/bitrix-module/`.
-
-## License
-
-**MIT.** A commercial product that is free of charge: use, copy, modify, and ship it. The repository is public. No EULA, no paid tier. Local checks: `make doctor` / `make verify` / `make trust-ci-test`. Merge trust, when deployed, is the App-owned policy-epoch exact-SHA check described in [`trust-ci/README.md`](trust-ci/README.md).
