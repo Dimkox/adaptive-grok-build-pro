@@ -43,11 +43,17 @@
       "from": "reviewing",
       "reason": "final code and test rereviews passed with no findings",
       "to": "ready"
+    },
+    {
+      "at": "2026-08-31T15:26:46+00:00",
+      "from": "ready",
+      "reason": "committed-head verification found two ROOT tests coupled to branch-global frozen-base fitness",
+      "to": "implementing"
     }
   ],
   "route_id": "fa3ae6080deb",
   "schema_version": 1,
-  "status": "ready",
+  "status": "implementing",
   "title": "Fix Trust CI bounded workspace process cleanup in the immutable read-only runner: zombie-only descendants after SIGKILL must not mask the original stdout/stderr/timeout failure, while live or uncertain survivors remain fail-closed. Deliver as an isolated stacked Trust-CI-only bugfix on M2 with regression tests.",
-  "updated_at": "2026-08-31T15:14:05+00:00"
+  "updated_at": "2026-08-31T15:26:46+00:00"
 }

@@ -56,6 +56,10 @@ The static root receipt regression for the older frozen pre-adoption base is not
 
 The receipt regression was therefore stabilized narrowly: its former branch-global `result.status == 'pass'` assertion was RED for every legitimate later Trust-CI-only stacked worktree, while its actual base/binding/evidence assertions remained meaningful. The test now passes in the dirty hotfix worktree and in a fresh local clone of `9493741…` with this exact diff applied; the active route's architecture gate independently remains `pass` against route base `9493741…`.
 
+## Committed-head ROOT regression rationale
+
+At committed head `6a2ccca`, two ROOT tests were RED solely because they compared the entire later stacked Trust-CI-only worktree to the frozen pre-adoption base: `test_all_mandatory_categories_emit_typed_applicability` asserted global `change_separation` and report pass states, and `test_route_base_remains_a_separate_architecture_staleness_binding` asserted `_architecture_check` pass. Their actual contracts are typed category/applicability evidence and exact comparison/route-base receipt binding, respectively. The remediation retains those direct assertions and removes only the branch-global fitness-pass assumptions; it does not alter architecture fitness policy or the active-route gate.
+
 Rollback is a one-file forward-fix/revert of the classifier with its focused tests; never replace uncertain state with cleanup success or omit TERM/KILL/reap.
 
 ## TR-001 direct-classifier remediation

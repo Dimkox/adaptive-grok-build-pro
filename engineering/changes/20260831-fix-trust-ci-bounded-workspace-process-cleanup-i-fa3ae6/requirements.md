@@ -12,7 +12,7 @@
 - The worker process group remains rejected for both signal and inspection.
 - A vanished PID is a normal race; incomplete membership evidence is not zombie proof.
 - The direct `Popen` leader is still reaped and selector/stream cleanup remains intact.
-- The receipt regression continues to bind frozen adoption base, route base, fingerprint, and evidence fields, but does not claim an arbitrary later stacked worktree has globally passing cumulative fitness.
+- The receipt regression continues to bind frozen adoption base, route base, fingerprint, and evidence fields; the typed-applicability regression continues to require every mandatory category and its typed evidence. Neither claims an arbitrary later stacked worktree has globally passing cumulative fitness.
 
 ## Non-functional requirements
 

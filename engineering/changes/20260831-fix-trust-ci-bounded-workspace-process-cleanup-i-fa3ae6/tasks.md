@@ -6,5 +6,6 @@
 - [x] Run focused workspace, diff, spec, and pinned-runner checks.
 - [x] Stabilize the frozen-adoption receipt test to assert binding evidence rather than cumulative stacked-branch fitness.
 - [x] Address TR-001 with direct deterministic classifier tests for parser, member state, races, bounds, deadline, and final-probe outcomes.
+- [x] Decouple ROOT receipt-binding and typed-applicability regressions from later stacked-branch global fitness while retaining their direct contract assertions.
 - [ ] Run the route verifier and independent code/test reviews on the final fingerprint.
 - [ ] Bind final evidence and retain PR App-owned exact-SHA check as a separate merge gate.

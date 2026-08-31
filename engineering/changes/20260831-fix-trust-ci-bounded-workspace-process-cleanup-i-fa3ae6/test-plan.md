@@ -10,11 +10,11 @@
 | P0 | Direct bounded procfs classifier accepts all-Z target PGID records only | deterministic mocked `scandir`/`open`/`read` unit tests |
 | P0 | Direct classifier rejects X/other live states, malformed/truncated/oversized records, open/read failures, caps, deadlines, and uncertain final probes | deterministic mocked procfs unit tests |
 | P1 | Existing descendant cleanup, leader reap, own-group refusal, and ESRCH race behavior | `trust-ci/tests/test_workspace.py` |
-| P1 | Frozen-adoption receipt binding remains deterministic for a later stacked hotfix | `tests/test_change_receipts.py` |
+| P1 | Frozen-adoption receipt route-base binding and mandatory typed-applicability categories remain deterministic for a later stacked hotfix | `tests/test_change_receipts.py`, `tests/test_architecture_fitness.py` |
 
 ## Automated checks
 
-- Unit: focused `PostKillProcessGroupClassifierTests` and `WorkspaceStreamingTests`, full `trust-ci/tests/test_workspace.py`, and the frozen-adoption receipt binding test.
+- Unit: focused `PostKillProcessGroupClassifierTests` and `WorkspaceStreamingTests`, full `trust-ci/tests/test_workspace.py`, and the frozen-adoption receipt-binding plus typed-applicability tests.
 - Integration: digest-pinned read-only runner execution where available.
 - Contract: no public contract change; validate the v2 change spec.
 - E2E: route verifier and final independent review receipts.

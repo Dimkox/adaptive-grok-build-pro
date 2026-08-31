@@ -13,7 +13,7 @@
     {
       "evidence": [{"test": "tests/test_change_receipts.py"}, {"receipt": "verification"}],
       "id": "AC-003",
-      "statement": "The frozen-adoption receipt regression validates exact comparison-base, binding, fingerprint, and evidence invariants without asserting cumulative branch-global fitness."
+      "statement": "The frozen-adoption receipt and typed-applicability regressions validate exact comparison-base, route-base, binding, fingerprint, evidence, and mandatory-category invariants without asserting cumulative branch-global fitness."
     }
   ],
   "approvals": {
