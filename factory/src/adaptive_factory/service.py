@@ -36,6 +36,16 @@ class FactoryService:
         self._require(actor, "task:submit", intake.repository_id)
         return self.store.intake(intake, actor, now)
 
+    def get_task(self, task_id: str, *, actor: Actor):
+        self._require(actor, "task:read")
+        task = self.store.get_task(task_id)
+        self._require(actor, "task:read", task.repository_id)
+        return task
+
+    def list_tasks(self, *, repository_id: str, limit: int, cursor: str | None, actor: Actor):
+        self._require(actor, "task:list", repository_id)
+        return self.store.list_tasks(repository_id=repository_id, limit=limit, cursor_task_id=cursor)
+
     def claim(self, *, owner: str, role: RunRole, repositories: Iterable[str], lease_seconds: int, actor: Actor, now: datetime):
         self._require(actor, "task:claim")
         repositories = tuple(sorted(set(repositories)))
@@ -51,6 +61,8 @@ class FactoryService:
 
     def release(self, grant: LeaseGrant, *, outcome: str | FailureClass, actor: Actor, now: datetime):
         self._require(actor, "task:release")
+        if isinstance(outcome, str) and outcome != "completed":
+            outcome = FailureClass(outcome)
         return self.store.release(grant, outcome, actor, now)
 
     def reserve_budget(self, grant: LeaseGrant, *, cost_usd_micros: int, token_units: int, wall_seconds: int, reason_digest: str, idempotency_key: str, actor: Actor):

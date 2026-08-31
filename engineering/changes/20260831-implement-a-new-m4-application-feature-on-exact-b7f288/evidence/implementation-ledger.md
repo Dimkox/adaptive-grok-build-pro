@@ -36,3 +36,10 @@ Each vertical records its RED command/result before production source is added, 
 - GREEN PostgreSQL: `FACTORY_TEST_DATABASE_URL=<redacted> ... -m unittest factory.tests.test_postgres_integration -v` passed 4 real PostgreSQL 17 tests in 5.887s after the focused repairs.
 - Database-time ruling: task acceptance/deadline, lease expiry and reconciliation use PostgreSQL time. The restart tests expire only the named disposable run row to avoid a 30-second sleep; production callers cannot supply the database clock.
 - Restart probe: the bounded subprocess holder/reclaim script passed; one expired lease was repaired, a higher fence issued, and the late heartbeat rejected.
+
+### Local API and CLI
+
+- RED: after installing the approved pinned dependencies into a disposable venv, `test_api` failed because `adaptive_factory.api` did not exist. A later focused RED proved raw contract exceptions escaped instead of producing a safe structured response.
+- GREEN: API plus service tests passed 9 tests for constant-time scoped bearer auth, repository authorization, idempotency/correlation, 1 MiB bound, safe errors, typed failures, forbidden endpoint absence and no-follow mode-0600 token loading.
+- Boundary: checked-in OpenAPI and CLI expose only local control operations; HTTP transport uses an explicit Unix-domain socket and the CLI has no database, provider, repository, GitHub, systemd or deployment path.
+- Cleanup: editable-install `factory/src/adaptive_factory.egg-info` was removed as an exact generated artifact and excluded by `factory/.gitignore`.
