@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import os
 import sys
@@ -202,15 +203,18 @@ class PackageTests(unittest.TestCase):
 
     def test_investor_demo_local_release_artifact_is_complete_and_checksum_bound(self) -> None:
         version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
-        archive_path = ROOT / "dist" / f"adaptive-grok-build-pro-v{version}.zip"
-        checksum_path = ROOT / "dist" / f"adaptive-grok-build-pro-v{version}.zip.sha256"
-        self.assertTrue(archive_path.is_file())
-        self.assertTrue(checksum_path.is_file())
-        expected = checksum_path.read_text(encoding="utf-8").split()[0]
-        import hashlib
-        self.assertEqual(hashlib.sha256(archive_path.read_bytes()).hexdigest(), expected)
-        with zipfile.ZipFile(archive_path) as archive:
-            names = set(archive.namelist())
+        with tempfile.TemporaryDirectory() as tmp:
+            archive_path = Path(tmp) / f"adaptive-grok-build-pro-v{version}.zip"
+            checksum_path = archive_path.with_name(f"{archive_path.name}.sha256")
+            digest = PACKAGE.write_archive(ROOT, archive_path)
+            self.assertTrue(archive_path.is_file())
+            self.assertTrue(checksum_path.is_file())
+            expected = checksum_path.read_text(encoding="utf-8").split()[0]
+            self.assertEqual(digest, expected)
+            self.assertEqual(hashlib.sha256(archive_path.read_bytes()).hexdigest(), expected)
+            with zipfile.ZipFile(archive_path) as archive:
+                names = set(archive.namelist())
+        self.assertFalse((ROOT / "MANIFEST.sha256").exists())
         prefix = "adaptive-grok-build-pro/"
         required = {
             "VERSION",
