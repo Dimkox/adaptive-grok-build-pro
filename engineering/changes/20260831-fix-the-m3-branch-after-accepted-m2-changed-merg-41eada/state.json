@@ -25,11 +25,29 @@
       "from": "approved",
       "reason": "Exact accepted M2 merged, four conflicts resolved, and focused M2/M3 characterization cohorts pass",
       "to": "implementing"
+    },
+    {
+      "at": "2026-08-31T19:44:12+00:00",
+      "from": "implementing",
+      "reason": "CR-001 remediated; focused checks and full verifier passed on f998ed28",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-31T19:44:12+00:00",
+      "from": "verifying",
+      "reason": "Fresh independent code, test, and security rereviews passed on f998ed28",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-31T19:44:12+00:00",
+      "from": "reviewing",
+      "reason": "Implementation and independent review complete; closing report-inclusive evidence state before final fingerprint binding",
+      "to": "ready"
     }
   ],
   "route_id": "41eadaeae674",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "ready",
   "title": "Fix the M3 branch after accepted M2 changed: merge exact M2 head 022411b05924618cfde0cb97b8c8aff4955e6013 into M3, resolve integration conflicts without changing M3 requirements, add or update regression tests if needed, run verification and reviews, and prepare PR #11 for fresh exact-SHA Trust CI; no external writes without exact delegated grants.",
-  "updated_at": "2026-08-31T19:02:12+00:00"
+  "updated_at": "2026-08-31T19:44:12+00:00"
 }
