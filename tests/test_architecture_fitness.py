@@ -749,6 +749,82 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "fail")
         self.assertTrue(any("NODE-B" in finding for finding in result.findings))
 
+    def test_http_client_constructors_distinguish_http_from_https_across_import_shapes(self) -> None:
+        cases = (
+            (
+                "direct HTTPConnection",
+                "import http.client\nhttp.client.HTTPConnection('127.0.0.1')\n",
+                "http",
+            ),
+            (
+                "aliased HTTPConnection",
+                "import http.client as client\nclient.HTTPConnection('127.0.0.1')\n",
+                "http",
+            ),
+            (
+                "module from-import HTTPConnection",
+                "from http import client\nclient.HTTPConnection('127.0.0.1')\n",
+                "http",
+            ),
+            (
+                "constructor from-import HTTPConnection",
+                "from http.client import HTTPConnection as Connection\nConnection('127.0.0.1')\n",
+                "http",
+            ),
+            (
+                "direct HTTPSConnection",
+                "import http.client\nhttp.client.HTTPSConnection('example.test')\n",
+                "https",
+            ),
+            (
+                "constructor from-import HTTPSConnection",
+                "from http.client import HTTPSConnection as Connection\nConnection('example.test')\n",
+                "https",
+            ),
+        )
+        for label, source, protocol in cases:
+            with self.subTest(label=label):
+                system = _system()
+                system["nodes"][0]["repository_paths"] = ["src"]
+                system["nodes"][0]["runtime"]["network"] = "local_only"
+                system["edges"].append({
+                    "id": "EDGE-HTTP-CLIENT",
+                    "from": "NODE-A",
+                    "to": "NODE-B",
+                    "type": "data_flow",
+                    "protocol": protocol,
+                    "direction": "from_to",
+                    "authentication": "local_os",
+                    "network_policy": "local_only",
+                    "sync_or_async": "synchronous",
+                    "allowed_data": ["DATA-INTERNAL"],
+                    "failure_behavior": {
+                        "mode": "fail_closed",
+                        "timeout_ms": 1000,
+                        "max_retries": 0,
+                        "idempotency": "not_required",
+                        "correlation_id": "not_required",
+                        "terminal_action": "reject",
+                        "observable_signal": "SIG-EDGE-FAILURE",
+                    },
+                })
+                rules = _rules()
+                rules["network_policies"] = [{
+                    "id": "FIT-NETWORK",
+                    "node_types": ["local_component"],
+                    "allowed_protocols": [protocol],
+                    "require_declared_edge": True,
+                    "severity": "error",
+                }]
+                repo, base = self._repo(system=system, rules=rules)
+                repo.write_text("src/client.py", source)
+                head = repo.commit(label)
+                report = self._evaluate(repo, base, head)
+                result = self._results(report)["network_client"]
+                self.assertEqual(result.status, "pass", result.findings)
+                self.assertEqual(result.findings, ())
+                self.assertIn("new_network_client", report.triggers)
+
     def test_queue_provenance_covers_wildcards_and_structured_assignments(self) -> None:
         system = _system()
         system["nodes"][0]["type"] = "worker"

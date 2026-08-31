@@ -62,7 +62,6 @@ _NETWORK_IMPORTS = {
     "aiohttp": "https",
     "docker": "docker_api",
     "ftplib": "ftp",
-    "http.client": "https",
     "httpx": "https",
     "imaplib": "imap",
     "poplib": "pop3",
@@ -663,6 +662,15 @@ def _network_protocol(imported: str) -> str | None:
     return None if not matches else max(matches)[1]
 
 
+def _http_client_protocol(imported: str, call: str) -> str | None:
+    if imported != "http.client" and not imported.startswith("http.client."):
+        return None
+    return {
+        "HTTPConnection": "http",
+        "HTTPSConnection": "https",
+    }.get(call.rsplit(".", 1)[-1])
+
+
 def _import_targets(tree: ast.AST) -> set[str]:
     targets: set[str] = set()
     for node in ast.walk(tree):
@@ -1169,6 +1177,10 @@ def _network_clients(
             if protocol:
                 clients.append((path, protocol, owner))
         for imported, call in _called_imports(tree):
+            protocol = _http_client_protocol(imported, call)
+            if protocol is not None:
+                clients.append((path, protocol, owner))
+                continue
             if _network_protocol(imported) is not None:
                 continue
             if _network_call_is_applicable(imported, call, project_roots):
@@ -2091,7 +2103,10 @@ def _network_families(tree: ast.AST, project_roots: set[str]) -> set[str]:
         imported for imported in _import_targets(tree) if _network_protocol(imported) is not None
     }
     for imported, call in _called_imports(tree):
-        if _network_protocol(imported) is not None:
+        protocol = _http_client_protocol(imported, call)
+        if protocol is not None:
+            values.add(f"http.client:{protocol}")
+        elif _network_protocol(imported) is not None:
             values.add(imported)
         elif _network_call_is_applicable(imported, call, project_roots):
             values.add(f"unsupported:{call}")
