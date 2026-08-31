@@ -22,3 +22,9 @@ Each vertical records its RED command/result before production source is added, 
 
 - RED: `python3 -m unittest factory.tests.test_state -v` failed because `adaptive_factory.state` did not exist.
 - GREEN: the same command passed 6 tests covering every state pair, terminality, operator requeue evidence, provider denial, rejected future delivery states and the initial-plus-two closed retry policy.
+
+### Migration foundation
+
+- RED: `python3 -m unittest factory.tests.test_migrations -v` failed because `adaptive_factory.migrations` did not exist.
+- GREEN: the same command passed 4 tests for contiguous discovery, immutable checksum planning, drift rejection and factory-only schema markers.
+- Ruling: bootstrap creates only `factory.schema_migrations`; all three packaged migrations apply under one factory-specific advisory transaction and never inspect another migration registry.
