@@ -195,6 +195,6 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 ## 2026-08-31 — Let a gitignored package artifact become a test fixture
 
-**Symptom:** The local package test passed only because `dist/` already existed, while clean Trust CI root-unittest failed without that gitignored artifact.
-**Root cause:** The test asserted a scratch archive instead of building its own fixture in a temporary directory.
-**Durable rule:** Clean-checkout tests must create and verify every ignored artifact they require, leaving no persistent source-tree mutation.
+**Symptom:** The local package test passed only because `dist/` existed; clean Trust CI root-unittest first failed without that ignored artifact and then still failed against its read-only workspace.
+**Root cause:** The test depended on scratch `dist/`, and the first fix moved only the output to temporary storage while still running the packager against source, whose manifest generation writes into `/workspace` even though deployed Trust CI mounts it read-only.
+**Durable rule:** Exact-SHA artifact tests must stage the tracked package inventory into a writable temporary root and validate it there without writing to source.
