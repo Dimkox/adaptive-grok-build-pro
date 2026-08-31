@@ -1,71 +1,87 @@
-# Test review — post-remediation investor-ready local product MVP
+# Final post-fix test review — investor-ready local product MVP
 
 ## Verdict
 
 **PASS**
 
-The two Important findings from the prior review wave are resolved and protected by focused regression tests. No Critical or Important test gap remains in the bounded local-demo scope.
+The post-merge bootstrap defect is fixed in product HEAD `c711bd7912d7ba44e137db8a1afda44eae16897b`, protected by a semantic regression test, represented truthfully in the rebuilt ZIP, and covered by a fresh full verification receipt. No Critical or Important test gap remains.
 
-## Inspected identity and tree
+## Exact inspected identity
 
-- Route: `befa117340b9`; route-selected role: `test_reviewer`.
-- Approved comparison base and Git HEAD at review: `2cf89e40e5c3f33cddf87eecd7956ecf4a201df3`.
-- Inspected combined pre-report tree fingerprint: `586d1ce5f974575d27e78f778d6f43339e0dbca31956f37c18b92f2351612eb3`.
-- That fingerprint included the complete remediated tracked/untracked product tree, the fresh PASS `code-review.md`, and the prior `test-review.md`. Replacing this report is this reviewer's only tree change after fingerprint capture.
-- Active package: `engineering/changes/20260830-add-new-browser-ui-functionality-to-adaptive-gro-befa11`.
-- Release artifact inspected: `dist/adaptive-grok-build-pro-v2.1.0.zip`, SHA-256 `5969f951e416f2fb93b3d453267a91efded59ce109058b79b8ebf765ee89cec6`.
+- Product HEAD: `c711bd7912d7ba44e137db8a1afda44eae16897b`.
+- Parent/pre-fix merge: `3af0e803c8d763f227f0669e3c614806a90fc75b`.
+- Remediation commit scope: `PROJECT_STATE.json`, `START_HERE.md`, `README.md`, and `tests/test_structure.py`.
+- Fresh PASS verification receipt: `.grok-stack/runtime/receipts/befa117340b9/verification.json`, created `2026-08-31T10:01:11+00:00`, product HEAD `c711bd7912d7ba44e137db8a1afda44eae16897b`, fingerprint `53464d59f61364821a22d97c94ded9013964c231d2fddde9cdc222f91a0cebdc`.
+- Combined pre-report fingerprint after the final code-review append: `3cd235c546f0c024561c0e971eb26a7bfca36b3c3f89b5ab04770441cc9e6c7d`.
+- The product tree matched HEAD; only route-selected review evidence files were modified. Replacing this report is this reviewer's only subsequent mutation.
 
-## Mandatory remediation checks
+## Important finding resolution
 
-### 1. Initialization performs no subprocess or Git operation — resolved
+Resolved. The mandatory zero-context bootstrap now consistently describes the actual v2.1.0 candidate:
 
-`DemoApplication` now uses explicit deterministic, non-authoritative `DEMO_ROUTE_METADATA`; it no longer derives Git base/fingerprint during construction. `demo.py` no longer imports `git_default_base` or `tree_fingerprint`.
+- `PROJECT_STATE.json` declares source identity `2.1.0`, locally complete candidates M1, M2, M3, and `investor-demo-mvp`, active PR #15, branch `mvp/investor-ready`, and target `main`.
+- Its delivery state explicitly says external exact-SHA Trust CI and required approvals are pending, with `merged=false` and `deployed=false`.
+- `START_HERE.md` carries the same current candidate and next-action truth. It contains none of the obsolete PR #8, old M1 branch, M1-not-started, or Task-1 restart instructions.
+- README current-state wording now agrees that M1/M2/M3 are locally complete source candidates while external Trust CI, approvals, merge, release, and deployment remain separate pending gates.
+- The Bitrix and MIT License sections removed by the merge were restored without changing the complete K16 graph.
 
-`test_application_and_server_initialization_do_not_run_subprocesses` patches `subprocess.run` **before** both `DemoApplication(...)` and `create_server(...)` execute. Both constructions and their bundled snapshots complete while any subprocess call would raise an assertion. This closes the hole in the earlier request-only test, whose patch began after server initialization.
+The new `test_fresh_agent_bootstrap_tracks_current_v2_candidate` parses the machine-readable state, asserts exact current candidate/PR/branch/delivery values, checks required human-readable markers, and rejects all stale bootstrap claims. `test_readme_retains_bitrix_and_license_sections` prevents recurrence of the merge's tail-section loss.
 
-The existing request-path test still separately proves that snapshot and preview HTTP traffic runs no subprocess and leaves `.grok-stack/runtime` byte/mtime state unchanged.
+## Fresh full verification
 
-### 2. Alternate scenario is computed and truthfully labelled — resolved
+The current receipt records PASS for all route-selected technical checks:
 
-The fixture now uses `Review the project documentation for clarity and broken links`. `build_sample_snapshot` computes that prompt through the real router using the same deterministic demo metadata and publishes an allowlisted `alternate_route` projection plus a label derived from the computed intent, risk, and write owner.
+- git diff check;
+- typed change spec;
+- architecture drift, fitness, and diagrams;
+- governance;
+- secret scan;
+- contract structure;
+- SQL safety;
+- Ruff;
+- Bandit;
+- Python unit suite: **480 tests passed**, 439.961 seconds;
+- coverage: **80%** total;
+- source stability.
 
-`test_alternate_scenario_claims_match_its_computed_route` independently invokes `build_route` and proves equality for intent/risk/domains/write owner. Current canonical result is `review`, `medium`, `[api]`, and no write owner; the label is exactly `Use contrasting review route · medium risk · no write owner`.
+The receipt is valid evidence for the exact product HEAD and its recorded fingerprint. The delivery owner must create fresh final receipts after review evidence is finalized, as required by the repository workflow.
 
-The browser takes `alternate_action_label` from the snapshot rather than embedding a risk claim. Static UI tests reject the stale `low-risk` wording. `docs/INVESTOR_DEMO.md` describes the same computed medium-risk result and explicitly rejects a fabricated low-risk claim. The rebuilt archive contains the corrected fixture, computation, UI, and guide.
+## Independently reproduced focused checks
 
-## Fresh test evidence
+### Bootstrap, version, graph, package, and critical demo regressions
 
-### Focused remediation and demo/API suite
+Focused command covering the new bootstrap tests, README identity/graph, package artifact, computed alternate scenario, and initialization no-subprocess regression:
 
-`python3 -m unittest tests.test_demo tests.test_demo_http -v`
+- **10 tests passed**, 0.422 seconds, `OK`.
 
-- **20 tests passed**, 0.920 seconds, `OK`.
-- Includes both new regressions plus route/spec direct equivalence, provenance, bundled-report validation, partial degradation, safe DOM, accessibility/responsive states, Host/Origin/media/schema/size/traversal/method rejection, headers, no-runtime-mutation, launcher, and OpenAPI inventory.
+### Full structure and package modules
 
-### Expanded impacted-scope suite
+`python3 -m unittest tests.test_structure tests.test_manifest_package -v`
 
-`python3 -m unittest tests.test_demo tests.test_demo_http tests.test_installer.InstallerTests.test_payload_is_sorted_safe_duplicate_free_and_profile_explicit tests.test_installer.InstallerTests.test_materialize_new_publishes_verified_payload_once tests.test_manifest_package.ManifestTests.test_local_demo_engine_assets_contract_and_guide_are_packaged tests.test_manifest_package.PackageTests.test_investor_demo_local_release_artifact_is_complete_and_checksum_bound tests.test_structure.StructureTests.test_core_product_files_exist tests.test_structure.StructureTests.test_version_identity_matches_readme tests.test_structure.StructureTests.test_local_demo_is_documented_as_read_only_sample_evidence -v`
+- **32 tests passed**, 8.913 seconds, `OK`.
+- Includes bootstrap truth, restored README sections, v2.1.0 identity, complete 120-edge K16 graph, core inventory, external merge authority, no GitHub Actions, deterministic/self-verifying packaging, secret/runtime exclusions, installer materialization, and demo artifact inclusion.
 
-- **27 tests passed**, 2.145 seconds, `OK`.
-- Confirms installer payload/materialization, package inventory, version/docs identity, and checksum-bound release artifact in addition to all demo/API regressions.
+### Static integrity
 
-### Static and artifact checks
-
-- `ruff check .grok-stack/adaptive_grok/demo.py .grok-stack/adaptive_grok/demo_http.py scripts/grok_demo.py tests/test_demo.py tests/test_demo_http.py` — PASS, `All checks passed!`.
 - `git diff --check` — PASS.
-- `(cd dist && sha256sum -c adaptive-grok-build-pro-v2.1.0.zip.sha256)` — PASS.
-- Direct ZIP inspection found `DEMO_ROUTE_METADATA`, computed alternate-label logic, the corrected alternate prompt, and corrected investor-guide wording in the packaged files.
-- A fresh full `python3 scripts/grok_verify.py --mode pr` wave ran on the remediated product tree: every technical check passed; its final source-stability check alone failed because independent review evidence files were concurrently replaced. That run is useful technical evidence but is not treated as a valid final receipt. The parent delivery owner will freeze/commit the review reports and rerun verification on the stable final tree.
+- `PROJECT_STATE.json` parsed successfully and its source identity matched `VERSION`.
 
-## Acceptance and forbidden-outcome assessment
+## Rebuilt ZIP evidence
 
-- One-command loopback launch, closed HTTP surface, real pure route/spec preview, canonical architecture/governance projections, and truthful provenance remain covered.
-- Preview verification remains `not_run`; bundled sample evidence is never represented as merge authority.
-- Initialization and request traffic expose no Git/shell/verifier/provider/deploy operation.
-- Dynamic UI values use text-only DOM rendering, and the alternate investor narrative is now derived from canonical computation.
-- Installer and archive include the complete corrected product/demo surface with matching checksum.
+- Archive: `dist/adaptive-grok-build-pro-v2.1.0.zip`.
+- SHA-256: `998880263cb046bc10c4b47d30c7d41ade9ff48d3ade7797a60d74fa18be04bf`.
+- Adjacent checksum verification: PASS.
+- Direct ZIP inspection confirmed:
+  - embedded `VERSION` and `PROJECT_STATE.json.source_identity` both equal `2.1.0`;
+  - locally complete candidates are M1/M2/M3/investor-demo MVP;
+  - active work is PR #15 on `mvp/investor-ready` targeting `main`;
+  - external Trust CI and approvals are pending, merge/deploy are false;
+  - `START_HERE.md` contains the current PR/branch/exact-SHA instructions and none of the stale PR #8/M1-not-started instructions;
+  - README contains the restored Bitrix and License sections.
 
-## Severity-classified gaps
+Checksum integrity and semantic bootstrap truth are therefore both established for the investor artifact.
+
+## Severity-classified findings
 
 ### Critical
 
@@ -77,11 +93,9 @@ None.
 
 ### Minor residual risk
 
-1. UI evidence remains portable structural/HTTP integration rather than a real browser-runner visual E2E. The approved test plan makes browser screenshots optional; semantic DOM, focus, offline/stale, mobile, reduced-motion, and forced-color behavior are asserted.
-2. Some rare HTTP branches do not have individual cases, including short/missing `Content-Length`, missing static asset, injected internal preview failure, invalid port, and HEAD/TRACE behavior. The representative rejection classes and closed allowlist are covered.
-3. OpenAPI tests verify the closed method/path inventory and request contract, not comprehensive runtime response-schema conformance. This is non-blocking for the single bundled UI consumer.
-4. The no-mutation test snapshots runtime state rather than every repository file. The corrected initialization/request regressions plus module inspection show no write primitive or outbound client in the demo path; a generalized side-effect harness would further strengthen future service evolution.
+1. UI assurance remains structural and HTTP-integrated rather than a real browser screenshot/E2E run, consistent with the approved test plan's optional browser evidence.
+2. OpenAPI tests freeze the local path/method/request boundary but do not fully validate every runtime success-response schema; this remains non-blocking for the single bundled UI consumer.
 
 ## Completion assessment
 
-The current remediated tree has sufficient test evidence for a PASS test review of the local investor-ready MVP. This verdict is not merge, release, deployment, production, or App-owned exact-SHA Trust CI authority; final completion still requires the delivery owner to freeze the evidence tree and create fresh fingerprint-bound verification/review receipts.
+The corrected product HEAD and rebuilt ZIP have sufficient evidence for a final local PASS test review. This verdict does not claim the App-owned exact-SHA Trust CI check, human approvals, merge, release publication, or deployment; those remain pending operator-controlled gates exactly as the corrected bootstrap states.

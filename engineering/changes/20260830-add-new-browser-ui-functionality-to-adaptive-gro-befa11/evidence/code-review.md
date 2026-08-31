@@ -63,3 +63,97 @@ None.
 ## Completion boundary
 
 This PASS supports the local investor-demo product scope only. It is not merge, release, deployment, production mutation, signed approval, or App-owned exact-SHA Trust CI evidence.
+
+---
+
+## Post-merge review — remediation required
+
+### Verdict
+
+**FAIL**
+
+This later verdict supersedes the pre-merge PASS above for merge commit `3af0e803c8d763f227f0669e3c614806a90fc75b`.
+
+### Inspected merge identity
+
+- Merge HEAD: `3af0e803c8d763f227f0669e3c614806a90fc75b`.
+- First parent (verified MVP): `9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b`.
+- Second parent (`origin/main`): `1c06299894279a88b881defa3f19b004fa742223`.
+- Clean post-merge tree fingerprint before review evidence/test changes: `16b5ca33aa8e72bbf2d724cf6c767d4f541f7a217e5784c340310df9f8d49858`.
+- First-parent delta: `AGENTS.md`, `PROJECT_STATE.json`, `README.md`, and `START_HERE.md`. The sole textual merge conflict was `README.md`; its K16 graph remained complete and its v2.1.0/demo/Trust-CI boundaries remained intact.
+- The reported full `grok_verify --mode pr` run on this exact merge HEAD passed all checks; targeted README graph, version, and demo-documentation tests were independently reproduced and passed.
+
+### Critical
+
+None.
+
+### Important — rank-3 bootstrap source directs fresh agents to obsolete M1 work
+
+The newly merged `PROJECT_STATE.json` and `START_HERE.md` claim that M1 is the active milestone, M1 implementation has not started, PR #8 / `milestone/m1-typed-intent-evidence` is the current branch, and Task 1 of the old M1 plan is the next action. The actual first parent already contains locally completed M1, M2, M3, and the investor-demo MVP, and the current active branch is `mvp/investor-ready`.
+
+This is an authority/workflow regression, not merely stale prose: the same merge changes `AGENTS.md` to elevate `PROJECT_STATE.json` into source-of-truth rank 3 and explicitly instruct a fresh agent to continue the branch named there. A clean-clone agent would therefore be directed away from the current candidate into obsolete work. The claims also contradict README's current-state M1/M2/M3 implementation bullets and are included in the product archive.
+
+Required remediation: update both bootstrap artifacts to identify the v2.1.0 investor candidate, its current PR/branch and locally complete candidate layers, while keeping external exact-SHA Trust CI, required approvals, merge, release, and deployment explicitly pending. Add a regression test that rejects the obsolete PR #8/M1-not-started claims.
+
+### Minor — README merge removed useful product sections
+
+The first-parent delta removed the prior `## Bitrix` and `## License` tail sections. MIT identity and the Bitrix example remain linked elsewhere, so this is not a release-authority or licensing failure, but restoring the sections avoids a product-documentation regression from the merge.
+
+### Other assessment
+
+No product code, API, demo security boundary, packaging mechanism, GitHub Actions policy, or external merge-authority regression was found in the merge. A fresh review is required after the bootstrap and README remediation is committed and reverified.
+
+---
+
+## Final post-fix review
+
+### Verdict
+
+**PASS**
+
+This final verdict supersedes the post-merge FAIL above for remediation commit `c711bd7912d7ba44e137db8a1afda44eae16897b`. No Critical or Important issue remains.
+
+### Exact inspected identity
+
+- Product HEAD: `c711bd7912d7ba44e137db8a1afda44eae16897b`.
+- Parent/pre-fix merge: `3af0e803c8d763f227f0669e3c614806a90fc75b`.
+- Inspected pre-report worktree fingerprint: `53464d59f61364821a22d97c94ded9013964c231d2fddde9cdc222f91a0cebdc`.
+- Product worktree matched HEAD exactly; the only pre-existing worktree changes were independently owned `code-review.md` and `test-review.md` evidence updates. Appending this section is the reviewer's only subsequent mutation.
+- Remediation delta is bounded to `PROJECT_STATE.json`, `START_HERE.md`, `README.md`, and `tests/test_structure.py`.
+
+### Important finding resolution
+
+Resolved. `PROJECT_STATE.json` now identifies source identity `2.1.0`, locally complete M1/M2/M3/investor-demo candidates, active PR #15 on `mvp/investor-ready` targeting `main`, and a delivery state of external exact-SHA Trust CI pending, required approvals pending, merged false, and deployed false. The old `3af0e803...` SHA is explicitly context-only and cannot be reused as current evidence.
+
+`START_HERE.md` carries the same bounded truth, contains no PR #8, obsolete M1 branch, M1-not-started, or Task-1 restart instruction, and directs the next agent to the current PR head plus external exact-SHA/approval gates. It does not claim Trust CI success, merge, release, or deployment. This restores consistency with the rank-3 source-of-truth role assigned by `AGENTS.md` and with README's current-state layers.
+
+### README resolution
+
+The K16 graph remains complete, the source identity remains v2.1.0, and the current-state section now describes M2 and M3 as locally complete source candidates while retaining explicit fresh verification, PR, external Trust CI, approval, merge, and deployment boundaries. The Bitrix and MIT License sections removed by the merge are restored.
+
+### Verification evidence
+
+- Parent reported a fresh full `python3 scripts/grok_verify.py --mode pr` PASS on this product HEAD.
+- Independently reproduced four focused structure checks: bootstrap state, restored Bitrix/License sections, complete README graph, and version identity — **4/4 passed**.
+- `PROJECT_STATE.json` parsed successfully with `python3 -m json.tool`.
+- Stale bootstrap-claim search across `PROJECT_STATE.json`, `START_HERE.md`, and `README.md` returned no match.
+- Current PR/branch and pending external-authority assertions were present in both machine-readable and human-readable handoffs.
+- `git diff --check 3af0e803c8d763f227f0669e3c614806a90fc75b..c711bd7912d7ba44e137db8a1afda44eae16897b` passed.
+
+### Severity-classified findings
+
+#### Critical
+
+None.
+
+#### Important
+
+None.
+
+#### Minor
+
+None introduced by the remediation. The pre-existing local-demo residual notes in the pre-merge review remain non-blocking and unchanged.
+
+### Authority boundary
+
+This PASS is local code-review evidence for the exact product HEAD only. The App-owned policy-epoch check on the exact current PR SHA, required human-signed approvals, merge, release publication, and deployment remain separate pending operator-controlled gates.
