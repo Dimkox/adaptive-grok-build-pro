@@ -7,7 +7,7 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 ## Delivered behavior
 
 - Closed typed intake, handoff, actor, task, run, attempt and command records with canonical digests, full-frozen-intent duplicate identity, atomic supersession and bounded 4xx validation.
-- Eleven contiguous checksum-locked factory migrations, repository/full-policy/action-bound transaction-serialized M0 authority, complete schema-008 unsafe-accounting quarantine, audit-v2 evidence, task-history indexes, capability-shaped capacity authority, effective least-privilege `factory_runtime` execution and no `trust_ci` privileges.
+- Twelve contiguous checksum-locked factory migrations, repository/full-policy/action-bound transaction-serialized M0 authority, complete schema-008 unsafe-accounting quarantine, audit-v2 evidence, task-history indexes, capability-shaped capacity and fixed-metrics authority, effective least-privilege `factory_runtime` execution and no `trust_ci` privileges.
 - Transactional `FOR UPDATE SKIP LOCKED` claims, monotonic per-task fences, database-time leases/deadlines and 20 global readers / 10 per repository / one writer capacity.
 - Initial attempt plus two infrastructure retries, terminal dead/needs-human handling, 14,400-second and USD 25/token/output/event/repair ceilings, durable fail-closed missing accounting and idempotent usage observations.
 - Global/repository kills, complete task/run/correlation-bound hash-chained audit, and capacity-before-task reconciliation capped at 100 candidates and an exact five-second transaction timeout.
@@ -39,6 +39,8 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 - `70cb209` — authority serialization, schema-008 accounting quarantine and mandatory cleanup semantics.
 - `905249a` — frozen release-observability review evidence.
 - `034168b` — bounded fixed-key release metrics inventory and rejection signals.
+- `7eaccd6` — frozen observability-boundary review evidence.
+- `94fc5ad` — transactional fixed-row metrics snapshot, closed runtime capabilities and bounded rejection accounting.
 
 ## Independent-review remediation
 
@@ -56,6 +58,10 @@ Before PR delivery, the fourth residual wave corrects unreleased migration `011`
 
 The fifth residual wave closes AC-013 observability without adding a dependency or metric-label surface. The existing three authenticated families now expose fixed store-derived intake/queue/transition, lease/capacity, budget, retry/dead, kill and reconciliation/repair values plus a durable stale-fence rejection counter; missing, invalid and scope-denied credentials increment a redacted process-local total despite disabled access logging. Only that authentication total resets on server restart.
 
+The sixth residual wave closes the observability authority and consistency boundary with forward migration `012`. Runtime can no longer read or mutate generic counter rows; it receives only a fixed snapshot function and a no-argument saturating fence-rejection capability, while the pre-`012` rows remain locked untrusted evidence and the trusted fence epoch begins at zero. One owner-maintained 21-column singleton is backfilled under an atomic disposable-only cutover and maintained in the same transactions as authoritative writes, eliminating mixed multi-query snapshots and full-history metric scans.
+
+Every final application 401/403 now increments exactly once at the HTTP response boundary, including actor-kind, repository and trusted-authority denial, without labels or credentials. Snapshot reads have fixed 5-second statement and 500-millisecond lock bounds; stale-fence instrumentation has shorter connection/lock/statement bounds and is best effort after the authoritative decision, so counter failure cannot replace or materially delay exact `409 stale_fence`. The first full PostgreSQL run reproduced a counter-trigger/capacity lock inversion; restricting reconciliation counter work to completed-state deltas restored the established capacity-first order and the regression passed on a recreated disposable database.
+
 ## Verification evidence
 
 - Final remediation factory suite: 63/63 passed in 32.699s against fresh disposable PostgreSQL 17, including API integration, both authority interleavings/forms, schema-008 upgrade safety, exhausted-event cleanup, effective-role denials, accounting recovery, deadlock regression, repository kill, bounded reconciliation, query plans, bootstrap and UDS authentication.
@@ -68,13 +74,17 @@ The fifth residual wave closes AC-013 observability without adding a dependency 
 - Release-observability focused verification passed the API auth regression 1/1, the real PostgreSQL inventory regression 1/1 twice, API/server/service 21/21 and Ruff. The final fresh PostgreSQL exit passed 65/65 in 35.924s with the restart probe, and the root suite passed 488/488 in 312.686s on product commit `034168b`; the exact-tree verifier runs only after the final evidence commit.
 - The first exact-tree verifier passed every gate except secret scan, which conservatively matched direct deterministic credential assignments in the two new test files. Fixture construction is now split while retaining byte-identical runtime credentials and redaction assertions; no scanner rule or production authentication behavior was changed.
 - Post-repair evidence is zero secret-scan findings for both changed tests, the focused authentication/redaction case 1/1, and a second fresh PostgreSQL exit 65/65 in 41.762s with the restart probe. The final exact-tree verifier runs after this evidence is committed.
+- Observability-boundary focused evidence passed the real PostgreSQL migration/role/snapshot/fence-lock/upgrade/deadlock set 6/6 in 6.570s, exclusive snapshot-lock timeout 1/1, API/service regressions 2/2 and Ruff. The final named PostgreSQL suite passed 69/69 in 39.794s; the separately fresh disposable exit passed 69/69 in 39.993s plus actual restart, one repair, replay no-op, higher fence and late-holder rejection.
+- The root suite passed 488/488 in 305.256s on clean product commit `94fc5ad`; the exact changed-tree secret scan reports zero potential secrets. The final exact-tree verifier runs once after this evidence-only commit.
 
 ## Disposable migration evidence and cleanup
 
-Only exact disposable local PostgreSQL containers created by the focused and exit runners were mutated. The named fix-wave containers, including `m4-factory-pg-residual3`, and all dynamic exit containers were removed; generated `.venv`/egg-info artifacts were moved to trash, and no shared database, Trust CI state, external system or production resource was touched.
+Only exact disposable local PostgreSQL containers created by the focused and exit runners were mutated. The named fix-wave containers, including `m4-factory-pg-wave6-red`, and all dynamic exit containers were removed; generated `.venv`/egg-info/`__pycache__` artifacts were moved to trash, and no shared database, Trust CI state, external system or production resource was touched.
 
 ## Rollout, rollback and remaining authority
 
-Source rollout only: no service was activated and no migration was run outside disposable databases. Recovery after durable intake is global kill, stop local intake/claims, preserve audit/state, restore backup into a separate comparison database and forward-fix with migration `012+`; destructive down-migration is prohibited.
+Source rollout only: no service was activated and no migration was run outside disposable databases. Recovery after durable intake is global kill, stop local intake/claims, preserve audit/state, restore backup into a separate comparison database and forward-fix with migration `013+`; destructive down-migration is prohibited.
+
+M5 branch `milestone/m5-isolated-execution-provisional-m4` (route `37b05f579320`) and M6 branch `milestone/m6-semantic-validation-provisional-m4` (route `82aac86a3bf9`) are provisional parallel work based on M4 product `94fc5ad`; both must restack onto their accepted predecessors. This is a repository-local dependency handoff, not a push, external check or delivery claim.
 
 Independent route reviews, PR delivery, the App-owned policy-epoch check on the exact PR head, signed approval scopes, merge and any deployment remain outside this implementation report and are not claimed here. The calendar deadline does not change the product runtime contract or bypass those gates.
