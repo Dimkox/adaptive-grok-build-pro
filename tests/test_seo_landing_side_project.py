@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
+import socket
+import subprocess
+import sys
+import tempfile
+import time
 import unittest
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -190,6 +196,50 @@ class SeoLandingShowcaseContractTests(unittest.TestCase):
         runner = BROWSER_RUNNER.read_text(encoding="utf-8")
         for contract in ("Emulation.setDeviceMetricsOverride", "prefers-reduced-motion", "Input.dispatchKeyEvent", "Page.captureScreenshot"):
             self.assertIn(contract, runner)
+
+    def test_local_chrome_runner_exits_cleanly_after_contract_passes(self) -> None:
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            port = listener.getsockname()[1]
+        server = subprocess.Popen(
+            [sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1", "--directory", str(SHOWCASE_ROOT)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                try:
+                    with socket.create_connection(("127.0.0.1", port), timeout=0.1):
+                        break
+                except OSError:
+                    time.sleep(0.05)
+            else:
+                self.fail("showcase server did not start")
+
+            with tempfile.TemporaryDirectory() as output_dir:
+                result = subprocess.run(
+                    [
+                        "node",
+                        str(BROWSER_RUNNER),
+                        "--url",
+                        f"http://127.0.0.1:{port}/",
+                        "--output",
+                        output_dir,
+                        "--chrome",
+                        "/usr/bin/google-chrome",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                report_path = Path(output_dir) / "browser-contract.json"
+                self.assertTrue(report_path.is_file(), result.stderr)
+                self.assertTrue(json.loads(report_path.read_text(encoding="utf-8"))["passed"])
+                self.assertEqual(result.returncode, 0, f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}")
+        finally:
+            server.terminate()
+            server.wait(timeout=5)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,11 @@
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-01 — Browser runner lifecycle was not executed
+
+**Symptom:** The browser contract could report `passed: true` and then exit nonzero with `ENOTEMPTY` during cleanup.
+**Root cause:** The source-only contract failed to execute the real Chrome child lifecycle, allowing immediate profile deletion while the child was still writing.
+
 ## 2026-08-24 — Misread «приложуха» as a public website
 
 **Symptom:** Agents treated «приложуха» as a public website instead of GitHub App `https://github.com/apps/adaptive-trust-ci`.

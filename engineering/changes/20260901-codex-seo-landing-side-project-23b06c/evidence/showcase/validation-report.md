@@ -97,7 +97,7 @@ origin-bound structured facts were invented.
 python3 -m unittest tests.test_seo_landing_side_project -v
 ```
 
-Result: `Ran 9 tests — OK`.
+Current result: `Ran 10 tests — OK`.
 
 ```bash
 python3 -m unittest discover -s tests -q
