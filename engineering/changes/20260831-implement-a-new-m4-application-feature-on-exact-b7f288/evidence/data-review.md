@@ -1,61 +1,89 @@
-# M4 exact-final data review — PASS
+# M4 exact-head data review — FAIL
 
 ## Review binding
 
 - Route: `b7f288f1e81e`
 - Change: `20260831-implement-a-new-m4-application-feature-on-exact-b7f288`
 - Accepted M3 base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-- Exact reviewed product HEAD: `daa3930cb84ba6547171583e41bcf0dee2ab1314`
-- Exact Git tree: `9c93b2ca4fea4f71ab70bbf71bd62ca8df936ad8`
-- Full reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..daa3930cb84ba6547171583e41bcf0dee2ab1314`
-- Collision-fix range: `04261326e177e6d2014a576d3f4a0fb5feab56be..daa3930cb84ba6547171583e41bcf0dee2ab1314`
-- Exact-head verifier: PASS, tree fingerprint `ad41a13355b097f4be0a3d6c3754b9cc4de8178824e801ac264fad81c852e794`
+- Exact reviewed product HEAD: `fa043d48430963f82c52a76fbdabe2c35cd3d995`
+- Exact Git tree: `d8024cc0a188b4d58006a87fca5685e66471346a`
+- Full reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..fa043d48430963f82c52a76fbdabe2c35cd3d995`
+- Metrics repair range: `daa3930cb84ba6547171583e41bcf0dee2ab1314..fa043d48430963f82c52a76fbdabe2c35cd3d995`
+- Exact-head verifier receipt: PASS, tree fingerprint `9ec2ce27d8dd0e0ee896573d282f4e0dcef2349a05914659d9bdac1e8dc37d75`
 - Reviewer: route-selected read-only `data_reviewer`
+
+The HEAD, Git tree and repository fingerprint above were clean and mutually bound before concurrent final reviewers began rewriting their evidence reports. This review inspected the committed product tree, not those later report-only worktree changes.
 
 ## Verdict
 
-**PASS**
+**FAIL — two related Important data/operational findings remain in the new metrics query path.**
 
 - Critical data findings: **0**
-- Important data findings: **0**
+- Important data findings: **2**
 
-The two prior schema-008 recovery findings and the later same-identity migration collision are closed. No remaining Critical or Important migration, constraint, locking, accounting, replay, recovery or readiness defect was found in the exact product tree.
+The fixed metric inventory, redaction and cardinality are sound, and the previous schema-008 recovery defects remain closed. The new store projection is not a coherent database snapshot and its exact full-history aggregates have no execution bound.
 
-## Schema-008 recovery and migration 011
+## Important findings
 
-Migration `011` now performs one evidence-preserving, schema-qualified update:
+### DATA-006 — one metrics response can combine mutually impossible database states
 
-- blocked `queued`/`retry` rows become `needs_human/accounting_blocked`;
-- an unsafe `ready_for_human` row with a newer generation under the exact repository/source-type/source-ID identity becomes `superseded/accounting_blocked`;
-- a lone unsafe `ready_for_human` generation becomes `needs_human/accounting_blocked`.
+`PostgresFactoryStore.metrics()` opens the normal connection and executes eight separate aggregate statements (`factory/src/adaptive_factory/store.py:112-150`). `_connect()` only executes `SET ROLE`; it does not select a stronger transaction isolation level (`store.py:55-64`). PostgreSQL therefore uses the default `READ COMMITTED` behavior, where each statement receives a new snapshot.
 
-The `superseded` branch remains outside the `tasks_one_active_identity` predicate, so upgrading an unsafe generation 1 beside an already-active generation 2 cannot introduce a second index-active row. Migration `011` does not delete or rewrite intents, runs, attempts, reservations, observations, events or audit rows, and it preserves task reservation aggregates. Its exact packaged SHA-256 is `ff358ea06a5497d9d215f8fef7ab3540b0b4af993c806985e9d5ae6d46b01bea`.
+The families expose values whose relationships are committed atomically by the product, especially live runs and live capacity allocations. A real PostgreSQL 17 interleaving on exact HEAD proved the response path can split that transaction boundary:
 
-The real PostgreSQL regression builds a non-empty database through exact migration `008`, seeds an unsafe generation-1 `ready_for_human` two-attempt history with a live prior-attempt reservation and usage, and seeds generation 2 as `queued` under the same exact source identity. It proves atomic application of `[009,010,011]`, generation 1 at `superseded/accounting_blocked`, generation 2 uniquely claimable, exact reservation aggregates retained, readiness restored and an empty second migration plan (`factory/tests/test_postgres_integration.py:984-1237`).
+```text
+transaction_isolation='read committed'
+live_leases_first_statement=1
+concurrent committed cancel/release
+active_capacity_later_statement=0
+```
 
-Readiness independently rejects unsafe accounting on `queued`, `retry` and `ready_for_human`, and rejects a superseded accounting residue if its explicit `accounting_blocked` quarantine marker is removed. It intentionally accepts `needs_human/accounting_blocked` and `superseded/accounting_blocked` as non-claimable recovery states (`factory/src/adaptive_factory/store.py:80-96`). Claim selection still requires a claimable state, an unblocked zero projection and no live task reservation (`store.py:516-523`).
+There is no committed point in this history at which the factory had one live lease and zero live allocation: cancel closes both in one transaction. The same issue applies to task state versus transition count, reservation/observation projections and reconciliation totals. The current inventory test drives operations to completion before scraping, so it cannot detect a torn multi-statement observation.
 
-## Migration, constraint and transaction assessment
+Impact: the release-required operational surface can report a false capacity/lease or state/event imbalance during normal concurrent work. Operators cannot distinguish that torn scrape from the exact invariant drift that readiness, rollback and incident procedures require them to detect.
 
-- Migrations are contiguous `001..011`, checksum-locked and applied in one transaction under a factory advisory lock with five-second lock and statement timeouts. Non-contiguous history, missing packaged history and checksum drift fail closed.
-- Migrations `001..010` remain unchanged by the final collision repair. The in-place edit is confined to unreleased migration `011`, which the change ledger binds to disposable local databases only. Any disposable database with the superseded `011` checksum must be recreated; after durable intake recovery is forward-only with migration `012+`.
-- Task identity has a durable `(repository_id, source_type, source_id, generation)` uniqueness constraint plus one partial active-generation index. Run/task, allocation/task, reservation/task and observation/task relationships are bound by composite foreign keys; destructive cascades are absent.
-- Capacity allocation and release use fixed-search-path, PUBLIC-revoked capability functions, canonical counter-row lock order, ceilings of 20 global readers / 10 repository readers / one writer, underflow checks and exactly-once live-allocation release.
-- M0 authority validation uses `FOR SHARE`, which conflicts with non-key revocation updates and holds through intake commit. Claim uses `FOR UPDATE SKIP LOCKED`; reconcile/cancel/release acquire capacity before task/run locks. The real interleaving and deadlock regressions pass.
-- Completion requires current-run usage, no task-wide live reservation, zero reserved aggregates and unblocked accounting. Retry with unresolved accounting goes to explicit human recovery. Mandatory cleanup facts are outside the ordinary event budget but remain transactional with run/allocation release and hash-chained audit.
-- Command and accounting replay is durable and request-digest bound; exact replay returns the recorded result while a changed command conflicts. Migration replay is checksum verified and empty after `011`.
-- Claim, audit, usage, active-reservation and expired-run predicates have matching task-scoped indexes; populated `EXPLAIN (ANALYZE, BUFFERS)` assertions select them. Reconciliation is keyset-bounded to 100 candidates and the transaction-local timeout is exactly five seconds.
+Required repair: execute all store-derived metric reads against one explicit read-only repeatable snapshot, or return them from one SQL statement with one statement snapshot. Add a two-connection regression that pauses between the relevant reads, commits release/reconcile concurrently and proves the returned store-derived values correspond to one committed side of the transition. The separately process-local `auth_rejected` value may remain explicitly non-atomic with PostgreSQL state because its restart/reset boundary is already documented.
 
-Migration `011` is a set-based historical scan/update and can exceed the five-second bound on an unexpectedly large or contended database. In the authorized M4 source/disposable rollout this is not a release blocker; the transaction rolls back atomically, and the documented killed-start, backup/restore comparison and readiness gate make timeout or lock contention a no-go rather than a partial migration.
+### DATA-007 — release polling performs unbounded full-history scans with no statement timeout
+
+The new projection computes exact global `count(*)`/`sum(...)` values over `tasks`, `task_events`, `runs`, `usage_observations` and `reconciliation_runs` for every authenticated scrape (`store.py:114-150`). `task_events` and `usage_observations` are append-only histories with no global row or retention bound; a task alone permits up to 100,000 events, and the number of tasks is unbounded. Exact global count/sum cannot be made independent of retained history by the existing task-scoped indexes.
+
+Unlike intake, claim, list and reconcile, `metrics()` sets neither a local lock timeout nor a statement timeout. The exact PostgreSQL probe reported:
+
+```text
+statement_timeout='0'
+EXPLAIN count(task_events): Seq Scan
+EXPLAIN sum(usage_observations.output_bytes): Seq Scan
+```
+
+The small fixture's sub-2-KiB response proves bounded output cardinality, not bounded database work. A routine monitoring poll can consume work proportional to all retained evidence, hold its transaction snapshot/connection without a deadline and repeat that load at the scrape interval. This conflicts with the M4 data design's five-second store-operation bound and undermines the control plane precisely when history is large or the database is degraded.
+
+Required repair: set the documented transaction-local five-second statement bound before the first metrics read and avoid repeated exact scans of append-only history. Fixed durable counters/rollups updated in the same business transactions are the natural fit for cumulative event/usage/reconciliation totals; current gauges may use indexed bounded projections. Add a populated-scale/plan regression and an effective-timeout assertion for the supported metrics call. If exact scans are retained, the change package must state a defensible volume bound and prove they finish below the timeout at that bound.
+
+## Metrics properties that passed
+
+- The API returns exactly three fixed families with a closed set of fixed keys. No repository, source, task, run, actor, credential or reason becomes a label or key, so response cardinality is bounded.
+- Missing, invalid and scope-denied authentication increments only a saturated, lock-protected process-local integer. Its restart reset is documented, and credential bytes are not returned.
+- Durable stale-fence rejection uses one allow-listed `(metric_name,outcome)` row and saturates at signed `bigint`; concurrent increments are atomic through `INSERT ... ON CONFLICT DO UPDATE`.
+- Reservation/observation values use integer units, and PostgreSQL `sum(bigint)` avoids aggregate overflow. The JSON key count and response shape remain fixed even as values grow.
+- Wildcard operator authorization remains required before the store projection is invoked.
+
+## Existing migration, accounting and recovery closure rechecked
+
+- Migrations remain contiguous `001..011`, checksum-locked and atomic under the factory advisory lock. Migrations and schema are unchanged in the metrics repair range.
+- Migration `011` still hashes to `ff358ea06a5497d9d215f8fef7ab3540b0b4af993c806985e9d5ae6d46b01bea`. A real schema-008 history still upgrades through `[009,010,011]`, preserves reservation/run/attempt/usage evidence, quarantines unsafe generation 1 as `superseded/accounting_blocked`, leaves same-identity generation 2 uniquely claimable and replays with no pending migration.
+- Claim remains `SKIP LOCKED`, unblocked, zero-reservation and live-reservation guarded. Completion requires task-wide settled accounting. Capacity functions retain canonical lock order, ceilings and underflow protection.
+- M0 `FOR SHARE` authority serialization, mandatory cleanup outside the ordinary event budget, command replay, hash-chained audit, reconciliation limits, restart fencing and readiness accounting/capacity checks are unchanged and passed the fresh suite.
 
 ## Independent verification evidence
 
-- `git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..daa3930cb84ba6547171583e41bcf0dee2ab1314` — PASS.
-- `PYTHONPATH=factory/src python3 -m unittest factory.tests.test_migrations factory.tests.test_contracts factory.tests.test_state factory.tests.test_service -v` — PASS, 24/24.
-- `python3 factory/tests/run_disposable_exit.py` — PASS, 63/63 in 34.926s on a fresh disposable PostgreSQL 17 container, including the exact schema-008 same-identity upgrade, authority interleavings, accounting/replay, capacity, lock-order and indexed-plan cases.
-- The same independent run restarted PostgreSQL, repaired one expired lease, repaired zero on replay, issued a higher fence and rejected the late holder.
-- The exact disposable container and temporary environment were removed by the runner. No shared, external, Trust CI or production database was read or mutated.
+- `git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..fa043d48430963f82c52a76fbdabe2c35cd3d995` — PASS.
+- The exact-head fingerprint-bound verifier receipt is PASS for `fa043d48430963f82c52a76fbdabe2c35cd3d995` and `9ec2ce27d8dd0e0ee896573d282f4e0dcef2349a05914659d9bdac1e8dc37d75`.
+- `python3 factory/tests/run_disposable_exit.py` — PASS, 65/65 in 56.272s on fresh disposable PostgreSQL 17; the actual restart repaired one expired lease, replay repaired zero, a higher fence was issued and the late holder was rejected.
+- Independent two-connection PostgreSQL 17 probe — FAIL as DATA-006: `READ COMMITTED` returned `live_leases=1` before a committed cancel and `active_capacity=0` afterward inside the same metrics-style transaction.
+- The same probe — FAIL as DATA-007: effective `statement_timeout=0`; exact event count and observed-output sum selected sequential scans.
+- Both exact disposable probe containers and isolated environments were removed. No shared, external, Trust CI or production database was read or mutated.
 
-This review changed only this report. It did not modify product code, migrations, receipts, Git history or external state. Writing final review reports changes the evidence-tree fingerprint; the coordinator must rerun/bind final verification and review receipts to the resulting final evidence tree before claiming local completion.
+This review changed only this report. It did not modify product code, migrations, receipts, Git history or external state. Any repair changes the product fingerprint and requires fresh verification plus all selected reviews.
 
-**Final data-review result: PASS for exact product HEAD `daa3930cb84ba6547171583e41bcf0dee2ab1314`.**
+**Final data-review result: FAIL for exact product HEAD `fa043d48430963f82c52a76fbdabe2c35cd3d995`.**
