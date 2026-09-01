@@ -62,7 +62,27 @@ class PostgresFactoryStore:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute("SELECT current_user,COALESCE(max(version),0) FROM factory.schema_migrations")
             role, version = cursor.fetchone()
-            return {"status": "ready" if version == 6 else "not_ready", "database_role": role, "schema_version": version}
+            capacity_consistent = self._capacity_consistent(cursor)
+            return {
+                "status": "ready" if version == 7 and capacity_consistent else "not_ready",
+                "database_role": role,
+                "schema_version": version,
+                "capacity_consistent": capacity_consistent,
+            }
+
+    @staticmethod
+    def _capacity_consistent(cursor) -> bool:
+        cursor.execute(
+            """SELECT count(*) FILTER (WHERE scope_key IN ('global:reader','global:writer'))=2
+            AND bool_and(active_count = CASE
+              WHEN scope_key='global:reader' THEN (SELECT count(*) FROM factory.capacity_allocations WHERE role='reader' AND released_at IS NULL)
+              WHEN scope_key='global:writer' THEN (SELECT count(*) FROM factory.capacity_allocations WHERE role='writer' AND released_at IS NULL)
+              ELSE (SELECT count(*) FROM factory.capacity_allocations
+                    WHERE role='reader' AND released_at IS NULL
+                    AND repository_id=substring(c.scope_key FROM 12 FOR char_length(c.scope_key)-18))
+            END) FROM factory.capacity_counters c"""
+        )
+        return bool(cursor.fetchone()[0])
 
     def metrics(self) -> dict[str, dict[str, int]]:
         with self._connect() as connection, connection.cursor() as cursor:
@@ -70,7 +90,7 @@ class PostgresFactoryStore:
             intake, superseded = cursor.fetchone()
             cursor.execute("SELECT count(*) FILTER (WHERE state='expired') FROM factory.runs")
             reclaimed = cursor.fetchone()[0]
-            cursor.execute("SELECT COALESCE(sum(active_count) FILTER (WHERE scope_key LIKE 'global:%'),0) FROM factory.capacity_counters")
+            cursor.execute("SELECT count(*) FROM factory.capacity_allocations WHERE released_at IS NULL")
             active_capacity = cursor.fetchone()[0]
             cursor.execute("SELECT count(*) FILTER (WHERE accounting_blocked) FROM factory.tasks")
             blocked = cursor.fetchone()[0]
@@ -420,34 +440,13 @@ class PostgresFactoryStore:
                 return None
             if self._is_killed(cursor, request.repositories):
                 return no_grant()
-            global_key = f"global:{request.role.value}"
-            repo_keys = (
-                [f"repository:{repository}:reader" for repository in request.repositories]
-                if request.role is RunRole.READER
-                else []
-            )
-            for key in repo_keys:
-                cursor.execute(
-                    "INSERT INTO factory.capacity_counters(scope_key,ceiling) VALUES (%s,10) ON CONFLICT DO NOTHING",
-                    (key,),
-                )
-            keys = [global_key, *repo_keys]
             cursor.execute(
-                "SELECT scope_key,active_count,ceiling FROM factory.capacity_counters WHERE scope_key=ANY(%s) ORDER BY scope_key FOR UPDATE",
-                (keys,),
+                "SELECT * FROM factory.capacity_eligible_repositories(%s,%s)",
+                (request.role.value, list(request.repositories)),
             )
-            counters = {row[0]: (row[1], row[2]) for row in cursor.fetchall()}
-            if counters[global_key][0] >= counters[global_key][1]:
+            eligible_repositories = tuple(row[0] for row in cursor.fetchall())
+            if not eligible_repositories:
                 return no_grant()
-            eligible_repositories = request.repositories
-            if request.role is RunRole.READER:
-                eligible_repositories = tuple(
-                    repository
-                    for repository in request.repositories
-                    if counters[f"repository:{repository}:reader"][0] < counters[f"repository:{repository}:reader"][1]
-                )
-                if not eligible_repositories:
-                    return no_grant()
             cursor.execute(
                 """SELECT t.task_id,t.repository_id,t.packet_digest,t.deadline_at
                 FROM factory.tasks t WHERE t.state IN ('queued','retry') AND t.repository_id=ANY(%s)
@@ -459,9 +458,6 @@ class PostgresFactoryStore:
             if not row:
                 return no_grant()
             task_id, repository_id, packet_digest, deadline = row
-            repo_key = f"repository:{repository_id}:reader"
-            if request.role is RunRole.READER and counters[repo_key][0] >= counters[repo_key][1]:
-                return no_grant()
             cursor.execute(
                 "INSERT INTO factory.lease_sequences(task_id,last_fence) VALUES (%s,1) ON CONFLICT(task_id) DO UPDATE SET last_fence=factory.lease_sequences.last_fence+1 RETURNING last_fence",
                 (task_id,),
@@ -489,16 +485,11 @@ class PostgresFactoryStore:
                 (uuid.uuid4(), task_id, run_id, attempt_no),
             )
             cursor.execute(
-                "INSERT INTO factory.capacity_allocations(allocation_id,run_id,task_id,repository_id,role) VALUES (%s,%s,%s,%s,%s)",
+                "SELECT factory.capacity_allocate(%s,%s,%s,%s,%s)",
                 (uuid.uuid4(), run_id, task_id, repository_id, request.role.value),
             )
-            cursor.execute(
-                "UPDATE factory.capacity_counters SET active_count=active_count+1 WHERE scope_key=%s", (global_key,)
-            )
-            if request.role is RunRole.READER:
-                cursor.execute(
-                    "UPDATE factory.capacity_counters SET active_count=active_count+1 WHERE scope_key=%s", (repo_key,)
-                )
+            if not cursor.fetchone()[0]:
+                raise StoreError("capacity changed during claim")
             cursor.execute(
                 "UPDATE factory.tasks SET state='leased',current_run_id=%s,current_fence=%s,updated_at=clock_timestamp() WHERE task_id=%s",
                 (run_id, fence, task_id),
@@ -530,18 +521,9 @@ class PostgresFactoryStore:
             return grant
 
     @staticmethod
-    def _capacity_keys(role: str, repository_id: str) -> tuple[str, ...]:
-        keys = [f"global:{role}"]
-        if role == "reader":
-            keys.append(f"repository:{repository_id}:reader")
-        return tuple(sorted(keys))
-
-    def _lock_capacity(self, cursor, role: str, repository_id: str) -> None:
-        cursor.execute(
-            "SELECT scope_key FROM factory.capacity_counters WHERE scope_key=ANY(%s) ORDER BY scope_key FOR UPDATE",
-            (list(self._capacity_keys(role, repository_id)),),
-        )
-        cursor.fetchall()
+    def _lock_capacity_for_run(cursor, run_id: str) -> bool:
+        cursor.execute("SELECT factory.capacity_lock_run(%s)", (run_id,))
+        return bool(cursor.fetchone()[0])
 
     def _close_active_lease(self, cursor, task_id: str) -> None:
         cursor.execute(
@@ -554,8 +536,9 @@ class PostgresFactoryStore:
         candidate = cursor.fetchone()
         if candidate is None:
             return
-        run_id, role, repository_id = candidate
-        self._lock_capacity(cursor, role, repository_id)
+        run_id, _role, _repository_id = candidate
+        if not self._lock_capacity_for_run(cursor, str(run_id)):
+            return
         cursor.execute(
             """SELECT r.run_id FROM factory.tasks t JOIN factory.runs r ON r.run_id=t.current_run_id
             JOIN factory.capacity_allocations a ON a.run_id=r.run_id
@@ -564,24 +547,15 @@ class PostgresFactoryStore:
         )
         if cursor.fetchone() is None:
             return
-        cursor.execute(
-            "UPDATE factory.capacity_allocations SET released_at=clock_timestamp() WHERE run_id=%s AND released_at IS NULL RETURNING role,repository_id",
-            (run_id,),
-        )
-        released = cursor.fetchone()
-        if released is None:
-            return
         cursor.execute("UPDATE factory.runs SET state='released',released_at=clock_timestamp() WHERE run_id=%s", (run_id,))
         cursor.execute("UPDATE factory.attempts SET finished_at=clock_timestamp() WHERE run_id=%s", (run_id,))
-        role, repository_id = released
-        for key in self._capacity_keys(role, repository_id):
-            cursor.execute(
-                "UPDATE factory.capacity_counters SET active_count=active_count-1 WHERE scope_key=%s AND active_count>0",
-                (key,),
-            )
+        cursor.execute("SELECT factory.capacity_release(%s)", (run_id,))
+        if not cursor.fetchone()[0]:
+            raise StoreError("live lease capacity was not released")
 
     def _close_orphan_run(self, cursor, run_id: str, task_id: str, role: str, repository_id: str, actor: Actor) -> bool:
-        self._lock_capacity(cursor, role, repository_id)
+        if not self._lock_capacity_for_run(cursor, run_id):
+            return False
         cursor.execute(
             """SELECT r.run_id FROM factory.runs r JOIN factory.capacity_allocations a ON a.run_id=r.run_id
             WHERE r.run_id=%s AND r.task_id=%s AND r.released_at IS NULL AND a.released_at IS NULL
@@ -590,15 +564,15 @@ class PostgresFactoryStore:
         )
         if cursor.fetchone() is None:
             return False
-        cursor.execute("UPDATE factory.capacity_allocations SET released_at=clock_timestamp() WHERE run_id=%s", (run_id,))
         cursor.execute("UPDATE factory.runs SET state='expired',released_at=clock_timestamp() WHERE run_id=%s", (run_id,))
         cursor.execute(
             """UPDATE factory.attempts SET failure_class='worker_lost',failure_code='orphaned_projection',
             failure_digest=%s,finished_at=clock_timestamp() WHERE run_id=%s""",
             (canonical_digest({"failure": "orphaned_projection"}), run_id),
         )
-        for key in self._capacity_keys(role, repository_id):
-            cursor.execute("UPDATE factory.capacity_counters SET active_count=active_count-1 WHERE scope_key=%s AND active_count>0", (key,))
+        cursor.execute("SELECT factory.capacity_release(%s)", (run_id,))
+        if not cursor.fetchone()[0]:
+            raise StoreError("orphan capacity was not released")
         key = canonical_digest({"action": "reconcile_orphan", "run_id": run_id})
         self._event(cursor, task_id, actor, "orphan_reconciled", key, {"run_id": run_id})
         self._audit(cursor, task_id, actor, "reconcile_orphan", f"run:{run_id}", "orphaned_projection", key, run_id=run_id)
@@ -648,8 +622,9 @@ class PostgresFactoryStore:
         repository = cursor.fetchone()
         if repository is None:
             raise FenceError("stale or expired fence")
-        self._lock_capacity(cursor, grant.role.value, repository[0])
-        task_id, role, repository_id, attempt_no = self._lock_grant(cursor, grant, allow_expired=allow_expired)
+        if not self._lock_capacity_for_run(cursor, grant.run_id):
+            raise FenceError("stale or expired fence")
+        task_id, _role, _repository_id, attempt_no = self._lock_grant(cursor, grant, allow_expired=allow_expired)
         if isinstance(outcome, FailureClass):
             decision = classify_retry(outcome, attempt_no=attempt_no)
             target = TaskStatus.RETRY if decision.retry else (decision.terminal or TaskStatus.NEEDS_HUMAN)
@@ -676,18 +651,9 @@ class PostgresFactoryStore:
             "UPDATE factory.runs SET state=%s,released_at=clock_timestamp() WHERE run_id=%s",
             ("failed" if isinstance(outcome, FailureClass) else "completed", grant.run_id),
         )
-        cursor.execute(
-            "UPDATE factory.capacity_allocations SET released_at=clock_timestamp() WHERE run_id=%s AND released_at IS NULL",
-            (grant.run_id,),
-        )
-        cursor.execute(
-            "UPDATE factory.capacity_counters SET active_count=active_count-1 WHERE scope_key=%s", (f"global:{role}",)
-        )
-        if role == "reader":
-            cursor.execute(
-                "UPDATE factory.capacity_counters SET active_count=active_count-1 WHERE scope_key=%s",
-                (f"repository:{repository_id}:reader",),
-            )
+        cursor.execute("SELECT factory.capacity_release(%s)", (grant.run_id,))
+        if not cursor.fetchone()[0]:
+            raise StoreError("lease capacity was not released")
         terminal = target in {TaskStatus.DEAD, TaskStatus.READY_FOR_HUMAN}
         cursor.execute(
             "UPDATE factory.tasks SET state=%s,current_run_id=NULL,current_fence=NULL,updated_at=clock_timestamp(),terminal_at=CASE WHEN %s THEN clock_timestamp() ELSE terminal_at END WHERE task_id=%s",
@@ -949,6 +915,8 @@ class PostgresFactoryStore:
         last = None
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
             cursor.execute("SET LOCAL statement_timeout='5s'")
+            if not self._capacity_consistent(cursor):
+                raise StoreError("capacity counters do not match live allocations")
             command = {"limit": limit, "cursor": cursor_id}
             replay, prior, request_digest = self._command_replay(cursor, idempotency_key, actor, "reconcile", command)
             if replay:

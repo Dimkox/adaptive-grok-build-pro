@@ -320,3 +320,7 @@ Lock capacity in one order and close the live run, allocation and counters befor
 ## 2026-09-01 — Serialize immutable command and intake identities without mutable-row authority
 
 Use transaction advisory locks derived from validated command or intake identity keys, then persist exact command results before returning. This closes concurrent replay races while allowing `factory_runtime` to lose UPDATE authority over immutable intake identity rows.
+
+## 2026-09-01 — Make capacity mutation capability-shaped
+
+Encode 20/10/1 identities and ceilings as schema constraints, revoke raw runtime counter DML, and expose only allocation-bound security-definer functions with a fixed safe search path. This keeps scheduler lifecycle atomic while making arbitrary counter insert/reset impossible to the effective runtime role.

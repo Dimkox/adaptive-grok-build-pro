@@ -165,11 +165,29 @@ class InstallerTests(unittest.TestCase):
             "factory/compose.yaml",
             "factory/contracts/openapi/factory-control.v1.json",
             "factory/pyproject.toml",
+            "factory/uv.lock",
             "factory/src/adaptive_factory/store.py",
             "factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql",
+            "factory/tests/run_disposable_exit.py",
+            "factory/tests/postgres_restart_probe.py",
+            "factory/tests/test_postgres_integration.py",
         ):
             self.assertIn(expected, generic_paths)
-        self.assertFalse(any(path.startswith("factory/tests/") for path in generic_paths))
+        self.assertEqual(
+            {path for path in generic_paths if path.startswith("factory/tests/")},
+            {
+                "factory/tests/__init__.py",
+                "factory/tests/postgres_restart_probe.py",
+                "factory/tests/run_disposable_exit.py",
+                "factory/tests/test_api.py",
+                "factory/tests/test_contracts.py",
+                "factory/tests/test_migrations.py",
+                "factory/tests/test_postgres_integration.py",
+                "factory/tests/test_server.py",
+                "factory/tests/test_service.py",
+                "factory/tests/test_state.py",
+            },
+        )
         self.assertFalse(any("__pycache__" in path for path in generic_paths))
         self.assertFalse(set(MODULE.TARGET_OWNED_GOVERNANCE) & set(generic_paths))
         self.assertNotIn("local/AGENTS.md", generic_paths)

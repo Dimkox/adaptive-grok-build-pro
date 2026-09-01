@@ -1,89 +1,79 @@
-# Test review round 2 — M4 durable factory control plane
+# Test review round 3 — M4 durable factory control plane
 
 ## Verdict
 
-**FAIL**
+**PASS**
 
 - Route: `b7f288f1e81e`
 - Base SHA: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-- Reviewed head SHA: `9bc51e81dddb8fc02f22171b586eb8c9caa7f304`
-- Reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..9bc51e81dddb8fc02f22171b586eb8c9caa7f304`
-- Exact-head verification fingerprint: `bae655f75a7cdb67f3ef7dced1c4f51cd83c2f016b558dbb44384a613335fcf2`
+- Reviewed head SHA: `8435e23458885a48e2d5784f8cd01e84d978c28c`
+- Reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..8435e23458885a48e2d5784f8cd01e84d978c28c`
+- Exact-head verification fingerprint: `7f5f5a2c7eb5985b7b83643fee8158aba5a5fc4693eba826f58d9e9e1d519f70`
 
-The requested spelling `9bc51e8c` is not a Git object. The unambiguous requested prefix `9bc51e8` and clean worktree `HEAD` both resolve to the full SHA above, which is the tree reviewed.
-
-The prior leased-supersession, actual-restart, and verifier-coverage blockers are repaired and pass. Positive command replay also passes, but claim idempotency still changes a previously returned no-work result into a lease. That Important contract defect requires a failing review.
+No Critical or Important test, behavioral-contract, PostgreSQL concurrency/restart, failure-path, effective-role, or verifier-inclusion gap remains in the reviewed tree. The prior blockers reproduce as fixed on fresh disposable PostgreSQL 17.
 
 ## Findings
 
-### Important — no-work claim results are not idempotent and can later lease a task
+No Critical or Important findings.
 
-`PostgresFactoryStore.claim()` checks for a prior command at `factory/src/adaptive_factory/store.py:406-414`, but every no-grant path returns without recording the result: kill switch at `factory/src/adaptive_factory/store.py:415-416`, global capacity at `factory/src/adaptive_factory/store.py:434-435`, repository capacity at `factory/src/adaptive_factory/store.py:443-444` and `factory/src/adaptive_factory/store.py:457-458`, empty queue at `factory/src/adaptive_factory/store.py:452-454`, and exhausted attempts at `factory/src/adaptive_factory/store.py:464-471`. Only a successful lease reaches `_record_command` at `factory/src/adaptive_factory/store.py:515-523`.
+### Minor — capacity boundary evidence remains sequential
 
-Consequently, retrying the exact same API command after the queue changes does not replay the original `{"grant": null}` result; it performs a new claim and leases work. This violates AC-010 and `INV-003`, and it is precisely the lost-response/retry case durable idempotency is intended to control.
+The suite proves one-task claim contention with two threads (`factory/tests/test_postgres_integration.py:369-405`) and proves exact 20-global-reader, 10-repository-reader, and one-writer ceilings (`factory/tests/test_postgres_integration.py:428-465`), but it fills the three capacity boundaries sequentially. A future hardening test should use barriers for simultaneous transactions at reader 20/21, repository reader 10/11, and writer 1/2. This is not a release blocker because the transactional counter lock is exercised by the contention test and direct boundary assertions pass against the real database.
 
-The new test covers only a successful claim replay while a task is already queued (`factory/tests/test_postgres_integration.py:211-230`). It is therefore a false-positive for the complete mutation-idempotency contract.
+### Minor — no full HTTP-over-UDS round trip is automated
 
-Targeted fresh-PostgreSQL reproduction:
+The server test proves the listener is an owned `AF_UNIX` socket at mode `0660` and refuses unsafe paths (`factory/tests/test_server.py:13-33`); API/auth behavior is exercised in-process, and the CLI uses `httpx.HTTPTransport(uds=...)`. The suite does not start Uvicorn and send one authenticated CLI/API request through the actual socket. Add that end-to-end smoke test when the local service is packaged for rollout.
 
-```text
-first 200 {'grant': None}
-same_key_replay_after_task_arrives 200 {'grant': {'task_id': '...', 'run_id': '...', ...}}
-command_results 1
-```
+### Minor — the exit runner should remove its anonymous volume explicitly
 
-Required repair and coverage: persist `{"grant": null}` before every no-grant return; replay it after task arrival, kill removal, and capacity release; reject changed request payloads under the same key; and test concurrent same-key empty and successful claims.
+`factory/tests/run_disposable_exit.py:55-56` removes its uniquely named container with `docker rm -f` but omits `-v`. The test remains isolated and no container survives a successful run, but explicit volume removal would avoid orphaned disposable PostgreSQL data.
 
-## Prior Important issue retest
+## Prior blocker disposition
 
-| Prior blocker | Round-2 evidence | Result |
+| Prior blocker | Round-3 evidence | Result |
 | --- | --- | --- |
-| Leased supersede/cancel leaked run, allocation, and capacity; reconciliation failed | `test_cancel_and_supersede_release_leases_capacity_once` passed for reader cancel and writer supersede; direct code inspection confirms `_close_active_lease` closes run/allocation/attempt and decrements locked counters (`factory/src/adaptive_factory/store.py:540-575`). | PASS |
-| Positive API proposal/claim replay returned state-dependent conflict | `test_api_mutations_replay_exact_results_and_reject_changed_commands` passed exact successful claim/proposal/kill replay and changed-payload conflicts. The no-work claim finding above remains. | PARTIAL / FAIL |
-| Restart probe did not restart PostgreSQL or reconcile twice | `postgres_restart_probe.py` invokes `docker restart`, reconnects with a fresh service, reconciles twice, asserts repairs `1` then `0`, obtains a higher fence, and rejects the late heartbeat (`factory/tests/postgres_restart_probe.py:68-96`). It passed independently and inside the verifier exit run. | PASS |
-| Exact-tree verifier omitted API/PostgreSQL/restart tests | PR/release verification now invokes `factory/tests/run_disposable_exit.py` (`.grok-stack/adaptive_grok/verification.py:589-597`). Exact-head receipt `created_at=2026-09-01T09:09:15+00:00` records `factory-unit` PASS and `factory-postgres-exit` PASS with 40 tests plus actual restart. | PASS |
+| Leased cancel/supersede leaked runs, allocations, and capacity; reconciliation then failed | `test_cancel_and_supersede_release_leases_capacity_once` passed for reader cancel and writer supersede; `test_reconcile_isolates_orphan_and_repairs_valid_expired_lease` passed and replay repaired zero. | PASS |
+| Successful proposal/claim replay was state-dependent | Successful claim, proposal, kill, reserve-budget, and usage replays return the persisted result; changed commands return conflict (`factory/tests/test_postgres_integration.py:211-273`, `factory/tests/test_postgres_integration.py:300-367`). | PASS |
+| Empty claim replay later leased newly arrived work | Every no-grant path now records `{"grant": null}` (`factory/src/adaptive_factory/store.py:413-477`); `test_empty_claim_is_replayed_after_work_arrives` passed and verified stored correlation/result (`factory/tests/test_postgres_integration.py:275-298`). | PASS |
+| Concurrent same-key commands could race | `_command_replay` serializes each command key using an advisory transaction lock (`factory/src/adaptive_factory/store.py:89-102`). A targeted two-thread same-key API claim returned byte-equivalent grants with exactly one run and one command record. | PASS |
+| Restart probe did not restart PostgreSQL or reconcile twice | The probe executes `docker restart`, reconnects through a fresh store/service, reconciles twice with repairs `1` then `0`, issues a higher fence, and rejects the stale holder (`factory/tests/postgres_restart_probe.py:68-96`). | PASS |
+| PostgreSQL/API/restart evidence was outside exact-tree verification | PR/release verification invokes the mandatory exit runner (`.grok-stack/adaptive_grok/verification.py:589-597`). The exact-head receipt records `factory-unit`, `factory-postgres-exit`, `source-stability`, and overall verification as PASS. | PASS |
+| Runtime role could mutate policy/identity columns | Migration 006 revokes table UPDATE, then grants only `capacity_counters.active_count` (`factory/src/adaptive_factory/resources/006_runtime_policy_privileges.sql:1-2`). Integration tests execute allowed/denied statements under `SET ROLE factory_runtime` (`factory/tests/test_postgres_integration.py:608-652`). | PASS |
 
-## Test-honesty observations
+## Test honesty and failure paths
 
-### Minor — advertised capacity limits are still filled sequentially
-
-The 20-reader, 10-per-repository, and one-writer boundary test still claims sequentially (`factory/tests/test_postgres_integration.py:333-371`). The separate two-thread test proves contention for one task, not simultaneous transactions at each capacity boundary. Add barriers and competing transactions at reader 20/21, repository reader 10/11, and writer 1/2 so the P0 “competing claims, 20/10/1 capacity” plan is exercised literally.
-
-### Minor — the disposable exit runner leaves its anonymous PostgreSQL volume behind
-
-The runner removes the container with `docker rm -f` but omits `-v` (`factory/tests/run_disposable_exit.py:55-56`). Since the PostgreSQL image uses a data volume, the container is gone but its anonymous test-data volume can remain recoverable/orphaned. Cleanup should remove the exact container with its volume and verify both are absent.
-
-### Minor — exact-range whitespace is not covered by the receipt's clean-worktree diff check
-
-`git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..9bc51e81dddb8fc02f22171b586eb8c9caa7f304` reports committed trailing whitespace in round-1 evidence files, while the receipt's `git diff --check` on a clean worktree passes. This does not affect product behavior, but the check name overstates exact-range coverage.
+- The disposable exit runner fails closed because PR/release verification invokes it unconditionally when present; absence of Docker, `uv`, dependencies, PostgreSQL readiness, a test pass, or the restart probe causes a nonzero check.
+- The real suite uses effective `factory_runtime` connections, validates schema version 6 readiness, denies audit/intent/event/identity/capacity-ceiling mutation, and permits only the active counter update needed by runtime behavior.
+- Idempotency tests check exact replay, changed-payload conflict, correlation persistence, replay before stale-fence validation, empty results, and concurrent same-key serialization.
+- PostgreSQL tests cover queued supersession, leased cancel/supersession, orphan reconciliation, sequential replay, claim contention, capacity ceilings, fencing, retry-to-dead, accounting limits and missing accounting, kill switches, audit verification, and role isolation.
+- The restart evidence is honest: it restarts the actual disposable database container rather than merely ending a worker process.
 
 ## Commands and results
 
 ```text
 git rev-parse HEAD
-  9bc51e81dddb8fc02f22171b586eb8c9caa7f304
+  8435e23458885a48e2d5784f8cd01e84d978c28c
+
+git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..8435e23458885a48e2d5784f8cd01e84d978c28c
+  PASS (no output)
 
 python3 factory/tests/run_disposable_exit.py
-  PASS: 40 tests in 14.553s
+  PASS: 42 tests in 15.371s
   PASS: PostgreSQL restarted; one repair; replay no-op; higher fence; late holder rejected
   PASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation
 
-python3 -m unittest tests.test_verification_doctor.VerificationTests.test_python_pr_requires_factory_postgres_api_and_restart_exit_runner -v
-  PASS: 1 test in 2.145s
-
 exact-head verification receipt inspection
-  PASS: head 9bc51e81dddb8fc02f22171b586eb8c9caa7f304
+  PASS: status=pass
+  PASS: head=8435e23458885a48e2d5784f8cd01e84d978c28c
+  PASS: git-diff-check exit=0
   PASS: factory-unit exit=0
   PASS: factory-postgres-exit exit=0
+  PASS: source-stability repository fingerprint remained stable
 
-targeted same-key empty-claim replay on fresh PostgreSQL 17
-  FAIL: first response grant=null; replay after task arrival returned a live grant
-
-targeted concurrent reconciliation with two command keys and a forced shared lock wait
-  PASS: both calls completed; candidates=(1,1), repairs=(0,1), final global reader count=0, live allocations=0
-
-git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..9bc51e81dddb8fc02f22171b586eb8c9caa7f304
-  Minor evidence hygiene failure: committed trailing whitespace in round-1 review reports
+targeted concurrent same-key claim on fresh PostgreSQL 17
+  PASS: two HTTP responses were identical
+  PASS: runs=1; claim command records=1
+  PASS: store role transition observed factory_test -> factory_runtime
 ```
 
-The explicitly named manual review container `m4-test-review-r2-9bc51e8` and its anonymous volume were removed after testing. The exit runner removed its own container. No shared, Trust CI, external, or production database was read or mutated.
+The explicitly named manual review container `m4-test-review-r3-8435e23` and its anonymous volume were removed after testing. The mandatory exit runner removed its own container. No shared, Trust CI, external, or production database was read or mutated.

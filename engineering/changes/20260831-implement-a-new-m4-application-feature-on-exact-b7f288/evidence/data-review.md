@@ -1,100 +1,92 @@
-# Data review — M4 durable control plane
+# Data review — round 3
 
 ## Binding and verdict
 
 - Route: `b7f288f1e81e`
 - Base SHA: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-- Reviewed head SHA: `01643c6594947535e690c5722f710081c9b9db9f`
-- Reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..01643c6594947535e690c5722f710081c9b9db9f`
-- Role: route-selected read-only `data_reviewer`
+- Reviewed head SHA: `8435e23458885a48e2d5784f8cd01e84d978c28c`
+- Full reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..8435e23458885a48e2d5784f8cd01e84d978c28c`
+- Review role: route-selected read-only `data_reviewer`
+- Round: final round / round 3
 - Verdict: **FAIL**
 
-Three Important findings violate the declared capacity/reconciliation, budget/idempotency, and immutable-record invariants. Under the requested gate, any Critical or Important issue is a failure.
+Migration 006 resolves direct updates to policy ceilings and intake identities, and the prior cancellation, accounting, immutable-update, cross-record FK, and keyset-index findings are repaired. However, one Important least-privilege/capacity defect remains and was reproduced through the effective runtime role plus the supported scheduler. Under the requested gate, an Important issue requires FAIL.
 
 ## Findings
 
-### Important — cancelling or superseding a leased task permanently leaks capacity and makes reconciliation fail
+### Important — the runtime role can create or falsify capacity policy state, and normal claims then exceed both hard reader caps
 
-`intake()` supersedes every nonterminal generation, including `leased`, by clearing the task's current run/fence without releasing its run or capacity allocation and without decrementing either capacity counter (`factory/src/adaptive_factory/store.py:157-179`). `cancel()` similarly changes a leased task to `cancelled` without releasing the run/allocation/counters (`factory/src/adaptive_factory/store.py:689-701`). The normal release path is the only code that releases the allocation and decrements counters (`factory/src/adaptive_factory/store.py:454-490`).
+Migration 003 granted `factory_runtime` table-level `INSERT` and `UPDATE` on `capacity_counters` (`factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql:48-53`). Migration 006 revokes table-level update and restores column update only for `active_count`, but does not revoke `INSERT` (`factory/src/adaptive_factory/resources/006_runtime_policy_privileges.sql:1-2`). Consequently:
 
-The leaked run is not self-healing. Reconciliation selects every expired unreleased run (`factory/src/adaptive_factory/store.py:652-677`), but `_lock_grant()` requires the task to still have the same current run/fence and state `leased` (`factory/src/adaptive_factory/store.py:424-439`). A cancelled task fails the state predicate; a superseded task also has null current run/fence. The resulting `FenceError` rolls back the single transaction for the whole reconciliation page, so one leaked row can prevent unrelated expired leases from being repaired. This contradicts AC-002, AC-005, AC-009 and the explicit requirement that cancellation/supersession/reconciliation preserve evidence and be idempotent (`engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/requirements.md:6-13,22`).
+1. `factory_runtime` can insert a previously absent repository counter with any positive `ceiling` and any `active_count <= ceiling`. The schema constraint is only relational (`active_count <= ceiling`); it does not encode global reader 20, repository reader 10, or writer 1 (`factory/src/adaptive_factory/resources/002_runs_leases_capacity.sql:38-43`).
+2. The supported claim path uses `INSERT ... ceiling=10 ON CONFLICT DO NOTHING`, then trusts the pre-existing row's ceiling (`factory/src/adaptive_factory/store.py:423-464`). A runtime-inserted `repository:repo/poisoned:reader` row with ceiling 999 therefore permits more than 10 live readers in that repository.
+3. The column grant permits arbitrary assignment to `active_count`, not only the store's locked `+1`/`-1` transitions (`factory/src/adaptive_factory/store.py:495-501,577-581,683-689`). Resetting `global:reader.active_count` while 20 allocations remain lets the unchanged supported scheduler issue a 21st simultaneous global reader.
+4. Reconciliation repairs expired allocations but does not derive/reconcile counters or ceilings from live allocations (`factory/src/adaptive_factory/store.py:947-994`). Metrics also trusts the mutable counters (`factory/src/adaptive_factory/store.py:67-86`). The false policy state therefore persists and hides the actual over-allocation.
 
-Disposable PostgreSQL 17 evidence:
+This violates AC-005's database-enforced limits, the least-privilege requirement, and the rollback stop condition requiring zero leaked/imbalanced allocations (`engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/requirements.md:9,26`; `engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/rollback.md:3-5`). It is not merely hypothetical metadata drift: all 21 grants were created through `FactoryService.claim()`/`PostgresFactoryStore.claim()` after the runtime-role mutations.
 
-```text
-after_cancel= ('cancelled', 'leased', None, None, 1)
-reconcile_error= FenceError stale or expired fence
-counter_after_reconcile= 1
-live_allocations_after_reconcile= 1
-after_supersede= ('superseded', 'leased', None, 1)
-```
-
-Required repair: make terminal/superseding transitions and lease release one locked, idempotent transaction with a single fixed lock order; or explicitly mark an active run released/expired, release its allocation, and decrement all applicable counters before clearing the task pointer. Reconciliation must isolate or durably classify a bad candidate rather than roll back every candidate in the page. Add concurrent PostgreSQL tests for cancel-while-leased, supersede-while-leased, repeat commands, and a page containing both a stale inconsistent row and a valid expired lease.
-
-### Important — reservation, observation, wall, and retry-idempotency rules do not enforce the declared budgets
-
-`reserve_budget()` checks `reserved + observed + requested` before inserting, but `observe_usage()` checks only previously observed amounts and ignores existing reservations (`factory/src/adaptive_factory/store.py:512-547,549-615`). Therefore a task can reserve the full cost/token ceiling and then record the full ceiling again, leaving durable totals at twice the declared limit. Reservations are never consumed/released and their amounts are never reconciled to observations. The persisted `wall_seconds` has only a nonnegative constraint (`factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql:1-12`) and is never compared with the task deadline or wall budget, so `999999` seconds is accepted for a task whose maximum wall time is 14,400 seconds.
-
-The reservation operation is also not retry-idempotent: it performs the budget-exceeded check before `ON CONFLICT(idempotency_key) DO NOTHING`, so replaying the exact successful full-budget command raises `BudgetError` rather than returning the original result (`factory/src/adaptive_factory/store.py:523-547`). If a conflict occurs while capacity remains, it returns a newly generated, non-persisted reservation UUID rather than selecting the existing reservation. This contradicts AC-007 and the API-wide idempotency requirement (`engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/requirements.md:11,14,22`).
-
-Disposable PostgreSQL 17 evidence:
+Fresh disposable PostgreSQL 17 evidence:
 
 ```text
-duplicate_reservation= BudgetError budget exceeded or accounting blocked
-budget_totals= (25000000, 25000000, 25000000, 2000000, 2000000, 2000000) usage_created= True
-reserved_wall_seconds= 999999
+runtime_capacity_privileges= (True, False)
+supported_claims_granted= 20 claim_21_is_none= True
+capacity_rows= [('global:reader', 20, 20), ('repository:repo/poisoned:reader', 20, 999)]
+live_repo_allocations= 20
+runtime_reset_global_rows= 1
+supported_21st_live_grant= True
+capacity_rows_after_reset_claim= [('global:reader', 1, 20), ('repository:repo/poisoned:reader', 21, 999)]
+live_global_reader_allocations= 21
 ```
 
-Required repair: define and enforce one transactional accounting invariant (for example outstanding reservation plus settled usage never exceeds each task limit), consume/release reservations when usage is observed, enforce wall/output/event dimensions consistently, and resolve an idempotency key before applying a new-command budget check. A duplicate must validate command equivalence and return the persisted identifier/result. Add PostgreSQL tests that query durable aggregate invariants after retries and concurrent reserve/observe operations.
+The first phase proves runtime `INSERT` alone defeats the hard 10/repository cap while the immutable preseeded global row still stops at 20. The second phase proves the remaining arbitrary `active_count` update authority defeats the hard 20/global cap. The live-writer unique index still independently limits one live writer (`factory/src/adaptive_factory/resources/002_runs_leases_capacity.sql:54-55`), but that does not repair reader capacity.
 
-### Important — PostgreSQL does not enforce the documented immutability boundary
+Required repair: make policy values database-owned and make counter mutation capability-shaped rather than granting raw DML. At minimum, revoke direct runtime `INSERT` on `capacity_counters`, encode the only valid scope/ceiling combinations in database constraints, and expose repository-counter creation plus locked increment/decrement through tightly scoped functions or an equivalent mechanism that cannot assign arbitrary counts. Reconciliation/readiness must compare counters with live allocations and fail closed on any mismatch. Add effective-role tests that attempt arbitrary inserts and non-delta active-count assignments, then prove 11th repository and 21st global claims remain impossible after every allowed runtime operation.
 
-The architecture declares immutable intent/run/attempt/event/audit records (`engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/architecture.md:9-21`), but migration 003 grants the runtime role unrestricted table-level `UPDATE` on `accepted_intents`, `task_events`, `runs`, and `attempts` (`factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql:48-54`). There are no immutable-column grants or triggers. As a result, the same role trusted to run the product can rewrite frozen intake bodies/digests and event identity/evidence, or alter run/attempt identity and fencing columns outside store invariants. The integration privilege test checks only that `audit_log` lacks UPDATE/DELETE (`factory/tests/test_postgres_integration.py:266-287`) and misses the other records.
+## Prior findings rechecked
 
-Disposable PostgreSQL 17 evidence (the update was rolled back):
+### PASS — leased cancellation/supersession, allocation release, and reconciliation isolation
 
-```text
-runtime_update_privileges= (True, True, True, True)
-immutable_intent_update_rows= 1
-```
+`_close_active_lease()` now locks capacity in the same order as claim/release, closes run/attempt/allocation once, and decrements applicable counters before the task pointer is cleared (`factory/src/adaptive_factory/store.py:532-605`). Cancel and superseding intake call it before terminal projection changes (`factory/src/adaptive_factory/store.py:232-256,996-1015`). Reconciliation distinguishes current leases from orphan projections and repairs each idempotently (`factory/src/adaptive_factory/store.py:947-994`). The focused disposable test `test_cancel_and_supersede_release_leases_capacity_once` and mixed-orphan test passed.
 
-Required repair: grant only the lifecycle columns that must change, keep accepted intents and task events insert/select-only, and enforce immutable identity/fence/evidence columns at the database boundary. Extend the role test to attempt forbidden mutations under `SET LOCAL ROLE factory_runtime`, not merely inspect `audit_log` privileges.
+### PASS — reservation replay, settled accounting, wall/cost/token/output bounds
 
-### Minor — cross-record task/run consistency is not constrained in the schema
+Migration 005 adds task wall limits/reserved totals (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:38-41`). Budget reservation replay is resolved before live-fence/budget evaluation, changed evidence is rejected, and reservation totals include observed cost/tokens plus reserved wall (`factory/src/adaptive_factory/store.py:724-789`). Observation releases the run's outstanding reservations transactionally before recording immutable observed totals; completion requires unblocked, present, settled accounting (`factory/src/adaptive_factory/store.py:791-926,660-672`). The focused reservation, accounting-command replay, overflow, and completion tests passed.
 
-`capacity_allocations` independently references `run_id` and `task_id` (`factory/src/adaptive_factory/resources/002_runs_leases_capacity.sql:45-53`), while `budget_reservations` and `usage_observations` independently reference those identifiers (`factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql:1-25`). None uses the available composite run identity `(run_id, task_id)`. A runtime insert can therefore associate a valid run with a different valid task while satisfying every foreign key, corrupting capacity/accounting attribution. `audit_log.run_id` has no foreign key at all (`factory/src/adaptive_factory/resources/001_initial.sql:85-97`). Use composite foreign keys where a record is task-and-run scoped, and document whether audit intentionally permits run IDs not yet present.
+### PASS — immutable updates and command idempotency
 
-### Minor — index/query-plan evidence does not cover the bounded production query shapes
+Migration 005 replaces blanket updates with lifecycle-column grants and denies updates to accepted intents, task events, usage observations, kill switches, and audit rows (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:58-71`). Migration 006 also removes intake-identity update. Effective-role mutation tests pass under actual `SET ROLE factory_runtime` (`factory/tests/test_postgres_integration.py:608-654`). Command outcomes are advisory-lock serialized and bound to actor/action/request digest/correlation/result (`factory/src/adaptive_factory/store.py:89-112`); focused API and accounting replay tests passed.
 
-The checked-in PostgreSQL tests exercise correctness on tens of rows but contain no seeded-volume `EXPLAIN`/`EXPLAIN ANALYZE` evidence. In particular, repository-filtered listing orders by `task_id` (`factory/src/adaptive_factory/store.py:260-276`) while `tasks_list` is `(repository_id, created_at, task_id)` (`factory/src/adaptive_factory/resources/001_initial.sql:63-65`), and reconciliation filters by expiry but orders/keysets by `task_id` (`factory/src/adaptive_factory/store.py:652-662`) while `runs_expiry` begins with `lease_expires_at` (`factory/src/adaptive_factory/resources/002_runs_leases_capacity.sql:21-22`). Provide volume/distribution assumptions and plans for claim, list, audit verification, kill lookup, and reconciliation; add indexes matching the selected keyset semantics if plans show sorts or broad scans.
+### PASS — composite integrity, migration history, and keyset indexes
 
-## Positive observations
+Migration 005 adds composite `(run_id, task_id)` foreign keys for allocations, reservations and observations, plus the audit run FK (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:43-53`). It adds `(repository_id, task_id)` task listing and `(task_id, lease_expires_at)` unreleased-run reconciliation indexes matching the bounded keyset queries (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:55-56`). Migration discovery/checksum drift tests pass with contiguous versions 001–006, and migration application remains transaction/advisory-lock protected (`factory/src/adaptive_factory/migrations.py:33-64,84-108`). Recovery remains forward-only; no destructive rollback SQL was added.
 
-- Migrations are contiguous, checksum-bound, run under a transaction-scoped advisory lock, and set bounded migration lock/statement timeouts (`factory/src/adaptive_factory/migrations.py:33-64,84-108`). The forward-only recovery approach is documented; no destructive down-migration is introduced.
-- Claim locks capacity counters in sorted order before `FOR UPDATE SKIP LOCKED`, increments a per-task fence transactionally, and binds subsequent worker mutations to task/run/owner/fence/packet/state/lease/deadline (`factory/src/adaptive_factory/store.py:320-439`). The focused clean-path concurrency/fencing tests passed.
-- The audit log is denied UPDATE/DELETE for `factory_runtime`, serializes the per-task head, and verification recomputes the bounded chain (`factory/src/adaptive_factory/store.py:89-136,278-310`). This positive property does not compensate for mutable accepted intents/events or the release blockers above.
+### PASS with residual observation — locking and `SKIP LOCKED`
+
+Claim still locks capacity rows in stable key order and selects one queued task with `FOR UPDATE SKIP LOCKED` (`factory/src/adaptive_factory/store.py:423-500`). Fences remain transactionally monotonic and subsequent mutations bind run/task/owner/fence/packet/live lease/deadline (`factory/src/adaptive_factory/store.py:465-530,607-623`). Reconciliation no longer uses `SKIP LOCKED` in its candidate query, but it re-locks each task/allocation through the fixed capacity-first order and the concurrent-safe close paths; no duplicate decrement or stale-fence failure was observed in the focused tests. This is not independently blocking in round 3.
 
 ## Commands and evidence
 
-Static binding and inspection:
+Binding/static checks:
 
 ```text
 git rev-parse HEAD
-# 01643c6594947535e690c5722f710081c9b9db9f
-git rev-parse 67714a1f1b87effcfabe55d5ca2770d0a68d17c1
-git diff --name-status 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..01643c6594947535e690c5722f710081c9b9db9f
-git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..01643c6594947535e690c5722f710081c9b9db9f
+# 8435e23458885a48e2d5784f8cd01e84d978c28c
+git diff --name-status 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..8435e23458885a48e2d5784f8cd01e84d978c28c
+git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..8435e23458885a48e2d5784f8cd01e84d978c28c
 # exit 0
 ```
 
-Disposable database baseline:
+Fresh disposable PostgreSQL baseline:
 
 ```text
-docker run --name m4-data-review-b7f288 ... postgres:17-alpine
-FACTORY_TEST_DATABASE_URL=<disposable-local-url> uv run --project factory --with-editable factory python -m unittest factory.tests.test_postgres_integration -v
-# Ran 5 tests in 6.715s — OK
+docker run --name m4-data-review-r3-b7f288 ... postgres:17-alpine
+FACTORY_TEST_DATABASE_URL=<disposable-local-url> uv run --project factory python -m unittest factory.tests.test_postgres_integration -v
+# Ran 12 tests in 15.187s — OK
+
+uv run --project factory python -m unittest factory.tests.test_migrations -v
+# Ran 4 tests in 0.005s — OK
 ```
 
-Targeted probes used the public service/store methods plus read-only SQL assertions against the same fresh database. Their exact outputs are quoted under each finding. The immutable-role mutation was enclosed in a transaction and rolled back. The exact disposable container `m4-data-review-b7f288` was removed after review; no shared, Trust CI, external, or production database was read or mutated.
+Targeted probes used owner access only to provision/truncate the fresh disposable database and to assume `SET LOCAL ROLE factory_runtime`; every task intake and lease grant was then issued through the supported service/store path, whose connections themselves enforce `SET ROLE factory_runtime` (`factory/src/adaptive_factory/store.py:50-65`). Exact outputs are quoted in the Important finding. The disposable container `m4-data-review-r3-b7f288` was removed after review; no shared, Trust CI, external, or production database was read or mutated.
 
-Because the exact reviewed head has Important data-integrity defects, no `data_review` pass receipt should be recorded for this report.
+Because exact head `8435e23458885a48e2d5784f8cd01e84d978c28c` retains an Important database-policy defect, do not record a passing `data_review` receipt for this report.

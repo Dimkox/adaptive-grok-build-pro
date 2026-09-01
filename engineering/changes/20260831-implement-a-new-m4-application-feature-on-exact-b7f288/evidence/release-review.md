@@ -1,99 +1,105 @@
-# Release review — M4 durable factory control plane
+# Release review — round 3
 
-## Decision
+## Verdict and binding
 
 **FAIL — NO-GO for local source release.**
 
-Route: `b7f288f1e81e`
-Reviewed base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-Reviewed head: `01643c6594947535e690c5722f710081c9b9db9f`
-Reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..01643c6594947535e690c5722f710081c9b9db9f`
+- Route: `b7f288f1e81e`
+- Base SHA: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
+- Reviewed product HEAD: `8435e23458885a48e2d5784f8cd01e84d978c28c`
+- Full reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..8435e23458885a48e2d5784f8cd01e84d978c28c`
+- Exact-head verification fingerprint: `7f5f5a2c7eb5985b7b83643fee8158aba5a5fc4693eba826f58d9e9e1d519f70`
+- Critical findings: 0
+- Important findings: 2
+- Moderate findings: 1
 
-The repository was at the reviewed head when inspected. The committed README/current-state/stack graph and installer inventory are coherent, and no provider, GitHub, deployment, production, or Trust CI write path was found in the factory product. The exact tree is nevertheless not locally release-ready: the runtime cannot be started through a supported Unix-socket composition path, terminal/supersession paths can leak capacity and defeat reconciliation, least-privilege roles are not operationally wired, required observability is absent, the P0 database/API evidence is outside the fingerprint-bound verifier, and the rollback version is stale.
+The implementation materially closes all six prior release-review blockers. It is still a no-go because the effective runtime role can insert a repository capacity counter with an arbitrary policy ceiling and make the supported scheduler grant reader 11, and because the root README says the candidate has five migrations while the release tree contains six. The exact-head security review therefore also returns FAIL, and the route's all-review release gate cannot pass.
 
-Per the review contract, every Important finding below is release-blocking. Do not record a passing `release_review` receipt for this head.
+Do not record a passing `release_review` receipt for this head.
 
-## Findings
+## Severity-ordered findings
 
-### Important — I-1: the shipped package has no runnable Unix-socket API composition root
+### Important — I-1: `factory_runtime` can bypass the hard 10-reader repository ceiling through INSERT
 
-`factory/pyproject.toml:11-12` installs only the client CLI. `factory/src/adaptive_factory/api.py:81-82` exposes a transport-agnostic `create_app(service, authenticator)` factory, while `factory/src/adaptive_factory/settings.py:41-47` only parses three settings; no product code constructs the migrator/store/service/authenticator, starts Uvicorn with a Unix socket, validates the socket parent, handles a stale socket, or enforces the documented `0660` mode. The checked-in `.env.example:2-6` does not even define the required `FACTORY_DATABASE_URL`, and it contains no token-to-actor/scope/repository mapping from which `Authenticator` can be built.
+Migration 003 grants table-level INSERT on `factory.capacity_counters` to `factory_runtime` (`factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql:48-53`). Migration 006 revokes table UPDATE and restores only `active_count` UPDATE (`factory/src/adaptive_factory/resources/006_runtime_policy_privileges.sql:1-2`), but it leaves INSERT intact. The schema accepts every positive ceiling (`factory/src/adaptive_factory/resources/002_runs_leases_capacity.sql:38-43`). Claim inserts ceiling 10 only if the row is absent, then trusts the persisted ceiling for admission (`factory/src/adaptive_factory/store.py:423-464`).
 
-This contradicts the runnable authenticated Unix-socket API boundary required by `change-spec.yaml:5`, `architecture.md:23-25`, and the rollout step in `release.md:5`. It also means the “never a TCP listener” promise in `factory/README.md:22` is not enforced by the server product; it is true only of the CLI client transport. Add a supported, tested composition/start command that binds only an operator-owned UDS with fail-closed permissions and explicit actor/scope configuration.
+The exact-head security reviewer demonstrated under effective `factory_runtime` that an INSERT of `repository:probe/repo:reader` with ceiling `999` succeeds and that 11 ordinary tasks for the same repository can then be claimed through `FactoryService`. The checked-in privilege regression tests UPDATE denial but never attempts the policy-bearing INSERT (`factory/tests/test_postgres_integration.py:608-654`).
 
-### Important — I-2: supersession and cancellation can leak live capacity and make reconciliation fail
+Impact: a compromised runtime credential, a future SQL-injection defect, or an unintended runtime statement can change scheduler policy without migrator authority. This violates the advertised/database-authoritative 20/10/1 limits (`factory/README.md:3`, `requirements.md:8`, `change-spec.yaml:18`) and can overcommit repository-local resources during rollout. Readiness and metrics would still report normally because neither validates canonical counter ceilings.
 
-When changed intake supersedes an active leased task, `factory/src/adaptive_factory/store.py:157-179` clears `current_run_id` and `current_fence` but does not close the run/allocation or decrement global/repository capacity. Cancellation similarly changes only the task projection at `factory/src/adaptive_factory/store.py:689-700`. The reconciler later selects the still-open expired run at `factory/src/adaptive_factory/store.py:658-677`, but `_release_locked` delegates to the current-grant guard, which requires the task still to be leased and still reference that run (`factory/src/adaptive_factory/store.py:424-439`). It therefore raises instead of repairing the leak.
+Required repair: make ceilings schema-authoritative. Constrain/trigger exact values (`global:reader=20`, `global:writer=1`, `repository:*:reader=10`) or revoke direct INSERT and expose a narrowly scoped function that creates canonical repository rows. Add an effective-role arbitrary-INSERT denial and an end-to-end malformed/preseeded-counter test proving reader 11 is impossible.
 
-This breaks the 20/10/1 capacity invariant and the release/rollback claims that kill/reconciliation can restore zero leaked allocations. Close active runs and allocations atomically on supersede/cancel, or make reconciliation explicitly and idempotently repair terminal-projection orphan runs; cover both reader and writer cases and repeated repair.
+### Important — I-2: README current-state migration inventory is stale
 
-### Important — I-3: declared PostgreSQL role separation is metadata, not the executable runtime boundary
+`README.md:13` says M4 has “five isolated checksum PostgreSQL migrations,” while the exact tree ships contiguous migrations `001` through `006`, including `005_security_accounting_commands.sql` and `006_runtime_policy_privileges.sql`. `factory/README.md:18` and rollback guidance correctly describe migrations 005, 006, and future `007+`, so the root current-state statement is the inconsistent one.
 
-Migration `001` creates three `NOLOGIN` roles (`factory/src/adaptive_factory/resources/001_initial.sql:1-5`) and migration `003` grants them privileges (`factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql:48-58`). However, the migrator and every store operation accept the same arbitrary database URL (`factory/src/adaptive_factory/migrations.py:67-72`, `factory/src/adaptive_factory/store.py:44-53`), and no product bootstrap assumes `factory_migrator`, `factory_runtime`, or `factory_audit_reader`. The PostgreSQL test likewise migrates and exercises the store with the database-owner URL, then only queries privilege metadata (`factory/tests/test_postgres_integration.py:27-42,266-287`).
+Impact: the repository contract forbids proposing a release when README current state is behind the tree. An operator using the root status as inventory could expect schema version 5 while dependency-aware readiness requires exactly version 6 (`factory/src/adaptive_factory/store.py:61-65`). Change “five” to “six” and retain the exact migration/version parity test before the next review round.
 
-`release.md:7` names role separation as a go gate, and `requirements.md:26` requires separate least-privilege roles. The current artifact provides no reproducible way to meet that gate and does not prove representative runtime/audit operations under those roles. Define the operator provisioning/`SET ROLE` or credential model, use separate migrator/runtime connections, and test allowed and denied operations under the effective roles.
+### Moderate — M-1: transferable installer omits the verified dependency lock and exit harness
 
-### Important — I-4: required release observability and readiness are not implemented
+The installer correctly transfers the server, actor template, contracts, runtime source, and all six migrations through its managed `factory/src` tree (`scripts/install_into.py:17-30`). It intentionally excludes `factory/tests`, and it also omits `factory/uv.lock`. The exact-head verifier's mandatory exit uses both the test runner and `uv --project factory`, but an installed target receives neither the exit harness nor the locked transitive dependency graph.
 
-The typed change spec requires three metric families (`change-spec.yaml:23-26`), and `release.md:7` requires bounded visibility for intake, queue, transitions, leases, capacity, budgets, retry/dead, kills, reconciliation, and authentication failures. There is no metrics/telemetry/logging implementation in `factory/src`; `/health/ready` returns a constant ready response without checking database connectivity, migration status, or operational state (`factory/src/adaptive_factory/api.py:111-117`). No dashboard, alert, support owner, or concrete observation command is supplied.
+This does not create an external-write path and direct runtime dependencies remain exactly pinned in `factory/pyproject.toml:1-9`; however, the transferred package cannot reproduce the same P0 verification/dependency closure as the reviewed repository. Before an installed-target activation is proposed, either ship the lock and an appropriate verification artifact or explicitly document that exact source-repository verification and separately built immutable artifacts are prerequisites.
 
-Consequently an operator cannot execute the stated go/no-go observation gate or distinguish a live but unusable API from a ready control plane. Implement the specified low-cardinality/redacted signals, dependency-aware readiness, and an owned observation/runbook path before rollout.
+## Prior blocker recheck
 
-### Important — I-5: the exact-head verification receipt omits the high-risk API/PostgreSQL/restart exit suite
+| Prior blocker | Round-3 result | Evidence |
+| --- | --- | --- |
+| UDS composition/start path | **Closed** | `adaptive-factory-server` is installed (`factory/pyproject.toml:11-13`); it builds store/service/authenticator, pre-binds only `AF_UNIX`, validates ownership/path safety, applies `0660`, and passes only that socket to Uvicorn (`factory/src/adaptive_factory/server.py:73-121`). Actor and token files are bounded, no-follow mode `0600` inputs. |
+| Cancel/supersede capacity leak | **Closed** | `_close_active_lease` atomically locks and releases the run/allocation and decrements counters; orphan repair is isolated and idempotent (`factory/src/adaptive_factory/store.py:532-605`). Exact-head PostgreSQL receipt passes cancel/supersede and two-pass reconciliation tests. |
+| Effective database roles | **Closed except I-1 policy INSERT** | Every store connection executes `SET ROLE factory_runtime` (`factory/src/adaptive_factory/store.py:45-59`); readiness reports that effective role and schema 6. Migration 006 narrows UPDATE privileges, but I-1 remains. |
+| Readiness, metrics, runbook | **Closed** | `/health/ready` checks database/effective role/schema and returns 503 on failure; authenticated `/metrics` exposes the three declared bounded families (`factory/src/adaptive_factory/api.py:128-145`, `factory/src/adaptive_factory/store.py:61-87`). Release and rollback now name backup restore, schema/role checks, UDS mode, synthetic accounting flow, actual restart, two-pass reconciliation, owner evidence and forward migration `007+` (`release.md:3-7`, `rollback.md:3-5`). |
+| Verifier inclusion | **Closed** | PR/release verification mandates `factory/tests/run_disposable_exit.py` (`.grok-stack/adaptive_grok/verification.py:574-599`). The exact-head receipt passed 42 API/PostgreSQL/effective-role tests plus an actual restart/reconcile probe. |
+| Rollback version | **Closed** | Current schema is 006 and recovery consistently names migration `007+` (`factory/README.md:18,30-34`, `rollback.md:5`, `architecture.md:31`). |
 
-The existing exact-head receipt records a passing tree fingerprint `6831959f1205504b2c10f019a03a95d6143c01c3dc41a0de4cf90df81b7887f5`, but its factory check ran only 19 dependency-free contract/state/migration/service tests. The verifier explicitly selects only those four modules (`.grok-stack/adaptive_grok/verification.py:574-587`); it excludes `test_api.py`, `test_postgres_integration.py`, and `postgres_restart_probe.py`. The implementation report records a prior disposable PostgreSQL run, but that prose is not a fingerprint-bound mandatory check.
+## README, packaging, and no-external-write assessment
 
-This does not satisfy `requirements.md:18`, `test-plan.md:5-13`, or `release.md:3,7`, all of which require the real PostgreSQL/API/restart evidence and reviews on the final fingerprint. Make a disposable PostgreSQL/API/restart profile mandatory for this high-risk route, fail rather than skip when it is unavailable, and bind its result to the same final tree before reviews are recorded. The currently present independent test and security reports also return FAIL, so the five-review gate is independently unmet.
+- Product identity remains `2.0.12`; the identity test passed (`README.md:1,7`, `VERSION`).
+- The K17 stack graph still has all 136 pairwise `---` edges including Factory; `test_readme_stack_graph_is_complete` passed (`README.md:91-263`).
+- Installer inventory tests passed and include `actors.example.json`, server source, OpenAPI, and migrations through 006; credentials, sockets, database state, and factory tests are excluded.
+- `factory/uv.lock` supplies an exact dependency solution in the source repository, but M-1 applies to transferred installs.
+- Static inspection of exact-head `factory/src/adaptive_factory` found no provider execution, shell/subprocess, repository/Git/GitHub client, systemd, deployment, TCP listener, production mutation, or Trust CI write path. The only server socket family is `AF_UNIX`; the CLI uses explicit HTTP-over-UDS.
+- The sample PostgreSQL port is loopback-only (`factory/compose.yaml:8-9`), and source delivery activates nothing. The verification runner's Docker/PostgreSQL writes are bounded to a randomized disposable local container and are not product runtime behavior.
+- No external write, merge, deployment, publication, tag, production database mutation, or Trust CI mutation was performed by this review.
 
-### Important — I-6: rollback documentation names the already-applied migration as a future recovery
-
-The packaged schema is already at migration `004` (`factory/src/adaptive_factory/resources/004_event_and_repair_budgets.sql:1-3`), yet `rollback.md:5`, `factory/README.md:18`, and `architecture.md:31` instruct the operator to forward-fix with `004+`. The implementation report correctly says `005+` at `evidence/implementation-report.md:44`, leaving the authoritative operational documents inconsistent. The release/rollback plans also provide no concrete backup verification, restore validation, ownership, or smoke command sequence.
-
-Using the current migration number as a supposed forward repair is ambiguous and cannot recover an already-migrated database. Update all recovery docs to the next migration (`005+` for this head), and add a bounded, testable backup/restore/smoke procedure with named go/no-go ownership.
-
-## Positive release evidence
-
-- README identity is `2.0.12` and its current-state section accurately calls M4 a pending local source candidate (`README.md:1,5-16`).
-- The K17 inventory graph declares 136 pairwise edges including Factory, and `tests.test_structure.StructureTests.test_readme_stack_graph_is_complete` passed (`README.md:91-263`).
-- Installer inventory includes the full factory source/contracts/config and migration `004`, while excluding factory tests, credentials, sockets, and database/runtime state (`scripts/install_into.py:17-30`; focused inventory check passed). Installer and structure focused tests passed.
-- Migration discovery is contiguous and checksum-locked under a factory advisory transaction (`factory/src/adaptive_factory/migrations.py:33-64,84-108`); destructive down-migrations are absent.
-- Static search of the exact head found no subprocess/shell/provider/GitHub/deployment/production/Trust CI write path in `factory/src` or its API contract. The only HTTP client is the CLI's explicit UDS transport (`factory/src/adaptive_factory/cli.py:65-66`). The sample PostgreSQL port is loopback-only (`factory/compose.yaml:8-9`) and source delivery does not start it.
-- The architecture model/rules contain the Factory boundary and prohibit Factory-to-Trust-CI/external/production edges (`architecture/rules.yaml:113-134,190-219`).
-
-These positives support the no-external-write claim for source delivery, but they do not cure the release-blocking runtime, recovery, observability, and evidence gaps.
-
-## Commands and evidence
+## Verification and review evidence
 
 ```text
 git rev-parse HEAD
-  01643c6594947535e690c5722f710081c9b9db9f
+8435e23458885a48e2d5784f8cd01e84d978c28c
 
-git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..01643c6594947535e690c5722f710081c9b9db9f
-  PASS (no output)
+git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..8435e23458885a48e2d5784f8cd01e84d978c28c
+PASS (no output)
 
-python3 -m unittest factory.tests.test_contracts factory.tests.test_state \
-  factory.tests.test_migrations factory.tests.test_service \
-  factory.tests.test_api tests.test_installer tests.test_structure -v
-  51 tests passed; API module import ERROR because FastAPI is not installed in the reviewer base environment.
-  This is not represented as passing API evidence.
+uv run --project factory python -m unittest -v \
+  factory.tests.test_contracts factory.tests.test_service factory.tests.test_api \
+  factory.tests.test_server factory.tests.test_migrations factory.tests.test_state
+PASS — 30/30
 
-python3 scripts/grok_status.py
-  Route b7f288f1e81e at status verifying; verification reported stale after repository evidence changes;
-  code/test/security/data/release review receipts were not complete.
+python3 -m unittest tests.test_installer tests.test_structure -v
+PASS — 32/32
 
-git grep -n -E 'uvicorn|create_app\(|FactorySettings|PostgresMigrator|factory_(intake|lease|capacity).*_total|prometheus|metrics' 01643c6 -- factory ':!factory/tests'
-  Only the Uvicorn dependency declaration, uncomposed create_app, settings class, and migrator class matched;
-  no server composition or required metric implementation matched.
+exact-head .grok-stack/runtime/receipts/b7f288f1e81e/verification.json
+PASS — fingerprint 7f5f5a2c7eb5985b7b83643fee8158aba5a5fc4693eba826f58d9e9e1d519f70;
+485 root tests, 21 factory unit tests, 42 disposable API/PostgreSQL/effective-role tests,
+actual PostgreSQL restart/reconciliation, architecture/governance/contracts/SQL safety,
+Ruff, Bandit, secret scan, coverage, diff check, and source stability passed.
 
-git grep -n -E 'subprocess|Popen|os\.system|requests|urllib|aiohttp|https://|github\.com|api\.github' 01643c6 -- factory/src factory/contracts
-  No product external-execution/write match.
+exact-head security review empirical probes
+factory_runtime arbitrary repository counter INSERT: succeeded with ceiling 999
+supported scheduler grants for one repository: 11
+security verdict: FAIL, 1 Important
 
-installer build_payload exact inventory check
-  factory/src/adaptive_factory/resources/004_event_and_repair_budgets.sql: included
-  factory/tests/test_postgres_integration.py: excluded
-  factory/tests/test_api.py: excluded
+installer exact inventory probe
+included: actors.example.json, server.py, migrations 005 and 006
+excluded: uv.lock and factory/tests/run_disposable_exit.py
+
+exact-head product external-write static search
+no subprocess/shell/GitHub/external HTTP/TCP listener match under factory/src/adaptive_factory
 ```
 
-## Required release-gate reset
+The current shared worktree contains reviewer report rewrites, so `grok_status` correctly calls the earlier verification fingerprint stale after those evidence-file changes and review receipts are not yet complete. More fundamentally, security review is FAIL and the checked-in data review is still bound to old head `01643c6594947535e690c5722f710081c9b9db9f`, so the five exact-head independent-review gate is not satisfied.
 
-Return I-1 through I-6 to the single route write owner. After product/document changes, rerun the mandatory real PostgreSQL + API + restart cohort and `python3 scripts/grok_verify.py --mode pr` on the new final fingerprint, then rerun all five independent reviews. PR delivery, the App-owned exact-SHA Trust CI check, signed approval scopes, merge, tagging, publication, and activation remain separately controlled and were not performed by this review.
+## Required disposition
+
+Return I-1 and I-2 to the single route write owner. After the schema/privilege, regression, and README repairs, rerun the mandatory disposable exit and `python3 scripts/grok_verify.py --mode pr` on the new exact tree, then rerun all five independent reviews against that fingerprint. PR delivery, App-owned exact-SHA Trust CI, signed scopes, merge, tagging, publication, and activation remain separately controlled and were not performed.

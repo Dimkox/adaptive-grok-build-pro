@@ -282,3 +282,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Null claims changed after queue state, accounting retries ignored the API command identity, and runtime could change capacity ceilings and intake identities.
 **Root cause:** The first repair tested representative successful command replays and a subset of immutable tables instead of enumerating every accepted outcome and every policy-bearing privilege inherited from earlier migrations.
+
+## 2026-09-01 — Narrowed policy columns but retained raw policy-table DML
+
+**Symptom:** Runtime could insert a repository ceiling of 999 or reset `active_count`, after which the supported scheduler admitted reader 11 or 21.
+**Root cause:** Capacity was treated as a mutable counter implementation detail, so column grants were narrowed without recognizing that counter identity, insertion and assignment collectively constitute admission policy authority.

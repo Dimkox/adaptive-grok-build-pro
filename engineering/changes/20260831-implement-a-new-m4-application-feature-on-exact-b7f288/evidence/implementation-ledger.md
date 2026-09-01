@@ -53,7 +53,7 @@ Each vertical records its RED command/result before production source is added, 
 ### Architecture, delivery surface and documentation
 
 - RED: the architecture regression failed because the factory API/control/database nodes, local-preflight domain and isolated edges were absent. GREEN: architecture model/rules, all five deterministic diagrams, drift and 130 model/fitness tests passed with no Factory-to-Trust-CI/external edge.
-- RED/GREEN installer: the payload inventory initially omitted `factory/`; it now includes only source, SQL resources, OpenAPI and placeholder local templates, and excludes tests, credentials, sockets and runtime/database state.
+- RED/GREEN installer: the payload inventory initially omitted `factory/`; it now includes runtime source, SQL resources, OpenAPI, `uv.lock`, the mandatory disposable verification harness and placeholder local templates, while excluding credentials, sockets and runtime/database state.
 - RED/GREEN verifier: a focused test first proved the root verifier omitted nested factory tests; it now runs 19 dependency-free factory contract/state/migration/service tests on every verification and includes factory source in Python quality paths.
 - README/roadmap now state accepted M3 base `67714a1...`, truthful M4 candidate status, separate authority, complete K17/136-edge inventory, rollback and installer boundaries.
 
@@ -84,3 +84,10 @@ Each vertical records its RED command/result before production source is added, 
 - RED accounting commands: changed usage under one command key returned 200 and a reservation replay after release returned 409; GREEN binds reservation/usage request and exact result to actor, action, caller command key and correlation, and consults durable replay before live-fence state.
 - RED effective role: runtime privilege probes returned `(ceiling_update=True, active_count_update=True, intake_update=True)`; GREEN forward migration `006` returns `(False, True, False)`, while normal intake and capacity operations continue under `factory_runtime`.
 - GREEN focused: migration/API/service tests passed 17/17 and ruff passed. GREEN exit: 42/42 factory tests passed on fresh disposable PostgreSQL 17, followed by actual restart, one repair, zero-repair replay, higher fence and late-holder rejection.
+
+### Round-three capacity authority remediation
+
+- RED effective role: runtime retained raw counter INSERT and `active_count` UPDATE, so it could seed ceiling 999, admit repository reader 11, reset the global count and admit reader 21. RED installer/migration tests also showed no schema 007 and no transferred `uv.lock`/exit harness.
+- GREEN migration `007` constrains the only valid counter identities/ceilings, revokes raw counter INSERT/UPDATE and allocation INSERT, and grants only fixed-search-path eligibility/lock/allocate/release functions. Readiness and reconciliation now fail closed unless counters equal live allocations; metrics derives live capacity from allocations.
+- GREEN boundary evidence: direct forged INSERT, ceiling/reset UPDATE and intake-identity UPDATE are denied under effective `factory_runtime`; normal reader/writer allocation, release, cancel, supersede and reconciliation remain functional, while repository reader 11, global reader 21 and writer 2 return no grant.
+- GREEN packaging: all 17 installer tests pass with exact locked dependency and 10-file disposable harness inventory. The fresh PostgreSQL exit suite passes 42/42 plus actual restart, one repair, replay no-op, higher fence and late-holder rejection.

@@ -442,6 +442,12 @@ class PostgresFactoryTests(unittest.TestCase):
                 readers.append(grant)
         self.assertEqual(len(readers), 20)
         self.assertEqual(sum(self.store.get_task(grant.task_id).repository_id == "repo/a" for grant in readers), 10)
+        self.assertIsNone(
+            self.service.claim(
+                owner="reader-21", role=RunRole.READER, repositories=("repo/a", "repo/b"),
+                lease_seconds=60, actor=WORKER, now=NOW,
+            )
+        )
         for index, grant in enumerate(readers):
             self.service.observe_usage(
                 grant,
@@ -629,15 +635,17 @@ class PostgresFactoryTests(unittest.TestCase):
             )
             self.assertEqual(cursor.fetchone(), (True, True))
             cursor.execute(
-                "SELECT has_column_privilege('factory_runtime','factory.capacity_counters','ceiling','UPDATE'), has_column_privilege('factory_runtime','factory.capacity_counters','active_count','UPDATE'), has_table_privilege('factory_runtime','factory.intake_identities','UPDATE')"
+                "SELECT has_table_privilege('factory_runtime','factory.capacity_counters','INSERT'), has_column_privilege('factory_runtime','factory.capacity_counters','ceiling','UPDATE'), has_column_privilege('factory_runtime','factory.capacity_counters','active_count','UPDATE'), has_table_privilege('factory_runtime','factory.intake_identities','UPDATE')"
             )
-            self.assertEqual(cursor.fetchone(), (False, True, False))
+            self.assertEqual(cursor.fetchone(), (False, False, False, False))
         forbidden = (
             ("UPDATE factory.accepted_intents SET body='{}'::jsonb",),
             ("UPDATE factory.task_events SET actor_id='tampered'",),
             ("UPDATE factory.audit_log SET actor_id='tampered'",),
             ("DELETE FROM factory.accepted_intents",),
             ("UPDATE factory.capacity_counters SET ceiling=999 WHERE scope_key='global:reader'",),
+            ("UPDATE factory.capacity_counters SET active_count=0 WHERE scope_key='global:reader'",),
+            ("INSERT INTO factory.capacity_counters(scope_key,active_count,ceiling) VALUES ('repository:forged/repo:reader',0,999)",),
             ("UPDATE factory.intake_identities SET source_id='tampered'",),
         )
         for (statement,) in forbidden:
@@ -646,12 +654,18 @@ class PostgresFactoryTests(unittest.TestCase):
                     cursor.execute("SET LOCAL ROLE factory_runtime")
                     with self.assertRaises(psycopg.errors.InsufficientPrivilege):
                         cursor.execute(statement)
-        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
-            cursor.execute("SET LOCAL ROLE factory_runtime")
-            cursor.execute(
-                "UPDATE factory.capacity_counters SET active_count=active_count WHERE scope_key='global:reader'"
-            )
-            self.assertEqual(cursor.rowcount, 1)
+        lifecycle_task = self.submit(source="capacity-function-lifecycle").task
+        lifecycle_grant = self.service.claim(
+            owner="ignored", role=RunRole.READER, repositories=(lifecycle_task.repository_id,),
+            lease_seconds=60, actor=WORKER, now=NOW,
+        )
+        self.assertIsNotNone(lifecycle_grant)
+        self.service.observe_usage(
+            lifecycle_grant, provider_call_id="capacity-lifecycle", price_table_digest="2" * 64,
+            cost_usd_micros=0, token_units=0, output_bytes=0, actor=WORKER,
+        )
+        self.service.release(lifecycle_grant, outcome="completed", actor=WORKER, now=NOW)
+        self.assertEqual(self.store.readiness()["status"], "ready")
 
 
 if __name__ == "__main__":
