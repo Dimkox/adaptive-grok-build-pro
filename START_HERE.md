@@ -6,10 +6,11 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 - M0 (Live Trust Authority) is delivered to `main`.
 - M0 runtime repair and policy-loop fixes are also merged into `main` through PR #7 and PR #6.
-- As observed on 2026-09-01, protected `main` strictly requires `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114` on the exact up-to-date pull-request head.
+- As observed on 2026-09-01 at protected `main` `8ab4e57038dec2e07f01aaa0b207813a387358f4`, the branch strictly requires `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114` on the exact up-to-date pull-request head.
 - M1 is implemented/reviewed in the accepted stack, but only its early slice and design/plan are on `main`; complete M1 delivery is partial. M2 and M3 are implemented/reviewed and merged into predecessor milestone branches by PRs #10 and #11, not delivered to `main`.
 - M4 is implemented locally, but PR #17 remains open with failed exact-head checks and its local branch is two commits ahead of the published head. Its latest local head therefore has stale review/external evidence.
 - M5-M9 are not started. The current work is consolidated delivery reconciliation for M1-M4; do not start M5 merely because a milestone branch exists.
+- PR #19 delivered the optional SEO side project to `main` as `8ab4e57038dec2e07f01aaa0b207813a387358f4`; it is non-milestone work and is no longer an open continuation item.
 
 Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
 
@@ -56,7 +57,7 @@ Use one repository-level delivery ledger and one consolidated continuation route
 
 1. Preserve and deliver the accepted M2+M3 aggregate `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` through a clean current-main integration PR; this also carries the complete M1 source that is absent from `main`.
 2. Rebuild M4 as a clean successor from the delivered predecessor stack, using local `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06` only as source evidence. Do not claim PR #17 fixed or accepted: its published head is `8e6504168462bbabad359fec3d23838c87f5ba22` and its exact-head gates failed.
-3. Retain open PRs #12, #13, #15, #17 and #19 plus the unresolved PR #14/local work identified in `PROJECT_STATE.json`; integrate, explicitly supersede or abandon them without silently losing unique work.
+3. Retain open PRs #12, #13, #15 and #17 plus the unresolved PR #14/local work identified in `PROJECT_STATE.json`; integrate, explicitly supersede or abandon them without silently losing unique work. PR #19 is already delivered and its predecessor staging path is archival.
 4. After every protected-main merge, fetch remote refs, update the one state model, and obtain fresh exact-head verification/approvals for any branch made stale by the base change.
 5. Begin M5 only after M1-M4 delivery state is reconciled and observable on `origin/main`. `milestone/a-plus-autopilot` is design input, not M8 implementation.
 

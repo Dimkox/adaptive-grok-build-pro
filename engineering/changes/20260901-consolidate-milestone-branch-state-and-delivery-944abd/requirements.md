@@ -2,10 +2,10 @@
 
 ## Acceptance criteria
 
-- [x] Given observed main `1c06299894279a88b881defa3f19b004fa742223`, when `PROJECT_STATE.json` is parsed, then schema version 2 records implementation, review, stack integration, main delivery, and external gate separately for every M0-M9 milestone.
+- [x] Given observed main `8ab4e57038dec2e07f01aaa0b207813a387358f4`, when `PROJECT_STATE.json` is parsed, then schema version 2 records implementation, review, stack integration, main delivery, and external gate separately for every M0-M9 milestone.
 - [x] Given the recorded ancestry, when milestone facts are inspected, then M0 is delivered; M1 is implemented/reviewed with partial main delivery; M2/M3 are implemented/reviewed/stack-merged but not main-delivered; M4 is locally implemented with stale review and failed published gates; M5-M9 are not started.
 - [x] Given current merge authority, when current handoff sections are read, then state, README, and `START_HERE.md` agree on `adaptive-trust-ci/verified@06ecf1c875bc` and App ID `4694114`.
-- [x] Given continuation work, when the state inventory is read, then open PRs #12, #13, #15, #17, #19, unresolved PR #14/local work, active aggregate/M4 sources, and superseded integration sources remain explicitly dispositioned.
+- [x] Given continuation work, when the state inventory is read, then open PRs #12, #13, #15 and #17, delivered non-milestone PR #19, unresolved PR #14/local work, active aggregate/M4 sources, and superseded integration sources remain explicitly dispositioned.
 - [x] Given README is edited, when the graph regression runs, then it remains an exact complete graph of 16 nodes and 120 unique undirected edges.
 - [x] Given the route-proliferation failure, when `mistakes.md` is read, then a bounded root-cause entry explains that completed branch work was not consolidated into one active route/repository state.
 

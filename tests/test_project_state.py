@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
+CURRENT_MAIN_SHA = "8ab4e57038dec2e07f01aaa0b207813a387358f4"
 MILESTONES = {f"M{number}" for number in range(10)}
 AXES = ("implementation", "review", "stack_integration", "main_delivery", "external_gate")
 
@@ -29,7 +30,7 @@ class ProjectStateTests(unittest.TestCase):
     def test_project_state_has_independent_milestone_axes_and_truthful_facts(self) -> None:
         state = self.state
         self.assertEqual(state["schema_version"], 2)
-        self.assertEqual(state["observed_main_sha"], "1c06299894279a88b881defa3f19b004fa742223")
+        self.assertEqual(state["observed_main_sha"], CURRENT_MAIN_SHA)
         self.assertRegex(state["observed_at"], r"^2026-09-01T\d{2}:\d{2}:\d{2}Z$")
         self.assertEqual(set(state["milestones"]), MILESTONES)
         for milestone in state["milestones"].values():
@@ -68,14 +69,24 @@ class ProjectStateTests(unittest.TestCase):
         for section in current_sections:
             self.assertIn(CURRENT_CHECK, section)
             self.assertIn(str(CURRENT_APP_ID), section)
+            self.assertIn(CURRENT_MAIN_SHA, section)
             self.assertNotIn("adaptive-trust-ci/verified@6737355947c2", section)
+
+        start_here = (ROOT / "START_HERE.md").read_text(encoding="utf-8")
+        self.assertIn("PR #19", start_here)
+        self.assertIn("delivered", start_here)
+        self.assertNotRegex(start_here, r"open PRs[^.;\n]*#19")
 
     def test_work_inventory_preserves_open_and_unresolved_continuation_work(self) -> None:
         inventory = self.state["work_inventory"]
         self.assertEqual(
             {item["pull_request"] for item in inventory["open_pull_requests"]},
-            {12, 13, 15, 17, 19},
+            {12, 13, 15, 17},
         )
+        seo = self.state["delivered_non_milestone_work"][0]
+        self.assertEqual(seo["pull_request"], 19)
+        self.assertEqual(seo["status"], "delivered")
+        self.assertEqual(seo["merge_commit"], CURRENT_MAIN_SHA)
         self.assertIn("944abd96ddb3", {item["route_id"] for item in inventory["active"]})
         self.assertIn(14, {item.get("pull_request") for item in inventory["retained_unresolved"]})
         self.assertIn(1, {item.get("pull_request") for item in inventory["superseded"]})
