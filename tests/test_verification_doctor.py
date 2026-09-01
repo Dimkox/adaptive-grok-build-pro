@@ -726,6 +726,53 @@ class VerificationTests(unittest.TestCase):
             self.assertIsNotNone(postgres)
             self.assertEqual(postgres.status, 'pass')
 
+    def test_python_pr_skips_factory_postgres_exit_only_in_repository_sandbox(self) -> None:
+        with project_copy() as root:
+            package = root / 'factory' / 'tests'
+            package.mkdir(parents=True)
+            (root / 'factory' / 'pyproject.toml').write_text('[project]\nname="factory"\n', encoding='utf-8')
+            (root / 'factory' / '__init__.py').write_text('', encoding='utf-8')
+            (package / '__init__.py').write_text('', encoding='utf-8')
+            (package / 'test_contracts.py').write_text(_PASSING_UNITTEST, encoding='utf-8')
+            (package / 'run_disposable_exit.py').write_text('raise SystemExit(9)\n', encoding='utf-8')
+            with patch.dict(os.environ, {'GROK_VERIFY_CAPABILITY': 'repository-sandbox'}):
+                checks = _python(root, mode='pr')
+            postgres = next((item for item in checks if item.name == 'factory-postgres-exit'), None)
+            self.assertIsNotNone(postgres)
+            self.assertEqual(postgres.status, 'skip')
+            self.assertIn('no nested-container/database capability', postgres.summary)
+
+    def test_python_pr_propagates_local_factory_postgres_exit_failure(self) -> None:
+        with project_copy() as root:
+            package = root / 'factory' / 'tests'
+            package.mkdir(parents=True)
+            (root / 'factory' / 'pyproject.toml').write_text('[project]\nname="factory"\n', encoding='utf-8')
+            (root / 'factory' / '__init__.py').write_text('', encoding='utf-8')
+            (package / '__init__.py').write_text('', encoding='utf-8')
+            (package / 'test_contracts.py').write_text(_PASSING_UNITTEST, encoding='utf-8')
+            (package / 'run_disposable_exit.py').write_text('raise SystemExit(9)\n', encoding='utf-8')
+            with patch.dict(os.environ, {}, clear=False):
+                os.environ.pop('GROK_VERIFY_CAPABILITY', None)
+                checks = _python(root, mode='pr')
+            postgres = next((item for item in checks if item.name == 'factory-postgres-exit'), None)
+            self.assertIsNotNone(postgres)
+            self.assertEqual(postgres.status, 'fail')
+
+    def test_python_pr_does_not_trust_arbitrary_verifier_capability(self) -> None:
+        with project_copy() as root:
+            package = root / 'factory' / 'tests'
+            package.mkdir(parents=True)
+            (root / 'factory' / 'pyproject.toml').write_text('[project]\nname="factory"\n', encoding='utf-8')
+            (root / 'factory' / '__init__.py').write_text('', encoding='utf-8')
+            (package / '__init__.py').write_text('', encoding='utf-8')
+            (package / 'test_contracts.py').write_text(_PASSING_UNITTEST, encoding='utf-8')
+            (package / 'run_disposable_exit.py').write_text('raise SystemExit(9)\n', encoding='utf-8')
+            with patch.dict(os.environ, {'GROK_VERIFY_CAPABILITY': 'repository-sandbox-extra'}):
+                checks = _python(root, mode='pr')
+            postgres = next((item for item in checks if item.name == 'factory-postgres-exit'), None)
+            self.assertIsNotNone(postgres)
+            self.assertEqual(postgres.status, 'fail')
+
     def test_python_ignores_non_python_tests_directory(self) -> None:
         with project_copy() as root:
             path = root / 'tests' / 'Unit' / 'GreetingServiceTest.php'
