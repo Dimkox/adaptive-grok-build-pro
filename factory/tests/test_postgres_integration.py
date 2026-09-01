@@ -40,7 +40,7 @@ class PostgresFactoryTests(unittest.TestCase):
             )
             cursor.execute("UPDATE factory.capacity_counters SET active_count=0")
             cursor.execute(
-                "INSERT INTO factory.m0_authority_observations(observation_id,observed_at,check_name,exact_head_sha,issuer,evidence_digest) VALUES (%s,%s,%s,%s,%s,%s)",
+                "INSERT INTO factory.m0_authority_observations(observation_id,observed_at,check_name,exact_head_sha,issuer,evidence_digest,repository_id,policy_digest) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
                 (
                     uuid.uuid4(),
                     NOW,
@@ -48,6 +48,8 @@ class PostgresFactoryTests(unittest.TestCase):
                     "3" * 40,
                     "external-trust-ci-api",
                     "7" * 64,
+                    "owner/repository",
+                    "06ecf1c875bc" + "9" * 52,
                 ),
             )
         self.store = PostgresFactoryStore(DATABASE_URL)
@@ -58,6 +60,19 @@ class PostgresFactoryTests(unittest.TestCase):
         value["repository_id"] = repository
         value["source_id"] = source or str(uuid.uuid4())
         value["m0_authority"]["observed_at"] = NOW.isoformat()
+        if repository != "owner/repository":
+            import psycopg
+
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO factory.m0_authority_observations
+                    (observation_id,observed_at,check_name,exact_head_sha,issuer,evidence_digest,repository_id,policy_digest)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
+                    (
+                        uuid.uuid4(), NOW, "adaptive-trust-ci/verified@06ecf1c875bc", "3" * 40,
+                        "external-trust-ci-api", uuid.uuid4().hex * 2, repository, value["policy_digest"],
+                    ),
+                )
         return value
 
     def submit(self, repository="owner/repository", source=None):
@@ -75,6 +90,89 @@ class PostgresFactoryTests(unittest.TestCase):
         self.assertEqual(first.task.task_id, duplicate.task.task_id)
         self.assertNotEqual(first.task.task_id, replacement.task.task_id)
         self.assertEqual(self.store.get_task(first.task.task_id).status, TaskStatus.SUPERSEDED)
+
+    def test_changed_frozen_head_authority_and_limits_supersede_exact_replay(self):
+        import psycopg
+
+        source = "full-frozen-intent"
+        original = self.payload(source=source)
+        first = self.service.intake(original, actor=OPERATOR, now=NOW)
+        self.assertFalse(self.service.intake(original, actor=OPERATOR, now=NOW).created)
+        changed_limits = self.payload(source=source)
+        changed_limits["limits"]["max_events"] -= 1
+        second = self.service.intake(changed_limits, actor=OPERATOR, now=NOW)
+        self.assertNotEqual(first.task.task_id, second.task.task_id)
+        changed_head = self.payload(source=source)
+        for handoff in (changed_head["architecture"], changed_head["governance"]):
+            handoff["exact_head_sha"] = "4" * 40
+        changed_head["m0_authority"]["exact_head_sha"] = "4" * 40
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO factory.m0_authority_observations
+                (observation_id,observed_at,check_name,exact_head_sha,issuer,evidence_digest,repository_id,policy_digest)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+                (
+                    uuid.uuid4(), NOW, changed_head["m0_authority"]["check_name"], "4" * 40,
+                    "external-trust-ci-api", "8" * 64, changed_head["repository_id"], changed_head["policy_digest"],
+                ),
+            )
+        third = self.service.intake(changed_head, actor=OPERATOR, now=NOW)
+        self.assertNotEqual(second.task.task_id, third.task.task_id)
+        self.assertEqual(self.store.get_task(second.task.task_id).status, TaskStatus.SUPERSEDED)
+
+    def test_m0_authority_is_repository_policy_action_and_transaction_bound(self):
+        import psycopg
+
+        cross_repository = self.payload(source="cross-authority")
+        cross_repository["repository_id"] = "other/repository"
+        with self.assertRaises(StoreError):
+            self.service.intake(cross_repository, actor=OPERATOR, now=NOW)
+
+        wrong_policy = self.payload(source="wrong-policy")
+        wrong_policy["policy_digest"] = "abcdefabcdef" + "1" * 52
+        wrong_policy["m0_authority"]["check_name"] = "adaptive-trust-ci/verified@abcdefabcdef"
+        with self.assertRaises(StoreError):
+            self.service.intake(wrong_policy, actor=OPERATOR, now=NOW)
+
+        exception_payload = self.payload(source="wrong-exception-scope")
+        exception_payload["m0_authority"] = {
+            "bootstrap_exception": "local-bootstrap",
+            "issuer": "repository-owner",
+            "scope": "task:intake",
+            "expires_at": "2026-09-01T20:00:00+00:00",
+        }
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO factory.m0_bootstrap_exceptions
+                (exception_id,issuer,scope,expires_at,approval_digest,repository_id,policy_digest,action)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,'task:intake')""",
+                (
+                    "local-bootstrap", "repository-owner", "task:intake", "2026-09-01T20:00:00+00:00",
+                    "5" * 64, exception_payload["repository_id"], exception_payload["policy_digest"],
+                ),
+            )
+        accepted = self.service.intake(exception_payload, actor=OPERATOR, now=NOW)
+        self.assertTrue(accepted.created)
+        wrong_scope = self.payload(source="wrong-exception-scope-2")
+        wrong_scope["m0_authority"] = {**exception_payload["m0_authority"], "scope": "task:read"}
+        with self.assertRaises(StoreError):
+            self.service.intake(wrong_scope, actor=OPERATOR, now=NOW)
+
+        race_payload = self.payload(source="revocation-race")
+        identity = f"{race_payload['repository_id']}\x1f{race_payload['source_type']}\x1f{race_payload['source_id']}"
+        blocker = psycopg.connect(DATABASE_URL)
+        blocker.execute("SELECT pg_advisory_lock(hashtextextended(%s,0))", (identity,))
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(self.service.intake, race_payload, actor=OPERATOR, now=NOW)
+            with psycopg.connect(DATABASE_URL) as revoker:
+                revoker.execute(
+                    "UPDATE factory.m0_authority_observations SET revoked_at=clock_timestamp() WHERE repository_id=%s",
+                    (race_payload["repository_id"],),
+                )
+            blocker.execute("SELECT pg_advisory_unlock(hashtextextended(%s,0))", (identity,))
+            blocker.close()
+            with self.assertRaises(StoreError):
+                future.result(timeout=5)
 
     def test_cancel_and_supersede_release_leases_capacity_once(self):
         import psycopg
@@ -668,6 +766,36 @@ class PostgresFactoryTests(unittest.TestCase):
         )
         self.service.release(lifecycle_grant, outcome="completed", actor=WORKER, now=NOW)
         self.assertEqual(self.store.readiness()["status"], "ready")
+
+    def test_audit_chain_binds_task_run_and_correlation_identity(self):
+        import psycopg
+
+        for field in ("task_id", "run_id", "correlation_id"):
+            with self.subTest(field=field):
+                task = self.submit(source=f"audit-semantic-{field}").task
+                grant = self.service.claim(
+                    owner="ignored", role=RunRole.READER, repositories=(task.repository_id,),
+                    lease_seconds=60, actor=WORKER, now=NOW,
+                )
+                self.assertTrue(self.store.verify_audit_chain(task.task_id))
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    if field == "task_id":
+                        other = self.submit(source=f"audit-other-{field}").task
+                        cursor.execute(
+                            "UPDATE factory.audit_log SET task_id=%s WHERE task_id=%s AND action='intake'",
+                            (other.task_id, task.task_id),
+                        )
+                    elif field == "run_id":
+                        cursor.execute(
+                            "UPDATE factory.audit_log SET run_id=%s WHERE task_id=%s AND action='intake'",
+                            (grant.run_id, task.task_id),
+                        )
+                    else:
+                        cursor.execute(
+                            "UPDATE factory.audit_log SET correlation_id='tampered' WHERE task_id=%s AND action='intake'",
+                            (task.task_id,),
+                        )
+                self.assertFalse(self.store.verify_audit_chain(task.task_id))
 
     def test_hidden_allocation_invalidates_fence_and_reconciliation_fails_closed(self):
         import psycopg

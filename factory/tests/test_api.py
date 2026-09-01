@@ -46,6 +46,14 @@ class FakeService:
     def readiness(self):
         return {"status": "ready", "database_role": "factory_runtime", "schema_version": 8}
 
+    def claim(self, **kwargs):
+        self.calls.append(("claim", kwargs))
+        return None
+
+    def reconcile(self, **kwargs):
+        self.calls.append(("reconcile", kwargs))
+        return {"candidates": 0, "repaired": 0, "cursor": None}
+
 
 class ApiTests(unittest.TestCase):
     def setUp(self):
@@ -117,6 +125,36 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.json()["error"], "invalid")
         self.assertNotIn("shell_command", response.text)
+
+    def test_malformed_closed_commands_return_bounded_4xx(self):
+        token = "test-worker-operator-credential"
+        actor = Actor(
+            "combined-local-test",
+            "operator",
+            frozenset({"task:claim", "task:cancel", "factory:reconcile"}),
+            frozenset({"*"}),
+        )
+        client = TestClient(create_app(self.service, Authenticator({token: actor})), raise_server_exceptions=False)
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Idempotency-Key": "malformed-command",
+            "X-Correlation-ID": "malformed-correlation",
+        }
+        cases = (
+            ("/v1/claims", {"role": "root", "repositories": ["owner/repository"], "lease_seconds": 60}),
+            ("/v1/claims", {"role": "reader", "repositories": "owner/repository", "lease_seconds": 60}),
+            ("/v1/claims", {"role": "reader", "repositories": ["owner/repository"], "lease_seconds": "60"}),
+            ("/v1/reconcile", {"limit": "many"}),
+            ("/v1/reconcile", {"cursor": "not-a-uuid"}),
+            ("/v1/tasks/not-a-uuid/cancel", {"reason": "operator"}),
+            ("/v1/tasks/00000000-0000-0000-0000-000000000001/cancel", {"reason": {"nested": True}}),
+            ("/v1/tasks/00000000-0000-0000-0000-000000000001/cancel", {"reason": "x" * 129}),
+        )
+        for path, payload in cases:
+            with self.subTest(path=path, payload=payload):
+                response = client.post(path, headers=headers, json=payload)
+                self.assertIn(response.status_code, {400, 422})
+                self.assertLessEqual(len(response.content), 256)
 
     def test_token_file_rejects_symlink_and_non_private_mode(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -35,6 +35,7 @@ def main() -> int:
     import psycopg
 
     now = datetime.now(timezone.utc).replace(microsecond=0)
+    policy_digest = "0123456789ab" + "9" * 52
     check_name = "adaptive-trust-ci/verified@0123456789ab"
     with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
         cursor.execute(
@@ -42,8 +43,8 @@ def main() -> int:
         )
         cursor.execute("UPDATE factory.capacity_counters SET active_count=0")
         cursor.execute(
-            "INSERT INTO factory.m0_authority_observations(observation_id,observed_at,check_name,exact_head_sha,issuer,evidence_digest) VALUES (%s,%s,%s,%s,%s,%s)",
-            (uuid.uuid4(), now, check_name, "6" * 40, "external-test-verifier", "a" * 64),
+            "INSERT INTO factory.m0_authority_observations(observation_id,observed_at,check_name,exact_head_sha,issuer,evidence_digest,repository_id,policy_digest) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+            (uuid.uuid4(), now, check_name, "6" * 40, "external-test-verifier", "a" * 64, "probe/repository", policy_digest),
         )
     payload = {
         "contract_version": 1, "request_id": "restart-probe", "repository_id": "probe/repository",
@@ -52,7 +53,7 @@ def main() -> int:
         "spec_digest": "2" * 64,
         "architecture": {"architecture_contract_version": 1, "architecture_digest": "3" * 64, "architecture_evidence_digest": "4" * 64, "exact_base_sha": "5" * 40, "exact_head_sha": "6" * 40},
         "governance": {"governance_contract_version": 1, "governance_digest": "7" * 64, "governance_evidence_digest": "8" * 64, "architecture_digest": "3" * 64, "exact_base_sha": "5" * 40, "exact_head_sha": "6" * 40},
-        "policy_digest": "9" * 64,
+        "policy_digest": policy_digest,
         "m0_authority": {"observed_at": now.isoformat(), "check_name": check_name, "exact_head_sha": "6" * 40},
         "acceptance_ids": ["AC-001"],
         "limits": {"wall_seconds": 14400, "max_cost_usd_micros": 25000000, "max_token_units": 2000000, "max_output_bytes": 10000000, "max_events": 100000, "infrastructure_retries": 2, "semantic_repairs": 3},

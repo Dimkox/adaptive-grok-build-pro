@@ -235,6 +235,9 @@ class TaskIntakeV1:
         authority = M0AuthorityV1.from_dict(data["m0_authority"], now)
         if authority.exact_head_sha and authority.exact_head_sha != governance.exact_head_sha:
             raise ContractError("handoff_mismatch", "m0 exact head")
+        policy_digest = _hex(data["policy_digest"], "policy_digest", HEX64)
+        if authority.check_name and not authority.check_name.endswith("@" + policy_digest[:12]):
+            raise ContractError("m0_policy_mismatch")
         acceptance = data["acceptance_ids"]
         if (
             not isinstance(acceptance, list)
@@ -259,25 +262,14 @@ class TaskIntakeV1:
             "spec_digest": _hex(data["spec_digest"], "spec_digest", HEX64),
             "architecture": architecture,
             "governance": governance,
-            "policy_digest": _hex(data["policy_digest"], "policy_digest", HEX64),
+            "policy_digest": policy_digest,
             "m0_authority": authority,
             "acceptance_ids": tuple(acceptance),
             "limits": TaskLimitsV1.from_dict(data["limits"]),
         }
         intent_digest = canonical_digest(normalized)
         idempotency_key = canonical_digest(
-            {
-                "contract": "adaptive-factory.intake/v1",
-                "repository_id": normalized["repository_id"],
-                "source_type": source_type,
-                "source_id": normalized["source_id"],
-                "source_digest": normalized["source_digest"],
-                "exact_base_sha": normalized["exact_base_sha"],
-                "spec_digest": normalized["spec_digest"],
-                "architecture_digest": architecture.architecture_digest,
-                "governance_digest": governance.governance_digest,
-                "policy_digest": normalized["policy_digest"],
-            }
+            {"contract": "adaptive-factory.intake/v1", "intent_digest": intent_digest}
         )
         return cls(**normalized, intent_digest=intent_digest, idempotency_key=idempotency_key)
 

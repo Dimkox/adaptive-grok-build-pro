@@ -6,6 +6,7 @@ import json
 import uuid
 
 from .contracts import HEX64, TaskIntakeV1, canonical_digest
+from .migrations import discover_migrations
 from .models import Actor, FailureClass, LeaseGrant, RunRole, TaskProjection, TaskStatus
 from .state import classify_retry
 
@@ -19,6 +20,10 @@ class FenceError(StoreError):
 
 
 class BudgetError(StoreError):
+    pass
+
+
+class AuthorityError(StoreError):
     pass
 
 
@@ -64,7 +69,7 @@ class PostgresFactoryStore:
             role, version = cursor.fetchone()
             capacity_consistent = self._capacity_consistent(cursor)
             return {
-                "status": "ready" if version == 8 and capacity_consistent else "not_ready",
+                "status": "ready" if version == len(discover_migrations()) and capacity_consistent else "not_ready",
                 "database_role": role,
                 "schema_version": version,
                 "capacity_consistent": capacity_consistent,
@@ -131,22 +136,33 @@ class PostgresFactoryStore:
             (key, actor.actor_id, action, digest, correlation or key, json.dumps(result, sort_keys=True, separators=(",", ":"))),
         )
 
-    def verify_m0_authority(self, authority) -> bool:
-        with self._connect() as connection, connection.cursor() as cursor:
-            if authority.observed_at is not None:
-                cursor.execute(
-                    """SELECT 1 FROM factory.m0_authority_observations
-                    WHERE observed_at=%s AND check_name=%s AND exact_head_sha=%s AND revoked_at IS NULL""",
-                    (authority.observed_at, authority.check_name, authority.exact_head_sha),
-                )
-            else:
-                cursor.execute(
-                    """SELECT 1 FROM factory.m0_bootstrap_exceptions
-                    WHERE exception_id=%s AND issuer=%s AND scope=%s AND expires_at=%s
-                    AND revoked_at IS NULL AND expires_at>clock_timestamp()""",
-                    (authority.bootstrap_exception, authority.issuer, authority.scope, authority.expires_at),
-                )
-            return cursor.fetchone() is not None
+    @staticmethod
+    def _verify_m0_authority(cursor, intake: TaskIntakeV1) -> bool:
+        authority = intake.m0_authority
+        if authority.observed_at is not None:
+            cursor.execute(
+                "SELECT factory.m0_observation_valid(%s,%s,%s,%s,%s)",
+                (
+                    authority.observed_at,
+                    authority.check_name,
+                    authority.exact_head_sha,
+                    intake.repository_id,
+                    intake.policy_digest,
+                ),
+            )
+        else:
+            cursor.execute(
+                "SELECT factory.m0_exception_valid(%s,%s,%s,%s,%s,%s)",
+                (
+                    authority.bootstrap_exception,
+                    authority.issuer,
+                    authority.scope,
+                    authority.expires_at,
+                    intake.repository_id,
+                    intake.policy_digest,
+                ),
+            )
+        return bool(cursor.fetchone()[0])
 
     @staticmethod
     def _projection(row) -> TaskProjection:
@@ -204,7 +220,11 @@ class PostgresFactoryStore:
         bounded = metadata or {}
         digest = canonical_digest(
             {
+                "digest_version": 2,
                 "previous_digest": previous,
+                "task_id": task_id,
+                "run_id": run_id,
+                "correlation_id": correlation_id,
                 "actor": actor.actor_id,
                 "action": action,
                 "resource": resource,
@@ -214,7 +234,7 @@ class PostgresFactoryStore:
             }
         )
         cursor.execute(
-            "INSERT INTO factory.audit_log(task_id,run_id,previous_digest,current_digest,actor_id,action,resource,reason,correlation_id,metadata,created_at) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s)",
+            "INSERT INTO factory.audit_log(task_id,run_id,previous_digest,current_digest,actor_id,action,resource,reason,correlation_id,metadata,created_at,digest_version) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s,2)",
             (
                 task_id,
                 run_id,
@@ -238,6 +258,8 @@ class PostgresFactoryStore:
                 "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
                 (f"{intake.repository_id}\x1f{intake.source_type}\x1f{intake.source_id}",),
             )
+            if not self._verify_m0_authority(cursor, intake):
+                raise AuthorityError("M0 authority is not trusted for repository/policy/action")
             cursor.execute(
                 "INSERT INTO factory.intake_identities(repository_id,source_type,source_id) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING",
                 (intake.repository_id, intake.source_type, intake.source_id),
@@ -377,7 +399,7 @@ class PostgresFactoryStore:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute("SET statement_timeout='5s'")
             cursor.execute(
-                """SELECT previous_digest,current_digest,actor_id,action,resource,reason,created_at,metadata
+                """SELECT previous_digest,current_digest,task_id,run_id,correlation_id,actor_id,action,resource,reason,created_at,metadata,digest_version
                 FROM factory.audit_log WHERE task_id=%s ORDER BY audit_id LIMIT 100001""",
                 (task_id,),
             )
@@ -386,20 +408,28 @@ class PostgresFactoryStore:
                 return False
             previous = "0" * 64
             for row in rows:
-                recorded_previous, recorded_current, actor, action, resource, reason, received_at, metadata = row
+                recorded_previous, recorded_current, stored_task_id, run_id, correlation_id, actor, action, resource, reason, received_at, metadata, digest_version = row
                 if recorded_previous.strip() != previous:
                     return False
-                expected = canonical_digest(
-                    {
-                        "previous_digest": previous,
-                        "actor": actor,
-                        "action": action,
-                        "resource": resource,
-                        "reason": reason,
-                        "received_at": received_at,
-                        "metadata_digest": canonical_digest(metadata),
-                    }
-                )
+                envelope = {
+                    "previous_digest": previous,
+                    "actor": actor,
+                    "action": action,
+                    "resource": resource,
+                    "reason": reason,
+                    "received_at": received_at,
+                    "metadata_digest": canonical_digest(metadata),
+                }
+                if digest_version == 2:
+                    envelope.update(
+                        {
+                            "digest_version": 2,
+                            "task_id": str(stored_task_id),
+                            "run_id": str(run_id) if run_id is not None else None,
+                            "correlation_id": correlation_id,
+                        }
+                    )
+                expected = canonical_digest(envelope)
                 if recorded_current.strip() != expected:
                     return False
                 previous = expected

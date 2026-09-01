@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 import unittest
 
 from adaptive_factory.models import Actor, FailureClass, LeaseGrant, RunRole, TaskProjection, TaskStatus
+from adaptive_factory.contracts import ContractError
 from adaptive_factory.service import AuthorizationError, FactoryService
 from factory.tests.test_contracts import valid_intake
 
@@ -14,11 +15,10 @@ class RecordingStore:
         self.calls = []
 
     def intake(self, intake, actor, now):
+        if intake.m0_authority.bootstrap_exception is not None:
+            raise AuthorizationError("transactional authority lookup rejected")
         self.calls.append(("intake", intake, actor, now))
         return {"task_id": "task-1", "created": True}
-
-    def verify_m0_authority(self, authority):
-        return authority.check_name == "adaptive-trust-ci/verified@06ecf1c875bc"
 
     def claim(self, request, actor, now, **_kwargs):
         self.calls.append(("claim", request, actor, now))
@@ -34,6 +34,14 @@ class RecordingStore:
     def release(self, grant, outcome, actor, now, **_kwargs):
         self.calls.append(("release", outcome))
         return TaskStatus.RETRY
+
+    def reconcile(self, *args, **kwargs):
+        self.calls.append(("reconcile", args, kwargs))
+        return "reconciled"
+
+    def metrics(self):
+        self.calls.append(("metrics",))
+        return {}
 
 
 class ServiceTests(unittest.TestCase):
@@ -61,7 +69,7 @@ class ServiceTests(unittest.TestCase):
         actor = Actor("caller", "client", frozenset({"task:submit"}), frozenset({"owner/repository"}))
         payload = valid_intake()
         payload["m0_authority"]["check_name"] = "caller-asserted-not-trust-ci"
-        with self.assertRaises(AuthorizationError):
+        with self.assertRaises(ContractError):
             service.intake(payload, actor=actor, now=NOW)
         payload = valid_intake()
         payload["m0_authority"] = {
@@ -72,6 +80,18 @@ class ServiceTests(unittest.TestCase):
         }
         with self.assertRaises(AuthorizationError):
             service.intake(payload, actor=actor, now=NOW)
+        self.assertEqual(store.calls, [])
+
+    def test_global_reconcile_and_metrics_require_wildcard_repository_authority(self):
+        store = RecordingStore()
+        service = FactoryService(store)
+        scoped = Actor(
+            "operator", "operator", frozenset({"factory:reconcile"}), frozenset({"owner/repository"})
+        )
+        with self.assertRaises(AuthorizationError):
+            service.reconcile(actor=scoped, now=NOW)
+        with self.assertRaises(AuthorizationError):
+            service.metrics(actor=scoped)
         self.assertEqual(store.calls, [])
 
     def test_claim_rejects_unbounded_lease_and_missing_worker_scope(self):

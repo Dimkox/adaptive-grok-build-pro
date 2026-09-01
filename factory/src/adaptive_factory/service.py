@@ -29,7 +29,7 @@ class FactoryService:
 
     def metrics(self, *, actor: Actor):
         self._require(actor, "factory:reconcile")
-        if actor.kind != "operator":
+        if actor.kind != "operator" or "*" not in actor.repositories:
             raise AuthorizationError("metrics require operator actor")
         return self.store.metrics()
 
@@ -43,9 +43,6 @@ class FactoryService:
     def intake(self, payload, *, actor: Actor, now: datetime):
         intake = TaskIntakeV1.from_dict(payload, now=now) if not isinstance(payload, TaskIntakeV1) else payload
         self._require(actor, "task:submit", intake.repository_id)
-        verifier = getattr(self.store, "verify_m0_authority", None)
-        if verifier is None or not verifier(intake.m0_authority):
-            raise AuthorizationError("M0 authority is not trusted by the control plane")
         return self.store.intake(intake, actor, now)
 
     def get_task(self, task_id: str, *, actor: Actor):
@@ -147,7 +144,7 @@ class FactoryService:
 
     def reconcile(self, *, actor: Actor, now: datetime, limit: int = 100, cursor: str | None = None, idempotency_key: str | None = None, correlation_id: str | None = None):
         self._require(actor, "factory:reconcile")
-        if actor.kind != "operator" or not 1 <= limit <= 100:
+        if actor.kind != "operator" or "*" not in actor.repositories or not 1 <= limit <= 100:
             raise AuthorizationError("bounded operator reconciliation required")
         return self.store.reconcile(actor, now, limit, cursor, idempotency_key=idempotency_key, correlation_id=correlation_id)
 

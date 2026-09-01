@@ -34,7 +34,7 @@ def valid_intake():
             "exact_base_sha": "2" * 40,
             "exact_head_sha": "3" * 40,
         },
-        "policy_digest": "9" * 64,
+        "policy_digest": "06ecf1c875bc" + "9" * 52,
         "m0_authority": {
             "observed_at": NOW.isoformat(),
             "check_name": "adaptive-trust-ci/verified@06ecf1c875bc",
@@ -62,6 +62,29 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(len(intake.intent_digest), 64)
         self.assertEqual(len(intake.idempotency_key), 64)
         self.assertEqual(intake.limits.wall_seconds, 14400)
+
+    def test_complete_frozen_intent_defines_duplicate_identity(self):
+        original = valid_intake()
+        replay = TaskIntakeV1.from_dict(original, now=NOW)
+        self.assertEqual(replay.idempotency_key, TaskIntakeV1.from_dict(valid_intake(), now=NOW).idempotency_key)
+        changed_limits = valid_intake()
+        changed_limits["limits"]["max_events"] -= 1
+        changed_head = valid_intake()
+        for handoff in (changed_head["architecture"], changed_head["governance"]):
+            handoff["exact_head_sha"] = "4" * 40
+        changed_head["m0_authority"]["exact_head_sha"] = "4" * 40
+        changed_evidence = valid_intake()
+        changed_evidence["architecture"]["architecture_evidence_digest"] = "8" * 64
+        for changed in (changed_limits, changed_head, changed_evidence):
+            parsed = TaskIntakeV1.from_dict(changed, now=NOW)
+            self.assertNotEqual(parsed.intent_digest, replay.intent_digest)
+            self.assertNotEqual(parsed.idempotency_key, replay.idempotency_key)
+
+    def test_observed_m0_check_suffix_must_match_policy_identity(self):
+        payload = valid_intake()
+        payload["policy_digest"] = "9" * 64
+        with self.assertRaisesRegex(ContractError, "m0_policy_mismatch"):
+            TaskIntakeV1.from_dict(payload, now=NOW)
 
     def test_unknown_fields_versions_dirty_sha_and_excessive_limits_fail(self):
         cases = []
