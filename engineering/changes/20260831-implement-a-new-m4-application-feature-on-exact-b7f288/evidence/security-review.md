@@ -1,144 +1,130 @@
-# M4 last exact-head security review — FAIL
+# M4 exact-final security review — PASS
 
-## Reviewed identity
+## Review binding
 
 - Route: `b7f288f1e81e`
 - Change: `20260831-implement-a-new-m4-application-feature-on-exact-b7f288`
-- Exact base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
+- Accepted M3 base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
 - Prior reviewed HEAD: `83e6b0d0c29e813932aa29b0d72ac4d85d27df7b`
-- Exact reviewed HEAD: `04261326e177e6d2014a576d3f4a0fb5feab56be`
-- Exact Git tree: `3959e7c46d6bb30f49727f6162b73d8ab4a72376`
-- Focused range: `83e6b0d0c29e813932aa29b0d72ac4d85d27df7b..04261326e177e6d2014a576d3f4a0fb5feab56be`
-- Full range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..04261326e177e6d2014a576d3f4a0fb5feab56be`
-- Exact-head verifier: PASS, all 14 gates, fingerprint `e7401c598db44069e77259d7e0f4da893e67b89f4778e195af540c3a753e86b0`
+- Exact reviewed HEAD: `daa3930cb84ba6547171583e41bcf0dee2ab1314`
+- Exact Git tree: `9c93b2ca4fea4f71ab70bbf71bd62ca8df936ad8`
+- Focused collision-fix range: `04261326e177e6d2014a576d3f4a0fb5feab56be..daa3930cb84ba6547171583e41bcf0dee2ab1314`
+- Full reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..daa3930cb84ba6547171583e41bcf0dee2ab1314`
+- Exact-head verifier: PASS, fingerprint `ad41a13355b097f4be0a3d6c3754b9cc4de8178824e801ac264fad81c852e794`
 - Reviewer: route-selected read-only `security_reviewer`
 
 ## Verdict
 
-**FAIL**
+**PASS**
 
 - Critical findings: **0**
-- Important findings: **1**
+- Important findings: **0**
 - Moderate findings: **0**
 
-Migration `011` closes the two previously reported accounting-state omissions in
-the single-generation fixture, but its `ready_for_human -> needs_human` recovery
-can violate the existing active-identity uniqueness invariant. The exact tree must
-not receive a passing security-review receipt.
+The prior active-generation collision is closed. No remaining security,
+authorization, repository-isolation, audit-integrity or fail-open finding at
+Moderate severity or above was found in the exact full diff.
 
-## Severity-ordered finding
+## Prior Important collision — closed
 
-### Important I-1 — legacy positive-state quarantine can collide with a newer active generation and roll back migration 011
+Migration `011` now selects an evidence-preserving target compatible with the
+one-active-generation invariant:
 
-The durable task index permits at most one state considered active for a
-`(repository_id, source_type, source_id)` identity. It excludes
-`ready_for_human`, `dead`, `cancelled` and `superseded`, but it does **not** exclude
-`needs_human`
-(`factory/src/adaptive_factory/resources/001_initial.sql:61-64`). This is
-consistent with runtime intake: a positive `ready_for_human` generation is not
-superseded and does not block creating a later active generation of the same
-source identity (`factory/src/adaptive_factory/store.py:308-338`).
+- an unsafe legacy `ready_for_human` row with any newer generation becomes
+  `superseded/accounting_blocked`;
+- an unsafe positive row without a newer generation, and blocked queued/retry
+  rows, become `needs_human/accounting_blocked`.
 
-Migration `011` unconditionally changes every unsafe legacy
-`ready_for_human` row to `needs_human`
-(`factory/src/adaptive_factory/resources/011_legacy_accounting_quarantine.sql:1-16`).
-For a reachable history containing:
+The existence predicate is bound to the exact repository, source type and source
+ID and requires a strictly greater generation
+(`factory/src/adaptive_factory/resources/011_legacy_accounting_quarantine.sql:1-27`).
+`superseded` remains outside `tasks_one_active_identity`, so an already-active
+newer generation is not duplicated or displaced. Intent, run, attempt,
+reservation, usage, task-event and audit evidence is not deleted or rewritten.
 
-1. generation 1 in `ready_for_human` with unresolved prior-attempt accounting;
-2. generation 2 for the same identity in `queued`, `retry`, `leased` or another
-   index-active state;
+The real schema-008 regression now seeds generation 1 as an unsafe
+`ready_for_human` task and generation 2 as `queued` under the same exact source
+identity. It proves migrations `009,010,011` apply, generation 1 becomes
+`superseded/accounting_blocked`, generation 2 remains the sole claimable task,
+the issued grant is for generation 2, aggregates and the live reservation remain
+present, readiness is truthful, and migration replay is empty
+(`factory/tests/test_postgres_integration.py:984-1242`).
 
-the update attempts to put both generations inside `tasks_one_active_identity`.
-PostgreSQL raises a unique violation and the atomic migration transaction rolls
-back. The control plane remains below required schema 11 and therefore not ready;
-the security quarantine that was intended to remove the false-positive terminal
-state is never installed.
+Readiness recognizes the quarantined terminal representation rather than treating
+it as a positive endpoint. It fails if unresolved superseded accounting loses its
+`accounting_blocked` marker, while allowing the deliberate blocked quarantine
+(`factory/src/adaptive_factory/store.py:80-96`). This is defense in depth beyond
+the migration and does not weaken claim selection.
 
-The expanded upgrade regression does not cover this case. Its unsafe positive row
-uses source ID `legacy-ready-reservation`, while every other seeded task uses a
-different source ID (`factory/tests/test_postgres_integration.py:1051-1089`). It
-therefore proves the update only when no later active generation can conflict
-(`test_postgres_integration.py:1129-1144`). The exact-head verifier's 63-test
-PostgreSQL pass inherits this gap.
+## Migration and privilege assessment
 
-Required remediation:
+- Migration `011` is static schema-qualified owner DML only. It creates no role,
+  function or dynamic SQL, grants no privilege, changes no default privilege and
+  exposes no runtime callable capability.
+- Packaged migrations remain contiguous and checksum-bound. Earlier migrations
+  and the authority/capacity definer functions are unchanged by the focused fix.
+- `factory_runtime` still cannot update/delete immutable intents, task events or
+  audit rows; forge capacity counters/ceilings; insert allocations; directly
+  release allocations; or access the separate `trust_ci` schema.
+- M0 observation and exception validators retain fixed
+  `search_path=pg_catalog,factory`, static schema-qualified SQL, PUBLIC-revoked
+  EXECUTE-only runtime grants and `FOR SHARE` locks that serialize non-key
+  revocation through intake commit.
 
-1. Add a forward migration that gives unsafe legacy positive generations an
-   evidence-preserving, non-positive quarantine representation compatible with an
-   already-active newer generation. Do not delete or rewrite intent, run,
-   reservation, usage or audit evidence, and do not weaken the one-active-identity
-   invariant merely to make the migration pass.
-2. Add a real schema-008 upgrade regression with an unsafe
-   `ready_for_human` generation and a newer active generation sharing the exact
-   repository/source identity. Prove migrations `009..current` apply atomically,
-   the unsafe generation is no longer reported as a successful endpoint, the
-   intended current generation remains unambiguous, readiness is truthful, and
-   migration replay is idempotent.
+## Full security boundary recheck
 
-## Focused security assessment
-
-- Migration `011` contains only static, schema-qualified owner DML. It adds no
-  function, role, grant, default privilege or dynamic SQL and does not broaden
-  runtime access. Its predicates preserve reservation/counter/run/usage rows; the
-  finding is the incompatible target state, not evidence deletion.
-- The new readiness predicate correctly detects blocked or unsettled
-  `queued`, `retry` and `ready_for_human` rows. Claim independently retains the
-  unblocked/zero-counter/no-live-reservation candidate guard. These checks fail
-  closed after a successful migration and under owner-only fault injection.
-- The checked single-generation upgrade cases now correctly move blocked-zero
-  retry and unsettled positive rows to `needs_human/accounting_blocked`, preserve
-  aggregate and reservation evidence, reject claim, and make migration replay a
-  no-op.
-
-## Prior security closures rechecked
-
-- Observation and bootstrap-exception M0 authority remain bound to repository,
-  full policy digest, closed action, trusted identity, exact governance head and
-  expiry/non-revocation. Both validators retain fixed
-  `search_path=pg_catalog,factory`, PUBLIC-revoked EXECUTE-only definer authority
-  and `FOR SHARE`; real PostgreSQL tests still cover revoke-before-validation and
-  revocation blocked through commit after validation.
-- M2/M3 provenance and exact base/head compatibility remain immutable and caller
-  claims do not substitute Trust-CI authority.
-- Global reconcile/metrics still require wildcard operator authority. Worker
-  operations remain actor/repository/task/run/owner/fence/packet/live-allocation/
-  lease/deadline/budget bound.
-- Capacity remains behind the fixed-search-path, PUBLIC-revoked 20/10/1 definer
-  functions. Runtime cannot forge counters, allocations or allocation release;
-  drift makes readiness and reconcile fail closed.
-- Mandatory cleanup remains internal, state/fence/idempotency bounded and audited
-  in the same transaction. It cannot consume or bypass ordinary retry budget;
-  exhausted retry routes to `needs_human`, and cleanup releases capacity exactly
-  once.
-- Audit v2 still authenticates task/run/correlation and all other semantic fields;
-  runtime audit/event update and delete remain denied. Absolute owned no-follow
-  actor/token loading, constant-time bearer comparison, 1 MiB cumulative body cap,
-  bounded/redacted responses and owned UDS-only serving remain unchanged.
-- No provider, shell, repository, Git/GitHub, TCP, systemd, deployment or other
-  external execution/write path was added. No GitHub Actions or deployed Trust-CI
-  policy, holdout, key, database, GitHub App, approval-store or branch-protection
-  boundary changed.
+- **Authority and provenance:** persisted M0 authority is bound to repository,
+  full policy digest, exact policy-epoch check name, closed intake action,
+  exact governance head, expiry and non-revocation. Both authority forms and both
+  revocation interleavings are exercised. M2/M3 architecture/governance digests
+  and exact base/head pairs remain mutually bound and producer-owned.
+- **Authorization and isolation:** task submit/read/list/cancel and worker
+  operations retain repository checks. Worker grants bind authenticated actor,
+  task/run, owner, repository, fence, packet, live allocation, lease/deadline and
+  budget state. Global metrics/reconciliation and global kill require wildcard
+  operator authority; repository kill remains repository-scoped.
+- **Capacity, accounting and cleanup:** fixed-search-path/PUBLIC-revoked database
+  functions retain canonical 20-global-reader, 10-repository-reader and one-writer
+  enforcement. Readiness/reconcile fail closed on capacity drift. Claim excludes
+  blocked/nonzero/live-reservation candidates. Completion requires current-run
+  usage and all-task settled accounting. Mandatory cleanup is internal,
+  idempotent, state/fence bounded, hash-audited and releases capacity exactly once
+  even after ordinary-event exhaustion; exhausted retry routes to human review.
+- **Audit integrity:** new audit-v2 rows authenticate previous digest, task, run,
+  correlation, actor, action, resource, reason, timestamp and canonical metadata;
+  legacy v1 rows remain verifiable without rewrite. Runtime audit update/delete
+  remains denied, and cleanup does not bypass audit creation.
+- **Local transport and secrets:** actor/token inputs require absolute normalized
+  paths, descriptor-walked no-follow ancestry, trusted ownership, an owned private
+  final parent and an owned regular mode-`0600` leaf. Bearer comparison is
+  constant-time. The server exposes only an owned Unix socket, cumulatively caps
+  bodies at 1 MiB, disables access logs and returns bounded/redacted errors and
+  metrics.
+- **External capability:** no provider, shell, repository, Git/GitHub, TCP,
+  systemd, deployment or other external execution/write path exists in the M4
+  runtime. No GitHub Actions or deployed Trust-CI policy, holdout, signing key,
+  database state, GitHub App configuration, human approval store or branch
+  protection is modified by the full change.
 
 ## Verification evidence
 
-- Inspected the active route/change package, prior reviews, implementation
-  ledger/report, complete focused diff, migration `011`, readiness/store logic and
-  the expanded schema-008 PostgreSQL fixture.
-- `git diff --check 67714a1...0426132` passed.
-- Independent focused contracts/state/migrations/service run passed 24/24.
+- Confirmed clean product HEAD `daa3930...` and exact tree before this report
+  write; inspected the complete accepted-base diff and focused collision repair.
+- `git diff --check 67714a1...daa3930` passed.
+- Independent contracts/state/migrations/service tests passed 24/24.
 - The exact-head receipt reports all 14 gates PASS, including source stability,
-  63/63 disposable PostgreSQL/API/effective-role tests and actual restart/
-  reconciliation. Those results do not exercise the same-identity multi-generation
-  upgrade conflict above.
+  the fresh disposable PostgreSQL/API/effective-role suite, same-identity upgrade
+  recovery, authority interleavings and actual restart/reconciliation.
 - No `.env`, token, private key, credential store, production dump, shared
-  database, Trust-CI state or external system was read or mutated. No product code,
-  commit, receipt, database, push, merge, release or deployment was changed by this
-  review; the only retained repository write is this requested report.
+  database, Trust-CI state or external system was read or mutated. No product
+  source, commit, receipt, database, push, merge, release or deployment was
+  changed by this review; the only retained repository write is this requested
+  report.
 
 ## Residual trust boundary
 
-After I-1 is repaired by the route's single write owner, rerun exact-head
-verification and affected independent reviews on one stable fingerprint. Local
-review evidence never authorizes merge: the final PR SHA still requires the GitHub
-App-owned policy-epoch Check Run and all independently signed approval scopes
-required by deployed policy.
+This PASS is local preflight evidence for exact product HEAD `daa3930...`; it is
+not merge authority. The final pull-request SHA still requires the GitHub
+App-owned policy-epoch Check Run and every independently signed approval scope
+required by deployed policy. Any product, base or policy change invalidates this
+review binding.

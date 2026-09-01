@@ -172,3 +172,8 @@ Each vertical records its RED command/result before production source is added, 
 - Focused GREEN: schema-008 upgrade plus effective-runtime bootstrap passed 2/2 in 1.773s; migration/contract/state/service tests passed 24/24, installer tests passed 17/17 and Ruff passed.
 - Full fresh exit GREEN: 63/63 factory tests passed in 34.667s on a new disposable PostgreSQL 17 instance, followed by actual restart, one repair, replay no-op, higher fence and late-holder rejection. The focused and dynamic exit containers were removed.
 - Root GREEN: `python3 -m unittest discover -s tests -v` passed 488/488 in 324.581s on product commit `d15302f`.
+
+### Residual release fix wave 5 on `daa3930`
+
+- Durable inputs: the current code, security, test and data reports are retained as PASS evidence and the current release report is retained as FAIL evidence. RR-003 is limited to the mismatch between AC-013/release-required operational signals and the supported authenticated `/metrics` surface.
+- Investigation boundary: inspect release contract, API authentication, server access-log configuration, store event/audit/state sources and metrics response end to end before selecting a repair. No dashboard, dependency, unbounded label, credential logging or unrelated refactor is in scope.

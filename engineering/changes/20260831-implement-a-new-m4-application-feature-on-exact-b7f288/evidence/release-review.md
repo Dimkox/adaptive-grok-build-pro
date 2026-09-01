@@ -1,42 +1,82 @@
-# Final independent release review — M4 durable factory control plane
+# Final exact-head independent release review — M4 durable factory control plane
 
 ## Verdict and binding
 
-**FAIL — Important forward-recovery finding present.**
+**FAIL — one Important release-readiness blocker remains.**
 
+- Reviewer role: route-selected read-only `release_reviewer`
 - Route: `b7f288f1e81e`
-- Base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-- Prior reviewed head: `4230dc8e73bcf4dfcf6c60d294d379d44a30c698`
-- Reviewed product head: `83e6b0d0c29e813932aa29b0d72ac4d85d27df7b`
-- Focused range: `4230dc8e73bcf4dfcf6c60d294d379d44a30c698..83e6b0d0c29e813932aa29b0d72ac4d85d27df7b`
-- Exact-head local verification receipt: PASS, fingerprint `9a9dd64921cc5edf8889330b79732016c0235cc37e4a27c712a05128b3659746`, including `factory-postgres-exit=pass` and source stability PASS.
+- Accepted M3 base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
+- Exact reviewed product HEAD: `daa3930cb84ba6547171583e41bcf0dee2ab1314`
+- Exact reviewed Git tree: `9c93b2ca4fea4f71ab70bbf71bd62ca8df936ad8`
+- Full reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..daa3930cb84ba6547171583e41bcf0dee2ab1314`
+- Exact-head verifier receipt: PASS, fingerprint `ad41a13355b097f4be0a3d6c3754b9cc4de8178824e801ac264fad81c852e794`
 
-I reviewed the focused and full M4 ranges, prior release finding closure, migration 010, store readiness/claim/release/accounting paths, schema-008 upgrade test, installer inventory, bootstrap/Compose configuration, README/release/rollback guidance, cleanup semantics, active route/state, and exact-head verification evidence. `git diff --check` over the focused range is clean.
+I inspected the actual cumulative diff, active route and package, install inventory, migrations/bootstrap/readiness, schema-008 upgrade and replay evidence, release/rollback/schedule, README/version/stack graph, runtime metrics/auth path, implementation ledger/report and exact-head verifier receipt. The prior schema-008 forward-recovery blockers are closed, but the release plan's mandatory observability set is not implemented or evidenced. That mismatch prevents a go decision for a durable scheduler/control plane.
 
 ## Important finding
 
-### RR-002 — Migration 010 leaves a valid schema-008 blocked-accounting state permanently non-ready instead of quarantining it
+### RR-003 — the documented go/no-go observability set cannot be observed
 
-Migration 010 quarantines `queued`/`retry` tasks only when they have an active reservation or nonzero reserved aggregates (`factory/src/adaptive_factory/resources/010_authority_accounting_and_cleanup.sql:41-70`). It does **not** include `task.accounting_blocked=true` in either predicate.
+The release plan requires bounded observation of “intake, queue, transitions, leases, capacity, budget, retries/dead, kills, reconciliation and auth failures” and makes any missing go gate a no-go (`release.md:5-7`). The shipped authenticated `/metrics` endpoint returns only:
 
-That is a reachable schema-008 state with zero active reservations and zero aggregates: missing-price/usage handling sets `accounting_blocked=true` (`factory/src/adaptive_factory/store.py:840-973`), then a subsequent retryable release with no reservation keeps the task's target as `retry` because the pre-010 release path only changes target for an active reservation (`4230dc8:factory/src/adaptive_factory/store.py:670-718`). The task will therefore enter migration 010 as `retry`, `accounting_blocked=true`, and otherwise zeroed.
+- accepted and superseded task counts;
+- expired-run/reclaimed count;
+- current active capacity;
+- accounting-blocked task count;
+- active kill count;
+- cumulative repaired count.
 
-After upgrade, it remains `retry`. The new readiness gate correctly detects the inconsistency and returns not-ready (`factory/src/adaptive_factory/store.py:80-93`), and claim correctly refuses it (`:513-520`), but no supported recovery path changes the task to `needs_human` or clears the inconsistency. This leaves a legitimate schema-008 upgrade permanently unable to pass the documented readiness gate. The checked-in upgrade regression covers only an unresolved reservation/nonzero aggregate (`factory/tests/test_postgres_integration.py:984-1098`), so it cannot establish closure for this state.
+That implementation has no queue depth/state counts, transition counts, current/live lease count, reserved/observed budget signal, retry/dead counts, fence-rejection count despite the family name, or authentication-failure count (`factory/src/adaptive_factory/store.py:112-132`). The endpoint simply authenticates and returns those store values (`factory/src/adaptive_factory/api.py:200-203`). Authentication failures are not persisted or counted, and the shipped server explicitly disables access logging (`factory/src/adaptive_factory/server.py:96-102`), so the missing auth-failure signal cannot be recovered from the documented runtime surface.
 
-Impact: a separately approved local rollout from an eligible older durable state can become stuck before activation despite migration 010’s stated legacy-accounting quarantine and the release plan’s claimable-accounting go/no-go gate. Manual direct database mutation would be an undocumented security-sensitive recovery operation, contrary to the bounded forward-recovery plan.
+The tests prove that the three returned families are authenticated and redacted, but no test asserts the release-plan signal inventory or exercises signal changes for queue, transition, live lease, budget, retry/dead, fence rejection or failed authentication. The implementation report and README therefore overstate rollout observability when they claim the release plan matches the final tree.
 
-Required repair: extend migration 010 (or add reviewed forward migration 011) to quarantine every nonterminal claimable state whose accounting is blocked or inconsistent, including zero-reservation/zero-aggregate `accounting_blocked` rows. Preserve task/run/audit facts, provide an observable quarantine count or bounded operator disposition, and add a real schema-008-to-current regression that constructs this exact state and proves: migration completes, task becomes `needs_human`, readiness passes, claim remains impossible, and recovery is explicit/idempotent. Re-run exact-tree verification and all route-selected reviews after the repair.
+Impact: after clearing the initial kill, an operator cannot distinguish a stalled queue, retry/dead escalation, accumulating live leases, budget pressure, repeated fence rejection or authentication attack from healthy operation using the supported surface. Synthetic happy-path and restart smoke tests do not provide ongoing incident visibility. This is an Important release blocker for AC-013 and for the package's own go/no-go contract, not a request for a full dashboard product.
 
-## Controls assessed as sound
+Required repair: either implement the exact bounded, low-cardinality inventory named by the release plan (including a safe authentication-failure signal) or narrow the approved release contract with an explicit operator-visible alternative that actually exists. Add behavioral tests that drive each promised signal, assert exact bounded/redacted output with no task IDs/bodies/reasoning/secrets, and prove unauthorized metrics access increments or emits the documented safe signal without exposing credentials. Re-run the exact-tree verifier and all route-selected reviews on the final evidence tree.
 
-- The owner/runtime bootstrap closure remains sound: `adaptive-factory-admin bootstrap-local` applies checksum migrations with the owner DSN, provisions a bounded `NOINHERIT` runtime login with only `factory_runtime`, and verifies effective-role readiness with the runtime DSN. Compose/environment examples and installer inventory remain consistent.
-- Migration 010 changes authority row locks from `FOR KEY SHARE` to `FOR SHARE`, which serializes the non-key `revoked_at` update against intake. The committed integration tests cover both authority forms and the after-validation revocation interleaving.
-- Mandatory cleanup facts are separated from the ordinary event budget, preserving release/reconcile/cancel capacity cleanup under exhausted ordinary events. The bounded/idempotent cleanup tests cover this behavior.
-- The source remains local-only: UDS rather than TCP, no provider/shell/repository/GitHub/systemd/deploy/Trust-CI mutation path, and Docker limited to disposable test execution. Migration recovery remains forward-only; documentation consistently calls for schema 010 and forward migration `011+` after durable intake.
-- The README truthfully calls M4 a local source candidate and keeps final reviews, PR delivery, exact-head App check, signed scopes, merge, and deployment pending. The active change is `verifying`, not complete.
+## Release controls assessed as sound
 
-## Delivery boundary
+### Install, upgrade and bootstrap
 
-The exact-head local verifier PASS is useful preflight evidence but does not waive RR-002 and is not merge authority. This report authorizes no migration, activation, PR delivery, merge, tag, release, deployment, production mutation, or Trust CI action.
+- The installer payload includes package source, OpenAPI, locked dependencies, migrations 001-011, local placeholders and the complete disposable test/restart harness; it excludes runtime credentials, sockets and database state. Installer evidence is 17/17.
+- Source installation does not apply migrations or activate a service. The separately invoked admin bootstrap uses distinct owner/runtime DSNs, checksum planning and a factory advisory lock, provisions or validates a `LOGIN NOINHERIT` runtime role, grants only `factory_runtime`, then checks readiness through the runtime DSN.
+- Real PostgreSQL evidence builds a non-empty schema-008 database, atomically applies exactly 009-011, proves schema 11 readiness and empty replay, and separately proves the shipped effective-role bootstrap.
 
-After RR-002 is closed and the evidence tree is frozen, local closure requires a fresh fingerprint-bound verifier and all route-selected reviews on that same tree. Merge eligibility still requires the GitHub App-owned `adaptive-trust-ci/verified@<policy-sha12>` Check Run plus every required independently signed scope on the exact PR head.
+### Schema-008 recovery and checksum caveat
+
+- The previous release/data findings for blocked-zero retry and unsafe `ready_for_human` accounting are closed by migration 011. The final same-identity fixture proves generation 1 becomes evidence-preserving `superseded/accounting_blocked`, generation 2 stays queued and is the exact claim target, reservation aggregates remain intact, readiness fails if the quarantine marker is removed, and migration replay is empty.
+- Migrations 001-010 remain immutable. Migration 011 was corrected in place only before PR delivery and only after disposable-local use. The README, factory README and ledger explicitly require any database holding the earlier 011 checksum to be discarded and recreated; they prohibit checksum override/history rewrite/shared repair. The reproduced old-checksum rejection caused the exact disposable container to be discarded and rebuilt.
+
+### Rollback and forward recovery
+
+- Rollout starts killed and requires verified backup restoration into a separate comparison database before activation. Failure triggers global kill, stops intake/claims and the socket process, and preserves rows, audit, logs and evidence.
+- Before first intake only a specifically identified disposable database may be destroyed. After durable intake there is no down-migration or audit deletion: recovery is comparison restore or reviewed forward migration 012+, with readiness, role-denial, capacity/accounting, audit-chain and two-pass reconciliation checks.
+
+### Documentation, identity, graph and schedule
+
+- `VERSION`, README H1 and current-state identity all remain `2.0.12`; factory service identity is separately `0.1.0`, and Trust CI remains separately identified. README truthfully labels M4 a local source candidate rather than merged/deployed behavior.
+- The stack graph contains 17 core nodes and exactly all 136 unique pairwise `---` edges, including Factory-to-every-other-node; no pair is missing.
+- The schedule preserves the superseding `2026-09-08 00:00 UTC+3` deadline, reserves the final four hours for exact-state gates and explicitly says schedule pressure cannot waive any gate. At review time the M4 window had not expired.
+
+### External trust boundary
+
+- M4 remains UDS/local and has no provider execution, repository/Git/GitHub/systemd/deploy/production or Trust CI mutation path. No GitHub Actions were introduced.
+- Local verifier/reviews are preflight only. Even after RR-003 is repaired, merge/rollout remains **NO-GO** until the evidence tree is frozen, every required review/receipt binds that tree, a separately authorized PR exists, the App-owned policy-epoch `adaptive-trust-ci/verified@<policy-sha12>` check passes on its exact head, and all required independently signed scopes are present. This report authorizes none of those operations.
+
+## Exact evidence
+
+The inspected verifier receipt was created at `2026-09-01T22:11:35Z` for exact HEAD `daa3930cb84ba6547171583e41bcf0dee2ab1314` and fingerprint `ad41a13355b097f4be0a3d6c3754b9cc4de8178824e801ac264fad81c852e794`:
+
+```text
+14/14 verifier checks: PASS
+root python-unittest: 488 tests in 492.642s — OK
+factory-unit: 24 tests in 0.012s — OK
+factory-postgres-exit: 63 tests in 51.339s — OK
+actual restart: one repair; replay no-op; higher fence; late holder rejected — PASS
+source-stability: PASS
+```
+
+The ledger also records exact active-generation GREEN at 1/1, upgrade plus bootstrap at 2/2, installer 17/17, fresh PostgreSQL 63/63 plus restart and root 488/488 on product commit `d15302f`, followed by the exact final-tree verifier above. `git diff --check` over the full base-to-head range produced no output.
+
+Before this report write, `git rev-parse HEAD` and `HEAD^{tree}` matched the SHA/tree above. Concurrent final security/test report rewrites were already present in the worktree and were not modified by this reviewer. This review changed only `release-review.md`; it changed the evidence-tree fingerprint, so the existing verifier receipt is not a final worktree receipt and must not be recorded as local closure.
