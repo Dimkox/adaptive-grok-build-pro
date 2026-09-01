@@ -307,3 +307,13 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The first fresh migration `009` run failed while dropping the M0 observation uniqueness constraint.
 **Root cause:** The patch used the untruncated logical name instead of querying PostgreSQL's actual 63-byte generated identifier before writing the forward migration.
+
+## 2026-09-01 — Put a destructive repair in an additive migration
+
+**Symptom:** Final architecture fitness rejected migration `009` even though the dropped uniqueness constraint was replaced in the same file.
+**Root cause:** The migration optimized the final schema shape instead of preserving the additive, forward-safe history contract; the unaccepted disposable-only draft was corrected before final verification.
+
+## 2026-09-01 — Treated first PostgreSQL readiness as stable image startup
+
+**Symptom:** The disposable exit intermittently lost its first host connection immediately after `pg_isready` succeeded during the image's bootstrap/postmaster handoff.
+**Root cause:** The harness proved one readiness sample but did not account for the official image's one-time server replacement before opening external clients.

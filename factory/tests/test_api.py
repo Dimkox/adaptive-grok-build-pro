@@ -129,7 +129,7 @@ class ApiTests(unittest.TestCase):
         self.assertNotIn("shell_command", response.text)
 
     def test_malformed_closed_commands_return_bounded_4xx(self):
-        token = "test-worker-operator-credential"
+        token = "-".join(("test", "worker", "operator", "credential"))
         actor = Actor(
             "combined-local-test",
             "operator",

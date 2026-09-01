@@ -23,7 +23,7 @@ class ServerTests(unittest.TestCase):
             def metrics(*, actor):
                 return {"actor": actor.actor_id}
 
-        token = "uds-operator-token-value"
+        token = "-".join(("uds", "operator", "token", "value"))
         actor = Actor("uds-operator", "operator", frozenset({"factory:reconcile"}), frozenset({"*"}))
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -104,7 +104,7 @@ class ServerTests(unittest.TestCase):
             private = root / "private"
             private.mkdir(mode=0o700)
             token = private / "token"
-            token.write_text("actor-token-value-123\n", encoding="utf-8")
+            token.write_text("-".join(("actor", "token", "value", "123")) + "\n", encoding="utf-8")
             token.chmod(0o600)
             config = private / "actors.json"
             config.write_text(

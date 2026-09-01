@@ -1,8 +1,6 @@
 ALTER TABLE factory.m0_authority_observations
   ADD COLUMN repository_id text,
   ADD COLUMN policy_digest char(64) CHECK (policy_digest ~ '^[0-9a-f]{64}$');
-ALTER TABLE factory.m0_authority_observations
-  DROP CONSTRAINT m0_authority_observations_observed_at_check_name_exact_head_key;
 ALTER TABLE factory.m0_bootstrap_exceptions
   ADD COLUMN repository_id text,
   ADD COLUMN policy_digest char(64) CHECK (policy_digest ~ '^[0-9a-f]{64}$'),
@@ -14,9 +12,7 @@ ALTER TABLE factory.m0_authority_observations
   ),
   ADD CONSTRAINT m0_observation_policy_check_bound CHECK (
     policy_digest IS NULL OR check_name='adaptive-trust-ci/verified@' || left(policy_digest,12)
-  ),
-  ADD CONSTRAINT m0_observation_subject_unique UNIQUE
-    (repository_id,policy_digest,observed_at,check_name,exact_head_sha);
+  );
 ALTER TABLE factory.m0_bootstrap_exceptions
   ADD CONSTRAINT m0_exception_repository_bound CHECK (
     repository_id IS NULL OR octet_length(repository_id) BETWEEN 1 AND 128

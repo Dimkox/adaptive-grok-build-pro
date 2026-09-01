@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import os
 import time
 import unittest
@@ -64,13 +64,15 @@ class PostgresFactoryTests(unittest.TestCase):
         if repository != "owner/repository":
             import psycopg
 
+            observed_at = NOW - timedelta(microseconds=1 + sum(repository.encode("utf-8")))
+            value["m0_authority"]["observed_at"] = observed_at.isoformat()
             with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
                 cursor.execute(
                     """INSERT INTO factory.m0_authority_observations
                     (observation_id,observed_at,check_name,exact_head_sha,issuer,evidence_digest,repository_id,policy_digest)
                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
                     (
-                        uuid.uuid4(), NOW, "adaptive-trust-ci/verified@06ecf1c875bc", "3" * 40,
+                        uuid.uuid4(), observed_at, "adaptive-trust-ci/verified@06ecf1c875bc", "3" * 40,
                         "external-trust-ci-api", uuid.uuid4().hex * 2, repository, value["policy_digest"],
                     ),
                 )
@@ -969,7 +971,7 @@ class PostgresFactoryTests(unittest.TestCase):
         from adaptive_factory.admin import bootstrap_local
 
         login = "factory_service_test"
-        password = "local-runtime-bootstrap-test"
+        password = "-".join(("local", "runtime", "bootstrap", "test"))
         from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
         runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})

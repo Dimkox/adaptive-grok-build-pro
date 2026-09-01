@@ -45,6 +45,9 @@ def main() -> int:
             if time.monotonic() >= deadline:
                 raise RuntimeError("disposable PostgreSQL did not become ready")
             time.sleep(0.25)
+        # Avoid the image's one-time bootstrap/postmaster handoff after the
+        # first successful readiness response before opening host TCP clients.
+        time.sleep(1.0)
         with tempfile.TemporaryDirectory(prefix="adaptive-factory-exit-venv-") as environment_root:
             environment["UV_PROJECT_ENVIRONMENT"] = environment_root
             uv = ["uv", "run", "--project", "factory"]
