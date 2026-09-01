@@ -1,41 +1,54 @@
-# Security review — PASS
+# Final security re-review — PASS
 
 ## Reviewed identity
 
 - Route: `944abd96ddb3`
 - Change: `20260901-consolidate-milestone-branch-state-and-delivery-944abd`
 - Repository: `Dimkox/adaptive-grok-build-pro`
-- Reviewed range: `origin/main...8439f62180f0df3b60498174a121450ea58eaa51`
+- Reviewed range: `origin/main...e9000559be5e3f23f1069c625c3a5d7b943c362d`
+- Re-review delta: `8439f62180f0df3b60498174a121450ea58eaa51..e9000559be5e3f23f1069c625c3a5d7b943c362d`
 - Observed `origin/main`: `8ab4e57038dec2e07f01aaa0b207813a387358f4`
-- Reviewed head: `8439f62180f0df3b60498174a121450ea58eaa51`
+- Reviewed head: `e9000559be5e3f23f1069c625c3a5d7b943c362d`
 - Reviewer: route-selected read-only `security_reviewer`
 - Verdict: **PASS**
 - Critical findings: **0**
 - Important findings: **0**
-- Moderate findings: **1** (workflow evidence accuracy; fail-closed and not a protection bypass)
-- Low findings: **1**
+- Moderate findings: **0**
 
-No Critical or Important security issue was found. The exact diff changes repository state documentation, bootstrap text, a deterministic state test, `mistakes.md`, and the durable change package. It does not change Trust CI/GitHub Actions/policy implementation, authentication, signing, branch protection, deployed configuration, migrations, infrastructure, or application code.
+No Critical, Important, or Moderate security issue remains. The re-review delta changes evidence, shared memory, and deterministic state tests only. It does not change Trust CI, GitHub Actions, policy, hooks, authentication/signing, deployed configuration, branch protection, application code, migrations, infrastructure, or production behavior.
 
-## Severity-ordered findings
+## Prior findings closure
 
-### Moderate M-1 — implementation evidence incorrectly says `git diff --check` passed
+### Prior Moderate M-1 — closed
 
-`engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/implementation-report.md:20-25` records `git diff --check` as passing, then says a separate scan excludes Markdown hard breaks. The actual exact-range command fails on trailing spaces in:
+The committed candidate range now passes:
 
-- `engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-architect.md:3-4`;
-- `engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-integration-architect.md:3-5`;
-- `engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-repo-explorer.md:3-5`.
+```text
+git diff --check origin/main...HEAD
+PASS (no output)
+```
 
-This is inaccurate workflow evidence, but it is fail-closed rather than a bypass: the repository verifier's `git-diff-check` will fail and cannot produce a passing verification receipt for this tree. Correct the whitespace or correct the evidence, rerun verification, and repeat affected exact-tree reviews. It does not weaken live branch protection or external Trust CI.
+The eight trailing-space defects were removed from the three historical analysis reports. `engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/implementation-report.md:20-25,37-44` now explicitly retracts the insufficient bare-working-tree claim, explains why committed-range checking is required, records the exact-range defect, and avoids claiming an exact-head PASS before the repair commit existed.
 
-### Low L-1 — analysis evidence discloses a local absolute worktree path
+This restores evidence accuracy and keeps hygiene fail-closed. Any future committed-range whitespace defect will fail `git diff --check origin/main...HEAD` and the repository verification gate.
 
-`engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-docs-researcher.md:7` records `/home/pall/grok-projects/adaptive-grok-build-pro-state-reconcile`. This is low-value host/user metadata, not a credential, key, token, endpoint, or private runtime value. Prefer repository-relative identifiers in public evidence where the absolute path is unnecessary.
+### Prior Low L-1 — closed
 
-## Live branch-protection and App verification
+`engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-docs-researcher.md:7` now identifies only the isolated branch worktree and no longer publishes absolute host/user metadata. A full scoped search found no remaining absolute state-reconcile worktree path outside the superseded prior security report, which this update removes.
 
-Read-only GitHub API observation on 2026-09-01 returned:
+## Shared-memory safety
+
+The additions are bounded process lessons:
+
+- `decisions.md:3-6` requires isolated branch work to converge through one five-axis delivery ledger; it grants no authority and cannot promote branch presence to delivery.
+- `mistakes.md:3-7` records that committed PR-range hygiene must be checked, preserving the fail-closed verification lesson.
+- `mistakes.md:8-12` records that evidence replacement must be one atomic update rather than destructive delete/add, reducing interruption-related evidence loss.
+
+The additions contain no credential, token, private key, signature, database URL, private runtime state, production command, delegated authority, or instruction to bypass exact-SHA review. They are within the standing three-sentence shared-memory contract.
+
+## Live branch protection
+
+A fresh read-only GitHub API observation returned:
 
 ```json
 {
@@ -52,59 +65,52 @@ Read-only GitHub API observation on 2026-09-01 returned:
 }
 ```
 
-This matches `PROJECT_STATE.json`, README, `START_HERE.md`, and the release gate. The exact PR #19 head `ecc85d903d0394f99a139fd4e74a7cc452e386c6` has a successful Check Run named `adaptive-trust-ci/verified@06ecf1c875bc`, owned by App slug `adaptive-trust-ci`, App ID `4694114`. No protection weakening was performed or proposed.
+This is unchanged from the prior review and matches the handoff documents. Repository documentation and local evidence do not control these settings. The App/context binding, strict current-base requirement, admin enforcement, reviews, stale-review dismissal, conversation resolution, and linear-history requirements remain enabled; force pushes and deletion remain disabled.
 
-The changed-file allow-list contains no `trust-ci/**`, `.github/**`, `.grok-stack/adaptive_grok/**`, hook, policy/trust-store, Docker/Compose, systemd, infrastructure, Terraform, SQL/migration, key, certificate, or environment file. The branch changes no GitHub Actions path and the structural regression confirming no Actions workflow passed.
+## Secrets and control-plane scope
 
-## Fail-closed delivery claims
+The bounded repository secret scanner returned **PASS — 0 potential secrets** for the full `origin/main...HEAD` range. A second path and pattern audit found no committed private-key block, credential token, password/secret assignment, key/certificate file, `.env` file, database URL, or private approval/signing material.
 
-Live GitHub and ancestry checks support the state model:
+The 25 changed paths contain no:
 
-- PR #10 is merged into `milestone/m1-typed-intent-evidence`, not `main`; merge `c23fd49f80c7d1c74ca3393b6079a74f251a72d8` is not an ancestor of current main.
-- PR #11 is merged into `milestone/m2-executable-architecture`, not `main`; merge `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` is not an ancestor of current main.
-- PRs #12 and #13 remain open with old-epoch `ACTION_REQUIRED` checks.
-- PR #15 remains open with current-epoch Trust CI failure.
-- PR #17 remains open against the milestone base with current-epoch Trust CI and GitGuardian failures.
-- PR #19 is merged to `main` as current main `8ab4e57038dec2e07f01aaa0b207813a387358f4`, with both current-epoch Trust CI and GitGuardian successful.
-- M4 is explicitly recorded as locally implemented but stale-reviewed, externally failed, and not delivered; unpublished commits are not promoted to external authority.
+- `trust-ci/**`, `.github/**`, hook, routing, or verification implementation;
+- deployed policy, holdout, trust store, GitHub App, branch-protection, or PostgreSQL state;
+- Docker/Compose, systemd, infrastructure, Terraform, SQL/migration, key, certificate, or environment file;
+- application or production runtime code.
 
-These distinctions prevent stack merge, local implementation, historical review, or a stale/failed check from being interpreted as protected-main delivery. `engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/release.md:15-17` is also fail-closed: changed observations, stale review, missing inventory, graph drift, forbidden paths, or an external-gate gap are all no-go.
+No `.env`, private key, credential store, signing key, GitHub App key, human approval key, production dump, or deployed trust store was read during this re-review. GitHub calls were GET-only.
 
-## Secrets, inventories, and grants
+## Strengthened fail-closed tests
 
-The bounded repository secret scanner returned `pass: 0 potential secrets`. A second path/pattern audit found no committed private-key block, credential token, password/secret assignment, key/certificate file, `.env` file, or sensitive Trust CI state in the 21 changed paths. No `.env`, private key, credential store, Trust CI signing key, GitHub App key, human approval key, production dump, or deployed trust store was read during this review.
+`tests/test_project_state.py` now pins exact milestone SHAs, PR bases/heads/statuses, local Git object existence and ancestry, the full continuation inventory, and the canonical 16 graph identities. Adversarial regressions prove rejection of:
 
-The inventories contain public repository metadata (PR numbers, branch names, commit SHAs, check names/conclusions, App identity), the non-secret policy digest, and an approval-key count. They contain no key bytes, signatures, tokens, credential identifiers, database URLs, private runtime state, or secret values. Local-only branch names/SHAs are within the explicitly authorized inventory scope; their source bodies are not copied.
+- forged PR #17 base, head, and success status;
+- forged M2/M3 commit identities;
+- M2/M3 ancestry falsely implying main delivery;
+- replacing the canonical `GitHubApp` graph identity with `FakeApp`.
 
-Metadata-only inspection of `.grok-stack/runtime/approvals.json` found no wildcard grant:
-
-- protected-path grants are route/change/repository/head-bound and name only `README.md`, `mistakes.md`, or `tests/test_project_state.py` for `protected-path-write`;
-- the production grant names only action `pull-request-merge` and resource `https://github.com/Dimkox/adaptive-grok-build-pro/pull/19`, bound to its earlier exact Git head;
-- no grant authorizes deployed Trust CI changes, branch-protection changes, secrets, this branch's merge, or a general production action.
-
-These delegated local grants remain non-authoritative workflow controls. The changed `mistakes.md` path independently requires the externally deployed policy's signed `governance` scope on the final exact PR head; the release plan correctly requires any such scope and the App-owned check.
-
-## Rollback and recovery
-
-`engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/rollback.md:3-17` is bounded and safe. Before merge it allows abandoning only the isolated branch/PR with authorization. After merge it requires a protected forward-fix or revert PR, forbids rewriting `main` and deleting evidence branches, makes clear that documentation cannot roll back product/Trust CI state, and requires refreshed external observations plus a fresh exact-head App check. No destructive or production rollback is implied.
+The subprocess checks use fixed argv without a shell and consume repository-controlled SHA strings. They perform read-only local Git object/ancestry queries and introduce no command-injection or external-write path.
 
 ## Verification evidence
 
 ```text
 git rev-parse HEAD
+e9000559be5e3f23f1069c625c3a5d7b943c362d
+
+git show -s --format='%H%n%P%n%s' HEAD
+e9000559be5e3f23f1069c625c3a5d7b943c362d
 8439f62180f0df3b60498174a121450ea58eaa51
+test: harden consolidated state evidence
 
-git rev-parse origin/main
-8ab4e57038dec2e07f01aaa0b207813a387358f4
+git diff --check 8439f62180f0df3b60498174a121450ea58eaa51..HEAD
+PASS (no output)
 
-git diff --name-status origin/main...8439f62180f0df3b60498174a121450ea58eaa51
-21 changed paths; state/docs/test/change-package only
+git diff --check origin/main...HEAD
+PASS (no output)
 
-repository bounded secret scan
-PASS — 0 potential secrets
-
-python3 -m unittest -v tests.test_project_state tests.test_structure
-Ran 15 tests — OK
+python3 -m unittest -v \
+  tests.test_project_state tests.test_seo_landing_side_project tests.test_structure
+Ran 31 tests — OK
 
 python3 scripts/grok_spec.py validate \
   --change-id 20260901-consolidate-milestone-branch-state-and-delivery-944abd
@@ -113,12 +119,15 @@ PASS — digest 963e638eec4d5bd832c33edf14fb1ace413ec480ded834596db6574ca18f6412
 python3 -m json.tool PROJECT_STATE.json
 PASS
 
-git diff --check origin/main...8439f62180f0df3b60498174a121450ea58eaa51
-FAIL — analysis-report Markdown trailing whitespace (Moderate M-1)
+repository bounded secret scan
+PASS — 0 potential secrets
+
+changed-range control-plane/sensitive-path audit
+25 changed paths; 0 control-plane or sensitive paths
 ```
 
-All GitHub observations were GET-only. No external write, push, pull-request mutation, merge, release, deployment, branch-protection mutation, or Trust CI mutation was performed by this reviewer.
+No external write, push, pull-request mutation, merge, release, deployment, branch-protection mutation, or Trust CI mutation was performed by this reviewer.
 
 ## Verdict
 
-**PASS** for security review of exact head `8439f62180f0df3b60498174a121450ea58eaa51`: Critical 0, Important 0. Live protection is not weakened, App/context facts are correct, delivery claims fail closed, no secret/private material is exposed, grants are narrowly scoped, and rollback is safe. Moderate M-1 must be resolved before a clean verification receipt or merge-readiness claim; any subsequent tree change invalidates this exact-head report and requires affected review again.
+**PASS** for final security review of exact head `e9000559be5e3f23f1069c625c3a5d7b943c362d`. Critical: 0. Important: 0. Moderate: 0. Both prior findings are closed; shared-memory additions are safe; live protection is unchanged; and the range contains no secrets or control-plane implementation changes. Any subsequent tree change invalidates this exact-head report and requires affected review again.
