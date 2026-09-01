@@ -2,13 +2,23 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-01T18:44:24Z",
-  "observed_main_sha": "1c06299894279a88b881defa3f19b004fa742223",
+  "observed_at": "2026-09-01T18:56:54Z",
+  "observed_main_sha": "8ab4e57038dec2e07f01aaa0b207813a387358f4",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
   "delivered_milestones_on_main": ["M0"],
   "implemented_milestones": ["M0", "M1", "M2", "M3", "M4"],
+  "delivered_non_milestone_work": [
+    {
+      "name": "SEO landing side project",
+      "status": "delivered",
+      "pull_request": 19,
+      "source_head": "ecc85d903d0394f99a139fd4e74a7cc452e386c6",
+      "merge_commit": "8ab4e57038dec2e07f01aaa0b207813a387358f4",
+      "notes": "Optional repository-scoped SEO skill and non-indexable showcase; not M0-M9 progress."
+    }
+  ],
   "active_delivery": {
     "route_id": "944abd96ddb3",
     "branch": "chore/reconcile-milestone-state",
@@ -239,8 +249,7 @@
       {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "disposition": "Retain; rebase and obtain fresh governance approval/current-epoch check."},
       {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "disposition": "Retain; restack after PR 12 and obtain fresh approval/check."},
       {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "disposition": "Do not merge wholesale; replay the unique investor demo and packaging slice."},
-      {"pull_request": 17, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "milestone/m2-executable-architecture", "head": "8e6504168462bbabad359fec3d23838c87f5ba22", "status": "open_current_epoch_and_gitguardian_failure", "disposition": "Preserve as failed evidence; create and deliver a clean successor."},
-      {"pull_request": 19, "branch": "feature/seo-landing-codex-main", "base": "main", "head": "ecc85d903d0394f99a139fd4e74a7cc452e386c6", "status": "open_clean_current_epoch_success", "disposition": "Independent non-milestone delivery; success is eligibility, not delivery."}
+      {"pull_request": 17, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "milestone/m2-executable-architecture", "head": "8e6504168462bbabad359fec3d23838c87f5ba22", "status": "open_current_epoch_and_gitguardian_failure", "disposition": "Preserve as failed evidence; create and deliver a clean successor."}
     ],
     "retained_unresolved": [
       {"pull_request": 14, "local_head": "cb2fe7ce637c464179e20b5b37aae334e56c1838", "purpose": "Unique closed production-promotion work requiring explicit re-evaluation."},
@@ -249,7 +258,7 @@
     ],
     "superseded": [
       {"pull_request": 1, "branch": "hardening/trust-boundary-v2-1", "reason": "Closed Actions-era trust design; never merge."},
-      {"pull_request": 18, "branch": "feature/seo-landing-codex-side-project", "reason": "Stacked staging integration only; PR 19 is the main-delivery path."},
+      {"pull_request": 18, "branch": "feature/seo-landing-codex-side-project", "reason": "Stacked staging integration only; PR 19 delivered the SEO source to main and this path is archival."},
       {"branches": ["feat/m4-durable-factory-control-plane", "milestone/m4-durable-control-plane-local", "fix/m3-restack-accepted-m2"], "reason": "Local aliases carry no accepted source beyond the named M2/M3/M4 evidence refs."}
     ]
   },

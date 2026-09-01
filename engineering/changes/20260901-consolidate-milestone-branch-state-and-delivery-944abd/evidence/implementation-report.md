@@ -1,7 +1,8 @@
 # Implementation evidence — milestone state reconciliation
 
 Route: `944abd96ddb3`
-Base: `1c06299894279a88b881defa3f19b004fa742223`
+Original base: `1c06299894279a88b881defa3f19b004fa742223`
+Current rebased main: `8ab4e57038dec2e07f01aaa0b207813a387358f4`
 Scope: repository state/handoff only; no Trust CI implementation, roadmap checkbox, GitHub Actions, or external mutation.
 
 ## TDD evidence
@@ -31,6 +32,13 @@ Result: 15/15 tests passed; the change spec and JSON parsed; tracked diff check 
 - README and `START_HERE.md` agree on the current policy epoch/App and the M1-M4 delivery distinction; M5-M9 remain not started.
 - Active/open/retained/superseded work is inventoried without branch cleanup or external writes.
 - The README Mermaid topology remains exact K16 with 120 unique edges.
+
+## Post-PR #19 integration refresh
+
+- Fetched and rebased onto `origin/main` `8ab4e57038dec2e07f01aaa0b207813a387358f4`; the only conflict was `mistakes.md`, resolved by retaining both the delivered SEO branch's Chrome/optional-dependency lesson and this route's state-consolidation lesson.
+- `PROJECT_STATE.json`, README, and `START_HERE.md` now record PR #19 as delivered non-milestone work at its exact merge commit, remove it from the open continuation set, and retain every other active/open/unresolved/superseded source.
+- RED: two focused state/inventory tests failed because the snapshot still named main `1c06299894279a88b881defa3f19b004fa742223` and still listed PR #19 as open; the handoff consistency test then failed because current sections did not contain `8ab4e57038dec2e07f01aaa0b207813a387358f4`.
+- GREEN: the three focused regression tests passed, followed by `python3 -m unittest -v tests.test_project_state tests.test_seo_landing_side_project tests.test_structure` (26/26), change-spec validation, JSON parsing, and `git diff --check`.
 
 ## Remaining gates
 
