@@ -55,6 +55,7 @@ class MigrationTests(unittest.TestCase):
             "for share",
             "accounting_blocked=true",
             "ready_for_human",
+            "superseded",
         ):
             self.assertIn(marker, sql)
         self.assertNotIn("on delete cascade", sql)

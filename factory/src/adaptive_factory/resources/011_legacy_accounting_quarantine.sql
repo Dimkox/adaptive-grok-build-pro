@@ -1,5 +1,16 @@
 UPDATE factory.tasks AS task
-SET state='needs_human', accounting_blocked=true, updated_at=clock_timestamp()
+SET state=CASE
+      WHEN task.state='ready_for_human' AND EXISTS (
+        SELECT 1 FROM factory.tasks AS newer
+        WHERE newer.repository_id=task.repository_id
+          AND newer.source_type=task.source_type
+          AND newer.source_id=task.source_id
+          AND newer.generation>task.generation
+      ) THEN 'superseded'
+      ELSE 'needs_human'
+    END,
+    accounting_blocked=true,
+    updated_at=clock_timestamp()
 WHERE (
     task.state IN ('queued','retry') AND task.accounting_blocked
   ) OR (

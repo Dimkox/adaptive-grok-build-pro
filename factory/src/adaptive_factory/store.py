@@ -83,7 +83,8 @@ class PostgresFactoryStore:
             """SELECT NOT EXISTS (
             SELECT 1 FROM factory.tasks t
             WHERE (
-              t.state IN ('queued','retry','ready_for_human') AND (
+              (t.state IN ('queued','retry','ready_for_human') OR
+               (t.state='superseded' AND NOT t.accounting_blocked)) AND (
                 t.accounting_blocked OR t.cost_reserved_micros<>0 OR t.tokens_reserved<>0
                 OR t.wall_reserved_seconds<>0 OR EXISTS (
                   SELECT 1 FROM factory.budget_reservations b

@@ -48,7 +48,9 @@ The mandatory exit runner creates an exact disposable PostgreSQL 17 container, e
 
 The second residual wave uses forward-only migration `010` without changing applied `009`: both M0 authority forms now hold a row lock that conflicts with non-key revocation through intake commit; a real non-empty schema-008 upgrade quarantines unresolved prior-attempt accounting before claim; and mandatory release/reconcile/cancel events plus audit survive an exhausted ordinary-event budget while capacity returns exactly once.
 
-The third residual wave leaves applied migration `010` immutable and adds forward-only migration `011`. A schema-008 blocked claimable row with zero aggregates and a human-ready row with live prior-attempt accounting are both preserved as explicit `needs_human/accounting_blocked` quarantines; readiness additionally rejects any reintroduced unsafe `ready_for_human` projection.
+The third residual wave leaves applied migration `010` immutable and adds forward-only migration `011`. A schema-008 blocked claimable row with zero aggregates becomes explicit `needs_human/accounting_blocked`, while a human-ready row with live prior-attempt accounting is preserved in a non-positive accounting quarantine; readiness additionally rejects any reintroduced unsafe `ready_for_human` projection.
+
+Before PR delivery, the fourth residual wave corrects unreleased migration `011` under the explicit disposable-only exception. An unsafe older human-ready generation becomes `superseded/accounting_blocked` when a newer generation exists, retaining reservations, usage, run and audit evidence without colliding with the one-active-identity index; a lone unsafe positive generation remains `needs_human/accounting_blocked`. Readiness accepts retained superseded accounting only with that explicit quarantine marker and fails closed if it is removed.
 
 ## Verification evidence
 

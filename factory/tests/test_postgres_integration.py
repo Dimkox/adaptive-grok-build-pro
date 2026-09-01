@@ -996,6 +996,7 @@ class PostgresFactoryTests(unittest.TestCase):
             task_id, intent_id, run_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
             blocked_task_id, blocked_intent_id = uuid.uuid4(), uuid.uuid4()
             ready_task_id, ready_intent_id = uuid.uuid4(), uuid.uuid4()
+            ready_new_task_id, ready_new_intent_id = uuid.uuid4(), uuid.uuid4()
             ready_failed_run_id, ready_completed_run_id = uuid.uuid4(), uuid.uuid4()
             with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
                 cursor.execute("CREATE SCHEMA factory")
@@ -1056,6 +1057,7 @@ class PostgresFactoryTests(unittest.TestCase):
                 for legacy_intent_id, source in (
                     (blocked_intent_id, "legacy-blocked-zero"),
                     (ready_intent_id, "legacy-ready-reservation"),
+                    (ready_new_intent_id, "legacy-ready-reservation"),
                 ):
                     cursor.execute(
                         """INSERT INTO factory.accepted_intents
@@ -1087,6 +1089,15 @@ class PostgresFactoryTests(unittest.TestCase):
                     VALUES (%s,%s,'owner/repository','manual','legacy-ready-reservation','ready_for_human',1,%s,
                      now()+interval '1 hour',25000000,2000000,10000000,100,500,600,false,3,0,14400,700,now())""",
                     (ready_task_id, ready_intent_id, uuid.uuid4().hex * 2),
+                )
+                cursor.execute(
+                    """INSERT INTO factory.tasks
+                    (task_id,intent_id,repository_id,source_type,source_id,state,generation,packet_digest,
+                     deadline_at,cost_limit_micros,token_limit,output_limit_bytes,event_limit,
+                     accounting_blocked,repair_limit,repair_count,wall_limit_seconds)
+                    VALUES (%s,%s,'owner/repository','manual','legacy-ready-reservation','queued',2,%s,
+                     now()+interval '1 hour',25000000,2000000,10000000,100,false,3,0,14400)""",
+                    (ready_new_task_id, ready_new_intent_id, uuid.uuid4().hex * 2),
                 )
                 for legacy_run_id, fence, state in (
                     (ready_failed_run_id, 1, "failed"),
@@ -1137,18 +1148,21 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(task_id)).status,
                     upgraded_store.get_task(str(blocked_task_id)).status,
                     upgraded_store.get_task(str(ready_task_id)).status,
+                    upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
                     [9, 10, 11], "ready", 11, True,
-                    TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN,
+                    TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
+                    TaskStatus.QUEUED,
                 ),
             )
-            self.assertIsNone(
-                upgraded_service.claim(
-                    owner="legacy-retry-worker", role=RunRole.READER, repositories=("owner/repository",),
-                    lease_seconds=60, actor=WORKER, now=NOW,
-                )
+            current_grant = upgraded_service.claim(
+                owner="legacy-retry-worker", role=RunRole.READER, repositories=("owner/repository",),
+                lease_seconds=60, actor=WORKER, now=NOW,
             )
+            self.assertIsNotNone(current_grant)
+            self.assertEqual(current_grant.task_id, str(ready_new_task_id))
+            self.assertEqual(upgraded_store.get_task(current_grant.task_id).generation, 2)
             with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
                 cursor.execute(
                     """SELECT accounting_blocked,cost_reserved_micros,tokens_reserved,wall_reserved_seconds,
@@ -1201,7 +1215,22 @@ class PostgresFactoryTests(unittest.TestCase):
             )
             with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
                 cursor.execute(
-                    "UPDATE factory.tasks SET state='needs_human',accounting_blocked=true WHERE task_id=%s",
+                    "UPDATE factory.tasks SET state='superseded',accounting_blocked=true WHERE task_id=%s",
+                    (ready_task_id,),
+                )
+            self.assertEqual(upgraded_store.readiness()["status"], "ready")
+            with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE factory.tasks SET accounting_blocked=false WHERE task_id=%s",
+                    (ready_task_id,),
+                )
+            self.assertEqual(
+                (upgraded_store.readiness()["status"], upgraded_store.readiness()["accounting_consistent"]),
+                ("not_ready", False),
+            )
+            with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE factory.tasks SET accounting_blocked=true WHERE task_id=%s",
                     (ready_task_id,),
                 )
             self.assertEqual(upgraded_store.readiness()["status"], "ready")
