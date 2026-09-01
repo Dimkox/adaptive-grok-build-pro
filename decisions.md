@@ -166,3 +166,7 @@ Reuse the active route only when `FOLLOW_UP_RE` matches the whole prompt, or the
 ## 2026-08-24 — M0 CI host is claw, not a laptop
 
 The M0 Trust CI host is hostname `claw` (Xeon E5-2680 v4, ~16 GiB ECC, Ubuntu 24.04). Never call it a laptop; SearXNG already owns `127.0.0.1:8080` and co-located n8n/app databases remain residual risk the user accepted. Trust CI therefore publishes another loopback port (`127.0.0.1:18080` by default) with compose project `adaptive-trust-ci`.
+
+## 2026-09-01 — Keep SEO landing generation isolated and repository-scoped
+
+Embedding the Codex skill under `.agents/skills/` and its showcase under `side-projects/` makes the capability available on demand without changing Trust CI runtime behavior. The showcase remains `noindex, nofollow` until a real production origin is supplied and verified.
