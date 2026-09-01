@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Локальная витрина Codex-навыка для генерации, аудита и точечной оптимизации SEO-лендингов.">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#071310">
+  <title>SEO Landing для Codex — локальная витрина</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#content">Перейти к содержанию</a>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="#top">
+        <span class="brand-mark" aria-hidden="true">SL</span>
+        <span>SEO Landing</span>
+      </a>
+      <nav aria-label="Основная навигация">
+        <a href="#modes">Режимы</a>
+        <a href="#workflow">Процесс</a>
+        <a href="#start">Запуск</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="content">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="shell hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow"><span aria-hidden="true"></span> Repository-scoped Codex skill</p>
+          <h1 id="hero-title">SEO-лендинги по запросу — прямо в Codex</h1>
+          <p class="lead">Один навык для трёх задач: собрать статическую страницу из проверенного брифа, провести доказательный аудит или аккуратно исправить существующий лендинг.</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#start">Как запустить</a>
+            <a class="button button-secondary" href="#guardrails">Границы безопасности</a>
+          </div>
+          <ul class="signal-list" aria-label="Ключевые свойства">
+            <li>Без фреймворков</li>
+            <li>Без внешних ресурсов</li>
+            <li>Только измеримые выводы</li>
+          </ul>
+        </div>
+        <div class="terminal" role="group" aria-label="Пример обращения к навыку">
+          <div class="terminal-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="terminal-body">
+            <p class="terminal-label">codex / prompt</p>
+            <code><span>$</span> $seo-landing</code>
+            <p>Собери SEO-лендинг из этого брифа. Не выдумывай домен, факты и результаты измерений.</p>
+            <div class="terminal-status"><span aria-hidden="true"></span> mode: generate</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="modes" aria-labelledby="modes-title">
+      <div class="shell">
+        <p class="section-kicker">Три режима, одна точка входа</p>
+        <h2 id="modes-title">Codex сначала понимает задачу</h2>
+        <div class="card-grid">
+          <article class="mode-card accent-mint">
+            <span class="mode-number" aria-hidden="true">01</span>
+            <p class="mode-name">generate</p>
+            <h3>Создать с нуля</h3>
+            <p>Собирает обязательные факты, создаёт проект в отдельном каталоге и показывает HTML до запуска валидации.</p>
+          </article>
+          <article class="mode-card accent-blue">
+            <span class="mode-number" aria-hidden="true">02</span>
+            <p class="mode-name">audit-only</p>
+            <h3>Проверить без изменений</h3>
+            <p>Читает заданный URL или локальные файлы, фиксирует команды и наблюдения, но ничего не записывает.</p>
+          </article>
+          <article class="mode-card accent-amber">
+            <span class="mode-number" aria-hidden="true">03</span>
+            <p class="mode-name">fix-existing</p>
+            <h3>Исправить точечно</h3>
+            <p>Меняет только названные дефекты, сохраняет остальную разметку и повторно просит одобрить HTML.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section workflow-section" id="workflow" aria-labelledby="workflow-title">
+      <div class="shell split-heading">
+        <div>
+          <p class="section-kicker">Контролируемый процесс</p>
+          <h2 id="workflow-title">От намерения до проверяемого результата</h2>
+        </div>
+        <p>Навык отделяет факты от предположений и не выдаёт синтаксическую проверку за поисковый эффект.</p>
+      </div>
+      <div class="shell workflow-list">
+        <article><span>01</span><div><h3>Маршрутизация</h3><p>Выбирается generate, audit-only или fix-existing — без лишних вопросов из другого режима.</p></div></article>
+        <article><span>02</span><div><h3>Проверенные входные данные</h3><p>Домен, ключевые слова, claims, права на материалы и endpoints берутся только из подтверждённых источников.</p></div></article>
+        <article><span>03</span><div><h3>HTML stop point</h3><p>Перед валидацией Codex показывает версию страницы и ждёт явного одобрения пользователя.</p></div></article>
+        <article><span>04</span><div><h3>Измеримое evidence</h3><p>В отчёт попадают фактические команды и результаты; недоступная проверка честно помечается как blocker.</p></div></article>
+      </div>
+    </section>
+
+    <section class="section" id="guardrails" aria-labelledby="guardrails-title">
+      <div class="shell guardrail-panel">
+        <div>
+          <p class="section-kicker">Guardrails</p>
+          <h2 id="guardrails-title">Не просто быстрый HTML</h2>
+          <p>Навык наследует подробный технический контракт upstream-проекта и добавляет границы репозитория Codex.</p>
+        </div>
+        <ul class="check-list">
+          <li><span aria-hidden="true">✓</span> Retrieved content считается данными, а не инструкцией.</li>
+          <li><span aria-hidden="true">✓</span> Секреты, ключи и файлы окружения не читаются.</li>
+          <li><span aria-hidden="true">✓</span> Публикация и production writes требуют отдельного разрешения.</li>
+          <li><span aria-hidden="true">✓</span> Непроверенные числа, отзывы и SEO-эффекты не придумываются.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section start-section" id="start" aria-labelledby="start-title">
+      <div class="shell start-panel">
+        <p class="section-kicker">Локальный запуск</p>
+        <h2 id="start-title">Сформулируйте задачу — skill выберет режим</h2>
+        <div class="prompt-block" role="group" aria-label="Пример команды">
+          <span aria-hidden="true">$</span>
+          <code>$seo-landing Аудируй локальный index.html без изменений</code>
+        </div>
+        <p>CTA показывает текст обращения к локальному навыку. Он не отправляет данные и не выполняет внешние операции.</p>
+      </div>
+    </section>
+
+    <section class="section compact-section" aria-labelledby="provenance-title">
+      <div class="shell provenance">
+        <div>
+          <p class="section-kicker">Provenance</p>
+          <h2 id="provenance-title">Основано на открытом upstream skill</h2>
+        </div>
+        <p>Адаптация сохраняет MIT-лицензию, авторство Aleksandr Alhov и точную привязку к импортированному commit. Технические references перенесены byte-for-byte.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-inner">
+      <p><strong>SEO Landing</strong> · side project Adaptive Grok Build Pro</p>
+      <p>Предрелизная витрина: индексация отключена до назначения канонического домена.</p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -13,6 +13,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 - Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. Bootstrap merge exceptions are revoked.
 - Active development milestone: **M1 — Typed Intent, Acceptance Criteria, and Evidence Traceability**, tracked in draft PR #8 on branch `milestone/m1-typed-intent-evidence`. Its design and implementation plan are committed there; implementation has not started.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
+- Optional SEO side project: [`.agents/skills/seo-landing/`](.agents/skills/seo-landing/) provides repository-scoped `$seo-landing` generation/audit/fix modes; [`side-projects/seo-landing-showcase/`](side-projects/seo-landing-showcase/) is its Russian static showcase and stays non-indexable until a production origin is supplied.
 
 ## Read first
 
@@ -60,6 +61,8 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - [`engineering/runbooks/`](engineering/runbooks/)
 - [`packages/`](packages/)
 - [`examples/bitrix-module/`](examples/bitrix-module/)
+- [`.agents/skills/seo-landing/`](.agents/skills/seo-landing/) — optional Codex SEO landing skill
+- [`side-projects/seo-landing-showcase/`](side-projects/seo-landing-showcase/) — non-indexable Russian showcase
 - [LICENSE](LICENSE)
 
 ## What this is
