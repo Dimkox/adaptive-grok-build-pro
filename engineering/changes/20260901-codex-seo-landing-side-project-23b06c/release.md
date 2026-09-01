@@ -15,8 +15,8 @@ only through explicit `$seo-landing` or matching intent; the showcase remains
 ## Metrics and alerts
 
 - Codex skill validator exit code is zero (`Skill is valid!`).
-- Focused contract test failures are zero: 10 passed.
-- Full unittest failures are zero: 209 passed.
+- Focused contract test failures are zero: 11 passed on the lab host; the real-browser lifecycle test skips precisely when optional Node.js or Chrome is unavailable in the immutable runner.
+- Full unittest failures are zero: 210 passed.
 - W3C Nu errors are zero on final HTML.
 - Lighthouse 13.4.1 medians are Performance 100, Accessibility 100, Best Practices 96, SEO 60, LCP 901.6 ms, CLS 0, and TBT 0 ms.
 - Best Practices loses only the local `/favicon.ico` 404; SEO loses only intentional `noindex` crawl blocking.

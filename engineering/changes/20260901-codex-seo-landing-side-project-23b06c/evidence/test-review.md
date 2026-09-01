@@ -1,4 +1,4 @@
-# Independent test re-review — browser lifecycle fix
+# Independent final test review — Trust-runner compatibility
 
 ## Verdict
 
@@ -6,79 +6,75 @@
 
 - Route: `23b06c1b62a3`
 - Base: `origin/main` / `1c06299894279a88b881defa3f19b004fa742223`
-- Git HEAD: `fa374bba0aed6d2f257f407f652d91ee51150a84`
-- Reviewed implementation: that HEAD plus the current uncommitted browser-lifecycle hotfix and its evidence updates
-- Pre-report verifier fingerprint: `37569de867bffa3cb772a402b739720df9e91c66d9f20358b7dcf1add1ea184e`
+- Git HEAD: `05d37d4fbdf419bf5c0c098e6f44c4d64124f218`
+- Reviewed implementation: that HEAD plus the current uncommitted optional-browser compatibility test/docs delta
+- Full-verifier receipt fingerprint: `10e568186ebd0c87828de04e9a0d9f47e6d4556ed7fe90c2b9b6f742caa550b8`
 - Critical findings: none
 - Important findings: none
 
-The prior `ENOTEMPTY` failure is fixed. The implementation now waits for Chrome to exit before deleting its profile, has bounded escalation and cleanup retries, and is covered by a real Node/Chrome subprocess regression that asserts both contract success and process exit 0.
+The real browser lifecycle remains enforced whenever Node and Chrome are available, while environments that lack either optional lab executable now skip only that environment-dependent lifecycle test. Contract/source/safety tests remain mandatory everywhere.
 
-## Prior Important finding — resolved
+## Capability boundary — PASS
 
-### Bounded process and profile cleanup — PASS
+`browser_dependencies()` searches normal PATH names and bounded conventional executable paths for Node.js and Chrome/Chromium. `test_local_chrome_runner_exits_cleanly_after_contract_passes` calls `skipTest` only when one or both executable lookups return no result, before server/process startup.
 
-`side-projects/seo-landing-showcase/browser-contract.mjs:79-107` now:
-
-1. detects an already-exited child;
-2. sends `SIGTERM` and waits at most 3 seconds;
-3. escalates to `SIGKILL` and waits at most another 3 seconds;
-4. fails explicitly if Chrome still does not exit;
-5. deletes only the guarded `seo-landing-browser-contract-*` temp profile with five retries and 100 ms retry delay;
-6. awaits cleanup from the top-level `finally` block.
-
-This removes the original kill/delete race without swallowing cleanup failure or introducing an unbounded wait.
-
-### Honest execution-level regression — PASS
-
-`tests/test_seo_landing_side_project.py:200-245` launches a real Python HTTP server on an ephemeral loopback port and invokes the checked-in runner with actual Node and `/usr/bin/google-chrome`. It independently asserts:
-
-- `browser-contract.json` was created;
-- parsed `passed` is true;
-- subprocess return code is exactly 0;
-- the server is terminated and awaited in `finally`.
-
-I ran this single lifecycle regression twice consecutively:
+Independent negative simulations produced:
 
 ```text
-run 1: Ran 1 test in 2.571s — OK
-run 2: Ran 1 test in 1.729s — OK
+Node missing, Chrome present:
+  SKIP unavailable optional lab dependencies: Node.js
+
+Node present, Chrome missing:
+  SKIP unavailable optional lab dependencies: Chrome
+
+Node and Chrome reported available, subprocess forced to fail:
+  NOT SKIPPED; recorded as a test failure
 ```
 
-The set of `/tmp/seo-landing-browser-contract-*` directories was identical before and after both runs: neither execution leaked its profile. The later focused-suite execution also passed the same real lifecycle test.
+The checked-in `test_local_chrome_runner_skips_without_optional_lab_dependencies` also runs the actual lifecycle test object under discovery/access denial and asserts exactly one skip, zero errors, zero failures, and the explicit `Node.js, Chrome` reason. Therefore arbitrary browser/server/report/timeout/exit failures are not converted into skips.
 
-## Verification
+## Real lifecycle — PASS
 
-### Focused contracts — PASS
+On the current host, dependency discovery resolved real Node and Google Chrome. I ran the lifecycle test directly:
+
+```text
+python3 -m unittest \
+  tests.test_seo_landing_side_project.SeoLandingShowcaseContractTests.test_local_chrome_runner_exits_cleanly_after_contract_passes -v
+
+Ran 1 test in 1.611s — OK
+```
+
+This execution launched a real loopback server and Node/Chrome subprocess, required `browser-contract.json` with `passed: true`, required exit code 0, and left the set of `/tmp/seo-landing-browser-contract-*` directories unchanged. The prior bounded SIGTERM/SIGKILL/profile-cleanup behavior remains present.
+
+## Focused and full verification — PASS
 
 ```text
 python3 -m unittest tests.test_seo_landing_side_project -v
-Ran 10 tests in 1.987s — OK
+Ran 11 tests in 2.872s — OK
 ```
 
-All ten methods ran without skips or expected failures. This includes the real browser lifecycle regression plus the prior exact package inventory, mode/write boundary, mixed-clause write mutation, external stylesheet/icon/resource mutation, provenance, noindex, accessibility-source, and browser-source contracts.
+All eleven methods ran locally; the real lifecycle displayed `ok`, not `skipped`. The suite also covers package inventory, audit/write boundaries, mixed-clause mutations, external stylesheet/icon/resource mutations, provenance, noindex/accessibility source contracts, and runner versioning.
 
-### Full verifier — PASS
-
-Receipt `.grok-stack/runtime/receipts/23b06c1b62a3/verification.json`:
+Current full-verifier receipt:
 
 ```text
-created_at: 2026-09-01T17:34:47+00:00
+created_at: 2026-09-01T17:45:49+00:00
 status: pass
-tree_fingerprint: 37569de867bffa3cb772a402b739720df9e91c66d9f20358b7dcf1add1ea184e
-python-unittest: Ran 209 tests in 45.250s — OK
+tree_fingerprint: 10e568186ebd0c87828de04e9a0d9f47e6d4556ed7fe90c2b9b6f742caa550b8
+python-unittest: Ran 210 tests in 46.435s — OK
+all other selected checks: PASS
 ```
 
-All other selected checks are PASS. Before this report write, `python3 scripts/grok_status.py` accepted verification as current and reported only the two review receipts as outstanding. The parent must refresh/record final fingerprint-bound receipts after review reports are finalized.
+Repository status currently labels receipts stale because review/document evidence changed after that run; this is expected during the review wave and requires the parent's final fingerprint-bound refresh. The verifier result itself is genuine and includes the real lifecycle on this dependency-capable host.
 
 ## Retained frontend evidence applicability — PASS
 
-The hotfix changes only Chrome shutdown/profile cleanup and adds its subprocess regression; it does not change `index.html`, `styles.css`, the browser assertions, screenshots, W3C JSON, or Lighthouse JSON.
+The compatibility delta changes only test-side executable discovery/skip handling and evidence prose. It does not modify showcase HTML, CSS, browser-contract behavior, screenshots, or validator/Lighthouse JSON.
 
-- `browser-contract.json` remains `passed: true`: no overflow at 320/768/1280/1920, reduced motion true, scroll behavior `auto`, and a visible first-Tab skip link to `#content` with a solid 3 px outline.
+- Browser contract remains `passed: true` at 320, 768, 1280, and 1920 px, with no overflow, reduced motion true, scroll behavior `auto`, and the visible first-Tab skip link.
 - W3C remains 0 messages / 0 errors.
-- Lighthouse 13.4.1 remains 100 Performance, 100 Accessibility, 96 Best Practices, and 60 SEO in all three runs; LCP values are 901.8472, 901.5387, and 901.5505 ms, with CLS and TBT 0. `label-content-name-mismatch` is not applicable in all final runs.
-- The report continues to disclose that SEO 60 is caused by intentional `noindex` and that automated Accessibility 100 is not WCAG certification.
+- Lighthouse remains 100 Performance, 100 Accessibility, 96 Best Practices, and 60 SEO for all three runs; LCP values remain 901.8472, 901.5387, and 901.5505 ms, with CLS/TBT 0 and no applicable accessible-name mismatch.
+- SEO 60 remains accurately attributed to intentional `noindex`; automated Accessibility 100 is not represented as WCAG certification.
 - `git diff --check`: PASS.
 
 No product file was modified by this reviewer. This report is the only review-owned write.

@@ -97,7 +97,7 @@ origin-bound structured facts were invented.
 python3 -m unittest tests.test_seo_landing_side_project -v
 ```
 
-Current result: `Ran 10 tests — OK`.
+Current lab-host result: `Ran 11 tests — OK`. The real-browser lifecycle test skips with a precise reason only when optional Node.js or Chrome is unavailable.
 
 ```bash
 python3 -m unittest discover -s tests -q
