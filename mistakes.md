@@ -292,3 +292,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Runtime could set `capacity_allocations.released_at`, hide a leased worker from capacity views and leave counters inconsistent while its fence remained valid.
 **Root cause:** Least-privilege review covered counter policy and allocation creation but did not enumerate every inherited allocation lifecycle grant or define a live allocation as part of lease validity.
+
+## 2026-09-01 — Passed Markdown backticks through a shell-quoted PR body
+
+**Symptom:** The first `gh pr create` attempt launched a local verifier instead of creating the PR and had to be interrupted; no external write occurred.
+**Root cause:** A multiline Markdown body containing backticks was embedded in a double-quoted shell argument, allowing command substitution instead of using a literal body file or structured argument boundary.
