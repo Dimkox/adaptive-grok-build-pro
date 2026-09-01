@@ -47,6 +47,13 @@ Result at the original implementation boundary: 15/15 tests passed; the change s
 - Exact-range defect: the former committed range exposed eight trailing-space lines across three historical analysis reports. Only those spaces were removed; the fourth report received only the separately reviewed absolute-path-to-repository-relative wording repair.
 - Candidate hygiene: after staging the uncommitted repair, `git diff --check`, `git diff --cached --check origin/main`, and `git diff --check origin/main` pass. As required by the no-commit boundary, `origin/main...HEAD` still names the pre-repair commit and continues to reproduce the old failure until the staged candidate is committed; no exact-HEAD PASS is claimed.
 
+## Trust CI exact-checkout repair
+
+- External failure at exact head `718ec4d58ef37e2a77e8cc4423c37ae54a3737cf`: repository holdout and external holdout passed, while `root-unittest` failed because mandatory `git cat-file` could not resolve M2 commit `022411b05924618cfde0cb97b8c8aff4955e6013` in the isolated single-branch checkout. A local `--no-local --single-branch` clone reproduced the same failure with exit 1.
+- RED: the new self-contained merge-parent test failed because `PROJECT_STATE.json` did not record the accepted parents for merges `c23fd49f80c7d1c74ca3393b6079a74f251a72d8` and `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`.
+- Repair: durable state now records both exact ordered parent pairs and tests validate their literal and milestone relationships. Git-object corroboration remains an additional local path only when every named object exists; the durable proof always runs and its adversarial ancestry mutation remains mandatory.
+- GREEN: the isolated single-branch clone still could not resolve `022411b…`, yet all 10 state tests and the full 220-test root suite passed without a fetch. The local full root suite also passed 220/220; focused lint/spec/JSON and exact diff checks follow the final evidence update.
+
 ## Remaining gates
 
 Route-selected independent code, test, and security reviews plus fingerprint-bound verification/receipts remain pending outside this write-owner implementation handoff. The App-owned exact-head check and any signed approval are external merge authority and are not claimed here.

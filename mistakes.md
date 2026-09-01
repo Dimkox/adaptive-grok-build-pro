@@ -2,6 +2,11 @@
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-01 — Treated developer Git objects as exact-checkout inputs
+
+**Symptom:** Trust CI passed both holdouts but failed root unittest because stacked M2/M3 commit objects were absent from its isolated exact-SHA checkout.
+**Root cause:** A mandatory state test treated objects reachable only through developer remote refs as part of the repository contract instead of recording the accepted merge-parent proof in durable state.
+
 ## 2026-09-01 — Checked only the uncommitted diff for PR hygiene
 
 **Symptom:** Verification reported a clean diff while the committed PR range still contained trailing whitespace.
