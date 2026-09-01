@@ -721,7 +721,9 @@ class VerificationTests(unittest.TestCase):
             (package / '__init__.py').write_text('', encoding='utf-8')
             (package / 'test_contracts.py').write_text(_PASSING_UNITTEST, encoding='utf-8')
             (package / 'run_disposable_exit.py').write_text('print("postgres api restart exit")\n', encoding='utf-8')
-            checks = _python(root, mode='pr')
+            with patch.dict(os.environ, {}, clear=False):
+                os.environ.pop('GROK_VERIFY_CAPABILITY', None)
+                checks = _python(root, mode='pr')
             postgres = next((item for item in checks if item.name == 'factory-postgres-exit'), None)
             self.assertIsNotNone(postgres)
             self.assertEqual(postgres.status, 'pass')
