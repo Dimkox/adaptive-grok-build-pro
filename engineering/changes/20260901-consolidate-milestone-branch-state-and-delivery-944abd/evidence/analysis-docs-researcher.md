@@ -4,7 +4,7 @@
 
 - Route: `944abd96ddb3`
 - Repository: `Dimkox/adaptive-grok-build-pro`
-- Read-only audit worktree: `/home/pall/grok-projects/adaptive-grok-build-pro-state-reconcile`
+- Read-only audit worktree: the isolated `chore/reconcile-milestone-state` worktree
 - Audited base/head: `1c06299894279a88b881defa3f19b004fa742223` (`origin/main` and this worktree HEAD at observation time)
 - Observation date: 2026-09-01 UTC
 - Files compared: `PROJECT_STATE.json`, `README.md`, `START_HERE.md`, `decisions.md`, `mistakes.md`, `DARK_FACTORY_ROADMAP.md`, milestone branch evidence, all local/remote refs, all GitHub pull requests, live Trust CI readiness, and live `main` protection.

@@ -1,7 +1,7 @@
 # Architecture analysis — truthful milestone state reconciliation
 
-Route: `944abd96ddb3`  
-Observed: 2026-09-01 after `git fetch --all --prune`  
+Route: `944abd96ddb3`
+Observed: 2026-09-01 after `git fetch --all --prune`
 Baseline: `origin/main@1c06299894279a88b881defa3f19b004fa742223`
 
 ## Finding

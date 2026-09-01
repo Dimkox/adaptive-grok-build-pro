@@ -2,6 +2,10 @@
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-09-01 — Converge branch work through one delivery ledger
+
+Many isolated branches and worktrees may preserve implementation evidence, but they converge through one consolidated delivery route before completion. That route updates the five-axis `PROJECT_STATE.json` implementation/review/stack-merge/main-delivery/gate ledger so branch presence is never mistaken for delivery.
+
 ## 2026-08-24 — M0.3 bind main; revoke bootstrap exceptions
 
 Live App-owned check `adaptive-trust-ci/verified@6737355947c2` is bound to GitHub App ID `4694114` on protected `main`. Revoke the 2026-08-23 M1-start / PR #2 / PR #4 bootstrap exceptions because that live App-owned check exists (never by forging one). PR #5 stays unmerged while Check Run `97529209576` is `action_required`.
