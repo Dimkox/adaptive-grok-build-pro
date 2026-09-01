@@ -1,88 +1,80 @@
-# Independent final test review — milestone state reconciliation
+# Independent final test re-review — hardened milestone state reconciliation
 
 ## Verdict
 
-**FAIL**
+**PASS**
 
 - Route: `944abd96ddb3`
 - Base: `origin/main` / `8ab4e57038dec2e07f01aaa0b207813a387358f4`
-- Reviewed HEAD: `8439f62180f0df3b60498174a121450ea58eaa51`
-- Reviewed range: `origin/main...8439f62180f0df3b60498174a121450ea58eaa51`
-- Verification receipt fingerprint: `e5950a781ca5eae1b5ac5f5bc4086f6aeb602c2c2e228e0602ae789033d99f9e`
+- Reviewed HEAD: `e9000559be5e3f23f1069c625c3a5d7b943c362d`
+- Reviewed range: `origin/main...e9000559be5e3f23f1069c625c3a5d7b943c362d`
+- Verification receipt fingerprint: `6528a20c4491d434409212b780db61766c814d73ae73cab2814306b1acba64a0`
 - Critical findings: none
-- Important findings: 3
+- Important findings: none
 
-The checked-in snapshot currently agrees with live GitHub and local ref evidence, and the focused/full suites pass. PASS is blocked because the new tests do not protect the exact branch/PR/SHA facts they label truthful, the graph test does not protect exact node identity, and the verifier's passing diff check does not cover the committed PR range.
+The checked-in snapshot agrees with the independently audited GitHub and local ref evidence. All three prior Important findings are closed: exact inventory/SHA and ancestry mutations are rejected, graph identity is canonical and role-table-bound, and the literal committed PR range passes `git diff --check`.
 
-## Findings
+## Resolved findings
 
-### Important — `tests/test_project_state.py:31-59,76-91` permits false exact-SHA, branch-base, and gate facts
+### Resolved — exact milestone, ancestry, and work-inventory facts are enforced
 
-The milestone test asserts axis status strings but not the commits, PR bases, merge targets, heads, or ancestry that justify those statuses. The inventory test asserts only the set of four open PR numbers and a few membership facts; it does not validate the recorded PR branches, bases, heads, statuses, dispositions, all PRs, or the complete local/remote branch inventory.
+`tests/test_project_state.py` now asserts the exact implementation/review/merge/gate SHAs and stack PR/base facts for M0-M4. It compares the complete material open-PR records, delivered PR #19 identity, retained-unresolved records, and active branches rather than only comparing PR numbers.
 
-An in-memory adversarial mutation changed all of the following while preserving every current assertion exercised for those records:
-
-```text
-PR #17 base: milestone/m2-executable-architecture -> main
-PR #17 head: 8e650416... -> 0000000000000000000000000000000000000000
-PR #17 status: open_current_epoch_and_gitguardian_failure -> success
-M2 implementation commit: 022411b... -> 0000000000000000000000000000000000000000
-
-wrong_pr17_base_head_status_and_m2_commit_pass_current_assertions=TRUE
-```
-
-These are the contract's essential distinctions: stack integration versus main delivery and exact-head external authority. A synchronized error in `PROJECT_STATE.json` and the few duplicated constants can therefore pass. Add an immutable observed-inventory fixture or explicit assertions for every material PR's number/base/head/state/merge SHA/check conclusion, every milestone evidence SHA/target, and the exact branch inventory captured by the audit. Where a Git object is locally available, also assert existence and ancestry/merge-parent relationships.
-
-### Important — `tests/test_project_state.py:93-109` calls the graph exact while deriving node identity from the graph itself
-
-The test builds `nodes` from the current edges and then computes the expected K16 from that same derived set. It verifies topology and count, but not that the set is the required 16 core nodes or that it equals the 16-row node-role table.
-
-I replaced every `GitHubApp` edge token with `FakeApp` in memory while leaving the role table unchanged. The current algorithm still passed all four claims: 16 nodes, 120 edges, 120 unique edges, and complete pair coverage:
+The original bypass mutations are now checked in and rejected:
 
 ```text
-graph_wrong_node_identity_passes_current_algorithm=TRUE
+test_adversarial_pr17_base_head_and_status_are_rejected ... ok
+test_adversarial_m2_m3_commits_are_rejected ... ok
+test_adversarial_m2_m3_ancestry_is_rejected ... ok
 ```
 
-Assert the explicit node set `{Route, Skills, Agents, Hooks, Policy, Verify, Packages, Contract, Decisions, Mistakes, TrustAPI, TrustWorker, Postgres, Runner, Holdout, GitHubApp}` and parse the node-role table to require exact identity equality. This is required for the repository's README graph contract, not merely cosmetic coverage.
+The ancestry test additionally requires the named commit objects to exist, proves M2/M3 source ancestry into the recorded stack merge commits, and proves those stack commits are not ancestors of observed main. This directly protects stack integration versus main delivery and exact-head authority.
 
-### Important — committed PR diff fails whitespace validation while the full verifier records PASS
+### Resolved — graph topology, node identity, and role-table identity are exact
 
-The exact reviewed range fails:
+`CANONICAL_GRAPH_NODES` now names all required 16 nodes. `_assert_readme_graph` requires the role-table set to equal that canonical set, the edge-derived set to equal the role-table set, and all 120 unique edges to equal the combinations of the canonical nodes.
+
+The prior `GitHubApp` to `FakeApp` graph-only mutation is now rejected:
 
 ```text
-git diff --check origin/main...8439f62180f0df3b60498174a121450ea58eaa51
-
-engineering/changes/.../evidence/analysis-architect.md:3: trailing whitespace
-engineering/changes/.../evidence/analysis-architect.md:4: trailing whitespace
-engineering/changes/.../evidence/analysis-integration-architect.md:3-5: trailing whitespace
-engineering/changes/.../evidence/analysis-repo-explorer.md:3-5: trailing whitespace
+test_adversarial_graph_node_identity_mutation_is_rejected ... ok
 ```
 
-The current verifier receipt nevertheless records `git-diff-check: pass`, because its invocation observes no uncommitted work in this clean worktree rather than validating `origin/main...HEAD`. The change test plan likewise lists bare `git diff --check`, which is a no-op for committed changes. Remove the whitespace defects and make the PR-mode verifier bind diff validation to its resolved base/head range so the receipt cannot false-positive a committed diff.
+The normal graph test also passes with the required node set and exact K16 topology.
+
+### Resolved — the literal committed PR range passes whitespace validation
+
+The exact command requested for the reviewed range now succeeds with no output:
+
+```text
+git diff --check origin/main...HEAD
+exact_range_diff_check=PASS
+```
+
+The previously reported evidence-file trailing whitespace has been removed. The current verifier receipt also records `git-diff-check: pass`; the independent literal range command above supplies the exact-range evidence for this review.
 
 ## Passing evidence and current-fact audit
 
-### Focused tests — PASS, subject to coverage gaps above
+### Focused tests — PASS
 
 ```text
 python3 -m unittest tests.test_project_state tests.test_structure -v
-Ran 15 tests in 0.028s — OK
+Ran 20 tests in 0.142s — OK
 ```
 
-The four new state tests themselves ran in 0.003s and passed. JSON parsing, schema version 2, five axis keys for M0-M9, documented status values, current-section epoch/App text, selected inventory membership, and K16 topology/count are exercised.
+All nine state tests and eleven structure tests passed. A separate run of the four adversarial regression methods completed in 0.022s with all four `ok`.
 
-### Full verifier receipt — PASS result, invalidated as completion evidence by finding 3
+### Full verifier receipt — PASS
 
 Receipt `.grok-stack/runtime/receipts/944abd96ddb3/verification.json`:
 
 ```text
-created_at: 2026-09-01T19:01:18+00:00
+created_at: 2026-09-01T19:14:27+00:00
 status: pass
-tree_fingerprint: e5950a781ca5eae1b5ac5f5bc4086f6aeb602c2c2e228e0602ae789033d99f9e
+tree_fingerprint: 6528a20c4491d434409212b780db61766c814d73ae73cab2814306b1acba64a0
 profiles: base, integration, infra
-python-unittest: Ran 214 tests in 47.626s — OK
-ruff / bandit / coverage / secret-scan / contract-structure / sql-safety: PASS
-git-diff-check: reported PASS, contradicted by exact-range reproduction above
+python-unittest: Ran 219 tests in 45.667s — OK
+git-diff-check / ruff / bandit / coverage / secret-scan / contract-structure / sql-safety: PASS
 ```
 
 Before this report write, `grok_status.py` accepted verification as current and reported only the three review receipts missing.
@@ -102,7 +94,7 @@ The current local branch count is 25 and remote non-PR branch count is 26, match
 
 ### Schema compatibility — PASS with explicit version transition
 
-Repository search found no executable consumer of `PROJECT_STATE.json` beyond the new test. The version 1 to version 2 change is intentional and documented as replacing ambiguous milestone fields with five explicit axes. Bootstrap readers are directed to the new `active_delivery` and `work_inventory` model, so there is no silent in-repository parser break. The coverage gap in finding 1 still needs repair so malformed or inaccurate v2 snapshots fail deterministically.
+Repository search found no executable consumer of `PROJECT_STATE.json` beyond the new test. The version 1 to version 2 change is intentional and documented as replacing ambiguous milestone fields with five explicit axes. Bootstrap readers are directed to the new `active_delivery` and `work_inventory` model, so there is no silent in-repository parser break. Exact fact and adversarial coverage now rejects the previously demonstrated inaccurate v2 snapshots.
 
 ### Scope isolation — PASS
 

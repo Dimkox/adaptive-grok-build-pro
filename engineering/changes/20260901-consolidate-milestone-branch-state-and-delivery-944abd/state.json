@@ -31,11 +31,23 @@
       "from": "implementing",
       "reason": "state repair implemented; focused checks passing",
       "to": "verifying"
+    },
+    {
+      "at": "2026-09-01T19:17:46+00:00",
+      "from": "verifying",
+      "reason": "full verifier passed and independent review wave completed",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-01T19:17:46+00:00",
+      "from": "reviewing",
+      "reason": "code test and security reviews pass with no blocking findings",
+      "to": "ready"
     }
   ],
   "route_id": "944abd96ddb3",
   "schema_version": 1,
-  "status": "verifying",
+  "status": "ready",
   "title": "Consolidate milestone branch state and delivery",
-  "updated_at": "2026-09-01T18:53:09+00:00"
+  "updated_at": "2026-09-01T19:17:46+00:00"
 }
