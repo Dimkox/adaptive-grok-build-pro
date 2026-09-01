@@ -272,6 +272,100 @@ class PostgresFactoryTests(unittest.TestCase):
         self.assertEqual((killed.status_code, replay.status_code, conflict.status_code), (200, 200, 409))
         self.assertEqual(killed.json(), replay.json())
 
+    def test_empty_claim_is_replayed_after_work_arrives(self):
+        from fastapi.testclient import TestClient
+        import psycopg
+
+        token = "worker-" + "empty-claim-" + "credential"
+        client = TestClient(create_app(self.service, Authenticator({token: WORKER})))
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Idempotency-Key": "empty-claim-command-001",
+            "X-Correlation-ID": "empty-claim-correlation-001",
+        }
+        payload = {"role": "reader", "repositories": ["owner/repository"], "lease_seconds": 60}
+        first = client.post("/v1/claims", headers=headers, json=payload)
+        self.assertEqual(first.json(), {"grant": None})
+        self.submit(source="arrived-after-empty-claim")
+        replay = client.post("/v1/claims", headers=headers, json=payload)
+        conflict = client.post("/v1/claims", headers=headers, json={**payload, "lease_seconds": 61})
+        self.assertEqual(replay.json(), first.json())
+        self.assertEqual(conflict.status_code, 409)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT correlation_id,result FROM factory.command_results WHERE action='claim'"
+            )
+            self.assertEqual(cursor.fetchone(), ("empty-claim-correlation-001", {"grant": None}))
+
+    def test_accounting_commands_replay_before_stale_fence_and_preserve_correlation(self):
+        from fastapi.testclient import TestClient
+        import psycopg
+
+        task = self.submit(source="accounting-command-replay").task
+        grant = self.service.claim(
+            owner="ignored", role=RunRole.READER, repositories=(task.repository_id,),
+            lease_seconds=60, actor=WORKER, now=NOW,
+        )
+        token = "worker-" + "accounting-" + "credential"
+        client = TestClient(create_app(self.service, Authenticator({token: WORKER})))
+        grant_body = {
+            "task_id": grant.task_id, "run_id": grant.run_id, "owner": grant.owner,
+            "role": grant.role.value, "fence": grant.fence,
+            "expires_at": grant.expires_at.isoformat().replace("+00:00", "Z"),
+            "packet_digest": grant.packet_digest,
+        }
+        reserve_headers = {
+            "Authorization": f"Bearer {token}", "Idempotency-Key": "reservation-command-001",
+            "X-Correlation-ID": "reservation-correlation-001",
+        }
+        reserve_body = {
+            "grant": grant_body, "cost_usd_micros": 0, "token_units": 0,
+            "wall_seconds": 1, "reason_digest": "a" * 64,
+        }
+        reserved = client.post("/v1/budget-reservations", headers=reserve_headers, json=reserve_body)
+        self.assertEqual(reserved.status_code, 200)
+
+        usage_task = self.submit(source="usage-command-replay").task
+        usage_grant = self.service.claim(
+            owner="ignored", role=RunRole.READER, repositories=(usage_task.repository_id,),
+            lease_seconds=60, actor=WORKER, now=NOW,
+        )
+        usage_grant_body = {
+            "task_id": usage_grant.task_id, "run_id": usage_grant.run_id, "owner": usage_grant.owner,
+            "role": usage_grant.role.value, "fence": usage_grant.fence,
+            "expires_at": usage_grant.expires_at.isoformat().replace("+00:00", "Z"),
+            "packet_digest": usage_grant.packet_digest,
+        }
+        usage_headers = {
+            "Authorization": f"Bearer {token}", "Idempotency-Key": "usage-command-001",
+            "X-Correlation-ID": "usage-correlation-001",
+        }
+        usage_body = {
+            "grant": usage_grant_body, "provider_call_id": "provider-call-one",
+            "price_table_digest": "2" * 64, "cost_usd_micros": 0,
+            "token_units": 0, "output_bytes": 0,
+        }
+        usage = client.post("/v1/usage-observations", headers=usage_headers, json=usage_body)
+        replay = client.post("/v1/usage-observations", headers=usage_headers, json=usage_body)
+        changed = client.post(
+            "/v1/usage-observations", headers=usage_headers,
+            json={**usage_body, "provider_call_id": "provider-call-two"},
+        )
+        self.assertEqual((usage.status_code, replay.status_code, changed.status_code), (200, 200, 409))
+        self.assertEqual(usage.json(), replay.json())
+        self.service.release(grant, outcome=FailureClass.WORKER_LOST, actor=WORKER, now=NOW)
+        stale_replay = client.post("/v1/budget-reservations", headers=reserve_headers, json=reserve_body)
+        self.assertEqual(stale_replay.status_code, 200)
+        self.assertEqual(stale_replay.json(), reserved.json())
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT action,correlation_id FROM factory.command_results WHERE action IN ('reserve_budget','observe_usage') ORDER BY action"
+            )
+            self.assertEqual(
+                cursor.fetchall(),
+                [("observe_usage", "usage-correlation-001"), ("reserve_budget", "reservation-correlation-001")],
+            )
+
     def test_two_workers_get_one_task_and_late_fence_is_rejected(self):
         self.submit()
 
@@ -534,11 +628,17 @@ class PostgresFactoryTests(unittest.TestCase):
                 "SELECT has_table_privilege('factory_runtime','factory.audit_log','INSERT'), has_table_privilege('factory_audit_reader','factory.audit_log','SELECT')"
             )
             self.assertEqual(cursor.fetchone(), (True, True))
+            cursor.execute(
+                "SELECT has_column_privilege('factory_runtime','factory.capacity_counters','ceiling','UPDATE'), has_column_privilege('factory_runtime','factory.capacity_counters','active_count','UPDATE'), has_table_privilege('factory_runtime','factory.intake_identities','UPDATE')"
+            )
+            self.assertEqual(cursor.fetchone(), (False, True, False))
         forbidden = (
             ("UPDATE factory.accepted_intents SET body='{}'::jsonb",),
             ("UPDATE factory.task_events SET actor_id='tampered'",),
             ("UPDATE factory.audit_log SET actor_id='tampered'",),
             ("DELETE FROM factory.accepted_intents",),
+            ("UPDATE factory.capacity_counters SET ceiling=999 WHERE scope_key='global:reader'",),
+            ("UPDATE factory.intake_identities SET source_id='tampered'",),
         )
         for (statement,) in forbidden:
             with self.subTest(statement=statement), psycopg.connect(DATABASE_URL) as connection:
@@ -546,6 +646,12 @@ class PostgresFactoryTests(unittest.TestCase):
                     cursor.execute("SET LOCAL ROLE factory_runtime")
                     with self.assertRaises(psycopg.errors.InsufficientPrivilege):
                         cursor.execute(statement)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute("SET LOCAL ROLE factory_runtime")
+            cursor.execute(
+                "UPDATE factory.capacity_counters SET active_count=active_count WHERE scope_key='global:reader'"
+            )
+            self.assertEqual(cursor.rowcount, 1)
 
 
 if __name__ == "__main__":

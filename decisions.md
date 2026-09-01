@@ -316,3 +316,7 @@ Pre-bind the owned mode-`0660` Unix socket, force every store connection through
 ## 2026-09-01 — Couple terminal projection changes to resource ownership
 
 Lock capacity in one order and close the live run, allocation and counters before clearing a task's current lease pointer. This makes cancel, supersede, release and orphan reconciliation idempotent views of the same resource invariant.
+
+## 2026-09-01 — Serialize immutable command and intake identities without mutable-row authority
+
+Use transaction advisory locks derived from validated command or intake identity keys, then persist exact command results before returning. This closes concurrent replay races while allowing `factory_runtime` to lose UPDATE authority over immutable intake identity rows.

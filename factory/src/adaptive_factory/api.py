@@ -289,6 +289,7 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
             reason_digest=payload["reason_digest"],
             idempotency_key=key,
             actor=actor,
+            correlation_id=correlation,
         )
         return JSONResponse({"reservation_id": reservation_id}, headers={"X-Correlation-ID": correlation})
 
@@ -300,7 +301,7 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         x_correlation_id: str | None = Header(None),
     ):
         actor = authenticator.authenticate(authorization, "task:budget")
-        _command_key(idempotency_key)
+        key = _command_key(idempotency_key)
         correlation = _request_id(x_correlation_id, "X-Correlation-ID")
         expected = {"grant", "provider_call_id", "price_table_digest", "cost_usd_micros", "token_units", "output_bytes"}
         if set(payload) != expected:
@@ -313,6 +314,8 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
             token_units=payload["token_units"],
             output_bytes=payload["output_bytes"],
             actor=actor,
+            idempotency_key=key,
+            correlation_id=correlation,
         )
         return JSONResponse(_json(result), headers={"X-Correlation-ID": correlation})
 

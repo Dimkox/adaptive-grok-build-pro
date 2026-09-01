@@ -62,7 +62,7 @@ class PostgresFactoryStore:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute("SELECT current_user,COALESCE(max(version),0) FROM factory.schema_migrations")
             role, version = cursor.fetchone()
-            return {"status": "ready" if version == 5 else "not_ready", "database_role": role, "schema_version": version}
+            return {"status": "ready" if version == 6 else "not_ready", "database_role": role, "schema_version": version}
 
     def metrics(self) -> dict[str, dict[str, int]]:
         with self._connect() as connection, connection.cursor() as cursor:
@@ -90,6 +90,7 @@ class PostgresFactoryStore:
         if key is None:
             return False, None, canonical_digest(request)
         digest = canonical_digest(request)
+        cursor.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", (key,))
         cursor.execute(
             "SELECT actor_id,action,request_digest,result FROM factory.command_results WHERE idempotency_key=%s",
             (key,),
@@ -214,11 +215,11 @@ class PostgresFactoryStore:
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
             cursor.execute(
-                "INSERT INTO factory.intake_identities(repository_id,source_type,source_id) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING",
-                (intake.repository_id, intake.source_type, intake.source_id),
+                "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
+                (f"{intake.repository_id}\x1f{intake.source_type}\x1f{intake.source_id}",),
             )
             cursor.execute(
-                "SELECT repository_id FROM factory.intake_identities WHERE repository_id=%s AND source_type=%s AND source_id=%s FOR UPDATE",
+                "INSERT INTO factory.intake_identities(repository_id,source_type,source_id) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING",
                 (intake.repository_id, intake.source_type, intake.source_id),
             )
             cursor.execute(
@@ -412,8 +413,13 @@ class PostgresFactoryStore:
                     value["task_id"], value["run_id"], value["owner"], RunRole(value["role"]), value["fence"],
                     datetime.fromisoformat(value["expires_at"].replace("Z", "+00:00")), value["packet_digest"]
                 )
-            if self._is_killed(cursor, request.repositories):
+            def no_grant() -> None:
+                self._record_command(
+                    cursor, idempotency_key, actor, "claim", request_digest, correlation_id, {"grant": None}
+                )
                 return None
+            if self._is_killed(cursor, request.repositories):
+                return no_grant()
             global_key = f"global:{request.role.value}"
             repo_keys = (
                 [f"repository:{repository}:reader" for repository in request.repositories]
@@ -432,7 +438,7 @@ class PostgresFactoryStore:
             )
             counters = {row[0]: (row[1], row[2]) for row in cursor.fetchall()}
             if counters[global_key][0] >= counters[global_key][1]:
-                return None
+                return no_grant()
             eligible_repositories = request.repositories
             if request.role is RunRole.READER:
                 eligible_repositories = tuple(
@@ -441,7 +447,7 @@ class PostgresFactoryStore:
                     if counters[f"repository:{repository}:reader"][0] < counters[f"repository:{repository}:reader"][1]
                 )
                 if not eligible_repositories:
-                    return None
+                    return no_grant()
             cursor.execute(
                 """SELECT t.task_id,t.repository_id,t.packet_digest,t.deadline_at
                 FROM factory.tasks t WHERE t.state IN ('queued','retry') AND t.repository_id=ANY(%s)
@@ -451,11 +457,11 @@ class PostgresFactoryStore:
             )
             row = cursor.fetchone()
             if not row:
-                return None
+                return no_grant()
             task_id, repository_id, packet_digest, deadline = row
             repo_key = f"repository:{repository_id}:reader"
             if request.role is RunRole.READER and counters[repo_key][0] >= counters[repo_key][1]:
-                return None
+                return no_grant()
             cursor.execute(
                 "INSERT INTO factory.lease_sequences(task_id,last_fence) VALUES (%s,1) ON CONFLICT(task_id) DO UPDATE SET last_fence=factory.lease_sequences.last_fence+1 RETURNING last_fence",
                 (task_id,),
@@ -468,7 +474,7 @@ class PostgresFactoryStore:
                     "UPDATE factory.tasks SET state='dead',terminal_at=clock_timestamp(),updated_at=clock_timestamp() WHERE task_id=%s",
                     (task_id,),
                 )
-                return None
+                return no_grant()
             run_id = uuid.uuid4()
             cursor.execute(
                 "SELECT LEAST(clock_timestamp()+(%s * interval '1 second'),%s)", (request.lease_seconds, deadline)
@@ -716,7 +722,8 @@ class PostgresFactoryStore:
             return result
 
     def reserve_budget(
-        self, grant: LeaseGrant, cost: int, tokens: int, wall: int, reason_digest: str, key: str, actor: Actor
+        self, grant: LeaseGrant, cost: int, tokens: int, wall: int, reason_digest: str, key: str, actor: Actor,
+        *, correlation_id: str | None = None,
     ) -> str:
         if (
             any(type(value) is not int or value < 0 for value in (cost, tokens, wall))
@@ -725,6 +732,14 @@ class PostgresFactoryStore:
         ):
             raise BudgetError("invalid budget evidence")
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            command = {
+                "task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence,
+                "cost_usd_micros": cost, "token_units": tokens, "wall_seconds": wall,
+                "reason_digest": reason_digest,
+            }
+            replay, prior, request_digest = self._command_replay(cursor, key, actor, "reserve_budget", command)
+            if replay:
+                return prior["reservation_id"]
             self._lock_grant(cursor, grant)
             cursor.execute(
                 """SELECT reservation_id,task_id,run_id,cost_usd_micros,token_units,wall_seconds,reason_digest
@@ -737,7 +752,12 @@ class PostgresFactoryStore:
                 actual = (str(duplicate[1]), str(duplicate[2]), duplicate[3], duplicate[4], duplicate[5], duplicate[6].strip())
                 if actual != expected:
                     raise StoreError("idempotency key reused with different budget request")
-                return str(duplicate[0])
+                reservation_id = str(duplicate[0])
+                self._record_command(
+                    cursor, key, actor, "reserve_budget", request_digest, correlation_id,
+                    {"reservation_id": reservation_id},
+                )
+                return reservation_id
             cursor.execute(
                 "SELECT cost_limit_micros,token_limit,wall_limit_seconds,cost_reserved_micros,cost_observed_micros,tokens_reserved,tokens_observed,wall_reserved_seconds,accounting_blocked FROM factory.tasks WHERE task_id=%s FOR UPDATE",
                 (grant.task_id,),
@@ -761,7 +781,12 @@ class PostgresFactoryStore:
                     "UPDATE factory.tasks SET cost_reserved_micros=cost_reserved_micros+%s,tokens_reserved=tokens_reserved+%s,wall_reserved_seconds=wall_reserved_seconds+%s WHERE task_id=%s",
                     (cost, tokens, wall, grant.task_id),
                 )
-            return str(row[0] if row else reservation_id)
+            result = str(row[0] if row else reservation_id)
+            self._record_command(
+                cursor, key, actor, "reserve_budget", request_digest, correlation_id,
+                {"reservation_id": result},
+            )
+            return result
 
     def observe_usage(
         self,
@@ -772,6 +797,9 @@ class PostgresFactoryStore:
         tokens: int,
         output: int,
         actor: Actor,
+        *,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
     ) -> UsageResult:
         if (
             not isinstance(provider_call_id, str)
@@ -782,6 +810,18 @@ class PostgresFactoryStore:
         blocked_reason = None
         result = None
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            command = {
+                "task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence,
+                "provider_call_id": provider_call_id, "price_table_digest": price_table_digest,
+                "cost_usd_micros": cost, "token_units": tokens, "output_bytes": output,
+            }
+            replay, prior, request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "observe_usage", command
+            )
+            if replay:
+                if "error" in prior:
+                    raise BudgetError(prior["error"])
+                return UsageResult(prior["observation_id"], prior["created"])
             self._lock_grant(cursor, grant)
             if not isinstance(price_table_digest, str) or not HEX64.fullmatch(price_table_digest):
                 blocked_reason = "missing_price_table"
@@ -795,7 +835,12 @@ class PostgresFactoryStore:
                 if duplicate:
                     if (duplicate[1].strip(), duplicate[2], duplicate[3], duplicate[4]) != (price_table_digest, cost, tokens, output):
                         raise StoreError("provider call id reused with different usage evidence")
-                    return UsageResult(str(duplicate[0]), False)
+                    result = UsageResult(str(duplicate[0]), False)
+                    self._record_command(
+                        cursor, idempotency_key, actor, "observe_usage", request_digest, correlation_id,
+                        {"observation_id": result.observation_id, "created": result.created},
+                    )
+                    return result
                 cursor.execute(
                     """SELECT COALESCE(sum(cost_usd_micros),0),COALESCE(sum(token_units),0),COALESCE(sum(wall_seconds),0)
                     FROM factory.budget_reservations WHERE task_id=%s AND run_id=%s AND released_at IS NULL""",
@@ -863,8 +908,17 @@ class PostgresFactoryStore:
                     "accounting_blocked",
                     f"run:{grant.run_id}",
                     blocked_reason,
-                    key,
+                    correlation_id or key,
                     run_id=grant.run_id,
+                )
+                self._record_command(
+                    cursor, idempotency_key, actor, "observe_usage", request_digest, correlation_id,
+                    {"error": "accounting blocked"},
+                )
+            elif result is not None:
+                self._record_command(
+                    cursor, idempotency_key, actor, "observe_usage", request_digest, correlation_id,
+                    {"observation_id": result.observation_id, "created": result.created},
                 )
         if blocked_reason:
             raise BudgetError("accounting blocked")

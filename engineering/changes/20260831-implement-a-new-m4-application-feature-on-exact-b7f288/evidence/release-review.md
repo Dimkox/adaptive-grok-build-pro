@@ -4,9 +4,9 @@
 
 **FAIL — NO-GO for local source release.**
 
-Route: `b7f288f1e81e`  
-Reviewed base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`  
-Reviewed head: `01643c6594947535e690c5722f710081c9b9db9f`  
+Route: `b7f288f1e81e`
+Reviewed base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
+Reviewed head: `01643c6594947535e690c5722f710081c9b9db9f`
 Reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..01643c6594947535e690c5722f710081c9b9db9f`
 
 The repository was at the reviewed head when inspected. The committed README/current-state/stack graph and installer inventory are coherent, and no provider, GitHub, deployment, production, or Trust CI write path was found in the factory product. The exact tree is nevertheless not locally release-ready: the runtime cannot be started through a supported Unix-socket composition path, terminal/supersession paths can leak capacity and defeat reconciliation, least-privilege roles are not operationally wired, required observability is absent, the P0 database/API evidence is outside the fingerprint-bound verifier, and the rollback version is stale.

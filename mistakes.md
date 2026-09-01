@@ -277,3 +277,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Integration tests passed as the database owner while `factory_runtime` retained blanket updates over immutable evidence.
 **Root cause:** Role DDL and privilege metadata were mistaken for an effective connection boundary; representative product operations never executed under `SET ROLE factory_runtime`.
+
+## 2026-09-01 — Sampled least privilege and successful idempotency paths
+
+**Symptom:** Null claims changed after queue state, accounting retries ignored the API command identity, and runtime could change capacity ceilings and intake identities.
+**Root cause:** The first repair tested representative successful command replays and a subset of immutable tables instead of enumerating every accepted outcome and every policy-bearing privilege inherited from earlier migrations.

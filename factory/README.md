@@ -15,7 +15,7 @@ FACTORY_TEST_DATABASE_URL='postgresql://factory_test:replace@127.0.0.1:5432/fact
   .venv/bin/python -m unittest tests.test_postgres_integration -v
 ```
 
-The migration runner uses a factory-only advisory lock and immutable packaged checksums. Migration `005` narrows runtime grants and adds trusted M0, command replay and accounting controls. After durable intake, rollback is global kill + preserved audit + backup restore into a separate comparison database or forward migration `006+`; never down-migrate or delete evidence.
+The migration runner uses a factory-only advisory lock and immutable packaged checksums. Migration `005` adds trusted M0, command replay and accounting controls; migration `006` narrows runtime capacity and intake grants to the columns actually mutated. After durable intake, rollback is global kill + preserved audit + backup restore into a separate comparison database or forward migration `007+`; never down-migrate or delete evidence.
 
 ## Local API and CLI
 
@@ -31,4 +31,4 @@ Configuration names are documented in `.env.example`; it contains placeholders o
 
 `/health/ready` checks the effective `factory_runtime` role and exact schema version. Authenticated `/metrics` returns only the three declared low-cardinality JSON families; it never labels task IDs or emits bodies, tokens or reasoning. `python3 scripts/grok_verify.py --mode pr` creates a disposable PostgreSQL 17 container, executes API/database/effective-role tests, performs an actual database restart, reconciles twice, and removes that exact container.
 
-For a separately approved rollout: start killed; verify a logical backup by restoring it into a distinct comparison database; migrate with the migrator credential; start `adaptive-factory-server`; check readiness/metrics; run synthetic submit/claim/reserve/observe/release/restart/reconcile twice; then clear kill. On any invariant failure, enable global kill, stop the socket process, preserve state/audit/logs, and forward-fix with migration `006+`.
+For a separately approved rollout: start killed; verify a logical backup by restoring it into a distinct comparison database; migrate with the migrator credential; start `adaptive-factory-server`; check readiness/metrics; run synthetic submit/claim/reserve/observe/release/restart/reconcile twice; then clear kill. On any invariant failure, enable global kill, stop the socket process, preserve state/audit/logs, and forward-fix with migration `007+`.

@@ -104,10 +104,12 @@ class FactoryService:
         reason_digest: str,
         idempotency_key: str,
         actor: Actor,
+        correlation_id: str | None = None,
     ):
         self._require_grant_actor(grant, actor, "task:budget")
         return self.store.reserve_budget(
-            grant, cost_usd_micros, token_units, wall_seconds, reason_digest, idempotency_key, actor
+            grant, cost_usd_micros, token_units, wall_seconds, reason_digest, idempotency_key, actor,
+            correlation_id=correlation_id,
         )
 
     def observe_usage(
@@ -120,10 +122,13 @@ class FactoryService:
         token_units: int,
         output_bytes: int,
         actor: Actor,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
     ):
         self._require_grant_actor(grant, actor, "task:budget")
         return self.store.observe_usage(
-            grant, provider_call_id, price_table_digest, cost_usd_micros, token_units, output_bytes, actor
+            grant, provider_call_id, price_table_digest, cost_usd_micros, token_units, output_bytes, actor,
+            idempotency_key=idempotency_key, correlation_id=correlation_id,
         )
 
     def set_kill(

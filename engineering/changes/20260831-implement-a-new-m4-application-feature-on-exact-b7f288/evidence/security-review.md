@@ -1,109 +1,122 @@
-# M4 final security review — FAIL
+# M4 round-2 security review — FAIL
 
 ## Reviewed identity
 
 - Route: `b7f288f1e81e`
 - Change: `20260831-implement-a-new-m4-application-feature-on-exact-b7f288`
 - Base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-- Reviewed head: `01643c6594947535e690c5722f710081c9b9db9f`
-- Reviewed diff: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..01643c6594947535e690c5722f710081c9b9db9f`
+- Reviewed head: `9bc51e81dddb8fc02f22171b586eb8c9caa7f304`
+- Full reviewed diff: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..9bc51e81dddb8fc02f22171b586eb8c9caa7f304`
+- Fix commit: `9bc51e81dddb8fc02f22171b586eb8c9caa7f304` (`01643c6594947535e690c5722f710081c9b9db9f` parent)
 - Reviewer: route-selected read-only `security_reviewer`
 - Verdict: **FAIL**
 - Critical findings: **0**
-- Important findings: **5**
-- Moderate findings: **2**
+- Important findings: **1**
+- Moderate findings: **1**
 
-PASS requires zero Critical/Important findings. This report is local review evidence only; it is not merge authority and cannot create the App-owned `adaptive-trust-ci/verified@<policy-sha12>` check.
+The task supplied abbreviation `9bc51e8c`, which does not resolve in this repository. The clean checked-out fix commit is `9bc51e81dddb8fc02f22171b586eb8c9caa7f304`; this report and all executable evidence are bound to that exact SHA.
 
-## Important findings
+PASS requires zero Critical/Important findings. This is local review evidence only and cannot substitute for the App-owned `adaptive-trust-ci/verified@<policy-sha12>` check on the exact pull-request head.
 
-### I-1 — Caller assertions are accepted as M0 trust authority
+## Prior-finding closure matrix
 
-`M0AuthorityV1.from_dict()` accepts any fresh caller-supplied `observed_at`, any regex-shaped `check_name`, and a matching caller-supplied head SHA (`factory/src/adaptive_factory/contracts.py:145-160`). Its alternate form accepts any named bootstrap exception, issuer, scope, and future expiration (`factory/src/adaptive_factory/contracts.py:161-170`). Intake only cross-compares those fields with the other caller-supplied handoffs (`factory/src/adaptive_factory/contracts.py:227-237`); it does not bind the observation to the deployed policy epoch/App identity or bind an exception to a trusted, persisted operator decision. This remains reachable to every token with `task:submit` (`factory/src/adaptive_factory/api.py:119-131`).
+| Prior finding | Round-2 result | Evidence |
+| --- | --- | --- |
+| I-1 caller-forgeable M0 authority | **Closed** | Intake now requires a matching, non-revoked row in a separately provisioned M0 observation/exception table (`factory/src/adaptive_factory/service.py:43-49`, `factory/src/adaptive_factory/store.py:113-128`). Observation names are constrained to `adaptive-trust-ci/verified@<12 hex>` and runtime receives SELECT only (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:1-19,68`). Focused service tests reject unpersisted caller assertions and fabricated bootstrap exceptions. |
+| I-2 worker actor/repository boundary | **Closed** | Claim owner is derived from `actor.actor_id`; worker kind, grant owner, and immutable task repository are checked before mutation (`factory/src/adaptive_factory/api.py:213-235`, `factory/src/adaptive_factory/service.py:61-95,97-127`). Store fencing still checks task/run/owner/fence/packet/live state in one locked transaction (`factory/src/adaptive_factory/store.py:601-617`). Cross-owner/cross-repository service regressions pass. |
+| I-3 completion accounting | **Closed** | Authenticated reservation and usage endpoints now exist (`factory/src/adaptive_factory/api.py:271-317`). Cost/token/wall reservations are bounded and settled (`factory/src/adaptive_factory/store.py:718-872`); completed release rejects blocked, absent, or unsettled accounting (`factory/src/adaptive_factory/store.py:637-666`). PostgreSQL regressions prove missing/unsettled accounting fails and settled accounting completes. |
+| I-4 UDS-only bootstrap/mode | **Closed** | `adaptive-factory-server` is a dedicated composition root (`factory/pyproject.toml:11-13`, `factory/src/adaptive_factory/server.py:102-121`). It pre-binds only `AF_UNIX`, rejects relative paths and unsafe/non-owned parents/existing paths, applies `0660`, passes only the pre-bound socket to Uvicorn, and exposes no host/port/TCP option (`factory/src/adaptive_factory/server.py:73-99,107-121`). Actor/token files are no-follow, regular, private and bounded (`factory/src/adaptive_factory/server.py:22-70`, `factory/src/adaptive_factory/settings.py:13-31`). Focused socket/config tests pass. |
+| I-5 effective least-privilege DB roles | **Still Important — open** | Connections do execute `SET ROLE factory_runtime` and immutable audit/intent/event updates are narrowed, but inherited table-level privileges remain exploitable; see I-1 below. |
+| M-1 streaming body cap | **Closed** | Middleware validates malformed/negative/declared lengths and cumulatively caps every streamed chunk before parsing (`factory/src/adaptive_factory/api.py:108-126`). Oversized declared and chunked/no-length plus malformed-length tests pass. |
+| M-2 correlation/idempotency | **Still Moderate — open** | Kill, release, heartbeat, cancel, reconcile and successful claim now record exact command results/correlation and reject changed replay, but reservation/usage and no-result claims remain incomplete; see M-1 below. |
 
-A focused production-code probe accepted both:
+## Important finding
+
+### I-1 — Effective runtime role can still rewrite security policy and other supposedly narrow state
+
+Migration `003` granted table-level `SELECT, INSERT, UPDATE` on all operational tables to `factory_runtime`, including `intake_identities` and `capacity_counters` (`factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql:48-53`). Migration `005` revokes table-level UPDATE from several immutable tables, then adds column grants, but it never revokes the inherited table-level UPDATE on `capacity_counters` or `intake_identities` (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:58-71`). Therefore the later column-oriented narrowing does not protect the capacity `ceiling` column.
+
+A fresh disposable PostgreSQL 17 database was migrated through version 005, and a connection created by the production `PostgresFactoryStore._connect()` confirmed the effective role and mutated the global reader ceiling:
 
 ```text
-accepted_authority ... check_name='caller-asserted-not-trust-ci' ...
-accepted_authority ... bootstrap_exception='fabricated', issuer='untrusted-caller', scope='anything' ...
+effective_privileges= ('factory_runtime', True, True, True, True)
+runtime_ceiling_mutation= 999
 ```
 
-An authenticated submitter can therefore manufacture the authority that is supposed to gate dispatch. This contradicts the requirement that M4 consume frozen authority and not infer permission from caller claims. Require a verifier-produced, integrity-protected observation bound to the exact head, deployed check name/policy epoch and trusted issuer; remove the revoked bootstrap form or require a separately persisted and authenticated operator exception with an allowlisted scope and bounded TTL.
+The tuple means: current role `factory_runtime`; UPDATE allowed on `capacity_counters.ceiling`; table UPDATE allowed on `intake_identities`; INSERT allowed on `accepted_intents`; INSERT allowed on `kill_switches`. The direct `UPDATE factory.capacity_counters SET ceiling=999 WHERE scope_key='global:reader'` succeeded. Claim trusts the database ceiling (`factory/src/adaptive_factory/store.py:429-458`), so a compromised runtime credential or injection in any future runtime path can bypass the hard 20-reader policy without migrator/operator authority.
 
-### I-2 — Worker mutations are not bound to actor identity or repository authorization
+The new integration privilege test covers update denial only for `accepted_intents`, `task_events`, and `audit_log` (`factory/tests/test_postgres_integration.py:514-548`), so it misses this live privilege. The app legitimately needs to adjust `active_count`, but not `ceiling`; it also does not need UPDATE on intake identity columns.
 
-Claim accepts an arbitrary caller-provided `owner` (`factory/src/adaptive_factory/api.py:184-204`, `factory/src/adaptive_factory/service.py:49-60`) instead of binding the lease owner to `actor.actor_id`. Heartbeat, release, budget reservation, and usage observation check only a coarse scope (`factory/src/adaptive_factory/service.py:62-101`); unlike read/cancel/claim, they never enforce `actor.repositories`. The SQL fence validates the owner string embedded in the caller-supplied grant but does not compare it with the authenticated actor or that actor's repository set (`factory/src/adaptive_factory/store.py:424-440`).
+Required remediation: revoke the inherited table-level privileges first, then grant only the exact operations/columns used by runtime. At minimum, revoke table UPDATE on `capacity_counters` and grant UPDATE on `active_count` only; revoke UPDATE on `intake_identities`; audit all privileges inherited from migration 003 rather than sampling three tables. Add effective-role negative tests that attempt to change every policy/identity/immutable column, including `capacity_counters.ceiling`, while retaining positive tests for legitimate runtime operations.
 
-A focused service-boundary probe showed actor `worker-B`, authorized only for `repo/B`, successfully invoking heartbeat and completed release for a grant owned by `worker-A`:
+## Moderate finding
+
+### M-1 — Correlation and command idempotency remain incomplete on accounting and no-result claims
+
+The API computes and validates the command key and correlation header for budget reservation, but passes only the command key to the service; correlation is dropped (`factory/src/adaptive_factory/api.py:271-293`, `factory/src/adaptive_factory/service.py:97-111`). For usage observation it computes then discards the command key and also drops correlation (`factory/src/adaptive_factory/api.py:295-317`, `factory/src/adaptive_factory/service.py:113-127`). `observe_usage()` deduplicates only by `(run_id, provider_call_id)` (`factory/src/adaptive_factory/store.py:766-872`), so the same `Idempotency-Key` with a changed provider call is accepted as a second mutation rather than rejected as a conflicting replay.
+
+A focused ASGI probe sent one reservation and two different usage bodies under the same idempotency/correlation headers:
 
 ```text
-heartbeat worker-B frozenset({'repo/B'}) worker-A
-release worker-B frozenset({'repo/B'}) worker-A completed
+statuses= 200 200 200
+service_kwargs= [
+  ('reserve', {... 'idempotency_key': '<derived>', 'actor': ...}),
+  ('usage', {'provider_call_id': 'provider-1', ... 'actor': ...}),
+  ('usage', {'provider_call_id': 'provider-2', ... 'actor': ...})
+]
 ```
 
-Possession or forwarding of a grant therefore bypasses the token's actor/repository boundary. Bind claim owner to the authenticated actor (or an explicit server-side worker identity), and enforce actor ID plus repository authorization inside the same transaction that locks every grant mutation. Add cross-actor and cross-repository heartbeat/release/budget regression tests.
+Neither accounting call received `correlation_id`; usage received neither the command key nor correlation. This can double-observe and consume/block budget when a caller reuses one command identity with changed content, and it prevents correlation of accounting evidence to the authenticated API command.
 
-### I-3 — Budget enforcement can be bypassed by the normal API completion path
+Claim has a related gap: kill/capacity/no-task returns occur before `_record_command()` (`factory/src/adaptive_factory/store.py:397-458`), so the same idempotency key that first returned no grant can later acquire a lease after state changes. Exact replay is recorded only for a successful claim (`factory/src/adaptive_factory/store.py:500-524`).
 
-The API exposes claim, heartbeat and proposal/release, but no budget reservation or usage-observation endpoint (`factory/src/adaptive_factory/api.py:184-237`, `factory/contracts/openapi/factory-control.v1.json:10-14`). A worker can directly propose `completed`; release checks the live fence but does not require accounting evidence, inspect `accounting_blocked`, settle a reservation, or compare observed usage with reserved usage (`factory/src/adaptive_factory/store.py:424-440`, `factory/src/adaptive_factory/store.py:454-510`). `accounting_blocked` only affects future claims and reservations (`factory/src/adaptive_factory/store.py:353-357`, `factory/src/adaptive_factory/store.py:524-535`), so even a currently blocked lease can complete. The stored `wall_seconds` reservation is never included in any limit calculation (`factory/src/adaptive_factory/store.py:512-547`).
+Required remediation: route every mutation through the same durable command-result mechanism, including reserve, observe, and every claim result (`grant` or `null`); bind actor/action/request digest/correlation and return the exact recorded result; reject the same key with changed content. Keep `(run_id, provider_call_id)` as an additional provider-level uniqueness constraint, not a replacement for API command idempotency. Add changed-body/same-key, exact replay, correlation persistence, and no-grant-then-state-change regressions.
 
-Consequently, missing accounting fails closed only if a caller voluntarily invokes the non-API service method that detects it. Require server-side accounting state for every completion/release, reject release while accounting is absent or blocked, expose a closed authenticated accounting protocol if workers need it, and enforce/settle wall, cost, token and output reservations atomically.
+## Other security observations
 
-### I-4 — The claimed Unix-socket-only server boundary is not implemented
-
-The package has only a CLI entry point (`factory/pyproject.toml:11-12`). `FactorySettings` is not wired to an application bootstrap, and the tree contains no Uvicorn server construction, Unix-socket bind, socket-parent ownership validation, stale-socket handling, or `0660` permission enforcement. `create_app()` returns a transport-agnostic ASGI app (`factory/src/adaptive_factory/api.py:81-82`), so nothing in product code prevents an integrator from binding it to TCP. The CLI's use of `httpx.HTTPTransport(uds=...)` (`factory/src/adaptive_factory/cli.py:61-66`) constrains only that client, not the server.
-
-This leaves the primary local trust boundary asserted by AC-010 and `factory/README.md:20-24` unenforced and provides no runnable authenticated API composition from settings, store, service and tokens. Add a dedicated server entry point that can only bind an operator-owned Unix socket, validates/no-follows its parent and existing path, applies `0660` under a controlled umask, refuses TCP configuration, wires `read_token_file()` and repository-scoped actors, and has an end-to-end socket-mode/no-TCP test.
-
-### I-5 — Runtime database grants permit mutation of records described as immutable/append-only
-
-Migration `003` grants `factory_runtime` `UPDATE` on every operational table except `audit_log`, including `accepted_intents`, `task_events`, `usage_observations`, `budget_reservations`, and `kill_switches` (`factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql:48-53`). Those tables are described as immutable or append-only evidence, yet a runtime credential can rewrite accepted bodies/digests, event actors/actions/metadata, usage, or the current kill state without producing a new row. The audit chain covers only `audit_log`; it does not detect these rewrites (`factory/src/adaptive_factory/store.py:278-310`). The runtime connection also accepts an arbitrary database URL without checking/setting the intended role (`factory/src/adaptive_factory/store.py:44-53`).
-
-The audit-log-specific no-update/no-delete test is positive but too narrow (`factory/tests/test_postgres_integration.py:266-287`). Replace the blanket grant with per-table least privilege (for example INSERT-only immutable facts, narrowly necessary UPDATE columns/tables), ensure the service actually operates under the runtime role, and add negative privilege tests for every immutable/evidence table.
-
-## Moderate findings
-
-### M-1 — The 1 MiB body limit is Content-Length-only and runs before authentication
-
-Middleware rejects only when a parseable `Content-Length` is present (`factory/src/adaptive_factory/api.py:104-109`). A streaming/chunked ASGI body has no content length and is fully consumed by FastAPI's JSON parser before endpoint authentication. Malformed `Content-Length` also reaches an unhandled `int()` conversion. A local peer with socket access can therefore bypass the documented 1 MiB memory bound without a valid token. Enforce a cumulative receive limit at the ASGI boundary and return a bounded 400/413 for malformed or oversized framing; test chunked, missing, conflicting and malformed lengths.
-
-### M-2 — Mutation correlation and kill idempotency do not preserve reliable operator evidence
-
-The API validates `X-Correlation-ID` but drops it before service/store calls; store audit instead uses request IDs or synthesized digests (`factory/src/adaptive_factory/api.py:119-279`, `factory/src/adaptive_factory/store.py:229-238`, `factory/src/adaptive_factory/store.py:417-419`, `factory/src/adaptive_factory/store.py:491-505`). Kill changes are not added to the hash-chained audit, and conflicting reuse of an idempotency key returns the caller's newly requested `enabled` value when the insert did nothing (`factory/src/adaptive_factory/store.py:639-650`). This can falsely report an unkill/kill while durable state remains opposite. Persist the authenticated correlation ID, action digest and actual prior result; reject an idempotency key reused with different scope/enabled/reason; preserve kill evidence in an append-only protected record/audit chain.
-
-## Positive controls observed
-
-- Bearer token digests are compared with `hmac.compare_digest`, and the token-file reader uses `O_NOFOLLOW`, verifies a regular `0600` file, bounds length and closes the descriptor (`factory/src/adaptive_factory/api.py:35-53`, `factory/src/adaptive_factory/settings.py:13-31`). No token or database secret was read or logged during this review.
-- Application SQL values are parameterized; the only executed raw SQL is packaged, checksum-bound migration text (`factory/src/adaptive_factory/migrations.py:33-64`, `factory/src/adaptive_factory/store.py`). No SQL-injection path was found in the reviewed surface.
-- Claims use ordered capacity locks plus `FOR UPDATE SKIP LOCKED`, monotonic per-task fences, database time, live-run/state/deadline checks and transaction-scoped updates (`factory/src/adaptive_factory/store.py:320-440`). These controls reject stale/expired grants when the authenticated resource boundary is otherwise correct.
-- Global/repository kill state blocks new claims as specified (`factory/src/adaptive_factory/store.py:312-324`), and reconciliation is page-bounded to 100 by the service with a five-second statement timeout (`factory/src/adaptive_factory/service.py:112-116`, `factory/src/adaptive_factory/store.py:652-687`).
-- `audit_log` itself is insert/select-only for the runtime role and is hash chained; verification recalculates the chain and head (`factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql:52-54`, `factory/src/adaptive_factory/store.py:89-136`, `factory/src/adaptive_factory/store.py:278-310`).
-- No provider, shell, repository, Git/GitHub, deploy, systemd, connector or production-write execution path was found under `factory/src/adaptive_factory`.
+- Bearer digests still use constant-time comparison, and raw tokens are loaded from bounded no-follow `0600` files without logging (`factory/src/adaptive_factory/api.py:35-53`, `factory/src/adaptive_factory/settings.py:13-31`).
+- Application values are parameterized in SQL. Packaged migrations are contiguous and checksum-bound; no SQL-injection path was found.
+- Lease fencing, capacity lock order, `FOR UPDATE SKIP LOCKED`, database deadlines, stale-fence rejection, kill-before-claim and bounded reconciliation remain present. The disposable restart probe demonstrated a higher fence and rejection of the late holder.
+- Audit log UPDATE/DELETE remains denied to runtime and its hash chain verifies; command results are INSERT/SELECT only. Correlation is durable for the mutations that actually call `_record_command()`.
+- No provider execution, shell/subprocess, repository/Git/GitHub, systemd, deploy, network client, external-write or production-mutation path was found in `factory/src/adaptive_factory`. The only socket family constructed by the server is `AF_UNIX`.
+- Readiness proves effective `factory_runtime` and exact schema version 5 (`factory/src/adaptive_factory/store.py:50-65`). Operational deployment must still ensure the login role itself is not owner/superuser and can only `SET ROLE factory_runtime`; tests use a disposable owner login and therefore do not prove that host-level credential design.
 
 ## Commands and evidence
 
 ```text
 git rev-parse HEAD
-01643c6594947535e690c5722f710081c9b9db9f
+9bc51e81dddb8fc02f22171b586eb8c9caa7f304
 
-git diff --name-status 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..01643c6594947535e690c5722f710081c9b9db9f
-72 changed paths inspected; factory package, contracts, SQL, tests and surrounding change documents reviewed.
+git show -s --format='%H %P %s' HEAD
+9bc51e81dddb8fc02f22171b586eb8c9caa7f304 01643c6594947535e690c5722f710081c9b9db9f fix(factory): close durable control-plane review blockers
 
-PYTHONPATH=factory/src:. python3 <focused authority/authorization probe>
-Both fabricated M0 forms accepted; cross-repository/cross-owner heartbeat and release reached the store.
+uv run --project factory python -m unittest -v \
+  factory.tests.test_contracts factory.tests.test_service factory.tests.test_api \
+  factory.tests.test_server factory.tests.test_migrations factory.tests.test_state
+Ran 30 tests — OK
 
-python3 -m compileall -q factory/src factory/tests
-PASS
+uv run --project factory python factory/tests/run_disposable_exit.py
+Ran 40 tests — OK
+PASS: PostgreSQL restarted; one repair; replay no-op; higher fence; late holder rejected
+PASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation
 
-rg -n "uvicorn.run|Config\\(|Server\\(|chmod\\(.*0660|chmod\\(.*0o660|create_unix|bind.*unix|\\[project.scripts\\]" factory -S
-Only `[project.scripts]` matched; it defines the CLI, not a server.
+fresh disposable PostgreSQL 17 + PostgresMigrator + PostgresFactoryStore._connect privilege probe
+effective_privileges= ('factory_runtime', True, True, True, True)
+runtime_ceiling_mutation= 999
+The exact probe container `adaptive-factory-security-r2` was removed by its EXIT cleanup.
 
-python3 -m unittest discover -s factory/tests -p 'test_*.py' -v
-NOT RUNNABLE in the reviewer base environment: `fastapi` and the installed `adaptive_factory` package were absent. This is not represented as passing evidence. The independent route verification receipt must remain the source for the full test result on the exact fingerprint.
+focused ASGI accounting command probe
+same Idempotency-Key with two different provider_call_id bodies: 200, 200
+neither usage call received command key/correlation; reservation did not receive correlation
+
+rg -n "subprocess|os.system|shell=True|git |github|provider|systemd|deploy|requests.|httpx.(get|post)|socket.AF_INET" factory/src/adaptive_factory -S
+No execution/network/TCP operation matched; only provider-call identifiers and failure enums matched.
 ```
 
-No `.env`, private key, credential store, production dump, Trust CI secret/state, or human approval material was read. No database, network, push, merge, release, deployment or other external mutation was performed. The only repository write by this reviewer is this requested report.
+The full base-to-head `git diff --check` currently reports trailing Markdown hard-break spaces in committed first-round `release-review.md` and `test-review.md`; this is not a security finding, but the final evidence refresh should remove stale first-round review identities.
+
+No `.env`, token contents, database credential store, private key, production dump, Trust CI secret/state, or human approval material was read. This review created and removed only exact disposable local PostgreSQL containers through the checked-in test runner and the focused privilege probe. It performed no shared/production database mutation, external write, push, merge, release or deployment. The only repository write by this reviewer is this requested report; concurrent changes to other evidence reports belong to other review agents and were not altered.
 
 ## Required disposition
 
-**FAIL.** Return I-1 through I-5 to the single route write owner, add adversarial regressions, rerun exact-tree verification, and repeat every affected independent review. Do not record a passing `security_review` receipt for head `01643c6594947535e690c5722f710081c9b9db9f`.
+**FAIL.** Return I-1 to the single route write owner and fix M-1 in the same bounded remediation because it is an explicit incomplete prior finding. Add the effective-role and command-replay regressions described above, rerun disposable verification, then repeat affected independent reviews on the new exact SHA. Do not record a passing `security_review` receipt for `9bc51e81dddb8fc02f22171b586eb8c9caa7f304`.

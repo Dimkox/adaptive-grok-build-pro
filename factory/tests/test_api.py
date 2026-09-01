@@ -44,7 +44,7 @@ class FakeService:
         raise KeyError(task_id)
 
     def readiness(self):
-        return {"status": "ready", "database_role": "factory_runtime", "schema_version": 5}
+        return {"status": "ready", "database_role": "factory_runtime", "schema_version": 6}
 
 
 class ApiTests(unittest.TestCase):

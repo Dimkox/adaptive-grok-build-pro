@@ -77,3 +77,10 @@ Each vertical records its RED command/result before production source is added, 
 - RED deployment boundary: no server module existed and body framing trusted `Content-Length`; GREEN pre-binds only an owned absolute Unix socket at `0660`, loads closed mode-`0600` actor/token files without following links, executes store connections as `factory_runtime`, and cumulatively bounds streamed bytes.
 - RED schema/evidence: migration count was four and effective runtime could update immutable facts; GREEN migration `005` adds trusted authority/command records, accounting fields/composite FKs/keyset indexes and column-level grants. Effective-role SQL now denies accepted-intent, task-event and audit tampering.
 - RED verifier: PR `_python` had no PostgreSQL exit check; GREEN adds `factory-postgres-exit`, whose self-provisioning run passed 40 tests and an actual PostgreSQL restart with one repair, zero on replay, higher fence and late-holder rejection.
+
+### Round-two review remediation
+
+- RED null claim: an empty claim returned `grant=null`, but the same command key leased newly arrived work; GREEN serializes the key and persists/replays `{"grant":null}` before every accepted no-grant return.
+- RED accounting commands: changed usage under one command key returned 200 and a reservation replay after release returned 409; GREEN binds reservation/usage request and exact result to actor, action, caller command key and correlation, and consults durable replay before live-fence state.
+- RED effective role: runtime privilege probes returned `(ceiling_update=True, active_count_update=True, intake_update=True)`; GREEN forward migration `006` returns `(False, True, False)`, while normal intake and capacity operations continue under `factory_runtime`.
+- GREEN focused: migration/API/service tests passed 17/17 and ruff passed. GREEN exit: 42/42 factory tests passed on fresh disposable PostgreSQL 17, followed by actual restart, one repair, zero-repair replay, higher fence and late-holder rejection.
