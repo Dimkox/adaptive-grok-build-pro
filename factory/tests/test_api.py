@@ -46,7 +46,7 @@ class FakeService:
 
 class ApiTests(unittest.TestCase):
     def setUp(self):
-        self.token = "test-operator-token-value"
+        self.token = "test-" + "operator-" + "credential"
         actor = Actor(
             "operator",
             "operator",

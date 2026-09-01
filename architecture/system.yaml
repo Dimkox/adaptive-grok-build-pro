@@ -546,6 +546,7 @@
         "factory/pyproject.toml",
         "factory/src/adaptive_factory/__init__.py",
         "factory/src/adaptive_factory/contracts.py",
+        "factory/src/adaptive_factory/migrations.py",
         "factory/src/adaptive_factory/models.py",
         "factory/src/adaptive_factory/service.py",
         "factory/src/adaptive_factory/state.py",
@@ -571,7 +572,6 @@
       "public_contracts": [],
       "repository_paths": [
         "factory/compose.yaml",
-        "factory/src/adaptive_factory/migrations.py",
         "factory/src/adaptive_factory/resources"
       ],
       "runtime": {

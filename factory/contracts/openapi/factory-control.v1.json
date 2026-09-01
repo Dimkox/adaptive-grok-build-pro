@@ -1,18 +1,17 @@
 {
   "openapi": "3.1.0",
   "info": {"title": "Adaptive Factory Local Control API", "version": "1.0.0"},
-  "servers": [{"url": "http://factory.local", "description": "HTTP over operator-owned Unix socket only"}],
   "paths": {
     "/health/live": {"get": {"tags": ["health"], "responses": {"200": {"description": "live"}}}},
     "/health/ready": {"get": {"tags": ["health"], "responses": {"200": {"description": "ready"}}}},
-    "/v1/tasks": {"get": {"tags": ["tasks"], "security": [{"bearerAuth": ["task:list"]}], "responses": {"200": {"description": "bounded list"}}}, "post": {"tags": ["tasks"], "security": [{"bearerAuth": ["task:submit"]}], "responses": {"200": {"description": "duplicate"}, "201": {"description": "created"}}}},
-    "/v1/tasks/{task_id}": {"get": {"tags": ["tasks"], "security": [{"bearerAuth": ["task:read"]}], "responses": {"200": {"description": "task"}, "404": {"description": "not found"}}}},
-    "/v1/tasks/{task_id}/cancel": {"post": {"tags": ["tasks"], "security": [{"bearerAuth": ["task:cancel"]}], "responses": {"200": {"description": "cancelled"}}}},
-    "/v1/claims": {"post": {"tags": ["worker"], "security": [{"bearerAuth": ["task:claim"]}], "responses": {"200": {"description": "claim result"}}}},
-    "/v1/heartbeats": {"post": {"tags": ["worker"], "security": [{"bearerAuth": ["task:heartbeat"]}], "responses": {"200": {"description": "lease"}}}},
-    "/v1/proposals": {"post": {"tags": ["worker"], "security": [{"bearerAuth": ["task:release"]}], "responses": {"200": {"description": "release status"}}}},
-    "/v1/kill-switches": {"post": {"tags": ["operator"], "security": [{"bearerAuth": ["factory:kill"]}], "responses": {"200": {"description": "kill state"}}}},
-    "/v1/reconcile": {"post": {"tags": ["operator"], "security": [{"bearerAuth": ["factory:reconcile"]}], "responses": {"200": {"description": "bounded repair result"}}}}
+    "/v1/tasks": {"get": {"description": "Requires task:list scope.", "tags": ["tasks"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "bounded list"}}}, "post": {"description": "Requires task:submit scope.", "tags": ["tasks"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "duplicate"}, "201": {"description": "created"}}}},
+    "/v1/tasks/{task_id}": {"get": {"description": "Requires task:read scope.", "tags": ["tasks"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "task"}, "404": {"description": "not found"}}}},
+    "/v1/tasks/{task_id}/cancel": {"post": {"description": "Requires task:cancel scope.", "tags": ["tasks"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "cancelled"}}}},
+    "/v1/claims": {"post": {"description": "Requires task:claim scope.", "tags": ["worker"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "claim result"}}}},
+    "/v1/heartbeats": {"post": {"description": "Requires task:heartbeat scope.", "tags": ["worker"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "lease"}}}},
+    "/v1/proposals": {"post": {"description": "Requires task:release scope.", "tags": ["worker"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "release status"}}}},
+    "/v1/kill-switches": {"post": {"description": "Requires factory:kill scope.", "tags": ["operator"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "kill state"}}}},
+    "/v1/reconcile": {"post": {"description": "Requires factory:reconcile scope.", "tags": ["operator"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "bounded repair result"}}}}
   },
   "components": {"securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer"}}}
 }

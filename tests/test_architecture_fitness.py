@@ -3214,13 +3214,38 @@ class ArchitectureFitnessTests(unittest.TestCase):
         repo.write_text(
             "src/use.py",
             "import pathlib\nimport local_client\nimport pydantic\n"
-            "pathlib.Path('value')\nlocal_client.SSHClient()\npydantic.BaseModel()\n",
+            "from fastapi import HTTPException\n"
+            "pathlib.Path('value')\nlocal_client.SSHClient()\npydantic.BaseModel()\n"
+            "HTTPException(400)\n",
         )
         head = repo.commit("local constructors")
         report = self._evaluate(repo, base, head)
         result = self._results(report)["network_client"]
         self.assertEqual(result.status, "not_applicable")
         self.assertNotIn("new_network_client", report.triggers)
+
+    def test_network_fitness_recognizes_bounded_httpx_unix_socket_transport(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "service"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        system["edges"][0]["protocol"] = "unix_http"
+        rules = _rules()
+        rules["network_policies"] = [{
+            "id": "FIT-NETWORK",
+            "node_types": ["service"],
+            "allowed_protocols": ["unix_http"],
+            "require_declared_edge": True,
+            "severity": "error",
+        }]
+        repo, base = self._repo(system=system, rules=rules)
+        repo.write_text(
+            "src/client.py",
+            "import httpx\nsocket_path = '/run/factory.sock'\ntransport = httpx.HTTPTransport(uds=socket_path)\n"
+            "client = httpx.Client(transport=transport, base_url='http://factory.local')\n",
+        )
+        head = repo.commit("unix socket client")
+        result = self._results(self._evaluate(repo, base, head))["network_client"]
+        self.assertEqual(result.status, "pass")
 
     def test_change_separation_rejects_product_and_trust_ci_mixing(self) -> None:
         rules = _rules()

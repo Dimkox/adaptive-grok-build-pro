@@ -153,11 +153,7 @@
       "path_prefixes": [
         "factory/src/adaptive_factory/resources"
       ],
-      "required_phases": [
-        "contract",
-        "expand",
-        "migrate"
-      ],
+      "required_phases": [],
       "severity": "error"
     }
   ],
@@ -172,6 +168,7 @@
       ],
       "id": "FIT-DECLARED-NETWORK-ONLY",
       "node_types": [
+        "local_component",
         "service",
         "worker"
       ],

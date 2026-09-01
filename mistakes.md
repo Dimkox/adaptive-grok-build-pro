@@ -257,3 +257,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The first real PostgreSQL intake violated the exact four-hour constraint by microseconds.
 **Root cause:** `accepted_at` and `deadline_at` used separate volatile clock samples; deriving the deadline from the transaction timestamp restored one consistent database-time boundary.
+
+## 2026-09-01 — Added architecture authority without updating every exact-state fixture
+
+**Symptom:** Root receipt and governance tests failed because their isolated repositories contained the new architecture model but not its required factory OpenAPI Git object.
+**Root cause:** Only the verification fixture was extended during the first architecture slice; all helpers that materialize canonical architecture must copy every declared contract path as one snapshot.

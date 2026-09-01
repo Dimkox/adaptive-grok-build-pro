@@ -350,8 +350,9 @@ class ChangeSpecTests(unittest.TestCase):
             self.assertEqual(loaded["risk"]["tier"], "green")
             self.assertIn("AC-001", mapped)
 
-    def test_no_factory_tree(self) -> None:
-        self.assertFalse((ROOT / "factory").exists())
+    def test_factory_is_nested_without_root_packaging_or_github_actions(self) -> None:
+        self.assertTrue((ROOT / "factory" / "pyproject.toml").is_file())
+        self.assertTrue((ROOT / "factory" / "src" / "adaptive_factory").is_dir())
         self.assertFalse((ROOT / "pyproject.toml").exists())
         self.assertFalse((ROOT / "requirements.txt").exists())
         self.assertFalse((ROOT / "setup.py").exists())

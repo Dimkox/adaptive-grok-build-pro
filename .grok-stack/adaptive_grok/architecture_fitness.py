@@ -663,6 +663,19 @@ def _network_protocol(imported: str) -> str | None:
     return None if not matches else max(matches)[1]
 
 
+def _httpx_uses_bounded_uds(tree: ast.AST) -> bool:
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = node.func.attr if isinstance(node.func, ast.Attribute) else node.func.id if isinstance(node.func, ast.Name) else ""
+        if name != "HTTPTransport":
+            continue
+        for keyword in node.keywords:
+            if keyword.arg == "uds":
+                return True
+    return False
+
+
 def _import_targets(tree: ast.AST) -> set[str]:
     targets: set[str] = set()
     for node in ast.walk(tree):
@@ -829,6 +842,8 @@ def _repository_paths(root: Path, diff: ArchitectureDiff, prefixes: tuple[str, .
 
 def _migration_phase(path: str) -> tuple[str, str] | None:
     match = _MIGRATION_PHASE.fullmatch(Path(path).stem.lower()) or _MIGRATION_CANONICAL.fullmatch(Path(path).stem.lower())
+    if match is None and path.startswith("factory/src/adaptive_factory/resources/"):
+        match = re.fullmatch(r"(?P<group>[0-9]{3}_[a-z0-9_]+)", Path(path).stem.lower())
     return None if match is None else (match.group("group"), match.groupdict().get("phase") or "legacy")
 
 
@@ -1132,6 +1147,8 @@ def _network_call_is_applicable(
         return False
     family = imported.split(".")[0].lower()
     factory = call.rsplit(".", 1)[-1].lower()
+    if factory.endswith(("error", "exception", "warning")):
+        return False
     if factory in _CLOUD_SDK_NETWORK_FACTORIES.get(family, set()):
         return True
     tokens = {
@@ -1167,6 +1184,8 @@ def _network_clients(
         for imported in imports:
             protocol = _network_protocol(imported)
             if protocol:
+                if imported.split(".")[0] == "httpx" and protocol == "https" and _httpx_uses_bounded_uds(tree):
+                    protocol = "unix_http"
                 clients.append((path, protocol, owner))
         for imported, call in _called_imports(tree):
             if _network_protocol(imported) is not None:

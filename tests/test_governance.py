@@ -288,6 +288,7 @@ def _git_commit_fixture(root: Path) -> str:
 def _materialize_architecture(root: Path) -> None:
     shutil.copytree(ROOT / "architecture", root / "architecture")
     shutil.copytree(ROOT / "engineering" / "contracts", root / "engineering" / "contracts")
+    shutil.copytree(ROOT / "factory" / "contracts", root / "factory" / "contracts")
     for schema_name in (
         "architecture-system.schema.json",
         "architecture-rules.schema.json",
@@ -1306,6 +1307,7 @@ class GovernanceKnowledgeTests(unittest.TestCase):
         for schema_name in ("architecture-system.schema.json", "architecture-rules.schema.json"):
             shutil.copy2(ROOT / "schemas" / schema_name, root / "schemas" / schema_name)
         shutil.copytree(ROOT / "engineering" / "contracts", root / "engineering" / "contracts")
+        shutil.copytree(ROOT / "factory" / "contracts", root / "factory" / "contracts")
         for example in examples or []:
             files = []
             for relative in example["repository_paths"]:

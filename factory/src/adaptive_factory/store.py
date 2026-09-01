@@ -422,17 +422,17 @@ class PostgresFactoryStore:
             )
 
     def _lock_grant(self, cursor, grant: LeaseGrant, *, allow_expired: bool = False):
-        expiry_guard = "" if allow_expired else "AND r.lease_expires_at>clock_timestamp()"
         cursor.execute(
-            f"""SELECT r.task_id,r.role,a.repository_id,at.attempt_no
+            """SELECT r.task_id,r.role,a.repository_id,at.attempt_no
             FROM factory.runs r JOIN factory.tasks t ON t.task_id=r.task_id
             JOIN factory.capacity_allocations a ON a.run_id=r.run_id
             JOIN factory.attempts at ON at.run_id=r.run_id
             WHERE r.run_id=%s AND r.task_id=%s AND r.owner_id=%s AND r.fence=%s AND r.packet_digest=%s
-            AND r.state='leased' AND r.released_at IS NULL {expiry_guard}
+            AND r.state='leased' AND r.released_at IS NULL
+            AND (%s OR r.lease_expires_at>clock_timestamp())
             AND t.current_run_id=r.run_id AND t.current_fence=r.fence AND t.state='leased' AND t.deadline_at>clock_timestamp()
             FOR UPDATE OF r,t,a""",
-            (grant.run_id, grant.task_id, grant.owner, grant.fence, grant.packet_digest),
+            (grant.run_id, grant.task_id, grant.owner, grant.fence, grant.packet_digest, allow_expired),
         )
         row = cursor.fetchone()
         if not row:
