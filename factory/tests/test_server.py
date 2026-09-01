@@ -21,7 +21,10 @@ class ServerTests(unittest.TestCase):
         class Service:
             @staticmethod
             def metrics(*, actor):
-                return {"actor": actor.actor_id}
+                return {
+                    "actor": actor.actor_id,
+                    "factory_capacity_budget_kill_and_reconcile_outcomes_total": {},
+                }
 
         token = "-".join(("uds", "operator", "token", "value"))
         actor = Actor("uds-operator", "operator", frozenset({"factory:reconcile"}), frozenset({"*"}))
@@ -48,7 +51,13 @@ class ServerTests(unittest.TestCase):
                         time.sleep(0.02)
                 self.assertEqual(unauthorized.status_code, 401)
                 response = client.get("/metrics", headers={"Authorization": f"Bearer {token}"})
-                self.assertEqual(response.json(), {"actor": "uds-operator"})
+                self.assertEqual(
+                    response.json(),
+                    {
+                        "actor": "uds-operator",
+                        "factory_capacity_budget_kill_and_reconcile_outcomes_total": {"auth_rejected": 1},
+                    },
+                )
                 client.close()
             finally:
                 server.should_exit = True

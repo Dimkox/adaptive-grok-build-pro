@@ -111,25 +111,70 @@ class PostgresFactoryStore:
 
     def metrics(self) -> dict[str, dict[str, int]]:
         with self._connect() as connection, connection.cursor() as cursor:
-            cursor.execute("SELECT count(*),count(*) FILTER (WHERE state='superseded') FROM factory.tasks")
-            intake, superseded = cursor.fetchone()
-            cursor.execute("SELECT count(*) FILTER (WHERE state='expired') FROM factory.runs")
-            reclaimed = cursor.fetchone()[0]
+            cursor.execute(
+                """SELECT count(*),count(*) FILTER (WHERE state='superseded'),
+                count(*) FILTER (WHERE state='queued'),count(*) FILTER (WHERE state='retry'),
+                count(*) FILTER (WHERE state='dead'),
+                COALESCE(sum(cost_reserved_micros),0),COALESCE(sum(cost_observed_micros),0),
+                COALESCE(sum(tokens_reserved),0),COALESCE(sum(tokens_observed),0),
+                COALESCE(sum(wall_reserved_seconds),0),count(*) FILTER (WHERE accounting_blocked)
+                FROM factory.tasks"""
+            )
+            (
+                intake, superseded, queued, retry, dead, reserved_cost, observed_cost,
+                reserved_tokens, observed_tokens, reserved_wall, blocked,
+            ) = cursor.fetchone()
+            cursor.execute("SELECT count(*) FROM factory.task_events")
+            transition_events = cursor.fetchone()[0]
+            cursor.execute(
+                """SELECT count(*) FILTER (WHERE state='leased' AND released_at IS NULL),
+                count(*) FILTER (WHERE state='expired') FROM factory.runs"""
+            )
+            live_leases, reclaimed = cursor.fetchone()
             cursor.execute("SELECT count(*) FROM factory.capacity_allocations WHERE released_at IS NULL")
             active_capacity = cursor.fetchone()[0]
-            cursor.execute("SELECT count(*) FILTER (WHERE accounting_blocked) FROM factory.tasks")
-            blocked = cursor.fetchone()[0]
+            cursor.execute("SELECT COALESCE(sum(output_bytes),0) FROM factory.usage_observations")
+            observed_output = cursor.fetchone()[0]
             cursor.execute("SELECT count(*) FROM (SELECT DISTINCT ON (scope_key) enabled FROM factory.kill_switches ORDER BY scope_key,created_at DESC,switch_id DESC) current WHERE enabled")
             kills = cursor.fetchone()[0]
-            cursor.execute("SELECT COALESCE(sum(repaired),0) FROM factory.reconciliation_runs WHERE status='completed'")
-            repaired = cursor.fetchone()[0]
+            cursor.execute(
+                """SELECT count(*),COALESCE(sum(candidates),0),COALESCE(sum(repaired),0)
+                FROM factory.reconciliation_runs WHERE status='completed'"""
+            )
+            reconciliation_runs, reconciliation_candidates, repaired = cursor.fetchone()
+            cursor.execute(
+                """SELECT COALESCE((SELECT value FROM factory.metric_counters
+                WHERE metric_name='factory_lease_reclaim_and_fence_rejection_total'
+                AND outcome='fence_rejected'),0)"""
+            )
+            fence_rejected = cursor.fetchone()[0]
         return {
-            "factory_intake_and_rejection_outcomes_total": {"accepted": intake, "superseded": superseded},
-            "factory_lease_reclaim_and_fence_rejection_total": {"reclaimed": reclaimed},
+            "factory_intake_and_rejection_outcomes_total": {
+                "accepted": intake, "superseded": superseded, "queued": queued, "retry": retry,
+                "dead": dead, "transition_events": transition_events,
+            },
+            "factory_lease_reclaim_and_fence_rejection_total": {
+                "live_leases": live_leases, "reclaimed": reclaimed, "fence_rejected": fence_rejected,
+            },
             "factory_capacity_budget_kill_and_reconcile_outcomes_total": {
-                "active_capacity": active_capacity, "accounting_blocked": blocked, "active_kills": kills, "repaired": repaired
+                "active_capacity": active_capacity, "cost_reserved_micros": reserved_cost,
+                "cost_observed_micros": observed_cost, "tokens_reserved": reserved_tokens,
+                "tokens_observed": observed_tokens, "wall_reserved_seconds": reserved_wall,
+                "output_observed_bytes": observed_output, "accounting_blocked": blocked,
+                "active_kills": kills, "reconciliation_runs": reconciliation_runs,
+                "reconciliation_candidates": reconciliation_candidates, "repaired": repaired,
             },
         }
+
+    def record_fence_rejection(self) -> None:
+        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO factory.metric_counters(metric_name,outcome,value)
+                VALUES ('factory_lease_reclaim_and_fence_rejection_total','fence_rejected',1)
+                ON CONFLICT(metric_name,outcome) DO UPDATE SET value=CASE
+                  WHEN factory.metric_counters.value<9223372036854775807
+                  THEN factory.metric_counters.value+1 ELSE factory.metric_counters.value END"""
+            )
 
     def _command_replay(self, cursor, key: str | None, actor: Actor, action: str, request: dict):
         if key is None:

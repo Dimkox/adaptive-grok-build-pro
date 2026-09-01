@@ -6,6 +6,7 @@ from typing import Iterable
 
 from .contracts import TaskIntakeV1
 from .models import Actor, FailureClass, LeaseGrant, RunRole
+from .store import FenceError
 
 
 class AuthorizationError(PermissionError):
@@ -81,15 +82,30 @@ class FactoryService:
         task = self.store.get_task(grant.task_id)
         self._require(actor, scope, task.repository_id)
 
+    def _fenced(self, operation):
+        try:
+            return operation()
+        except FenceError:
+            self.store.record_fence_rejection()
+            raise
+
     def heartbeat(self, grant: LeaseGrant, *, actor: Actor, now: datetime, idempotency_key: str | None = None, correlation_id: str | None = None):
         self._require_grant_actor(grant, actor, "task:heartbeat")
-        return self.store.heartbeat(grant, actor, now, idempotency_key=idempotency_key, correlation_id=correlation_id)
+        return self._fenced(
+            lambda: self.store.heartbeat(
+                grant, actor, now, idempotency_key=idempotency_key, correlation_id=correlation_id
+            )
+        )
 
     def release(self, grant: LeaseGrant, *, outcome: str | FailureClass, actor: Actor, now: datetime, idempotency_key: str | None = None, correlation_id: str | None = None):
         self._require_grant_actor(grant, actor, "task:release")
         if isinstance(outcome, str) and outcome != "completed":
             outcome = FailureClass(outcome)
-        return self.store.release(grant, outcome, actor, now, idempotency_key=idempotency_key, correlation_id=correlation_id)
+        return self._fenced(
+            lambda: self.store.release(
+                grant, outcome, actor, now, idempotency_key=idempotency_key, correlation_id=correlation_id
+            )
+        )
 
     def reserve_budget(
         self,
@@ -104,9 +120,11 @@ class FactoryService:
         correlation_id: str | None = None,
     ):
         self._require_grant_actor(grant, actor, "task:budget")
-        return self.store.reserve_budget(
-            grant, cost_usd_micros, token_units, wall_seconds, reason_digest, idempotency_key, actor,
-            correlation_id=correlation_id,
+        return self._fenced(
+            lambda: self.store.reserve_budget(
+                grant, cost_usd_micros, token_units, wall_seconds, reason_digest, idempotency_key, actor,
+                correlation_id=correlation_id,
+            )
         )
 
     def observe_usage(
@@ -123,9 +141,11 @@ class FactoryService:
         correlation_id: str | None = None,
     ):
         self._require_grant_actor(grant, actor, "task:budget")
-        return self.store.observe_usage(
-            grant, provider_call_id, price_table_digest, cost_usd_micros, token_units, output_bytes, actor,
-            idempotency_key=idempotency_key, correlation_id=correlation_id,
+        return self._fenced(
+            lambda: self.store.observe_usage(
+                grant, provider_call_id, price_table_digest, cost_usd_micros, token_units, output_bytes, actor,
+                idempotency_key=idempotency_key, correlation_id=correlation_id,
+            )
         )
 
     def set_kill(

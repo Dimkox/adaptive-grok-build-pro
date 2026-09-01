@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import hashlib
 import hmac
 import re
+import threading
 import uuid
 from typing import Any, Mapping
 
@@ -40,9 +41,21 @@ class Authenticator:
         if not tokens:
             raise ValueError("at least one local token is required")
         self._actors = tuple((hashlib.sha256(token.encode()).digest(), actor) for token, actor in tokens.items())
+        self._rejection_lock = threading.Lock()
+        self._rejections = 0
+
+    def _reject(self) -> None:
+        with self._rejection_lock:
+            if self._rejections < 9_223_372_036_854_775_807:
+                self._rejections += 1
+
+    def rejection_count(self) -> int:
+        with self._rejection_lock:
+            return self._rejections
 
     def authenticate(self, authorization: str | None, scope: str) -> Actor:
         if not authorization or not authorization.startswith("Bearer "):
+            self._reject()
             raise HTTPException(401, "bearer authentication required", headers={"WWW-Authenticate": "Bearer"})
         candidate = hashlib.sha256(authorization[7:].encode()).digest()
         matched = None
@@ -50,8 +63,10 @@ class Authenticator:
             if hmac.compare_digest(candidate, digest):
                 matched = actor
         if matched is None:
+            self._reject()
             raise HTTPException(401, "invalid bearer credential", headers={"WWW-Authenticate": "Bearer"})
         if scope not in matched.scopes:
+            self._reject()
             raise HTTPException(403, "scope denied")
         return matched
 
@@ -200,7 +215,11 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
     @app.get("/metrics", tags=["operator"])
     def metrics(authorization: str | None = Header(None)):
         actor = authenticator.authenticate(authorization, "factory:reconcile")
-        return service.metrics(actor=actor)
+        result = dict(service.metrics(actor=actor))
+        family = dict(result["factory_capacity_budget_kill_and_reconcile_outcomes_total"])
+        family["auth_rejected"] = authenticator.rejection_count()
+        result["factory_capacity_budget_kill_and_reconcile_outcomes_total"] = family
+        return result
 
     @app.post("/v1/tasks", tags=["tasks"])
     def submit(

@@ -56,6 +56,14 @@ class FakeService:
         self.calls.append(("reconcile", kwargs))
         return {"candidates": 0, "repaired": 0, "cursor": None}
 
+    def metrics(self, *, actor):
+        self.calls.append(("metrics", actor))
+        return {
+            "factory_intake_and_rejection_outcomes_total": {},
+            "factory_lease_reclaim_and_fence_rejection_total": {},
+            "factory_capacity_budget_kill_and_reconcile_outcomes_total": {},
+        }
+
 
 class ApiTests(unittest.TestCase):
     def setUp(self):
@@ -127,6 +135,31 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.json()["error"], "invalid")
         self.assertNotIn("shell_command", response.text)
+
+    def test_metrics_counts_auth_rejections_without_exposing_credentials(self):
+        operator_token = "metrics-operator-credential"
+        scoped_token = "metrics-scoped-credential"
+        operator = Actor(
+            "metrics-operator", "operator", frozenset({"factory:reconcile"}), frozenset({"*"})
+        )
+        scoped = Actor("metrics-scoped", "operator", frozenset(), frozenset({"*"}))
+        client = TestClient(
+            create_app(self.service, Authenticator({operator_token: operator, scoped_token: scoped}))
+        )
+        self.assertEqual(client.get("/metrics").status_code, 401)
+        self.assertEqual(client.get("/metrics", headers={"Authorization": "Bearer invalid"}).status_code, 401)
+        self.assertEqual(
+            client.get("/metrics", headers={"Authorization": f"Bearer {scoped_token}"}).status_code, 403
+        )
+        response = client.get("/metrics", headers={"Authorization": f"Bearer {operator_token}"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["factory_capacity_budget_kill_and_reconcile_outcomes_total"]["auth_rejected"],
+            3,
+        )
+        self.assertNotIn(operator_token, response.text)
+        self.assertNotIn(scoped_token, response.text)
+        self.assertLessEqual(len(response.content), 2048)
 
     def test_malformed_closed_commands_return_bounded_4xx(self):
         token = "-".join(("test", "worker", "operator", "credential"))

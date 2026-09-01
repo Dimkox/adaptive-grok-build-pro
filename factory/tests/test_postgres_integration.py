@@ -850,6 +850,107 @@ class PostgresFactoryTests(unittest.TestCase):
             )
         )
 
+    def test_release_metrics_inventory_tracks_durable_operations_and_rejections(self):
+        import psycopg
+        from fastapi.testclient import TestClient
+
+        self.submit(source="metrics-queued")
+        dead = self.submit(source="metrics-dead").task
+        for attempt in range(3):
+            grant = self.service.claim(
+                owner=f"metrics-dead-{attempt}", role=RunRole.READER,
+                repositories=(dead.repository_id,), lease_seconds=30, actor=WORKER, now=NOW,
+            )
+            self.service.release(grant, outcome=FailureClass.WORKER_LOST, actor=WORKER, now=NOW)
+
+        reserved = self.submit(source="metrics-reserved").task
+        reserved_grant = self.service.claim(
+            owner="metrics-reserved", role=RunRole.READER, repositories=(reserved.repository_id,),
+            lease_seconds=30, actor=WORKER, now=NOW,
+        )
+        self.service.reserve_budget(
+            reserved_grant, cost_usd_micros=7, token_units=11, wall_seconds=13,
+            reason_digest="a" * 64, idempotency_key="b" * 64, actor=WORKER,
+        )
+
+        observed = self.submit(source="metrics-observed").task
+        observed_grant = self.service.claim(
+            owner="metrics-observed", role=RunRole.READER, repositories=(observed.repository_id,),
+            lease_seconds=30, actor=WORKER, now=NOW,
+        )
+        self.service.observe_usage(
+            observed_grant, provider_call_id="metrics-call", price_table_digest="c" * 64,
+            cost_usd_micros=5, token_units=6, output_bytes=7, actor=WORKER,
+        )
+
+        repair = self.submit(source="metrics-repair").task
+        repair_grant = self.service.claim(
+            owner="metrics-repair", role=RunRole.READER, repositories=(repair.repository_id,),
+            lease_seconds=30, actor=WORKER, now=NOW,
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=%s",
+                (repair_grant.run_id,),
+            )
+        self.assertEqual(self.service.reconcile(actor=OPERATOR, now=NOW).repaired, 1)
+        with self.assertRaises(FenceError):
+            self.service.heartbeat(repair_grant, actor=WORKER, now=NOW)
+        self.service.set_kill(
+            scope_key="global", enabled=True, reason="metrics-stop",
+            idempotency_key="d" * 64, actor=OPERATOR, now=NOW,
+        )
+
+        token = "metrics-local-operator-credential"
+        authenticator = Authenticator({token: OPERATOR})
+        client = TestClient(create_app(self.service, authenticator))
+        self.assertEqual(client.get("/metrics").status_code, 401)
+        response = client.get("/metrics", headers={"Authorization": f"Bearer {token}"})
+        self.assertEqual(response.status_code, 200)
+        metrics = response.json()
+        self.assertEqual(
+            set(metrics),
+            {
+                "factory_intake_and_rejection_outcomes_total",
+                "factory_lease_reclaim_and_fence_rejection_total",
+                "factory_capacity_budget_kill_and_reconcile_outcomes_total",
+            },
+        )
+        intake = metrics["factory_intake_and_rejection_outcomes_total"]
+        leases = metrics["factory_lease_reclaim_and_fence_rejection_total"]
+        operations = metrics["factory_capacity_budget_kill_and_reconcile_outcomes_total"]
+        self.assertEqual(set(intake), {"accepted", "superseded", "queued", "retry", "dead", "transition_events"})
+        self.assertEqual(set(leases), {"live_leases", "reclaimed", "fence_rejected"})
+        self.assertEqual(
+            set(operations),
+            {
+                "active_capacity", "cost_reserved_micros", "cost_observed_micros",
+                "tokens_reserved", "tokens_observed", "wall_reserved_seconds",
+                "output_observed_bytes", "accounting_blocked", "active_kills",
+                "reconciliation_runs", "reconciliation_candidates", "repaired", "auth_rejected",
+            },
+        )
+        self.assertEqual(
+            (intake["accepted"], intake["queued"], intake["retry"], intake["dead"]),
+            (5, 1, 1, 1),
+        )
+        self.assertGreaterEqual(intake["transition_events"], 15)
+        self.assertEqual((leases["live_leases"], leases["reclaimed"], leases["fence_rejected"]), (2, 1, 1))
+        self.assertEqual(
+            (
+                operations["active_capacity"], operations["cost_reserved_micros"],
+                operations["cost_observed_micros"], operations["tokens_reserved"],
+                operations["tokens_observed"], operations["wall_reserved_seconds"],
+                operations["output_observed_bytes"], operations["active_kills"],
+                operations["reconciliation_runs"], operations["reconciliation_candidates"],
+                operations["repaired"], operations["auth_rejected"],
+            ),
+            (2, 7, 5, 11, 6, 13, 7, 1, 1, 1, 1, 1),
+        )
+        self.assertNotIn(token, response.text)
+        self.assertNotIn("metrics-queued", response.text)
+        self.assertLessEqual(len(response.content), 2048)
+
     def test_event_repair_and_database_deadline_limits_fail_closed(self):
         import psycopg
 

@@ -52,6 +52,8 @@ The third residual wave leaves applied migration `010` immutable and adds forwar
 
 Before PR delivery, the fourth residual wave corrects unreleased migration `011` under the explicit disposable-only exception. An unsafe older human-ready generation becomes `superseded/accounting_blocked` when a newer generation exists, retaining reservations, usage, run and audit evidence without colliding with the one-active-identity index; a lone unsafe positive generation remains `needs_human/accounting_blocked`. Readiness accepts retained superseded accounting only with that explicit quarantine marker and fails closed if it is removed.
 
+The fifth residual wave closes AC-013 observability without adding a dependency or metric-label surface. The existing three authenticated families now expose fixed store-derived intake/queue/transition, lease/capacity, budget, retry/dead, kill and reconciliation/repair values plus a durable stale-fence rejection counter; missing, invalid and scope-denied credentials increment a redacted process-local total despite disabled access logging. Only that authentication total resets on server restart.
+
 ## Verification evidence
 
 - Final remediation factory suite: 63/63 passed in 32.699s against fresh disposable PostgreSQL 17, including API integration, both authority interleavings/forms, schema-008 upgrade safety, exhausted-event cleanup, effective-role denials, accounting recovery, deadlock regression, repository kill, bounded reconciliation, query plans, bootstrap and UDS authentication.

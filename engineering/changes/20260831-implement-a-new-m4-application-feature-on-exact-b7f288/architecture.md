@@ -24,6 +24,8 @@ PostgreSQL `factory.*` is the only M4 operational authority. Its migrations, reg
 
 The versioned API runs over an operator-owned Unix socket. Bearer tokens come from no-follow regular `0600` files, compare constant-time, map to closed scopes and are never logged. Socket mode is `0660`; bodies are at most 1 MiB; pages and projections are bounded. The CLI only calls the API. TCP, provider/Git/GitHub/deploy/systemd/external-write operations are absent.
 
+The authenticated metrics surface has three fixed families and no caller-controlled labels. Queue/state, transitions, leases, capacity, budget, kills, reconciliation/repair and stale-fence rejection are derived from durable PostgreSQL state/counters; missing, invalid and scope-denied authentication attempts increment only a lock-protected process-local total because credentials are rejected before store authority. That auth total resets on socket-process restart and never contains credential or actor material.
+
 M2/M3 producer handoffs keep their producer exact-base/head pairs. M4 validates closed shapes and cross-digest/SHA compatibility; it never invents those values from the current implementation commit. A fresh M0 observation (<=300 seconds) or named issuer/scope/expiry-bounded bootstrap exception is required at intake.
 
 ## Failure, rollout and recovery
