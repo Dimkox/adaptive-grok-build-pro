@@ -172,6 +172,7 @@ class InstallerTests(unittest.TestCase):
             "factory/src/adaptive_factory/resources/008_allocation_release_authority.sql",
             "factory/src/adaptive_factory/resources/009_authority_audit_and_history_indexes.sql",
             "factory/src/adaptive_factory/resources/010_authority_accounting_and_cleanup.sql",
+            "factory/src/adaptive_factory/resources/011_legacy_accounting_quarantine.sql",
             "factory/tests/run_disposable_exit.py",
             "factory/tests/postgres_restart_probe.py",
             "factory/tests/test_postgres_integration.py",

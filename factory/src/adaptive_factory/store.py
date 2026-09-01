@@ -82,11 +82,13 @@ class PostgresFactoryStore:
         cursor.execute(
             """SELECT NOT EXISTS (
             SELECT 1 FROM factory.tasks t
-            WHERE t.state IN ('queued','retry') AND (
-              t.accounting_blocked OR t.cost_reserved_micros<>0 OR t.tokens_reserved<>0
-              OR t.wall_reserved_seconds<>0 OR EXISTS (
-                SELECT 1 FROM factory.budget_reservations b
-                WHERE b.task_id=t.task_id AND b.released_at IS NULL
+            WHERE (
+              t.state IN ('queued','retry','ready_for_human') AND (
+                t.accounting_blocked OR t.cost_reserved_micros<>0 OR t.tokens_reserved<>0
+                OR t.wall_reserved_seconds<>0 OR EXISTS (
+                  SELECT 1 FROM factory.budget_reservations b
+                  WHERE b.task_id=t.task_id AND b.released_at IS NULL
+                )
               )
             ))"""
         )

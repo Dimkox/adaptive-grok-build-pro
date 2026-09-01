@@ -994,6 +994,9 @@ class PostgresFactoryTests(unittest.TestCase):
         try:
             migrations = discover_migrations()
             task_id, intent_id, run_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+            blocked_task_id, blocked_intent_id = uuid.uuid4(), uuid.uuid4()
+            ready_task_id, ready_intent_id = uuid.uuid4(), uuid.uuid4()
+            ready_failed_run_id, ready_completed_run_id = uuid.uuid4(), uuid.uuid4()
             with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
                 cursor.execute("CREATE SCHEMA factory")
                 cursor.execute(
@@ -1045,17 +1048,101 @@ class PostgresFactoryTests(unittest.TestCase):
                     VALUES (%s,%s,%s,%s,25000000,2000000,14400,%s)""",
                     (uuid.uuid4(), task_id, run_id, "a" * 64, "b" * 64),
                 )
+                cursor.execute(
+                    """INSERT INTO factory.intake_identities(repository_id,source_type,source_id)
+                    VALUES ('owner/repository','manual','legacy-blocked-zero'),
+                           ('owner/repository','manual','legacy-ready-reservation')"""
+                )
+                for legacy_intent_id, source in (
+                    (blocked_intent_id, "legacy-blocked-zero"),
+                    (ready_intent_id, "legacy-ready-reservation"),
+                ):
+                    cursor.execute(
+                        """INSERT INTO factory.accepted_intents
+                        (intent_id,intent_digest,idempotency_key,repository_id,source_type,source_id,source_digest,
+                         exact_base_sha,spec_digest,architecture_digest,governance_digest,policy_digest,body)
+                        VALUES (%s,%s,%s,'owner/repository','manual',%s,%s,%s,%s,%s,%s,%s,'{}')""",
+                        (
+                            legacy_intent_id, uuid.uuid4().hex * 2, uuid.uuid4().hex * 2, source,
+                            uuid.uuid4().hex * 2, uuid.uuid4().hex + uuid.uuid4().hex[:8],
+                            uuid.uuid4().hex * 2, uuid.uuid4().hex * 2,
+                            uuid.uuid4().hex * 2, uuid.uuid4().hex * 2,
+                        ),
+                    )
+                cursor.execute(
+                    """INSERT INTO factory.tasks
+                    (task_id,intent_id,repository_id,source_type,source_id,state,generation,packet_digest,
+                     deadline_at,cost_limit_micros,token_limit,output_limit_bytes,event_limit,
+                     accounting_blocked,repair_limit,repair_count,wall_limit_seconds)
+                    VALUES (%s,%s,'owner/repository','manual','legacy-blocked-zero','retry',1,%s,
+                     now()+interval '1 hour',25000000,2000000,10000000,100,true,3,0,14400)""",
+                    (blocked_task_id, blocked_intent_id, uuid.uuid4().hex * 2),
+                )
+                cursor.execute(
+                    """INSERT INTO factory.tasks
+                    (task_id,intent_id,repository_id,source_type,source_id,state,generation,packet_digest,
+                     deadline_at,cost_limit_micros,token_limit,output_limit_bytes,event_limit,
+                     cost_reserved_micros,tokens_reserved,accounting_blocked,repair_limit,repair_count,
+                     wall_limit_seconds,wall_reserved_seconds,terminal_at)
+                    VALUES (%s,%s,'owner/repository','manual','legacy-ready-reservation','ready_for_human',1,%s,
+                     now()+interval '1 hour',25000000,2000000,10000000,100,500,600,false,3,0,14400,700,now())""",
+                    (ready_task_id, ready_intent_id, uuid.uuid4().hex * 2),
+                )
+                for legacy_run_id, fence, state in (
+                    (ready_failed_run_id, 1, "failed"),
+                    (ready_completed_run_id, 2, "completed"),
+                ):
+                    cursor.execute(
+                        """INSERT INTO factory.runs
+                        (run_id,task_id,owner_id,role,packet_digest,fence,state,lease_expires_at,deadline_at,released_at)
+                        SELECT %s,task_id,'legacy-worker','reader',packet_digest,%s,%s,
+                          now()-interval '1 minute',deadline_at,now() FROM factory.tasks WHERE task_id=%s""",
+                        (legacy_run_id, fence, state, ready_task_id),
+                    )
+                cursor.execute(
+                    """INSERT INTO factory.attempts
+                    (attempt_id,task_id,run_id,attempt_no,failure_class,failure_code,failure_digest,finished_at)
+                    VALUES (%s,%s,%s,1,'worker_lost','worker_lost',%s,now()),
+                           (%s,%s,%s,2,NULL,NULL,NULL,now())""",
+                    (
+                        uuid.uuid4(), ready_task_id, ready_failed_run_id, uuid.uuid4().hex * 2,
+                        uuid.uuid4(), ready_task_id, ready_completed_run_id,
+                    ),
+                )
+                cursor.execute(
+                    """INSERT INTO factory.budget_reservations
+                    (reservation_id,task_id,run_id,idempotency_key,cost_usd_micros,token_units,wall_seconds,reason_digest)
+                    VALUES (%s,%s,%s,%s,500,600,700,%s)""",
+                    (
+                        uuid.uuid4(), ready_task_id, ready_failed_run_id,
+                        uuid.uuid4().hex * 2, uuid.uuid4().hex * 2,
+                    ),
+                )
+                cursor.execute(
+                    """INSERT INTO factory.usage_observations
+                    (observation_id,task_id,run_id,provider_call_id,price_table_digest,cost_usd_micros,
+                     token_units,output_bytes)
+                    VALUES (%s,%s,%s,'legacy-completed-call',%s,1,1,1)""",
+                    (uuid.uuid4(), ready_task_id, ready_completed_run_id, uuid.uuid4().hex * 2),
+                )
 
             applied = PostgresMigrator(upgrade_url).apply()
             upgraded_store = PostgresFactoryStore(upgrade_url)
             upgraded_service = FactoryService(upgraded_store)
             readiness = upgraded_store.readiness()
-            self.assertEqual([migration.version for migration in applied], [9, 10])
             self.assertEqual(
-                (readiness["status"], readiness["schema_version"], readiness["accounting_consistent"]),
-                ("ready", 10, True),
+                (
+                    [migration.version for migration in applied],
+                    readiness["status"], readiness["schema_version"], readiness["accounting_consistent"],
+                    upgraded_store.get_task(str(task_id)).status,
+                    upgraded_store.get_task(str(blocked_task_id)).status,
+                    upgraded_store.get_task(str(ready_task_id)).status,
+                ),
+                (
+                    [9, 10, 11], "ready", 11, True,
+                    TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN,
+                ),
             )
-            self.assertEqual(upgraded_store.get_task(str(task_id)).status, TaskStatus.NEEDS_HUMAN)
             self.assertIsNone(
                 upgraded_service.claim(
                     owner="legacy-retry-worker", role=RunRole.READER, repositories=("owner/repository",),
@@ -1070,6 +1157,21 @@ class PostgresFactoryTests(unittest.TestCase):
                     (task_id,),
                 )
                 self.assertEqual(cursor.fetchone(), (True, 25_000_000, 2_000_000, 14_400, 1))
+                cursor.execute(
+                    """SELECT task_id,accounting_blocked,cost_reserved_micros,tokens_reserved,
+                    wall_reserved_seconds,
+                    (SELECT count(*) FROM factory.budget_reservations b
+                     WHERE b.task_id=t.task_id AND b.released_at IS NULL)
+                    FROM factory.tasks t WHERE task_id=ANY(%s) ORDER BY task_id""",
+                    ([blocked_task_id, ready_task_id],),
+                )
+                expected = {
+                    blocked_task_id: (True, 0, 0, 0, 0),
+                    ready_task_id: (True, 500, 600, 700, 1),
+                }
+                self.assertEqual(
+                    {row[0]: tuple(row[1:]) for row in cursor.fetchall()}, expected
+                )
                 cursor.execute(
                     "UPDATE factory.tasks SET state='retry',accounting_blocked=false WHERE task_id=%s",
                     (task_id,),
@@ -1089,6 +1191,21 @@ class PostgresFactoryTests(unittest.TestCase):
                     "UPDATE factory.tasks SET state='needs_human',accounting_blocked=true WHERE task_id=%s",
                     (task_id,),
                 )
+                cursor.execute(
+                    "UPDATE factory.tasks SET state='ready_for_human',accounting_blocked=false WHERE task_id=%s",
+                    (ready_task_id,),
+                )
+            self.assertEqual(
+                (upgraded_store.readiness()["status"], upgraded_store.readiness()["accounting_consistent"]),
+                ("not_ready", False),
+            )
+            with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE factory.tasks SET state='needs_human',accounting_blocked=true WHERE task_id=%s",
+                    (ready_task_id,),
+                )
+            self.assertEqual(upgraded_store.readiness()["status"], "ready")
+            self.assertEqual(PostgresMigrator(upgrade_url).apply(), ())
         finally:
             with psycopg.connect(DATABASE_URL, autocommit=True) as admin:
                 admin.execute(
@@ -1279,7 +1396,7 @@ class PostgresFactoryTests(unittest.TestCase):
         runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
         result = bootstrap_local(DATABASE_URL, login, password, runtime_url)
         self.assertEqual(result["database_role"], "factory_runtime")
-        self.assertEqual(result["schema_version"], 10)
+        self.assertEqual(result["schema_version"], 11)
         with psycopg.connect(runtime_url) as connection, connection.cursor() as cursor:
             cursor.execute("SET ROLE factory_runtime")
             cursor.execute("SELECT session_user,current_user")

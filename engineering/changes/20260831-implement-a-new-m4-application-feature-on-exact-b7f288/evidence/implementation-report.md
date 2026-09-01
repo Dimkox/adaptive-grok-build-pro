@@ -7,7 +7,7 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 ## Delivered behavior
 
 - Closed typed intake, handoff, actor, task, run, attempt and command records with canonical digests, full-frozen-intent duplicate identity, atomic supersession and bounded 4xx validation.
-- Ten contiguous checksum-locked factory migrations, repository/full-policy/action-bound transaction-serialized M0 authority, schema-008 unresolved-accounting quarantine, audit-v2 evidence, task-history indexes, capability-shaped capacity authority, effective least-privilege `factory_runtime` execution and no `trust_ci` privileges.
+- Eleven contiguous checksum-locked factory migrations, repository/full-policy/action-bound transaction-serialized M0 authority, complete schema-008 unsafe-accounting quarantine, audit-v2 evidence, task-history indexes, capability-shaped capacity authority, effective least-privilege `factory_runtime` execution and no `trust_ci` privileges.
 - Transactional `FOR UPDATE SKIP LOCKED` claims, monotonic per-task fences, database-time leases/deadlines and 20 global readers / 10 per repository / one writer capacity.
 - Initial attempt plus two infrastructure retries, terminal dead/needs-human handling, 14,400-second and USD 25/token/output/event/repair ceilings, durable fail-closed missing accounting and idempotent usage observations.
 - Global/repository kills, complete task/run/correlation-bound hash-chained audit, and capacity-before-task reconciliation capped at 100 candidates and an exact five-second transaction timeout.
@@ -48,6 +48,8 @@ The mandatory exit runner creates an exact disposable PostgreSQL 17 container, e
 
 The second residual wave uses forward-only migration `010` without changing applied `009`: both M0 authority forms now hold a row lock that conflicts with non-key revocation through intake commit; a real non-empty schema-008 upgrade quarantines unresolved prior-attempt accounting before claim; and mandatory release/reconcile/cancel events plus audit survive an exhausted ordinary-event budget while capacity returns exactly once.
 
+The third residual wave leaves applied migration `010` immutable and adds forward-only migration `011`. A schema-008 blocked claimable row with zero aggregates and a human-ready row with live prior-attempt accounting are both preserved as explicit `needs_human/accounting_blocked` quarantines; readiness additionally rejects any reintroduced unsafe `ready_for_human` projection.
+
 ## Verification evidence
 
 - Final remediation factory suite: 63/63 passed in 32.699s against fresh disposable PostgreSQL 17, including API integration, both authority interleavings/forms, schema-008 upgrade safety, exhausted-event cleanup, effective-role denials, accounting recovery, deadlock regression, repository kill, bounded reconciliation, query plans, bootstrap and UDS authentication.
@@ -62,6 +64,6 @@ Only exact disposable local PostgreSQL containers created by the focused and exi
 
 ## Rollout, rollback and remaining authority
 
-Source rollout only: no service was activated and no migration was run outside disposable databases. Recovery after durable intake is global kill, stop local intake/claims, preserve audit/state, restore backup into a separate comparison database and forward-fix with migration `011+`; destructive down-migration is prohibited.
+Source rollout only: no service was activated and no migration was run outside disposable databases. Recovery after durable intake is global kill, stop local intake/claims, preserve audit/state, restore backup into a separate comparison database and forward-fix with migration `012+`; destructive down-migration is prohibited.
 
 Independent route reviews, PR delivery, the App-owned policy-epoch check on the exact PR head, signed approval scopes, merge and any deployment remain outside this implementation report and are not claimed here. The calendar deadline does not change the product runtime contract or bypass those gates.
