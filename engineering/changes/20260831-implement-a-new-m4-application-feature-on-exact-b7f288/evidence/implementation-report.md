@@ -57,10 +57,11 @@ The third residual wave leaves applied migration `010` immutable and adds forwar
 - Representative `EXPLAIN (ANALYZE, BUFFERS)` assertions selected the claim, audit, usage, active-reservation and reconciliation indexes added or retained for their exact predicates.
 - Root regression run: 488 tests in 314.727s found one undeclared admin source; after binding it to the existing factory service node, the focused regression, architecture validate, repository drift and all five diagram checks passed.
 - Residual focused PostgreSQL tests passed 5/5; migration tests passed 4/4, installer tests passed 17/17, the dependency-free factory suite passed 24/24, Ruff passed, and the full root suite passed 488/488 in 299.731s. `python3 scripts/grok_verify.py --mode pr` runs after this report commit to bind the final-tree verdict.
+- Final recovery focused PostgreSQL upgrade/bootstrap tests passed 2/2 in 1.664s; migration/contract/state/service tests passed 24/24, installer tests passed 17/17 and Ruff passed. The fresh PostgreSQL exit passed 63/63 in 50.054s with the restart probe, and the root suite passed 488/488 in 313.667s on product commit `3bbafeb`.
 
 ## Disposable migration evidence and cleanup
 
-Only exact disposable local PostgreSQL containers created by the focused and exit runners were mutated. The named `m4-factory-pg-fixwave` container and both dynamic exit containers were removed; generated `.venv`/egg-info artifacts were moved to trash, and no shared database, Trust CI state, external system or production resource was touched.
+Only exact disposable local PostgreSQL containers created by the focused and exit runners were mutated. The named fix-wave containers, including `m4-factory-pg-residual3`, and all dynamic exit containers were removed; generated `.venv`/egg-info artifacts were moved to trash, and no shared database, Trust CI state, external system or production resource was touched.
 
 ## Rollout, rollback and remaining authority
 
