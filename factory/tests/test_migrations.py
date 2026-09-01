@@ -6,8 +6,8 @@ from adaptive_factory.migrations import AppliedMigration, MigrationError, discov
 class MigrationTests(unittest.TestCase):
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], [1, 2, 3, 4, 5, 6, 7, 8, 9])
-        self.assertEqual(len({item.sha256 for item in migrations}), 9)
+        self.assertEqual([item.version for item in migrations], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        self.assertEqual(len({item.sha256 for item in migrations}), 10)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -51,6 +51,9 @@ class MigrationTests(unittest.TestCase):
             "m0_observation_policy_check_bound",
             "audit_log_task_order",
             "budget_reservations_task_run_active",
+            "mandatory_cleanup",
+            "for share",
+            "accounting_blocked=true",
         ):
             self.assertIn(marker, sql)
         self.assertNotIn("on delete cascade", sql)

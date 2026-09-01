@@ -68,12 +68,29 @@ class PostgresFactoryStore:
             cursor.execute("SELECT current_user,COALESCE(max(version),0) FROM factory.schema_migrations")
             role, version = cursor.fetchone()
             capacity_consistent = self._capacity_consistent(cursor)
+            accounting_consistent = self._accounting_consistent(cursor)
             return {
-                "status": "ready" if version == len(discover_migrations()) and capacity_consistent else "not_ready",
+                "status": "ready" if version == len(discover_migrations()) and capacity_consistent and accounting_consistent else "not_ready",
                 "database_role": role,
                 "schema_version": version,
                 "capacity_consistent": capacity_consistent,
+                "accounting_consistent": accounting_consistent,
             }
+
+    @staticmethod
+    def _accounting_consistent(cursor) -> bool:
+        cursor.execute(
+            """SELECT NOT EXISTS (
+            SELECT 1 FROM factory.tasks t
+            WHERE t.state IN ('queued','retry') AND (
+              t.accounting_blocked OR t.cost_reserved_micros<>0 OR t.tokens_reserved<>0
+              OR t.wall_reserved_seconds<>0 OR EXISTS (
+                SELECT 1 FROM factory.budget_reservations b
+                WHERE b.task_id=t.task_id AND b.released_at IS NULL
+              )
+            ))"""
+        )
+        return bool(cursor.fetchone()[0])
 
     @staticmethod
     def _capacity_consistent(cursor) -> bool:
@@ -173,20 +190,23 @@ class PostgresFactoryStore:
         return "SELECT t.task_id,t.repository_id,t.state,t.generation,i.intent_digest,t.packet_digest,t.deadline_at FROM factory.tasks t JOIN factory.accepted_intents i ON i.intent_id=t.intent_id"
 
     def _event(
-        self, cursor, task_id: str, actor: Actor, action: str, idempotency_key: str, metadata: dict | None = None
+        self, cursor, task_id: str, actor: Actor, action: str, idempotency_key: str,
+        metadata: dict | None = None, *, mandatory_cleanup: bool = False,
     ) -> None:
         cursor.execute(
-            """SELECT t.event_limit,COALESCE(max(e.event_sequence),0)
+            """SELECT t.event_limit,
+            count(e.event_id) FILTER (WHERE NOT e.mandatory_cleanup),
+            COALESCE(max(e.event_sequence),0)
             FROM factory.tasks t LEFT JOIN factory.task_events e ON e.task_id=t.task_id
             WHERE t.task_id=%s GROUP BY t.event_limit""",
             (task_id,),
         )
-        event_limit, previous_sequence = cursor.fetchone()
-        if previous_sequence >= event_limit:
+        event_limit, ordinary_count, previous_sequence = cursor.fetchone()
+        if not mandatory_cleanup and ordinary_count >= event_limit:
             raise BudgetError("event budget exceeded")
         sequence = previous_sequence + 1
         cursor.execute(
-            "INSERT INTO factory.task_events(event_id,task_id,event_sequence,idempotency_key,actor_id,action,metadata) VALUES (%s,%s,%s,%s,%s,%s,%s::jsonb) ON CONFLICT(task_id,idempotency_key) DO NOTHING",
+            "INSERT INTO factory.task_events(event_id,task_id,event_sequence,idempotency_key,actor_id,action,metadata,mandatory_cleanup) VALUES (%s,%s,%s,%s,%s,%s,%s::jsonb,%s) ON CONFLICT(task_id,idempotency_key) DO NOTHING",
             (
                 uuid.uuid4(),
                 task_id,
@@ -195,8 +215,20 @@ class PostgresFactoryStore:
                 actor.actor_id,
                 action,
                 json.dumps(metadata or {}, separators=(",", ":")),
+                mandatory_cleanup,
             ),
         )
+
+    @staticmethod
+    def _ordinary_event_capacity_available(cursor, task_id: str) -> bool:
+        cursor.execute(
+            """SELECT count(e.event_id) FILTER (WHERE NOT e.mandatory_cleanup) < t.event_limit
+            FROM factory.tasks t LEFT JOIN factory.task_events e ON e.task_id=t.task_id
+            WHERE t.task_id=%s GROUP BY t.event_limit""",
+            (task_id,),
+        )
+        row = cursor.fetchone()
+        return bool(row and row[0])
 
     def _audit(
         self,
@@ -284,7 +316,8 @@ class PostgresFactoryStore:
                 )
                 key = canonical_digest({"action": "superseded", "replacement": intake.intent_digest})
                 self._event(
-                    cursor, old_id, actor, "superseded", key, {"replacement_intent_digest": intake.intent_digest}
+                    cursor, old_id, actor, "superseded", key,
+                    {"replacement_intent_digest": intake.intent_digest}, mandatory_cleanup=True,
                 )
                 self._audit(
                     cursor,
@@ -481,6 +514,9 @@ class PostgresFactoryStore:
                 """SELECT t.task_id,t.repository_id,t.packet_digest,t.deadline_at
                 FROM factory.tasks t WHERE t.state IN ('queued','retry') AND t.repository_id=ANY(%s)
                 AND t.deadline_at>clock_timestamp() AND NOT t.accounting_blocked
+                AND t.cost_reserved_micros=0 AND t.tokens_reserved=0 AND t.wall_reserved_seconds=0
+                AND NOT EXISTS (SELECT 1 FROM factory.budget_reservations b
+                  WHERE b.task_id=t.task_id AND b.released_at IS NULL)
                 ORDER BY t.created_at,t.task_id FOR UPDATE SKIP LOCKED LIMIT 1""",
                 (list(eligible_repositories),),
             )
@@ -604,7 +640,9 @@ class PostgresFactoryStore:
         if not cursor.fetchone()[0]:
             raise StoreError("orphan capacity was not released")
         key = canonical_digest({"action": "reconcile_orphan", "run_id": run_id})
-        self._event(cursor, task_id, actor, "orphan_reconciled", key, {"run_id": run_id})
+        self._event(
+            cursor, task_id, actor, "orphan_reconciled", key, {"run_id": run_id}, mandatory_cleanup=True
+        )
         self._audit(cursor, task_id, actor, "reconcile_orphan", f"run:{run_id}", "orphaned_projection", key, run_id=run_id)
         return True
 
@@ -688,6 +726,8 @@ class PostgresFactoryStore:
             cursor.execute("UPDATE factory.attempts SET finished_at=clock_timestamp() WHERE run_id=%s", (grant.run_id,))
         else:
             raise StoreError("unsupported release outcome")
+        if target is TaskStatus.RETRY and not self._ordinary_event_capacity_available(cursor, grant.task_id):
+            target = TaskStatus.NEEDS_HUMAN
         cursor.execute(
             "UPDATE factory.runs SET state=%s,released_at=clock_timestamp() WHERE run_id=%s",
             ("failed" if isinstance(outcome, FailureClass) else "completed", grant.run_id),
@@ -703,7 +743,9 @@ class PostgresFactoryStore:
         key = canonical_digest(
             {"action": "release", "run_id": grant.run_id, "fence": grant.fence, "target": target.value}
         )
-        self._event(cursor, str(task_id), actor, "released", key, {"target": target.value})
+        self._event(
+            cursor, str(task_id), actor, "released", key, {"target": target.value}, mandatory_cleanup=True
+        )
         self._audit(
             cursor,
             str(task_id),
@@ -1019,7 +1061,9 @@ class PostgresFactoryStore:
                     "UPDATE factory.tasks SET state='cancelled',current_run_id=NULL,current_fence=NULL,terminal_at=clock_timestamp(),updated_at=clock_timestamp() WHERE task_id=%s",
                     (task_id,),
                 )
-                self._event(cursor, task_id, actor, "cancelled", key, {"reason": reason})
+                self._event(
+                    cursor, task_id, actor, "cancelled", key, {"reason": reason}, mandatory_cleanup=True
+                )
                 self._audit(cursor, task_id, actor, "cancel", f"task:{task_id}", reason, correlation_id or key)
             self._record_command(cursor, key, actor, "cancel", request_digest, correlation_id, {"task_id": task_id})
         return self.get_task(task_id)
