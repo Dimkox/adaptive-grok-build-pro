@@ -3,6 +3,9 @@ flowchart LR
   node_4e78270f61d78ed8["NODE-DOCKER-ENGINE | service | Trust CI operators; compose-described TCP/2375 local executor"]
   node_2e8a7072de3f3743["NODE-EXACT-SHA-WORKSPACE | repository | Trust CI operators"]
   node_0a0fe2f046a648e9["NODE-EXTERNAL-HOLDOUT | policy_bundle | external Trust CI policy operators"]
+  node_a6c166e55f8e1784["NODE-FACTORY-CONTROL | local_component | local factory operators"]
+  node_93915052ae8a2e67["NODE-FACTORY-LOCAL-API | service | local factory operators"]
+  node_a77de286f8308fd4["NODE-FACTORY-POSTGRES | datastore | local factory operators"]
   node_8b8a8cd21b180532["NODE-GITHUB | external_system | GitHub"]
   node_dfd1104494c6ab8f["NODE-GOVERNANCE-REGISTRIES | repository | repository engineering"]
   node_23677f8757246623["NODE-GOVERNANCE-VALIDATOR | local_component | repository engineering"]
@@ -16,6 +19,8 @@ flowchart LR
   node_d0e570b2fbe52f98 -->|"EDGE-API-POSTGRES | data_flow | postgresql"| node_1a6c7efb2d08591b
   node_8938bd3db1932751 -->|"EDGE-CHANGE-LOCAL-VERIFIER | data_flow | filesystem"| node_23bed8fcbfc79861
   node_4e78270f61d78ed8 -->|"EDGE-DOCKER-ISOLATED-RUNNER | deployment | docker_api"| node_1c3a10ba26a8e80d
+  node_93915052ae8a2e67 -->|"EDGE-FACTORY-API-CONTROL | control | unix_http"| node_a6c166e55f8e1784
+  node_a6c166e55f8e1784 -->|"EDGE-FACTORY-CONTROL-POSTGRES | data_flow | postgresql"| node_a77de286f8308fd4
   node_8b8a8cd21b180532 -->|"EDGE-GITHUB-TRUST-CI-API | data_flow | https"| node_d0e570b2fbe52f98
   node_dfd1104494c6ab8f -->|"EDGE-GOVERNANCE-REGISTRIES-VALIDATOR | data_flow | filesystem"| node_23677f8757246623
   node_23677f8757246623 -->|"EDGE-GOVERNANCE-VALIDATOR-LOCAL-VERIFIER | data_flow | filesystem"| node_23bed8fcbfc79861

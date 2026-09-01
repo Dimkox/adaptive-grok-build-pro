@@ -40,6 +40,14 @@
       "path": "schemas/governance-handoff-v1.schema.json",
       "role": "producer",
       "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-CONTROL-OPENAPI",
+      "kind": "openapi",
+      "path": "factory/contracts/openapi/factory-control.v1.json",
+      "role": "bidirectional",
+      "version": "1"
     }
   ],
   "data_classifications": [
@@ -99,12 +107,79 @@
     },
     {
       "classification": "restricted",
+      "contains_secret": false,
+      "id": "DATA-FACTORY-INTENT",
+      "tenant_scoped": true
+    },
+    {
+      "classification": "restricted",
+      "contains_secret": false,
+      "id": "DATA-FACTORY-STATE",
+      "tenant_scoped": true
+    },
+    {
+      "classification": "restricted",
+      "contains_secret": false,
+      "id": "DATA-FACTORY-AUDIT",
+      "tenant_scoped": true
+    },
+    {
+      "classification": "restricted",
       "contains_secret": true,
       "id": "DATA-TRUST-MATERIAL",
       "tenant_scoped": false
     }
   ],
   "edges": [
+    {
+      "allowed_data": [
+        "DATA-FACTORY-INTENT",
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-LOCAL-API",
+      "id": "EDGE-FACTORY-API-CONTROL",
+      "network_policy": "no_network",
+      "protocol": "unix_http",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-CONTROL",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-INTENT",
+        "DATA-FACTORY-STATE",
+        "DATA-FACTORY-AUDIT"
+      ],
+      "authentication": "database_role",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 2,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-DURABLE-STATE-FAILURE",
+        "terminal_action": "dead_letter",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-CONTROL",
+      "id": "EDGE-FACTORY-CONTROL-POSTGRES",
+      "network_policy": "local_only",
+      "protocol": "postgresql",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-POSTGRES",
+      "type": "data_flow"
+    },
     {
       "allowed_data": [
         "DATA-REPOSITORY-SOURCE"
@@ -435,6 +510,83 @@
   ],
   "nodes": [
     {
+      "data_classification": "DATA-FACTORY-INTENT",
+      "id": "NODE-FACTORY-LOCAL-API",
+      "owner": "local factory operators",
+      "public_contracts": [
+        "CONTRACT-FACTORY-CONTROL-OPENAPI"
+      ],
+      "repository_paths": [
+        "factory/.env.example",
+        "factory/contracts/openapi",
+        "factory/src/adaptive_factory/api.py",
+        "factory/src/adaptive_factory/cli.py",
+        "factory/src/adaptive_factory/settings.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [
+        "SECRET-FACTORY-TOKEN"
+      ],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "service"
+    },
+    {
+      "data_classification": "DATA-FACTORY-STATE",
+      "id": "NODE-FACTORY-CONTROL",
+      "owner": "local factory operators",
+      "public_contracts": [],
+      "repository_paths": [
+        "factory/.gitignore",
+        "factory/README.md",
+        "factory/pyproject.toml",
+        "factory/src/adaptive_factory/__init__.py",
+        "factory/src/adaptive_factory/contracts.py",
+        "factory/src/adaptive_factory/models.py",
+        "factory/src/adaptive_factory/service.py",
+        "factory/src/adaptive_factory/state.py",
+        "factory/src/adaptive_factory/store.py",
+        "factory/tests"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "local_only"
+      },
+      "secrets": [
+        "SECRET-FACTORY-DATABASE"
+      ],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-FACTORY-AUDIT",
+      "id": "NODE-FACTORY-POSTGRES",
+      "owner": "local factory operators",
+      "public_contracts": [],
+      "repository_paths": [
+        "factory/compose.yaml",
+        "factory/src/adaptive_factory/migrations.py",
+        "factory/src/adaptive_factory/resources"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "postgresql",
+        "lifecycle": "on_demand",
+        "network": "local_only"
+      },
+      "secrets": [
+        "SECRET-FACTORY-DATABASE"
+      ],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "datastore"
+    },
+    {
       "data_classification": "DATA-REPOSITORY-SOURCE",
       "id": "NODE-LOCAL-ROUTE-POLICY",
       "owner": "repository engineering",
@@ -764,6 +916,14 @@
     {
       "classification": "trust_material",
       "id": "SECRET-WEBHOOK"
+    },
+    {
+      "classification": "trust_material",
+      "id": "SECRET-FACTORY-DATABASE"
+    },
+    {
+      "classification": "trust_material",
+      "id": "SECRET-FACTORY-TOKEN"
     }
   ],
   "signals": [
@@ -806,6 +966,14 @@
     {
       "description": "Exact-SHA workspace preparation or access failed closed.",
       "id": "SIG-WORKSPACE-FAILURE"
+    },
+    {
+      "description": "Local factory authentication, bounds, lease, fence, capacity, budget, kill, or reconciliation rejected an operation.",
+      "id": "SIG-FACTORY-CONTROL-FAILURE"
+    },
+    {
+      "description": "Factory-only PostgreSQL operational state was unavailable or inconsistent.",
+      "id": "SIG-FACTORY-DURABLE-STATE-FAILURE"
     }
   ],
   "trust_domains": [
@@ -843,6 +1011,11 @@
       "id": "TD-PRODUCTION-TRUST",
       "kind": "production_trust",
       "owner": "human security approvers"
+    },
+    {
+      "id": "TD-FACTORY-CONTROL",
+      "kind": "local_preflight",
+      "owner": "local factory operators"
     }
   ]
 }

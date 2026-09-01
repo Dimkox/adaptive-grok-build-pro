@@ -26,6 +26,7 @@
         ".grok-stack",
         "architecture",
         "engineering/contracts",
+        "factory",
         "governance",
         "schemas",
         "scripts"
@@ -46,6 +47,7 @@
         ".grok-stack/adaptive_grok",
         "architecture",
         "engineering/contracts",
+        "factory",
         "governance",
         "schemas",
         "scripts"
@@ -107,6 +109,28 @@
       "to_trust_domains": [
         "TD-PRODUCTION-TRUST"
       ]
+    },
+    {
+      "edge_types": [
+        "control",
+        "data_flow",
+        "dependency",
+        "deployment",
+        "publication",
+        "secret_flow"
+      ],
+      "from_trust_domains": [
+        "TD-FACTORY-CONTROL"
+      ],
+      "id": "FIT-FACTORY-NO-TRUST-OR-EXTERNAL-EDGE",
+      "severity": "error",
+      "to_trust_domains": [
+        "TD-TRUST-CI-CONTROL",
+        "TD-TRUST-CI-EXECUTION",
+        "TD-EXTERNAL-POLICY",
+        "TD-EXTERNAL-PLATFORM",
+        "TD-PRODUCTION-TRUST"
+      ]
     }
   ],
   "migration_policies": [
@@ -122,6 +146,19 @@
         "migrate"
       ],
       "severity": "error"
+    },
+    {
+      "id": "FIT-FACTORY-SQL-HISTORY",
+      "immutable_history": true,
+      "path_prefixes": [
+        "factory/src/adaptive_factory/resources"
+      ],
+      "required_phases": [
+        "contract",
+        "expand",
+        "migrate"
+      ],
+      "severity": "error"
     }
   ],
   "network_policies": [
@@ -130,7 +167,8 @@
         "docker_api",
         "filesystem",
         "https",
-        "postgresql"
+        "postgresql",
+        "unix_http"
       ],
       "id": "FIT-DECLARED-NETWORK-ONLY",
       "node_types": [
@@ -164,9 +202,22 @@
         ".grok-stack",
         "architecture",
         "engineering/contracts",
+        "factory",
         "governance",
         "schemas",
         "scripts"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "trust-ci",
+        "trust_ci",
+        "adaptive_trust_ci"
+      ],
+      "id": "FIT-FACTORY-CANNOT-DEFINE-TRUST-CI",
+      "severity": "error",
+      "source_prefixes": [
+        "factory"
       ]
     }
   ],
@@ -215,6 +266,17 @@
         "SECRET-WEBHOOK"
       ],
       "severity": "error"
+    },
+    {
+      "allowed_trust_domains": [
+        "TD-FACTORY-CONTROL"
+      ],
+      "id": "FIT-FACTORY-MATERIAL-BOUNDARY",
+      "secret_classes": [
+        "SECRET-FACTORY-DATABASE",
+        "SECRET-FACTORY-TOKEN"
+      ],
+      "severity": "error"
     }
   ],
   "tenant_authorization_policies": [
@@ -224,6 +286,9 @@
         "DATA-ATTESTATION",
         "DATA-HOLDOUT",
         "DATA-JOB-STATE",
+        "DATA-FACTORY-AUDIT",
+        "DATA-FACTORY-INTENT",
+        "DATA-FACTORY-STATE",
         "DATA-TRUST-MATERIAL"
       ],
       "id": "FIT-RESTRICTED-DATA-AUTHORIZATION",

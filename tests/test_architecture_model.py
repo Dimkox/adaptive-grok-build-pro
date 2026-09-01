@@ -153,6 +153,21 @@ class ArchitectureModelTests(unittest.TestCase):
         if ARCH is None:
             self.fail("adaptive_grok.architecture is not implemented")
 
+    def test_factory_control_plane_is_local_and_separate_from_trust_ci(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        nodes = {node["id"]: node for node in snapshot.system["nodes"]}
+        expected = {"NODE-FACTORY-LOCAL-API", "NODE-FACTORY-CONTROL", "NODE-FACTORY-POSTGRES"}
+        self.assertTrue(expected <= set(nodes))
+        for node_id in expected:
+            self.assertEqual(nodes[node_id]["trust_domain"], "TD-FACTORY-CONTROL")
+        prohibited = {"NODE-TRUST-CI-POSTGRES", "NODE-TRUST-CI-API", "NODE-TRUST-CI-WORKER", "NODE-GITHUB", "NODE-DOCKER-ENGINE", "NODE-ISOLATED-RUNNER"}
+        for edge in snapshot.system["edges"]:
+            self.assertFalse(edge["from"] in expected and edge["to"] in prohibited, edge["id"])
+            self.assertFalse(edge["to"] in expected and edge["from"] in prohibited, edge["id"])
+        factory_edges = [edge for edge in snapshot.system["edges"] if edge["from"] in expected or edge["to"] in expected]
+        self.assertTrue(factory_edges)
+        self.assertTrue(all(edge["network_policy"] in {"no_network", "local_only"} for edge in factory_edges))
+
     def _repo(self, system: dict | None = None, rules: dict | None = None):
         temp = tempfile.TemporaryDirectory()
         root = Path(temp.name)
@@ -1040,10 +1055,14 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 5)
+        self.assertEqual(len(records), 6)
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
+        factory_api = next(record for record in records if record.id == "CONTRACT-FACTORY-CONTROL-OPENAPI")
+        self.assertEqual(factory_api.kind, "openapi")
+        self.assertEqual(factory_api.role, "bidirectional")
+        self.assertNotIn("/v1/providers/run", documents[factory_api.id]["paths"])
         governance_handoff = next(
             record
             for record in records
