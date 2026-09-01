@@ -324,3 +324,7 @@ Use transaction advisory locks derived from validated command or intake identity
 ## 2026-09-01 — Make capacity mutation capability-shaped
 
 Encode 20/10/1 identities and ceilings as schema constraints, revoke raw runtime counter DML, and expose only allocation-bound security-definer functions with a fixed safe search path. This keeps scheduler lifecycle atomic while making arbitrary counter insert/reset impossible to the effective runtime role.
+
+## 2026-09-01 — Bind lease validity to a live capacity allocation
+
+Treat an unreleased canonical allocation as part of the worker fence and deny runtime direct allocation updates. This keeps heartbeat, release and accounting fail-closed if privileged out-of-band drift hides an allocation, without implicitly repairing counters.

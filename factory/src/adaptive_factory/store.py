@@ -64,7 +64,7 @@ class PostgresFactoryStore:
             role, version = cursor.fetchone()
             capacity_consistent = self._capacity_consistent(cursor)
             return {
-                "status": "ready" if version == 7 and capacity_consistent else "not_ready",
+                "status": "ready" if version == 8 and capacity_consistent else "not_ready",
                 "database_role": role,
                 "schema_version": version,
                 "capacity_consistent": capacity_consistent,
@@ -542,7 +542,7 @@ class PostgresFactoryStore:
         cursor.execute(
             """SELECT r.run_id FROM factory.tasks t JOIN factory.runs r ON r.run_id=t.current_run_id
             JOIN factory.capacity_allocations a ON a.run_id=r.run_id
-            WHERE t.task_id=%s AND r.run_id=%s AND r.released_at IS NULL FOR UPDATE OF t,r,a""",
+            WHERE t.task_id=%s AND r.run_id=%s AND r.released_at IS NULL FOR UPDATE OF t,r""",
             (task_id, run_id),
         )
         if cursor.fetchone() is None:
@@ -559,7 +559,7 @@ class PostgresFactoryStore:
         cursor.execute(
             """SELECT r.run_id FROM factory.runs r JOIN factory.capacity_allocations a ON a.run_id=r.run_id
             WHERE r.run_id=%s AND r.task_id=%s AND r.released_at IS NULL AND a.released_at IS NULL
-            FOR UPDATE OF r,a""",
+            FOR UPDATE OF r""",
             (run_id, task_id),
         )
         if cursor.fetchone() is None:
@@ -586,9 +586,10 @@ class PostgresFactoryStore:
             JOIN factory.attempts at ON at.run_id=r.run_id
             WHERE r.run_id=%s AND r.task_id=%s AND r.owner_id=%s AND r.fence=%s AND r.packet_digest=%s
             AND r.state='leased' AND r.released_at IS NULL
+            AND a.released_at IS NULL
             AND (%s OR r.lease_expires_at>clock_timestamp())
             AND t.current_run_id=r.run_id AND t.current_fence=r.fence AND t.state='leased' AND t.deadline_at>clock_timestamp()
-            FOR UPDATE OF r,t,a""",
+            FOR UPDATE OF r,t""",
             (grant.run_id, grant.task_id, grant.owner, grant.fence, grant.packet_digest, allow_expired),
         )
         row = cursor.fetchone()

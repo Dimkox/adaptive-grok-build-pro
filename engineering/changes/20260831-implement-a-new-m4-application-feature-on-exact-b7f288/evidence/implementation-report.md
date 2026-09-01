@@ -7,7 +7,7 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 ## Delivered behavior
 
 - Closed typed intake, handoff, actor, task, run, attempt and limit records with canonical digests, exact duplicate return and atomic supersession.
-- Seven contiguous checksum-locked factory migrations, persisted trusted-M0/command evidence, capability-shaped capacity authority, effective least-privilege `factory_runtime` execution and no `trust_ci` privileges.
+- Eight contiguous checksum-locked factory migrations, persisted trusted-M0/command evidence, capability-shaped capacity authority, effective least-privilege `factory_runtime` execution and no `trust_ci` privileges.
 - Transactional `FOR UPDATE SKIP LOCKED` claims, monotonic per-task fences, database-time leases/deadlines and 20 global readers / 10 per repository / one writer capacity.
 - Initial attempt plus two infrastructure retries, terminal dead/needs-human handling, 14,400-second and USD 25/token/output/event/repair ceilings, durable fail-closed missing accounting and idempotent usage observations.
 - Global/repository kills, append-only hash-chained audit with bounded verification, and ordered reconciliation capped at 100 candidates and five seconds.
@@ -37,7 +37,7 @@ The mandatory exit runner creates an exact disposable PostgreSQL 17 container, e
 
 ## Verification evidence
 
-- Remediation factory suite: 42/42 passed against fresh disposable PostgreSQL 17, including API integration, M0 authority, effective-role denials, null/accounting command replay, accounting, terminal lease cleanup and orphan reconciliation.
+- Remediation factory suite: 43/43 passed against fresh disposable PostgreSQL 17, including API integration, M0 authority, effective-role denials, null/accounting command replay, allocation-tamper fencing, accounting, terminal lease cleanup and orphan reconciliation.
 - Actual restart probe: PostgreSQL container restarted, one expired holder reclaimed, second reconciliation repaired zero, a higher fence issued, and the late holder was rejected.
 - Architecture model/fitness: 131/131 passed; validate, drift, diagram check and full worktree fitness passed.
 - Former root-verifier regressions: all 15 targeted failures passed; API/contract/state/migration/service unit subset 25/25 passed.
@@ -50,6 +50,6 @@ Only the exact local container `m4-factory-pg-b7f288` and its fresh `m4_factory_
 
 ## Rollout, rollback and remaining authority
 
-Source rollout only: no service was activated and no migration was run outside disposable databases. Recovery after durable intake is global kill, stop local intake/claims, preserve audit/state, restore backup into a separate comparison database and forward-fix with migration `008+`; destructive down-migration is prohibited.
+Source rollout only: no service was activated and no migration was run outside disposable databases. Recovery after durable intake is global kill, stop local intake/claims, preserve audit/state, restore backup into a separate comparison database and forward-fix with migration `009+`; destructive down-migration is prohibited.
 
 Independent route reviews, PR delivery, the App-owned policy-epoch check on the exact PR head, signed approval scopes, merge and any deployment remain outside this implementation report and are not claimed here. The calendar deadline does not change the product runtime contract or bypass those gates.

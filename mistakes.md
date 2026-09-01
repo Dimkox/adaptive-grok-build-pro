@@ -287,3 +287,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Runtime could insert a repository ceiling of 999 or reset `active_count`, after which the supported scheduler admitted reader 11 or 21.
 **Root cause:** Capacity was treated as a mutable counter implementation detail, so column grants were narrowed without recognizing that counter identity, insertion and assignment collectively constitute admission policy authority.
+
+## 2026-09-01 — Revoked counter mutation but retained allocation release mutation
+
+**Symptom:** Runtime could set `capacity_allocations.released_at`, hide a leased worker from capacity views and leave counters inconsistent while its fence remained valid.
+**Root cause:** Least-privilege review covered counter policy and allocation creation but did not enumerate every inherited allocation lifecycle grant or define a live allocation as part of lease validity.

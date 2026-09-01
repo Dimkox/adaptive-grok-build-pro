@@ -168,6 +168,7 @@ class InstallerTests(unittest.TestCase):
             "factory/uv.lock",
             "factory/src/adaptive_factory/store.py",
             "factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql",
+            "factory/src/adaptive_factory/resources/008_allocation_release_authority.sql",
             "factory/tests/run_disposable_exit.py",
             "factory/tests/postgres_restart_probe.py",
             "factory/tests/test_postgres_integration.py",

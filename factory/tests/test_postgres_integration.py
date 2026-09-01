@@ -635,9 +635,9 @@ class PostgresFactoryTests(unittest.TestCase):
             )
             self.assertEqual(cursor.fetchone(), (True, True))
             cursor.execute(
-                "SELECT has_table_privilege('factory_runtime','factory.capacity_counters','INSERT'), has_column_privilege('factory_runtime','factory.capacity_counters','ceiling','UPDATE'), has_column_privilege('factory_runtime','factory.capacity_counters','active_count','UPDATE'), has_table_privilege('factory_runtime','factory.intake_identities','UPDATE')"
+                "SELECT has_table_privilege('factory_runtime','factory.capacity_counters','INSERT'), has_column_privilege('factory_runtime','factory.capacity_counters','ceiling','UPDATE'), has_column_privilege('factory_runtime','factory.capacity_counters','active_count','UPDATE'), has_table_privilege('factory_runtime','factory.intake_identities','UPDATE'), has_column_privilege('factory_runtime','factory.capacity_allocations','released_at','UPDATE')"
             )
-            self.assertEqual(cursor.fetchone(), (False, False, False, False))
+            self.assertEqual(cursor.fetchone(), (False, False, False, False, False))
         forbidden = (
             ("UPDATE factory.accepted_intents SET body='{}'::jsonb",),
             ("UPDATE factory.task_events SET actor_id='tampered'",),
@@ -646,6 +646,8 @@ class PostgresFactoryTests(unittest.TestCase):
             ("UPDATE factory.capacity_counters SET ceiling=999 WHERE scope_key='global:reader'",),
             ("UPDATE factory.capacity_counters SET active_count=0 WHERE scope_key='global:reader'",),
             ("INSERT INTO factory.capacity_counters(scope_key,active_count,ceiling) VALUES ('repository:forged/repo:reader',0,999)",),
+            ("UPDATE factory.capacity_allocations SET released_at=clock_timestamp()",),
+            ("UPDATE factory.capacity_allocations SET released_at=NULL",),
             ("UPDATE factory.intake_identities SET source_id='tampered'",),
         )
         for (statement,) in forbidden:
@@ -665,6 +667,52 @@ class PostgresFactoryTests(unittest.TestCase):
             cost_usd_micros=0, token_units=0, output_bytes=0, actor=WORKER,
         )
         self.service.release(lifecycle_grant, outcome="completed", actor=WORKER, now=NOW)
+        self.assertEqual(self.store.readiness()["status"], "ready")
+
+    def test_hidden_allocation_invalidates_fence_and_reconciliation_fails_closed(self):
+        import psycopg
+
+        task = self.submit(source="hidden-allocation").task
+        grant = self.service.claim(
+            owner="ignored", role=RunRole.READER, repositories=(task.repository_id,),
+            lease_seconds=60, actor=WORKER, now=NOW,
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.capacity_allocations SET released_at=clock_timestamp() WHERE run_id=%s",
+                (grant.run_id,),
+            )
+        with self.assertRaises(FenceError):
+            self.service.heartbeat(grant, actor=WORKER, now=NOW)
+        with self.assertRaises(FenceError):
+            self.service.release(grant, outcome=FailureClass.WORKER_LOST, actor=WORKER, now=NOW)
+        with self.assertRaises(FenceError):
+            self.service.reserve_budget(
+                grant, cost_usd_micros=0, token_units=0, wall_seconds=1,
+                reason_digest="a" * 64, idempotency_key="b" * 64, actor=WORKER,
+            )
+        with self.assertRaises(FenceError):
+            self.service.observe_usage(
+                grant, provider_call_id="hidden-allocation", price_table_digest="2" * 64,
+                cost_usd_micros=0, token_units=0, output_bytes=0, actor=WORKER,
+            )
+        self.assertEqual(self.store.readiness()["status"], "not_ready")
+        with self.assertRaisesRegex(StoreError, "capacity counters do not match live allocations"):
+            self.service.reconcile(actor=OPERATOR, now=NOW)
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.capacity_allocations SET released_at=NULL WHERE run_id=%s",
+                (grant.run_id,),
+            )
+        self.service.observe_usage(
+            grant, provider_call_id="restored-allocation", price_table_digest="2" * 64,
+            cost_usd_micros=0, token_units=0, output_bytes=0, actor=WORKER,
+        )
+        self.assertEqual(
+            self.service.release(grant, outcome="completed", actor=WORKER, now=NOW),
+            TaskStatus.READY_FOR_HUMAN,
+        )
         self.assertEqual(self.store.readiness()["status"], "ready")
 
 

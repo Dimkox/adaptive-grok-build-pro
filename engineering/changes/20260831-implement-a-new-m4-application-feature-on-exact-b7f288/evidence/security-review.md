@@ -1,78 +1,90 @@
-# M4 round-3 security review — FAIL
+# M4 round-4 security review — PASS
 
 ## Reviewed identity
 
 - Route: `b7f288f1e81e`
 - Change: `20260831-implement-a-new-m4-application-feature-on-exact-b7f288`
 - Base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-- Reviewed head: `8435e23458885a48e2d5784f8cd01e84d978c28c`
-- Full reviewed diff: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..8435e23458885a48e2d5784f8cd01e84d978c28c`
-- Round-3 fix commit: `8435e23458885a48e2d5784f8cd01e84d978c28c` (parent `9bc51e81dddb8fc02f22171b586eb8c9caa7f304`)
+- Reviewed head: `9fd2a56c57f834ad39c03a2f748bdbaefc79c91c`
+- Full reviewed diff: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..9fd2a56c57f834ad39c03a2f748bdbaefc79c91c`
+- Round-4 fix commit: `9fd2a56c57f834ad39c03a2f748bdbaefc79c91c` (parent `8435e23458885a48e2d5784f8cd01e84d978c28c`)
 - Reviewer: route-selected read-only `security_reviewer`
-- Verdict: **FAIL**
+- Verdict: **PASS**
 - Critical findings: **0**
-- Important findings: **1**
-- Moderate findings: **0**
+- Important findings: **0**
+- Moderate findings: **1**
 
-PASS requires zero Critical/Important findings. This local report is not merge authority and cannot replace the App-owned `adaptive-trust-ci/verified@<policy-sha12>` check on the exact pull-request head.
+No Critical or Important security finding remains. The Moderate least-privilege cleanup below is bounded, fail-closed, observable through readiness and does not invalidate this security PASS. This report is local evidence only; it is not merge authority and cannot replace the App-owned `adaptive-trust-ci/verified@<policy-sha12>` check on the exact pull-request head.
 
-## Prior-finding recheck
+## Round-3 blocker closure: canonical database-owned capacity
 
-| Area | Round-3 result | Evidence |
+Migration 007 closes the arbitrary-ceiling INSERT bypass with three mutually reinforcing controls:
+
+1. `capacity_counters_canonical_policy` constrains the only legal rows to `global:reader=20`, `global:writer=1`, and `repository:*:reader=10` (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:1-9`). Even the table owner cannot insert a ceiling of 999.
+2. Runtime loses direct INSERT/UPDATE on counters and direct INSERT on allocations (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:160-169`). Fresh effective-role probes returned no INSERT/UPDATE privilege and denied forged statements with SQLSTATE `42501`.
+3. Counter creation/allocation/release is performed by four `SECURITY DEFINER` functions with `SET search_path=pg_catalog,factory`, schema-qualified relations, closed role/repository/live-run checks, stable ordered locks and canonical ceilings (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:11-158`). PUBLIC execute is revoked and only `factory_runtime` receives execute.
+
+The store now calls only those functions for capacity eligibility, allocation, lock and release (`factory/src/adaptive_factory/store.py:440-494,524-575,625-655`). Readiness additionally compares counters with live allocations and fails closed on drift (`factory/src/adaptive_factory/store.py:61-85`). The supported PostgreSQL suite proves 20 global readers, 10 per repository, one writer, reader 21 rejected, and lifecycle release returning readiness to consistent.
+
+Fresh round-4 evidence:
+
+```text
+effective_dml= ('factory_runtime', False, False, False, True, False)
+```
+
+Tuple: effective role; counter INSERT denied; counter UPDATE denied; allocation INSERT denied; allocation `released_at` UPDATE still allowed (Moderate M-1); PUBLIC counter INSERT denied.
+
+```text
+function_security= ('capacity_allocate', True, ['search_path=pg_catalog, factory'], True, False)
+function_security= ('capacity_eligible_repositories', True, ['search_path=pg_catalog, factory'], True, False)
+function_security= ('capacity_lock_run', True, ['search_path=pg_catalog, factory'], True, False)
+function_security= ('capacity_release', True, ['search_path=pg_catalog, factory'], True, False)
+```
+
+For each function: `SECURITY DEFINER=true`; fixed search path; runtime execute=true; PUBLIC execute=false.
+
+```text
+forged_dml_denied= 42501 INSERT capacity_counters(... ceiling=999)
+forged_dml_denied= 42501 UPDATE capacity_counters SET active_count=0
+forged_dml_denied= 42501 INSERT capacity_allocations(...)
+canonical_constraint_denied_owner= 23514
+```
+
+The prior reader-11 attack no longer has a runtime DML path, and the canonical constraint independently rejects the forged row under owner authority.
+
+## All prior security findings rechecked
+
+| Area | Round-4 result | Evidence |
 | --- | --- | --- |
-| M0 authority | **Closed** | Intake requires a matching non-revoked, independently provisioned observation/exception (`factory/src/adaptive_factory/service.py:43-49`, `factory/src/adaptive_factory/store.py:114-129`). Runtime has SELECT only on the trusted M0 tables; caller assertions alone still fail. |
-| Worker actor/repository authorization | **Closed** | Claim derives owner from authenticated actor; worker kind, grant owner, scope and immutable task repository are checked before heartbeat/release/accounting (`factory/src/adaptive_factory/api.py:213-235`, `factory/src/adaptive_factory/service.py:61-132`). Store fencing locks task/run/allocation and checks owner/fence/packet/live lease/deadline. Cross-owner/repository regressions pass. |
-| Completion accounting | **Closed** | Reservation/usage endpoints are authenticated; cost/token/wall/output bounds and settlement are durable; completion requires usage, no open reservation and no accounting block. Exact accounting replay succeeds before stale-fence checking and changed command content conflicts. |
-| UDS-only bootstrap, mode and token permissions | **Closed** | The only server composition pre-binds `AF_UNIX`, validates an absolute owned safe parent/existing path, applies `0660`, and passes only that socket to Uvicorn (`factory/src/adaptive_factory/server.py:73-121`). Actor/token files are bounded, no-follow regular `0600` files. No TCP option/listener exists. |
-| Streaming body cap | **Closed** | Middleware validates declared length and cumulatively caps all streamed chunks at 1 MiB before parsing (`factory/src/adaptive_factory/api.py:108-126`). Declared, chunked/no-length and malformed-length tests pass. |
-| Claim-null replay | **Closed** | Every no-grant branch records `{"grant": null}` under the actor/action/request digest/correlation; exact replay remains null after work arrives and changed content conflicts (`factory/src/adaptive_factory/store.py:398-480`, `factory/tests/test_postgres_integration.py:275-298`). |
-| Accounting idempotency/correlation | **Closed** | API/service now carry command key and correlation for reserve/observe (`factory/src/adaptive_factory/api.py:271-320`, `factory/src/adaptive_factory/service.py:97-132`). Store serializes keys with an advisory transaction lock, persists exact results/errors, replays before stale-fence validation and rejects changed content (`factory/src/adaptive_factory/store.py:89-103,728-927`). PostgreSQL regressions confirm both correlations. |
-| Runtime UPDATE denial for capacity ceiling/intake identities | **Closed as written, but policy still bypassable through INSERT** | Migration 006 revokes table UPDATE and grants `active_count` only (`factory/src/adaptive_factory/resources/006_runtime_policy_privileges.sql:1-2`). Fresh effective-role probes denied both requested UPDATE statements. The remaining INSERT route is the Important finding below. |
+| M0 authority | **Closed** | Intake requires a matching non-revoked, independently provisioned M0 observation/exception; caller assertions alone fail (`factory/src/adaptive_factory/service.py:43-49`, `factory/src/adaptive_factory/store.py:134-149`). Runtime has SELECT only on those authority tables. |
+| Worker actor/repository auth | **Closed** | Claim owner derives from authenticated actor. Worker kind, scope, grant owner and immutable task repository are checked before heartbeat/release/accounting, while the store rechecks owner/run/fence/packet/live state under locks. Cross-owner/repository regressions pass. |
+| Completion accounting/budgets | **Closed** | Authenticated reservation/usage endpoints enforce cost/token/wall/output ceilings, missing pricing blocks, reservations settle, completion requires usage and no open reservation/block, and exact command replay precedes stale-fence checks. |
+| Claim-null replay | **Closed** | Every no-grant result is durably recorded with actor/action/request digest/correlation. Exact replay remains null after work arrives and changed content conflicts. |
+| Accounting idempotency/correlation | **Closed** | Reserve/observe carry command key and correlation through API/service/store, serialize the key with an advisory transaction lock, replay exact results/errors and reject changed content. Durable correlations are asserted in PostgreSQL tests. |
+| UDS-only server and secrets | **Closed** | The composition root pre-binds only `AF_UNIX`, validates absolute owned safe paths, applies `0660`, and exposes no TCP setting. Actor/token files are bounded no-follow regular `0600`; bearer hashes compare constant-time; access logging is disabled. |
+| Streaming body cap | **Closed** | Declared length is validated and streamed chunks are cumulatively capped at 1 MiB before parsing. Declared, chunked/no-length and malformed-length regressions pass. |
+| SQL/injection/search path | **Closed** | Application values are parameterized. Definer functions use fixed `pg_catalog,factory`, schema-qualified relations and closed typed inputs; PUBLIC execute is revoked. No SQL injection or search-path substitution path was found. |
+| Lease fencing/kill/audit | **Closed** | Database time, monotonic fences, owner/run/packet/current-state/deadline checks, kill-before-claim, ordered locks and bounded reconciliation remain. Audit log is insert/select-only for runtime, hash-chain verification passes, and command results are immutable replay evidence. |
+| Unsafe/external operations | **Closed** | No provider execution, subprocess/shell, repository/Git/GitHub, systemd, deploy, TCP client/listener, connector, production mutation or Trust CI authority path exists under `factory/src/adaptive_factory`. |
 
-## Important finding
+## Moderate finding
 
-### I-1 — Runtime can pre-seed an arbitrary repository capacity ceiling and bypass the hard limit
+### M-1 — Obsolete direct allocation-release UPDATE grant remains
 
-Migration 006 correctly removes UPDATE on `capacity_counters.ceiling` and `intake_identities`, but migration 003's table-level INSERT on `capacity_counters` remains (`factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql:48-53`, `factory/src/adaptive_factory/resources/006_runtime_policy_privileges.sql:1-2`). Runtime legitimately needs to create dynamic repository counters, yet the schema only requires `ceiling > 0`; it does not constrain a `repository:*:reader` row to ceiling 10 (`factory/src/adaptive_factory/resources/002_runs_leases_capacity.sql:38-43`). Claim inserts 10 only when the row is absent, then trusts the persisted ceiling (`factory/src/adaptive_factory/store.py:424-463`).
+Migration 005 granted runtime UPDATE on `capacity_allocations.released_at` (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:67`). Migration 007 revokes direct allocation INSERT but does not revoke that column UPDATE (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:164-169`). The fresh effective-role probe confirms `has_column_privilege(... released_at, UPDATE)=true`.
 
-A fresh PostgreSQL 17 database migrated through version 006 produced:
+The store no longer uses that direct grant; all legitimate allocation release goes through `factory.capacity_release(uuid)`. A compromised runtime credential could mark an allocation released without decrementing counters. This does not permit over-capacity execution: counters remain conservatively high, readiness compares them to live allocations and becomes `not_ready`, and subsequent claims fail closed. Impact is bounded availability/evidence inconsistency, not authorization or cap bypass.
 
-```text
-effective_privileges= ('factory_runtime', False, True, False, True)
-denied= UPDATE factory.capacity_counters SET ceiling=999 WHERE scope_key='global:reader'
-denied= UPDATE factory.intake_identities SET source_id='tampered'
-inserted_repository_ceiling= 999
-```
+Recommended forward cleanup: revoke UPDATE on `factory.capacity_allocations` from `factory_runtime` in migration 008 and add an effective-role denial regression, while retaining positive release/reconciliation tests through `capacity_release`.
 
-The tuple is: effective role `factory_runtime`; capacity-ceiling UPDATE denied; active-count UPDATE allowed; intake-identity UPDATE denied; capacity-counter INSERT allowed. The same effective role successfully inserted `repository:probe/repo:reader` with ceiling `999`.
-
-This is not merely theoretical privilege metadata. A second clean migrated database pre-seeded that row, submitted 11 ordinary tasks through `FactoryService`, then claimed them through the supported scheduler:
-
-```text
-reader_grants_for_one_repository= 11
-```
-
-The documented/database-authoritative maximum is 10 readers per repository. A compromised runtime credential, future SQL injection, or unintended runtime statement can therefore modify security policy without UPDATE/migrator authority and make the supported claim path violate AC-005. The new privilege regression checks UPDATE denial and a positive `active_count` update, but does not attempt an arbitrary INSERT (`factory/tests/test_postgres_integration.py:608-654`).
-
-Required remediation: make ceilings schema-authoritative, not caller-supplied runtime data. For example, add a constraint/trigger that permits exactly `global:reader=20`, `global:writer=1`, and `repository:*:reader=10`, or move repository-counter creation behind a narrowly defined security-definer function while revoking direct INSERT. Add an effective-role regression that arbitrary repository ceiling INSERT fails and an end-to-end test proving a preexisting/malformed counter cannot yield reader 11. Audit all other policy-bearing columns for the same insert-vs-update privilege gap.
-
-## Positive security evidence
-
-- Bearer hashes use constant-time comparison. Actor configuration and token files are closed, bounded and no-follow/private; credentials are not logged.
-- All application SQL values are parameterized. Migrations are contiguous, packaged and checksum-bound. No SQL-injection path was found in the current API/store.
-- Monotonic task fences, live owner/run/packet/state/deadline checks, stable capacity lock order, `FOR UPDATE SKIP LOCKED`, bounded retries, kill-before-claim and bounded reconciliation remain intact.
-- Audit log remains insert/select-only for runtime and hash-chain verification passes. Command results are insert/select-only and serialize duplicate command keys.
-- No provider execution, subprocess/shell, repository/Git/GitHub, systemd, deploy, TCP/network-client, external-write or production-mutation path was found under `factory/src/adaptive_factory`.
-- Readiness checks effective `factory_runtime` and exact schema version 6. Deployment must additionally ensure the login role is not owner/superuser; disposable tests intentionally use an owner login that can `SET ROLE`.
-
-## Commands and evidence
+## Verification evidence
 
 ```text
 git rev-parse HEAD
-8435e23458885a48e2d5784f8cd01e84d978c28c
+9fd2a56c57f834ad39c03a2f748bdbaefc79c91c
 
 git show -s --format='%H %P %s' HEAD
-8435e23458885a48e2d5784f8cd01e84d978c28c 9bc51e81dddb8fc02f22171b586eb8c9caa7f304 fix(factory): complete durable command and role invariants
+9fd2a56c57f834ad39c03a2f748bdbaefc79c91c 8435e23458885a48e2d5784f8cd01e84d978c28c fix(factory): make capacity authority database-owned
 
 git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..HEAD
 PASS (no output)
@@ -87,18 +99,16 @@ Ran 42 tests — OK
 PASS: PostgreSQL restarted; one repair; replay no-op; higher fence; late holder rejected
 PASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation
 
-fresh PostgreSQL 17 effective-role privilege probe
-effective_privileges= ('factory_runtime', False, True, False, True)
-requested UPDATE denials passed; arbitrary repository ceiling INSERT returned 999
-
-fresh PostgreSQL 17 end-to-end supported scheduler probe
-reader_grants_for_one_repository= 11
+fresh PostgreSQL 17 privilege/function/forged-DML probe
+direct counter INSERT/UPDATE and allocation INSERT denied
+owner-level noncanonical ceiling rejected by CHECK
+all four functions SECURITY DEFINER, fixed search_path, runtime-only execute
 ```
 
-The parent reports a fresh root `python3 scripts/grok_verify.py --mode pr` PASS for this exact head. That broad verifier result does not exercise the arbitrary counter INSERT/reader-11 abuse case and therefore does not negate I-1.
+The parent reports a fresh root `python3 scripts/grok_verify.py --mode pr` PASS on this exact head. The focused independent probes above cover the former security gap beyond the broad verifier.
 
-Both exact reviewer-created containers, `adaptive-factory-security-r3` and `adaptive-factory-security-r3-claims`, were removed by EXIT cleanup; the checked-in exit runner also removed its unique container. No `.env`, token content, private key, credential store, production dump, Trust CI secret/state, or human approval material was read. No shared/production database, external system, push, merge, release or deployment was mutated. The only repository write by this reviewer is this requested report.
+The exact reviewer-created container `adaptive-factory-security-r4` and the checked-in exit runner's unique container were removed. No `.env`, token content, private key, credential store, production dump, Trust CI secret/state, or human approval material was read. No shared/production database, external system, push, merge, release or deployment was mutated. The only repository write by this reviewer is this requested report.
 
-## Required disposition
+## Verdict
 
-**FAIL.** Return I-1 to the single route write owner, add the schema/effective-role/end-to-end regressions, rerun exact-tree verification, and repeat affected independent reviews. Do not record a passing `security_review` receipt for `8435e23458885a48e2d5784f8cd01e84d978c28c`.
+**PASS** for local `security_review` on exact head `9fd2a56c57f834ad39c03a2f748bdbaefc79c91c`. The Moderate M-1 cleanup is recommended but does not block this source-only local M4 change. Record the receipt only while the tree fingerprint remains current; any repository change invalidates this report and requires affected verification/review again.
