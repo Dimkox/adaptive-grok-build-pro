@@ -6,6 +6,8 @@ Risk: high
 Complexity: high-risk
 Domains: ai, security
 
+Historical status: this package preserves the original M3/M4 design record and its exact historical evidence. M3 was later accepted at `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`; current M4 implementation and evidence belong only to `engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/` and must not reuse this package's receipts as current authority.
+
 ## Problem
 
 The repository has an approved provider-neutral design and an exact M2-A implementation at `635c9ddf2d63c1ea823074106976a8f3de6299a9`, but it still lacks controlled machine-readable governance (M3) and the durable PostgreSQL factory control plane (M4).

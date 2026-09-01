@@ -14,8 +14,19 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 
-MANAGED_DIRS = (".grok", ".agents", ".grok-stack")
+MANAGED_DIRS = (
+    ".grok",
+    ".agents",
+    ".grok-stack",
+    "factory/contracts",
+    "factory/src",
+)
 MANAGED_FILES = (
+    "factory/.env.example",
+    "factory/.gitignore",
+    "factory/README.md",
+    "factory/compose.yaml",
+    "factory/pyproject.toml",
     "scripts/grok_architecture.py",
     "scripts/grok_governance.py",
     "scripts/grok_route.py",

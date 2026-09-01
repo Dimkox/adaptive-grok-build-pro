@@ -65,18 +65,29 @@ class ContractTests(unittest.TestCase):
 
     def test_unknown_fields_versions_dirty_sha_and_excessive_limits_fail(self):
         cases = []
-        unknown = valid_intake(); unknown["command"] = "git push"; cases.append((unknown, "unknown_fields"))
-        version = valid_intake(); version["contract_version"] = 2; cases.append((version, "unsupported_version"))
-        sha = valid_intake(); sha["exact_base_sha"] = "dirty"; cases.append((sha, "invalid_sha"))
-        limits = valid_intake(); limits["limits"]["wall_seconds"] = 14401; cases.append((limits, "limit_exceeded"))
+        unknown = valid_intake()
+        unknown["command"] = "git push"
+        cases.append((unknown, "unknown_fields"))
+        version = valid_intake()
+        version["contract_version"] = 2
+        cases.append((version, "unsupported_version"))
+        sha = valid_intake()
+        sha["exact_base_sha"] = "dirty"
+        cases.append((sha, "invalid_sha"))
+        limits = valid_intake()
+        limits["limits"]["wall_seconds"] = 14401
+        cases.append((limits, "limit_exceeded"))
         for payload, code in cases:
             with self.subTest(code=code), self.assertRaisesRegex(ContractError, code):
                 TaskIntakeV1.from_dict(payload, now=NOW)
 
     def test_handoff_mismatch_duplicate_acceptance_and_stale_m0_fail(self):
-        mismatch = valid_intake(); mismatch["governance"]["architecture_digest"] = "8" * 64
-        duplicate = valid_intake(); duplicate["acceptance_ids"] = ["AC-001", "AC-001"]
-        stale = valid_intake(); stale["m0_authority"]["observed_at"] = (NOW - timedelta(seconds=301)).isoformat()
+        mismatch = valid_intake()
+        mismatch["governance"]["architecture_digest"] = "8" * 64
+        duplicate = valid_intake()
+        duplicate["acceptance_ids"] = ["AC-001", "AC-001"]
+        stale = valid_intake()
+        stale["m0_authority"]["observed_at"] = (NOW - timedelta(seconds=301)).isoformat()
         for payload, code in ((mismatch, "handoff_mismatch"), (duplicate, "acceptance_ids"), (stale, "stale_m0")):
             with self.subTest(code=code), self.assertRaisesRegex(ContractError, code):
                 TaskIntakeV1.from_dict(payload, now=NOW)

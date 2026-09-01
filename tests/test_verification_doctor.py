@@ -206,7 +206,7 @@ class _PathTools:
 class VerificationTests(unittest.TestCase):
     @staticmethod
     def _adopt_architecture(root: Path) -> None:
-        for rel in ('architecture', 'schemas', 'engineering/contracts'):
+        for rel in ('architecture', 'schemas', 'engineering/contracts', 'factory'):
             source = ROOT / rel
             target = root / rel
             if target.exists():
@@ -698,6 +698,19 @@ class VerificationTests(unittest.TestCase):
             names = _names(_python(root))
             self.assertNotIn('python-unittest', names)
             self.assertNotIn('pytest', names)
+
+    def test_python_runs_dependency_free_factory_unit_contracts(self) -> None:
+        with project_copy() as root:
+            package = root / 'factory' / 'tests'
+            package.mkdir(parents=True)
+            (root / 'factory' / 'pyproject.toml').write_text('[project]\nname="factory"\n', encoding='utf-8')
+            (root / 'factory' / '__init__.py').write_text('', encoding='utf-8')
+            (package / '__init__.py').write_text('', encoding='utf-8')
+            (package / 'test_contracts.py').write_text(_PASSING_UNITTEST, encoding='utf-8')
+            checks = _python(root, mode='fast')
+            factory = next((item for item in checks if item.name == 'factory-unit'), None)
+            self.assertIsNotNone(factory)
+            self.assertEqual(factory.status, 'pass')
 
     def test_python_ignores_non_python_tests_directory(self) -> None:
         with project_copy() as root:

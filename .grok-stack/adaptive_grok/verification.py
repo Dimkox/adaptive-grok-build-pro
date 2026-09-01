@@ -440,6 +440,7 @@ QUALITY_PY_PATHS = (
     'stop_gate.py',
     'subagent_start.py',
     'subagent_stop.py',
+    'factory/src/adaptive_factory',
 )
 
 _SEMGREP_CONFIGS = ('semgrep.yaml', '.semgrep.yml', '.semgrep.yaml')
@@ -570,6 +571,21 @@ def _python(root: Path, mode: str = 'fast') -> list[CheckResult]:
             )
             if mode in {'pr', 'release'}:
                 results.append(CheckResult('coverage', 'skip', 'coverage not available'))
+    factory_tests = root / 'factory' / 'tests'
+    factory_modules = [
+        f'factory.tests.test_{name}'
+        for name in ('contracts', 'state', 'migrations', 'service')
+        if (factory_tests / f'test_{name}.py').is_file()
+    ]
+    if (root / 'factory' / 'pyproject.toml').is_file() and factory_modules:
+        results.append(
+            _command_check(
+                root,
+                'factory-unit',
+                [sys.executable, '-m', 'unittest', *factory_modules],
+                300,
+            )
+        )
     return results
 
 

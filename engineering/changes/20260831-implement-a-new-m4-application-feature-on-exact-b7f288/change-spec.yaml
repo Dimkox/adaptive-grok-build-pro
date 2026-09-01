@@ -1,13 +1,13 @@
 {
   "acceptance_criteria": [
-    {"id":"AC-001","statement":"Closed immutable M1 M2 M3 and M0 bound intake deduplicates exact work and atomically supersedes stale active generations","evidence":[{"receipt":"test_review"}]},
-    {"id":"AC-002","statement":"PostgreSQL leases monotonic fences 20 10 1 capacity retries budgets kills append-only audit and reconciliation enforce bounded durable behavior","evidence":[{"receipt":"test_review"},{"receipt":"security_review"}]},
-    {"id":"AC-003","statement":"Authenticated scoped Unix socket API and CLI expose local control without execution external-write production or Trust CI authority","evidence":[{"receipt":"security_review"}]},
+    {"id":"AC-001","statement":"Closed immutable M1 M2 M3 and M0 bound intake deduplicates exact work and atomically supersedes stale active generations","evidence":[{"test":"factory/tests/test_contracts.py"},{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"test_review"}]},
+    {"id":"AC-002","statement":"PostgreSQL leases monotonic fences 20 10 1 capacity retries budgets kills append-only audit and reconciliation enforce bounded durable behavior","evidence":[{"test":"factory/tests/test_migrations.py"},{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"test_review"},{"receipt":"security_review"}]},
+    {"id":"AC-003","statement":"Authenticated scoped Unix socket API and CLI expose local control without execution external-write production or Trust CI authority","evidence":[{"test":"factory/tests/test_api.py"},{"receipt":"security_review"}]},
     {"id":"AC-004","statement":"Architecture tooling documentation final verification and all selected independent reviews describe and validate one final product tree","evidence":[{"test":"tests/test_architecture_model.py"},{"test":"tests/test_structure.py"},{"receipt":"verification"},{"receipt":"code_review"},{"receipt":"test_review"},{"receipt":"release_review"}]}
   ],
   "approvals": {"required_scopes":["architecture","data","security","release"]},
   "change_id":"20260831-implement-a-new-m4-application-feature-on-exact-b7f288",
-  "contracts": {"events":[],"json_schema":[],"openapi":[]},
+  "contracts": {"events":[],"json_schema":[],"openapi":["factory/contracts/openapi/factory-control.v1.json"]},
   "forbidden_outcomes": [
     {"id":"FORBID-001","statement":"Factory executes providers repository commands GitHub writes deployment systemd production mutation or Trust CI authority","evidence":[{"receipt":"security_review"}]},
     {"id":"FORBID-002","statement":"Factory shares Trust CI package schema migration registry roles credentials policy holdout keys approvals or database state","evidence":[{"receipt":"security_review"}]},

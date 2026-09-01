@@ -35,7 +35,8 @@ class RecordingStore:
 
 class ServiceTests(unittest.TestCase):
     def test_submit_requires_scope_and_repository_authorization(self):
-        store = RecordingStore(); service = FactoryService(store)
+        store = RecordingStore()
+        service = FactoryService(store)
         denied = Actor("caller", "client", frozenset(), frozenset({"owner/repository"}))
         cross_repo = Actor("caller", "client", frozenset({"task:submit"}), frozenset({"other/repository"}))
         for actor in (denied, cross_repo):
@@ -44,27 +45,46 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(store.calls, [])
 
     def test_valid_submit_parses_before_store_boundary(self):
-        store = RecordingStore(); service = FactoryService(store)
+        store = RecordingStore()
+        service = FactoryService(store)
         actor = Actor("caller", "client", frozenset({"task:submit"}), frozenset({"owner/repository"}))
         result = service.intake(valid_intake(), actor=actor, now=NOW)
         self.assertTrue(result["created"])
         self.assertEqual(store.calls[0][1].repository_id, "owner/repository")
 
     def test_claim_rejects_unbounded_lease_and_missing_worker_scope(self):
-        store = RecordingStore(); service = FactoryService(store)
+        store = RecordingStore()
+        service = FactoryService(store)
         actor = Actor("worker", "worker", frozenset({"task:claim"}), frozenset({"owner/repository"}))
         with self.assertRaisesRegex(ValueError, "lease_seconds"):
-            service.claim(owner="worker", role=RunRole.READER, repositories=("owner/repository",), lease_seconds=301, actor=actor, now=NOW)
+            service.claim(
+                owner="worker",
+                role=RunRole.READER,
+                repositories=("owner/repository",),
+                lease_seconds=301,
+                actor=actor,
+                now=NOW,
+            )
         denied = Actor("worker", "worker", frozenset(), frozenset({"owner/repository"}))
         with self.assertRaises(AuthorizationError):
-            service.claim(owner="worker", role=RunRole.READER, repositories=("owner/repository",), lease_seconds=60, actor=denied, now=NOW)
+            service.claim(
+                owner="worker",
+                role=RunRole.READER,
+                repositories=("owner/repository",),
+                lease_seconds=60,
+                actor=denied,
+                now=NOW,
+            )
         self.assertEqual(store.calls, [])
 
     def test_read_list_and_release_stay_typed_and_authorized(self):
-        store = RecordingStore(); service = FactoryService(store)
+        store = RecordingStore()
+        service = FactoryService(store)
         reader = Actor("reader", "client", frozenset({"task:read", "task:list"}), frozenset({"owner/repository"}))
         self.assertEqual(service.get_task("task-1", actor=reader).task_id, "task-1")
-        self.assertEqual(len(service.list_tasks(repository_id="owner/repository", limit=10, cursor=None, actor=reader)), 1)
+        self.assertEqual(
+            len(service.list_tasks(repository_id="owner/repository", limit=10, cursor=None, actor=reader)), 1
+        )
         worker = Actor("worker", "worker", frozenset({"task:release"}), frozenset({"owner/repository"}))
         grant = LeaseGrant("task-1", "run-1", "worker", RunRole.READER, 1, NOW, "b" * 64)
         service.release(grant, outcome="worker_lost", actor=worker, now=NOW)

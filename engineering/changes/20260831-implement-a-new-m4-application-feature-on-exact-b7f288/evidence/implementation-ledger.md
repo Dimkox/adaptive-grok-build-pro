@@ -43,3 +43,22 @@ Each vertical records its RED command/result before production source is added, 
 - GREEN: API plus service tests passed 9 tests for constant-time scoped bearer auth, repository authorization, idempotency/correlation, 1 MiB bound, safe errors, typed failures, forbidden endpoint absence and no-follow mode-0600 token loading.
 - Boundary: checked-in OpenAPI and CLI expose only local control operations; HTTP transport uses an explicit Unix-domain socket and the CLI has no database, provider, repository, GitHub, systemd or deployment path.
 - Cleanup: editable-install `factory/src/adaptive_factory.egg-info` was removed as an exact generated artifact and excluded by `factory/.gitignore`.
+
+### Accounting, audit and role separation
+
+- RED: the real PostgreSQL role/audit regression failed because `verify_audit_chain` was absent; the missing-price regression then failed because `observe_usage` was absent.
+- GREEN: targeted PostgreSQL tests prove the three factory roles are `NOLOGIN`, non-superuser and non-creator; runtime has no `trust_ci` usage and no audit update/delete, while audit-reader has read-only access. Chain verification recomputes every bounded digest and head; missing price tables and cost/token/output overflow persist `accounting_blocked` before returning a bounded error.
+- RED/GREEN: the migration test required a contiguous `004` repair/event-budget migration before it existed, then passed all four migration tests after the forward-only addition. Event writes now enforce the accepted per-task ceiling, and restart repair counts cannot exceed the persisted semantic-repair ceiling.
+
+### Architecture, delivery surface and documentation
+
+- RED: the architecture regression failed because the factory API/control/database nodes, local-preflight domain and isolated edges were absent. GREEN: architecture model/rules, all five deterministic diagrams, drift and 130 model/fitness tests passed with no Factory-to-Trust-CI/external edge.
+- RED/GREEN installer: the payload inventory initially omitted `factory/`; it now includes only source, SQL resources, OpenAPI and placeholder local templates, and excludes tests, credentials, sockets and runtime/database state.
+- RED/GREEN verifier: a focused test first proved the root verifier omitted nested factory tests; it now runs 19 dependency-free factory contract/state/migration/service tests on every verification and includes factory source in Python quality paths.
+- README/roadmap now state accepted M3 base `67714a1...`, truthful M4 candidate status, separate authority, complete K17/136-edge inventory, rollback and installer boundaries.
+
+### Full disposable exit suite before final root verification
+
+- `FACTORY_TEST_DATABASE_URL=<redacted> ... -m unittest discover -s factory/tests -t . -v` passed 30/30 tests, including five real PostgreSQL 17 cases, in 6.431 seconds.
+- `postgres_restart_probe.py` passed: one expired holder was reclaimed exactly once, a higher fence issued and the late heartbeat rejected.
+- The only database mutation was the fresh local disposable database inside exact container `m4-factory-pg-b7f288`; no Trust CI, shared, external or production state was read or written.

@@ -161,8 +161,16 @@ class InstallerTests(unittest.TestCase):
             "schemas/debt-entry.schema.json",
             "schemas/governance-handoff-v1.schema.json",
             "schemas/governance-rule.schema.json",
+            "factory/README.md",
+            "factory/compose.yaml",
+            "factory/contracts/openapi/factory-control.v1.json",
+            "factory/pyproject.toml",
+            "factory/src/adaptive_factory/store.py",
+            "factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql",
         ):
             self.assertIn(expected, generic_paths)
+        self.assertFalse(any(path.startswith("factory/tests/") for path in generic_paths))
+        self.assertFalse(any("__pycache__" in path for path in generic_paths))
         self.assertFalse(set(MODULE.TARGET_OWNED_GOVERNANCE) & set(generic_paths))
         self.assertNotIn("local/AGENTS.md", generic_paths)
         self.assertIn("local/AGENTS.md", bitrix_paths)

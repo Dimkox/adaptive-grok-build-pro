@@ -1,12 +1,14 @@
 from datetime import datetime, timezone
-import os
 from pathlib import Path
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 
 from fastapi.testclient import TestClient
 
 from adaptive_factory.api import Authenticator, create_app
+from adaptive_factory.cli import main as cli_main
 from adaptive_factory.contracts import TaskIntakeV1
 from adaptive_factory.models import Actor, TaskProjection, TaskStatus
 from adaptive_factory.settings import SettingsError, read_token_file
@@ -15,25 +17,49 @@ from factory.tests.test_contracts import valid_intake
 
 
 class FakeService:
-    def __init__(self): self.calls = []
+    def __init__(self):
+        self.calls = []
+
     def intake(self, payload, *, actor, now):
         intake = TaskIntakeV1.from_dict(payload, now=now)
         self.calls.append(("intake", actor, intake))
-        task = TaskProjection("00000000-0000-0000-0000-000000000001", intake.repository_id, TaskStatus.QUEUED, 1, "a" * 64, "b" * 64, datetime.now(timezone.utc))
+        task = TaskProjection(
+            "00000000-0000-0000-0000-000000000001",
+            intake.repository_id,
+            TaskStatus.QUEUED,
+            1,
+            "a" * 64,
+            "b" * 64,
+            datetime.now(timezone.utc),
+        )
         return IntakeResult(task, True)
 
-    def get_task(self, task_id, *, actor): raise KeyError(task_id)
-    def list_tasks(self, *, repository_id, limit, cursor, actor): return ()
-    def cancel(self, task_id, *, reason, idempotency_key, actor, now): raise KeyError(task_id)
+    def get_task(self, task_id, *, actor):
+        raise KeyError(task_id)
+
+    def list_tasks(self, *, repository_id, limit, cursor, actor):
+        return ()
+
+    def cancel(self, task_id, *, reason, idempotency_key, actor, now):
+        raise KeyError(task_id)
 
 
 class ApiTests(unittest.TestCase):
     def setUp(self):
         self.token = "test-operator-token-value"
-        actor = Actor("operator", "operator", frozenset({"task:submit", "task:read", "task:list", "task:cancel"}), frozenset({"owner/repository"}))
+        actor = Actor(
+            "operator",
+            "operator",
+            frozenset({"task:submit", "task:read", "task:list", "task:cancel"}),
+            frozenset({"owner/repository"}),
+        )
         self.service = FakeService()
         self.client = TestClient(create_app(self.service, Authenticator({self.token: actor})))
-        self.auth = {"Authorization": f"Bearer {self.token}", "Idempotency-Key": "request-001", "X-Correlation-ID": "correlation-001"}
+        self.auth = {
+            "Authorization": f"Bearer {self.token}",
+            "Idempotency-Key": "request-001",
+            "X-Correlation-ID": "correlation-001",
+        }
 
     @staticmethod
     def payload():
@@ -56,11 +82,16 @@ class ApiTests(unittest.TestCase):
         self.assertFalse(paths & forbidden)
 
     def test_body_over_one_mebibyte_is_rejected_without_parsing(self):
-        response = self.client.post("/v1/tasks", headers={**self.auth, "Content-Type": "application/json"}, content=b"{" + b"x" * 1_048_576 + b"}")
+        response = self.client.post(
+            "/v1/tasks",
+            headers={**self.auth, "Content-Type": "application/json"},
+            content=b"{" + b"x" * 1_048_576 + b"}",
+        )
         self.assertEqual(response.status_code, 413)
 
     def test_contract_failure_returns_bounded_structured_error(self):
-        payload = self.payload(); payload["shell_command"] = "forbidden"
+        payload = self.payload()
+        payload["shell_command"] = "forbidden"
         response = self.client.post("/v1/tasks", headers=self.auth, json=payload)
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.json()["error"], "invalid")
@@ -68,13 +99,37 @@ class ApiTests(unittest.TestCase):
 
     def test_token_file_rejects_symlink_and_non_private_mode(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory); token_file = root / "token"; token_file.write_text("secret-token-value\n", encoding="utf-8")
+            root = Path(directory)
+            token_file = root / "token"
+            token_file.write_text("secret-token-value\n", encoding="utf-8")
             token_file.chmod(0o644)
-            with self.assertRaises(SettingsError): read_token_file(token_file)
+            with self.assertRaises(SettingsError):
+                read_token_file(token_file)
             token_file.chmod(0o600)
             self.assertEqual(read_token_file(token_file), "secret-token-value")
-            link = root / "link"; link.symlink_to(token_file)
-            with self.assertRaises(SettingsError): read_token_file(link)
+            link = root / "link"
+            link.symlink_to(token_file)
+            with self.assertRaises(SettingsError):
+                read_token_file(link)
+
+    def test_cli_exposes_the_complete_local_control_surface(self):
+        output = StringIO()
+        with self.assertRaises(SystemExit), redirect_stdout(output):
+            cli_main(["--help"])
+        for command in (
+            "health",
+            "intake",
+            "show",
+            "list",
+            "cancel",
+            "claim",
+            "heartbeat",
+            "proposal",
+            "kill",
+            "unkill",
+            "reconcile",
+        ):
+            self.assertIn(command, output.getvalue())
 
 
 if __name__ == "__main__":

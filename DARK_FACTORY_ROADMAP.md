@@ -527,7 +527,7 @@ status
 - [x] Introduce a debt ledger that distinguishes intentional debt from accidental slop.
 - [x] Prevent a factory task from activating its own governance rule.
 
-Checked M3 items denote implemented source behavior with focused regression evidence on the milestone branch. They do not denote merge, deployment, external authority, or active governance. The seven small example source files exist, but the canonical-example registry remains empty until an independent exact-record authority and real human governance approval are available; therefore the two canonical-example work items remain open. M4 remains pending until the final M3 verifier/review gate, PR delivery, external exact-SHA Trust CI check, signed scopes, and merge are complete.
+Checked M3 items denote behavior accepted at exact merge `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`; they do not denote deployment, active governance, or authority for any later tree. The seven small example source files exist, but the canonical-example registry remains empty until an independent exact-record authority and real human governance approval are available; therefore the two canonical-example work items remain open. M4 is now the active local source candidate on that exact base and must obtain its own final verification, independent reviews, PR delivery and external exact-SHA authority.
 
 ## Exit criteria
 
@@ -560,6 +560,8 @@ factory/
 ```
 
 Do not add a root packaging marker.
+
+Current status: the M4 local source candidate lives under `factory/` on accepted M3 base `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`. Unchecked work and exit items remain unchecked until the final exact-tree verifier, independent reviews and external PR authority are recorded; source presence alone is not completion or deployment.
 
 ## Factory task state machine
 

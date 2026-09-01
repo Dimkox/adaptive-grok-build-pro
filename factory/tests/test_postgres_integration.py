@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import os
 import unittest
 import uuid
@@ -13,8 +13,15 @@ from factory.tests.test_contracts import valid_intake
 
 DATABASE_URL = os.environ.get("FACTORY_TEST_DATABASE_URL")
 NOW = datetime.now(timezone.utc).replace(microsecond=0)
-OPERATOR = Actor("operator", "operator", frozenset({"task:submit", "task:cancel", "factory:kill", "factory:reconcile"}), frozenset({"*"}))
-WORKER = Actor("worker", "worker", frozenset({"task:claim", "task:heartbeat", "task:release", "task:budget"}), frozenset({"*"}))
+OPERATOR = Actor(
+    "operator",
+    "operator",
+    frozenset({"task:submit", "task:cancel", "factory:kill", "factory:reconcile"}),
+    frozenset({"*"}),
+)
+WORKER = Actor(
+    "worker", "worker", frozenset({"task:claim", "task:heartbeat", "task:release", "task:budget"}), frozenset({"*"})
+)
 
 
 @unittest.skipUnless(DATABASE_URL, "FACTORY_TEST_DATABASE_URL must name a disposable database")
@@ -25,8 +32,11 @@ class PostgresFactoryTests(unittest.TestCase):
 
     def setUp(self):
         import psycopg
+
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
-            cursor.execute("TRUNCATE factory.audit_log, factory.audit_heads, factory.task_events, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities RESTART IDENTITY")
+            cursor.execute(
+                "TRUNCATE factory.audit_log, factory.audit_heads, factory.task_events, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities RESTART IDENTITY"
+            )
             cursor.execute("UPDATE factory.capacity_counters SET active_count=0")
         self.store = PostgresFactoryStore(DATABASE_URL)
         self.service = FactoryService(self.store)
@@ -45,61 +55,236 @@ class PostgresFactoryTests(unittest.TestCase):
         payload = self.payload(source="same-source")
         first = self.service.intake(payload, actor=OPERATOR, now=NOW)
         duplicate = self.service.intake(payload, actor=OPERATOR, now=NOW)
-        changed = self.payload(source="same-source"); changed["source_digest"] = "8" * 64
+        changed = self.payload(source="same-source")
+        changed["source_digest"] = "8" * 64
         replacement = self.service.intake(changed, actor=OPERATOR, now=NOW)
-        self.assertTrue(first.created); self.assertFalse(duplicate.created)
+        self.assertTrue(first.created)
+        self.assertFalse(duplicate.created)
         self.assertEqual(first.task.task_id, duplicate.task.task_id)
         self.assertNotEqual(first.task.task_id, replacement.task.task_id)
         self.assertEqual(self.store.get_task(first.task.task_id).status, TaskStatus.SUPERSEDED)
 
     def test_two_workers_get_one_task_and_late_fence_is_rejected(self):
         self.submit()
+
         def claim(index):
-            return self.service.claim(owner=f"worker-{index}", role=RunRole.READER, repositories=("owner/repository",), lease_seconds=30, actor=WORKER, now=NOW)
+            return self.service.claim(
+                owner=f"worker-{index}",
+                role=RunRole.READER,
+                repositories=("owner/repository",),
+                lease_seconds=30,
+                actor=WORKER,
+                now=NOW,
+            )
+
         with ThreadPoolExecutor(max_workers=2) as pool:
             grants = list(pool.map(claim, range(2)))
         live = [grant for grant in grants if grant]
         self.assertEqual(len(live), 1)
         old = live[0]
         import psycopg
+
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
-            cursor.execute("UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=%s", (old.run_id,))
+            cursor.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=%s",
+                (old.run_id,),
+            )
         self.service.reconcile(actor=OPERATOR, now=NOW)
-        new = self.service.claim(owner="worker-new", role=RunRole.READER, repositories=("owner/repository",), lease_seconds=30, actor=WORKER, now=NOW)
+        new = self.service.claim(
+            owner="worker-new",
+            role=RunRole.READER,
+            repositories=("owner/repository",),
+            lease_seconds=30,
+            actor=WORKER,
+            now=NOW,
+        )
         self.assertGreater(new.fence, old.fence)
         with self.assertRaises(FenceError):
             self.service.heartbeat(old, actor=WORKER, now=NOW)
 
     def test_reader_and_writer_capacity_is_enforced(self):
-        for index in range(21): self.submit(repository="repo/a" if index < 11 else "repo/b")
+        for index in range(21):
+            self.submit(repository="repo/a" if index < 11 else "repo/b")
         readers = []
         for index in range(30):
-            grant = self.service.claim(owner=f"reader-{index}", role=RunRole.READER, repositories=("repo/a", "repo/b"), lease_seconds=60, actor=WORKER, now=NOW)
-            if grant: readers.append(grant)
+            grant = self.service.claim(
+                owner=f"reader-{index}",
+                role=RunRole.READER,
+                repositories=("repo/a", "repo/b"),
+                lease_seconds=60,
+                actor=WORKER,
+                now=NOW,
+            )
+            if grant:
+                readers.append(grant)
         self.assertEqual(len(readers), 20)
         self.assertEqual(sum(self.store.get_task(grant.task_id).repository_id == "repo/a" for grant in readers), 10)
-        for grant in readers: self.service.release(grant, outcome="completed", actor=WORKER, now=NOW)
-        for index in range(2): self.submit(repository="repo/w", source=f"writer-{index}")
-        first = self.service.claim(owner="writer-1", role=RunRole.WRITER, repositories=("repo/w",), lease_seconds=60, actor=WORKER, now=NOW)
-        second = self.service.claim(owner="writer-2", role=RunRole.WRITER, repositories=("repo/w",), lease_seconds=60, actor=WORKER, now=NOW)
-        self.assertIsNotNone(first); self.assertIsNone(second)
+        for grant in readers:
+            self.service.release(grant, outcome="completed", actor=WORKER, now=NOW)
+        for index in range(2):
+            self.submit(repository="repo/w", source=f"writer-{index}")
+        first = self.service.claim(
+            owner="writer-1", role=RunRole.WRITER, repositories=("repo/w",), lease_seconds=60, actor=WORKER, now=NOW
+        )
+        second = self.service.claim(
+            owner="writer-2", role=RunRole.WRITER, repositories=("repo/w",), lease_seconds=60, actor=WORKER, now=NOW
+        )
+        self.assertIsNotNone(first)
+        self.assertIsNone(second)
 
     def test_retry_budget_kill_and_reconcile_fail_closed(self):
         task = self.submit().task
         for attempt in range(1, 4):
-            grant = self.service.claim(owner=f"worker-{attempt}", role=RunRole.READER, repositories=(task.repository_id,), lease_seconds=30, actor=WORKER, now=NOW)
+            grant = self.service.claim(
+                owner=f"worker-{attempt}",
+                role=RunRole.READER,
+                repositories=(task.repository_id,),
+                lease_seconds=30,
+                actor=WORKER,
+                now=NOW,
+            )
             self.service.release(grant, outcome=FailureClass.WORKER_LOST, actor=WORKER, now=NOW)
         self.assertEqual(self.store.get_task(task.task_id).status, TaskStatus.DEAD)
 
         task = self.submit(source="budget").task
-        grant = self.service.claim(owner="budget-worker", role=RunRole.READER, repositories=(task.repository_id,), lease_seconds=30, actor=WORKER, now=NOW)
-        self.service.reserve_budget(grant, cost_usd_micros=25_000_000, token_units=2_000_000, wall_seconds=30, reason_digest="a" * 64, idempotency_key="b" * 64, actor=WORKER)
+        grant = self.service.claim(
+            owner="budget-worker",
+            role=RunRole.READER,
+            repositories=(task.repository_id,),
+            lease_seconds=30,
+            actor=WORKER,
+            now=NOW,
+        )
+        self.service.reserve_budget(
+            grant,
+            cost_usd_micros=25_000_000,
+            token_units=2_000_000,
+            wall_seconds=30,
+            reason_digest="a" * 64,
+            idempotency_key="b" * 64,
+            actor=WORKER,
+        )
         with self.assertRaises(BudgetError):
-            self.service.reserve_budget(grant, cost_usd_micros=1, token_units=0, wall_seconds=0, reason_digest="c" * 64, idempotency_key="d" * 64, actor=WORKER)
+            self.service.reserve_budget(
+                grant,
+                cost_usd_micros=1,
+                token_units=0,
+                wall_seconds=0,
+                reason_digest="c" * 64,
+                idempotency_key="d" * 64,
+                actor=WORKER,
+            )
 
-        self.service.set_kill(scope_key="global", enabled=True, reason="operator-stop", idempotency_key="e" * 64, actor=OPERATOR, now=NOW)
+        usage_task = self.submit(source="missing-accounting").task
+        usage_grant = self.service.claim(
+            owner="usage-worker",
+            role=RunRole.READER,
+            repositories=(usage_task.repository_id,),
+            lease_seconds=30,
+            actor=WORKER,
+            now=NOW,
+        )
+        with self.assertRaises(BudgetError):
+            self.service.observe_usage(
+                usage_grant,
+                provider_call_id="provider-call-1",
+                price_table_digest=None,
+                cost_usd_micros=1,
+                token_units=1,
+                output_bytes=1,
+                actor=WORKER,
+            )
+        with self.assertRaises(BudgetError):
+            self.service.reserve_budget(
+                usage_grant,
+                cost_usd_micros=0,
+                token_units=0,
+                wall_seconds=0,
+                reason_digest="f" * 64,
+                idempotency_key="1" * 64,
+                actor=WORKER,
+            )
+
+        output_payload = self.payload(source="output-budget")
+        output_payload["limits"]["max_output_bytes"] = 1
+        output_task = self.service.intake(output_payload, actor=OPERATOR, now=NOW).task
+        output_grant = self.service.claim(
+            owner="output-worker",
+            role=RunRole.READER,
+            repositories=(output_task.repository_id,),
+            lease_seconds=30,
+            actor=WORKER,
+            now=NOW,
+        )
+        first_usage = self.service.observe_usage(
+            output_grant,
+            provider_call_id="output-1",
+            price_table_digest="2" * 64,
+            cost_usd_micros=0,
+            token_units=0,
+            output_bytes=1,
+            actor=WORKER,
+        )
+        duplicate_usage = self.service.observe_usage(
+            output_grant,
+            provider_call_id="output-1",
+            price_table_digest="2" * 64,
+            cost_usd_micros=0,
+            token_units=0,
+            output_bytes=1,
+            actor=WORKER,
+        )
+        self.assertTrue(first_usage.created)
+        self.assertFalse(duplicate_usage.created)
+        self.assertEqual(first_usage.observation_id, duplicate_usage.observation_id)
+        with self.assertRaises(BudgetError):
+            self.service.observe_usage(
+                output_grant,
+                provider_call_id="output-2",
+                price_table_digest="2" * 64,
+                cost_usd_micros=0,
+                token_units=0,
+                output_bytes=1,
+                actor=WORKER,
+            )
+
+        self.service.set_kill(
+            scope_key="global", enabled=True, reason="operator-stop", idempotency_key="e" * 64, actor=OPERATOR, now=NOW
+        )
         self.submit(source="killed")
-        self.assertIsNone(self.service.claim(owner="blocked", role=RunRole.READER, repositories=("owner/repository",), lease_seconds=30, actor=WORKER, now=NOW))
+        self.assertIsNone(
+            self.service.claim(
+                owner="blocked",
+                role=RunRole.READER,
+                repositories=("owner/repository",),
+                lease_seconds=30,
+                actor=WORKER,
+                now=NOW,
+            )
+        )
+
+    def test_roles_are_isolated_and_audit_is_append_only_and_verifiable(self):
+        task = self.submit(source="audit-role-check").task
+        self.assertTrue(self.store.verify_audit_chain(task.task_id))
+        import psycopg
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute("CREATE SCHEMA IF NOT EXISTS trust_ci; REVOKE ALL ON SCHEMA trust_ci FROM PUBLIC")
+            cursor.execute(
+                "SELECT rolname,rolcanlogin,rolsuper,rolcreaterole FROM pg_roles WHERE rolname=ANY(%s) ORDER BY rolname",
+                (["factory_audit_reader", "factory_migrator", "factory_runtime"],),
+            )
+            roles = cursor.fetchall()
+            self.assertEqual([row[0] for row in roles], ["factory_audit_reader", "factory_migrator", "factory_runtime"])
+            self.assertTrue(all(row[1:] == (False, False, False) for row in roles))
+            cursor.execute(
+                "SELECT has_schema_privilege('factory_runtime','trust_ci','USAGE'), has_table_privilege('factory_runtime','factory.audit_log','UPDATE'), has_table_privilege('factory_runtime','factory.audit_log','DELETE')"
+            )
+            self.assertEqual(cursor.fetchone(), (False, False, False))
+            cursor.execute(
+                "SELECT has_table_privilege('factory_runtime','factory.audit_log','INSERT'), has_table_privilege('factory_audit_reader','factory.audit_log','SELECT')"
+            )
+            self.assertEqual(cursor.fetchone(), (True, True))
 
 
 if __name__ == "__main__":

@@ -61,7 +61,7 @@ def plan_migrations(available: Iterable[Migration], applied: Iterable[AppliedMig
     for recorded, packaged in zip(applied, available):
         if (recorded.version, recorded.name, recorded.sha256) != (packaged.version, packaged.name, packaged.sha256):
             raise MigrationError(f"migration drift at version {recorded.version}")
-    return available[len(applied):]
+    return available[len(applied) :]
 
 
 class PostgresMigrator:
@@ -72,6 +72,7 @@ class PostgresMigrator:
 
     def status(self) -> tuple[AppliedMigration, ...]:
         import psycopg
+
         with psycopg.connect(self._database_url) as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT to_regclass('factory.schema_migrations')")
@@ -82,6 +83,7 @@ class PostgresMigrator:
 
     def apply(self) -> tuple[Migration, ...]:
         import psycopg
+
         available = discover_migrations()
         applied_now: list[Migration] = []
         with psycopg.connect(self._database_url) as connection:
@@ -98,6 +100,9 @@ class PostgresMigrator:
                 pending = plan_migrations(available, (AppliedMigration(*row) for row in cursor.fetchall()))
                 for migration in pending:
                     cursor.execute(migration.sql)
-                    cursor.execute("INSERT INTO factory.schema_migrations(version,name,sha256) VALUES (%s,%s,%s)", (migration.version, migration.name, migration.sha256))
+                    cursor.execute(
+                        "INSERT INTO factory.schema_migrations(version,name,sha256) VALUES (%s,%s,%s)",
+                        (migration.version, migration.name, migration.sha256),
+                    )
                     applied_now.append(migration)
         return tuple(applied_now)

@@ -304,3 +304,7 @@ Mocking `scandir`, stat-file open/read, and monotonic time directly exercises pa
 ## 2026-08-31 — Restack M3 on the exact accepted M2 predecessor
 
 Consume accepted M2 `022411b05924618cfde0cb97b8c8aff4955e6013` through a true two-parent merge and regenerate architecture, governance, and receipt evidence for the resulting exact M3 head. This preserves both reviewed lineages while preventing historical exact-state artifacts from being reused as current authority.
+
+## 2026-09-01 — Keep factory control and merge trust as separate authority domains
+
+Model the factory as a nested local package with its own PostgreSQL schema/roles/migrations and Unix-socket API, and give it no edge or dependency on Trust CI, GitHub, providers, deployment, or production. This made installer, architecture, privilege and API tests able to prove the separation directly.

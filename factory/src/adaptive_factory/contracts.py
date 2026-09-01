@@ -97,7 +97,13 @@ class ArchitectureHandoffV1:
         _closed(data, fields)
         if data["architecture_contract_version"] != 1:
             raise ContractError("unsupported_version", "architecture")
-        return cls(1, _hex(data["architecture_digest"], "architecture_digest", HEX64), _hex(data["architecture_evidence_digest"], "architecture_evidence_digest", HEX64), _hex(data["exact_base_sha"], "architecture.exact_base_sha", HEX40), _hex(data["exact_head_sha"], "architecture.exact_head_sha", HEX40))
+        return cls(
+            1,
+            _hex(data["architecture_digest"], "architecture_digest", HEX64),
+            _hex(data["architecture_evidence_digest"], "architecture_evidence_digest", HEX64),
+            _hex(data["exact_base_sha"], "architecture.exact_base_sha", HEX40),
+            _hex(data["exact_head_sha"], "architecture.exact_head_sha", HEX40),
+        )
 
 
 @dataclass(frozen=True)
@@ -115,7 +121,14 @@ class GovernanceHandoffV1:
         _closed(data, fields)
         if data["governance_contract_version"] != 1:
             raise ContractError("unsupported_version", "governance")
-        return cls(1, _hex(data["governance_digest"], "governance_digest", HEX64), _hex(data["governance_evidence_digest"], "governance_evidence_digest", HEX64), _hex(data["architecture_digest"], "governance.architecture_digest", HEX64), _hex(data["exact_base_sha"], "governance.exact_base_sha", HEX40), _hex(data["exact_head_sha"], "governance.exact_head_sha", HEX40))
+        return cls(
+            1,
+            _hex(data["governance_digest"], "governance_digest", HEX64),
+            _hex(data["governance_evidence_digest"], "governance_evidence_digest", HEX64),
+            _hex(data["architecture_digest"], "governance.architecture_digest", HEX64),
+            _hex(data["exact_base_sha"], "governance.exact_base_sha", HEX40),
+            _hex(data["exact_head_sha"], "governance.exact_head_sha", HEX40),
+        )
 
 
 @dataclass(frozen=True)
@@ -140,12 +153,21 @@ class M0AuthorityV1:
             check_name = _text(data["check_name"], "check_name", 256)
             if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/@:-]{0,255}", check_name):
                 raise ContractError("invalid_identifier", "check_name")
-            return cls(observed_at=at, check_name=check_name, exact_head_sha=_hex(data["exact_head_sha"], "m0.exact_head_sha", HEX40))
+            return cls(
+                observed_at=at,
+                check_name=check_name,
+                exact_head_sha=_hex(data["exact_head_sha"], "m0.exact_head_sha", HEX40),
+            )
         if set(data) == exception:
             expires = _time(data["expires_at"], "expires_at")
             if expires <= now.astimezone(timezone.utc):
                 raise ContractError("stale_m0", "bootstrap exception expired")
-            return cls(bootstrap_exception=_id(data["bootstrap_exception"], "bootstrap_exception"), issuer=_id(data["issuer"], "issuer"), scope=_id(data["scope"], "scope"), expires_at=expires)
+            return cls(
+                bootstrap_exception=_id(data["bootstrap_exception"], "bootstrap_exception"),
+                issuer=_id(data["issuer"], "issuer"),
+                scope=_id(data["scope"], "scope"),
+                expires_at=expires,
+            )
         raise ContractError("m0_authority", "must be one closed authority form")
 
 
@@ -204,13 +226,22 @@ class TaskIntakeV1:
         now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
         architecture = ArchitectureHandoffV1.from_dict(data["architecture"])
         governance = GovernanceHandoffV1.from_dict(data["governance"])
-        if (architecture.architecture_digest != governance.architecture_digest or architecture.exact_base_sha != governance.exact_base_sha or architecture.exact_head_sha != governance.exact_head_sha):
+        if (
+            architecture.architecture_digest != governance.architecture_digest
+            or architecture.exact_base_sha != governance.exact_base_sha
+            or architecture.exact_head_sha != governance.exact_head_sha
+        ):
             raise ContractError("handoff_mismatch")
         authority = M0AuthorityV1.from_dict(data["m0_authority"], now)
         if authority.exact_head_sha and authority.exact_head_sha != governance.exact_head_sha:
             raise ContractError("handoff_mismatch", "m0 exact head")
         acceptance = data["acceptance_ids"]
-        if not isinstance(acceptance, list) or not acceptance or acceptance != sorted(set(acceptance)) or any(not isinstance(item, str) or not ACCEPTANCE_ID.fullmatch(item) for item in acceptance):
+        if (
+            not isinstance(acceptance, list)
+            or not acceptance
+            or acceptance != sorted(set(acceptance))
+            or any(not isinstance(item, str) or not ACCEPTANCE_ID.fullmatch(item) for item in acceptance)
+        ):
             raise ContractError("acceptance_ids")
         source_type = data["source_type"]
         if source_type not in {"manual", "api", "github_issue_projection"}:
@@ -234,12 +265,20 @@ class TaskIntakeV1:
             "limits": TaskLimitsV1.from_dict(data["limits"]),
         }
         intent_digest = canonical_digest(normalized)
-        idempotency_key = canonical_digest({
-            "contract": "adaptive-factory.intake/v1",
-            "repository_id": normalized["repository_id"], "source_type": source_type, "source_id": normalized["source_id"],
-            "source_digest": normalized["source_digest"], "exact_base_sha": normalized["exact_base_sha"], "spec_digest": normalized["spec_digest"],
-            "architecture_digest": architecture.architecture_digest, "governance_digest": governance.governance_digest, "policy_digest": normalized["policy_digest"],
-        })
+        idempotency_key = canonical_digest(
+            {
+                "contract": "adaptive-factory.intake/v1",
+                "repository_id": normalized["repository_id"],
+                "source_type": source_type,
+                "source_id": normalized["source_id"],
+                "source_digest": normalized["source_digest"],
+                "exact_base_sha": normalized["exact_base_sha"],
+                "spec_digest": normalized["spec_digest"],
+                "architecture_digest": architecture.architecture_digest,
+                "governance_digest": governance.governance_digest,
+                "policy_digest": normalized["policy_digest"],
+            }
+        )
         return cls(**normalized, intent_digest=intent_digest, idempotency_key=idempotency_key)
 
     def to_dict(self) -> dict[str, Any]:

@@ -252,3 +252,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Two full root verifiers were launched during the focused TR-001 remediation and had to be terminated by their exact PIDs after entering unrelated root coverage discovery.
 **Root cause:** The remediation instruction was misread as requiring route/full verification despite the parent retaining final verifier ownership; focused Trust-CI checks were the assigned verification scope.
+
+## 2026-09-01 — Derived a strict deadline from two database clock samples
+
+**Symptom:** The first real PostgreSQL intake violated the exact four-hour constraint by microseconds.
+**Root cause:** `accepted_at` and `deadline_at` used separate volatile clock samples; deriving the deadline from the transaction timestamp restored one consistent database-time boundary.

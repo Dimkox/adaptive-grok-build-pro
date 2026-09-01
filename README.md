@@ -9,8 +9,8 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
 - M1 typed intent is locally source-ready: canonical schema-v2 specs, route-driven generation, strict bounded validation, criterion-bound receipts, and `scripts/grok_spec.py` summary/coverage commands passed full local verification and all four route-selected wave-7 reviews on exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a`. A later authorized local database run passed PostgreSQL integration 10/10 and the full Trust CI suite 200/200 with no skips, validating six Trust CI tables, three migrations through version 3, and four bounded `NOLOGIN` roles; this is [local test evidence](engineering/changes/20260826-m1-typed-intent-evidence-rebuild-a4f882/evidence/postgres-integration-local.md), not deployed proof. PR update, the App-owned exact-SHA check, signed approvals, merge, and deployment of the new holdout, worker reader, policy, and attestation emitter remain incomplete operator-controlled steps. Historical schema-v1 YAML is explicit unchanged-history compatibility only.
 - M2-A executable architecture source is accepted at exact commit `022411b05924618cfde0cb97b8c8aff4955e6013`: strict target-owned model/rules/adoption state, bounded deterministic parsing, exact Git-object diff, repository/contract drift, mandatory fitness evidence including a package-aware bounded abstract interpreter for queue provenance, monotonic risk, five read-only Mermaid text projections, architecture-bound local verification/receipts, a read-only/new-target installer boundary, descriptor-bound packaging, and bounded fail-closed zombie-only workspace cleanup are implemented. M2-B independent enforcement and deployment remain separate operator-controlled work; local architecture output is not merge authority.
-- M3 controlled knowledge and debt is a local source candidate being restacked on exact accepted M2 `022411b05924618cfde0cb97b8c8aff4955e6013`: strict target-owned governance registries, bounded no-follow loading, reviewed rule lifecycle, conflict detection, canonical-example/debt semantics, non-authoritative Markdown projections, exact `GovernanceHandoffV1`, executable architecture fitness, governance-bound local receipts, and safe installer distribution are implemented. The shipped registries are empty, repository-authored approval-looking fields are not external authority, and no active rule/example or closed debt is fabricated. Fresh restack verification/reviews, PR delivery, the App-owned exact-SHA check, signed approvals, merge, and any deployment remain pending until they are recorded for the resulting exact head.
-- M4 durable factory control-plane implementation is pending and cannot start from local M3 prose or receipts. It must consume current exact M1/M2/M3 handoffs and separately verified external authority on its own branch and pull request.
+- M3 controlled knowledge and debt is accepted at exact merge `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` on accepted M2 `022411b05924618cfde0cb97b8c8aff4955e6013`: strict target-owned governance registries, bounded no-follow loading, reviewed rule lifecycle, conflict detection, canonical-example/debt semantics, non-authoritative Markdown projections, exact `GovernanceHandoffV1`, executable architecture fitness, governance-bound local receipts, and safe installer distribution are implemented. The shipped registries remain empty; repository-authored approval-looking fields are not external authority and no active rule/example or closed debt is fabricated.
+- M4 durable factory control plane is the current local source candidate on that exact M3 base: the separate [`factory/`](factory/) package provides closed frozen intake, isolated checksum PostgreSQL migrations, durable idempotent scheduling, fenced leases, bounded capacity/retry/budgets, kills, hash-chained audit, reconciliation and authenticated Unix-socket API/CLI. It has no provider/execution/external-write or Trust CI authority; final exact-tree verification/reviews, PR delivery, the App-owned exact-SHA check, signed scopes, merge and deployment remain pending.
 - Independent CI candidate: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
 - Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. The PR #2 bootstrap exception is revoked. PR #5 is not mergeable while that Check Run is `action_required`.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
@@ -23,8 +23,9 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 4. [CHANGELOG.md](CHANGELOG.md)
 5. [QUICKSTART.md](QUICKSTART.md)
 6. [`trust-ci/README.md`](trust-ci/README.md)
-7. `.grok-stack/runtime/active-route.json` (live route; not product identity or merge authority)
-8. This README’s stack graph and map
+7. [`factory/README.md`](factory/README.md)
+8. `.grok-stack/runtime/active-route.json` (live route; not product identity or merge authority)
+9. This README’s stack graph and map
 
 ## How work runs
 
@@ -67,6 +68,7 @@ Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, execu
 - [`scripts/grok_doctor.py`](scripts/grok_doctor.py)
 - [`scripts/install_into.py`](scripts/install_into.py)
 - [`trust-ci/`](trust-ci/) — external merge trust, deployed independently
+- [`factory/`](factory/) — local M4 task control plane; no execution or merge authority
 - [`engineering/runbooks/`](engineering/runbooks/)
 - [`packages/`](packages/)
 - [`examples/bitrix-module/`](examples/bitrix-module/)
@@ -79,6 +81,7 @@ Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, execu
 - Strict typed change intent with stable criterion/evidence IDs and deterministic spec fingerprints
 - Strict executable architecture with deterministic digests, exact-state diff, drift, fitness, and projection-only diagrams
 - Controlled governance with candidate-only agent input, reviewed lifecycle, exact evidence digests, canonical examples, and intentional-debt records
+- Separate durable local factory control with immutable handoffs, fenced PostgreSQL scheduling, bounded recovery and Unix-socket administration
 - Local verification / review receipts via `scripts/grok_*.py`
 - Multi-agent discipline described in `AGENTS.md`
 - `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`
@@ -87,7 +90,7 @@ Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, execu
 
 ## Stack graph
 
-Decorative inventory graph (K16): every listed core node is linked to every other with one of 120 `---` edges. It is an inventory regression only, not architecture authority or architectural evidence. The directed, trust-aware authority is the reviewed model and rules described below; prompts, generated views, local receipts, and delegated grants are not merge authority.
+Decorative inventory graph (K17): every listed core node is linked to every other with one of 136 `---` edges. It is an inventory regression only, not architecture authority or architectural evidence. The directed, trust-aware authority is the reviewed model and rules described below; prompts, generated views, local receipts, and delegated grants are not merge authority.
 
 ```mermaid
 graph TD
@@ -100,6 +103,7 @@ graph TD
   Runner["isolated runner"]
   Holdout["external holdout"]
   GitHubApp["GitHub App Checks"]
+  Factory["local factory control"]
   Route --- Skills
   Route --- Agents
   Route --- Hooks
@@ -220,6 +224,22 @@ graph TD
   Runner --- Holdout
   Runner --- GitHubApp
   Holdout --- GitHubApp
+  Route --- Factory
+  Skills --- Factory
+  Agents --- Factory
+  Hooks --- Factory
+  Policy --- Factory
+  Verify --- Factory
+  Packages --- Factory
+  Contract --- Factory
+  Decisions --- Factory
+  Mistakes --- Factory
+  TrustAPI --- Factory
+  TrustWorker --- Factory
+  Postgres --- Factory
+  Runner --- Factory
+  Holdout --- Factory
+  GitHubApp --- Factory
 ```
 
 | Node | Role |
@@ -240,6 +260,7 @@ graph TD
 | Runner | Isolated no-network runner container; `policy.sandbox.image` must equal `TRUST_CI_RUNNER_IMAGE` |
 | Holdout | External digest-pinned bundle, outside the PR checkout |
 | GitHubApp | App-owned Checks `adaptive-trust-ci/verified@<policy-sha12>` bound to the App ID |
+| Factory | Separate local M4 control API/store under `factory/`; no provider execution, external write, deployment or merge authority |
 
 oneshots `migrate` / `runner-loader` reuse API/worker images; privileged rootless DinD is an execution edge of Runner.
 
@@ -268,6 +289,8 @@ python3 scripts/grok_architecture.py fitness --base <40-char-sha> --head <40-cha
 ```
 
 Diagram rendering is stdout-only and repository-read-only. To update a checked-in projection, apply the reviewed rendered text through the normal source-edit workflow and then run `diagram --check`; projections are never authority. Malformed, unknown, unsafe, excessive, partially missing, or applicable-but-unsupported adopted architecture fails closed. Installer-delivered examples live under [`.grok-stack/templates/architecture/`](.grok-stack/templates/architecture/system.example.yaml), but every plan and payload excludes the consumer-owned `architecture/system.yaml`, `architecture/rules.yaml`, and `architecture/adoption.json`; follow the manual review-and-adopt sequence in [QUICKSTART.md](QUICKSTART.md).
+
+The M4 factory is modeled as an isolated local-preflight trust domain with only Unix HTTP and its own PostgreSQL edge. Installer payloads include its source, migrations, OpenAPI contract and placeholder-only local configuration, but never tests, credentials, sockets, databases or runtime state. Installation does not run migrations or activate a service.
 
 The queue and installer safety boundary is specified in the [approved pivot design](docs/superpowers/specs/2026-08-27-m2a-queue-installer-pivot-design.md) and its [implementation plan](docs/superpowers/plans/2026-08-27-m2a-queue-installer-pivot.md). Queue fitness and `new_queue` risk consume one bounded abstract-interpreter result: relevant uncertainty fails closed, while unrelated common method names remain non-queue.
 
