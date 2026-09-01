@@ -37,6 +37,8 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 - `dfe03f3` — calendar-independent bounded authority-expiry regression fixture.
 - `066520d` — frozen second residual review wave evidence.
 - `70cb209` — authority serialization, schema-008 accounting quarantine and mandatory cleanup semantics.
+- `905249a` — frozen release-observability review evidence.
+- `034168b` — bounded fixed-key release metrics inventory and rejection signals.
 
 ## Independent-review remediation
 
@@ -63,6 +65,7 @@ The fifth residual wave closes AC-013 observability without adding a dependency 
 - Residual focused PostgreSQL tests passed 5/5; migration tests passed 4/4, installer tests passed 17/17, the dependency-free factory suite passed 24/24, Ruff passed, and the full root suite passed 488/488 in 299.731s. `python3 scripts/grok_verify.py --mode pr` runs after this report commit to bind the final-tree verdict.
 - Final recovery focused PostgreSQL upgrade/bootstrap tests passed 2/2 in 1.664s; migration/contract/state/service tests passed 24/24, installer tests passed 17/17 and Ruff passed. The fresh PostgreSQL exit passed 63/63 in 50.054s with the restart probe, and the root suite passed 488/488 in 313.667s on product commit `3bbafeb`.
 - Active-generation recovery passed the exact schema-008 PostgreSQL reproduction 1/1 in 1.887s and the combined upgrade/bootstrap run 2/2 in 1.773s. The fresh PostgreSQL exit passed 63/63 in 34.667s with the restart probe, and the root suite passed 488/488 in 324.581s on product commit `d15302f`; the final exact-tree verifier runs after this evidence commit.
+- Release-observability focused verification passed the API auth regression 1/1, the real PostgreSQL inventory regression 1/1 twice, API/server/service 21/21 and Ruff. The final fresh PostgreSQL exit passed 65/65 in 35.924s with the restart probe, and the root suite passed 488/488 in 312.686s on product commit `034168b`; the exact-tree verifier runs only after the final evidence commit.
 
 ## Disposable migration evidence and cleanup
 
