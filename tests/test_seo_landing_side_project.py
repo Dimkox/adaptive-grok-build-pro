@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import shutil
 import socket
 import subprocess
 import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -17,6 +20,26 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = ROOT / ".agents" / "skills" / "seo-landing"
 SHOWCASE_ROOT = ROOT / "side-projects" / "seo-landing-showcase"
 BROWSER_RUNNER = SHOWCASE_ROOT / "browser-contract.mjs"
+
+
+def available_executable(names: tuple[str, ...], candidates: tuple[str, ...]) -> str | None:
+    for name in names:
+        discovered = shutil.which(name)
+        if discovered:
+            return discovered
+    for candidate in candidates:
+        if Path(candidate).is_file() and os.access(candidate, os.X_OK):
+            return candidate
+    return None
+
+
+def browser_dependencies() -> tuple[str | None, str | None]:
+    node = available_executable(("node", "nodejs"), ("/usr/local/bin/node", "/usr/bin/node"))
+    chrome = available_executable(
+        ("google-chrome", "chromium", "chromium-browser"),
+        ("/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"),
+    )
+    return node, chrome
 
 
 def markdown_section(text: str, heading: str) -> str:
@@ -197,7 +220,22 @@ class SeoLandingShowcaseContractTests(unittest.TestCase):
         for contract in ("Emulation.setDeviceMetricsOverride", "prefers-reduced-motion", "Input.dispatchKeyEvent", "Page.captureScreenshot"):
             self.assertIn(contract, runner)
 
+    def test_local_chrome_runner_skips_without_optional_lab_dependencies(self) -> None:
+        lifecycle = self.__class__("test_local_chrome_runner_exits_cleanly_after_contract_passes")
+        result = unittest.TestResult()
+        with mock.patch.object(shutil, "which", return_value=None), mock.patch.object(os, "access", return_value=False):
+            lifecycle.run(result)
+        self.assertEqual(result.errors, [])
+        self.assertEqual(result.failures, [])
+        self.assertEqual(len(result.skipped), 1)
+        self.assertIn("unavailable optional lab dependencies: Node.js, Chrome", result.skipped[0][1])
+
     def test_local_chrome_runner_exits_cleanly_after_contract_passes(self) -> None:
+        node, chrome = browser_dependencies()
+        missing = [name for name, executable in (("Node.js", node), ("Chrome", chrome)) if executable is None]
+        if missing:
+            self.skipTest(f"real-browser lifecycle skipped; unavailable optional lab dependencies: {', '.join(missing)}")
+
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))
             port = listener.getsockname()[1]
@@ -220,14 +258,14 @@ class SeoLandingShowcaseContractTests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as output_dir:
                 result = subprocess.run(
                     [
-                        "node",
+                        node,
                         str(BROWSER_RUNNER),
                         "--url",
                         f"http://127.0.0.1:{port}/",
                         "--output",
                         output_dir,
                         "--chrome",
-                        "/usr/bin/google-chrome",
+                        chrome,
                     ],
                     capture_output=True,
                     text=True,

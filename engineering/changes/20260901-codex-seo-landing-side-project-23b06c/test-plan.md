@@ -26,8 +26,8 @@
 
 ## Executed evidence — 2026-09-01
 
-- Focused contracts: 10 tests passed, including structural mode, exact inventory, external-resource, and browser-runner lifecycle contracts.
-- Full unittest discovery: 209 tests passed in the latest full-suite run.
+- Focused contracts: 11 tests passed on the lab host, including structural mode, exact inventory, external-resource, availability-gate, and real browser-runner lifecycle contracts; only the lifecycle test skips when optional Node.js or Chrome is unavailable.
+- Full unittest discovery: 210 tests passed in the latest full-suite run.
 - W3C Nu: 0 errors and 0 messages after repairing two generic-div ARIA errors.
 - Browser: no horizontal overflow at 320/768/1280/1920; first Tab exposes the skip link with a 3 px outline; reduced-motion computes `scroll-behavior: auto`.
 - Versioned browser runner reports `passed: true`.
