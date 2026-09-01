@@ -1,4 +1,4 @@
-# Independent test review — M4 durable factory control plane
+# Independent test re-review — M4 durable factory control plane
 
 ## Verdict
 
@@ -6,88 +6,80 @@
 
 - Route: `b7f288f1e81e`
 - Base SHA: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-- Reviewed product HEAD: `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`
-- Reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`
-- Exact-product verification fingerprint inspected: `13363f4e7d5b058ae864ca54c165bb671e6355c2d7082f60c023a01154347df3`
+- Prior reviewed HEAD: `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`
+- Reviewed fix HEAD: `4230dc8e73bcf4dfcf6c60d294d379d44a30c698`
+- Reviewed fix range: `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06..4230dc8e73bcf4dfcf6c60d294d379d44a30c698`
+- Reviewed full range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..4230dc8e73bcf4dfcf6c60d294d379d44a30c698`
+- Exact-head verification fingerprint: `0092b4cd8152eb7919c94c610e66c7a4d71ad46382f1c5db852df41af0ac8789`
 
-No Critical finding was found, but Important acceptance-test gaps remain. The current suite is strong and the exact product head passes the full verifier, including a fresh disposable PostgreSQL 17 run and actual restart. It does not, however, directly exercise every mandatory fail-closed budget, repository-kill, and bounded-reconciliation behavior claimed by AC-007 through AC-009 and AC-012. PASS is therefore not justified under the route's test-plan standard.
+The prior TR-001 and TR-002 acceptance-test gaps are closed with direct, non-vacuous PostgreSQL assertions. One new Important authority TOCTOU remains: the test named transaction-bound proves revoke-before-validation rejection, but the database lock used after successful validation does not prevent a concurrent revocation from committing before the intake transaction commits. No Critical finding was found, but PASS is not justified while a revoked authority can race a successful intake.
 
-## Findings
+## Finding
 
-### TR-001 — Important — event/repair/deadline limits are not behaviorally exercised
+### TR-003 — Important — successful M0 validation is not fenced against concurrent revocation
 
-AC-007 requires the 14,400-second deadline and cost, token, output, event, and repair ceilings to fail closed; AC-012 requires real PostgreSQL evidence for budgets. The integration suite directly proves cost/token/wall reservation settlement and overflow (`factory/tests/test_postgres_integration.py:118-175`, `:473-597`), plus output observation deduplication and overflow. It never drives the event ceiling to rejection, never exhausts a task's persisted `repair_limit`, and never proves an expired task deadline cannot be claimed.
+Migration 009's authority functions select a valid observation or bootstrap exception using `FOR KEY SHARE` (`factory/src/adaptive_factory/resources/009_authority_audit_and_history_indexes.sql:32-59`). PostgreSQL key-share locking does not block an update of a non-key field such as `revoked_at`. Intake calls the function and then persists/supersedes work in the same transaction (`factory/src/adaptive_factory/store.py:254-369`), so another transaction can set `revoked_at` after the function returned `true` and before intake commits.
 
-The only test reference to the repair ceiling is a string-presence assertion for `repair_limit` in packaged SQL (`factory/tests/test_migrations.py:31-52`). `max_events` and `semantic_repairs` otherwise appear only in valid fixture payloads. The restart probe repairs exactly one lease (`factory/tests/postgres_restart_probe.py:85-96`), so it cannot establish cap behavior. Production branches at `factory/src/adaptive_factory/store.py:159-183` and `:941-953` are consequently unexecuted at their rejection boundaries.
+The current regression does not exercise that interleaving. It holds the source advisory lock, starts intake, commits the revocation while intake is still waiting, then releases the advisory lock and expects intake to fail (`factory/tests/test_postgres_integration.py:165-179`). This proves revoke-before-validation behavior, not revoke-after-successful-validation serialization.
 
-Required closure: add disposable-PostgreSQL tests with deliberately small limits that (1) consume the final event and reject the next state mutation without partial persistence, (2) exhaust semantic repairs and prove no repair beyond the persisted ceiling, and (3) expire the database-time task deadline and prove claim/mutation rejection. Assertions must include task/run/event/counter state after failure, not only exception type.
-
-### TR-002 — Important — repository kill and reconciliation bounds lack direct acceptance evidence
-
-AC-008 says both global and repository kill switches block new claims. The real PostgreSQL test enables only `scope_key="global"` and asserts a claim returns `None` (`factory/tests/test_postgres_integration.py:599-612`). Repository-kill coverage is limited to authorization rejection against a recording fake (`factory/tests/test_service.py:102-134`); no test proves a valid repository kill blocks that repository while leaving another repository claimable.
-
-AC-009 requires reconciliation to process at most 100 candidates within a five-second database bound. Existing tests cover one/two candidates, exact replay, orphan isolation, and counter inconsistency (`factory/tests/test_postgres_integration.py:407-426`, `:672-716`), but none creates more than 100 expired candidates or asserts a 100-item page/cursor boundary. The five-second guarantee is present only as implementation SQL (`SET LOCAL statement_timeout='5s'` at `factory/src/adaptive_factory/store.py:918`) and is not asserted by a test.
-
-Required closure: add real PostgreSQL cases for repository-scoped kill isolation and for more than 100 expired candidates, asserting first-page count/cursor, remaining live work, replay/idempotency, and subsequent bounded completion. Assert the transaction's effective `statement_timeout` or deterministically provoke a bounded timeout so the five-second contract is test-bearing.
-
-### Minor — capacity threshold filling remains sequential
-
-The suite proves a genuine two-worker race for one task (`factory/tests/test_postgres_integration.py:369-405`) and exact 20/10/1 capacity thresholds (`:428-471`), but the threshold fill itself is sequential. A barrier-based last-slot race would strengthen proof that database-owned counters cannot oversubscribe under simultaneous claims. This is not separately Important because concurrency and each exact capacity boundary are already exercised against PostgreSQL.
-
-### Minor — API and Unix-socket behavior are not joined by an end-to-end UDS request
-
-Socket ownership/mode tests, API/auth tests, and PostgreSQL-backed API mutations exist, but no automated case starts the server and sends an authenticated request over the actual Unix socket. This is useful rollout hardening; the missing core acceptance evidence is already captured in TR-001/TR-002.
-
-## Coverage that is direct and non-vacuous
-
-| Area | Evidence reviewed | Result |
-| --- | --- | --- |
-| Immutable intake and supersession | Closed contract negatives reject unknown fields, unsupported versions, dirty SHA, handoff mismatch, duplicate acceptance IDs and stale M0 (`factory/tests/test_contracts.py:57-104`). PostgreSQL duplicate replay returns the same task and changed source creates a replacement while superseding the old task (`factory/tests/test_postgres_integration.py:66-77`). | PASS |
-| Claim concurrency and fencing | Two threads compete for one task and exactly one receives a grant; an expired run is reconciled, the replacement fence is greater, and the old heartbeat raises `FenceError` (`factory/tests/test_postgres_integration.py:369-405`). Hidden allocation corruption separately fences heartbeat, release, reservation and usage and makes reconcile fail closed (`:672-716`). | PASS |
-| Capacity | Real PostgreSQL assertions establish 20 global readers, 10 readers for `repo/a`, and one writer, with the next claim returning `None` (`factory/tests/test_postgres_integration.py:428-471`). | PASS, with Minor concurrency hardening |
-| Retry/dead semantics | State-policy tests enumerate the closed retryable failure set and stop attempt three; PostgreSQL performs three worker-lost attempts and asserts `dead` (`factory/tests/test_state.py:49-62`; `factory/tests/test_postgres_integration.py:473-485`). | PASS |
-| Idempotency/correlation | API-backed PostgreSQL cases assert exact response replay, changed-payload `409`, durable empty-claim replay, reservation replay before stale-fence validation, usage dedupe/conflict, kill replay, and stored correlation IDs (`factory/tests/test_postgres_integration.py:211-367`). | PASS |
-| Authentication/authorization | Missing bearer/idempotency/correlation are rejected; token symlink/mode checks are direct; service tests reject missing scope, cross-repository intake, cross-worker grants, and unauthorized kill scopes before store calls (`factory/tests/test_api.py:73-134`; `factory/tests/test_service.py:40-134`). | PASS for tested boundaries |
-| Effective PostgreSQL roles | The suite checks role flags and privileges, then executes forbidden intent/event/audit/capacity/allocation DML under `SET LOCAL ROLE factory_runtime` and requires `InsufficientPrivilege`; a supported lifecycle still succeeds (`factory/tests/test_postgres_integration.py:614-670`). This is effective-role behavior, not metadata-only evidence. | PASS |
-| Actual restart/reconciliation | The probe invokes `docker restart`, reconnects with a fresh service/store, asserts repairs `1` then `0`, receives a higher fence, and rejects the late holder (`factory/tests/postgres_restart_probe.py:68-97`). | PASS |
-| No execution/external surface | OpenAPI negatives assert the forbidden provider, shell, Git, PR, deploy and systemd endpoints are absent; architecture/root verification also passed. | PASS for declared surface |
-
-## Verifier capability matrix
-
-The `factory-postgres-exit` gate is included only for PR/release modes when the runner exists. It skips only when `GROK_VERIFY_CAPABILITY` exactly equals `repository-sandbox`; otherwise it executes the exit runner and propagates failure (`.grok-stack/adaptive_grok/verification.py:590-608`). The four focused tests are non-vacuous:
-
-- unset capability plus a successful synthetic runner => `pass`;
-- exact `repository-sandbox` plus `SystemExit(9)` => named `skip` with the capability reason;
-- unset capability plus `SystemExit(9)` => `fail`;
-- `repository-sandbox-extra` plus `SystemExit(9)` => `fail`.
-
-Commit `cf0219b` explicitly removes an inherited capability value in both local pass/fail tests, closing the branch-history/environment-dependent false-skip defect. A caller-controlled environment variable is not merge authority, so local completion must still require an exact-head receipt whose `factory-postgres-exit` is `pass`, not `skip`. The inspected receipt satisfies that condition for product HEAD `cf0219b`.
-
-## Verification performed
+An independent two-connection probe against the exact migration set on disposable PostgreSQL 17 produced:
 
 ```text
-git rev-parse HEAD
-  cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06
-
-git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06
-  PASS (no output)
-
-focused verifier capability tests
-  4 tests in 8.654s — OK
-
-dependency-free factory contracts/state/migrations/service
-  21 tests in 0.012s — OK
-
-python3 factory/tests/run_disposable_exit.py
-  43 tests in 17.295s — OK
-  PASS: PostgreSQL restarted; one repair; replay no-op; higher fence; late holder rejected
-  PASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation
-
-exact-product verification receipt (created 2026-09-01T14:59:00Z)
-  status=pass
-  product head=cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06
-  tree_fingerprint=13363f4e7d5b058ae864ca54c165bb671e6355c2d7082f60c023a01154347df3
-  python-unittest=pass; factory-unit=pass; factory-postgres-exit=pass; source-stability=pass
+{'validator_returned': True, 'revocation_blocked_until_intake_commit': False}
 ```
 
-The verification receipt predates the independent review-report rewrites and therefore does not bind the final evidence tree. After TR-001 and TR-002 are remediated and independently rereviewed, final verification and all route-selected reviews must be recorded against one new fingerprint for AC-014. No product, receipt, Git, external, production, or Trust CI state was changed by this review.
+Thus the authority row was successfully validated and remained updateable by a concurrent revoker before the validating transaction ended. The same lock mode is used for bootstrap exceptions.
+
+Required closure:
+
+- Use a row lock or atomic database operation that conflicts with `revoked_at` updates through the end of the intake transaction, for both observation and exception authority forms.
+- Add a two-transaction regression that pauses intake after successful database validation, attempts revocation concurrently, and proves exactly one safe ordering: either revocation wins and intake fails, or intake commits before revocation can commit.
+- Assert no accepted intent/task/supersession is persisted in the revocation-wins ordering. Do not satisfy the test solely by revoking before the validator runs.
+
+## Prior blocker disposition
+
+| Prior finding | Direct current evidence | Result |
+| --- | --- | --- |
+| Event budget exhaustion | A task with `max_events=2` consumes intake and claim events; release raises `BudgetError`, and the transaction rollback is asserted by exact state `leased`, unchanged `current_run_id`, and event count `2` (`factory/tests/test_postgres_integration.py:716-733`). | CLOSED |
+| Repair cap exhaustion | A task with `semantic_repairs=1` is reconciled first to `retry`, then to `needs_human`; replay repairs zero and persisted `(repair_count, repair_limit)` remains `(1,1)` (`factory/tests/test_postgres_integration.py:735-753`). | CLOSED |
+| Database deadline | An expired queued task cannot be claimed, and a live grant whose task deadline is expired rejects heartbeat with `FenceError` (`factory/tests/test_postgres_integration.py:755-770`). | CLOSED |
+| Repository kill isolation | A valid `repository:repo/a` kill blocks repo A while repo B remains claimable and is cancelled cleanly (`factory/tests/test_postgres_integration.py:799-819`). | CLOSED |
+| Reconciliation page and timeout | The disposable fixture creates 101 internally consistent expired runs, asserts page/replay/page results `(100,100,first,1,1)`, and uses a trigger to require the effective transaction setting to equal `5s`; no expired run remains (`factory/tests/test_postgres_integration.py:821-869`). | CLOSED |
+
+## Additional fix-wave coverage
+
+| Area | Non-vacuous assertion reviewed | Result |
+| --- | --- | --- |
+| Frozen authority and idempotency | Complete frozen intent changes in limits, producer head, or evidence digest change both intent digest and idempotency key; PostgreSQL exact replay deduplicates while changed limits/head supersede (`factory/tests/test_contracts.py:66-81`; `factory/tests/test_postgres_integration.py:97-124`). Command tests retain exact-result replay and changed-payload conflicts. | PASS, except TR-003 |
+| Authority scope/policy/action | Cross-repository observation, wrong full-policy identity/check suffix, and wrong bootstrap action/scope fail; valid repository/policy/action-bound exception succeeds (`factory/tests/test_contracts.py:83-87`; `factory/tests/test_postgres_integration.py:126-163`). | PASS, except transaction serialization |
+| Cross-attempt accounting | An unresolved full reservation forces `needs_human`, blocks retry claim, preserves reservation totals, sets `accounting_blocked`, and leaves one live reservation (`factory/tests/test_postgres_integration.py:772-797`). | PASS |
+| Deadlock regression | Cancel and reconcile contend behind the same capacity lock; both finish without exception within bounded futures, and the task ends cancelled (`factory/tests/test_postgres_integration.py:871-900`). Production paths now acquire capacity before task/run locks. | PASS |
+| History/query indexes | Real `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` plans over populated data must select named claim, audit, usage, active-reservation and reconciliation indexes (`factory/tests/test_postgres_integration.py:902-968`). Migration discovery requires versions 1-9 and the new index markers. | PASS |
+| Audit semantics | Tampering task, run, or correlation identity independently makes v2 chain verification false (`factory/tests/test_postgres_integration.py:1047-1075`). Effective runtime DML denials and supported lifecycle remain direct. | PASS |
+| Shipped bootstrap | The shipped admin path applies migrations, creates a bounded `NOINHERIT` login, validates readiness through the runtime DSN, and proves `session_user` differs from effective `factory_runtime` (`factory/tests/test_postgres_integration.py:970-987`). | PASS |
+| Real Unix socket | Uvicorn is started on a prepared Unix listener; HTTPX over UDS receives `401` without credentials and the authenticated actor response with a bearer token (`factory/tests/test_server.py:20-56`). Absolute/no-follow credential ancestry negatives are also direct. | PASS |
+| Closed API negatives | Malformed roles, repository shape, numeric type, cursor UUID, task UUID and reason shape/length all return bounded 4xx responses rather than 500 (`factory/tests/test_api.py:131-159`). | PASS |
+
+## Concurrency and residual test quality
+
+- The suite continues to prove a true two-worker/one-task claim race, monotonic replacement fence, late-holder rejection, exact 20/10/1 capacity limits, hidden-allocation fencing, retry/dead behavior, accounting replay, kill replay, and actual database restart.
+- Capacity threshold filling remains sequential while one-task claim contention is concurrent. A barrier-based final-slot race remains useful Minor hardening, but the database-owned capacity functions and exact thresholds are exercised.
+- The cancel/reconcile deadlock regression uses short scheduling delays to arrange contention. It exercises the shared lock path and is meaningful, though a database-side synchronization barrier would make the old lock-order failure more deterministic. This is Minor hardening, not the reason for FAIL.
+- The disposable exit runner removes its exact container but still omits explicit anonymous-volume removal. This is local hygiene only.
+
+## Exact-head verification evidence
+
+The fingerprint-bound receipt created at `2026-09-01T20:26:54Z` records HEAD `4230dc8e73bcf4dfcf6c60d294d379d44a30c698`, fingerprint `0092b4cd8152eb7919c94c610e66c7a4d71ad46382f1c5db852df41af0ac8789`, and overall PASS:
+
+```text
+git-diff-check, change-spec, architecture, governance, secret-scan,
+contract-structure, sql-safety, ruff, bandit, coverage, source-stability: PASS
+python-unittest: 488 tests — OK
+factory-unit: 24 tests — OK
+factory-postgres-exit: 59 tests in 29.656s — OK
+restart probe: one repair; replay no-op; higher fence; late holder rejected — PASS
+```
+
+`git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..4230dc8e73bcf4dfcf6c60d294d379d44a30c698` also produced no output. The verifier PASS establishes regression stability but cannot substitute for the uncovered authority interleaving demonstrated above.
+
+The independent probe mutated only an exact disposable PostgreSQL container, which was removed. Its generated ignored `factory/.venv` was moved to the recoverable user trash at `/home/pall/.local/share/Trash/files/m4-review-venv.TfNybY/factory.venv`. No product, receipt, Git, shared database, Trust CI, external, or production state was changed by this review.

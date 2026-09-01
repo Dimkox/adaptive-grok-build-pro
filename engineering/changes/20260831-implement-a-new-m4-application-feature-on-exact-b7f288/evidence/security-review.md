@@ -1,14 +1,16 @@
-# M4 security review — FAIL
+# M4 security re-review — FAIL
 
 ## Reviewed identity
 
 - Route: `b7f288f1e81e`
 - Change: `20260831-implement-a-new-m4-application-feature-on-exact-b7f288`
 - Exact base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-- Exact product HEAD: `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`
-- Exact Git tree: `d497c897e3875dd52f788c10bbb1f7ed19e3942f`
-- Full reviewed range:
-  `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`
+- Prior failing product HEAD: `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`
+- Exact re-reviewed product HEAD: `4230dc8e73bcf4dfcf6c60d294d379d44a30c698`
+- Exact Git tree: `663de1bc25b9aee4da419b93a59ec2c98304ac4c`
+- Full reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..4230dc8e73bcf4dfcf6c60d294d379d44a30c698`
+- Remediation range: `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06..4230dc8e73bcf4dfcf6c60d294d379d44a30c698`
+- Verification receipt: PASS, exact HEAD `4230dc8e73bcf4dfcf6c60d294d379d44a30c698`, fingerprint `0092b4cd8152eb7919c94c610e66c7a4d71ad46382f1c5db852df41af0ac8789`
 - Reviewer: route-selected read-only `security_reviewer`
 
 ## Verdict
@@ -16,197 +18,122 @@
 **FAIL**
 
 - Critical findings: **0**
-- Important findings: **2**
-- Moderate findings: **2**
+- Important findings: **1**
+- Moderate findings: **0**
 
-The current exact tree must not receive a passing `security_review` receipt.
-Local verification and older review reports do not waive the authorization and
-authority-provenance defects below, and none of them is external merge authority.
+The fix wave closes repository/full-policy binding, global-control authorization,
+private-file ancestry and audit-envelope integrity, but its M0 revocation lock does
+not conflict with the supported revocation update. The exact tree must not receive
+a passing security-review receipt.
 
-## Severity-ordered findings
+## Severity-ordered finding
 
-### Important I-1 — Persisted M0 authority is not bound to repository or policy and is checked outside intake's transaction
+### Important I-1 — `FOR KEY SHARE` does not serialize `revoked_at` updates, so M0 can be revoked while intake still commits
 
-The trusted observation table stores `observed_at`, policy-epoch-shaped
-`check_name`, `exact_head_sha`, issuer and evidence digest, but no repository
-identity or full deployed-policy digest
-(`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:1-10`).
-Bootstrap exceptions likewise have a free-form scope but no enforced repository,
-action or policy subject (`005_security_accounting_commands.sql:12-19`).
+Migration `009` now correctly binds an observation or exception to the requested
+repository and full policy digest, enforces the policy-epoch check-name relation,
+and restricts bootstrap authority to `action='task:intake'`
+(`factory/src/adaptive_factory/resources/009_authority_audit_and_history_indexes.sql:1-19,39-42,55-58`).
+The store also invokes that validation from the same database transaction that
+creates the accepted intent (`factory/src/adaptive_factory/store.py:254-264`).
 
-`TaskIntakeV1` accepts the caller's `repository_id` and `policy_digest`, but its
-cross-authority checks only compare the M2/M3 architecture fields and M0 head to
-the governance head (`factory/src/adaptive_factory/contracts.py:227-263`). The
-store lookup then checks only the caller-repeated timestamp/check-name/head tuple,
-or the caller-repeated exception fields
-(`factory/src/adaptive_factory/store.py:134-149`). It does not bind the row to
-`intake.repository_id`, `intake.policy_digest`, the expected policy SHA prefix,
-or a repository-scoped exception subject.
+The remaining concurrency control is nevertheless insufficient. Both
+`m0_observation_valid` and `m0_exception_valid` select the authority row with
+`FOR KEY SHARE` (`009_authority_audit_and_history_indexes.sql:39-43,55-59`). In
+PostgreSQL, a key-share row lock conflicts with deletion and key-changing updates,
+but not with a `FOR NO KEY UPDATE` lock. The supported revocation statement changes
+only non-key `revoked_at`, so it can commit after the validator has observed
+`revoked_at IS NULL` and before the intake transaction commits. Under the store's
+default `READ COMMITTED` transaction, no later authority read detects that change.
+The result is an accepted intent whose authority was already revoked when intake
+committed.
 
-The checked-in nominal fixture demonstrates the gap: it accepts
-`policy_digest=999999...` with check suffix `06ecf1c875bc`. An independent
-reproduction on exact HEAD printed:
-
-```text
-policy_prefix 999999999999
-check_suffix 06ecf1c875bc
-mismatch_accepted True
-```
-
-Consequently one legitimate observation can be replayed for another configured
-repository that contains the same commit (including a fork), while an arbitrary
-policy digest is frozen into an accepted intent as though it were validated.
-The bootstrap path has the same cross-repository problem because its `scope`
-string is matched for equality but never interpreted against the requested
-repository/action.
-
-There is also a revocation race: `FactoryService.intake()` calls
-`verify_m0_authority()` on one connection and only afterwards opens the separate
-intake transaction (`factory/src/adaptive_factory/service.py:43-49`,
-`factory/src/adaptive_factory/store.py:134-149,234-243`). A trusted operator can
-revoke the observation between those operations and the intake will still commit.
+The regression does not exercise this interleaving. It first blocks intake on the
+source advisory lock, commits the revocation, and only then lets intake perform its
+first authority read (`factory/tests/test_postgres_integration.py:165-179`). It
+proves revoke-before-validation rejection, not validation-before-revoke commit
+serialization; its claim that `FOR KEY SHARE` protects concurrent revocation is
+therefore false.
 
 Required remediation:
 
-1. Add a forward migration that binds every M0 observation/exception to an exact
-   repository subject and full policy identity (and, for an exception, a closed
-   action/scope that is actually evaluated).
-2. Require the check-name suffix to match the trusted full policy digest and
-   compare that trusted tuple with the intake values.
-3. Perform the non-revoked, unexpired authority lookup in the same transaction
-   that inserts the accepted intent, or consume an unforgeable transaction-bound
-   authority handle.
-4. Add cross-repository, wrong-policy, wrong-scope and concurrent-revocation
-   regressions. Caller JSON must remain a lookup request, never authority.
+1. Lock the matching authority row with a mode that conflicts with a non-key
+   revocation update, for example `FOR SHARE` or `FOR UPDATE`, while retaining the
+   validation and accepted-intent insert in the same transaction. Apply the same
+   repair to observations and bootstrap exceptions.
+2. Add a two-connection regression that pauses intake *after* authority validation
+   and before accepted-intent commit, starts `UPDATE ... SET revoked_at=...` on the
+   second connection, and proves a serial order: either intake commits before the
+   revocation can commit, or intake observes the completed revocation and rejects.
+   It must never allow revocation to commit first followed by successful intake.
 
-### Important I-2 — Repository-scoped operators can run the global reconciler and mutate other repositories
+## Prior findings re-evaluated
 
-Repository authorization is enforced for submit/read/list/cancel, worker grants
-and repository kill switches. Reconcile is the exception:
+- **Repository/full-policy/action M0 binding:** closed apart from the revocation
+  serialization defect above. Legacy nullable rows fail equality matching; new
+  calls compare repository and all 64 policy hex characters, and the authoritative
+  check name is recomputed from that digest.
+- **Scoped reconciliation and metrics:** closed by requiring operator kind, the
+  explicit scope, and wildcard repository authority before either global store
+  operation (`factory/src/adaptive_factory/service.py:30-34,145-149`). A
+  repository-scoped actor no longer reaches global reconciliation.
+- **Private actor/token packaging:** closed. The shared reader requires absolute
+  normalized paths, fails if no-follow/directory capabilities are absent, walks
+  ancestry by held directory descriptors with no-follow, enforces trusted owners,
+  requires an effective-UID-owned non-writable final parent, and requires an
+  effective-UID-owned regular mode-`0600` leaf
+  (`factory/src/adaptive_factory/settings.py:13-57`). Actor configuration and token
+  files use the same reader.
+- **Audit identity integrity:** closed. New version-2 digests include task, run and
+  correlation identity, and verification reselects and recomputes those fields;
+  version-1 rows remain verifiable without rewriting prior immutable audit
+  (`factory/src/adaptive_factory/store.py:201-252,398-438`).
 
-- `FactoryService.reconcile()` checks only the `factory:reconcile` scope, operator
-  kind and limit; it neither requires wildcard authority nor passes allowed
-  repositories to the store (`factory/src/adaptive_factory/service.py:148-152`).
-- `PostgresFactoryStore.reconcile()` selects every expired live allocation and
-  has no repository predicate (`factory/src/adaptive_factory/store.py:914-955`).
-  It can release capacity and move another repository's task to retry,
-  needs-human or dead while writing audit/events as the unauthorized operator.
+## Other security controls checked
 
-An independent service-boundary reproduction on exact HEAD used an operator with
-only `repositories={"repo/a"}` and reached the unfiltered store reconciler:
-
-```text
-global_reconcile_reached True
-repo_scoped_result mutated-all-repositories
-```
-
-This violates the stated fail-closed unauthorized-repository contract. The kill
-path already demonstrates the appropriate pattern by requiring `"*"` for a
-global operation or checking one repository explicitly
-(`factory/src/adaptive_factory/service.py:138-146`).
-
-Required remediation: either require wildcard repository authority for the
-global reconcile endpoint, or pass the actor's closed repository set through the
-service and apply it to candidate selection, mutation, cursor and idempotency
-identity. Add unit, API and real-PostgreSQL tests proving a repo-A operator cannot
-observe or repair repo-B work.
-
-### Moderate M-1 — Actor and token file checks do not secure path ancestry or ownership
-
-Actor configuration and bearer-token readers use `O_NOFOLLOW` only on the final
-pathname and validate regular-file mode `0600`
-(`factory/src/adaptive_factory/server.py:22-37`,
-`factory/src/adaptive_factory/settings.py:13-31`). They do not require an absolute
-path, verify the file owner, pin repository/root identity, or walk every ancestor
-with no-follow directory descriptors. `getattr(..., 0)` also silently removes the
-no-follow property on a platform without that capability.
-
-A mode-`0600` leaf therefore does not by itself prove operator ownership. In a
-renameable or symlinked ancestor (especially when the service runs with elevated
-read authority), a local attacker can substitute an attacker-owned actor file or
-token before startup and choose credentials/scopes. The socket path has an
-explicit owned/private-parent check, but the more sensitive authentication files
-do not (`factory/src/adaptive_factory/server.py:73-93`).
-
-Required remediation: require absolute paths; fail if required descriptor
-capabilities are unavailable; open and pin every ancestor without following
-links; require an explicit trusted owner policy for both actor and token files;
-and test ancestor symlink/replacement, foreign ownership and unsupported
-capability cases.
-
-### Moderate M-2 — The advertised audit hash chain does not authenticate all stored audit evidence
-
-Audit rows store `task_id`, `run_id` and `correlation_id`, but `_audit()` excludes
-all three from `current_digest` (`factory/src/adaptive_factory/store.py:185-230`).
-`verify_audit_chain()` does not even select them and can therefore return true
-after those fields change (`factory/src/adaptive_factory/store.py:376-408`).
-
-Runtime UPDATE/DELETE denial on `audit_log` is a valuable primary control, but it
-does not make a partial hash an integrity proof. A privileged repair, accidental
-owner mutation or future grant regression can alter run attribution or request
-correlation without detection while the product reports a valid chain. These are
-security-relevant evidence fields used for fencing and incident reconstruction.
-
-Required remediation: version the canonical audit envelope and bind at least
-task, run, correlation, actor, action, resource, reason, timestamp and canonical
-metadata into each digest. Add fault-injection tests that mutate each stored
-semantic field with migration-owner authority and require chain verification to
-fail. Keep runtime audit UPDATE/DELETE revocations.
-
-## Security controls that remain sound
-
-- Migrations are contiguous/checksummed and factory-only. Runtime has no Trust-CI
-  schema authority in the tested role model.
-- Capacity functions are static, parameterized `SECURITY DEFINER` routines with
-  fixed `search_path=pg_catalog,factory`, schema-qualified objects, PUBLIC
-  execution revoked, canonical 20/10/1 ceilings and ordered locks. Migration 008
-  removes direct runtime allocation-release mutation.
-- Lease mutation binds task, run, authenticated owner, fence, packet, live
-  allocation, lease/deadline and current task projection. Capacity drift makes
-  readiness and reconciliation fail closed.
-- The API cumulatively caps streamed bodies at 1 MiB, uses bounded generic errors,
-  constant-time bearer comparison and disables access logging. The composition
-  exposes an owned Unix socket only; no TCP listener is configured.
-- No provider, shell, repository command, Git/GitHub, systemd, deployment or
-  external-write capability exists under `factory/src/adaptive_factory`; the CLI
-  uses only HTTP over an explicit Unix-domain socket.
-- The verifier capability hotfix is narrowly implemented: only exact
-  `GROK_VERIFY_CAPABILITY=repository-sandbox` skips only
-  `factory-postgres-exit`; absent, malformed and suffixed values execute the
-  runner and propagate failure. That environment declaration is not
-  authentication or merge authority, so the external runner/policy must remain
-  responsible for setting it.
+- Migration `009` does not broaden table privileges. Its two `SECURITY DEFINER`
+  functions use fixed `search_path=pg_catalog,factory`, schema-qualified static SQL,
+  revoke PUBLIC execution and grant only EXECUTE to `factory_runtime`
+  (`009_authority_audit_and_history_indexes.sql:32-67`). Existing capacity routines
+  retain the same fixed-search-path/PUBLIC-revoked boundary, and migrations `007`
+  and `008` continue to deny raw capacity/allocation authority.
+- Closed M2/M3 handoffs still require matching architecture digest and exact
+  base/head pairs; M0 exact head still matches the governance head. M4 records
+  producer provenance rather than deriving or claiming Trust-CI authority.
+- Actor/repository checks, constant-time bearer comparison, cumulative 1 MiB body
+  cap, bounded parsing, owned UDS-only listener, generic errors and access-log
+  suppression remain present. No provider, shell, repository, Git/GitHub, deploy,
+  systemd or other external execution/write path was found under the product
+  runtime.
+- No repository change adds GitHub Actions or changes deployed Trust-CI policy,
+  holdout, keys, PostgreSQL state, GitHub App configuration, human approval stores
+  or branch protection. The repository-local verifier/receipt remains preflight
+  evidence only.
 
 ## Verification evidence
 
-Static inspection covered the complete base-to-head diff, all eight SQL
-migrations, contracts, store/service/API/server/settings/CLI, tests, change
-package and verifier hotfix. `git diff --check` passed and the changed-tree secret
-scan found no committed credential/private-key pattern.
-
-Focused exact-head tests passed:
-
-```text
-Ran 25 tests in 9.094s
-OK
-```
-
-This set covered contracts, service authorization currently under test,
-migrations, state/retry policy and all four verifier capability cases. The
-existing exact-head verification receipt also records the broader API/database
-exit suites as passing, but it is currently stale after evidence refresh and in
-all cases does not detect or waive the findings above.
+- Inspected the active route, requirements, architecture, test plan, prior FAIL
+  report, implementation ledger/report, the full base-to-head diff and the complete
+  remediation diff.
+- `git diff --check 67714a1...4230dc8` passed.
+- Focused dependency-free contracts/service/migrations tests: 18 passed; the first
+  combined command had one import error solely because system Python lacked
+  `uvicorn`. Running the four server/UDS/private-file tests in the locked project
+  environment passed 4/4. The generated ignored `.venv` was moved to trash after
+  the run.
+- The exact final verification receipt reports PASS for HEAD `4230dc8...` and tree
+  fingerprint `0092b4cd...`; a passing local verifier does not detect or waive the
+  row-lock semantics finding.
 
 No `.env`, token, private key, credential store, production dump, Trust-CI state,
-shared database or external system was read or mutated. This review performed no
-push, merge, release, deployment or database write. The only repository write is
-this requested report.
+shared database or external system was read or mutated. No product source, commit,
+receipt, database, push, merge, release or deployment was changed by this review;
+the only retained repository write is this requested report.
 
 ## Residual trust boundary
 
-This report is local review evidence for exact product HEAD
-`cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`; it is not merge authority. After
-the findings are repaired by the route's single write owner, rerun full
-verification and all affected independent reviews on one stable fingerprint.
-The final pull-request SHA still requires the App-owned policy-epoch Check Run
-and every required independently signed approval scope.
+After I-1 is repaired by the route's single write owner, rerun exact-head
+verification and the affected independent reviews on one stable fingerprint. A
+local PASS still would not authorize merge: the final PR SHA requires the
+GitHub-App-owned policy-epoch Check Run and every independently signed approval
+scope required by deployed policy.

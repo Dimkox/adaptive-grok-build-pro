@@ -1,71 +1,67 @@
-# Code review — M4 durable factory control plane
+# Code re-review — M4 durable factory control plane
 
 ## Verdict
 
 **FAIL**
 
-No Critical findings were found. Three Important findings remain in the exact reviewed product tree, so AC-014 and local code-review completion are not satisfied.
+The three prior code-review findings are closed, but one new Important finding remains in their authority remediation. No Critical findings were found. AC-014 and a passing local code-review receipt are therefore not satisfied at exact HEAD.
 
 ## Review binding
 
 - Route: `b7f288f1e81e`
 - Product base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-- Reviewed HEAD: `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`
-- Merge base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` (exact route base)
-- Reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`
-- Latest verifier range inspected separately: `8e6504168462bbabad359fec3d23838c87f5ba22..cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`
-- Verification evidence inspected: receipt created `2026-09-01T14:59:00+00:00`, fingerprint `13363f4e7d5b058ae864ca54c165bb671e6355c2d7082f60c023a01154347df3`, with 43 disposable-PostgreSQL/API tests and actual restart/reconciliation passing. Subsequent evidence-file changes make that receipt stale for the current worktree; they do not alter the reviewed product HEAD.
+- Prior failing HEAD: `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`
+- Reviewed fix HEAD: `4230dc8e73bcf4dfcf6c60d294d379d44a30c698`
+- Exact merge base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
+- Full range inspected: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..4230dc8e73bcf4dfcf6c60d294d379d44a30c698`
+- Focused fix range inspected: `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06..4230dc8e73bcf4dfcf6c60d294d379d44a30c698`
+- Exact-head verifier receipt before this report rewrite: **PASS**, fingerprint `0092b4cd8152eb7919c94c610e66c7a4d71ad46382f1c5db852df41af0ac8789`, created `2026-09-01T20:26:54+00:00`. It records `factory-unit`, 59-test disposable PostgreSQL/API exit with actual restart/reconciliation, and source stability as passing.
 
-## Findings
+## Finding
 
-### Important — CR-001: changed frozen producer authority is returned as a duplicate instead of superseding the active task
+### Important — CR-004: the M0 authority row lock does not serialize intake against revocation
 
-`TaskIntakeV1.intent_digest` binds the complete normalized intake, including producer exact heads/evidence, M0 authority, route/change IDs, acceptance IDs and limits (`factory/src/adaptive_factory/contracts.py:249-267`). Its separate `idempotency_key`, however, omits those fields and binds only a subset of source/base and M1/M2/M3/policy digests (`factory/src/adaptive_factory/contracts.py:268-281`). Intake then looks up that subset key and immediately returns the old task without comparing `intent_digest` (`factory/src/adaptive_factory/store.py:246-251`).
+Migration 009 moves authority validation into the intake transaction, but both security-definer validators select the authority row `FOR KEY SHARE` (`factory/src/adaptive_factory/resources/009_authority_audit_and_history_indexes.sql:32-60`). Revocation changes only the non-key `revoked_at` column. PostgreSQL uses a `FOR NO KEY UPDATE` row lock for an update that does not change a unique-key value, and `FOR KEY SHARE` is compatible with that lock mode. A revoker can therefore update and commit `revoked_at` while the intake transaction still holds its key-share lock and continues inserting the accepted intent/task.
 
-This violates AC-002 and the architecture statement that only exact duplicates are returned while changed frozen authority creates a new generation. A valid second intake with matching repository/source/digests but different, mutually consistent M2/M3/M0 `exact_head_sha` values produces the same idempotency key and a different intent digest; the reviewer reproduced `same_key=True` and `same_intent=False`. The store therefore preserves neither the new accepted authority nor the required supersession event/audit. The existing PostgreSQL test changes only `source_digest`, which is included in the subset key, so it does not cover this case (`factory/tests/test_postgres_integration.py:66-77`).
+The implementation ledger explicitly claims that these functions lock authority rows against concurrent revocation, but the current regression does not exercise that interleaving. It blocks intake on the source-identity advisory lock, commits revocation first, and only then allows `_verify_m0_authority` to read the row (`factory/tests/test_postgres_integration.py:165-179`). That proves a pre-validation revocation is rejected; it does not prove that revocation after a successful validation is serialized with the remaining intake transaction.
 
-Required repair: define duplicate identity from the complete frozen intent (or compare the located row's `intent_digest` before returning), then add real PostgreSQL regressions for changed producer exact head/evidence, M0 authority and another accepted frozen field such as limits. Exact replay must return the same task; any changed frozen intent for the same source identity must atomically supersede eligible nonterminal work.
+This leaves the original authority TOCTOU partially open: the validation and accepted-intent writes now share a transaction, but a revocation can become committed before the accepted intent commits. That contradicts the fail-closed stale-authority requirement and the remediation's stated transaction-bound revocation guarantee.
 
-### Important — CR-002: repository-limited reconcile credentials can mutate every repository
+Required repair: acquire a row lock that conflicts with non-key revocation updates, such as `FOR SHARE` or `FOR UPDATE`, in both observation and exception validators (or use an equivalent atomic authority-consumption protocol). Add a two-connection PostgreSQL regression that pauses after successful authority validation, attempts `UPDATE ... SET revoked_at=...` concurrently, and proves there is no ordering where revocation commits before an intake based on that authority commits. The opposite ordering—revocation wins before validation—must continue to reject intake.
 
-`FactoryService.reconcile` checks only the `factory:reconcile` scope and `operator` kind; it never requires wildcard repository authority or passes an authorized repository filter (`factory/src/adaptive_factory/service.py:148-152`). `PostgresFactoryStore.reconcile` then selects expired runs globally and releases/retries/dead-letters or repairs them regardless of repository (`factory/src/adaptive_factory/store.py:914-962`).
+## Prior code-review closure
 
-Consequently an actor configured with `repositories={"repo/a"}` and the reconcile scope can change tasks and capacity owned by `repo/b`. This breaks the scoped API/repository-isolation contract and is inconsistent with the explicit wildcard requirement already used for global kill (`factory/src/adaptive_factory/service.py:141-145`). Metrics has the same unfiltered cross-repository shape (`factory/src/adaptive_factory/service.py:30-34`, `factory/src/adaptive_factory/store.py:87-107`), although the mutation path is the release blocker.
+| Prior finding | Result | Evidence |
+| --- | --- | --- |
+| CR-001: subset intake key discarded changed frozen authority as a duplicate | **Closed** | `idempotency_key` now hashes the complete `intent_digest` (`factory/src/adaptive_factory/contracts.py:267-271`). Contract tests vary limits, producer head and evidence; real PostgreSQL proves exact replay plus head/authority/limit supersession (`factory/tests/test_contracts.py:66-81`, `factory/tests/test_postgres_integration.py:97-124`). |
+| CR-002: repository-limited operator could run global reconcile/metrics | **Closed** | Both operations now require operator kind and wildcard repository authority before reaching the store (`factory/src/adaptive_factory/service.py:30-34,148-152`), with a service regression proving a scoped actor reaches neither path (`factory/tests/test_service.py:85-95`). |
+| CR-003: malformed closed commands escaped as 500/database errors | **Closed** | API helpers now validate closed mappings, text/IDs, canonical UUIDs, strict integers, digests and repository arrays before store access (`factory/src/adaptive_factory/api.py:66-130`). Claim, grant, proposal, budget, usage, kill, reconcile, list/show and cancel use those parsers; malformed role/type/limit/cursor/task/reason cases return bounded 4xx responses (`factory/tests/test_api.py:131-159`). |
 
-Required repair: either require `"*"` for global reconcile/metrics, or make reconcile repository-scoped end to end and constrain every candidate query and cursor to the authorized repository set. Add a service/API and disposable-PostgreSQL regression proving a repository-limited operator cannot observe or repair another repository.
+## Focused fix-wave review
 
-### Important — CR-003: malformed closed API commands escape as internal errors instead of bounded client failures
+- Intake authority is now repository/full-policy/action bound and checked inside the insertion transaction through fixed-search-path, PUBLIC-revoked security-definer functions. Wrong repository/policy/scope and pre-validation revocation fail closed. CR-004 is specifically about the row-lock strength after validation, not those bindings.
+- Migration 009 is additive and retains the already-applied 001–008 bytes. It versions the audit envelope, keeps legacy version-1 verification, adds task/run/correlation to new version-2 digests, and adds predicate-compatible task-history indexes.
+- Cross-attempt unresolved reservations now set `accounting_blocked` and force `needs_human`; completion checks every live task reservation plus aggregate reserved counters. This closes the reviewed accounting escape without weakening exact command replay.
+- Reconciliation acquires canonical capacity locks before the task row, matching cancel/supersede/release order. Capacity arithmetic, live-allocation fencing, bounded pages and the exact five-second statement timeout remain intact.
+- The new local admin boundary uses a distinct owner DSN, parameterized identifier/literal composition, bounded runtime login attributes, `NOINHERIT`, and readiness through the runtime credential. It adds no external/provider/Git/GitHub/deployment command path.
+- Actor/token files now require absolute normalized paths, descriptor-walked no-follow ancestry, trusted ownership, final-parent integrity and owned mode-0600 regular files. The UDS server remains the only application listener.
+- Rollout/rollback documentation consistently requires schema 009, local source-only activation, evidence preservation and forward recovery via 010+.
 
-The API declares raw `dict` bodies and converts untrusted members with constructors or Python coercions outside a validation/error boundary. Examples include `RunRole(payload["role"])` on claim (`factory/src/adaptive_factory/api.py:213-236`), `FailureClass(outcome)` through proposal/release (`factory/src/adaptive_factory/service.py:91-95`), and `int(payload.get("limit", 100))` on reconcile (`factory/src/adaptive_factory/api.py:345-365`). Invalid enum/type values raise uncaught `ValueError`/`TypeError`; only contract, authorization, fence, budget and store errors have handlers (`factory/src/adaptive_factory/api.py:88-106`). Cancel also stringifies arbitrary JSON as a reason and has no reason bound before database event/audit insertion (`factory/src/adaptive_factory/api.py:191-211`, `factory/src/adaptive_factory/store.py:965-983`).
+## Verifier and evidence review
 
-These are ordinary untrusted client inputs to a closed versioned API, but they can produce `500` responses and transaction-level database exceptions instead of deterministic `400/422` errors. That is incompatible with AC-010's closed, bounded API semantics and obscures operational failures.
+The earlier repository-sandbox capability hotfix remains narrowly scoped: only exact `GROK_VERIFY_CAPABILITY=repository-sandbox` skips only `factory-postgres-exit`; other values execute and propagate the runner result. The current exact-head local receipt used the execution path, not a skip, and records the disposable database/API/restart suite as passing.
 
-Required repair: parse each command into a closed typed request contract with explicit enum, scalar, UUID/digest, collection and byte-length bounds; translate all validation failures to the documented bounded `4xx` envelope. Add API tests for invalid role/outcome, non-integer reconcile limit, wrong claim collection/scalar types, malformed cursor/UUID and oversized/non-string reasons.
+The receipt is credible evidence for covered behavior but does not exercise the post-validation revocation interleaving described in CR-004. Rewriting this report changes the worktree fingerprint, so the pre-review receipt must be refreshed only after remediation and all independent reviews settle.
 
-## Reviewed behavior without blocking findings
+## Reviewer checks
 
-- The schema and store use PostgreSQL transactions, database time, `FOR UPDATE SKIP LOCKED`, monotonically increasing per-task fences and live allocation validation. Release/cancel/supersede/reconcile paths close runs, attempts and database-owned capacity through fixed-search-path security-definer functions.
-- Migrations are contiguous through `008`, checksum checked, factory-scoped, forward-only after intake, and the final migration removes runtime direct allocation-release authority. Counter ceilings and canonical scope identities are database constrained.
-- Command replay is serialized by an advisory transaction lock and checks actor, action and request digest before returning a stored result. Claim null results, heartbeat/release and accounting commands have durable replay paths before mutable fence validation.
-- Budget/cost/token/output and completion accounting fail closed; retry classification is restricted to the four declared infrastructure classes and attempt three becomes terminal.
-- The server pre-binds an absolute owned Unix socket, validates its parent, disables access logs, and has no TCP/provider/Git/GitHub/deploy/systemd execution surface. Actor/token files use no-follow file opens and exact mode checks.
-- Rollback is evidence-preserving: global kill, stop local intake/claims, retain audit/state, restore into a separate comparison database and forward-fix with migration `009+`; no down migration is proposed.
-
-## Latest verifier capability hotfix
-
-The `7520b33` production change and `cf0219b` test-isolation follow-up do not add a separate blocking finding. The skip is confined to the pre-existing `factory-postgres-exit` check in PR/release mode and requires exact equality with `GROK_VERIFY_CAPABILITY=repository-sandbox` (`.grok-stack/adaptive_grok/verification.py:590-608`). Unset or look-alike values execute the unchanged 600-second runner, and a runner failure remains a verifier failure. The local-success test now removes inherited capability state, so the four capability matrix tests are order/environment isolated (`tests/test_verification_doctor.py:715-776`).
-
-The variable is a runner capability declaration, not authentication or merge authority. The sandbox skip remains acceptable only alongside immutable-runner provenance and separate exact-head evidence where `factory-postgres-exit` actually passed; the inspected receipt contains that passing 43-test/restart evidence. It does not replace the App-owned exact-SHA Trust CI check.
-
-## Reviewer verification
-
-- `git merge-base <base> HEAD` — exact route base returned.
+- Exact HEAD and merge base — matched the requested `4230dc8e73bcf4dfcf6c60d294d379d44a30c698` and route base.
 - `git diff --check <base>..<head>` — PASS.
-- Four focused verifier-capability tests — PASS, 4/4.
-- Dependency-free factory contract/state/migration/service tests — PASS, 21/21. API/server imports in the host interpreter were unavailable because FastAPI/Uvicorn are intentionally package-local; the exact-head disposable exit receipt supplies those dependency-backed results.
-- Frozen-intent classifier probe — reproduced same idempotency key with different full intent digests after a mutually consistent producer/M0 exact-head change.
-- Existing exact-head disposable exit evidence — PASS, 43/43 plus actual PostgreSQL restart, one repair, replay no-op, higher fence and late-holder rejection.
+- Full cumulative diff and all eight focused fix-wave commits — inspected, including contracts, service/API, store, migration 009, settings/server/admin, tests, architecture and rollout evidence.
+- Exact-head verifier receipt — PASS at supplied fingerprint; factory exit records 59 tests plus actual PostgreSQL restart, one repair, replay no-op, higher fence and late-holder rejection.
+- CR-001/002/003 regression paths — inspected and matched the repaired implementation.
+- CR-004 lock analysis — validator `FOR KEY SHARE` compared with the non-key `revoked_at` update and with the actual advisory-gated test ordering; the current test does not enter the vulnerable post-validation window.
 
-## Residual risks after required repairs
+## Residual risks after required repair
 
-The reconciliation path is intentionally globally serialized through capacity locks and bounded by a five-second transaction timeout; high contention can fail a reconcile invocation even when state remains safe, so operations should monitor and retry with the same command key. The effective runtime role still has broad insert privileges needed by the current direct-SQL store design, so a future hardening iteration should move immutable intake/event/audit creation behind narrower database functions; this review did not classify that architectural residual as a new blocker because the supported API/service boundary enforces those writes and direct runtime tampering is outside the declared credential boundary.
+Reconciliation remains globally serialized by capacity locks and deliberately bounded by a five-second timeout, so high contention can produce a safe failed invocation that an operator must replay with the same command key. Migration 009 invalidates legacy authority rows whose new repository/policy fields remain null; that is a fail-closed rollout characteristic and requires explicit reprovisioning before intake. None of this local evidence replaces the App-owned exact-SHA Trust CI check or signed external approvals.
