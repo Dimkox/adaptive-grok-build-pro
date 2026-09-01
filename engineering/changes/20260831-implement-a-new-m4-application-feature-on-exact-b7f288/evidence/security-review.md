@@ -1,106 +1,212 @@
-# M4 round-5 security review — PASS
+# M4 security review — FAIL
 
 ## Reviewed identity
 
 - Route: `b7f288f1e81e`
 - Change: `20260831-implement-a-new-m4-application-feature-on-exact-b7f288`
-- Base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-- Reviewed head: `f82134de35e531a8b3bbf235ad480254ba40f1fe`
-- Full reviewed diff: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..f82134de35e531a8b3bbf235ad480254ba40f1fe`
-- Round-5 delta: `9fd2a56c57f834ad39c03a2f748bdbaefc79c91c..f82134de35e531a8b3bbf235ad480254ba40f1fe`
-- Round-5 fix commit: `f82134de35e531a8b3bbf235ad480254ba40f1fe` (parent `9fd2a56c57f834ad39c03a2f748bdbaefc79c91c`)
+- Exact base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
+- Exact product HEAD: `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`
+- Exact Git tree: `d497c897e3875dd52f788c10bbb1f7ed19e3942f`
+- Full reviewed range:
+  `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`
 - Reviewer: route-selected read-only `security_reviewer`
-- Verdict: **PASS**
-- Critical findings: **0**
-- Important findings: **0**
-- Moderate findings: **0**
-
-No Critical, Important, or Moderate security finding remains. This report is local exact-tree evidence only. It is not merge authority and cannot replace the App-owned `adaptive-trust-ci/verified@<policy-sha12>` check on the exact pull-request head.
-
-## Severity-ordered findings
-
-No findings.
-
-## Round-4 residual closure: allocation release authority
-
-Migration 008 revokes runtime UPDATE authority on `factory.capacity_allocations` (`factory/src/adaptive_factory/resources/008_allocation_release_authority.sql:1`). This closes round-4 Moderate M-1: a runtime credential can no longer forge either release or restoration of `capacity_allocations.released_at`.
-
-The supported PostgreSQL test verifies both the effective privilege and actual denial:
-
-- `has_column_privilege('factory_runtime', 'factory.capacity_allocations', 'released_at', 'UPDATE') = false` (`factory/tests/test_postgres_integration.py:637-641`).
-- Runtime attempts to set `released_at=clock_timestamp()` and `released_at=NULL` both raise `InsufficientPrivilege` (`factory/tests/test_postgres_integration.py:643-657`).
-- Existing counter INSERT/UPDATE, allocation INSERT, immutable intake/event/audit, and cross-schema denials remain in the same effective-role regression (`factory/tests/test_postgres_integration.py:626-657`).
-
-Legitimate release remains available only through `factory.capacity_release(uuid)`, a `SECURITY DEFINER` function with `SET search_path=pg_catalog,factory`, schema-qualified relations, run-closed validation, ordered counter locks, underflow rejection, allocation release and counter decrement in one transaction (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:127-157`). PUBLIC execute remains revoked and runtime execute remains explicitly granted (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:160-169`).
-
-The store was correctly adapted to the least-privilege role: it no longer requests direct row locks on `capacity_allocations`, which require UPDATE privilege, while the database-owned capacity functions retain the authoritative locks and transitions (`factory/src/adaptive_factory/store.py:523-575`). Positive cancel, supersede, reconciliation and completion lifecycle tests pass, so the revoke does not create a release or availability regression.
-
-## Live-allocation fence enforcement
-
-`_lock_grant` now requires `a.released_at IS NULL` in addition to the existing run ID, task ID, authenticated owner, fence, packet digest, live run state, lease/deadline and current task projection checks (`factory/src/adaptive_factory/store.py:581-599`). That single locked boundary is used by:
-
-- heartbeat before lease extension (`factory/src/adaptive_factory/store.py:600-617`);
-- release before attempt, run, task and capacity transitions (`factory/src/adaptive_factory/store.py:618-689`);
-- budget reservation before any reservation or task accounting write (`factory/src/adaptive_factory/store.py:691-756`);
-- usage observation before reservation settlement, usage insertion or accounting changes (`factory/src/adaptive_factory/store.py:758-893`).
-
-The removed direct `FOR UPDATE OF a` does not weaken concurrency. Capacity allocation/release is serialized by the fixed-search-path definer functions' ordered counter locks; release also locks the live allocation before changing it (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:56-77,127-157`). Run/task row locks continue to serialize worker state transitions. A released or missing allocation therefore causes `FenceError` before any new worker mutation.
-
-The new PostgreSQL regression deliberately hides an allocation using migration-owner authority, then proves heartbeat, release, reserve, and usage all reject the holder; readiness becomes `not_ready`; reconciliation refuses inconsistent capacity; restoring the owner-created fault permits normal usage and completion (`factory/tests/test_postgres_integration.py:675-716`). This is a strong fault-injection test beyond what the runtime role itself can perform after migration 008.
-
-Exact replay remains intentionally before fence validation. An already committed command returns its immutable prior result or error without performing another mutation; a new key must pass the live-allocation fence. This preserves at-most-once behavior, stale-fence safety, and durable correlation (`factory/src/adaptive_factory/store.py:109-131,600-617,680-689,701-756,779-893`).
-
-## Prior security areas rechecked
-
-| Area | Round-5 result | Evidence |
-| --- | --- | --- |
-| M0 authority | **Closed** | Intake accepts only a matching, non-revoked persisted observation or bounded exception; caller assertions alone fail (`factory/src/adaptive_factory/service.py:43-49`, `factory/src/adaptive_factory/store.py:133-150`). Runtime has SELECT-only access to the authority tables. |
-| Worker actor and repository binding | **Closed** | Claim owner is derived from the authenticated worker. Worker kind, scope, repository authorization and grant owner are checked at the service boundary; store fencing rechecks immutable run/task identity (`factory/src/adaptive_factory/service.py:61-132`, `factory/src/adaptive_factory/store.py:581-599`). |
-| Completion accounting and fail-closed budgets | **Closed** | Reservation and usage values are typed/bounded; accounting blocks on invalid/missing pricing or exceeded limits; completion requires usage, no accounting block and no open reservation (`factory/src/adaptive_factory/store.py:629-650,691-893`). |
-| Claim-null replay and command correlation | **Closed** | No-grant claims are recorded durably. Commands serialize by advisory lock, bind actor/action/request digest, preserve correlation, replay exact results/errors, and reject changed content (`factory/src/adaptive_factory/store.py:109-131,418-521`). |
-| UDS and secret boundary | **Closed** | Composition pre-binds only an owned `AF_UNIX` socket at mode `0660`; safe absolute paths and private parents are required. Token/actor files are bounded no-follow regular `0600`; bearer comparisons are constant-time; access logging is disabled (`factory/src/adaptive_factory/server.py:20-120`, `factory/src/adaptive_factory/settings.py:25-73`, `factory/src/adaptive_factory/api.py:35-53`). |
-| Streaming request cap | **Closed** | Declared length is validated and streamed chunks are cumulatively capped at 1 MiB before parsing (`factory/src/adaptive_factory/api.py:19,108-126`). Declared, missing/chunked and malformed-length regressions pass. |
-| SQL/injection and definer search path | **Closed** | Application values are parameterized. All capacity definer functions fix `search_path=pg_catalog,factory`, schema-qualify relations, validate typed inputs, revoke PUBLIC execute and expose only the bounded runtime calls (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:11-169`). |
-| Canonical capacity and isolation | **Closed** | Database CHECK policy fixes global readers at 20, global writer at 1 and repository readers at 10. Runtime cannot forge counters or allocations; supported scheduler hard-cap tests pass (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:1-9,80-125,160-169`). |
-| Lease fencing, kill switches and reconciliation | **Closed** | Database time, monotonic fences, owner/run/packet/current-state/deadline/live-allocation checks, kill-before-claim, bounded ordered reconciliation and fail-closed capacity consistency remain. Stale holders and hidden allocations are rejected. |
-| Audit integrity and logging | **Closed** | Runtime cannot UPDATE/DELETE audit rows; hash-chain verification and append-only event/audit behavior pass. HTTP access logging is disabled and bounded error responses do not expose secrets or SQL details. |
-| Unsafe operations | **Closed** | No provider execution, subprocess/shell, Git/GitHub, systemd, deploy, TCP listener/client, connector, production mutation or Trust CI authority path exists under `factory/src/adaptive_factory`. |
-
-## Verification evidence
-
-```text
-git rev-parse HEAD
-f82134de35e531a8b3bbf235ad480254ba40f1fe
-
-git show -s --format='%H%n%P%n%s' HEAD
-f82134de35e531a8b3bbf235ad480254ba40f1fe
-9fd2a56c57f834ad39c03a2f748bdbaefc79c91c
-fix(factory): close allocation release authority
-
-git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..HEAD
-PASS (no output)
-
-uv run --project factory python -m unittest -v \
-  factory.tests.test_contracts factory.tests.test_service factory.tests.test_api \
-  factory.tests.test_server factory.tests.test_migrations factory.tests.test_state
-Ran 30 tests — OK
-
-uv run --project factory python factory/tests/run_disposable_exit.py
-Ran 43 tests — OK
-PASS: PostgreSQL restarted; one repair; replay no-op; higher fence; late holder rejected
-PASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation
-
-python3 scripts/grok_verify.py --mode pr
-PASS architecture, governance, secret-scan, contract-structure, SQL safety,
-Ruff, Bandit, Python unittest, coverage, factory unit, factory PostgreSQL exit,
-and source stability
-RESULT: PASS | profiles=base,contracts,data,integration | changed=86
-```
-
-The first broad verifier invocation was environmentally invalid because the preceding focused `uv run` had created an ignored `factory/.venv`, which architecture inventory correctly treated as unowned source. The reviewer moved that generated environment out of the repository and reran the verifier; the clean exact-head run above passed with a stable fingerprint. No product file was changed for that cleanup.
-
-The disposable PostgreSQL runner removed its unique container. No `.env`, token content, private key, credential store, production dump, Trust CI secret/state or human approval material was read. No shared/production database, external system, push, merge, release or deployment was mutated. The only repository write by this reviewer is this requested report.
 
 ## Verdict
 
-**PASS** for local `security_review` on exact head `f82134de35e531a8b3bbf235ad480254ba40f1fe`. Critical: 0. Important: 0. Moderate: 0. Record the receipt only while the tree fingerprint remains current; any repository change invalidates this report and requires affected verification/review again.
+**FAIL**
+
+- Critical findings: **0**
+- Important findings: **2**
+- Moderate findings: **2**
+
+The current exact tree must not receive a passing `security_review` receipt.
+Local verification and older review reports do not waive the authorization and
+authority-provenance defects below, and none of them is external merge authority.
+
+## Severity-ordered findings
+
+### Important I-1 — Persisted M0 authority is not bound to repository or policy and is checked outside intake's transaction
+
+The trusted observation table stores `observed_at`, policy-epoch-shaped
+`check_name`, `exact_head_sha`, issuer and evidence digest, but no repository
+identity or full deployed-policy digest
+(`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:1-10`).
+Bootstrap exceptions likewise have a free-form scope but no enforced repository,
+action or policy subject (`005_security_accounting_commands.sql:12-19`).
+
+`TaskIntakeV1` accepts the caller's `repository_id` and `policy_digest`, but its
+cross-authority checks only compare the M2/M3 architecture fields and M0 head to
+the governance head (`factory/src/adaptive_factory/contracts.py:227-263`). The
+store lookup then checks only the caller-repeated timestamp/check-name/head tuple,
+or the caller-repeated exception fields
+(`factory/src/adaptive_factory/store.py:134-149`). It does not bind the row to
+`intake.repository_id`, `intake.policy_digest`, the expected policy SHA prefix,
+or a repository-scoped exception subject.
+
+The checked-in nominal fixture demonstrates the gap: it accepts
+`policy_digest=999999...` with check suffix `06ecf1c875bc`. An independent
+reproduction on exact HEAD printed:
+
+```text
+policy_prefix 999999999999
+check_suffix 06ecf1c875bc
+mismatch_accepted True
+```
+
+Consequently one legitimate observation can be replayed for another configured
+repository that contains the same commit (including a fork), while an arbitrary
+policy digest is frozen into an accepted intent as though it were validated.
+The bootstrap path has the same cross-repository problem because its `scope`
+string is matched for equality but never interpreted against the requested
+repository/action.
+
+There is also a revocation race: `FactoryService.intake()` calls
+`verify_m0_authority()` on one connection and only afterwards opens the separate
+intake transaction (`factory/src/adaptive_factory/service.py:43-49`,
+`factory/src/adaptive_factory/store.py:134-149,234-243`). A trusted operator can
+revoke the observation between those operations and the intake will still commit.
+
+Required remediation:
+
+1. Add a forward migration that binds every M0 observation/exception to an exact
+   repository subject and full policy identity (and, for an exception, a closed
+   action/scope that is actually evaluated).
+2. Require the check-name suffix to match the trusted full policy digest and
+   compare that trusted tuple with the intake values.
+3. Perform the non-revoked, unexpired authority lookup in the same transaction
+   that inserts the accepted intent, or consume an unforgeable transaction-bound
+   authority handle.
+4. Add cross-repository, wrong-policy, wrong-scope and concurrent-revocation
+   regressions. Caller JSON must remain a lookup request, never authority.
+
+### Important I-2 — Repository-scoped operators can run the global reconciler and mutate other repositories
+
+Repository authorization is enforced for submit/read/list/cancel, worker grants
+and repository kill switches. Reconcile is the exception:
+
+- `FactoryService.reconcile()` checks only the `factory:reconcile` scope, operator
+  kind and limit; it neither requires wildcard authority nor passes allowed
+  repositories to the store (`factory/src/adaptive_factory/service.py:148-152`).
+- `PostgresFactoryStore.reconcile()` selects every expired live allocation and
+  has no repository predicate (`factory/src/adaptive_factory/store.py:914-955`).
+  It can release capacity and move another repository's task to retry,
+  needs-human or dead while writing audit/events as the unauthorized operator.
+
+An independent service-boundary reproduction on exact HEAD used an operator with
+only `repositories={"repo/a"}` and reached the unfiltered store reconciler:
+
+```text
+global_reconcile_reached True
+repo_scoped_result mutated-all-repositories
+```
+
+This violates the stated fail-closed unauthorized-repository contract. The kill
+path already demonstrates the appropriate pattern by requiring `"*"` for a
+global operation or checking one repository explicitly
+(`factory/src/adaptive_factory/service.py:138-146`).
+
+Required remediation: either require wildcard repository authority for the
+global reconcile endpoint, or pass the actor's closed repository set through the
+service and apply it to candidate selection, mutation, cursor and idempotency
+identity. Add unit, API and real-PostgreSQL tests proving a repo-A operator cannot
+observe or repair repo-B work.
+
+### Moderate M-1 — Actor and token file checks do not secure path ancestry or ownership
+
+Actor configuration and bearer-token readers use `O_NOFOLLOW` only on the final
+pathname and validate regular-file mode `0600`
+(`factory/src/adaptive_factory/server.py:22-37`,
+`factory/src/adaptive_factory/settings.py:13-31`). They do not require an absolute
+path, verify the file owner, pin repository/root identity, or walk every ancestor
+with no-follow directory descriptors. `getattr(..., 0)` also silently removes the
+no-follow property on a platform without that capability.
+
+A mode-`0600` leaf therefore does not by itself prove operator ownership. In a
+renameable or symlinked ancestor (especially when the service runs with elevated
+read authority), a local attacker can substitute an attacker-owned actor file or
+token before startup and choose credentials/scopes. The socket path has an
+explicit owned/private-parent check, but the more sensitive authentication files
+do not (`factory/src/adaptive_factory/server.py:73-93`).
+
+Required remediation: require absolute paths; fail if required descriptor
+capabilities are unavailable; open and pin every ancestor without following
+links; require an explicit trusted owner policy for both actor and token files;
+and test ancestor symlink/replacement, foreign ownership and unsupported
+capability cases.
+
+### Moderate M-2 — The advertised audit hash chain does not authenticate all stored audit evidence
+
+Audit rows store `task_id`, `run_id` and `correlation_id`, but `_audit()` excludes
+all three from `current_digest` (`factory/src/adaptive_factory/store.py:185-230`).
+`verify_audit_chain()` does not even select them and can therefore return true
+after those fields change (`factory/src/adaptive_factory/store.py:376-408`).
+
+Runtime UPDATE/DELETE denial on `audit_log` is a valuable primary control, but it
+does not make a partial hash an integrity proof. A privileged repair, accidental
+owner mutation or future grant regression can alter run attribution or request
+correlation without detection while the product reports a valid chain. These are
+security-relevant evidence fields used for fencing and incident reconstruction.
+
+Required remediation: version the canonical audit envelope and bind at least
+task, run, correlation, actor, action, resource, reason, timestamp and canonical
+metadata into each digest. Add fault-injection tests that mutate each stored
+semantic field with migration-owner authority and require chain verification to
+fail. Keep runtime audit UPDATE/DELETE revocations.
+
+## Security controls that remain sound
+
+- Migrations are contiguous/checksummed and factory-only. Runtime has no Trust-CI
+  schema authority in the tested role model.
+- Capacity functions are static, parameterized `SECURITY DEFINER` routines with
+  fixed `search_path=pg_catalog,factory`, schema-qualified objects, PUBLIC
+  execution revoked, canonical 20/10/1 ceilings and ordered locks. Migration 008
+  removes direct runtime allocation-release mutation.
+- Lease mutation binds task, run, authenticated owner, fence, packet, live
+  allocation, lease/deadline and current task projection. Capacity drift makes
+  readiness and reconciliation fail closed.
+- The API cumulatively caps streamed bodies at 1 MiB, uses bounded generic errors,
+  constant-time bearer comparison and disables access logging. The composition
+  exposes an owned Unix socket only; no TCP listener is configured.
+- No provider, shell, repository command, Git/GitHub, systemd, deployment or
+  external-write capability exists under `factory/src/adaptive_factory`; the CLI
+  uses only HTTP over an explicit Unix-domain socket.
+- The verifier capability hotfix is narrowly implemented: only exact
+  `GROK_VERIFY_CAPABILITY=repository-sandbox` skips only
+  `factory-postgres-exit`; absent, malformed and suffixed values execute the
+  runner and propagate failure. That environment declaration is not
+  authentication or merge authority, so the external runner/policy must remain
+  responsible for setting it.
+
+## Verification evidence
+
+Static inspection covered the complete base-to-head diff, all eight SQL
+migrations, contracts, store/service/API/server/settings/CLI, tests, change
+package and verifier hotfix. `git diff --check` passed and the changed-tree secret
+scan found no committed credential/private-key pattern.
+
+Focused exact-head tests passed:
+
+```text
+Ran 25 tests in 9.094s
+OK
+```
+
+This set covered contracts, service authorization currently under test,
+migrations, state/retry policy and all four verifier capability cases. The
+existing exact-head verification receipt also records the broader API/database
+exit suites as passing, but it is currently stale after evidence refresh and in
+all cases does not detect or waive the findings above.
+
+No `.env`, token, private key, credential store, production dump, Trust-CI state,
+shared database or external system was read or mutated. This review performed no
+push, merge, release, deployment or database write. The only repository write is
+this requested report.
+
+## Residual trust boundary
+
+This report is local review evidence for exact product HEAD
+`cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`; it is not merge authority. After
+the findings are repaired by the route's single write owner, rerun full
+verification and all affected independent reviews on one stable fingerprint.
+The final pull-request SHA still requires the App-owned policy-epoch Check Run
+and every required independently signed approval scope.
