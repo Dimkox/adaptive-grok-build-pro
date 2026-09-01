@@ -54,7 +54,7 @@ The second residual wave uses forward-only migration `010` without changing appl
 - Actual restart probe: PostgreSQL container restarted, one expired holder reclaimed, second reconciliation repaired zero, a higher fence issued, and the late holder was rejected.
 - Representative `EXPLAIN (ANALYZE, BUFFERS)` assertions selected the claim, audit, usage, active-reservation and reconciliation indexes added or retained for their exact predicates.
 - Root regression run: 488 tests in 314.727s found one undeclared admin source; after binding it to the existing factory service node, the focused regression, architecture validate, repository drift and all five diagram checks passed.
-- Residual focused PostgreSQL tests passed 5/5; migration tests passed 4/4, installer tests passed 17/17, the dependency-free factory suite passed 24/24, and Ruff passed. A fresh root suite and `python3 scripts/grok_verify.py --mode pr` run after this report commit bind the final-tree verdict.
+- Residual focused PostgreSQL tests passed 5/5; migration tests passed 4/4, installer tests passed 17/17, the dependency-free factory suite passed 24/24, Ruff passed, and the full root suite passed 488/488 in 299.731s. `python3 scripts/grok_verify.py --mode pr` runs after this report commit to bind the final-tree verdict.
 
 ## Disposable migration evidence and cleanup
 
