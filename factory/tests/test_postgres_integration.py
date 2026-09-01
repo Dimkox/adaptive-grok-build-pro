@@ -137,12 +137,13 @@ class PostgresFactoryTests(unittest.TestCase):
         with self.assertRaises(StoreError):
             self.service.intake(wrong_policy, actor=OPERATOR, now=NOW)
 
+        exception_expires_at = NOW + timedelta(minutes=10)
         exception_payload = self.payload(source="wrong-exception-scope")
         exception_payload["m0_authority"] = {
             "bootstrap_exception": "local-bootstrap",
             "issuer": "repository-owner",
             "scope": "task:intake",
-            "expires_at": "2026-09-01T20:00:00+00:00",
+            "expires_at": exception_expires_at.isoformat(),
         }
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
@@ -150,7 +151,7 @@ class PostgresFactoryTests(unittest.TestCase):
                 (exception_id,issuer,scope,expires_at,approval_digest,repository_id,policy_digest,action)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,'task:intake')""",
                 (
-                    "local-bootstrap", "repository-owner", "task:intake", "2026-09-01T20:00:00+00:00",
+                    "local-bootstrap", "repository-owner", "task:intake", exception_expires_at,
                     "5" * 64, exception_payload["repository_id"], exception_payload["policy_digest"],
                 ),
             )

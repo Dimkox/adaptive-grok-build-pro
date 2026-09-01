@@ -317,3 +317,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The disposable exit intermittently lost its first host connection immediately after `pg_isready` succeeded during the image's bootstrap/postmaster handoff.
 **Root cause:** The harness proved one readiness sample but did not account for the official image's one-time server replacement before opening external clients.
+
+## 2026-09-01 — Fixed a security fixture expiry to the delivery date
+
+**Symptom:** The fresh exit suite failed after the calendar crossed a hard-coded bootstrap-exception timestamp.
+**Root cause:** A bounded-expiry test encoded the project schedule date instead of deriving the permitted short lifetime from its captured test clock.
