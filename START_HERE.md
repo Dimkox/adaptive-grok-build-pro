@@ -4,14 +4,12 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 ## Current project state
 
-- M0 (Live Trust Authority) is complete and merged into `main`.
+- M0 (Live Trust Authority) is delivered to `main`.
 - M0 runtime repair and policy-loop fixes are also merged into `main` through PR #7 and PR #6.
-- The independent App-owned merge gate is live as `adaptive-trust-ci/verified@6737355947c2` and protected `main` binds that check to GitHub App ID `4694114`.
-- The current development milestone is M1: Typed Intent, Acceptance Criteria, and Evidence Traceability.
-- M1 is tracked in draft PR #8 on branch `milestone/m1-typed-intent-evidence`.
-- M1 design: `docs/superpowers/specs/2026-08-26-m1-typed-intent-evidence-design.md` on the PR #8 branch.
-- M1 implementation plan: `docs/superpowers/plans/2026-08-26-m1-typed-intent-evidence.md` on the PR #8 branch.
-- M1 implementation has not started yet. The next implementation action is Task 1 in that plan: strict typed schema and zero-dependency validator, using TDD.
+- As observed on 2026-09-01, protected `main` strictly requires `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114` on the exact up-to-date pull-request head.
+- M1 is implemented/reviewed in the accepted stack, but only its early slice and design/plan are on `main`; complete M1 delivery is partial. M2 and M3 are implemented/reviewed and merged into predecessor milestone branches by PRs #10 and #11, not delivered to `main`.
+- M4 is implemented locally, but PR #17 remains open with failed exact-head checks and its local branch is two commits ahead of the published head. Its latest local head therefore has stale review/external evidence.
+- M5-M9 are not started. The current work is consolidated delivery reconciliation for M1-M4; do not start M5 merely because a milestone branch exists.
 
 Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
 
@@ -26,7 +24,7 @@ Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
    - `DARK_FACTORY_ROADMAP.md`
    - `README.md`
 2. Run `git fetch --all --prune` before reasoning about active branches or pull requests.
-3. If continuing M1, inspect PR #8 and branch `milestone/m1-typed-intent-evidence`, then read the M1 design and plan before changing code.
+3. Inspect `PROJECT_STATE.json`, then PRs #10, #11 and #17 with their exact base/head SHAs before continuing milestone delivery. Treat a merge into another milestone branch as stack integration, not delivery to `main`; do not start M5.
 4. If starting a different software-development task, create/resolve the local route first. `.grok-stack/runtime/active-route.json` is runtime state and may legitimately be absent in a fresh clone; do not fabricate it.
 5. Follow `AGENTS.md`: one write owner, route-selected analysis/review agents, local verification as evidence, pull-request-only delivery, and external Trust CI as merge authority.
 6. Never add GitHub Actions.
@@ -52,20 +50,15 @@ The source and runbooks for the independent merge authority are under `trust-ci/
 
 Before changing Trust CI behavior, read the current deployed-policy/holdout constraints in `AGENTS.md` and the activation/rollout runbooks. Repository code cannot itself alter deployed trust material.
 
-## Current M1 handoff
+## Current milestone delivery handoff
 
-PR #8 contains design and plan only. Treat them as the current approved implementation contract. Do not re-design M1 from chat memory and do not skip directly to M2.
+Use one repository-level delivery ledger and one consolidated continuation route. Existing branches are evidence and integration inputs; their names, local `ready` files and GitHub `MERGED` labels do not prove protected-main delivery.
 
-Implementation order is the six tasks in the M1 plan:
-
-1. strict typed schema and zero-dependency validator;
-2. route-driven spec generation and Markdown authority links;
-3. CLI, verification integration, criterion-bound receipts and staleness;
-4. independent holdout enforcement;
-5. Trust CI attestation spec digest and criterion coverage;
-6. durable M1 package, roadmap evidence, full verification, exact-SHA Trust CI, then merge.
-
-If the PR head moves, use the branch/PR as source of truth rather than copying an old SHA from documentation.
+1. Preserve and deliver the accepted M2+M3 aggregate `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` through a clean current-main integration PR; this also carries the complete M1 source that is absent from `main`.
+2. Rebuild M4 as a clean successor from the delivered predecessor stack, using local `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06` only as source evidence. Do not claim PR #17 fixed or accepted: its published head is `8e6504168462bbabad359fec3d23838c87f5ba22` and its exact-head gates failed.
+3. Retain open PRs #12, #13, #15, #17 and #19 plus the unresolved PR #14/local work identified in `PROJECT_STATE.json`; integrate, explicitly supersede or abandon them without silently losing unique work.
+4. After every protected-main merge, fetch remote refs, update the one state model, and obtain fresh exact-head verification/approvals for any branch made stale by the base change.
+5. Begin M5 only after M1-M4 delivery state is reconciled and observable on `origin/main`. `milestone/a-plus-autopilot` is design input, not M8 implementation.
 
 ## No chat dependency
 

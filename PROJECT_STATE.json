@@ -1,43 +1,264 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
+  "observed_at": "2026-09-01T18:44:24Z",
+  "observed_main_sha": "1c06299894279a88b881defa3f19b004fa742223",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
-  "completed_milestones": [
-    "M0"
-  ],
-  "active_milestone": "M1",
-  "last_completed_milestone_merge": {
-    "pull_request": 5,
-    "commit": "069fe8226addb8a1922dde3db4e753434baa3a3d",
-    "title": "M0: consolidate live Trust Authority"
+  "delivered_milestones_on_main": ["M0"],
+  "implemented_milestones": ["M0", "M1", "M2", "M3", "M4"],
+  "active_delivery": {
+    "route_id": "944abd96ddb3",
+    "branch": "chore/reconcile-milestone-state",
+    "change_package": "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd",
+    "status": "reconciling_milestone_stack_with_main_delivery",
+    "highest_implemented_milestone": "M4",
+    "next_roadmap_milestone": "M5",
+    "next_action": "Deliver the accepted M1-M3 stack and a clean M4 successor through current-main pull requests before starting M5."
   },
-  "recent_repairs": [
-    {
-      "pull_request": 7,
-      "commit": "98f0c45c780c9dd8be6b01afe4667f0b4b0b7630",
-      "purpose": "Trust CI runtime/workspace integrity repair"
+  "milestones": {
+    "M0": {
+      "implementation": {
+        "status": "complete",
+        "commit": "9590db4db14838ab534958aaa0842f5523f043ae",
+        "evidence": "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-repo-explorer.md"
+      },
+      "review": {
+        "status": "passed",
+        "commit": "9590db4db14838ab534958aaa0842f5523f043ae",
+        "evidence": ["engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-docs-researcher.md"]
+      },
+      "stack_integration": {
+        "status": "not_applicable",
+        "base_branch": null,
+        "pull_request": null,
+        "merge_commit": null
+      },
+      "main_delivery": {
+        "status": "delivered",
+        "pull_request": 5,
+        "merge_commit": "069fe8226addb8a1922dde3db4e753434baa3a3d",
+        "notes": "PRs 6 and 7 subsequently delivered M0-era repairs to main."
+      },
+      "external_gate": {
+        "status": "stale",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": "9590db4db14838ab534958aaa0842f5523f043ae",
+        "observed_historical_check": "adaptive-trust-ci/verified@6737355947c2",
+        "historical_conclusion": "success"
+      }
     },
-    {
-      "pull_request": 6,
-      "commit": "d17e95d9a99db2495c81f66053f0eebc7ae47d8d",
-      "purpose": "target-aware shell policy and denial-loop circuit breaker"
+    "M1": {
+      "implementation": {
+        "status": "complete",
+        "commit": "022411b05924618cfde0cb97b8c8aff4955e6013",
+        "evidence": "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-repo-explorer.md"
+      },
+      "review": {
+        "status": "passed",
+        "commit": "022411b05924618cfde0cb97b8c8aff4955e6013",
+        "evidence": [
+          "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-architect.md",
+          "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-docs-researcher.md"
+        ]
+      },
+      "stack_integration": {
+        "status": "merged",
+        "base_branch": "milestone/m1-typed-intent-evidence",
+        "pull_request": 10,
+        "merge_commit": "c23fd49f80c7d1c74ca3393b6079a74f251a72d8",
+        "notes": "The complete M1 source was accepted as part of the combined M1/M2 stack."
+      },
+      "main_delivery": {
+        "status": "partial",
+        "pull_requests": [4, 8],
+        "merge_commits": [
+          "48cb9737fac7f26fb70b425957a3ed64d4c1eb55",
+          "e81ae72766972e1dda38f20bc7b3dece62319fd0"
+        ],
+        "notes": "Only the early typed-spec slice and design/plan are on main; the full reviewed milestone exit source is not."
+      },
+      "external_gate": {
+        "status": "success",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": "022411b05924618cfde0cb97b8c8aff4955e6013",
+        "notes": "This exact-head success authorized stack acceptance, not delivery to main."
+      }
+    },
+    "M2": {
+      "implementation": {
+        "status": "complete",
+        "commit": "022411b05924618cfde0cb97b8c8aff4955e6013",
+        "evidence": "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-repo-explorer.md"
+      },
+      "review": {
+        "status": "passed",
+        "commit": "022411b05924618cfde0cb97b8c8aff4955e6013",
+        "evidence": ["engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-architect.md"]
+      },
+      "stack_integration": {
+        "status": "merged",
+        "base_branch": "milestone/m1-typed-intent-evidence",
+        "pull_request": 10,
+        "merge_commit": "c23fd49f80c7d1c74ca3393b6079a74f251a72d8"
+      },
+      "main_delivery": {
+        "status": "not_delivered",
+        "pull_request": null,
+        "merge_commit": null
+      },
+      "external_gate": {
+        "status": "success",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": "022411b05924618cfde0cb97b8c8aff4955e6013",
+        "notes": "This exact-head success authorized stack acceptance, not delivery to main."
+      }
+    },
+    "M3": {
+      "implementation": {
+        "status": "complete",
+        "commit": "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
+        "evidence": "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-repo-explorer.md"
+      },
+      "review": {
+        "status": "passed",
+        "commit": "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
+        "evidence": ["engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-architect.md"]
+      },
+      "stack_integration": {
+        "status": "merged",
+        "base_branch": "milestone/m2-executable-architecture",
+        "pull_request": 11,
+        "merge_commit": "67714a1f1b87effcfabe55d5ca2770d0a68d17c1"
+      },
+      "main_delivery": {
+        "status": "not_delivered",
+        "pull_request": null,
+        "merge_commit": null
+      },
+      "external_gate": {
+        "status": "success",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
+        "notes": "This exact-head success authorized stack acceptance, not delivery to main."
+      }
+    },
+    "M4": {
+      "implementation": {
+        "status": "complete",
+        "commit": "cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06",
+        "evidence": "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-integration-architect.md",
+        "notes": "This commit is local-only and two commits ahead of the published PR head."
+      },
+      "review": {
+        "status": "stale",
+        "commit": "f82134de35e531a8b3bbf235ad480254ba40f1fe",
+        "evidence": ["engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-docs-researcher.md"],
+        "notes": "Five reviews covered the product head; later local verifier commits do not have a complete fresh review set."
+      },
+      "stack_integration": {
+        "status": "open",
+        "base_branch": "milestone/m2-executable-architecture",
+        "pull_request": 17,
+        "remote_head": "8e6504168462bbabad359fec3d23838c87f5ba22",
+        "local_head": "cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06",
+        "merge_commit": null
+      },
+      "main_delivery": {
+        "status": "not_delivered",
+        "pull_request": null,
+        "merge_commit": null,
+        "notes": "Build a clean successor from current main after delivering the accepted predecessor stack."
+      },
+      "external_gate": {
+        "status": "failure",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": "8e6504168462bbabad359fec3d23838c87f5ba22",
+        "notes": "Published PR 17 failed Trust CI and GitGuardian; unpublished local fixes have no external authority."
+      }
+    },
+    "M5": {
+      "implementation": {"status": "not_started", "commit": null, "evidence": null},
+      "review": {"status": "not_reviewed", "commit": null, "evidence": []},
+      "stack_integration": {"status": "not_applicable", "base_branch": null, "pull_request": null, "merge_commit": null},
+      "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
+      "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
+    },
+    "M6": {
+      "implementation": {"status": "not_started", "commit": null, "evidence": null},
+      "review": {"status": "not_reviewed", "commit": null, "evidence": []},
+      "stack_integration": {"status": "not_applicable", "base_branch": null, "pull_request": null, "merge_commit": null},
+      "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
+      "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
+    },
+    "M7": {
+      "implementation": {"status": "not_started", "commit": null, "evidence": null},
+      "review": {"status": "not_reviewed", "commit": null, "evidence": []},
+      "stack_integration": {"status": "not_applicable", "base_branch": null, "pull_request": null, "merge_commit": null},
+      "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
+      "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
+    },
+    "M8": {
+      "implementation": {"status": "not_started", "commit": null, "evidence": "origin/milestone/a-plus-autopilot@90a5da294ec06e9fbbf8ea97d1c27c64484b9069 is design input only"},
+      "review": {"status": "not_reviewed", "commit": null, "evidence": []},
+      "stack_integration": {"status": "not_applicable", "base_branch": null, "pull_request": null, "merge_commit": null},
+      "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
+      "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
+    },
+    "M9": {
+      "implementation": {"status": "not_started", "commit": null, "evidence": null},
+      "review": {"status": "not_reviewed", "commit": null, "evidence": []},
+      "stack_integration": {"status": "not_applicable", "base_branch": null, "pull_request": null, "merge_commit": null},
+      "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
+      "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
     }
-  ],
-  "active_work": {
-    "pull_request": 8,
-    "branch": "milestone/m1-typed-intent-evidence",
-    "status": "design_and_plan_committed_implementation_not_started",
-    "design": "docs/superpowers/specs/2026-08-26-m1-typed-intent-evidence-design.md",
-    "plan": "docs/superpowers/plans/2026-08-26-m1-typed-intent-evidence.md",
-    "next_action": "Implement Task 1 from the M1 plan with TDD: strict typed schema and zero-dependency validator"
+  },
+  "work_inventory": {
+    "active": [
+      {
+        "route_id": "944abd96ddb3",
+        "branch": "chore/reconcile-milestone-state",
+        "purpose": "Publish one truthful repository-level milestone and delivery ledger."
+      },
+      {
+        "route_id": "944abd96ddb3",
+        "branch": "origin/milestone/m2-executable-architecture",
+        "head": "67714a1f1b87effcfabe55d5ca2770d0a68d17c1",
+        "purpose": "Accepted M2+M3 aggregate retained for clean current-main delivery."
+      },
+      {
+        "route_id": "944abd96ddb3",
+        "branch": "milestone/m4-durable-control-plane-accepted-m3",
+        "local_head": "cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06",
+        "purpose": "Source for a clean M4 successor after predecessor delivery."
+      }
+    ],
+    "open_pull_requests": [
+      {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "disposition": "Retain; rebase and obtain fresh governance approval/current-epoch check."},
+      {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "disposition": "Retain; restack after PR 12 and obtain fresh approval/check."},
+      {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "disposition": "Do not merge wholesale; replay the unique investor demo and packaging slice."},
+      {"pull_request": 17, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "milestone/m2-executable-architecture", "head": "8e6504168462bbabad359fec3d23838c87f5ba22", "status": "open_current_epoch_and_gitguardian_failure", "disposition": "Preserve as failed evidence; create and deliver a clean successor."},
+      {"pull_request": 19, "branch": "feature/seo-landing-codex-main", "base": "main", "head": "ecc85d903d0394f99a139fd4e74a7cc452e386c6", "status": "open_clean_current_epoch_success", "disposition": "Independent non-milestone delivery; success is eligibility, not delivery."}
+    ],
+    "retained_unresolved": [
+      {"pull_request": 14, "local_head": "cb2fe7ce637c464179e20b5b37aae334e56c1838", "purpose": "Unique closed production-promotion work requiring explicit re-evaluation."},
+      {"branch": "feature/workflow-artifact-adapters", "local_head": "dccaeec2a6b79c73663765f5909243e468e4b070", "purpose": "Local-only work requiring comparison before cleanup."},
+      {"branch": "origin/milestone/a-plus-autopilot", "head": "90a5da294ec06e9fbbf8ea97d1c27c64484b9069", "purpose": "Design-only reference; not M8 implementation."}
+    ],
+    "superseded": [
+      {"pull_request": 1, "branch": "hardening/trust-boundary-v2-1", "reason": "Closed Actions-era trust design; never merge."},
+      {"pull_request": 18, "branch": "feature/seo-landing-codex-side-project", "reason": "Stacked staging integration only; PR 19 is the main-delivery path."},
+      {"branches": ["feat/m4-durable-factory-control-plane", "milestone/m4-durable-control-plane-local", "fix/m3-restack-accepted-m2"], "reason": "Local aliases carry no accepted source beyond the named M2/M3/M4 evidence refs."}
+    ]
   },
   "trust_ci": {
-    "required_check": "adaptive-trust-ci/verified@6737355947c2",
+    "required_check": "adaptive-trust-ci/verified@06ecf1c875bc",
+    "policy_digest": "06ecf1c875bc12fa696956998983e04b102f28571a586bc3bb7a2fff5083fdb2",
     "github_app_id": 4694114,
     "protected_branch": "main",
+    "strict_up_to_date": true,
     "service_identity": "2.1.0",
     "no_github_actions": true,
     "source_directory": "trust-ci",
@@ -46,7 +267,7 @@
   "fresh_clone": {
     "active_route_may_be_absent": true,
     "must_fetch_remote_refs": true,
-    "continue_active_work_from_pull_request": true,
+    "continue_active_work_from_project_state": true,
     "chat_history_required": false
   },
   "intentionally_untracked": [
