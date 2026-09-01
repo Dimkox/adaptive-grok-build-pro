@@ -7,6 +7,11 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 **Symptom:** The browser contract could report `passed: true` and then exit nonzero with `ENOTEMPTY` during cleanup.
 **Root cause:** The source-only contract failed to execute the real Chrome child lifecycle, allowing immediate profile deletion while the child was still writing; its replacement execution test then omitted the optional-dependency availability boundary and mistook local host capabilities for the immutable Trust runner contract.
 
+## 2026-09-01 — Used branches as the milestone delivery ledger
+
+**Symptom:** Completed M1-M4 work accumulated across stacked branches while the repository handoff still said M1 had not started, causing M4 to be overlooked.
+**Root cause:** Isolated branches were allowed, but completed work was not consolidated back into one active route and repository-level state that separated stack integration from protected-main delivery.
+
 ## 2026-08-24 — Misread «приложуха» as a public website
 
 **Symptom:** Agents treated «приложуха» as a public website instead of GitHub App `https://github.com/apps/adaptive-trust-ci`.
