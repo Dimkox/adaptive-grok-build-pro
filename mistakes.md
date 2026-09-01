@@ -2,6 +2,16 @@
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-01 — Checked only the uncommitted diff for PR hygiene
+
+**Symptom:** Verification reported a clean diff while the committed PR range still contained trailing whitespace.
+**Root cause:** The default `git diff --check` inspected only working-tree changes, so committed-range hygiene escaped; PR evidence must also check `git diff --check origin/main...HEAD`.
+
+## 2026-09-01 — Replaced a review report through delete then add
+
+**Symptom:** An interrupted reviewer rewrite temporarily deleted an evidence report before its replacement was written.
+**Root cause:** Replacement was split into destructive delete/add operations instead of one atomic update; preserved reports must be updated in place with a single patch.
+
 ## 2026-09-01 — Browser runner lifecycle was not executed
 
 **Symptom:** The browser contract could report `passed: true` and then exit nonzero with `ENOTEMPTY` during cleanup.

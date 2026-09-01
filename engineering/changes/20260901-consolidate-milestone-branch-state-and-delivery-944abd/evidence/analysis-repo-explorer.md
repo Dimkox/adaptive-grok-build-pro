@@ -1,8 +1,8 @@
 # Repository and pull-request ancestry inventory
 
-Date: 2026-09-01 UTC  
-Route: `944abd96ddb3`  
-Repository: `Dimkox/adaptive-grok-build-pro`  
+Date: 2026-09-01 UTC
+Route: `944abd96ddb3`
+Repository: `Dimkox/adaptive-grok-build-pro`
 Mode: read-only inventory after `git fetch --all --prune`
 
 ## Executive finding

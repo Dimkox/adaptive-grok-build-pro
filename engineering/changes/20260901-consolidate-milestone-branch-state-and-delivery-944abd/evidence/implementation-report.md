@@ -24,7 +24,7 @@ python3 -m json.tool PROJECT_STATE.json
 git diff --check
 ```
 
-Result: 15/15 tests passed; the change spec and JSON parsed; tracked diff check passed. A separate whitespace scan excludes the four preserved analysis reports because their existing two-space Markdown hard breaks are evidence formatting, not implementation whitespace defects.
+Result at the original implementation boundary: 15/15 tests passed; the change spec and JSON parsed. The bare working-tree `git diff --check` result was insufficient evidence for the committed PR range; the review repair below supersedes that hygiene claim.
 
 ## Delivered source behavior
 
@@ -38,7 +38,14 @@ Result: 15/15 tests passed; the change spec and JSON parsed; tracked diff check 
 - Fetched and rebased onto `origin/main` `8ab4e57038dec2e07f01aaa0b207813a387358f4`; the only conflict was `mistakes.md`, resolved by retaining both the delivered SEO branch's Chrome/optional-dependency lesson and this route's state-consolidation lesson.
 - `PROJECT_STATE.json`, README, and `START_HERE.md` now record PR #19 as delivered non-milestone work at its exact merge commit, remove it from the open continuation set, and retain every other active/open/unresolved/superseded source.
 - RED: two focused state/inventory tests failed because the snapshot still named main `1c06299894279a88b881defa3f19b004fa742223` and still listed PR #19 as open; the handoff consistency test then failed because current sections did not contain `8ab4e57038dec2e07f01aaa0b207813a387358f4`.
-- GREEN: the three focused regression tests passed, followed by `python3 -m unittest -v tests.test_project_state tests.test_seo_landing_side_project tests.test_structure` (26/26), change-spec validation, JSON parsing, and `git diff --check`.
+- GREEN at that boundary: the three focused regression tests passed, followed by `python3 -m unittest -v tests.test_project_state tests.test_seo_landing_side_project tests.test_structure` (26/26), change-spec validation, JSON parsing, and working-tree `git diff --check`. Exact candidate-range hygiene was added in the review repair.
+
+## Blocking test-review repair
+
+- RED: adversarial mutations of PR #17 base/head/status, M2/M3 commit evidence, and the Mermaid `GitHubApp` identity all passed the former assertions; the three new rejection tests therefore failed with “AssertionError not raised.”
+- GREEN: literal milestone/inventory facts, local Git object/ancestry checks, and role-table-bound canonical graph identities reject those mutations. The focused state/structure/SEO suite passed 31/31; the full local suite passed 219/219; focused Ruff, change-spec validation, and JSON parsing passed.
+- Exact-range defect: the former committed range exposed eight trailing-space lines across three historical analysis reports. Only those spaces were removed; the fourth report received only the separately reviewed absolute-path-to-repository-relative wording repair.
+- Candidate hygiene: after staging the uncommitted repair, `git diff --check`, `git diff --cached --check origin/main`, and `git diff --check origin/main` pass. As required by the no-commit boundary, `origin/main...HEAD` still names the pre-repair commit and continues to reproduce the old failure until the staged candidate is committed; no exact-HEAD PASS is claimed.
 
 ## Remaining gates
 

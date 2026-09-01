@@ -1,8 +1,8 @@
 # Integration architecture review — one route, no branch loss
 
-Route: `944abd96ddb3`  
-Repository: `Dimkox/adaptive-grok-build-pro`  
-Observation: 2026-09-01 after `git fetch --all --prune`  
+Route: `944abd96ddb3`
+Repository: `Dimkox/adaptive-grok-build-pro`
+Observation: 2026-09-01 after `git fetch --all --prune`
 Observed protected base: `origin/main@1c06299894279a88b881defa3f19b004fa742223`
 
 ## Verdict
