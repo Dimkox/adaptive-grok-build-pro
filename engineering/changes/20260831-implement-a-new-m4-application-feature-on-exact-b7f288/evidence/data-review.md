@@ -1,99 +1,76 @@
-# Data re-review — fix HEAD `4230dc8e73bcf4dfcf6c60d294d379d44a30c698`
+# Final data re-review — exact HEAD `83e6b0d0c29e813932aa29b0d72ac4d85d27df7b`
 
 ## Binding and verdict
 
 - Route: `b7f288f1e81e`
-- Base SHA: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-- Prior failing HEAD: `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`
-- Reviewed fix HEAD: `4230dc8e73bcf4dfcf6c60d294d379d44a30c698`
-- Fix range: `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06..4230dc8e73bcf4dfcf6c60d294d379d44a30c698`
-- Supplied verifier result: PASS, fingerprint `0092b4cd8152eb7919c94c610e66c7a4d71ad46382f1c5db852df41af0ac8789`
+- Accepted base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
+- Prior fix HEAD: `4230dc8e73bcf4dfcf6c60d294d379d44a30c698`
+- Reviewed product HEAD: `83e6b0d0c29e813932aa29b0d72ac4d85d27df7b`
+- Focused range: `4230dc8e73bcf4dfcf6c60d294d379d44a30c698..83e6b0d0c29e813932aa29b0d72ac4d85d27df7b`
+- Supplied verifier result: PASS, fingerprint `9a9dd64921cc5edf8889330b79732016c0235cc37e4a27c712a05128b3659746`
 - Review role: route-selected read-only `data_reviewer`
 - Verdict: **FAIL**
 
-The three prior findings are repaired for newly created supported state: failed runs with live reservations move to accounting recovery rather than retry, reconciliation now takes capacity before task/run locks, and migration 009 adds predicate-compatible task-history indexes. However, three Important data/recovery findings remain. No Critical finding was found.
+The authority, mandatory-cleanup, current retry/completion, lock-order and index repairs are effective. Two Important schema-008 forward-recovery findings remain. No Critical finding was found.
 
 ## Findings
 
-### Important — `FOR KEY SHARE` does not serialize authority revocation with accepted intake
+### Important — schema-008 blocked retry state is not quarantined and permanently fails readiness
 
-Migration 009's security-definer authority functions select the matching observation/exception `FOR KEY SHARE` (`factory/src/adaptive_factory/resources/009_authority_audit_and_history_indexes.sql:32-60`). Intake invokes the function inside its insertion transaction after the source-identity advisory lock (`factory/src/adaptive_factory/store.py:254-262`). PostgreSQL non-key updates take a `FOR NO KEY UPDATE` row lock, which is compatible with `FOR KEY SHARE`; setting `revoked_at` is therefore not blocked by the supposed validation lock.
+Migration 010 quarantines a `queued`/`retry` task only when it has an active reservation or nonzero reserved aggregate (`factory/src/adaptive_factory/resources/010_authority_accounting_and_cleanup.sql:41-70`). It omits `task.accounting_blocked=true` from both update predicates. Readiness independently rejects every claimable blocked task (`factory/src/adaptive_factory/store.py:80-93`), while claim correctly excludes it (`factory/src/adaptive_factory/store.py:513-520`). There is no supported runtime path that converts this pre-existing retry projection to explicit accounting recovery.
 
-A deterministic PostgreSQL 17 probe paused intake immediately after `_verify_m0_authority()` returned true, updated and committed `revoked_at` on a second connection, then allowed intake to continue:
-
-```text
-authority_revocation_seconds=0.028
-intake_result=[('accepted', '<task-id>')]
-revoked_and_tasks=(True, 1)
-thread_alive=False
-```
-
-The checked-in revocation test does not exercise this interleaving: it blocks intake on the source advisory lock and commits revocation before authority validation (`factory/tests/test_postgres_integration.py:165-179`). The implementation ledger's claim that authority rows are locked against concurrent revocation is therefore false, and an intake can commit after its authority has been revoked.
-
-Required repair: use a row lock that conflicts with a `revoked_at` update (`FOR SHARE` or stronger), or require revocation and validation to use the same explicit advisory/row-lock protocol. Add a two-connection regression that pauses after successful validation, proves revocation cannot commit ahead of the intake linearization point, and then proves later intake fails.
-
-### Important — migration 009 leaves pre-009 unresolved reservations claimable
-
-The runtime repair correctly checks the failed current run for active reservations and moves it to `needs_human` with `accounting_blocked=true` (`factory/src/adaptive_factory/store.py:659-670`); completion also checks all task reservations and aggregate reserved counters (`factory/src/adaptive_factory/store.py:675-686`). Migration 009, however, contains no data validation/backfill for schema-008 tasks already left in `queued`/`retry` with an unresolved prior-run reservation (`factory/src/adaptive_factory/resources/009_authority_audit_and_history_indexes.sql:1-67`). Claim still admits any `queued`/`retry` task whose projection flag is false, without checking active reservations (`factory/src/adaptive_factory/store.py:481-484`).
-
-A representative schema-008 database was seeded with exactly the state the prior implementation could commit: attempt 1 failed, its full reservation remained active, the task was `retry`, and `accounting_blocked=false`. After applying packaged migration 009, the normal runtime claim succeeded:
+This state is reachable in schema 008: missing/invalid pricing marks the leased task accounting-blocked, and a subsequent retryable release with no live reservation could persist `retry`, zero reserved counters and `accounting_blocked=true`. An independent PostgreSQL 17 probe built a non-empty schema-008 database with that state, applied exact packaged migrations 009 and 010, then connected through the runtime store:
 
 ```text
-legacy_reservation_post_009_grant=('<task-id>', 2)
-task_row=('leased', False, 25000000, 1)
+legacy_blocked_after_010=('retry', True, 0, 0, 0)
+readiness={'status': 'not_ready', 'schema_version': 10,
+           'capacity_consistent': True, 'accounting_consistent': False}
 ```
 
-Completion will now fail later, but missing accounting did not block work or retry as required. This is an upgrade/restart safety defect in the forward-only migration path.
+The claim defense prevents unsafe work, but the documented rollout cannot reach readiness and the migration has not provided bounded forward recovery. Direct owner mutation would be an undocumented security-sensitive recovery step.
 
-Required repair: in a forward migration, quarantine every nonterminal task with active reservations/aggregate disagreement before it is claimable, or add a database-backed `NOT EXISTS` reservation guard to claim plus a bounded reconciliation path. The migration must preserve immutable reservation/audit evidence and include a real 008 -> current upgrade regression with representative unresolved accounting.
+Required repair: add a forward migration that quarantines every claimable `queued`/`retry` row with `accounting_blocked=true`, including zero-reservation/zero-aggregate rows, while preserving accounting and audit evidence. Add a real 008-to-current regression proving `needs_human`, ready service status, no claim, and idempotent re-application/restart behavior.
 
-### Important — exhausting a valid event budget prevents every supported lease-recovery path
+### Important — schema-008 positive terminal tasks can retain live prior-attempt reservations while readiness reports ready
 
-The closed contract accepts `max_events` values from zero through 100,000 (`factory/src/adaptive_factory/contracts.py:174-196`). `_event()` raises once the persisted sequence reaches that limit (`factory/src/adaptive_factory/store.py:175-199`). Lease release, reconciliation and cancellation perform cleanup and then append a task event in the same transaction; event exhaustion rolls the whole transaction back (`factory/src/adaptive_factory/store.py:648-718,954-1004,1006-1024`).
+The original cross-attempt bug could progress farther than `retry`: schema 008 completion checked active reservations only for the completing run, not the whole task. A reservation left live by attempt 1 could therefore survive attempt 2 completion and commit the positive terminal state `ready_for_human`. Migration 010 limits both quarantine updates to `state IN ('queued','retry')` (`010_authority_accounting_and_cleanup.sql:55,65`), and `_accounting_consistent()` uses the same state restriction (`store.py:83-91`). The current completion guard prevents new instances, but neither migration nor readiness repairs or exposes already durable instances.
 
-The new checked-in boundary test explicitly accepts the stuck behavior after intake and claim consume a limit of two (`factory/tests/test_postgres_integration.py:716-733`). An independent probe then expired that lease and attempted all supported recovery paths:
+An independent PostgreSQL 17 probe constructed the exact producible schema-008 history: failed released attempt 1 with an active reservation and nonzero task aggregates, completed attempt 2 with usage, and task state `ready_for_human`. After applying migrations 009 and 010:
 
 ```text
-release   -> BudgetError: event budget exceeded
-reconcile -> BudgetError: event budget exceeded
-cancel    -> BudgetError: event budget exceeded
-task_row=('leased', live_allocations=1, task_events=2)
+applied_versions=[9, 10]
+legacy_ready_after_010=('ready_for_human', False, 500, 600, 700, 1)
+readiness={'status': 'ready', 'schema_version': 10,
+           'capacity_consistent': True, 'accounting_consistent': True}
 ```
 
-The run, allocation and global/repository capacity remain live indefinitely; restart reconciliation cannot recover them. This violates bounded recovery and lets a valid intake limit permanently consume scheduler capacity.
+This is a false positive at M4's sole successful endpoint: unresolved reserved budget survives upgrade and restart, yet the service advertises ready. The checked-in upgrade regression seeds only `retry`, so its PASS cannot cover the original bug's terminal outcome.
 
-Required repair: ensure safety cleanup cannot be rolled back by an exhausted business-event allowance. Options include reserving mandatory lifecycle capacity, enforcing a sufficient lower bound derived from the permitted lifecycle, or using a separate non-exhaustible bounded recovery/audit fact. Replace the test's expected stuck lease with successful capacity release and idempotent repeated recovery.
+Required repair: make the forward migration and readiness invariant account for active reservations/aggregate disagreement in legacy positive terminal projections. The repair must preserve run/reservation/usage history and handle active-generation uniqueness when selecting an evidence-preserving exception state. Add a real 008-to-current regression for the two-attempt `ready_for_human` history and prove the unsafe positive endpoint cannot survive or be reported ready.
 
-## Prior findings rechecked
+## Original and residual findings rechecked
 
-### Repaired — cross-attempt accounting on newly executed failure paths
+- **Authority TOCTOU closed:** migration 010 replaces both fixed-search-path `SECURITY DEFINER` validators with `FOR SHARE`, which conflicts with the non-key `revoked_at` update. PostgreSQL tests cover observation and exception forms with revocation before validation (intake rejected) and after validation (revoker waits through intake commit, later intake rejected). PUBLIC execute remains revoked and runtime receives only the explicit execute grants (`010_authority_accounting_and_cleanup.sql:1-36`; `factory/tests/test_postgres_integration.py:235-316`).
+- **Claim defense and current accounting closed:** claim now requires unblocked zero aggregates and no active task reservation. Failure with an active current reservation goes to `needs_human`; completion checks every active task reservation and all reserved aggregates. The checked-in non-empty 008 upgrade correctly quarantines its seeded active-reservation `retry` row. The incomplete historical state coverage is limited to the two findings above (`store.py:513-520,697-725`; integration test lines 960-1098).
+- **Exhausted event cleanup closed:** ordinary events are counted separately from `mandatory_cleanup` facts. Release converts an exhausted retry to `needs_human`; release, expired-run reconciliation and cancel close run/allocation/counters once and append both a mandatory event and hash-chained audit in the same transaction. Exact replay/no-op checks pass (`store.py:192-231,622-647,729-759,1048-1068`; integration test lines 840-955).
+- **Lock ordering closed:** reconcile, cancel, supersede and release acquire canonical capacity locks before task/run locks. The reproduced reconcile/cancel interleaving now completes without deadlock or double release (`store.py:590-620,1008-1041`; integration test lines 1190-1230).
+- **Task-scoped indexes closed:** migrations retain predicate-compatible `audit_log_task_order`, `usage_observations_task_run`, `budget_reservations_task_run_active`, claim and reconciliation indexes. The populated `EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` regression requires the named indexes and passed (`009_authority_audit_and_history_indexes.sql:25-30`; integration test lines 1232-1275).
 
-An active reservation on the failing current run now forces `needs_human` and `accounting_blocked`, and no retry claim is available. Completion checks every active task reservation plus cost/token/wall aggregate counters. The focused real-PostgreSQL regression and the full exit suite pass (`factory/tests/test_postgres_integration.py:772-797`). The remaining blocker is migration of already durable schema-008 state, described above.
+## Migration, roles, audit and restart assessment
 
-### Repaired — reconcile/cancel lock order
-
-Reconciliation now calls `capacity_lock_run()` before `SELECT ... tasks ... FOR UPDATE` (`factory/src/adaptive_factory/store.py:978-990`), matching cancel/supersede/release's capacity-before-task order. The two-connection regression completed cancel and reconciliation without `40P01`, timeout or double release (`factory/tests/test_postgres_integration.py:886-913`).
-
-### Repaired — task-history index compatibility
-
-Migration 009 adds valid/ready indexes for audit order, task/run usage, active reservations and expired-run lookup (`factory/src/adaptive_factory/resources/009_authority_audit_and_history_indexes.sql:25-30`). `audit_log_task_order` was selected with default planner settings in retained-history data; the usage/reservation/reconciliation indexes are predicate-compatible and selected by the checked-in plan-shape regression. The original missing-index defect no longer remains Important.
-
-## Migration, roles, audit and recovery evidence
-
-- Packaged migrations are contiguous `001..009`. Versions 001-008 retain their prior SHA-256 values; the applied and packaged migration-009 checksum matched `2e37378af506bf18ab11705430b6876136ac3918d3d1e5699e7d63848b946e6a`.
-- A non-empty schema-008 upgrade applied only migration 009 atomically. A seeded legacy audit-v1 chain remained verifiable with `digest_version=1`; new audit rows use v2 and bind task, run and correlation identity (`factory/src/adaptive_factory/store.py:201-252,398-438`).
-- Legacy M0 rows acquire null repository/policy bindings and therefore fail closed until explicitly reprovisioned. The new functions are `SECURITY DEFINER`, have fixed `search_path=pg_catalog,factory`, deny PUBLIC execute and grant runtime execute. Their lock strength remains the finding above.
-- Runtime still cannot directly mutate capacity policy/allocation or update/delete audit, and the 20/10/1 capacity functions remain fixed-search-path capabilities.
-- Migration 009 is additive and recovery documentation remains forward-only (`010+`) with preserved audit/backup comparison. The unresolved-reservation upgrade gap and event-exhaustion recovery gap prevent a PASS.
+- Packaged migrations are contiguous `001..010`; the planner rejects non-contiguous history, missing package history and checksum drift. Migrations 001-009 are unchanged in the focused range; packaged migration 009 still hashes to `2e37378af506bf18ab11705430b6876136ac3918d3d1e5699e7d63848b946e6a`. Migration 010 is additive/forward-only and applies atomically under the migrator advisory lock and five-second transaction limits.
+- Migration 010's new event column inherits the established table privileges. Runtime still cannot update/delete append-only audit/events, mutate capacity policy/counters directly, release allocations directly, or access the separate `trust_ci` schema. The disposable effective-role and shipped bootstrap tests passed.
+- Audit v1 history remains verifiable; all new v2 rows bind task/run/correlation identity. Mandatory cleanup includes the event and v2 audit fact transactionally. Capacity release remains capability-shaped, lock ordered, underflow checked and exactly once.
+- Actual PostgreSQL restart evidence passed: one expired lease repair, zero-repair replay, higher fence and late-holder rejection. The remaining defects are migration/readiness coverage of already durable schema-008 accounting state, not volatile restart state.
 
 ## Verification evidence
 
-- `git diff --check cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06..4230dc8e73bcf4dfcf6c60d294d379d44a30c698` — PASS.
-- `python3 factory/tests/run_disposable_exit.py` — PASS: 59/59 tests, effective roles, actual PostgreSQL restart, one repair, zero-repair replay, higher fence and late-holder rejection.
-- Focused indexed-plan test — PASS; all four migration-009 indexes were valid and ready.
-- Independent authority, 008 -> 009 unresolved-accounting, and exhausted-event recovery probes — FAIL as detailed above.
-- The exact disposable container `adaptive-factory-data-rereview-4230dc8` and temporary environment were removed after review. No shared, Trust CI, external or production database was read or mutated.
+- `git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..83e6b0d0c29e813932aa29b0d72ac4d85d27df7b` — PASS.
+- `python3 factory/tests/run_disposable_exit.py` — PASS: 63/63 tests in 33.968s, effective roles, both authority forms/interleavings, accounting/retry boundaries, exhausted-event release/reconcile/cancel, deadlock regression, indexed plans, actual PostgreSQL restart and reconciliation.
+- Independent non-empty 008-to-010 blocked-retry probe — FAIL as described above.
+- Independent non-empty 008-to-010 two-attempt positive-terminal reservation probe — FAIL as described above.
+- The exact disposable container `adaptive-factory-data-final-83e6b0d` and temporary environment were removed after review. No shared, external, Trust CI or production database was read or mutated.
 
 No product file, commit or review receipt was changed. Only this report was overwritten.
 
-**Final data-review result: FAIL for exact fix HEAD `4230dc8e73bcf4dfcf6c60d294d379d44a30c698`.**
+**Final data-review result: FAIL for exact product HEAD `83e6b0d0c29e813932aa29b0d72ac4d85d27df7b`.**
