@@ -1,4 +1,4 @@
-# Independent final test re-review — hardened milestone state reconciliation
+# Independent final test re-review — isolated-checkout-safe state reconciliation
 
 ## Verdict
 
@@ -6,13 +6,13 @@
 
 - Route: `944abd96ddb3`
 - Base: `origin/main` / `8ab4e57038dec2e07f01aaa0b207813a387358f4`
-- Reviewed HEAD: `e9000559be5e3f23f1069c625c3a5d7b943c362d`
-- Reviewed range: `origin/main...e9000559be5e3f23f1069c625c3a5d7b943c362d`
-- Verification receipt fingerprint: `6528a20c4491d434409212b780db61766c814d73ae73cab2814306b1acba64a0`
+- Reviewed HEAD: `fd72d4528b8b73560babd259773568b9712e75e2`
+- Reviewed range: `origin/main...fd72d4528b8b73560babd259773568b9712e75e2`
+- Verification receipt fingerprint: `3493a00f88d3c3c1fa218884991eef5ee9267675cad59948b37736ede3340acf`
 - Critical findings: none
 - Important findings: none
 
-The checked-in snapshot agrees with the independently audited GitHub and local ref evidence. All three prior Important findings are closed: exact inventory/SHA and ancestry mutations are rejected, graph identity is canonical and role-table-bound, and the literal committed PR range passes `git diff --check`.
+The checked-in snapshot agrees with the independently audited GitHub and local ref evidence. Exact inventory/SHA and parent-proof mutations are rejected without requiring unreachable developer-ref objects, graph identity remains canonical and role-table-bound, and the literal committed PR range passes `git diff --check`.
 
 ## Resolved findings
 
@@ -28,7 +28,31 @@ test_adversarial_m2_m3_commits_are_rejected ... ok
 test_adversarial_m2_m3_ancestry_is_rejected ... ok
 ```
 
-The ancestry test additionally requires the named commit objects to exist, proves M2/M3 source ancestry into the recorded stack merge commits, and proves those stack commits are not ancestors of observed main. This directly protects stack integration versus main delivery and exact-head authority.
+The mandatory self-contained test now binds the exact ordered merge-parent pairs for PR #10/M2 and PR #11/M3, requires M1's integration record to agree with M2, and ties the recorded parents back to the milestone implementation commits. Its adversarial parent mutation is rejected. Local Git corroboration additionally checks actual merge parents and absence from main only when every named object is already present; it neither fetches nor fails an isolated checkout merely because developer-only remote objects are unavailable.
+
+### Isolated single-branch behavior — PASS
+
+A fresh disposable clone was created with:
+
+```text
+git clone --no-local --single-branch --branch chore/reconcile-milestone-state <source> <clone>
+```
+
+The clone was bound to exact head `fd72d4528b8b73560babd259773568b9712e75e2`. As in the external Trust runner, the formerly mandatory M2 object was absent:
+
+```text
+git cat-file -e 022411b05924618cfde0cb97b8c8aff4955e6013^{commit}
+exit 128
+```
+
+Despite that intentional object absence, the complete mandatory state suite passed:
+
+```text
+python3 -m unittest tests.test_project_state -v
+Ran 10 tests in 0.013s — OK
+```
+
+The self-contained parent proof and its mutation regression both executed as `ok`; the optional local corroboration also completed without fetching or failing. The disposable clones were removed after the check.
 
 ### Resolved — graph topology, node identity, and role-table identity are exact
 
@@ -59,25 +83,25 @@ The previously reported evidence-file trailing whitespace has been removed. The 
 
 ```text
 python3 -m unittest tests.test_project_state tests.test_structure -v
-Ran 20 tests in 0.142s — OK
+Ran 21 tests in 0.088s — OK
 ```
 
-All nine state tests and eleven structure tests passed. A separate run of the four adversarial regression methods completed in 0.022s with all four `ok`.
+All ten state tests and eleven structure tests passed. A separate targeted run of the self-contained proof, its ancestry mutation, and local corroboration completed with all three `ok`.
 
 ### Full verifier receipt — PASS
 
 Receipt `.grok-stack/runtime/receipts/944abd96ddb3/verification.json`:
 
 ```text
-created_at: 2026-09-01T19:14:27+00:00
+created_at: 2026-09-01T19:30:49+00:00
 status: pass
-tree_fingerprint: 6528a20c4491d434409212b780db61766c814d73ae73cab2814306b1acba64a0
+tree_fingerprint: 3493a00f88d3c3c1fa218884991eef5ee9267675cad59948b37736ede3340acf
 profiles: base, integration, infra
-python-unittest: Ran 219 tests in 45.667s — OK
+python-unittest: Ran 220 tests in 49.426s — OK
 git-diff-check / ruff / bandit / coverage / secret-scan / contract-structure / sql-safety: PASS
 ```
 
-Before this report write, `grok_status.py` accepted verification as current and reported only the three review receipts missing.
+The receipt is a genuine PASS for the exact pre-review product/evidence tree. `grok_status.py` currently labels the three review receipts stale after the subsequent review-record commit; the parent must refresh fingerprint-bound review/verification evidence after this report is finalized.
 
 ### Live GitHub, epoch, App, and PR state — PASS at review time
 
