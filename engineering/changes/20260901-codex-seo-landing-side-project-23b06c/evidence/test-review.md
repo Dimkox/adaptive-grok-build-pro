@@ -1,87 +1,84 @@
-# Independent test review — Phase C doc-only final acknowledgment
+# Independent test re-review — browser lifecycle fix
 
 ## Verdict
 
 **PASS**
 
 - Route: `23b06c1b62a3`
-- Git HEAD / implementation base: `7c61e3b647924e5667d171d8b286e5d79b8a4efe`
-- Reviewed state: uncommitted implementation tree
-- Pre-report tree fingerprint: `3448662aa259794be75b1f1179a0ab31478a5b89270a97d56b155eec5bdfb305`
+- Base: `origin/main` / `1c06299894279a88b881defa3f19b004fa742223`
+- Git HEAD: `fa374bba0aed6d2f257f407f652d91ee51150a84`
+- Reviewed implementation: that HEAD plus the current uncommitted browser-lifecycle hotfix and its evidence updates
+- Pre-report verifier fingerprint: `37569de867bffa3cb772a402b739720df9e91c66d9f20358b7dcf1add1ea184e`
 - Critical findings: none
 - Important findings: none
 
-The two prior false-positive gaps are repaired. The exact adversarial samples are now regression-tested and rejected, the nine focused contracts pass, and the current pre-review verifier receipt is PASS. Per the review sequencing instruction, the parent will refresh verification after both review reports are finalized; this report write is therefore not treated as a verifier failure.
+The prior `ENOTEMPTY` failure is fixed. The implementation now waits for Chrome to exit before deleting its profile, has bounded escalation and cleanup retries, and is covered by a real Node/Chrome subprocess regression that asserts both contract success and process exit 0.
 
-## Reproduced regression evidence
+## Prior Important finding — resolved
 
-### Mixed-clause audit-write guard — PASS
+### Bounded process and profile cleanup — PASS
 
-`tests/test_seo_landing_side_project.py:23-42` now evaluates semantic clauses rather than exempting an entire line because another clause contains a negation. Direct execution produced:
+`side-projects/seo-landing-showcase/browser-contract.mjs:79-107` now:
+
+1. detects an already-exited child;
+2. sends `SIGTERM` and waits at most 3 seconds;
+3. escalates to `SIGKILL` and waits at most another 3 seconds;
+4. fails explicitly if Chrome still does not exit;
+5. deletes only the guarded `seo-landing-browser-contract-*` temp profile with five retries and 100 ms retry delay;
+6. awaits cleanup from the top-level `finally` block.
+
+This removes the original kill/delete race without swallowing cleanup failure or introducing an unbounded wait.
+
+### Honest execution-level regression — PASS
+
+`tests/test_seo_landing_side_project.py:200-245` launches a real Python HTTP server on an ephemeral loopback port and invokes the checked-in runner with actual Node and `/usr/bin/google-chrome`. It independently asserts:
+
+- `browser-contract.json` was created;
+- parsed `passed` is true;
+- subprocess return code is exactly 0;
+- the server is terminated and awaited in `finally`.
+
+I ran this single lifecycle regression twice consecutively:
 
 ```text
-Do not invent findings; create a project file with the evidence.
-=> ['create a project file with the evidence.']
-
-Never fabricate scores, then save the report to audit.md.
-=> ['save the report to audit.md.']
+run 1: Ran 1 test in 2.571s — OK
+run 2: Ran 1 test in 1.729s — OK
 ```
 
-`test_mixed_clause_write_instructions_are_rejected` contains both exact mutations. The unchanged audit-only section still has no detected positive write instruction, explicitly prohibits file creation/modification, and retains the required missing-input, stop-before-validation/report, and fix-preservation boundaries.
+The set of `/tmp/seo-landing-browser-contract-*` directories was identical before and after both runs: neither execution leaked its profile. The later focused-suite execution also passed the same real lifecycle test.
 
-### External stylesheet/icon guard — PASS
-
-`tests/test_seo_landing_side_project.py:45-65` now extracts every `<link href>` in addition to the existing element attributes, `srcset`, CSS `@import`, and CSS `url()` cases. Direct execution produced:
-
-```text
-<link rel="stylesheet" href="https://evil.example/x.css">
-=> ['https://evil.example/x.css']
-
-<link rel="icon" href="https://evil.example/favicon.ico">
-=> ['https://evil.example/favicon.ico']
-```
-
-Both exact mutations are checked in `test_external_runtime_resource_mutations_are_rejected`, alongside preload, image/srcset, iframe, video, source, object, script, CSS import, and CSS URL mutations. The current showcase itself returns no external runtime URL.
-
-## Commands and results
+## Verification
 
 ### Focused contracts — PASS
 
 ```text
 python3 -m unittest tests.test_seo_landing_side_project -v
-Ran 9 tests in 0.013s — OK
+Ran 10 tests in 1.987s — OK
 ```
 
-All nine discovered test methods ran, including the two new regression methods; no skipped or expected-failure result was present. The exact helper calls above additionally ended with `exact_adversarial_samples=PASS`.
+All ten methods ran without skips or expected failures. This includes the real browser lifecycle regression plus the prior exact package inventory, mode/write boundary, mixed-clause write mutation, external stylesheet/icon/resource mutation, provenance, noindex, accessibility-source, and browser-source contracts.
 
-### Current verifier — PASS
+### Full verifier — PASS
 
-Receipt: `.grok-stack/runtime/receipts/23b06c1b62a3/verification.json`
+Receipt `.grok-stack/runtime/receipts/23b06c1b62a3/verification.json`:
 
 ```text
-created_at: 2026-09-01T17:12:36+00:00
+created_at: 2026-09-01T17:34:47+00:00
 status: pass
-tree_fingerprint: ba2bc9e4fe4d7bbdab86cd123f4d5743673e5133f638fec90d9a38265c3c0e11
-python-unittest: Ran 208 tests in 48.968s — OK
-ruff: PASS
-bandit: PASS
-coverage: PASS
+tree_fingerprint: 37569de867bffa3cb772a402b739720df9e91c66d9f20358b7dcf1add1ea184e
+python-unittest: Ran 209 tests in 45.250s — OK
 ```
 
-Before this report write, `python3 scripts/grok_status.py` reported no verification gap; only the not-yet-recorded code-review and test-review receipts remained.
+All other selected checks are PASS. Before this report write, `python3 scripts/grok_status.py` accepted verification as current and reported only the two review receipts as outstanding. The parent must refresh/record final fingerprint-bound receipts after review reports are finalized.
 
-### Final frontend evidence — PASS
+## Retained frontend evidence applicability — PASS
 
-- `browser-contract.json`: `passed: true`; 320, 768, 1280, and 1920 px all report no overflow, reduced motion true, and computed scroll behavior `auto`. The retained report also records a visible first-Tab skip link to `#content` with a solid 3 px outline.
-- `w3c-nu.json`: 0 messages and 0 errors.
-- Lighthouse 13.4.1 final runs independently parse as `100/100/96/60`, `100/100/96/60`, and `100/100/96/60`; LCP values are 901.8472, 901.5387, and 901.5505 ms, with CLS 0 and TBT 0 in every run.
-- The `label-content-name-mismatch` audit is `notApplicable` with no failing items in all three final runs. The accessibility category is 100. SEO 60 remains honestly attributed to intentional `noindex`; accessibility 100 remains described as automated lab evidence, not WCAG certification.
+The hotfix changes only Chrome shutdown/profile cleanup and adds its subprocess regression; it does not change `index.html`, `styles.css`, the browser assertions, screenshots, W3C JSON, or Lighthouse JSON.
+
+- `browser-contract.json` remains `passed: true`: no overflow at 320/768/1280/1920, reduced motion true, scroll behavior `auto`, and a visible first-Tab skip link to `#content` with a solid 3 px outline.
+- W3C remains 0 messages / 0 errors.
+- Lighthouse 13.4.1 remains 100 Performance, 100 Accessibility, 96 Best Practices, and 60 SEO in all three runs; LCP values are 901.8472, 901.5387, and 901.5505 ms, with CLS and TBT 0. `label-content-name-mismatch` is not applicable in all final runs.
+- The report continues to disclose that SEO 60 is caused by intentional `noindex` and that automated Accessibility 100 is not WCAG certification.
 - `git diff --check`: PASS.
 
-## Doc-only correction acknowledgment — PASS
-
-The only changes since the preceding PASS report are count-only markdown corrections in `release.md`, `test-plan.md`, and `evidence/showcase/validation-report.md`. All three now state 9 focused tests and 208 full-suite tests, matching the Phase C focused run and current verifier evidence. No HTML, CSS, browser runner, test implementation, JSON evidence, or screenshot changed.
-
-The retained frontend metrics are unchanged: Lighthouse medians remain Performance 100, Accessibility 100, Best Practices 96, SEO 60, LCP 901.6 ms, CLS 0, and TBT 0 ms; W3C remains 0/0; browser contract remains `passed: true` at all four viewports. No full rerun was needed for these documentation-only corrections.
-
-No product file was modified. This report is the only review-owned write.
+No product file was modified by this reviewer. This report is the only review-owned write.

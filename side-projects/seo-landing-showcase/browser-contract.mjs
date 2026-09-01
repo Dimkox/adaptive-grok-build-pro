@@ -76,10 +76,34 @@ async function launchChrome() {
   throw new Error("Timed out waiting for Chrome DevTools Protocol");
 }
 
-function stopChrome() {
-  if (chromeProcess && chromeProcess.exitCode === null) chromeProcess.kill("SIGTERM");
+function waitForExit(child, timeoutMs) {
+  if (child.exitCode !== null || child.signalCode !== null) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    let timer;
+    const onExit = () => {
+      clearTimeout(timer);
+      child.off("exit", onExit);
+      resolve(true);
+    };
+    child.once("exit", onExit);
+    timer = setTimeout(() => {
+      child.off("exit", onExit);
+      resolve(false);
+    }, timeoutMs);
+    if (child.exitCode !== null || child.signalCode !== null) onExit();
+  });
+}
+
+async function stopChrome() {
+  if (chromeProcess && chromeProcess.exitCode === null && chromeProcess.signalCode === null) {
+    chromeProcess.kill("SIGTERM");
+    if (!await waitForExit(chromeProcess, 3000)) {
+      chromeProcess.kill("SIGKILL");
+      if (!await waitForExit(chromeProcess, 3000)) throw new Error("Chrome did not exit after SIGKILL");
+    }
+  }
   if (chromeProfile && chromeProfile.startsWith(path.join(os.tmpdir(), "seo-landing-browser-contract-"))) {
-    fs.rmSync(chromeProfile, { recursive: true, force: true });
+    await fs.promises.rm(chromeProfile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 }
 
@@ -183,5 +207,5 @@ try {
   socket.close();
   if (!passed) process.exitCode = 1;
 } finally {
-  stopChrome();
+  await stopChrome();
 }
