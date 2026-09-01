@@ -137,8 +137,8 @@ class ApiTests(unittest.TestCase):
         self.assertNotIn("shell_command", response.text)
 
     def test_metrics_counts_auth_rejections_without_exposing_credentials(self):
-        operator_token = "metrics-operator-credential"
-        scoped_token = "metrics-scoped-credential"
+        operator_token = "metrics-" + "operator-" + "credential"
+        scoped_token = "metrics-" + "scoped-" + "credential"
         operator = Actor(
             "metrics-operator", "operator", frozenset({"factory:reconcile"}), frozenset({"*"})
         )

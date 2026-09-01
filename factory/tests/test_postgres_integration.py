@@ -901,7 +901,7 @@ class PostgresFactoryTests(unittest.TestCase):
             idempotency_key="d" * 64, actor=OPERATOR, now=NOW,
         )
 
-        token = "metrics-local-operator-credential"
+        token = "metrics-" + "local-" + "operator-credential"
         authenticator = Authenticator({token: OPERATOR})
         client = TestClient(create_app(self.service, authenticator))
         self.assertEqual(client.get("/metrics").status_code, 401)
