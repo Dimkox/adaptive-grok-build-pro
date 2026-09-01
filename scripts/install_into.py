@@ -24,6 +24,7 @@ MANAGED_DIRS = (
 MANAGED_FILES = (
     "factory/.env.example",
     "factory/.gitignore",
+    "factory/actors.example.json",
     "factory/README.md",
     "factory/compose.yaml",
     "factory/pyproject.toml",

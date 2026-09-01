@@ -262,3 +262,18 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Root receipt and governance tests failed because their isolated repositories contained the new architecture model but not its required factory OpenAPI Git object.
 **Root cause:** Only the verification fixture was extended during the first architecture slice; all helpers that materialize canonical architecture must copy every declared contract path as one snapshot.
+
+## 2026-09-01 — Treated task projection changes as lease cleanup
+
+**Symptom:** Cancelling or superseding a leased task cleared its current-run pointer but leaked the run, allocation and capacity counters, after which reconciliation failed on the stale projection.
+**Root cause:** Terminal transitions owned only the task row in the original design; the live lease/capacity resource invariant was not centralized under a fixed lock order.
+
+## 2026-09-01 — Validated command evidence without persisting command identity
+
+**Symptom:** API retries could lease twice or return a stale-fence conflict, and CLI UUID keys failed storage constraints.
+**Root cause:** Idempotency and correlation were treated as adapter headers rather than durable actor/action/request/result records with a single canonical key format.
+
+## 2026-09-01 — Declared database roles without using them
+
+**Symptom:** Integration tests passed as the database owner while `factory_runtime` retained blanket updates over immutable evidence.
+**Root cause:** Role DDL and privilege metadata were mistaken for an effective connection boundary; representative product operations never executed under `SET ROLE factory_runtime`.

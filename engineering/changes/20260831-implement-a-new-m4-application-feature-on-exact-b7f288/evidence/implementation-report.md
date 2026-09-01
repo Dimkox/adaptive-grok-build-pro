@@ -7,11 +7,12 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 ## Delivered behavior
 
 - Closed typed intake, handoff, actor, task, run, attempt and limit records with canonical digests, exact duplicate return and atomic supersession.
-- Four contiguous checksum-locked factory migrations, isolated `NOLOGIN` roles and no `trust_ci` privileges.
+- Five contiguous checksum-locked factory migrations, persisted trusted-M0/command evidence, effective `factory_runtime` execution and no `trust_ci` privileges.
 - Transactional `FOR UPDATE SKIP LOCKED` claims, monotonic per-task fences, database-time leases/deadlines and 20 global readers / 10 per repository / one writer capacity.
 - Initial attempt plus two infrastructure retries, terminal dead/needs-human handling, 14,400-second and USD 25/token/output/event/repair ceilings, durable fail-closed missing accounting and idempotent usage observations.
 - Global/repository kills, append-only hash-chained audit with bounded verification, and ordered reconciliation capped at 100 candidates and five seconds.
-- Constant-time scoped bearer authentication, repository authorization, bounded/redacted errors, 1 MiB body limit, checked-in OpenAPI, and CLI health/intake/show/list/cancel/claim/heartbeat/proposal/kill/reconcile over Unix HTTP only.
+- Constant-time scoped bearer authentication, actor/repository-bound worker mutations, bounded streaming bodies, durable idempotency/correlation, accounting endpoints, checked-in OpenAPI, and CLI control over Unix HTTP only.
+- Runnable `adaptive-factory-server` composition that pre-binds only an owned mode-`0660` Unix socket, plus dependency-aware readiness and the three declared redacted metric families.
 - Architecture model/rules/diagrams, K17 README graph, roadmap/status, installer inventory, verifier integration, release and forward-recovery documentation.
 
 ## Commits
@@ -26,10 +27,16 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 - `1924cb2` — bounded delivery/docs/installer/verifier/accounting completion.
 - `39dafa4` — exact verification-gate repairs.
 
+## Independent-review remediation
+
+The first five reviews correctly failed head `01643c6`. Regression-first repairs now atomically close leased cancel/supersede resources; isolate orphan reconciliation; settle and bound cost/token/wall accounting; require accounting before completion; preserve exact command replay; normalize CLI/API keys; bind workers and kill scopes to authenticated repository authority; require persisted M0 authority; execute under narrow database grants; and provide an actual UDS-only composition root.
+
+The mandatory exit runner creates an exact disposable PostgreSQL 17 container, executes API and database tests under effective roles, restarts PostgreSQL, reconnects through a fresh store, proves one repair then a zero-repair replay, and removes the exact container. The authoritative root verifier and replacement reviews still run after the final documentation/ledger commit.
+
 ## Verification evidence
 
-- Factory suite: 30/30 passed against fresh disposable PostgreSQL 17 in 7.046 seconds after the final migration checksum.
-- Restart probe: expired holder reclaimed once, higher fence issued, late heartbeat rejected.
+- Remediation factory suite: 40/40 passed against fresh disposable PostgreSQL 17, including API integration, M0 authority, effective-role denials, command replay, accounting, terminal lease cleanup and orphan reconciliation.
+- Actual restart probe: PostgreSQL container restarted, one expired holder reclaimed, second reconciliation repaired zero, a higher fence issued, and the late holder was rejected.
 - Architecture model/fitness: 131/131 passed; validate, drift, diagram check and full worktree fitness passed.
 - Former root-verifier regressions: all 15 targeted failures passed; API/contract/state/migration/service unit subset 25/25 passed.
 - Secret scan: zero findings. Ruff and Bandit: passed.
@@ -41,6 +48,6 @@ Only the exact local container `m4-factory-pg-b7f288` and its fresh `m4_factory_
 
 ## Rollout, rollback and remaining authority
 
-Source rollout only: no service was activated and no migration was run outside the disposable database. Recovery after durable intake is global kill, stop local intake/claims, preserve audit/state, restore backup into a separate comparison database and forward-fix with migration `005+`; destructive down-migration is prohibited.
+Source rollout only: no service was activated and no migration was run outside disposable databases. Recovery after durable intake is global kill, stop local intake/claims, preserve audit/state, restore backup into a separate comparison database and forward-fix with migration `006+`; destructive down-migration is prohibited.
 
 Independent route reviews, PR delivery, the App-owned policy-epoch check on the exact PR head, signed approval scopes, merge and any deployment remain outside this implementation report and are not claimed here. The calendar deadline does not change the product runtime contract or bypass those gates.

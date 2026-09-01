@@ -676,6 +676,15 @@ def _httpx_uses_bounded_uds(tree: ast.AST) -> bool:
     return False
 
 
+def _socket_uses_only_unix(tree: ast.AST) -> bool:
+    attributes = {
+        node.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "socket"
+    }
+    return "AF_UNIX" in attributes and not ({"AF_INET", "AF_INET6", "create_connection"} & attributes)
+
+
 def _import_targets(tree: ast.AST) -> set[str]:
     targets: set[str] = set()
     for node in ast.walk(tree):
@@ -1117,6 +1126,12 @@ def _project_import_roots(
     )
     paths = _repository_paths(root, diff, prefixes) if prefixes else ()
     roots = set(_GOVERNANCE_IMPORTS)
+    for prefix in prefixes:
+        parts = Path(prefix).parts
+        if "src" in parts:
+            index = parts.index("src") + 1
+            if index < len(parts) and not parts[index].endswith(tuple(_PYTHON_SUFFIXES)):
+                roots.add(parts[index])
     for path in paths:
         if Path(path).suffix not in _PYTHON_SUFFIXES:
             continue
@@ -1185,6 +1200,8 @@ def _network_clients(
             protocol = _network_protocol(imported)
             if protocol:
                 if imported.split(".")[0] == "httpx" and protocol == "https" and _httpx_uses_bounded_uds(tree):
+                    protocol = "unix_http"
+                if imported.split(".")[0] == "socket" and protocol == "tcp" and _socket_uses_only_unix(tree):
                     protocol = "unix_http"
                 clients.append((path, protocol, owner))
         for imported, call in _called_imports(tree):

@@ -586,6 +586,16 @@ def _python(root: Path, mode: str = 'fast') -> list[CheckResult]:
                 300,
             )
         )
+    factory_exit = factory_tests / 'run_disposable_exit.py'
+    if mode in {'pr', 'release'} and factory_exit.is_file():
+        results.append(
+            _command_check(
+                root,
+                'factory-postgres-exit',
+                [sys.executable, str(factory_exit.relative_to(root))],
+                600,
+            )
+        )
     return results
 
 

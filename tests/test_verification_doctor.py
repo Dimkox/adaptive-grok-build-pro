@@ -712,6 +712,20 @@ class VerificationTests(unittest.TestCase):
             self.assertIsNotNone(factory)
             self.assertEqual(factory.status, 'pass')
 
+    def test_python_pr_requires_factory_postgres_api_and_restart_exit_runner(self) -> None:
+        with project_copy() as root:
+            package = root / 'factory' / 'tests'
+            package.mkdir(parents=True)
+            (root / 'factory' / 'pyproject.toml').write_text('[project]\nname="factory"\n', encoding='utf-8')
+            (root / 'factory' / '__init__.py').write_text('', encoding='utf-8')
+            (package / '__init__.py').write_text('', encoding='utf-8')
+            (package / 'test_contracts.py').write_text(_PASSING_UNITTEST, encoding='utf-8')
+            (package / 'run_disposable_exit.py').write_text('print("postgres api restart exit")\n', encoding='utf-8')
+            checks = _python(root, mode='pr')
+            postgres = next((item for item in checks if item.name == 'factory-postgres-exit'), None)
+            self.assertIsNotNone(postgres)
+            self.assertEqual(postgres.status, 'pass')
+
     def test_python_ignores_non_python_tests_directory(self) -> None:
         with project_copy() as root:
             path = root / 'tests' / 'Unit' / 'GreetingServiceTest.php'

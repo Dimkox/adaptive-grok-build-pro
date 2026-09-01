@@ -50,7 +50,82 @@ class PostgresFactoryStore:
     def _connect(self):
         import psycopg
 
-        return psycopg.connect(self.database_url)
+        connection = psycopg.connect(self.database_url)
+        try:
+            connection.execute("SET ROLE factory_runtime")
+        except Exception:
+            connection.close()
+            raise
+        return connection
+
+    def readiness(self) -> dict[str, object]:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT current_user,COALESCE(max(version),0) FROM factory.schema_migrations")
+            role, version = cursor.fetchone()
+            return {"status": "ready" if version == 5 else "not_ready", "database_role": role, "schema_version": version}
+
+    def metrics(self) -> dict[str, dict[str, int]]:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT count(*),count(*) FILTER (WHERE state='superseded') FROM factory.tasks")
+            intake, superseded = cursor.fetchone()
+            cursor.execute("SELECT count(*) FILTER (WHERE state='expired') FROM factory.runs")
+            reclaimed = cursor.fetchone()[0]
+            cursor.execute("SELECT COALESCE(sum(active_count) FILTER (WHERE scope_key LIKE 'global:%'),0) FROM factory.capacity_counters")
+            active_capacity = cursor.fetchone()[0]
+            cursor.execute("SELECT count(*) FILTER (WHERE accounting_blocked) FROM factory.tasks")
+            blocked = cursor.fetchone()[0]
+            cursor.execute("SELECT count(*) FROM (SELECT DISTINCT ON (scope_key) enabled FROM factory.kill_switches ORDER BY scope_key,created_at DESC,switch_id DESC) current WHERE enabled")
+            kills = cursor.fetchone()[0]
+            cursor.execute("SELECT COALESCE(sum(repaired),0) FROM factory.reconciliation_runs WHERE status='completed'")
+            repaired = cursor.fetchone()[0]
+        return {
+            "factory_intake_and_rejection_outcomes_total": {"accepted": intake, "superseded": superseded},
+            "factory_lease_reclaim_and_fence_rejection_total": {"reclaimed": reclaimed},
+            "factory_capacity_budget_kill_and_reconcile_outcomes_total": {
+                "active_capacity": active_capacity, "accounting_blocked": blocked, "active_kills": kills, "repaired": repaired
+            },
+        }
+
+    def _command_replay(self, cursor, key: str | None, actor: Actor, action: str, request: dict):
+        if key is None:
+            return False, None, canonical_digest(request)
+        digest = canonical_digest(request)
+        cursor.execute(
+            "SELECT actor_id,action,request_digest,result FROM factory.command_results WHERE idempotency_key=%s",
+            (key,),
+        )
+        row = cursor.fetchone()
+        if row is None:
+            return False, None, digest
+        if (row[0], row[1], row[2].strip()) != (actor.actor_id, action, digest):
+            raise StoreError("idempotency key reused with different command")
+        return True, row[3], digest
+
+    @staticmethod
+    def _record_command(cursor, key: str | None, actor: Actor, action: str, digest: str, correlation: str | None, result: dict) -> None:
+        if key is None:
+            return
+        cursor.execute(
+            "INSERT INTO factory.command_results(idempotency_key,actor_id,action,request_digest,correlation_id,result) VALUES (%s,%s,%s,%s,%s,%s::jsonb)",
+            (key, actor.actor_id, action, digest, correlation or key, json.dumps(result, sort_keys=True, separators=(",", ":"))),
+        )
+
+    def verify_m0_authority(self, authority) -> bool:
+        with self._connect() as connection, connection.cursor() as cursor:
+            if authority.observed_at is not None:
+                cursor.execute(
+                    """SELECT 1 FROM factory.m0_authority_observations
+                    WHERE observed_at=%s AND check_name=%s AND exact_head_sha=%s AND revoked_at IS NULL""",
+                    (authority.observed_at, authority.check_name, authority.exact_head_sha),
+                )
+            else:
+                cursor.execute(
+                    """SELECT 1 FROM factory.m0_bootstrap_exceptions
+                    WHERE exception_id=%s AND issuer=%s AND scope=%s AND expires_at=%s
+                    AND revoked_at IS NULL AND expires_at>clock_timestamp()""",
+                    (authority.bootstrap_exception, authority.issuer, authority.scope, authority.expires_at),
+                )
+            return cursor.fetchone() is not None
 
     @staticmethod
     def _projection(row) -> TaskProjection:
@@ -154,11 +229,12 @@ class PostgresFactoryStore:
             if duplicate:
                 return IntakeResult(self._projection(duplicate), False)
             cursor.execute(
-                "SELECT task_id FROM factory.tasks WHERE repository_id=%s AND source_type=%s AND source_id=%s AND state NOT IN ('ready_for_human','dead','cancelled','superseded') FOR UPDATE",
+                "SELECT task_id FROM factory.tasks WHERE repository_id=%s AND source_type=%s AND source_id=%s AND state NOT IN ('ready_for_human','dead','cancelled','superseded')",
                 (intake.repository_id, intake.source_type, intake.source_id),
             )
             old_ids = [str(row[0]) for row in cursor.fetchall()]
             for old_id in old_ids:
+                self._close_active_lease(cursor, old_id)
                 cursor.execute(
                     "UPDATE factory.tasks SET state='superseded',terminal_at=clock_timestamp(),updated_at=clock_timestamp(),current_run_id=NULL,current_fence=NULL WHERE task_id=%s",
                     (old_id,),
@@ -204,8 +280,8 @@ class PostgresFactoryStore:
                 ),
             )
             cursor.execute(
-                """INSERT INTO factory.tasks(task_id,intent_id,repository_id,source_type,source_id,state,generation,packet_digest,deadline_at,cost_limit_micros,token_limit,output_limit_bytes,event_limit,repair_limit)
-                VALUES (%s,%s,%s,%s,%s,'queued',%s,%s,now()+(%s * interval '1 second'),%s,%s,%s,%s,%s) RETURNING deadline_at""",
+                """INSERT INTO factory.tasks(task_id,intent_id,repository_id,source_type,source_id,state,generation,packet_digest,deadline_at,cost_limit_micros,token_limit,output_limit_bytes,event_limit,repair_limit,wall_limit_seconds)
+                VALUES (%s,%s,%s,%s,%s,'queued',%s,%s,now()+(%s * interval '1 second'),%s,%s,%s,%s,%s,%s) RETURNING deadline_at""",
                 (
                     task_id,
                     intent_id,
@@ -220,6 +296,7 @@ class PostgresFactoryStore:
                     intake.limits.max_output_bytes,
                     intake.limits.max_events,
                     intake.limits.semantic_repairs,
+                    intake.limits.wall_seconds,
                 ),
             )
             deadline = cursor.fetchone()[0]
@@ -317,9 +394,24 @@ class PostgresFactoryStore:
         )
         return bool(cursor.fetchone()[0])
 
-    def claim(self, request, actor: Actor, now: datetime) -> LeaseGrant | None:
+    def claim(self, request, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> LeaseGrant | None:
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            command = {
+                "owner": request.owner,
+                "role": request.role.value,
+                "repositories": list(request.repositories),
+                "lease_seconds": request.lease_seconds,
+            }
+            replay, prior, request_digest = self._command_replay(cursor, idempotency_key, actor, "claim", command)
+            if replay:
+                value = prior["grant"]
+                if value is None:
+                    return None
+                return LeaseGrant(
+                    value["task_id"], value["run_id"], value["owner"], RunRole(value["role"]), value["fence"],
+                    datetime.fromisoformat(value["expires_at"].replace("Z", "+00:00")), value["packet_digest"]
+                )
             if self._is_killed(cursor, request.repositories):
                 return None
             global_key = f"global:{request.role.value}"
@@ -417,9 +509,94 @@ class PostgresFactoryStore:
             self._audit(
                 cursor, str(task_id), actor, "claim", f"run:{run_id}", "scheduled", key, {"fence": fence}, str(run_id)
             )
-            return LeaseGrant(
+            grant = LeaseGrant(
                 str(task_id), str(run_id), request.owner, request.role, fence, expires, packet_digest.strip()
             )
+            self._record_command(
+                cursor, idempotency_key, actor, "claim", request_digest, correlation_id,
+                {"grant": {
+                    "task_id": grant.task_id, "run_id": grant.run_id, "owner": grant.owner,
+                    "role": grant.role.value, "fence": grant.fence,
+                    "expires_at": grant.expires_at.isoformat().replace("+00:00", "Z"),
+                    "packet_digest": grant.packet_digest,
+                }},
+            )
+            return grant
+
+    @staticmethod
+    def _capacity_keys(role: str, repository_id: str) -> tuple[str, ...]:
+        keys = [f"global:{role}"]
+        if role == "reader":
+            keys.append(f"repository:{repository_id}:reader")
+        return tuple(sorted(keys))
+
+    def _lock_capacity(self, cursor, role: str, repository_id: str) -> None:
+        cursor.execute(
+            "SELECT scope_key FROM factory.capacity_counters WHERE scope_key=ANY(%s) ORDER BY scope_key FOR UPDATE",
+            (list(self._capacity_keys(role, repository_id)),),
+        )
+        cursor.fetchall()
+
+    def _close_active_lease(self, cursor, task_id: str) -> None:
+        cursor.execute(
+            """SELECT r.run_id,r.role,a.repository_id FROM factory.tasks t
+            JOIN factory.runs r ON r.run_id=t.current_run_id
+            JOIN factory.capacity_allocations a ON a.run_id=r.run_id
+            WHERE t.task_id=%s AND r.released_at IS NULL""",
+            (task_id,),
+        )
+        candidate = cursor.fetchone()
+        if candidate is None:
+            return
+        run_id, role, repository_id = candidate
+        self._lock_capacity(cursor, role, repository_id)
+        cursor.execute(
+            """SELECT r.run_id FROM factory.tasks t JOIN factory.runs r ON r.run_id=t.current_run_id
+            JOIN factory.capacity_allocations a ON a.run_id=r.run_id
+            WHERE t.task_id=%s AND r.run_id=%s AND r.released_at IS NULL FOR UPDATE OF t,r,a""",
+            (task_id, run_id),
+        )
+        if cursor.fetchone() is None:
+            return
+        cursor.execute(
+            "UPDATE factory.capacity_allocations SET released_at=clock_timestamp() WHERE run_id=%s AND released_at IS NULL RETURNING role,repository_id",
+            (run_id,),
+        )
+        released = cursor.fetchone()
+        if released is None:
+            return
+        cursor.execute("UPDATE factory.runs SET state='released',released_at=clock_timestamp() WHERE run_id=%s", (run_id,))
+        cursor.execute("UPDATE factory.attempts SET finished_at=clock_timestamp() WHERE run_id=%s", (run_id,))
+        role, repository_id = released
+        for key in self._capacity_keys(role, repository_id):
+            cursor.execute(
+                "UPDATE factory.capacity_counters SET active_count=active_count-1 WHERE scope_key=%s AND active_count>0",
+                (key,),
+            )
+
+    def _close_orphan_run(self, cursor, run_id: str, task_id: str, role: str, repository_id: str, actor: Actor) -> bool:
+        self._lock_capacity(cursor, role, repository_id)
+        cursor.execute(
+            """SELECT r.run_id FROM factory.runs r JOIN factory.capacity_allocations a ON a.run_id=r.run_id
+            WHERE r.run_id=%s AND r.task_id=%s AND r.released_at IS NULL AND a.released_at IS NULL
+            FOR UPDATE OF r,a""",
+            (run_id, task_id),
+        )
+        if cursor.fetchone() is None:
+            return False
+        cursor.execute("UPDATE factory.capacity_allocations SET released_at=clock_timestamp() WHERE run_id=%s", (run_id,))
+        cursor.execute("UPDATE factory.runs SET state='expired',released_at=clock_timestamp() WHERE run_id=%s", (run_id,))
+        cursor.execute(
+            """UPDATE factory.attempts SET failure_class='worker_lost',failure_code='orphaned_projection',
+            failure_digest=%s,finished_at=clock_timestamp() WHERE run_id=%s""",
+            (canonical_digest({"failure": "orphaned_projection"}), run_id),
+        )
+        for key in self._capacity_keys(role, repository_id):
+            cursor.execute("UPDATE factory.capacity_counters SET active_count=active_count-1 WHERE scope_key=%s AND active_count>0", (key,))
+        key = canonical_digest({"action": "reconcile_orphan", "run_id": run_id})
+        self._event(cursor, task_id, actor, "orphan_reconciled", key, {"run_id": run_id})
+        self._audit(cursor, task_id, actor, "reconcile_orphan", f"run:{run_id}", "orphaned_projection", key, run_id=run_id)
+        return True
 
     def _lock_grant(self, cursor, grant: LeaseGrant, *, allow_expired: bool = False):
         cursor.execute(
@@ -439,21 +616,33 @@ class PostgresFactoryStore:
             raise FenceError("stale or expired fence")
         return row
 
-    def heartbeat(self, grant: LeaseGrant, actor: Actor, now: datetime) -> LeaseGrant:
+    def heartbeat(self, grant: LeaseGrant, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> LeaseGrant:
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            command = {"grant": {"task_id": grant.task_id, "run_id": grant.run_id, "owner": grant.owner, "role": grant.role.value, "fence": grant.fence, "packet_digest": grant.packet_digest}}
+            replay, prior, request_digest = self._command_replay(cursor, idempotency_key, actor, "heartbeat", command)
+            if replay:
+                return LeaseGrant(grant.task_id, grant.run_id, grant.owner, grant.role, grant.fence, datetime.fromisoformat(prior["expires_at"].replace("Z", "+00:00")), grant.packet_digest)
             self._lock_grant(cursor, grant)
             cursor.execute(
                 "UPDATE factory.runs SET lease_expires_at=LEAST(clock_timestamp()+interval '30 seconds',deadline_at) WHERE run_id=%s RETURNING lease_expires_at",
                 (grant.run_id,),
             )
             expires = cursor.fetchone()[0]
-            return LeaseGrant(
+            result = LeaseGrant(
                 grant.task_id, grant.run_id, grant.owner, grant.role, grant.fence, expires, grant.packet_digest
             )
+            self._record_command(cursor, idempotency_key, actor, "heartbeat", request_digest, correlation_id, {"expires_at": expires.isoformat().replace("+00:00", "Z")})
+            return result
 
     def _release_locked(
-        self, cursor, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, *, allow_expired: bool = False
+        self, cursor, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, *, allow_expired: bool = False,
+        correlation_id: str | None = None
     ) -> TaskStatus:
+        cursor.execute("SELECT repository_id FROM factory.tasks WHERE task_id=%s", (grant.task_id,))
+        repository = cursor.fetchone()
+        if repository is None:
+            raise FenceError("stale or expired fence")
+        self._lock_capacity(cursor, grant.role.value, repository[0])
         task_id, role, repository_id, attempt_no = self._lock_grant(cursor, grant, allow_expired=allow_expired)
         if isinstance(outcome, FailureClass):
             decision = classify_retry(outcome, attempt_no=attempt_no)
@@ -463,6 +652,16 @@ class PostgresFactoryStore:
                 (outcome.value, outcome.value, canonical_digest({"failure": outcome.value}), grant.run_id),
             )
         elif outcome == "completed":
+            cursor.execute(
+                """SELECT t.accounting_blocked,
+                EXISTS(SELECT 1 FROM factory.usage_observations u WHERE u.task_id=t.task_id AND u.run_id=%s),
+                EXISTS(SELECT 1 FROM factory.budget_reservations b WHERE b.task_id=t.task_id AND b.run_id=%s AND b.released_at IS NULL)
+                FROM factory.tasks t WHERE t.task_id=%s""",
+                (grant.run_id, grant.run_id, grant.task_id),
+            )
+            blocked, has_usage, has_reservation = cursor.fetchone()
+            if blocked or not has_usage or has_reservation:
+                raise BudgetError("completion requires settled accounting")
             target = TaskStatus.READY_FOR_HUMAN
             cursor.execute("UPDATE factory.attempts SET finished_at=clock_timestamp() WHERE run_id=%s", (grant.run_id,))
         else:
@@ -499,15 +698,22 @@ class PostgresFactoryStore:
             "release",
             f"run:{grant.run_id}",
             target.value,
-            key,
+            correlation_id or key,
             {"fence": grant.fence},
             grant.run_id,
         )
         return target
 
-    def release(self, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, now: datetime) -> TaskStatus:
+    def release(self, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> TaskStatus:
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
-            return self._release_locked(cursor, grant, outcome, actor)
+            outcome_value = outcome.value if isinstance(outcome, FailureClass) else outcome
+            command = {"task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence, "outcome": outcome_value}
+            replay, prior, request_digest = self._command_replay(cursor, idempotency_key, actor, "release", command)
+            if replay:
+                return TaskStatus(prior["status"])
+            result = self._release_locked(cursor, grant, outcome, actor, correlation_id=correlation_id)
+            self._record_command(cursor, idempotency_key, actor, "release", request_digest, correlation_id, {"status": result.value})
+            return result
 
     def reserve_budget(
         self, grant: LeaseGrant, cost: int, tokens: int, wall: int, reason_digest: str, key: str, actor: Actor
@@ -521,16 +727,27 @@ class PostgresFactoryStore:
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
             self._lock_grant(cursor, grant)
             cursor.execute(
-                "SELECT cost_limit_micros,token_limit,cost_reserved_micros,cost_observed_micros,tokens_reserved,tokens_observed,accounting_blocked FROM factory.tasks WHERE task_id=%s FOR UPDATE",
+                """SELECT reservation_id,task_id,run_id,cost_usd_micros,token_units,wall_seconds,reason_digest
+                FROM factory.budget_reservations WHERE idempotency_key=%s""",
+                (key,),
+            )
+            duplicate = cursor.fetchone()
+            if duplicate:
+                expected = (grant.task_id, grant.run_id, cost, tokens, wall, reason_digest)
+                actual = (str(duplicate[1]), str(duplicate[2]), duplicate[3], duplicate[4], duplicate[5], duplicate[6].strip())
+                if actual != expected:
+                    raise StoreError("idempotency key reused with different budget request")
+                return str(duplicate[0])
+            cursor.execute(
+                "SELECT cost_limit_micros,token_limit,wall_limit_seconds,cost_reserved_micros,cost_observed_micros,tokens_reserved,tokens_observed,wall_reserved_seconds,accounting_blocked FROM factory.tasks WHERE task_id=%s FOR UPDATE",
                 (grant.task_id,),
             )
-            cost_limit, token_limit, reserved_cost, observed_cost, reserved_tokens, observed_tokens, blocked = (
-                cursor.fetchone()
-            )
+            cost_limit, token_limit, wall_limit, reserved_cost, observed_cost, reserved_tokens, observed_tokens, reserved_wall, blocked = cursor.fetchone()
             if (
                 blocked
                 or reserved_cost + observed_cost + cost > cost_limit
                 or reserved_tokens + observed_tokens + tokens > token_limit
+                or reserved_wall + wall > wall_limit
             ):
                 raise BudgetError("budget exceeded or accounting blocked")
             reservation_id = uuid.uuid4()
@@ -541,8 +758,8 @@ class PostgresFactoryStore:
             row = cursor.fetchone()
             if row:
                 cursor.execute(
-                    "UPDATE factory.tasks SET cost_reserved_micros=cost_reserved_micros+%s,tokens_reserved=tokens_reserved+%s WHERE task_id=%s",
-                    (cost, tokens, grant.task_id),
+                    "UPDATE factory.tasks SET cost_reserved_micros=cost_reserved_micros+%s,tokens_reserved=tokens_reserved+%s,wall_reserved_seconds=wall_reserved_seconds+%s WHERE task_id=%s",
+                    (cost, tokens, wall, grant.task_id),
                 )
             return str(row[0] if row else reservation_id)
 
@@ -570,12 +787,30 @@ class PostgresFactoryStore:
                 blocked_reason = "missing_price_table"
             else:
                 cursor.execute(
-                    "SELECT observation_id FROM factory.usage_observations WHERE run_id=%s AND provider_call_id=%s",
+                    """SELECT observation_id,price_table_digest,cost_usd_micros,token_units,output_bytes
+                    FROM factory.usage_observations WHERE run_id=%s AND provider_call_id=%s""",
                     (grant.run_id, provider_call_id),
                 )
                 duplicate = cursor.fetchone()
                 if duplicate:
+                    if (duplicate[1].strip(), duplicate[2], duplicate[3], duplicate[4]) != (price_table_digest, cost, tokens, output):
+                        raise StoreError("provider call id reused with different usage evidence")
                     return UsageResult(str(duplicate[0]), False)
+                cursor.execute(
+                    """SELECT COALESCE(sum(cost_usd_micros),0),COALESCE(sum(token_units),0),COALESCE(sum(wall_seconds),0)
+                    FROM factory.budget_reservations WHERE task_id=%s AND run_id=%s AND released_at IS NULL""",
+                    (grant.task_id, grant.run_id),
+                )
+                released_cost, released_tokens, released_wall = cursor.fetchone()
+                cursor.execute(
+                    "UPDATE factory.budget_reservations SET released_at=clock_timestamp() WHERE task_id=%s AND run_id=%s AND released_at IS NULL",
+                    (grant.task_id, grant.run_id),
+                )
+                cursor.execute(
+                    """UPDATE factory.tasks SET cost_reserved_micros=cost_reserved_micros-%s,
+                    tokens_reserved=tokens_reserved-%s,wall_reserved_seconds=wall_reserved_seconds-%s WHERE task_id=%s""",
+                    (released_cost, released_tokens, released_wall, grant.task_id),
+                )
                 cursor.execute(
                     """SELECT cost_limit_micros,token_limit,output_limit_bytes,cost_observed_micros,tokens_observed,
                     COALESCE((SELECT sum(output_bytes) FROM factory.usage_observations WHERE task_id=t.task_id),0)
@@ -636,28 +871,39 @@ class PostgresFactoryStore:
         assert result is not None
         return result
 
-    def set_kill(self, scope: str, enabled: bool, reason: str, key: str, actor: Actor, now: datetime) -> bool:
+    def set_kill(self, scope: str, enabled: bool, reason: str, key: str, actor: Actor, now: datetime, *, correlation_id: str | None = None) -> bool:
         if scope != "global" and not scope.startswith("repository:"):
             raise StoreError("invalid kill scope")
         if not HEX64.fullmatch(key) or not reason or len(reason) > 128:
             raise StoreError("invalid kill evidence")
-        with self._connect() as connection, connection.cursor() as cursor:
+        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            command = {"scope": scope, "enabled": enabled, "reason": reason}
+            replay, prior, request_digest = self._command_replay(cursor, key, actor, "set_kill", command)
+            if replay:
+                return bool(prior["enabled"])
             cursor.execute(
                 "INSERT INTO factory.kill_switches(switch_id,scope_key,enabled,actor_id,reason,idempotency_key) VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT(idempotency_key) DO NOTHING RETURNING enabled",
                 (uuid.uuid4(), scope, enabled, actor.actor_id, reason, key),
             )
             row = cursor.fetchone()
-            return bool(row[0]) if row else enabled
+            actual = bool(row[0]) if row else enabled
+            self._record_command(cursor, key, actor, "set_kill", request_digest, correlation_id, {"enabled": actual})
+            return actual
 
-    def reconcile(self, actor: Actor, now: datetime, limit: int, cursor_id: str | None) -> ReconcileResult:
+    def reconcile(self, actor: Actor, now: datetime, limit: int, cursor_id: str | None, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> ReconcileResult:
         repaired = 0
         last = None
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
             cursor.execute("SET LOCAL statement_timeout='5s'")
+            command = {"limit": limit, "cursor": cursor_id}
+            replay, prior, request_digest = self._command_replay(cursor, idempotency_key, actor, "reconcile", command)
+            if replay:
+                return ReconcileResult(prior["candidates"], prior["repaired"], prior["cursor"])
             cursor.execute(
-                """SELECT r.run_id,r.task_id,r.owner_id,r.role,r.fence,r.lease_expires_at,r.packet_digest
-                FROM factory.runs r WHERE r.released_at IS NULL AND r.lease_expires_at<=clock_timestamp()
-                AND (%s::uuid IS NULL OR r.task_id>%s::uuid) ORDER BY r.task_id FOR UPDATE SKIP LOCKED LIMIT %s""",
+                """SELECT r.run_id,r.task_id,r.owner_id,r.role,r.fence,r.lease_expires_at,r.packet_digest,a.repository_id
+                FROM factory.runs r JOIN factory.capacity_allocations a ON a.run_id=r.run_id
+                WHERE r.released_at IS NULL AND a.released_at IS NULL AND r.lease_expires_at<=clock_timestamp()
+                AND (%s::uuid IS NULL OR r.task_id>%s::uuid) ORDER BY r.task_id LIMIT %s""",
                 (cursor_id, cursor_id, limit),
             )
             rows = cursor.fetchall()
@@ -667,36 +913,49 @@ class PostgresFactoryStore:
                 (reconciliation_id, cursor_id, len(rows)),
             )
             for row in rows:
-                run_id, task_id, owner, role, fence, expires, packet = row
+                run_id, task_id, owner, role, fence, expires, packet, repository_id = row
                 cursor.execute(
                     "SELECT repair_count,repair_limit FROM factory.tasks WHERE task_id=%s FOR UPDATE", (task_id,)
                 )
                 repair_count, repair_limit = cursor.fetchone()
                 grant = LeaseGrant(str(task_id), str(run_id), owner, RunRole(role), fence, expires, packet.strip())
                 failure = FailureClass.PROVIDER_QUALITY if repair_count >= repair_limit else FailureClass.WORKER_LOST
-                self._release_locked(cursor, grant, failure, actor, allow_expired=True)
-                cursor.execute("UPDATE factory.runs SET state='expired' WHERE run_id=%s", (run_id,))
-                if repair_count < repair_limit:
-                    cursor.execute("UPDATE factory.tasks SET repair_count=repair_count+1 WHERE task_id=%s", (task_id,))
-                repaired += 1
+                cursor.execute("SELECT state,current_run_id,current_fence FROM factory.tasks WHERE task_id=%s", (task_id,))
+                state, current_run_id, current_fence = cursor.fetchone()
+                if state == "leased" and str(current_run_id) == str(run_id) and current_fence == fence:
+                    self._release_locked(cursor, grant, failure, actor, allow_expired=True)
+                    cursor.execute("UPDATE factory.runs SET state='expired' WHERE run_id=%s", (run_id,))
+                    if repair_count < repair_limit:
+                        cursor.execute("UPDATE factory.tasks SET repair_count=repair_count+1 WHERE task_id=%s", (task_id,))
+                    repaired += 1
+                elif self._close_orphan_run(cursor, str(run_id), str(task_id), role, repository_id, actor):
+                    repaired += 1
                 last = str(task_id)
             cursor.execute(
                 "UPDATE factory.reconciliation_runs SET status='completed',repaired=%s,finished_at=clock_timestamp(),cursor_task_id=%s WHERE reconciliation_id=%s",
                 (repaired, last, reconciliation_id),
             )
-        return ReconcileResult(len(rows), repaired, last)
+            result = ReconcileResult(len(rows), repaired, last)
+            self._record_command(cursor, idempotency_key, actor, "reconcile", request_digest, correlation_id, {"candidates": result.candidates, "repaired": result.repaired, "cursor": result.cursor})
+        return result
 
-    def cancel(self, task_id: str, reason: str, key: str, actor: Actor, now: datetime) -> TaskProjection:
+    def cancel(self, task_id: str, reason: str, key: str, actor: Actor, now: datetime, *, correlation_id: str | None = None) -> TaskProjection:
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            command = {"task_id": task_id, "reason": reason}
+            replay, _prior, request_digest = self._command_replay(cursor, key, actor, "cancel", command)
+            if replay:
+                return self.get_task(task_id)
+            self._close_active_lease(cursor, task_id)
             cursor.execute("SELECT state FROM factory.tasks WHERE task_id=%s FOR UPDATE", (task_id,))
             row = cursor.fetchone()
             if not row:
                 raise KeyError(task_id)
             if row[0] not in {"ready_for_human", "dead", "cancelled", "superseded"}:
                 cursor.execute(
-                    "UPDATE factory.tasks SET state='cancelled',terminal_at=clock_timestamp(),updated_at=clock_timestamp() WHERE task_id=%s",
+                    "UPDATE factory.tasks SET state='cancelled',current_run_id=NULL,current_fence=NULL,terminal_at=clock_timestamp(),updated_at=clock_timestamp() WHERE task_id=%s",
                     (task_id,),
                 )
                 self._event(cursor, task_id, actor, "cancelled", key, {"reason": reason})
-                self._audit(cursor, task_id, actor, "cancel", f"task:{task_id}", reason, key)
+                self._audit(cursor, task_id, actor, "cancel", f"task:{task_id}", reason, correlation_id or key)
+            self._record_command(cursor, key, actor, "cancel", request_digest, correlation_id, {"task_id": task_id})
         return self.get_task(task_id)

@@ -43,6 +43,9 @@ class FakeService:
     def cancel(self, task_id, *, reason, idempotency_key, actor, now):
         raise KeyError(task_id)
 
+    def readiness(self):
+        return {"status": "ready", "database_role": "factory_runtime", "schema_version": 5}
+
 
 class ApiTests(unittest.TestCase):
     def setUp(self):
@@ -80,6 +83,9 @@ class ApiTests(unittest.TestCase):
         paths = set(self.client.get("/openapi.json").json()["paths"])
         forbidden = {"/v1/providers/run", "/v1/git/push", "/v1/pull-requests", "/v1/deploy", "/v1/systemd", "/v1/shell"}
         self.assertFalse(paths & forbidden)
+        self.assertIn("/v1/budget-reservations", paths)
+        self.assertIn("/v1/usage-observations", paths)
+        self.assertEqual(self.client.get("/health/ready").json()["database_role"], "factory_runtime")
 
     def test_body_over_one_mebibyte_is_rejected_without_parsing(self):
         response = self.client.post(
@@ -88,6 +94,21 @@ class ApiTests(unittest.TestCase):
             content=b"{" + b"x" * 1_048_576 + b"}",
         )
         self.assertEqual(response.status_code, 413)
+
+    def test_body_limit_rejects_missing_or_malformed_length(self):
+        oversized = b"{" + b"x" * 1_048_576 + b"}"
+        response = self.client.post(
+            "/v1/tasks",
+            headers={**self.auth, "Content-Type": "application/json", "Transfer-Encoding": "chunked"},
+            content=oversized,
+        )
+        self.assertEqual(response.status_code, 413)
+        response = self.client.post(
+            "/v1/tasks",
+            headers={**self.auth, "Content-Type": "application/json", "Content-Length": "not-a-number"},
+            content=b"{}",
+        )
+        self.assertEqual(response.status_code, 400)
 
     def test_contract_failure_returns_bounded_structured_error(self):
         payload = self.payload()
@@ -125,6 +146,8 @@ class ApiTests(unittest.TestCase):
             "claim",
             "heartbeat",
             "proposal",
+            "reserve-budget",
+            "observe-usage",
             "kill",
             "unkill",
             "reconcile",

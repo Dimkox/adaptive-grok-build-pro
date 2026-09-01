@@ -308,3 +308,11 @@ Consume accepted M2 `022411b05924618cfde0cb97b8c8aff4955e6013` through a true tw
 ## 2026-09-01 — Keep factory control and merge trust as separate authority domains
 
 Model the factory as a nested local package with its own PostgreSQL schema/roles/migrations and Unix-socket API, and give it no edge or dependency on Trust CI, GitHub, providers, deployment, or production. This made installer, architecture, privilege and API tests able to prove the separation directly.
+
+## 2026-09-01 — Make the deployed boundary executable, not descriptive
+
+Pre-bind the owned mode-`0660` Unix socket, force every store connection through `SET ROLE factory_runtime`, and require persisted verifier/operator M0 records before intake. Exercising those boundaries through the mandatory disposable restart suite exposed failures that metadata and adapter-only tests could not.
+
+## 2026-09-01 — Couple terminal projection changes to resource ownership
+
+Lock capacity in one order and close the live run, allocation and counters before clearing a task's current lease pointer. This makes cancel, supersede, release and orphan reconciliation idempotent views of the same resource invariant.

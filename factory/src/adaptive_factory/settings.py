@@ -35,13 +35,13 @@ def read_token_file(path: Path) -> str:
 class FactorySettings:
     database_url: str
     socket_path: Path
-    token_file: Path
+    actors_file: Path
 
     @classmethod
     def from_environment(cls) -> "FactorySettings":
         database_url = os.environ.get("FACTORY_DATABASE_URL", "")
-        token_file = os.environ.get("FACTORY_API_TOKEN_FILE", "")
+        actors_file = os.environ.get("FACTORY_ACTORS_FILE", "")
         socket_path = Path(os.environ.get("FACTORY_SOCKET_PATH", "/run/adaptive-factory/control.sock"))
-        if not database_url or not token_file or not socket_path.is_absolute():
-            raise SettingsError("explicit database URL, token file and absolute socket path are required")
-        return cls(database_url, socket_path, Path(token_file))
+        if not database_url or not actors_file or not socket_path.is_absolute():
+            raise SettingsError("explicit database URL, actor file and absolute socket path are required")
+        return cls(database_url, socket_path, Path(actors_file))

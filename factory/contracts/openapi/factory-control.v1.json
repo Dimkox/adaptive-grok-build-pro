@@ -10,8 +10,11 @@
     "/v1/claims": {"post": {"description": "Requires task:claim scope.", "tags": ["worker"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "claim result"}}}},
     "/v1/heartbeats": {"post": {"description": "Requires task:heartbeat scope.", "tags": ["worker"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "lease"}}}},
     "/v1/proposals": {"post": {"description": "Requires task:release scope.", "tags": ["worker"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "release status"}}}},
+    "/v1/budget-reservations": {"post": {"description": "Requires task:budget scope and a current actor-bound lease.", "tags": ["worker"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "idempotent reservation identity"}}}},
+    "/v1/usage-observations": {"post": {"description": "Requires task:budget scope and settles current-run reservations.", "tags": ["worker"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "idempotent usage observation"}}}},
     "/v1/kill-switches": {"post": {"description": "Requires factory:kill scope.", "tags": ["operator"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "kill state"}}}},
-    "/v1/reconcile": {"post": {"description": "Requires factory:reconcile scope.", "tags": ["operator"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "bounded repair result"}}}}
+    "/v1/reconcile": {"post": {"description": "Requires factory:reconcile scope.", "tags": ["operator"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "bounded repair result"}}}},
+    "/metrics": {"get": {"description": "Requires operator factory:reconcile scope; returns bounded low-cardinality JSON counters.", "tags": ["operator"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "redacted metric families"}}}}
   },
   "components": {"securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer"}}}
 }

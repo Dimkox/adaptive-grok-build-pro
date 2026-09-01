@@ -10,7 +10,7 @@ from typing import Any, Mapping
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from .contracts import ContractError
+from .contracts import ContractError, canonical_digest
 from .models import Actor, LeaseGrant, RunRole
 from .service import AuthorizationError
 from .store import BudgetError, FenceError, StoreError
@@ -59,6 +59,10 @@ def _request_id(value: str | None, name: str) -> str:
     return value
 
 
+def _command_key(value: str | None) -> str:
+    return canonical_digest({"contract": "adaptive-factory.command/v1", "idempotency_key": _request_id(value, "Idempotency-Key")})
+
+
 def _grant(payload: Mapping[str, Any]) -> LeaseGrant:
     expected = {"task_id", "run_id", "owner", "role", "fence", "expires_at", "packet_digest"}
     if set(payload) != expected:
@@ -104,8 +108,21 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
     @app.middleware("http")
     async def bound_body(request: Request, call_next):
         length = request.headers.get("content-length")
-        if length and int(length) > MAX_BODY_BYTES:
-            return JSONResponse({"detail": "request body too large"}, status_code=413)
+        if length:
+            try:
+                declared = int(length)
+            except ValueError:
+                return JSONResponse({"detail": "invalid content length"}, status_code=400)
+            if declared < 0:
+                return JSONResponse({"detail": "invalid content length"}, status_code=400)
+            if declared > MAX_BODY_BYTES:
+                return JSONResponse({"detail": "request body too large"}, status_code=413)
+        body = bytearray()
+        async for chunk in request.stream():
+            if len(body) + len(chunk) > MAX_BODY_BYTES:
+                return JSONResponse({"detail": "request body too large"}, status_code=413)
+            body.extend(chunk)
+        request._body = bytes(body)
         return await call_next(request)
 
     @app.get("/health/live", tags=["health"])
@@ -114,7 +131,18 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
 
     @app.get("/health/ready", tags=["health"])
     def ready():
-        return {"status": "ready"}
+        try:
+            result = service.readiness()
+        except Exception as exc:
+            raise HTTPException(503, "database unavailable") from exc
+        if result.get("status") != "ready":
+            raise HTTPException(503, "schema not ready")
+        return result
+
+    @app.get("/metrics", tags=["operator"])
+    def metrics(authorization: str | None = Header(None)):
+        actor = authenticator.authenticate(authorization, "factory:reconcile")
+        return service.metrics(actor=actor)
 
     @app.post("/v1/tasks", tags=["tasks"])
     def submit(
@@ -169,13 +197,14 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         x_correlation_id: str | None = Header(None),
     ):
         actor = authenticator.authenticate(authorization, "task:cancel")
-        key = _request_id(idempotency_key, "Idempotency-Key")
+        _request_id(idempotency_key, "Idempotency-Key")
         correlation = _request_id(x_correlation_id, "X-Correlation-ID")
         if set(payload) != {"reason"}:
             raise HTTPException(422, "closed cancel body required")
         try:
             task = service.cancel(
-                task_id, reason=str(payload["reason"]), idempotency_key=key, actor=actor, now=datetime.now(timezone.utc)
+                task_id, reason=str(payload["reason"]), idempotency_key=_command_key(idempotency_key), actor=actor,
+                now=datetime.now(timezone.utc), correlation_id=correlation
             )
         except KeyError:
             raise HTTPException(404, "task not found")
@@ -189,18 +218,20 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         x_correlation_id: str | None = Header(None),
     ):
         actor = authenticator.authenticate(authorization, "task:claim")
-        _request_id(idempotency_key, "Idempotency-Key")
+        key = _command_key(idempotency_key)
         correlation = _request_id(x_correlation_id, "X-Correlation-ID")
-        expected = {"owner", "role", "repositories", "lease_seconds"}
+        expected = {"role", "repositories", "lease_seconds"}
         if set(payload) != expected:
             raise HTTPException(422, "closed claim body required")
         grant = service.claim(
-            owner=payload["owner"],
+            owner=actor.actor_id,
             role=RunRole(payload["role"]),
             repositories=payload["repositories"],
             lease_seconds=payload["lease_seconds"],
             actor=actor,
             now=datetime.now(timezone.utc),
+            idempotency_key=key,
+            correlation_id=correlation,
         )
         return JSONResponse(_json({"grant": grant}), headers={"X-Correlation-ID": correlation})
 
@@ -212,10 +243,10 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         x_correlation_id: str | None = Header(None),
     ):
         actor = authenticator.authenticate(authorization, "task:heartbeat")
-        _request_id(idempotency_key, "Idempotency-Key")
+        key = _command_key(idempotency_key)
         correlation = _request_id(x_correlation_id, "X-Correlation-ID")
         return JSONResponse(
-            _json(service.heartbeat(_grant(payload), actor=actor, now=datetime.now(timezone.utc))),
+            _json(service.heartbeat(_grant(payload), actor=actor, now=datetime.now(timezone.utc), idempotency_key=key, correlation_id=correlation)),
             headers={"X-Correlation-ID": correlation},
         )
 
@@ -227,14 +258,63 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         x_correlation_id: str | None = Header(None),
     ):
         actor = authenticator.authenticate(authorization, "task:release")
-        _request_id(idempotency_key, "Idempotency-Key")
+        key = _command_key(idempotency_key)
         correlation = _request_id(x_correlation_id, "X-Correlation-ID")
         if set(payload) != {"grant", "outcome"}:
             raise HTTPException(422, "closed proposal body required")
         status = service.release(
-            _grant(payload["grant"]), outcome=payload["outcome"], actor=actor, now=datetime.now(timezone.utc)
+            _grant(payload["grant"]), outcome=payload["outcome"], actor=actor, now=datetime.now(timezone.utc),
+            idempotency_key=key, correlation_id=correlation
         )
         return JSONResponse(_json({"status": status}), headers={"X-Correlation-ID": correlation})
+
+    @app.post("/v1/budget-reservations", tags=["worker"])
+    def reserve_budget(
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:budget")
+        key = _command_key(idempotency_key)
+        correlation = _request_id(x_correlation_id, "X-Correlation-ID")
+        expected = {"grant", "cost_usd_micros", "token_units", "wall_seconds", "reason_digest"}
+        if set(payload) != expected:
+            raise HTTPException(422, "closed budget reservation body required")
+        reservation_id = service.reserve_budget(
+            _grant(payload["grant"]),
+            cost_usd_micros=payload["cost_usd_micros"],
+            token_units=payload["token_units"],
+            wall_seconds=payload["wall_seconds"],
+            reason_digest=payload["reason_digest"],
+            idempotency_key=key,
+            actor=actor,
+        )
+        return JSONResponse({"reservation_id": reservation_id}, headers={"X-Correlation-ID": correlation})
+
+    @app.post("/v1/usage-observations", tags=["worker"])
+    def observe_usage(
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:budget")
+        _command_key(idempotency_key)
+        correlation = _request_id(x_correlation_id, "X-Correlation-ID")
+        expected = {"grant", "provider_call_id", "price_table_digest", "cost_usd_micros", "token_units", "output_bytes"}
+        if set(payload) != expected:
+            raise HTTPException(422, "closed usage observation body required")
+        result = service.observe_usage(
+            _grant(payload["grant"]),
+            provider_call_id=payload["provider_call_id"],
+            price_table_digest=payload["price_table_digest"],
+            cost_usd_micros=payload["cost_usd_micros"],
+            token_units=payload["token_units"],
+            output_bytes=payload["output_bytes"],
+            actor=actor,
+        )
+        return JSONResponse(_json(result), headers={"X-Correlation-ID": correlation})
 
     @app.post("/v1/kill-switches", tags=["operator"])
     def kill(
@@ -244,7 +324,7 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         x_correlation_id: str | None = Header(None),
     ):
         actor = authenticator.authenticate(authorization, "factory:kill")
-        key = _request_id(idempotency_key, "Idempotency-Key")
+        key = _command_key(idempotency_key)
         correlation = _request_id(x_correlation_id, "X-Correlation-ID")
         if set(payload) != {"scope_key", "enabled", "reason"}:
             raise HTTPException(422, "closed kill body required")
@@ -255,6 +335,7 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
             idempotency_key=key,
             actor=actor,
             now=datetime.now(timezone.utc),
+            correlation_id=correlation,
         )
         return JSONResponse({"enabled": enabled}, headers={"X-Correlation-ID": correlation})
 
@@ -266,7 +347,7 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         x_correlation_id: str | None = Header(None),
     ):
         actor = authenticator.authenticate(authorization, "factory:reconcile")
-        _request_id(idempotency_key, "Idempotency-Key")
+        key = _command_key(idempotency_key)
         correlation = _request_id(x_correlation_id, "X-Correlation-ID")
         if set(payload) - {"limit", "cursor"}:
             raise HTTPException(422, "closed reconcile body required")
@@ -275,6 +356,8 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
             now=datetime.now(timezone.utc),
             limit=int(payload.get("limit", 100)),
             cursor=payload.get("cursor"),
+            idempotency_key=key,
+            correlation_id=correlation,
         )
         return JSONResponse(_json(result), headers={"X-Correlation-ID": correlation})
 

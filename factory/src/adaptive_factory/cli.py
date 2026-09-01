@@ -40,7 +40,6 @@ def main(argv: list[str] | None = None) -> int:
     cancel.add_argument("task_id")
     cancel.add_argument("reason")
     claim = sub.add_parser("claim")
-    claim.add_argument("owner")
     claim.add_argument("role", choices=("reader", "writer"))
     claim.add_argument("repository", nargs="+")
     claim.add_argument("--lease-seconds", type=int, default=30)
@@ -49,6 +48,19 @@ def main(argv: list[str] | None = None) -> int:
     proposal = sub.add_parser("proposal")
     proposal.add_argument("grant_file")
     proposal.add_argument("outcome")
+    reserve = sub.add_parser("reserve-budget")
+    reserve.add_argument("grant_file")
+    reserve.add_argument("cost_usd_micros", type=int)
+    reserve.add_argument("token_units", type=int)
+    reserve.add_argument("wall_seconds", type=int)
+    reserve.add_argument("reason_digest")
+    usage = sub.add_parser("observe-usage")
+    usage.add_argument("grant_file")
+    usage.add_argument("provider_call_id")
+    usage.add_argument("price_table_digest")
+    usage.add_argument("cost_usd_micros", type=int)
+    usage.add_argument("token_units", type=int)
+    usage.add_argument("output_bytes", type=int)
     kill = sub.add_parser("kill")
     kill.add_argument("scope_key")
     kill.add_argument("reason")
@@ -81,7 +93,6 @@ def main(argv: list[str] | None = None) -> int:
                 "/v1/claims",
                 headers=headers,
                 json={
-                    "owner": args.owner,
                     "role": args.role,
                     "repositories": args.repository,
                     "lease_seconds": args.lease_seconds,
@@ -92,6 +103,31 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "proposal":
             response = client.post(
                 "/v1/proposals", headers=headers, json={"grant": _load(args.grant_file), "outcome": args.outcome}
+            )
+        elif args.command == "reserve-budget":
+            response = client.post(
+                "/v1/budget-reservations",
+                headers=headers,
+                json={
+                    "grant": _load(args.grant_file),
+                    "cost_usd_micros": args.cost_usd_micros,
+                    "token_units": args.token_units,
+                    "wall_seconds": args.wall_seconds,
+                    "reason_digest": args.reason_digest,
+                },
+            )
+        elif args.command == "observe-usage":
+            response = client.post(
+                "/v1/usage-observations",
+                headers=headers,
+                json={
+                    "grant": _load(args.grant_file),
+                    "provider_call_id": args.provider_call_id,
+                    "price_table_digest": args.price_table_digest,
+                    "cost_usd_micros": args.cost_usd_micros,
+                    "token_units": args.token_units,
+                    "output_bytes": args.output_bytes,
+                },
             )
         elif args.command in {"kill", "unkill"}:
             response = client.post(

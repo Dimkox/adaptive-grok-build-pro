@@ -3224,6 +3224,32 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "not_applicable")
         self.assertNotIn("new_network_client", report.triggers)
 
+    def test_network_analysis_recognizes_local_src_layout_package_imports(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "service"
+        system["nodes"][0]["repository_paths"] = [
+            "factory/src/adaptive_factory/server.py",
+            "factory/tests/test_server.py",
+        ]
+        rules = _rules()
+        rules["network_policies"] = [{
+            "id": "FIT-NETWORK",
+            "node_types": ["service"],
+            "allowed_protocols": ["filesystem"],
+            "require_declared_edge": True,
+            "severity": "error",
+        }]
+        repo, base = self._repo(system=system, rules=rules)
+        repo.write_text("factory/src/adaptive_factory/server.py", "def prepare_unix_socket(path):\n    return path\n")
+        repo.write_text(
+            "factory/tests/test_server.py",
+            "from adaptive_factory.server import prepare_unix_socket\nprepare_unix_socket('/run/factory.sock')\n",
+        )
+        head = repo.commit("local src layout import")
+        report = self._evaluate(repo, base, head)
+        result = self._results(report)["network_client"]
+        self.assertEqual(result.status, "not_applicable")
+
     def test_network_fitness_recognizes_bounded_httpx_unix_socket_transport(self) -> None:
         system = _system()
         system["nodes"][0]["type"] = "service"

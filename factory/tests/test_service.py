@@ -17,7 +17,10 @@ class RecordingStore:
         self.calls.append(("intake", intake, actor, now))
         return {"task_id": "task-1", "created": True}
 
-    def claim(self, request, actor, now):
+    def verify_m0_authority(self, authority):
+        return authority.check_name == "adaptive-trust-ci/verified@06ecf1c875bc"
+
+    def claim(self, request, actor, now, **_kwargs):
         self.calls.append(("claim", request, actor, now))
         return None
 
@@ -28,7 +31,7 @@ class RecordingStore:
         self.calls.append(("list", kwargs))
         return (self.get_task("task-1"),)
 
-    def release(self, grant, outcome, actor, now):
+    def release(self, grant, outcome, actor, now, **_kwargs):
         self.calls.append(("release", outcome))
         return TaskStatus.RETRY
 
@@ -51,6 +54,25 @@ class ServiceTests(unittest.TestCase):
         result = service.intake(valid_intake(), actor=actor, now=NOW)
         self.assertTrue(result["created"])
         self.assertEqual(store.calls[0][1].repository_id, "owner/repository")
+
+    def test_submit_rejects_caller_asserted_or_unpersisted_m0_authority(self):
+        store = RecordingStore()
+        service = FactoryService(store)
+        actor = Actor("caller", "client", frozenset({"task:submit"}), frozenset({"owner/repository"}))
+        payload = valid_intake()
+        payload["m0_authority"]["check_name"] = "caller-asserted-not-trust-ci"
+        with self.assertRaises(AuthorizationError):
+            service.intake(payload, actor=actor, now=NOW)
+        payload = valid_intake()
+        payload["m0_authority"] = {
+            "bootstrap_exception": "fabricated",
+            "issuer": "untrusted-caller",
+            "scope": "anything",
+            "expires_at": "2026-09-01T20:00:00+00:00",
+        }
+        with self.assertRaises(AuthorizationError):
+            service.intake(payload, actor=actor, now=NOW)
+        self.assertEqual(store.calls, [])
 
     def test_claim_rejects_unbounded_lease_and_missing_worker_scope(self):
         store = RecordingStore()
@@ -76,6 +98,40 @@ class ServiceTests(unittest.TestCase):
                 now=NOW,
             )
         self.assertEqual(store.calls, [])
+
+    def test_worker_and_kill_mutations_enforce_actor_and_repository_boundary(self):
+        store = RecordingStore()
+        service = FactoryService(store)
+        worker = Actor(
+            "worker-B",
+            "worker",
+            frozenset({"task:claim", "task:heartbeat", "task:release", "task:budget"}),
+            frozenset({"other/repository"}),
+        )
+        grant = LeaseGrant("task-1", "run-1", "worker-A", RunRole.READER, 1, NOW, "b" * 64)
+        with self.assertRaises(AuthorizationError):
+            service.heartbeat(grant, actor=worker, now=NOW)
+        with self.assertRaises(AuthorizationError):
+            service.release(grant, outcome="completed", actor=worker, now=NOW)
+        operator = Actor("operator", "operator", frozenset({"factory:kill"}), frozenset({"owner/repository"}))
+        with self.assertRaises(AuthorizationError):
+            service.set_kill(
+                scope_key="repository:other/repository",
+                enabled=True,
+                reason="stop",
+                idempotency_key="a" * 64,
+                actor=operator,
+                now=NOW,
+            )
+        with self.assertRaises(AuthorizationError):
+            service.set_kill(
+                scope_key="global",
+                enabled=True,
+                reason="stop",
+                idempotency_key="a" * 64,
+                actor=operator,
+                now=NOW,
+            )
 
     def test_read_list_and_release_stay_typed_and_authorized(self):
         store = RecordingStore()

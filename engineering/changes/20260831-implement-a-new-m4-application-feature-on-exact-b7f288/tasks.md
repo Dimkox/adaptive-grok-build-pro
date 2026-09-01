@@ -9,7 +9,8 @@
 - [x] TDD retry/dead-letter, budgets, kills, audit and reconciliation.
 - [x] TDD scoped Unix-socket API/CLI and OpenAPI.
 - [x] Integrate architecture, diagrams, verifier/installer, README/roadmap.
-- [ ] Run disposable PostgreSQL exit suite and root verifier.
+- [x] Run disposable PostgreSQL/API/effective-role/actual-restart exit suite.
+- [ ] Run final root verifier after remediation documentation is frozen.
 - [ ] Hand final fingerprint to all five independent reviewers.
 
 No push, PR, merge, deployment or external/production write is authorized by this implementation task.
