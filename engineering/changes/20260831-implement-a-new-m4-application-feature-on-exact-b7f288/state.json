@@ -19,11 +19,23 @@
       "from": "scoped",
       "reason": "User explicitly authorized automatic implementation; migration scope restricted to a fresh disposable local PostgreSQL database with no external or production writes",
       "to": "approved"
+    },
+    {
+      "at": "2026-09-01T07:18:56+00:00",
+      "from": "approved",
+      "reason": "All approved M4 verticals implemented locally with disposable PostgreSQL evidence",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-01T07:18:56+00:00",
+      "from": "implementing",
+      "reason": "Implementation and report frozen; run final exact-tree local verifier before independent reviews",
+      "to": "verifying"
     }
   ],
   "route_id": "b7f288f1e81e",
   "schema_version": 1,
-  "status": "approved",
+  "status": "verifying",
   "title": "Implement a new M4 application feature on exact base 67714a1f1b87effcfabe55d5ca2770d0a68d17c1: typed immutable task, run, and attempt records; PostgreSQL migrations and durable state; idempotent intake; lease fencing and capacity; bounded retry, dead-letter and budgets; kill switches, audit, reconciliation; authenticated local API and CLI; PostgreSQL integration tests. The feature remains local and has no network side effects.",
-  "updated_at": "2026-08-31T20:42:30+00:00"
+  "updated_at": "2026-09-01T07:18:56+00:00"
 }
