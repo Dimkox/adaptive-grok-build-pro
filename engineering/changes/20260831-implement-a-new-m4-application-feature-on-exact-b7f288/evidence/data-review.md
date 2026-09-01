@@ -1,78 +1,73 @@
-# Data review — round 4
+# Data review — round 5
 
 ## Binding and verdict
 
 - Route: `b7f288f1e81e`
 - Base SHA: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-- Reviewed head SHA: `9fd2a56c57f834ad39c03a2f748bdbaefc79c91c`
-- Full reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..9fd2a56c57f834ad39c03a2f748bdbaefc79c91c`
+- Reviewed head SHA: `f82134de35e531a8b3bbf235ad480254ba40f1fe`
+- Full reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..f82134de35e531a8b3bbf235ad480254ba40f1fe`
 - Review role: route-selected read-only `data_reviewer`
-- Round: final round / round 4
-- Verdict: **FAIL**
+- Round: final round / round 5
+- Verdict: **PASS**
 
-Migration 007 fixes direct counter-policy mutation and the supported scheduler now enforces 20 global readers, 10 readers per repository, and one live writer. One Important allocation-authority defect remains: `factory_runtime` retains direct `UPDATE(released_at)` on `capacity_allocations`, can hide a live allocation outside the canonical release function, and leaves the control plane unable to reconcile while the worker remains live. Under the requested gate, an Important issue requires FAIL.
+No Critical or Important data finding remains. Migration 008 revokes the last direct runtime allocation-mutation privilege, worker fencing now requires a live allocation, and inconsistent capacity state makes readiness and reconciliation fail closed. All prior capacity, schema-integrity, accounting, idempotency, reconciliation, index and migration findings were rechecked against a fresh disposable PostgreSQL 17 database.
 
-## Finding
+## Round-5 delta
 
-### Important — runtime can still directly tamper with live capacity allocations and create unrecoverable drift
+### PASS — allocation release is canonical and direct runtime tampering is denied
 
-Migration 005 granted `factory_runtime` column update on `capacity_allocations.released_at` (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:60-67`). Migration 007 revokes direct counter `INSERT, UPDATE` and allocation `INSERT`, but does not revoke allocation `UPDATE` (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:160-169`). The store no longer needs this grant: normal close paths set the run closed and invoke the security-definer `capacity_release()` function, which alone updates allocation release time and counters together (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:127-157`; `factory/src/adaptive_factory/store.py:528-579,617-677`).
-
-Using the effective runtime role, a direct update of a live allocation's `released_at` succeeded. This creates four inconsistent views:
-
-- the run and task remain leased, and `_lock_grant()` does not require `capacity_allocations.released_at IS NULL`, so the worker can continue heartbeating (`factory/src/adaptive_factory/store.py:581-615`);
-- the allocation disappears from live-allocation metrics and readiness's allocation counts (`factory/src/adaptive_factory/store.py:61-106`);
-- the global and repository counters remain at one because the canonical release function was bypassed;
-- readiness becomes `not_ready`, while reconciliation fails before examining candidates because it detects the mismatch and provides no repair path (`factory/src/adaptive_factory/store.py:913-962`).
-
-Fresh disposable PostgreSQL 17 evidence:
+Migration 008 revokes all runtime update authority on `factory.capacity_allocations` (`factory/src/adaptive_factory/resources/008_allocation_release_authority.sql:1`). Migration 007 already revoked direct allocation insert and counter insert/update, constrained canonical ceilings, and exposed only fixed-search-path security-definer capacity functions (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:1-169`). Effective runtime permissions are now:
 
 ```text
-runtime_capacity_privileges= (False, True, False)
-direct_allocation_tamper_rows= 1
-readiness_after_tamper= {'status': 'not_ready', 'database_role': 'factory_runtime', 'schema_version': 7, 'capacity_consistent': False}
-reconcile_after_tamper= StoreError capacity counters do not match live allocations
-live_worker_heartbeat_after_hidden_allocation= True
-tampered_state= ('leased', True, False, 1)
+runtime_capacity_mutation_privileges= (False, False, False)
+runtime_allocation_tamper=InsufficientPrivilege
 ```
 
-The tuple in `runtime_capacity_privileges` is `(capacity_allocations INSERT, capacity_allocations.released_at UPDATE, capacity_counters.active_count UPDATE)`. Direct counter and allocation inserts are denied, but direct allocation release mutation is still allowed.
+The tuple is `(capacity_allocations.released_at UPDATE, capacity_allocations INSERT, capacity_counters.active_count UPDATE)`. Normal store paths no longer require allocation-row update locks or DML: they lock run/task rows, close the run, and invoke `capacity_release()` to atomically release allocation plus counters (`factory/src/adaptive_factory/store.py:523-579,618-677`). The focused effective-role suite also denies allocation `released_at` updates in both directions (`factory/tests/test_postgres_integration.py:614-659`).
 
-This violates AC-005's transactional capacity invariant, the mandatory least-privilege requirement, and the rollback/readiness condition requiring zero allocation imbalance (`engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/requirements.md:9,26`; `engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/rollback.md:3-5`). Fail-closed readiness is positive detection, but detection without a bounded repair path does not preserve the capacity authority and leaves a live worker outside the allocation view.
+### PASS — hidden/mismatched allocations invalidate worker fences and fail closed
 
-Required repair: add a forward migration revoking `UPDATE` on `factory.capacity_allocations` from `factory_runtime`; require all release mutation through `factory.capacity_release(uuid)`; extend the effective-role forbidden-DML test with direct `released_at` updates (including setting and clearing it). Keep readiness's consistency check, and add a reviewed owner/migrator repair procedure or a narrowly scoped canonical reconciliation function for legacy drift. `_lock_grant()` should also require the joined allocation to remain live so a hidden allocation cannot continue as an accepted worker lease.
+`_lock_grant()` now requires `capacity_allocations.released_at IS NULL`, so heartbeat, release, budget reservation and usage observation all reject a grant whose allocation is absent or hidden (`factory/src/adaptive_factory/store.py:581-598`). Readiness requires schema version 8 and exact counter/live-allocation equality, while reconciliation refuses to operate on inconsistent capacity authority (`factory/src/adaptive_factory/store.py:61-85,914-963`). An owner-only corruption probe produced:
+
+```text
+heartbeat_hidden=FenceError
+release_hidden=FenceError
+reserve_hidden=FenceError
+observe_hidden=FenceError
+readiness_hidden= {'status': 'not_ready', 'database_role': 'factory_runtime', 'schema_version': 8, 'capacity_consistent': False}
+reconcile_hidden= StoreError capacity counters do not match live allocations
+```
+
+After owner restoration of the simulated legacy drift, the normal accounting/release path completed and readiness recovered:
+
+```text
+release_restored= ready_for_human
+readiness_restored= {'status': 'ready', 'database_role': 'factory_runtime', 'schema_version': 8, 'capacity_consistent': True}
+```
+
+The checked-in regression covers heartbeat, failure release, reservation and observation fencing, fail-closed readiness/reconciliation, owner restoration and canonical completion (`factory/tests/test_postgres_integration.py:670-718`).
 
 ## Prior findings rechecked
 
-### PASS — canonical capacity policy and direct counter tampering denial
+### PASS — database-enforced scheduler capacity 20 global readers / 10 per repository / one writer
 
-Migration 007 adds a schema constraint encoding exactly `global:reader=20`, `global:writer=1`, and `repository:<1..128 bytes>:reader=10` (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:1-9`). It revokes runtime counter insert/update and grants only fixed-search-path security-definer functions for eligibility, allocation locking, allocation and release (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:11-169`). Effective-role tests deny ceiling updates, active-count updates, and forged counter inserts (`factory/tests/test_postgres_integration.py:614-656`). The round-3 arbitrary ceiling/counter-reset exploits no longer succeed.
+The canonical policy constraint encodes only global reader 20, global writer 1 and repository reader 10 rows (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:1-9`). Eligibility and allocation functions lock counters in stable order and recheck every ceiling before allocation/counter increment (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:11-53,80-125`). Claims use those functions around `FOR UPDATE SKIP LOCKED` task selection in one transaction (`factory/src/adaptive_factory/store.py:418-521`). The fresh integration suite proves exactly 20 readers overall, 10 in each of two repositories, and one writer; the partial unique live-writer index remains an independent backstop (`factory/src/adaptive_factory/resources/002_runs_leases_capacity.sql:54-55`).
 
-### PASS — supported scheduler caps 20 global readers, 10 per repository, one writer
+### PASS — lease closure, monotonic fencing, retries and reconciliation
 
-Claims call `capacity_eligible_repositories()` before `FOR UPDATE SKIP LOCKED`, then create run/attempt and call `capacity_allocate()` in the same transaction (`factory/src/adaptive_factory/store.py:418-521`). Both functions lock canonical counters in stable order and `capacity_allocate()` rechecks every ceiling before inserting and incrementing (`factory/src/adaptive_factory/resources/007_capacity_authority.sql:11-53,80-125`). Fresh supported-path evidence:
+Cancel, supersede, release and orphan repair use the same capacity-first lock/release authority and are idempotent (`factory/src/adaptive_factory/store.py:523-579,618-688,914-983`). Per-task fence sequences remain transactionally monotonic; task/run/owner/fence/packet/live allocation/live lease/deadline predicates reject stale work (`factory/src/adaptive_factory/store.py:450-521,581-598`). Reconciliation is bounded to 100, five seconds, ordered by task keyset, separates current expired leases from orphan projections, and rejects capacity drift before mutation (`factory/src/adaptive_factory/store.py:914-963`). Focused cancel/supersede, mixed orphan/current, restart, stale-fence and retry/DLQ tests passed.
 
-```text
-supported_reader_grants= 20 repo_a= 10 repo_b= 10
-supported_writer_grants= 1 second_writer_none= True
-readiness_at_caps= {'status': 'ready', 'database_role': 'factory_runtime', 'schema_version': 7, 'capacity_consistent': True}
-canonical_capacity_rows= [('global:reader', 20, 20), ('global:writer', 1, 1), ('repository:repo/a:reader', 10, 10), ('repository:repo/b:reader', 10, 10)]
-live_allocations_by_role= [('reader', 20), ('writer', 1)]
-```
+### PASS — accounting budgets and mutation idempotency
 
-The partial unique live-writer index remains an independent one-writer backstop (`factory/src/adaptive_factory/resources/002_runs_leases_capacity.sql:54-55`).
+Command results are advisory-lock serialized and bound to actor, action, canonical request digest, correlation and exact result (`factory/src/adaptive_factory/store.py:109-132`). Reservation replay resolves before live-fence checks; changed evidence is rejected; cost/token/wall reservations are bounded and settled transactionally into immutable usage; output limits and completion's settled-accounting requirement remain enforced (`factory/src/adaptive_factory/store.py:690-892,635-647`). Focused API mutation replay, accounting replay after stale fence, reservation settlement, missing accounting and completion tests passed.
 
-### PASS — lease closure, orphan reconciliation, fencing and idempotency
+### PASS — immutable evidence and relational constraints
 
-Cancel, supersede, release and orphan repair now use capacity-lock/release functions and preserve the fixed lock order (`factory/src/adaptive_factory/store.py:523-579,617-688,913-982`). Clean-path consistency is checked before reconciliation; current and orphan expired runs are separated, and command replay remains actor/action/request/result bound (`factory/src/adaptive_factory/store.py:89-112,913-962`). Disposable tests for cancel/supersede release-once, mixed orphan/current reconciliation, stale fences, empty-claim replay and mutation replay passed. The Important direct-allocation mutation above is the remaining exception.
+Accepted intents and task events remain insert-only for runtime; audit and usage evidence cannot be updated; task/run/attempt updates are restricted to required lifecycle columns (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:58-71`; `factory/src/adaptive_factory/resources/006_runtime_policy_privileges.sql:1-2`; `factory/src/adaptive_factory/resources/008_allocation_release_authority.sql:1`). Composite `(run_id,task_id)` foreign keys cover allocations, reservations and observations, and audit rows reference runs (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:43-53`). Effective-role mutation tests and hash-chain verification passed.
 
-### PASS — accounting and immutable records
+### PASS — indexes, migrations and recovery posture
 
-Reservation replay resolves before live-fence checks; changed commands are rejected; cost/token/wall reservations are bounded and settled transactionally into immutable usage observations; output limits and completion's settled-accounting requirement remain enforced (`factory/src/adaptive_factory/store.py:690-892,635-647`). Accepted intents, task events, usage observations, kill switches and audit rows remain denied runtime update, with lifecycle-only grants for task/run/attempt fields (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:58-71`). Focused PostgreSQL accounting, completion, immutable-role and API replay tests passed.
-
-### PASS — schema integrity, indexes, migrations and recovery posture
-
-Composite `(run_id,task_id)` foreign keys cover allocations, reservations and usage, and audit rows reference runs (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:43-53`). Repository listing and reconciliation keyset indexes match their bounded queries (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:55-56`). Migrations remain contiguous 001–007, checksum-drift protected and applied in one advisory-locked transaction with timeouts (`factory/src/adaptive_factory/migrations.py:33-64,84-108`). Recovery remains forward-only; migration 007 introduces no destructive down migration.
+Repository listing uses `(repository_id,task_id)` and reconciliation uses the unreleased `(task_id,lease_expires_at)` keyset index (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:55-56`; `factory/src/adaptive_factory/store.py:338-354,925-930`). Migrations are contiguous 001–008, checksum-drift protected and applied under one transaction-scoped advisory lock with lock/statement timeouts (`factory/src/adaptive_factory/migrations.py:33-64,84-108`). Migration 008 is a forward-only least-privilege contraction and introduces no destructive data rewrite or down migration. Recovery remains preserve/restore-forward-fix rather than destructive rollback.
 
 ## Commands and evidence
 
@@ -80,25 +75,25 @@ Binding/static checks:
 
 ```text
 git rev-parse HEAD
-# 9fd2a56c57f834ad39c03a2f748bdbaefc79c91c
-git diff --name-status 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..9fd2a56c57f834ad39c03a2f748bdbaefc79c91c
-git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..9fd2a56c57f834ad39c03a2f748bdbaefc79c91c
+# f82134de35e531a8b3bbf235ad480254ba40f1fe
+git diff --name-status 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..f82134de35e531a8b3bbf235ad480254ba40f1fe
+git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..f82134de35e531a8b3bbf235ad480254ba40f1fe
 # exit 0
 ```
 
-Fresh disposable PostgreSQL baseline:
+Fresh disposable PostgreSQL evidence:
 
 ```text
-docker run --name m4-data-review-r4-b7f288 ... postgres:17-alpine
+docker run --name m4-data-review-r5-b7f288 ... postgres:17-alpine
 FACTORY_TEST_DATABASE_URL=<disposable-local-url> uv run --project factory python -m unittest factory.tests.test_postgres_integration -v
-# Ran 12 tests in 15.645s — OK
+# Ran 13 tests in 16.947s — OK
 
 uv run --project factory python -m unittest factory.tests.test_migrations -v
-# Ran 4 tests in 0.006s — OK
+# Ran 4 tests in 0.005s — OK
 ```
 
-The parent supplied fresh verifier PASS evidence for exact head `9fd2a56c57f834ad39c03a2f748bdbaefc79c91c`; this review independently reran the focused PostgreSQL and migration suites and the targeted effective-role probes. Owner access was used only to provision/truncate the fresh disposable database and assume `SET LOCAL ROLE factory_runtime`. All supported-path intake and claims used the service/store, whose connections enforce `SET ROLE factory_runtime` (`factory/src/adaptive_factory/store.py:50-65`). Exact probe outputs are quoted above.
+The parent supplied fresh verifier plus independent code/test/security PASS evidence for exact head `f82134de35e531a8b3bbf235ad480254ba40f1fe`. This review independently reran the full PostgreSQL integration suite, migration suite, static diff check and targeted effective-role/fencing probes. Owner access was used only to provision/truncate the disposable database and simulate/restore legacy corruption; supported product operations ran through service/store connections that enforce `SET ROLE factory_runtime` (`factory/src/adaptive_factory/store.py:50-59`).
 
-The exact disposable container `m4-data-review-r4-b7f288` was removed after review; no shared, Trust CI, external, or production database was read or mutated. No product code was changed.
+The exact disposable container `m4-data-review-r5-b7f288` was removed after review; no shared, Trust CI, external or production database was read or mutated. No product code was changed.
 
-Because exact head `9fd2a56c57f834ad39c03a2f748bdbaefc79c91c` retains an Important allocation-authority defect, do not record a passing `data_review` receipt for this report.
+**Final data-review result: PASS for exact head `f82134de35e531a8b3bbf235ad480254ba40f1fe`.**
