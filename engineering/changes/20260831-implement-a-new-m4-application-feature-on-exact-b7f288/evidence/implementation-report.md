@@ -35,6 +35,8 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 - `03a1080` — frozen fix-wave implementation evidence before exit verification.
 - `b820bed` — additive migration, secret fixture and PostgreSQL readiness gate repairs.
 - `dfe03f3` — calendar-independent bounded authority-expiry regression fixture.
+- `066520d` — frozen second residual review wave evidence.
+- `70cb209` — authority serialization, schema-008 accounting quarantine and mandatory cleanup semantics.
 
 ## Independent-review remediation
 
@@ -44,13 +46,15 @@ The final fix wave accepted every finding in the five overwritten FAIL reports; 
 
 The mandatory exit runner creates an exact disposable PostgreSQL 17 container, executes API and database tests under effective roles, restarts PostgreSQL, reconnects through a fresh store, proves one repair then a zero-repair replay, and removes the exact container. New acceptance cases directly exercise event/repair/deadline boundaries, repository-kill isolation, defensive 100+1 paging, the exact five-second setting, authority revocation races, real UDS authentication and shipped owner/runtime bootstrap.
 
+The second residual wave uses forward-only migration `010` without changing applied `009`: both M0 authority forms now hold a row lock that conflicts with non-key revocation through intake commit; a real non-empty schema-008 upgrade quarantines unresolved prior-attempt accounting before claim; and mandatory release/reconcile/cancel events plus audit survive an exhausted ordinary-event budget while capacity returns exactly once.
+
 ## Verification evidence
 
-- Final remediation factory suite: 59/59 passed in 30.541s against fresh disposable PostgreSQL 17, including API integration, authority revocation, effective-role denials, accounting recovery, deadlock regression, repository kill, bounded reconciliation, query plans, bootstrap and UDS authentication.
+- Final remediation factory suite: 63/63 passed in 32.699s against fresh disposable PostgreSQL 17, including API integration, both authority interleavings/forms, schema-008 upgrade safety, exhausted-event cleanup, effective-role denials, accounting recovery, deadlock regression, repository kill, bounded reconciliation, query plans, bootstrap and UDS authentication.
 - Actual restart probe: PostgreSQL container restarted, one expired holder reclaimed, second reconciliation repaired zero, a higher fence issued, and the late holder was rejected.
 - Representative `EXPLAIN (ANALYZE, BUFFERS)` assertions selected the claim, audit, usage, active-reservation and reconciliation indexes added or retained for their exact predicates.
 - Root regression run: 488 tests in 314.727s found one undeclared admin source; after binding it to the existing factory service node, the focused regression, architecture validate, repository drift and all five diagram checks passed.
-- Focused migration/API/UDS tests passed 17/17, architecture fitness passed, secret scan reported zero findings, and Ruff passed. `python3 scripts/grok_verify.py --mode pr` on committed head `dfe03f3` returned exact `RESULT: PASS` for all 14 gates; this report-only evidence commit is followed by one final verifier run to bind the receipt to the final tree.
+- Residual focused PostgreSQL tests passed 5/5; migration tests passed 4/4, installer tests passed 17/17, the dependency-free factory suite passed 24/24, and Ruff passed. A fresh root suite and `python3 scripts/grok_verify.py --mode pr` run after this report commit bind the final-tree verdict.
 
 ## Disposable migration evidence and cleanup
 
