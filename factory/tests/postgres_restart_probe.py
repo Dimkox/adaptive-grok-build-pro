@@ -41,6 +41,8 @@ def main() -> int:
         cursor.execute(
             "TRUNCATE factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
         )
+        cursor.execute("TRUNCATE factory.kill_switch_heads")
+        cursor.execute("INSERT INTO factory.metric_counters(singleton) VALUES (true)")
         cursor.execute("UPDATE factory.capacity_counters SET active_count=0")
         cursor.execute(
             "INSERT INTO factory.m0_authority_observations(observation_id,observed_at,check_name,exact_head_sha,issuer,evidence_digest,repository_id,policy_digest) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",

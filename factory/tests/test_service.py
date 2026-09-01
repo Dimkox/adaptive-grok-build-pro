@@ -4,6 +4,7 @@ import unittest
 from adaptive_factory.models import Actor, FailureClass, LeaseGrant, RunRole, TaskProjection, TaskStatus
 from adaptive_factory.contracts import ContractError
 from adaptive_factory.service import AuthorizationError, FactoryService
+from adaptive_factory.store import FenceError, StoreError
 from factory.tests.test_contracts import valid_intake
 
 
@@ -44,7 +45,30 @@ class RecordingStore:
         return {}
 
 
+class FailingFenceMetricStore(RecordingStore):
+    def __init__(self):
+        super().__init__()
+        self.original = FenceError("authoritative stale fence")
+
+    def heartbeat(self, *_args, **_kwargs):
+        raise self.original
+
+    def record_fence_rejection(self):
+        raise StoreError("metrics unavailable")
+
+
 class ServiceTests(unittest.TestCase):
+    def test_fence_metric_failure_never_replaces_authoritative_fence_error(self):
+        store = FailingFenceMetricStore()
+        service = FactoryService(store)
+        worker = Actor(
+            "worker", "worker", frozenset({"task:heartbeat"}), frozenset({"owner/repository"})
+        )
+        grant = LeaseGrant("task-1", "run-1", "worker", RunRole.READER, 1, NOW, "b" * 64)
+        with self.assertRaises(FenceError) as caught:
+            service.heartbeat(grant, actor=worker, now=NOW)
+        self.assertIs(caught.exception, store.original)
+
     def test_submit_requires_scope_and_repository_authorization(self):
         store = RecordingStore()
         service = FactoryService(store)

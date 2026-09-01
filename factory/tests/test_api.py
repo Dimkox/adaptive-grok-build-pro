@@ -13,6 +13,7 @@ from adaptive_factory.api import Authenticator, create_app
 from adaptive_factory.cli import main as cli_main
 from adaptive_factory.contracts import TaskIntakeV1
 from adaptive_factory.models import Actor, TaskProjection, TaskStatus
+from adaptive_factory.service import FactoryService
 from adaptive_factory.settings import SettingsError, read_token_file
 from adaptive_factory.store import IntakeResult
 from factory.tests.test_contracts import valid_intake
@@ -56,7 +57,7 @@ class FakeService:
         self.calls.append(("reconcile", kwargs))
         return {"candidates": 0, "repaired": 0, "cursor": None}
 
-    def metrics(self, *, actor):
+    def metrics(self, *, actor=None):
         self.calls.append(("metrics", actor))
         return {
             "factory_intake_and_rejection_outcomes_total": {},
@@ -138,28 +139,61 @@ class ApiTests(unittest.TestCase):
 
     def test_metrics_counts_auth_rejections_without_exposing_credentials(self):
         operator_token = "metrics-" + "operator-" + "credential"
-        scoped_token = "metrics-" + "scoped-" + "credential"
+        no_scope_token = "metrics-" + "no-scope-" + "credential"
+        repository_token = "metrics-" + "repository-" + "credential"
+        wrong_kind_token = "metrics-" + "wrong-kind-" + "credential"
         operator = Actor(
             "metrics-operator", "operator", frozenset({"factory:reconcile"}), frozenset({"*"})
         )
-        scoped = Actor("metrics-scoped", "operator", frozenset(), frozenset({"*"}))
+        no_scope = Actor("metrics-no-scope", "operator", frozenset(), frozenset({"*"}))
+        repository = Actor(
+            "metrics-repository", "operator", frozenset({"factory:reconcile"}),
+            frozenset({"owner/repository"}),
+        )
+        wrong_kind = Actor(
+            "metrics-wrong-kind", "worker", frozenset({"factory:reconcile"}), frozenset({"*"})
+        )
         client = TestClient(
-            create_app(self.service, Authenticator({operator_token: operator, scoped_token: scoped}))
+            create_app(
+                FactoryService(self.service),
+                Authenticator({
+                    operator_token: operator,
+                    no_scope_token: no_scope,
+                    repository_token: repository,
+                    wrong_kind_token: wrong_kind,
+                }),
+            )
         )
         self.assertEqual(client.get("/metrics").status_code, 401)
         self.assertEqual(client.get("/metrics", headers={"Authorization": "Bearer invalid"}).status_code, 401)
         self.assertEqual(
-            client.get("/metrics", headers={"Authorization": f"Bearer {scoped_token}"}).status_code, 403
+            client.get("/metrics", headers={"Authorization": f"Bearer {no_scope_token}"}).status_code, 403
+        )
+        self.assertEqual(
+            client.get("/metrics", headers={"Authorization": f"Bearer {repository_token}"}).status_code, 403
+        )
+        self.assertEqual(
+            client.get("/metrics", headers={"Authorization": f"Bearer {wrong_kind_token}"}).status_code, 403
         )
         response = client.get("/metrics", headers={"Authorization": f"Bearer {operator_token}"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.json()["factory_capacity_budget_kill_and_reconcile_outcomes_total"]["auth_rejected"],
-            3,
+            5,
         )
-        self.assertNotIn(operator_token, response.text)
-        self.assertNotIn(scoped_token, response.text)
+        for secret in (
+            operator_token, no_scope_token, repository_token, wrong_kind_token,
+            "metrics-repository", "owner/repository",
+        ):
+            self.assertNotIn(secret, response.text)
         self.assertLessEqual(len(response.content), 2048)
+
+        fresh = TestClient(create_app(FactoryService(self.service), Authenticator({operator_token: operator})))
+        restarted = fresh.get("/metrics", headers={"Authorization": f"Bearer {operator_token}"})
+        self.assertEqual(
+            restarted.json()["factory_capacity_budget_kill_and_reconcile_outcomes_total"]["auth_rejected"],
+            0,
+        )
 
     def test_malformed_closed_commands_return_bounded_4xx(self):
         token = "-".join(("test", "worker", "operator", "credential"))

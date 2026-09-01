@@ -27,6 +27,10 @@ class AuthorityError(StoreError):
     pass
 
 
+class MetricsUnavailable(StoreError):
+    pass
+
+
 @dataclass(frozen=True)
 class IntakeResult:
     task: TaskProjection
@@ -52,10 +56,11 @@ class PostgresFactoryStore:
             raise StoreError("database URL is required")
         self.database_url = database_url
 
-    def _connect(self):
+    def _connect(self, *, connect_timeout: int | None = None):
         import psycopg
 
-        connection = psycopg.connect(self.database_url)
+        options = {} if connect_timeout is None else {"connect_timeout": connect_timeout}
+        connection = psycopg.connect(self.database_url, **options)
         try:
             connection.execute("SET ROLE factory_runtime")
         except Exception:
@@ -110,44 +115,21 @@ class PostgresFactoryStore:
         return bool(cursor.fetchone()[0])
 
     def metrics(self) -> dict[str, dict[str, int]]:
-        with self._connect() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                """SELECT count(*),count(*) FILTER (WHERE state='superseded'),
-                count(*) FILTER (WHERE state='queued'),count(*) FILTER (WHERE state='retry'),
-                count(*) FILTER (WHERE state='dead'),
-                COALESCE(sum(cost_reserved_micros),0),COALESCE(sum(cost_observed_micros),0),
-                COALESCE(sum(tokens_reserved),0),COALESCE(sum(tokens_observed),0),
-                COALESCE(sum(wall_reserved_seconds),0),count(*) FILTER (WHERE accounting_blocked)
-                FROM factory.tasks"""
-            )
-            (
-                intake, superseded, queued, retry, dead, reserved_cost, observed_cost,
-                reserved_tokens, observed_tokens, reserved_wall, blocked,
-            ) = cursor.fetchone()
-            cursor.execute("SELECT count(*) FROM factory.task_events")
-            transition_events = cursor.fetchone()[0]
-            cursor.execute(
-                """SELECT count(*) FILTER (WHERE state='leased' AND released_at IS NULL),
-                count(*) FILTER (WHERE state='expired') FROM factory.runs"""
-            )
-            live_leases, reclaimed = cursor.fetchone()
-            cursor.execute("SELECT count(*) FROM factory.capacity_allocations WHERE released_at IS NULL")
-            active_capacity = cursor.fetchone()[0]
-            cursor.execute("SELECT COALESCE(sum(output_bytes),0) FROM factory.usage_observations")
-            observed_output = cursor.fetchone()[0]
-            cursor.execute("SELECT count(*) FROM (SELECT DISTINCT ON (scope_key) enabled FROM factory.kill_switches ORDER BY scope_key,created_at DESC,switch_id DESC) current WHERE enabled")
-            kills = cursor.fetchone()[0]
-            cursor.execute(
-                """SELECT count(*),COALESCE(sum(candidates),0),COALESCE(sum(repaired),0)
-                FROM factory.reconciliation_runs WHERE status='completed'"""
-            )
-            reconciliation_runs, reconciliation_candidates, repaired = cursor.fetchone()
-            cursor.execute(
-                """SELECT COALESCE((SELECT value FROM factory.metric_counters
-                WHERE metric_name='factory_lease_reclaim_and_fence_rejection_total'
-                AND outcome='fence_rejected'),0)"""
-            )
-            fence_rejected = cursor.fetchone()[0]
+        try:
+            with self._connect() as connection, connection.cursor() as cursor:
+                cursor.execute("SET LOCAL statement_timeout='5s'")
+                cursor.execute("SET LOCAL lock_timeout='500ms'")
+                cursor.execute("SELECT * FROM factory.read_metrics_snapshot()")
+                row = cursor.fetchone()
+        except Exception as exc:
+            raise MetricsUnavailable("metrics snapshot unavailable") from exc
+        (
+            _singleton, intake, superseded, queued, retry, dead, transition_events,
+            live_leases, reclaimed, fence_rejected, active_capacity,
+            reserved_cost, observed_cost, reserved_tokens, observed_tokens, reserved_wall,
+            observed_output, blocked, kills, reconciliation_runs,
+            reconciliation_candidates, repaired,
+        ) = row
         return {
             "factory_intake_and_rejection_outcomes_total": {
                 "accepted": intake, "superseded": superseded, "queued": queued, "retry": retry,
@@ -167,14 +149,10 @@ class PostgresFactoryStore:
         }
 
     def record_fence_rejection(self) -> None:
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
-            cursor.execute(
-                """INSERT INTO factory.metric_counters(metric_name,outcome,value)
-                VALUES ('factory_lease_reclaim_and_fence_rejection_total','fence_rejected',1)
-                ON CONFLICT(metric_name,outcome) DO UPDATE SET value=CASE
-                  WHEN factory.metric_counters.value<9223372036854775807
-                  THEN factory.metric_counters.value+1 ELSE factory.metric_counters.value END"""
-            )
+        with self._connect(connect_timeout=1) as connection, connection.cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='100ms'")
+            cursor.execute("SET LOCAL statement_timeout='250ms'")
+            cursor.execute("SELECT factory.increment_fence_rejected()")
 
     def _command_replay(self, cursor, key: str | None, actor: Actor, action: str, request: dict):
         if key is None:

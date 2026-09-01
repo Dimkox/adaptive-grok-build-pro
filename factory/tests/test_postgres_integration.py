@@ -40,6 +40,10 @@ class PostgresFactoryTests(unittest.TestCase):
             cursor.execute(
                 "TRUNCATE factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
             )
+            cursor.execute("SELECT to_regclass('factory.metric_counters_pre_012_untrusted')")
+            if cursor.fetchone()[0] is not None:
+                cursor.execute("TRUNCATE factory.kill_switch_heads")
+                cursor.execute("INSERT INTO factory.metric_counters(singleton) VALUES (true)")
             cursor.execute("UPDATE factory.capacity_counters SET active_count=0")
             cursor.execute(
                 "INSERT INTO factory.m0_authority_observations(observation_id,observed_at,check_name,exact_head_sha,issuer,evidence_digest,repository_id,policy_digest) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
@@ -951,6 +955,220 @@ class PostgresFactoryTests(unittest.TestCase):
         self.assertNotIn("metrics-queued", response.text)
         self.assertLessEqual(len(response.content), 2048)
 
+    def test_metric_counter_runtime_is_capability_only_monotonic_and_saturating(self):
+        import psycopg
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT
+                has_table_privilege('factory_runtime','factory.metric_counters','SELECT'),
+                has_table_privilege('factory_runtime','factory.metric_counters','INSERT'),
+                has_table_privilege('factory_runtime','factory.metric_counters','UPDATE'),
+                has_table_privilege('factory_runtime','factory.metric_counters','DELETE'),
+                has_table_privilege('factory_runtime','factory.metric_counters_pre_012_untrusted','SELECT'),
+                has_function_privilege('factory_runtime','factory.increment_fence_rejected()','EXECUTE'),
+                has_function_privilege('factory_runtime','factory.read_metrics_snapshot()','EXECUTE'),
+                has_function_privilege('public','factory.increment_fence_rejected()','EXECUTE'),
+                has_function_privilege('factory_runtime','factory.metrics_task_delta()','EXECUTE')"""
+            )
+            self.assertEqual(cursor.fetchone(), (False, False, False, False, False, True, True, False, False))
+
+        forbidden = (
+            "INSERT INTO factory.metric_counters(singleton,fence_rejected) VALUES (false,99)",
+            "UPDATE factory.metric_counters SET fence_rejected=0",
+            "DELETE FROM factory.metric_counters",
+            "SELECT * FROM factory.metric_counters",
+            "INSERT INTO factory.metric_counters_pre_012_untrusted(metric_name,outcome,value) VALUES ('forged','unknown',99)",
+            "SELECT * FROM factory.metric_counters_pre_012_untrusted",
+        )
+        for statement in forbidden:
+            with self.subTest(statement=statement), psycopg.connect(DATABASE_URL) as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute("SET LOCAL ROLE factory_runtime")
+                    with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                        cursor.execute(statement)
+
+        def increment(_index):
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute("SET LOCAL ROLE factory_runtime")
+                cursor.execute("SELECT factory.increment_fence_rejected()")
+                return cursor.fetchone()[0]
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            values = tuple(pool.map(increment, range(8)))
+        self.assertEqual((len(set(values)), min(values), max(values)), (8, 1, 8))
+        self.assertEqual(
+            self.store.metrics()["factory_lease_reclaim_and_fence_rejection_total"]["fence_rejected"], 8
+        )
+
+        maximum = 9_223_372_036_854_775_807
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute("UPDATE factory.metric_counters SET fence_rejected=%s", (maximum - 1,))
+        self.assertEqual((increment(0), increment(1)), (maximum, maximum))
+
+    def test_metrics_snapshot_is_atomic_constant_row_and_timed(self):
+        import psycopg
+        from fastapi.testclient import TestClient
+        from unittest import mock
+
+        task = self.submit(source="metrics-snapshot-race").task
+        grant = self.service.claim(
+            owner="metrics-snapshot-race", role=RunRole.READER,
+            repositories=(task.repository_id,), lease_seconds=60, actor=WORKER, now=NOW,
+        )
+        observed = threading.Event()
+        proceed = threading.Event()
+        statements = []
+        real_connection = self.store._connect()
+
+        class ProbeCursor:
+            def __init__(self, inner):
+                self.inner = inner
+
+            def __enter__(self):
+                self.inner.__enter__()
+                return self
+
+            def __exit__(self, *args):
+                return self.inner.__exit__(*args)
+
+            def __getattr__(self, name):
+                return getattr(self.inner, name)
+
+            def execute(self, statement, parameters=None):
+                text = str(statement).lower()
+                statements.append(text)
+                result = self.inner.execute(statement, parameters)
+                if (
+                    "from factory.runs" in text and "filter (where state='leased'" in text
+                ) or "read_metrics_snapshot" in text:
+                    if not observed.is_set():
+                        observed.set()
+                        if not proceed.wait(2):
+                            raise RuntimeError("metrics snapshot test barrier timed out")
+                return result
+
+        class ProbeConnection:
+            def __enter__(self):
+                real_connection.__enter__()
+                return self
+
+            def __exit__(self, *args):
+                return real_connection.__exit__(*args)
+
+            def cursor(self):
+                return ProbeCursor(real_connection.cursor())
+
+        with mock.patch.object(self.store, "_connect", return_value=ProbeConnection()):
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(self.store.metrics)
+                self.assertTrue(observed.wait(2), statements)
+                other = FactoryService(PostgresFactoryStore(DATABASE_URL))
+                other.release(grant, outcome=FailureClass.WORKER_LOST, actor=WORKER, now=NOW)
+                proceed.set()
+                metrics = future.result(timeout=2)
+        leases = metrics["factory_lease_reclaim_and_fence_rejection_total"]["live_leases"]
+        capacity = metrics["factory_capacity_budget_kill_and_reconcile_outcomes_total"]["active_capacity"]
+        self.assertIn((leases, capacity), {(1, 1), (0, 0)})
+        self.assertIn("set local statement_timeout='5s'", statements)
+        self.assertIn("set local lock_timeout='500ms'", statements)
+        data_statements = [item for item in statements if item.startswith("select")]
+        self.assertEqual(len(data_statements), 1)
+        self.assertIn("read_metrics_snapshot", data_statements[0])
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute("EXPLAIN (ANALYZE,FORMAT JSON) SELECT * FROM factory.metric_counters WHERE singleton")
+            plan = cursor.fetchone()[0][0]["Plan"]
+            self.assertEqual((plan["Relation Name"], plan["Actual Rows"]), ("metric_counters", 1))
+
+        blocker = psycopg.connect(DATABASE_URL)
+        blocker.execute("LOCK TABLE factory.metric_counters IN ACCESS EXCLUSIVE MODE")
+        token = "metrics-" + "timeout-" + "credential"
+        client = TestClient(
+            create_app(self.service, Authenticator({token: OPERATOR})), raise_server_exceptions=False
+        )
+        started = time.monotonic()
+        unavailable = client.get("/metrics", headers={"Authorization": f"Bearer {token}"})
+        elapsed = time.monotonic() - started
+        blocker.rollback()
+        blocker.close()
+        self.assertEqual(unavailable.status_code, 503)
+        self.assertLess(elapsed, 2)
+
+    def test_locked_metric_counter_never_delays_or_masks_stale_fence_409(self):
+        import psycopg
+        from fastapi.testclient import TestClient
+
+        task = self.submit(source="metrics-locked-fence").task
+        grant = self.service.claim(
+            owner="worker", role=RunRole.READER, repositories=(task.repository_id,),
+            lease_seconds=60, actor=WORKER, now=NOW,
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.capacity_allocations SET released_at=clock_timestamp() WHERE run_id=%s",
+                (grant.run_id,),
+            )
+            cursor.execute("SELECT to_regclass('factory.metric_counters_pre_012_untrusted')")
+            migrated = cursor.fetchone()[0] is not None
+            if not migrated:
+                cursor.execute(
+                    """INSERT INTO factory.metric_counters(metric_name,outcome,value)
+                    VALUES ('factory_lease_reclaim_and_fence_rejection_total','fence_rejected',0)
+                    ON CONFLICT(metric_name,outcome) DO UPDATE SET value=0"""
+                )
+        locker = psycopg.connect(DATABASE_URL)
+        if migrated:
+            locker.execute("SELECT fence_rejected FROM factory.metric_counters WHERE singleton FOR UPDATE")
+        else:
+            locker.execute(
+                """SELECT value FROM factory.metric_counters
+                WHERE metric_name='factory_lease_reclaim_and_fence_rejection_total'
+                  AND outcome='fence_rejected' FOR UPDATE"""
+            )
+        token = "metrics-" + "locked-fence-" + "credential"
+        client = TestClient(create_app(self.service, Authenticator({token: WORKER})))
+        body = {
+            "task_id": grant.task_id, "run_id": grant.run_id, "owner": grant.owner,
+            "role": grant.role.value, "fence": grant.fence,
+            "expires_at": grant.expires_at.isoformat().replace("+00:00", "Z"),
+            "packet_digest": grant.packet_digest,
+        }
+
+        def request(command):
+            return client.post(
+                "/v1/heartbeats",
+                headers={
+                    "Authorization": f"Bearer {token}", "Idempotency-Key": command,
+                    "X-Correlation-ID": command,
+                },
+                json=body,
+            )
+
+        timed_out = False
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(request, "locked-fence-command")
+            try:
+                response = future.result(timeout=1)
+            except FutureTimeout:
+                timed_out = True
+                locker.rollback()
+                response = future.result(timeout=2)
+            finally:
+                if not timed_out:
+                    locker.rollback()
+        locker.close()
+        self.assertFalse(timed_out, "metric row lock delayed the authoritative stale-fence response")
+        self.assertEqual((response.status_code, response.json()), (409, {"error": "conflict", "code": "stale_fence"}))
+        self.assertEqual(
+            self.store.metrics()["factory_lease_reclaim_and_fence_rejection_total"]["fence_rejected"], 0
+        )
+        after_unlock = request("unlocked-fence-command")
+        self.assertEqual((after_unlock.status_code, after_unlock.json()), (409, {"error": "conflict", "code": "stale_fence"}))
+        self.assertEqual(
+            self.store.metrics()["factory_lease_reclaim_and_fence_rejection_total"]["fence_rejected"], 1
+        )
+
     def test_event_repair_and_database_deadline_limits_fail_closed(self):
         import psycopg
 
@@ -1237,6 +1455,11 @@ class PostgresFactoryTests(unittest.TestCase):
                     VALUES (%s,%s,%s,'legacy-completed-call',%s,1,1,1)""",
                     (uuid.uuid4(), ready_task_id, ready_completed_run_id, uuid.uuid4().hex * 2),
                 )
+                cursor.execute(
+                    """INSERT INTO factory.metric_counters(metric_name,outcome,value) VALUES
+                    ('factory_lease_reclaim_and_fence_rejection_total','fence_rejected',999),
+                    ('forged-untrusted-key','unknown',777)"""
+                )
 
             applied = PostgresMigrator(upgrade_url).apply()
             upgraded_store = PostgresFactoryStore(upgrade_url)
@@ -1252,11 +1475,35 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11], "ready", 11, True,
+                    [9, 10, 11, 12], "ready", 12, True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
             )
+            metrics = upgraded_store.metrics()
+            self.assertEqual(
+                (
+                    metrics["factory_intake_and_rejection_outcomes_total"]["accepted"],
+                    metrics["factory_intake_and_rejection_outcomes_total"]["superseded"],
+                    metrics["factory_intake_and_rejection_outcomes_total"]["queued"],
+                    metrics["factory_lease_reclaim_and_fence_rejection_total"]["fence_rejected"],
+                    metrics["factory_capacity_budget_kill_and_reconcile_outcomes_total"]["cost_reserved_micros"],
+                    metrics["factory_capacity_budget_kill_and_reconcile_outcomes_total"]["output_observed_bytes"],
+                    metrics["factory_capacity_budget_kill_and_reconcile_outcomes_total"]["accounting_blocked"],
+                ),
+                (4, 1, 1, 0, 25_000_500, 1, 3),
+            )
+            with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT metric_name,outcome,value FROM factory.metric_counters_pre_012_untrusted ORDER BY metric_name"
+                )
+                self.assertEqual(
+                    cursor.fetchall(),
+                    [
+                        ("factory_lease_reclaim_and_fence_rejection_total", "fence_rejected", 999),
+                        ("forged-untrusted-key", "unknown", 777),
+                    ],
+                )
             current_grant = upgraded_service.claim(
                 owner="legacy-retry-worker", role=RunRole.READER, repositories=("owner/repository",),
                 lease_seconds=60, actor=WORKER, now=NOW,
@@ -1526,7 +1773,7 @@ class PostgresFactoryTests(unittest.TestCase):
         runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
         result = bootstrap_local(DATABASE_URL, login, password, runtime_url)
         self.assertEqual(result["database_role"], "factory_runtime")
-        self.assertEqual(result["schema_version"], 11)
+        self.assertEqual(result["schema_version"], 12)
         with psycopg.connect(runtime_url) as connection, connection.cursor() as cursor:
             cursor.execute("SET ROLE factory_runtime")
             cursor.execute("SELECT session_user,current_user")

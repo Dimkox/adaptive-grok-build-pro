@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from .contracts import ContractError, canonical_digest
 from .models import Actor, LeaseGrant, RunRole
 from .service import AuthorizationError
-from .store import AuthorityError, BudgetError, FenceError, StoreError
+from .store import AuthorityError, BudgetError, FenceError, MetricsUnavailable, StoreError
 
 
 MAX_BODY_BYTES = 1_048_576
@@ -44,7 +44,7 @@ class Authenticator:
         self._rejection_lock = threading.Lock()
         self._rejections = 0
 
-    def _reject(self) -> None:
+    def record_rejection(self) -> None:
         with self._rejection_lock:
             if self._rejections < 9_223_372_036_854_775_807:
                 self._rejections += 1
@@ -55,7 +55,6 @@ class Authenticator:
 
     def authenticate(self, authorization: str | None, scope: str) -> Actor:
         if not authorization or not authorization.startswith("Bearer "):
-            self._reject()
             raise HTTPException(401, "bearer authentication required", headers={"WWW-Authenticate": "Bearer"})
         candidate = hashlib.sha256(authorization[7:].encode()).digest()
         matched = None
@@ -63,10 +62,8 @@ class Authenticator:
             if hmac.compare_digest(candidate, digest):
                 matched = actor
         if matched is None:
-            self._reject()
             raise HTTPException(401, "invalid bearer credential", headers={"WWW-Authenticate": "Bearer"})
         if scope not in matched.scopes:
-            self._reject()
             raise HTTPException(403, "scope denied")
         return matched
 
@@ -178,6 +175,10 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
     async def store_error(_request: Request, _error: StoreError):
         return JSONResponse({"error": "conflict"}, status_code=409)
 
+    @app.exception_handler(MetricsUnavailable)
+    async def metrics_unavailable(_request: Request, _error: MetricsUnavailable):
+        return JSONResponse({"error": "unavailable", "code": "metrics"}, status_code=503)
+
     @app.middleware("http")
     async def bound_body(request: Request, call_next):
         length = request.headers.get("content-length")
@@ -196,7 +197,10 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
                 return JSONResponse({"detail": "request body too large"}, status_code=413)
             body.extend(chunk)
         request._body = bytes(body)
-        return await call_next(request)
+        response = await call_next(request)
+        if response.status_code in {401, 403}:
+            authenticator.record_rejection()
+        return response
 
     @app.get("/health/live", tags=["health"])
     def live():
