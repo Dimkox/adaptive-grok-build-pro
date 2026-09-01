@@ -4,6 +4,8 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from io import StringIO
+from unittest import mock
+import os
 
 from fastapi.testclient import TestClient
 
@@ -170,6 +172,28 @@ class ApiTests(unittest.TestCase):
             link.symlink_to(token_file)
             with self.assertRaises(SettingsError):
                 read_token_file(link)
+
+    def test_token_file_requires_absolute_owned_nofollow_ancestry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            root.chmod(0o700)
+            private = root / "private"
+            private.mkdir(mode=0o700)
+            token = private / "token"
+            token.write_text("secret-token-value\n", encoding="utf-8")
+            token.chmod(0o600)
+            with self.assertRaises(SettingsError):
+                read_token_file(Path("relative-token"))
+            alias = root / "alias"
+            alias.symlink_to(private, target_is_directory=True)
+            with self.assertRaises(SettingsError):
+                read_token_file(alias / "token")
+            with mock.patch.object(os, "O_NOFOLLOW", None):
+                with self.assertRaises(SettingsError):
+                    read_token_file(token)
+            with mock.patch("adaptive_factory.settings.os.geteuid", return_value=os.geteuid() + 1):
+                with self.assertRaises(SettingsError):
+                    read_token_file(token)
 
     def test_cli_exposes_the_complete_local_control_surface(self):
         output = StringIO()

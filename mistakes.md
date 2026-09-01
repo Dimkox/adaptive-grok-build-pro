@@ -302,3 +302,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The first `gh pr create` attempt launched a local verifier instead of creating the PR and had to be interrupted; no external write occurred.
 **Root cause:** A multiline Markdown body containing backticks was embedded in a double-quoted shell argument, allowing command substitution instead of using a literal body file or structured argument boundary.
+
+## 2026-09-01 — Guessed a generated PostgreSQL constraint name
+
+**Symptom:** The first fresh migration `009` run failed while dropping the M0 observation uniqueness constraint.
+**Root cause:** The patch used the untruncated logical name instead of querying PostgreSQL's actual 63-byte generated identifier before writing the forward migration.

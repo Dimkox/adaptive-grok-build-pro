@@ -28,4 +28,4 @@ M2/M3 producer handoffs keep their producer exact-base/head pairs. M4 validates 
 
 ## Failure, rollout and recovery
 
-Only database unavailable, worker lost, provider transport unavailable and temporary resource exhaustion are retryable; attempt three ends dead. Missing accounting blocks work. Kill switches block new claims while existing leases end cooperatively or expire. Source rollout is local/disposable only. Recovery is global kill, stop local intake/claims, preserve state/audit, restore a backup into a separate database for comparison, and forward-fix with migration `009+`.
+Only database unavailable, worker lost, provider transport unavailable and temporary resource exhaustion are retryable; attempt three ends dead. Missing accounting blocks work. Kill switches block new claims while existing leases end cooperatively or expire. Source rollout is local/disposable only. Recovery is global kill, stop local intake/claims, preserve state/audit, restore a backup into a separate database for comparison, and forward-fix with migration `010+`.

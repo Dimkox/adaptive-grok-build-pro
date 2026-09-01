@@ -660,6 +660,15 @@ class PostgresFactoryStore:
             decision = classify_retry(outcome, attempt_no=attempt_no)
             target = TaskStatus.RETRY if decision.retry else (decision.terminal or TaskStatus.NEEDS_HUMAN)
             cursor.execute(
+                "SELECT EXISTS(SELECT 1 FROM factory.budget_reservations WHERE task_id=%s AND run_id=%s AND released_at IS NULL)",
+                (grant.task_id, grant.run_id),
+            )
+            if cursor.fetchone()[0]:
+                target = TaskStatus.NEEDS_HUMAN
+                cursor.execute(
+                    "UPDATE factory.tasks SET accounting_blocked=true WHERE task_id=%s", (grant.task_id,)
+                )
+            cursor.execute(
                 "UPDATE factory.attempts SET failure_class=%s,failure_code=%s,failure_digest=%s,finished_at=clock_timestamp() WHERE run_id=%s",
                 (outcome.value, outcome.value, canonical_digest({"failure": outcome.value}), grant.run_id),
             )
@@ -667,12 +676,13 @@ class PostgresFactoryStore:
             cursor.execute(
                 """SELECT t.accounting_blocked,
                 EXISTS(SELECT 1 FROM factory.usage_observations u WHERE u.task_id=t.task_id AND u.run_id=%s),
-                EXISTS(SELECT 1 FROM factory.budget_reservations b WHERE b.task_id=t.task_id AND b.run_id=%s AND b.released_at IS NULL)
+                EXISTS(SELECT 1 FROM factory.budget_reservations b WHERE b.task_id=t.task_id AND b.released_at IS NULL),
+                t.cost_reserved_micros,t.tokens_reserved,t.wall_reserved_seconds
                 FROM factory.tasks t WHERE t.task_id=%s""",
-                (grant.run_id, grant.run_id, grant.task_id),
+                (grant.run_id, grant.task_id),
             )
-            blocked, has_usage, has_reservation = cursor.fetchone()
-            if blocked or not has_usage or has_reservation:
+            blocked, has_usage, has_reservation, reserved_cost, reserved_tokens, reserved_wall = cursor.fetchone()
+            if blocked or not has_usage or has_reservation or any((reserved_cost, reserved_tokens, reserved_wall)):
                 raise BudgetError("completion requires settled accounting")
             target = TaskStatus.READY_FOR_HUMAN
             cursor.execute("UPDATE factory.attempts SET finished_at=clock_timestamp() WHERE run_id=%s", (grant.run_id,))
@@ -967,14 +977,15 @@ class PostgresFactoryStore:
             )
             for row in rows:
                 run_id, task_id, owner, role, fence, expires, packet, repository_id = row
+                if not self._lock_capacity_for_run(cursor, str(run_id)):
+                    continue
                 cursor.execute(
-                    "SELECT repair_count,repair_limit FROM factory.tasks WHERE task_id=%s FOR UPDATE", (task_id,)
+                    "SELECT repair_count,repair_limit,state,current_run_id,current_fence FROM factory.tasks WHERE task_id=%s FOR UPDATE",
+                    (task_id,),
                 )
-                repair_count, repair_limit = cursor.fetchone()
+                repair_count, repair_limit, state, current_run_id, current_fence = cursor.fetchone()
                 grant = LeaseGrant(str(task_id), str(run_id), owner, RunRole(role), fence, expires, packet.strip())
                 failure = FailureClass.PROVIDER_QUALITY if repair_count >= repair_limit else FailureClass.WORKER_LOST
-                cursor.execute("SELECT state,current_run_id,current_fence FROM factory.tasks WHERE task_id=%s", (task_id,))
-                state, current_run_id, current_fence = cursor.fetchone()
                 if state == "leased" and str(current_run_id) == str(run_id) and current_fence == fence:
                     self._release_locked(cursor, grant, failure, actor, allow_expired=True)
                     cursor.execute("UPDATE factory.runs SET state='expired' WHERE run_id=%s", (run_id,))

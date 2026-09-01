@@ -11,7 +11,7 @@ import uvicorn
 from .api import Authenticator, create_app
 from .models import Actor
 from .service import FactoryService
-from .settings import FactorySettings, SettingsError, read_token_file
+from .settings import FactorySettings, SettingsError, read_private_file, read_token_file
 from .store import PostgresFactoryStore
 
 
@@ -20,21 +20,10 @@ class ServerError(RuntimeError):
 
 
 def _read_private_file(path: Path, maximum: int) -> bytes:
-    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
     try:
-        descriptor = os.open(path, flags)
-    except OSError as exc:
+        return read_private_file(path, maximum)
+    except SettingsError as exc:
         raise ServerError("configuration file cannot be opened safely") from exc
-    try:
-        metadata = os.fstat(descriptor)
-        if not stat.S_ISREG(metadata.st_mode) or stat.S_IMODE(metadata.st_mode) != 0o600:
-            raise ServerError("configuration file must be regular mode-0600")
-        raw = os.read(descriptor, maximum + 1)
-        if len(raw) > maximum:
-            raise ServerError("configuration file is too large")
-        return raw
-    finally:
-        os.close(descriptor)
 
 
 def load_actors(path: Path) -> dict[str, Actor]:
