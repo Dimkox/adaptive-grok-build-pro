@@ -118,3 +118,8 @@ Reuse the active route only when `FOLLOW_UP_RE` matches the whole prompt, or the
 ## 2026-08-14 — Bind receipts after the last change-package write
 
 `tree_fingerprint` hashes every non-runtime changed file, including `engineering/changes/**/state.json`. Transition the durable package to `ready` first, then run `grok_verify` and `grok_review`. Recording evidence before that last write guarantees stale receipts and a second verification loop.
+
+
+## 2026-09-01 — Keep SEO landing generation isolated and repository-scoped
+
+Embedding the Codex skill under `.agents/skills/` and its showcase under `side-projects/` makes the capability available on demand without changing Trust CI runtime behavior. The showcase remains `noindex, nofollow` until a real production origin is supplied and verified.

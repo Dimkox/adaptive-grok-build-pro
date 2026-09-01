@@ -1,0 +1,45 @@
+{
+  "url": "http://127.0.0.1:8765/",
+  "viewports": [
+    {
+      "width": 320,
+      "documentWidth": 320,
+      "bodyWidth": 320,
+      "overflow": false,
+      "reducedMotion": true,
+      "scrollBehavior": "smooth"
+    },
+    {
+      "width": 768,
+      "documentWidth": 753,
+      "bodyWidth": 753,
+      "overflow": false,
+      "reducedMotion": true,
+      "scrollBehavior": "smooth"
+    },
+    {
+      "width": 1280,
+      "documentWidth": 1265,
+      "bodyWidth": 1265,
+      "overflow": false,
+      "reducedMotion": true,
+      "scrollBehavior": "smooth"
+    },
+    {
+      "width": 1920,
+      "documentWidth": 1905,
+      "bodyWidth": 1905,
+      "overflow": false,
+      "reducedMotion": true,
+      "scrollBehavior": "smooth"
+    }
+  ],
+  "keyboardFirstTab": {
+    "tag": "A",
+    "className": "skip-link",
+    "href": "#content",
+    "visible": true,
+    "outlineStyle": "solid",
+    "outlineWidth": "3px"
+  }
+}
