@@ -547,6 +547,7 @@
         "factory/README.md",
         "factory/pyproject.toml",
         "factory/src/adaptive_factory/__init__.py",
+        "factory/src/adaptive_factory/admin.py",
         "factory/src/adaptive_factory/contracts.py",
         "factory/src/adaptive_factory/migrations.py",
         "factory/src/adaptive_factory/models.py",
