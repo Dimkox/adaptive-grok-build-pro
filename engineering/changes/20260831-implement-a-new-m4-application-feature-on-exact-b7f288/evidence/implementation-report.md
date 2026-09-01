@@ -6,13 +6,14 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 
 ## Delivered behavior
 
-- Closed typed intake, handoff, actor, task, run, attempt and limit records with canonical digests, exact duplicate return and atomic supersession.
-- Eight contiguous checksum-locked factory migrations, persisted trusted-M0/command evidence, capability-shaped capacity authority, effective least-privilege `factory_runtime` execution and no `trust_ci` privileges.
+- Closed typed intake, handoff, actor, task, run, attempt and command records with canonical digests, full-frozen-intent duplicate identity, atomic supersession and bounded 4xx validation.
+- Nine contiguous checksum-locked factory migrations, repository/full-policy/action-bound transactional M0 authority, audit-v2 evidence, task-history indexes, capability-shaped capacity authority, effective least-privilege `factory_runtime` execution and no `trust_ci` privileges.
 - Transactional `FOR UPDATE SKIP LOCKED` claims, monotonic per-task fences, database-time leases/deadlines and 20 global readers / 10 per repository / one writer capacity.
 - Initial attempt plus two infrastructure retries, terminal dead/needs-human handling, 14,400-second and USD 25/token/output/event/repair ceilings, durable fail-closed missing accounting and idempotent usage observations.
-- Global/repository kills, append-only hash-chained audit with bounded verification, and ordered reconciliation capped at 100 candidates and five seconds.
+- Global/repository kills, complete task/run/correlation-bound hash-chained audit, and capacity-before-task reconciliation capped at 100 candidates and an exact five-second transaction timeout.
 - Constant-time scoped bearer authentication, actor/repository-bound worker mutations, bounded streaming bodies, durable idempotency/correlation, accounting endpoints, checked-in OpenAPI, and CLI control over Unix HTTP only.
-- Runnable `adaptive-factory-server` composition that pre-binds only an owned mode-`0660` Unix socket, plus dependency-aware readiness and the three declared redacted metric families.
+- Runnable `adaptive-factory-server` composition that pre-binds only an owned mode-`0660` Unix socket, absolute owner-pinned no-follow actor/token ancestry, plus dependency-aware readiness and the three declared redacted metric families.
+- Reproducible `adaptive-factory-admin` local bootstrap/migration interface with distinct owner/runtime DSNs, bounded `NOINHERIT` runtime login membership and effective-role readiness validation.
 - Architecture model/rules/diagrams, K17 README graph, roadmap/status, installer inventory, verifier integration, release and forward-recovery documentation.
 
 ## Commits
@@ -28,28 +29,32 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 - `39dafa4` — exact verification-gate repairs.
 - `01643c6` — frozen first-round implementation evidence.
 - `9bc51e8` — first-review durable invariant, authorization and executable-boundary repairs.
+- `f09c113` — full frozen authority, transactional M0, audit-v2, global-scope and closed-command repairs.
+- `2c6521c` — accounting recovery, fixed lock order, acceptance boundaries, credential ancestry and local rollout bootstrap.
+- `bd1eed9` — executable architecture ownership for the admin interface.
 
 ## Independent-review remediation
 
 The first five reviews correctly failed head `01643c6`. Regression-first repairs now atomically close leased cancel/supersede resources; isolate orphan reconciliation; settle and bound cost/token/wall accounting; require accounting before completion; preserve exact command replay; normalize CLI/API keys; bind workers and kill scopes to authenticated repository authority; require persisted M0 authority; execute under narrow database grants; and provide an actual UDS-only composition root.
 
-The mandatory exit runner creates an exact disposable PostgreSQL 17 container, executes API and database tests under effective roles, restarts PostgreSQL, reconnects through a fresh store, proves one repair then a zero-repair replay, and removes the exact container. Round-two remediation now also persists null claim results, binds accounting mutations to the caller's command key and correlation ID, replays reservations before mutable fence checks, and removes runtime authority over intake identities and capacity ceilings.
+The final fix wave accepted every finding in the five overwritten FAIL reports; there was no technical pushback. It now binds duplicate identity to the complete frozen intent, validates M0 repository/full-policy/action inside intake's insertion transaction, denies repo-scoped global reconciliation/metrics, closes every command input before coercion, authenticates all audit evidence fields, blocks cross-attempt unresolved accounting from retry/completion, eliminates reconcile/cancel lock reversal, and adds representative indexed-plan evidence.
+
+The mandatory exit runner creates an exact disposable PostgreSQL 17 container, executes API and database tests under effective roles, restarts PostgreSQL, reconnects through a fresh store, proves one repair then a zero-repair replay, and removes the exact container. New acceptance cases directly exercise event/repair/deadline boundaries, repository-kill isolation, defensive 100+1 paging, the exact five-second setting, authority revocation races, real UDS authentication and shipped owner/runtime bootstrap.
 
 ## Verification evidence
 
-- Remediation factory suite: 43/43 passed against fresh disposable PostgreSQL 17, including API integration, M0 authority, effective-role denials, null/accounting command replay, allocation-tamper fencing, accounting, terminal lease cleanup and orphan reconciliation.
+- Final remediation factory suite: 59/59 passed in 30.687s against fresh disposable PostgreSQL 17, including API integration, authority revocation, effective-role denials, accounting recovery, deadlock regression, repository kill, bounded reconciliation, query plans, bootstrap and UDS authentication.
 - Actual restart probe: PostgreSQL container restarted, one expired holder reclaimed, second reconciliation repaired zero, a higher fence issued, and the late holder was rejected.
-- Architecture model/fitness: 131/131 passed; validate, drift, diagram check and full worktree fitness passed.
-- Former root-verifier regressions: all 15 targeted failures passed; API/contract/state/migration/service unit subset 25/25 passed.
-- Secret scan: zero findings. Ruff and Bandit: passed.
-- The first root verifier failure and every bounded correction are recorded in `implementation-ledger.md`. The final `python3 scripts/grok_verify.py --mode pr` runs after this report is committed so its fingerprint-bound receipt, rather than mutable prose, records the exact-tree verdict.
+- Representative `EXPLAIN (ANALYZE, BUFFERS)` assertions selected the claim, audit, usage, active-reservation and reconciliation indexes added or retained for their exact predicates.
+- Root regression run: 488 tests in 314.727s found one undeclared admin source; after binding it to the existing factory service node, the focused regression, architecture validate, repository drift and all five diagram checks passed.
+- Ruff and the focused contracts/service/API/migration suite passed. The exact final `python3 scripts/grok_verify.py --mode pr` runs after this report is committed so its fingerprint-bound receipt, rather than mutable prose, records the final-tree verdict.
 
 ## Disposable migration evidence and cleanup
 
-Only the exact local container `m4-factory-pg-b7f288` and its fresh `m4_factory_final` database were mutated. After the final PostgreSQL suite the exact container was removed; its disposable data is not recoverable, and no other container, shared database, Trust CI state, external system or production resource was touched.
+Only exact disposable local PostgreSQL containers created by the focused and exit runners were mutated. The named `m4-factory-pg-fixwave` container and both dynamic exit containers were removed; generated `.venv`/egg-info artifacts were moved to trash, and no shared database, Trust CI state, external system or production resource was touched.
 
 ## Rollout, rollback and remaining authority
 
-Source rollout only: no service was activated and no migration was run outside disposable databases. Recovery after durable intake is global kill, stop local intake/claims, preserve audit/state, restore backup into a separate comparison database and forward-fix with migration `009+`; destructive down-migration is prohibited.
+Source rollout only: no service was activated and no migration was run outside disposable databases. Recovery after durable intake is global kill, stop local intake/claims, preserve audit/state, restore backup into a separate comparison database and forward-fix with migration `010+`; destructive down-migration is prohibited.
 
 Independent route reviews, PR delivery, the App-owned policy-epoch check on the exact PR head, signed approval scopes, merge and any deployment remain outside this implementation report and are not claimed here. The calendar deadline does not change the product runtime contract or bypass those gates.

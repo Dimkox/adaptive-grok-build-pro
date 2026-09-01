@@ -43,11 +43,23 @@
       "from": "reviewing",
       "reason": "Local verification and independent review receipts complete",
       "to": "ready"
+    },
+    {
+      "at": "2026-09-01T19:51:33+00:00",
+      "from": "ready",
+      "reason": "Five independent FAIL reports reopened M4 for bounded regression-first remediation",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-01T19:51:33+00:00",
+      "from": "implementing",
+      "reason": "All accepted fix-wave findings implemented; freeze final report and run exact-tree verifier before rereview",
+      "to": "verifying"
     }
   ],
   "route_id": "b7f288f1e81e",
   "schema_version": 1,
-  "status": "ready",
+  "status": "verifying",
   "title": "Implement a new M4 application feature on exact base 67714a1f1b87effcfabe55d5ca2770d0a68d17c1: typed immutable task, run, and attempt records; PostgreSQL migrations and durable state; idempotent intake; lease fencing and capacity; bounded retry, dead-letter and budgets; kill switches, audit, reconciliation; authenticated local API and CLI; PostgreSQL integration tests. The feature remains local and has no network side effects.",
-  "updated_at": "2026-09-01T11:34:12+00:00"
+  "updated_at": "2026-09-01T19:51:33+00:00"
 }
