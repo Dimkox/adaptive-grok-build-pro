@@ -32,6 +32,9 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 - `f09c113` — full frozen authority, transactional M0, audit-v2, global-scope and closed-command repairs.
 - `2c6521c` — accounting recovery, fixed lock order, acceptance boundaries, credential ancestry and local rollout bootstrap.
 - `bd1eed9` — executable architecture ownership for the admin interface.
+- `03a1080` — frozen fix-wave implementation evidence before exit verification.
+- `b820bed` — additive migration, secret fixture and PostgreSQL readiness gate repairs.
+- `dfe03f3` — calendar-independent bounded authority-expiry regression fixture.
 
 ## Independent-review remediation
 
@@ -43,11 +46,11 @@ The mandatory exit runner creates an exact disposable PostgreSQL 17 container, e
 
 ## Verification evidence
 
-- Final remediation factory suite: 59/59 passed in 30.687s against fresh disposable PostgreSQL 17, including API integration, authority revocation, effective-role denials, accounting recovery, deadlock regression, repository kill, bounded reconciliation, query plans, bootstrap and UDS authentication.
+- Final remediation factory suite: 59/59 passed in 30.541s against fresh disposable PostgreSQL 17, including API integration, authority revocation, effective-role denials, accounting recovery, deadlock regression, repository kill, bounded reconciliation, query plans, bootstrap and UDS authentication.
 - Actual restart probe: PostgreSQL container restarted, one expired holder reclaimed, second reconciliation repaired zero, a higher fence issued, and the late holder was rejected.
 - Representative `EXPLAIN (ANALYZE, BUFFERS)` assertions selected the claim, audit, usage, active-reservation and reconciliation indexes added or retained for their exact predicates.
 - Root regression run: 488 tests in 314.727s found one undeclared admin source; after binding it to the existing factory service node, the focused regression, architecture validate, repository drift and all five diagram checks passed.
-- Ruff and the focused contracts/service/API/migration suite passed. The exact final `python3 scripts/grok_verify.py --mode pr` runs after this report is committed so its fingerprint-bound receipt, rather than mutable prose, records the final-tree verdict.
+- Focused migration/API/UDS tests passed 17/17, architecture fitness passed, secret scan reported zero findings, and Ruff passed. `python3 scripts/grok_verify.py --mode pr` on committed head `dfe03f3` returned exact `RESULT: PASS` for all 14 gates; this report-only evidence commit is followed by one final verifier run to bind the receipt to the final tree.
 
 ## Disposable migration evidence and cleanup
 
