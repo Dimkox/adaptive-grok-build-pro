@@ -79,6 +79,10 @@
         "base_branch": "milestone/m1-typed-intent-evidence",
         "pull_request": 10,
         "merge_commit": "c23fd49f80c7d1c74ca3393b6079a74f251a72d8",
+        "merge_parents": [
+          "0a4dd0a867c876f99a8fe3580c9f0d47c90e3105",
+          "022411b05924618cfde0cb97b8c8aff4955e6013"
+        ],
         "notes": "The complete M1 source was accepted as part of the combined M1/M2 stack."
       },
       "main_delivery": {
@@ -112,7 +116,11 @@
         "status": "merged",
         "base_branch": "milestone/m1-typed-intent-evidence",
         "pull_request": 10,
-        "merge_commit": "c23fd49f80c7d1c74ca3393b6079a74f251a72d8"
+        "merge_commit": "c23fd49f80c7d1c74ca3393b6079a74f251a72d8",
+        "merge_parents": [
+          "0a4dd0a867c876f99a8fe3580c9f0d47c90e3105",
+          "022411b05924618cfde0cb97b8c8aff4955e6013"
+        ]
       },
       "main_delivery": {
         "status": "not_delivered",
@@ -141,7 +149,11 @@
         "status": "merged",
         "base_branch": "milestone/m2-executable-architecture",
         "pull_request": 11,
-        "merge_commit": "67714a1f1b87effcfabe55d5ca2770d0a68d17c1"
+        "merge_commit": "67714a1f1b87effcfabe55d5ca2770d0a68d17c1",
+        "merge_parents": [
+          "022411b05924618cfde0cb97b8c8aff4955e6013",
+          "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d"
+        ]
       },
       "main_delivery": {
         "status": "not_delivered",

@@ -136,31 +136,77 @@ class ProjectStateTests(unittest.TestCase):
             if "gate_head" in exact:
                 self.assertEqual(actual["external_gate"]["head_sha"], exact["gate_head"])
 
-    def test_m2_m3_commits_have_stack_ancestry_but_are_absent_from_main(self) -> None:
+    def test_local_git_objects_corrobate_durable_stack_proof_when_available(self) -> None:
         milestones = self.state["milestones"]
-        relationships = (
-            (milestones["M2"]["implementation"]["commit"], milestones["M2"]["stack_integration"]["merge_commit"], True),
-            (milestones["M2"]["implementation"]["commit"], milestones["M3"]["stack_integration"]["merge_commit"], True),
-            (milestones["M3"]["implementation"]["commit"], milestones["M3"]["stack_integration"]["merge_commit"], True),
-            (milestones["M2"]["stack_integration"]["merge_commit"], CURRENT_MAIN_SHA, False),
-            (milestones["M3"]["stack_integration"]["merge_commit"], CURRENT_MAIN_SHA, False),
+        integrations = (milestones["M2"]["stack_integration"], milestones["M3"]["stack_integration"])
+        required_objects = {
+            CURRENT_MAIN_SHA,
+            *(integration["merge_commit"] for integration in integrations),
+            *(parent for integration in integrations for parent in integration["merge_parents"]),
+        }
+        objects_available = all(
+            subprocess.run(
+                ["git", "cat-file", "-e", f"{commit}^{{commit}}"],
+                cwd=ROOT,
+                check=False,
+                capture_output=True,
+            ).returncode
+            == 0
+            for commit in required_objects
         )
-        for ancestor, descendant, expected in relationships:
-            for commit in (ancestor, descendant):
-                exists = subprocess.run(
-                    ["git", "cat-file", "-e", f"{commit}^{{commit}}"],
-                    cwd=ROOT,
-                    check=False,
-                    capture_output=True,
-                )
-                self.assertEqual(exists.returncode, 0, f"missing commit object {commit}")
+        if not objects_available:
+            return
+
+        for integration in integrations:
+            parents = subprocess.run(
+                ["git", "show", "-s", "--format=%P", integration["merge_commit"]],
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip().split()
+            self.assertEqual(parents, integration["merge_parents"])
             result = subprocess.run(
-                ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+                ["git", "merge-base", "--is-ancestor", integration["merge_commit"], CURRENT_MAIN_SHA],
                 cwd=ROOT,
                 check=False,
                 capture_output=True,
             )
-            self.assertEqual(result.returncode == 0, expected, f"unexpected ancestry {ancestor} -> {descendant}")
+            self.assertEqual(result.returncode, 1, f"stack merge unexpectedly reached main: {integration['merge_commit']}")
+
+    def test_m2_m3_stack_merge_parent_proof_is_self_contained(self) -> None:
+        milestones = self.state["milestones"]
+        self.assertEqual(
+            {
+                milestone["stack_integration"]["merge_commit"]: milestone["stack_integration"].get("merge_parents")
+                for milestone in (milestones["M2"], milestones["M3"])
+            },
+            {
+                "c23fd49f80c7d1c74ca3393b6079a74f251a72d8": [
+                    "0a4dd0a867c876f99a8fe3580c9f0d47c90e3105",
+                    "022411b05924618cfde0cb97b8c8aff4955e6013",
+                ],
+                "67714a1f1b87effcfabe55d5ca2770d0a68d17c1": [
+                    "022411b05924618cfde0cb97b8c8aff4955e6013",
+                    "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
+                ],
+            },
+        )
+        self.assertEqual(milestones["M1"]["stack_integration"], {
+            **milestones["M2"]["stack_integration"],
+            "notes": "The complete M1 source was accepted as part of the combined M1/M2 stack.",
+        })
+        self.assertEqual(
+            milestones["M2"]["stack_integration"]["merge_parents"][1],
+            milestones["M2"]["implementation"]["commit"],
+        )
+        self.assertEqual(
+            milestones["M3"]["stack_integration"]["merge_parents"],
+            [
+                milestones["M2"]["implementation"]["commit"],
+                milestones["M3"]["implementation"]["commit"],
+            ],
+        )
 
     def test_current_epoch_and_app_are_consistent_in_handoff_documents(self) -> None:
         trust = self.state["trust_ci"]
@@ -240,12 +286,12 @@ class ProjectStateTests(unittest.TestCase):
     def test_adversarial_m2_m3_ancestry_is_rejected(self) -> None:
         original = self.state
         mutated = copy.deepcopy(original)
-        mutated["milestones"]["M2"]["implementation"]["commit"] = CURRENT_MAIN_SHA
-        mutated["milestones"]["M3"]["implementation"]["commit"] = CURRENT_MAIN_SHA
+        mutated["milestones"]["M2"]["stack_integration"]["merge_parents"] = [CURRENT_MAIN_SHA, "0" * 40]
+        mutated["milestones"]["M3"]["stack_integration"]["merge_parents"] = ["f" * 40, CURRENT_MAIN_SHA]
         self.state = mutated
         try:
             with self.assertRaises(AssertionError):
-                self.test_m2_m3_commits_have_stack_ancestry_but_are_absent_from_main()
+                self.test_m2_m3_stack_merge_parent_proof_is_self_contained()
         finally:
             self.state = original
 
