@@ -60,6 +60,7 @@ Before PR delivery, the fourth residual wave corrects unreleased migration `011`
 - Root regression run: 488 tests in 314.727s found one undeclared admin source; after binding it to the existing factory service node, the focused regression, architecture validate, repository drift and all five diagram checks passed.
 - Residual focused PostgreSQL tests passed 5/5; migration tests passed 4/4, installer tests passed 17/17, the dependency-free factory suite passed 24/24, Ruff passed, and the full root suite passed 488/488 in 299.731s. `python3 scripts/grok_verify.py --mode pr` runs after this report commit to bind the final-tree verdict.
 - Final recovery focused PostgreSQL upgrade/bootstrap tests passed 2/2 in 1.664s; migration/contract/state/service tests passed 24/24, installer tests passed 17/17 and Ruff passed. The fresh PostgreSQL exit passed 63/63 in 50.054s with the restart probe, and the root suite passed 488/488 in 313.667s on product commit `3bbafeb`.
+- Active-generation recovery passed the exact schema-008 PostgreSQL reproduction 1/1 in 1.887s and the combined upgrade/bootstrap run 2/2 in 1.773s. The fresh PostgreSQL exit passed 63/63 in 34.667s with the restart probe, and the root suite passed 488/488 in 324.581s on product commit `d15302f`; the final exact-tree verifier runs after this evidence commit.
 
 ## Disposable migration evidence and cleanup
 
