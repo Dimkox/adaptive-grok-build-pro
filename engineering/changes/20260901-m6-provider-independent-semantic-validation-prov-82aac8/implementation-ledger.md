@@ -8,7 +8,7 @@
 | Deadline | PLANNING | `2026-09-08T00:00:00+03:00`; no quality/dependency waiver |
 | Contract/schema layer | VERIFIED | RED at `fc02fc3`: missing `adaptive_factory.semantic_contracts`; GREEN: 9/9 contract tests; five schemas parse as JSON |
 | Deterministic adjudication | VERIFIED | RED at `ed28cfd`: missing adjudication module; GREEN: 9/9 adjudication tests, including permutations and all subject mutations |
-| Pure bounded repair | PLANNED | plan Task 3; M6-006/007/008/009 |
+| Pure bounded repair | VERIFIED | RED at `e1c2ea7`: missing repair module; GREEN: 7/7 policy tests covering cycles, recurrence and escalation matrix |
 | Current docs/connectivity tests | PLANNED | plan Task 4; M6-011/012 |
 | Focused verification | PLANNED | plan Task 5; M6-012 |
 | M5 TaskPacket/RunManifest/WorkspaceResult bridge | BLOCKED | factual M5 absent on exact M4 base |
@@ -26,3 +26,5 @@ Product commits append exact SHA and observed RED/GREEN results here. Connectivi
 - Contracts GREEN: the same command passed 9/9 on 2026-09-02 UTC. A follow-on shell used unavailable bare `python`; it did not invalidate the test result and was corrected to `uv run python` before commit.
 - Adjudication RED: `cd factory && uv run python -m unittest tests.test_semantic_adjudication -v` failed with expected `ModuleNotFoundError` before product code.
 - Adjudication GREEN: the same command passed 9/9 on 2026-09-02 UTC; combined contract/adjudication regression is rerun before commit.
+- Repair RED: `cd factory && uv run python -m unittest tests.test_semantic_repair -v` failed with expected `ModuleNotFoundError` before product code.
+- Repair GREEN: the same command passed 7/7 on 2026-09-02 UTC; cycles `1..3`, cycle four, paraphrased recurrence and all named escalation inputs are covered.
