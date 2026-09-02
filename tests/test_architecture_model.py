@@ -171,8 +171,8 @@ class ArchitectureModelTests(unittest.TestCase):
     def test_m6_provisional_contract_graph_is_complete_and_authority_bounded(self) -> None:
         roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
         edges = (
-            "M4ExactEvidence <--> M5BridgeBlocked",
-            "M5BridgeBlocked <--> M6Subject",
+            "M4ExactEvidence <--> M5ExactResult",
+            "M5ExactResult <--> M6Subject",
             "M6Subject <--> M6Evidence",
             "M6Evidence <--> M7ShadowBundle",
             "M7ShadowBundle <--> M8TrustProfile",

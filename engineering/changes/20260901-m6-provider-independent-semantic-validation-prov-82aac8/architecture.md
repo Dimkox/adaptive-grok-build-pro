@@ -1,32 +1,29 @@
-# Architecture — M6 Provider-Independent Semantic Validation Provisional Slice
+# Architecture — M6 M5-Aligned Semantic Validation
 
-> Typed authority: [`change-spec.yaml`](change-spec.yaml). This document cannot grant runtime or merge authority.
+> Typed authority: [`change-spec.yaml`](change-spec.yaml). This document cannot grant runtime, merge, Trust CI, approval, or external authority.
 
 ## Boundary ruling
 
-The exact base is `94fc5ad878e6b15df6418303caada49a3b93bf4c`. Although the route snapshot carries an older program-base identity, the user's approved scope binds this provisional implementation to exact M4. No M5 execution contracts exist here, so this change adds no SQL, store, service, state, API, OpenAPI, migration, provider, systemd, or restart behavior.
+Exact Phase A merge `c398ea06daa635ad679e22c8cd29dbf74d2ae12c` contains M5 candidate `141e51e75b2bb337fa3bb1544639c6c46c287309` plus the pure M6 core. This authorizes a factual provisional bridge; it does not make M4/M5 accepted or eliminate the later dependency-ordered restack.
 
-## Components and flow
+## Components
 
-- `semantic_contracts.py`: immutable strict parsers, typed requirements/validator proof and canonical derived digests.
-- `semantic_adjudication.py`: pure exact-subject validation and deterministic anomaly grouping. It derives the only verdict; provider decisions are not consumed.
-- `semantic_repair.py`: pure policy emitting a directive only for cycles `1..3`, exact original writer, fresh context, unchanged bindings and remaining limits.
-- `factory/contracts/jsonschema/*.json`: closed bounded public wire shapes, without implying API/persistence.
+- `semantic_bridge.py`: validates the complete exact M5 bundle, separates facts absent from M5, and derives one existing semantic subject deterministically.
+- `semantic_contracts.py`, `semantic_adjudication.py`, `semantic_repair.py`: immutable evidence, deterministic verdict, and pure cycles 1..3 policy.
+- migration `014_semantic_validation_bridge.sql`: append-only subjects/assignments/evidence/verdicts/directives/proposals/recovery plus narrow capability functions; migration 013 remains unchanged.
+- semantic store/service/API: canonical row reparse/cross-check, repository/scope authorization, dedicated coordinator/validator/adjudicator capabilities, idempotent commands, bounded reads.
+- semantic recovery/metrics: keyset restart without duplicates and fixed label sets.
 
-Trusted code constructs one `SemanticSubjectV1` from a sorted typed requirement set plus exact base/head, spec, architecture, authority, diff, deterministic, holdout and review digests; original writer/context; risk and diff limit. Findings and exact coverage bind `subject.digest` and validator proof. Adjudication checks bindings, derives typed finding identities excluding prose, reports duplicates/correlations/contradictions/unsupported passes, then applies `needs_human > repair > pass`. Repair either emits a bounded same-writer fresh-context directive or a typed escalation; it never mutates a run or calls a provider.
+## Exact flow
 
-## Contract and security decisions
+The store first validates M5 packet/manifest/snapshot/result and exact terminal proposal/attestations. The bridge binds task/run/fence/repository, every digest/SHA/status/failure field and canonical M5 bodies. An authenticated semantic input supplies only M5-absent requirements, holdout/review, risk, diff policy, and writer-context evidence. The derived subject roots independent assignments, findings and exact coverage. The adjudicator recomputes one immutable verdict. Repair creates at most one fenced child proposal per cycle and hands it to an explicit M5 broker; M6 never writes a workspace or calls a provider.
 
-Requirement kinds are `acceptance_criterion`, `invariant`, `forbidden_outcome`, `architecture_rule`, and `non_functional_requirement`. Finding identity hashes subject, typed requirement, severity, category and rule identity, not message/reproduction/evidence wording. Coverage is exactly one sorted entry per requirement and `1_000_000` millionths.
+Any input mutation creates a new digest and makes downstream evidence stale. Fourth/recurrent or policy-violating repair appends `needs_human`. Infrastructure `repair_count` is not semantic-cycle accounting.
 
-Every finding/coverage embeds validator ID, role `semantic_validator`, sorted capabilities, definition/model/context digests. Proof must differ from original writer/context, require `repository_read` and `semantic_validate`, and forbid `application_write`, `adjudicate`, `external_write`, `network`, and `credential_read`. Narrative remains untrusted bounded data.
+## Capability and data boundary
 
-Any mutation to requirements, exact SHA/digests, writer/context, risk or diff policy changes the subject digest; former findings, coverage, verdicts and directives become stale.
+Semantic coordinator, validator, and adjudicator are separate non-login/non-inheriting roles with narrow security-definer functions and fixed search path. They receive no direct table DML. Validator/adjudicator cannot mutate application, execution, artifact-attestation, Git, provider, Trust CI, credential, network, approval, or external state. Raw provider output, source bodies, prompts, logs, reasoning, secrets, and PII are absent from persisted/API semantic contracts.
 
-## BLOCKED M5 bridge
-
-TaskPacket input selection, RunManifest validator assignment, WorkspaceResult projection, provider event ingestion, durable stores, SQL fencing/idempotency, lifecycle transitions, repair child runs, cost/duration accounting, API/events, restart recovery and immutable evidence publication cannot be factual until M5. M7 PR evidence is later. Dependency-ordered restack/merge must place the eventual bridge after accepted M5; calendar deadline `2026-09-08T00:00:00+03:00` cannot change that order.
-
-There is no runtime consumer, so rollout is inert. Revert pure-slice commits if M5 requires v2; no data/runtime/external recovery exists.
+Migration 014 is forward-only and additive. Rollback disables new API/runtime wiring and forward-supersedes semantic evidence; accepted rows are never edited or deleted. No shared database or external service is touched in this source branch.
 
 Connectivity: [README](../../../README.md) ↔ [roadmap](../../../DARK_FACTORY_ROADMAP.md) ↔ [design](../../../docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md) ↔ [plan](../../../docs/superpowers/plans/2026-09-01-m6-semantic-validation-provisional.md) ↔ [package](brief.md) / [release](release.md) / [rollback](rollback.md) / [evidence](evidence/README.md).

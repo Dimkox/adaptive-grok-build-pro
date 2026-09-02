@@ -110,7 +110,7 @@ At the roadmap baseline, the public branch response showed `main` without requir
 | Typed business specification | Missing | Build schema, validator, traceability, and evidence mapping |
 | Executable architecture model | M2-A source candidate | Complete final reviews/receipts, then implement the independent M2-B enforcement floor |
 | Agent-loop backpressure | Missing | Add structured findings and bounded repair cycles |
-| Semantic validator/adjudicator | Provisional M6 source work | Route `82aac86a3bf9` on `milestone/m6-semantic-validation-provisional-m4`; restack after accepted M5 and retain independent verdict authority |
+| Semantic validator/adjudicator | Provisional M6 source work | Route `82aac86a3bf9` on `milestone/m6-semantic-validation-provisional-m4`; Phase A merge `c398ea0` contains exact provisional M5 `141e51e`, but accepted M4 -> M5 -> M6 restack and independent verdict authority remain mandatory |
 | Controlled learning | Missing | Replace automatic Markdown promotion with reviewed rule lifecycle |
 | Debt/slop ledger | Missing | Track deliberate debt, owner, cost, trigger, and deadline |
 | Durable factory task queue | Separate M4 local candidate | `01a10f5` exists locally but is not this M5 branch's parent, not pushed and not merged; dependency-ordered external gates remain open |
@@ -205,7 +205,7 @@ M1 + M2 + M3
 
 Milestones M1, M2, and M3 may be developed in parallel only after M0 has a live proof or an explicitly documented bootstrap exception approved by the user. M4 must consume their stable interfaces rather than inventing replacements.
 
-Current execution is parallel only for reversible source development. Separate local M4 candidate `01a10f5` is not the parent of the M5 branch, not pushed and not merged; M5 still descends from `460a8a01a6394cac710b4e3f9eea3d94d4beef89`, with `94fc5ad878e6b15df6418303caada49a3b93bf4c` retained as historical lineage. M5 route `37b05f579320` and M6 route `82aac86a3bf9` remain provisional; M6 paused at `5c5c371` still targets old M5 bridge `61db79f`. Acceptance, PR delivery, merge and Trust CI remain dependency ordered M4 → M5 → M6, and each downstream branch must restack onto its accepted predecessor. M5 remains `BLOCKED` on a suitable rootless-isolation host and trusted live Git snapshot broker. The hard deadline is **2026-09-08 00:00 UTC+3**; no completion or external authority follows from source presence or calendar pressure. See the [root current state](README.md), [factory source map](factory/README.md), [M5 design](docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md), [plan](docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md), [package](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md), [release](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/release.md), [rollback](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/rollback.md) and [evidence](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/evidence/README.md).
+Current execution is parallel only for reversible source development. Historical local M4 `01a10f5`, M5 lineage `460a8a01a6394cac710b4e3f9eea3d94d4beef89`, and anchor `94fc5ad878e6b15df6418303caada49a3b93bf4c` remain source history. Current M4 candidate `aee6558bb83418d7a1acb4582df6845bf7bdc3c6` is separate, not the parent of this branch, not pushed and not merged. M5 route `37b05f579320` is provisionally frozen at `141e51e75b2bb337fa3bb1544639c6c46c287309`; M6 route `82aac86a3bf9` normally merged it at `c398ea06daa635ad679e22c8cd29dbf74d2ae12c`. The historical M6 paused state at `5c5c371` and old bridge `61db79f` are superseded, not accepted. Acceptance, PR delivery, merge and Trust CI remain dependency ordered M4 -> M5 -> M6, and each downstream branch must restack onto its accepted predecessor. M5 remains `BLOCKED` on a suitable rootless-isolation host and trusted live Git snapshot broker. The hard deadline is **2026-09-08 00:00 UTC+3**; no completion or external authority follows from source presence or calendar pressure. See the [root current state](README.md), [factory source map](factory/README.md), [M5 design](docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md), [plan](docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md), [package](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md), [release](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/release.md), [rollback](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/rollback.md) and [evidence](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/evidence/README.md).
 
 ## 7.1 Exact milestone handoff contracts
 
@@ -664,7 +664,7 @@ Navigation: [root current state](README.md) ↔ [factory source map](factory/REA
 
 The current M5 factual boundary is four closed execution schemas plus a closed 20-operation OpenAPI surface. M4 state/lease/fence/allocation/budget facts bind the exact `TaskPacketV1`, provider profile and `RunManifestV1`; canonical proposals and a trusted workspace snapshot bind `WorkspaceResultV1`. Recovery appends only one control-plane `orphaned` stage/event after fake-workspace cleanup—no terminal proposal and no WorkspaceResult fabrication.
 
-M6 paused at `5c5c371` is `BLOCKED` pending dependency-ordered restack: it consumes old M5 bridge `61db79f`, lacks current `m4_status`, `failure_class`, `failure_reason` and exact task/run/fence/packet/result linkage. The future semantic subject must bind immutable M5 packet/manifest/proposal/snapshot/result digests; provider facts are not authority, fake brokers are not authority and no component may self-approve. That result may later feed M6 verdict → M7 shadow bundle → M8 profile after at least 30 human-accepted outcomes with demotion and an L2 ceiling → M9 preview/staging/canary/recovery; any SHA/digest change invalidates downstream evidence and production remains human-owned.
+The former M6 paused checkpoint `5c5c371` and old M5 bridge `61db79f` are superseded by provisional Phase A merge `c398ea0` of exact M5 candidate `141e51e`. Phase B must now bind immutable M5 task/run/fence/packet/manifest/proposal/attestation/snapshot/result/status/failure facts; provider facts are not authority, facts absent from M5 cannot be inferred, fake brokers are not authority and no component may self-approve. Accepted delivery is still `BLOCKED` pending predecessor restack and M5 isolation/snapshot gates. A PASS result may later feed M7 shadow bundle -> M8 profile after at least 30 human-accepted outcomes with demotion and an L2 ceiling -> M9 preview/staging/canary/recovery; any SHA/digest change invalidates downstream evidence and production remains human-owned.
 
 ## Objective
 
@@ -739,22 +739,22 @@ output contract
 
 # M6 — Independent Semantic Validation, Meta-Review, and Bounded Repair
 
-Current status: M6 paused at `5c5c371` on provisional route `82aac86a3bf9`. It remains based on old M5 bridge `61db79f`, has no factual exact task/run/fence/packet/result linkage, and must restack first onto accepted M4/M5 in dependency order; no compatibility, completion, push, external check or merge is claimed.
+Current status: provisional route `82aac86a3bf9` normally merged exact local M5 candidate `141e51e75b2bb337fa3bb1544639c6c46c287309` at Phase A commit `c398ea06daa635ad679e22c8cd29dbf74d2ae12c`. Focused M5/M6/architecture compatibility is green, and the former M6 paused checkpoint `5c5c371`/old bridge `61db79f` are historical. M4/M5 remain unaccepted/unpublished, so M6 still requires dependency-ordered restack and claims no compatibility acceptance, completion, push, external check, merge or release.
 
 ## Objective
 
 Add backpressure inside the agent loop so incorrect implementations stop early, produce structured findings, and undergo a finite repair process.
 
-## Current provisional M4 slice and dependency graph
+## Current provisional M5-aligned source and dependency graph
 
-The current branch implements only a pure provider-independent slice on exact M4 base `94fc5ad878e6b15df6418303caada49a3b93bf4c`: closed `SemanticSubjectV1`, `SemanticFindingV1`, `SemanticCoverageV1`, `SemanticVerdictV1`, and `RepairDirectiveV1` contracts; deterministic adjudication; and a pure cycle policy. It is not full M6. The factual M5 `TaskPacket`, `RunManifest`, and `WorkspaceResult` bridge is `BLOCKED`, so durable store/API/runtime/fence/idempotency/restart/provider work remains unimplemented. Deadline `2026-09-08T00:00:00+03:00` is planning only; parallel development still merges/restacks in dependency order.
+The branch retains the pure provider-independent `SemanticSubjectV1`, `SemanticFindingV1`, `SemanticCoverageV1`, `SemanticVerdictV1`, and `RepairDirectiveV1` contracts, deterministic adjudication, and cycle policy, now beside exact current M5 contracts/migration/store/service/API source. Approved Phase B implements a closed exact M5 bridge, forward migration 014, capability-shaped append-only store/API, finite child proposals, recovery and metrics. It is not accepted/full M6: M5-absent holdout/review/typed requirement/risk/diff-limit/writer-context facts require separate authenticated evidence, provider/system work remains excluded, and accepted delivery remains `BLOCKED` on predecessor gates. Deadline `2026-09-08T00:00:00+03:00` is planning only; parallel development still merges/restacks in dependency order.
 
 Current links: [README](README.md) ↔ this roadmap ↔ [M6 design](docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md) ↔ [plan](docs/superpowers/plans/2026-09-01-m6-semantic-validation-provisional.md) ↔ [package](engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/brief.md) / [release](engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/release.md) / [rollback](engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/rollback.md) / [evidence](engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/evidence/README.md).
 
 ```mermaid
 flowchart LR
-  M4ExactEvidence <--> M5BridgeBlocked
-  M5BridgeBlocked <--> M6Subject
+  M4ExactEvidence <--> M5ExactResult
+  M5ExactResult <--> M6Subject
   M6Subject <--> M6Evidence
   M6Evidence <--> M7ShadowBundle
   M7ShadowBundle <--> M8TrustProfile
@@ -763,8 +763,8 @@ flowchart LR
 
 | Producer | Consumer | Required binding | Status and rollback |
 | --- | --- | --- | --- |
-| M4 exact evidence | factual M5 bridge | `exact_base_sha`, `exact_head_sha`, spec/architecture/authority/evidence digests | M4 facts exist; bridge is `BLOCKED`; no inferred adapter |
-| M5 `TaskPacket` + `RunManifest` + `WorkspaceResult` | M6 `SemanticSubjectV1` | `task_packet_digest`, `run_manifest_digest`, `workspace_result_digest`, `exact_base_sha`, `exact_head_sha` | future versioned bridge only; incompatible shape requires new M6 version |
+| M4 exact evidence | factual M5 result | `exact_base_sha`, `exact_head_sha`, spec/architecture/authority/evidence digests | provisional source exists; accepted restack and M5 rootless/snapshot evidence remain `BLOCKED`; no inferred adapter |
+| M5 `TaskPacket` + `RunManifest` + `WorkspaceSnapshot` + `WorkspaceResult` | M6 exact binding + authenticated missing inputs -> `SemanticSubjectV1` | task/run/fence, `task_packet_digest`, `run_manifest_digest`, `terminal_proposal_digest`, attestation identities, `workspace_snapshot_digest`, `workspace_result_digest`, exact base/input/result head, `m4_status`, failure facts | Phase B source under TDD; incompatible shape requires a new version, never reinterpretation |
 | M6 subject/findings/coverage | M6 verdict/directive | `semantic_subject_digest`, typed finding identities, exact coverage, `semantic_verdict_digest`, residual-risk envelope | provisional pure code; repair reissues fresh exact-state evidence or escalates |
 | M6 exact verdict/findings/coverage/residual-risk envelope | M7 immutable shadow ready-for-PR bundle | `semantic_subject_digest`, `semantic_verdict_digest`, `semantic_evidence_envelope_digest`, `exact_head_sha`, `ready_for_pr_bundle_digest` | roadmap-only; rollback supersedes bundle and retains prior evidence |
 | M7 human decisions | M8 trust profile/demotion | `ready_for_pr_bundle_digest`, cohort identity, `trust_profile_digest`; at least 30 human-accepted tasks | roadmap-only; current autonomy ceiling remains L2; material mutation starts a new cohort and any trigger demotes |

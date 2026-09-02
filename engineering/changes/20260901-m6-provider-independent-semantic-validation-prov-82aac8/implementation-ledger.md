@@ -1,10 +1,12 @@
-# M6 Provisional Implementation Ledger
+# M6 M5-Aligned Provisional Implementation Ledger
 
 | Item | State | Binding / evidence |
 | --- | --- | --- |
 | Historical provisional base | FROZEN | `94fc5ad878e6b15df6418303caada49a3b93bf4c`; pure-slice origin only |
-| Exact M5 bridge upstream | FROZEN | `61db79f07904ae5facb244c34b26c8383504dd88`; Task4 parent `2c977b0589376acec90ef1f1536327ea7710c7ce` |
-| Dependency restack | VERIFIED | M6 commits rebased onto exact M5 bridge; conflicts only in expected `README.md` and `tests/test_structure.py`, resolved with M4+M5+M6-M9 graph retained; rebased pre-implementation HEAD `46c3a0d` |
+| Historical M5 bridge upstream | SUPERSEDED | `61db79f07904ae5facb244c34b26c8383504dd88`; retained only as pure-slice lineage |
+| Current exact M5 candidate | FROZEN | `141e51e75b2bb337fa3bb1544639c6c46c287309`; local, provisional, unaccepted and unpublished |
+| Phase A factual alignment | VERIFIED | normal two-parent merge `c398ea06daa635ad679e22c8cd29dbf74d2ae12c`; conflicts in README/structure/architecture tests resolved preserving full M5+M6 source; tree `cd1b7308b7f9bc559d433d6365cfbc044c3b8593` |
+| Future dependency restack | REQUIRED | local M4 candidate `aee6558bb83418d7a1acb4582df6845bf7bdc3c6` is separate; accepted delivery remains M4 -> M5 -> M6 |
 | Route and sole writer | FROZEN | `82aac86a3bf9`; `ai_implementer` |
 | Scope/design approval | SATISFIED | user-approved canonical design before dispatch |
 | Deadline | PLANNING | `2026-09-08T00:00:00+03:00`; no quality/dependency waiver |
@@ -12,12 +14,16 @@
 | Deterministic adjudication | VERIFIED | RED at `ed28cfd`: missing adjudication module; GREEN: 9/9 adjudication tests, including permutations and all subject mutations |
 | Pure bounded repair | VERIFIED | RED at `e1c2ea7`: missing repair module; GREEN: 7/7 policy tests covering cycles, recurrence and escalation matrix |
 | Current docs/connectivity tests | VERIFIED | pre-restack commit `c7f5002`; rebased commit `46c3a0d`; targeted graph/link/authority tests 3/3 |
-| Post-restack compatibility | VERIFIED | exact M5 bridge contracts/workspace/service/migrations 30/30; existing M6 contracts/adjudication/repair 25/25; targeted structure 3/3 |
-| M5 TaskPacket/RunManifest/WorkspaceResult bridge | IN PROGRESS | factual upstream frozen at `61db79f07904ae5facb244c34b26c8383504dd88`; adapter starts TDD after this binding |
-| Persistence/migration 014/fences/idempotency/restart | IN PROGRESS | additive post-execution semantic evidence bridge; M5 `ready_for_human` remains unchanged and is not reinterpreted |
+| Phase A focused verification | VERIFIED | M5 contracts/protocol/API/recovery 35/35; existing M6 pure 25/25; root structure/architecture/installer 87/87; architecture validate/drift/diagram-check and diff checks pass |
+| M5-aligned design/plan/package | VERIFIED | exact bundle mapping audited; M5-absent holdout/review/typed requirement/risk/diff-limit/writer-context facts remain separate authenticated inputs, never inferred; typed spec valid with 9/16 currently mapped and 7 future criteria honestly unmapped; root structure/architecture 70/70 |
+| Exact M5 -> semantic bridge | PLANNED | TDD Task 1; binds task/run/fence/packet/manifest/snapshot/result/proposal/attestations/status/failure and rejects cross-substitution |
+| Persistence/migration 014/fences/idempotency | PLANNED | additive append-only subject/evidence/verdict/directive/proposal/recovery source; migration 013 remains frozen |
+| Service/API/adjudication | PLANNED | additive closed semantic scopes and bounded reads; legacy/M5 behavior preserved |
+| Repair child lifecycle | PLANNED | exact parent binding, cycles 1..3, original writer/fresh context; fourth/recurrent/stale/policy violations escalate |
+| Restart/metrics/installer/docs | PLANNED | bounded keyset/replay, fixed label sets, source-only rollout/rollback and factual architecture inventory |
 | Provider calls/conformance | OUT OF SCOPE | no network, credentials, adapters or live calls |
-| Immutable durable semantic evidence | IN PROGRESS | migration 014 follows adapter and full adjudication-input binding; no live result claimed on this host |
-| Per-cycle cost/duration | BLOCKED | later runtime integration; not fabricated by migration 014 |
+| Immutable durable semantic evidence | PLANNED | migration 014 follows bridge and full adjudication-input binding; no live result or shared-DB action claimed |
+| Per-cycle cost/duration | PLANNED | bounded integer/time facts on proposal/recovery records; no provider billing inference or high-cardinality metric labels |
 | M7 PR evidence/delivery | BLOCKED | later milestone and authority |
 | Reviews/receipts/push/PR/merge/deploy | DEFERRED TO PARENT | excluded from implementer dispatch |
 

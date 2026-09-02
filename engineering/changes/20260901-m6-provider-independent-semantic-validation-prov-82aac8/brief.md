@@ -1,29 +1,25 @@
-# M6 Provider-Independent Semantic Validation — Provisional M4 Slice
+# M6 M5-Aligned Semantic Validation — Provisional Source
 
 > Typed authority: [`change-spec.yaml`](change-spec.yaml). This Markdown cannot override typed IDs or approval scopes.
 
 Change ID: `20260901-m6-provider-independent-semantic-validation-prov-82aac8`  
 Route: `82aac86a3bf9`  
-Provisional base: `94fc5ad878e6b15df6418303caada49a3b93bf4c`  
-Planning deadline: `2026-09-08T00:00:00+03:00` (calendar coordination only; never a product deadline or quality-gate waiver)
+Phase A merge: `c398ea06daa635ad679e22c8cd29dbf74d2ae12c`
+
+Merged M5 candidate: `141e51e75b2bb337fa3bb1544639c6c46c287309`
+
+Planning deadline: `2026-09-08T00:00:00+03:00`
 
 Connectivity: [README](../../../README.md) ↔ [roadmap](../../../DARK_FACTORY_ROADMAP.md) ↔ [design](../../../docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md) ↔ [plan](../../../docs/superpowers/plans/2026-09-01-m6-semantic-validation-provisional.md) ↔ this package / [release](release.md) / [rollback](rollback.md) / [evidence](evidence/README.md).
 
-## Problem and outcome
+## Outcome
 
-The M4 tree has no M5 `TaskPacket`, `RunManifest`, or `WorkspaceResult`. Adding M6 storage, API, state transitions, or runtime wiring now would fabricate interfaces and collide with M4 meanings: `RunRole` has reader/writer, attempts `1..3` are infrastructure attempts, `repair_count` accounts for worker loss, and successful work ends at `ready_for_human`.
+M6 consumes a fully verified immutable M5 `TaskPacketV1`/`RunManifestV1`/`WorkspaceSnapshotV1`/`WorkspaceResultV1` bundle, binds every exact task/run/fence/SHA/result/evidence fact, accepts only separately authenticated facts that M5 does not contain, and publishes append-only independent semantic findings, coverage, verdicts, and finite repair proposals.
 
-This provisional slice freezes only the stable provider-independent M6 core: five closed JSON schemas and strict parsers, typed requirement identity, exact-state subject binding, deterministic adjudication, validator separation proof, and pure same-original-writer/fresh-context repair policy for cycles `1..3`.
+M5 `ready_for_human`, failure classes/reasons, infrastructure attempts, and `repair_count` are preserved. Validator/adjudicator roles cannot write application code, execute providers, mutate M5 evidence, use Git/Trust CI/human approval, or access network/credentials. Cycle four, recurrence, stale evidence, risk/architecture/base/fence/budget/deadline violations escalate to `needs_human`.
 
-## Scope
+## Boundary
 
-In scope: semantic subject/finding/coverage/verdict/repair contracts; canonical digests; exact coverage; deterministic anomaly reporting and decision precedence; independent validator proof; recurrence and escalation; stale evidence; focused local tests and current-doc parity.
+In scope: exact bridge, forward migration 014, capability-shaped store/service/API, deterministic adjudication, cycles 1..3 child proposals, restart recovery, fixed low-cardinality metrics, installer/architecture/docs, and focused tests.
 
-Out of scope and BLOCKED on factual M5: persistence/migrations, API/events, provider adapters/calls, TaskPacket/RunManifest/WorkspaceResult integration, roles/states, fences/idempotency, restart, cost/duration persistence, holdout/review execution. M7 PR evidence and all external operations are later work.
-
-## Constraints
-
-- Add-only pure modules/schemas; no M4 model, state, SQL, API, or OpenAPI changes.
-- Local synthetic fixtures only; no credentials, provider streams, database or network.
-- Canonical UTF-8 JSON, sorted unique sets, integer millionths, no clock/randomness in adjudication.
-- Provider results are inputs, never transition or approval authority.
+Out of scope: live providers/models, shared database, production, credentials, external writes, M7 activation/compatibility claim, push/PR/merge/release/Trust CI/human approval. M4 and M5 remain unaccepted/unpublished; M6 must later restack in dependency order.
