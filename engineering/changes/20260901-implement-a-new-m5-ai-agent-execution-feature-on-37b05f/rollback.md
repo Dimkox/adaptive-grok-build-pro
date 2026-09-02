@@ -2,6 +2,8 @@
 
 Navigation: [package](brief.md) ↔ [schedule](schedule.md) ↔ [release](release.md) ↔ [evidence](evidence/README.md) ↔ [plan](../../../docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md).
 
-Before deployment, rollback is deletion/reversion of the unmerged source commit. After migration `013` is ever accepted, stop execution claims, preserve immutable packet/manifest/proposal evidence, keep legacy M4 control operations available, and forward-fix with migration `014+`; never down-migrate or rewrite `013`.
+Before deployment, rollback is deletion/reversion of the unmerged source commit. Migration `013` is unpublished and branch-only. After it is ever accepted, stop execution claims, preserve immutable packet/manifest/proposal/snapshot/result and recovery evidence, keep legacy M4 control operations available, and forward-fix with migration `014+`; never down-migrate or rewrite accepted `013`.
 
-Recovery verification must show no live execution allocations, every incomplete manifest terminal/orphaned, M4 20/10/1 accounting consistent, legacy `/v1/claims` unchanged, and no provider/systemd/external-write capability active.
+An upstream M4 SHA change pauses downstream writing and requires a three-way overlap plus contract-compatibility audit before restack. It invalidates the task packet, manifest, proposal, result and any later M6/M7/M8/M9 evidence; do not relabel old digests or provider/fake facts as authority. The current separate `01a10f5` candidate is not pushed, not merged and not this branch's parent.
+
+Recovery verification must show no live execution allocations, every eligible incomplete manifest terminal/orphaned by one control-plane stage/event, no fabricated proposal or WorkspaceResult, M4 20/10/1 accounting consistent, legacy `/v1/claims` unchanged, and no provider/systemd/external-write capability active. Rootless isolation and the trusted live Git snapshot broker remain `BLOCKED`; production remains human-owned.

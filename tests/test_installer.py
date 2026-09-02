@@ -164,9 +164,14 @@ class InstallerTests(unittest.TestCase):
             "factory/README.md",
             "factory/compose.yaml",
             "factory/contracts/openapi/factory-control.v1.json",
+            "factory/contracts/schemas/execution-event.v1.json",
+            "factory/contracts/schemas/execution-invocation.v1.json",
+            "factory/contracts/schemas/task-packet.v1.json",
+            "factory/contracts/schemas/workspace-result.v1.json",
             "factory/pyproject.toml",
             "factory/uv.lock",
             "factory/src/adaptive_factory/store.py",
+            "factory/src/adaptive_factory/recovery.py",
             "factory/src/adaptive_factory/admin.py",
             "factory/src/adaptive_factory/resources/003_budgets_kills_reconciliation.sql",
             "factory/src/adaptive_factory/resources/008_allocation_release_authority.sql",
@@ -176,21 +181,30 @@ class InstallerTests(unittest.TestCase):
             "factory/tests/run_disposable_exit.py",
             "factory/tests/postgres_restart_probe.py",
             "factory/tests/test_postgres_integration.py",
+            "factory/tests/fixtures/codex-0.152.1/success.jsonl",
+            "factory/tests/fixtures/grok-1.0.17/success.jsonl",
+            "factory/systemd/adaptive-factory-broker.service",
+            "factory/systemd/adaptive-factory-reader@.service",
+            "factory/systemd/adaptive-factory-supervisor.service",
+            "factory/systemd/adaptive-factory-writer.service",
         ):
             self.assertIn(expected, generic_paths)
+        expected_factory_tests = {
+            path.relative_to(ROOT).as_posix()
+            for path in (ROOT / "factory/tests").rglob("*")
+            if path.is_file() and "__pycache__" not in path.parts
+        }
         self.assertEqual(
             {path for path in generic_paths if path.startswith("factory/tests/")},
+            expected_factory_tests,
+        )
+        self.assertEqual(
+            {path for path in generic_paths if path.startswith("factory/systemd/")},
             {
-                "factory/tests/__init__.py",
-                "factory/tests/postgres_restart_probe.py",
-                "factory/tests/run_disposable_exit.py",
-                "factory/tests/test_api.py",
-                "factory/tests/test_contracts.py",
-                "factory/tests/test_migrations.py",
-                "factory/tests/test_postgres_integration.py",
-                "factory/tests/test_server.py",
-                "factory/tests/test_service.py",
-                "factory/tests/test_state.py",
+                "factory/systemd/adaptive-factory-broker.service",
+                "factory/systemd/adaptive-factory-reader@.service",
+                "factory/systemd/adaptive-factory-supervisor.service",
+                "factory/systemd/adaptive-factory-writer.service",
             },
         )
         self.assertFalse(any("__pycache__" in path for path in generic_paths))

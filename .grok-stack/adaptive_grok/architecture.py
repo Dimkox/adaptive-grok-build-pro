@@ -916,20 +916,27 @@ def validate_repository_drift(
 _SUPPORTED_SCHEMA_KEYS = {
     "$schema",
     "$id",
+    "$ref",
+    "title",
     "description",
     "type",
     "properties",
     "required",
     "additionalProperties",
     "enum",
+    "const",
     "items",
     "minItems",
     "maxItems",
+    "uniqueItems",
     "minLength",
     "maxLength",
     "minimum",
     "maximum",
     "pattern",
+    "allOf",
+    "if",
+    "then",
 }
 _HTTP_METHODS = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
 _SUPPORTED_CONTRACT_KINDS = {"event", "json_schema", "openapi", "signed_payload"}
@@ -985,9 +992,17 @@ def _unsupported_schema(schema: Any) -> bool:
             or len(type_names) != len(set(type_names))
         ):
             return True
-    for key in ("$id", "$schema", "description"):
+    for key in ("$id", "$schema", "description", "title"):
         if key in schema and not isinstance(schema[key], str):
             return True
+    if "$ref" in schema and (
+        not isinstance(schema["$ref"], str)
+        or not re.fullmatch(
+            r"(?:#[/A-Za-z0-9._~-]+|[A-Za-z0-9][A-Za-z0-9._-]*\.json(?:#[/A-Za-z0-9._~-]+)?)",
+            schema["$ref"],
+        )
+    ):
+        return True
     properties = schema.get("properties", {})
     if not isinstance(properties, dict) or not all(
         isinstance(name, str) for name in properties
@@ -1010,6 +1025,10 @@ def _unsupported_schema(schema: Any) -> bool:
         or any(not _valid_schema_scalar(item) for item in enum)
         or len({_canonical_bytes(item) for item in enum}) != len(enum)
     ):
+        return True
+    if "const" in schema and not _valid_schema_scalar(schema["const"]):
+        return True
+    if "uniqueItems" in schema and not isinstance(schema["uniqueItems"], bool):
         return True
     for key in _NONNEGATIVE_INTEGER_KEYWORDS:
         value = schema.get(key)
@@ -1041,9 +1060,25 @@ def _unsupported_schema(schema: Any) -> bool:
             return True
     if "items" in schema and not isinstance(schema["items"], dict):
         return True
+    all_of = schema.get("allOf", [])
+    if "allOf" in schema and (
+        not isinstance(all_of, list)
+        or not 1 <= len(all_of) <= 16
+        or not all(isinstance(child, dict) for child in all_of)
+    ):
+        return True
+    if "then" in schema and "if" not in schema:
+        return True
+    for key in ("if", "then"):
+        if key in schema and not isinstance(schema[key], dict):
+            return True
     if any(_unsupported_schema(child) for child in properties.values()):
         return True
     if "items" in schema and _unsupported_schema(schema["items"]):
+        return True
+    if any(_unsupported_schema(child) for child in all_of):
+        return True
+    if any(key in schema and _unsupported_schema(schema[key]) for key in ("if", "then")):
         return True
     return False
 
@@ -1066,6 +1101,15 @@ def _compare_schema_direction(
     direction: str,
     reasons: set[str],
 ) -> None:
+    for key in ("$ref", "const", "allOf", "if", "then"):
+        if _canonical_bytes(base.get(key)) != _canonical_bytes(head.get(key)):
+            reasons.add("changed_constraint")
+    base_unique = base.get("uniqueItems", False)
+    head_unique = head.get("uniqueItems", False)
+    if direction == "consumer" and not base_unique and head_unique:
+        reasons.add("narrowed_constraint")
+    elif direction == "producer" and base_unique and not head_unique:
+        reasons.add("widened_producer_output")
     if ("type" in base) != ("type" in head):
         reasons.add("changed_type")
         return
@@ -1216,7 +1260,10 @@ def _supported_parameters(parameters: Any, schemas: list[dict[str, Any]]) -> boo
 
 def _security_schemes(document: dict[str, Any]) -> dict[str, dict[str, Any]] | None:
     components = document.get("components", {})
-    if not isinstance(components, dict) or not set(components) <= {"securitySchemes"}:
+    if not isinstance(components, dict) or not set(components) <= {
+        "schemas",
+        "securitySchemes",
+    }:
         return None
     schemes = components.get("securitySchemes", {})
     if not isinstance(schemes, dict):
@@ -1245,6 +1292,25 @@ def _security_schemes(document: dict[str, Any]) -> dict[str, dict[str, Any]] | N
         if "description" in scheme and not isinstance(scheme["description"], str):
             return None
     return schemes
+
+
+def _supported_response_headers(headers: Any, schemas: list[dict[str, Any]]) -> bool:
+    if not isinstance(headers, dict):
+        return False
+    for name, header in headers.items():
+        if (
+            not isinstance(name, str)
+            or not name
+            or not isinstance(header, dict)
+            or not set(header) <= {"description", "required", "schema"}
+            or "schema" not in header
+            or ("description" in header and not isinstance(header["description"], str))
+            or ("required" in header and not isinstance(header["required"], bool))
+            or _unsupported_schema(header["schema"])
+        ):
+            return False
+        schemas.append(header["schema"])
+    return True
 
 
 def _supported_security(value: Any, schemes: dict[str, dict[str, Any]]) -> bool:
@@ -1290,6 +1356,15 @@ def _openapi_schemas(document: Any) -> tuple[dict[str, Any], ...] | None:
     if "security" in document and not _supported_security(document["security"], schemes):
         return None
     schemas: list[dict[str, Any]] = []
+    component_schemas = document.get("components", {}).get("schemas", {})
+    if not isinstance(component_schemas, dict) or any(
+        not isinstance(name, str)
+        or not name
+        or _unsupported_schema(schema)
+        for name, schema in component_schemas.items()
+    ):
+        return None
+    schemas.extend(component_schemas.values())
     for path, path_item in paths.items():
         if not isinstance(path, str) or not path.startswith("/") or not isinstance(path_item, dict):
             return None
@@ -1358,12 +1433,17 @@ def _openapi_schemas(document: Any) -> tuple[dict[str, Any], ...] | None:
                 if not isinstance(response, dict) or not set(response) <= {
                     "content",
                     "description",
+                    "headers",
                 }:
                     return None
                 if not isinstance(response.get("description"), str):
                     return None
                 if "content" in response and not _supported_content(
                     response["content"], schemas
+                ):
+                    return None
+                if "headers" in response and not _supported_response_headers(
+                    response["headers"], schemas
                 ):
                     return None
     return tuple(schemas)
@@ -1411,6 +1491,10 @@ def _referenced_security(value: Any) -> set[str]:
 
 
 def _compare_openapi(base: dict[str, Any], head: dict[str, Any], reasons: set[str]) -> None:
+    base_components = base.get("components", {}).get("schemas", {})
+    head_components = head.get("components", {}).get("schemas", {})
+    if _canonical_bytes(base_components) != _canonical_bytes(head_components):
+        reasons.add("changed_constraint")
     base_operations = _operations(base)
     head_operations = _operations(head)
     if set(base_operations) - set(head_operations):
@@ -1481,6 +1565,25 @@ def _compare_openapi(base: dict[str, Any], head: dict[str, Any], reasons: set[st
             head_response = head_responses[status]
             if not isinstance(base_response, dict) or not isinstance(head_response, dict):
                 continue
+            base_headers = base_response.get("headers", {})
+            head_headers = head_response.get("headers", {})
+            if set(base_headers) - set(head_headers):
+                reasons.add("removed_response_header")
+            if set(head_headers) - set(base_headers):
+                reasons.add("widened_producer_output")
+            for name in set(base_headers) & set(head_headers):
+                base_header = base_headers[name]
+                head_header = head_headers[name]
+                if base_header.get("required", False) and not head_header.get(
+                    "required", False
+                ):
+                    reasons.add("widened_producer_output")
+                _compare_schema_direction(
+                    base_header["schema"],
+                    head_header["schema"],
+                    "producer",
+                    reasons,
+                )
             base_schemas = _content_schemas(base_response)
             head_schemas = _content_schemas(head_response)
             if base_schemas and head_schemas:

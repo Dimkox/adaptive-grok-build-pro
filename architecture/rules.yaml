@@ -269,7 +269,8 @@
       "severity": "error",
       "source_prefixes": [
         "factory/src/adaptive_factory/execution_contracts.py",
-        "factory/src/adaptive_factory/protocol.py"
+        "factory/src/adaptive_factory/protocol.py",
+        "factory/src/adaptive_factory/recovery.py"
       ]
     },
     {

@@ -22,7 +22,8 @@ M4 accepted intent + legacy lease
 - `adapters/`: provider-native fixture translators and explicit conformance registry; no process/network invocation.
 - `brokers.py`: note/artifact/usage/terminal validation and redaction.
 - `workspace.py`: workspace/Git protocols, handle/path/environment policy, fake isolated runtime, host capability probe.
-- migration `013`: append-only execution packets/manifests/events/notes/artifacts and execution-stage constraints/functions.
+- `recovery.py`: provider-neutral, database-neutral coordinator over narrow store/workspace capabilities; it owns no provider, Git, scheduler, network or external authority.
+- migration `013`: append-only execution packets/manifests/events/proposals/stages, protected artifact attestations, factual results, fixed metrics and recovery capabilities.
 - store/service/API: explicit execution operations checked against task/run/owner/fence/packet/live allocation/deadline/budget.
 - `factory/systemd/`: fixed source unit topology only.
 
@@ -32,7 +33,15 @@ Packet control fields never originate from repository text or native provider ev
 
 ## Recovery and rollout
 
-On restart, a bounded reconciler scans at most 100 incomplete manifests in deterministic key order. A manifest with no live matching M4 lease becomes `orphaned`, gains one safe terminal proposal, releases broker-owned workspace state, and cannot accept later events. Rollout is source-only and feature-dark: migration/API/unit files are not applied, started, or enabled by this task. Forward-fix uses migration `014+`; migration `013` is never rewritten after acceptance.
+On restart, a bounded reconciler scans at most 100 incomplete manifests in `(updated_at, run_id)` order and selects only rows whose M4 run and allocation are both released. It cleans broker-owned fake workspace state before appending exactly one control-plane `orphaned` stage/event; it creates no terminal proposal and no WorkspaceResult fabrication. Rollout is source-only and feature-dark: migration/API/unit files are not applied, started, or enabled by this task. Migration `013` is still unpublished and may be repaired on this branch; after acceptance, forward-fix uses `014+` and never rewrites accepted evidence.
+
+## Executable contracts and downstream boundary
+
+The executable inventory is 21 nodes, 23 directed edges and ten contracts. Its M5 wire boundary is exactly four closed schemas: task packet and invocation are core-produced, canonical execution events are core-consumed, and the factual workspace result is core-produced; provider-specific adapters exchange only the modeled JSON/JSONL data flows and gain no database, Git, scheduler or external authority.
+
+M4 exact state, lease, fence, allocation and budget facts from this branch base `460a8a01a6394cac710b4e3f9eea3d94d4beef89` bind `TaskPacketV1`, the provider profile and `RunManifestV1`; proposal/snapshot/result digests then form the factual M5 output. M6 is paused and unintegrated: its current source `5c5c371` still consumes the old `61db79f` bridge and lacks current `m4_status`, `failure_class`, `failure_reason` plus exact task/run/fence/packet/result linkage. Restack must verify the exact bundle before defining an M6 semantic subject; provider facts and fake authority cannot substitute, and M5 never self-approves.
+
+The roadmap-only chain is digest-bound: an M6 verdict may feed an M7 shadow ready-for-PR bundle; M7 cohort evidence may feed an M8 profile only after at least 30 human-accepted outcomes with demotion and an L2 ceiling; an exact M8 profile/artifact may feed M9 preview/staging/canary/recovery. Any predecessor SHA, schema, packet, manifest, proposal, result, policy or artifact digest change invalidates downstream evidence, and production remains human-owned.
 
 ## Decision ledger
 

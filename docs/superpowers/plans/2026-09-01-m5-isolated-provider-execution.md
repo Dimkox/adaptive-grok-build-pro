@@ -25,7 +25,7 @@
 
 ## File Map
 
-- `factory/contracts/schemas/{task-packet,execution-invocation,execution-event}.v1.json`: closed canonical wire contracts.
+- `factory/contracts/schemas/{task-packet,execution-invocation,execution-event,workspace-result}.v1.json`: closed canonical wire contracts.
 - `factory/src/adaptive_factory/execution_contracts.py`: immutable authority/profile/policy/plan/packet/manifest/proposal values.
 - `factory/src/adaptive_factory/protocol.py`: bounded strict JSON/JSONL lifecycle parser.
 - `factory/src/adaptive_factory/adapters/{base,codex,grok}.py`: fixture-only native translators and eligibility.
@@ -166,11 +166,11 @@
 - Consumes: final source inventory and exact provisional status.
 - Produces: bidirectional current-doc links, complete README graph, factual M4→M5→M6 interface map, installer inventory and parity checks.
 
-- [ ] **Step 1: Write failing doc/architecture parity tests.** Remove one expected M5-M9 link/node/contract in a controlled fixture and assert orphan/staleness failure; require deadline, branch, route, base, blocker, exact digest/SHA invalidation, rollback, forbidden-authority and no-exit wording.
-- [ ] **Step 2: Confirm RED.** Run `python3 -m unittest tests.test_structure tests.test_architecture_model -v`; expect missing current M5 inventory/link failures.
-- [ ] **Step 3: Update current docs and models only.** Do not rewrite historical evidence. Preserve every edge in the root README complete stack graph and add the factual M6 digest boundary without a new M6 schema.
-- [ ] **Step 4: Update installer managed source inventory.** It may copy M5 source/contracts/units but must never install/enable units, migrate a database, or create provider credentials.
-- [ ] **Step 5: Confirm GREEN and commit.** Run the Step 2 command plus installer tests; commit with `docs(m5): connect provisional execution source map`.
+- [x] **Step 1: Write failing doc/architecture parity tests.** Remove one expected M5-M9 link/node/contract in a controlled fixture and assert orphan/staleness failure; require deadline, branch, route, base, blocker, exact digest/SHA invalidation, rollback, forbidden-authority and no-exit wording.
+- [x] **Step 2: Confirm RED.** Five focused parity tests failed on undeclared recovery/edge, six rather than ten contracts plus unsupported safe keywords, installer omissions, shallow contract objects and stale current docs.
+- [x] **Step 3: Update current docs and models only.** Historical review evidence remains unchanged; the root 22-node/231-edge graph is preserved and the blocked factual M6 digest boundary adds no M6 schema.
+- [x] **Step 4: Update installer managed source inventory.** It copies M5 source/contracts/fixtures/tests/units and never installs/enables units, migrates a database or creates credentials/runtime state.
+- [x] **Step 5: Confirm GREEN and commit.** Root structure/architecture/installer passed 84/84, factory discovery passed 166/166 with disposable PostgreSQL tests skipped outside their harness, and architecture validate/drift/diagram checks passed; commit with `docs(m5): connect provisional execution source map`.
 
 ### Task 7: Final locally feasible verification and blocked exit record
 

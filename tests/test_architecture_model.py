@@ -175,6 +175,7 @@ class ArchitectureModelTests(unittest.TestCase):
             "NODE-FACTORY-EXECUTION-CORE": {
                 "factory/src/adaptive_factory/execution_contracts.py",
                 "factory/src/adaptive_factory/protocol.py",
+                "factory/src/adaptive_factory/recovery.py",
             },
             "NODE-FACTORY-PROVIDER-ADAPTERS": {
                 "factory/src/adaptive_factory/adapters/__init__.py",
@@ -211,7 +212,10 @@ class ArchitectureModelTests(unittest.TestCase):
         ]
         self.assertEqual(
             {(edge["from"], edge["to"]) for edge in adapter_edges},
-            {("NODE-FACTORY-PROVIDER-ADAPTERS", "NODE-FACTORY-EXECUTION-CORE")},
+            {
+                ("NODE-FACTORY-EXECUTION-CORE", "NODE-FACTORY-PROVIDER-ADAPTERS"),
+                ("NODE-FACTORY-PROVIDER-ADAPTERS", "NODE-FACTORY-EXECUTION-CORE"),
+            },
         )
         self.assertTrue(all(edge["network_policy"] == "no_network" for edge in adapter_edges))
 
@@ -220,6 +224,8 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertIn("FIT-FACTORY-EXECUTION-CORE-BOUNDARY", policies)
         self.assertIn("FIT-FACTORY-PROPOSAL-BROKER-BOUNDARY", policies)
         self.assertIn("FIT-FACTORY-WORKSPACE-BROKER-BOUNDARY", policies)
+        self.assertEqual(len(snapshot.system["nodes"]), 21)
+        self.assertEqual(len(snapshot.system["edges"]), 23)
         adapter_forbidden = set(policies["FIT-FACTORY-ADAPTER-BOUNDARY"]["forbidden_dependency_prefixes"])
         self.assertTrue(
             {
@@ -235,6 +241,24 @@ class ArchitectureModelTests(unittest.TestCase):
                 "subprocess",
             }
             <= adapter_forbidden
+        )
+        recovery_forbidden = set(
+            policies["FIT-FACTORY-EXECUTION-CORE-BOUNDARY"][
+                "forbidden_dependency_prefixes"
+            ]
+        )
+        self.assertTrue(
+            {
+                "adaptive_factory.adapters",
+                "adaptive_factory.brokers",
+                "adaptive_factory.store",
+                "psycopg",
+                "git",
+                "requests",
+                "socket",
+                "subprocess",
+            }
+            <= recovery_forbidden
         )
         execution_nodes = set(expected_paths)
         external_or_privileged = {
@@ -1141,7 +1165,7 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 6)
+        self.assertEqual(len(records), 10)
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
@@ -1149,6 +1173,55 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertEqual(factory_api.kind, "openapi")
         self.assertEqual(factory_api.role, "bidirectional")
         self.assertNotIn("/v1/providers/run", documents[factory_api.id]["paths"])
+        execution_contracts = {
+            record.id: (record.kind, record.role, record.compatibility, record.path)
+            for record in records
+            if record.id.startswith("CONTRACT-FACTORY-EXECUTION-")
+        }
+        self.assertEqual(
+            execution_contracts,
+            {
+                "CONTRACT-FACTORY-EXECUTION-EVENT-V1": (
+                    "event",
+                    "consumer",
+                    "consumer_accepts_old",
+                    "factory/contracts/schemas/execution-event.v1.json",
+                ),
+                "CONTRACT-FACTORY-EXECUTION-INVOCATION-V1": (
+                    "json_schema",
+                    "producer",
+                    "producer_accepted_by_old",
+                    "factory/contracts/schemas/execution-invocation.v1.json",
+                ),
+                "CONTRACT-FACTORY-EXECUTION-TASK-PACKET-V1": (
+                    "json_schema",
+                    "producer",
+                    "producer_accepted_by_old",
+                    "factory/contracts/schemas/task-packet.v1.json",
+                ),
+                "CONTRACT-FACTORY-EXECUTION-WORKSPACE-RESULT-V1": (
+                    "json_schema",
+                    "producer",
+                    "producer_accepted_by_old",
+                    "factory/contracts/schemas/workspace-result.v1.json",
+                ),
+            },
+        )
+        execution_core = next(
+            node
+            for node in snapshot.system["nodes"]
+            if node["id"] == "NODE-FACTORY-EXECUTION-CORE"
+        )
+        self.assertEqual(
+            set(execution_core["public_contracts"]), set(execution_contracts)
+        )
+        for record in records:
+            if record.id in execution_contracts:
+                with self.subTest(contract=record.id):
+                    result = ARCH.compare_contracts(
+                        record, record, record.compatibility
+                    )
+                    self.assertEqual(result.status, "compatible", result.reasons)
         governance_handoff = next(
             record
             for record in records
@@ -1676,6 +1749,51 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertEqual(result.status, "incompatible")
         self.assertIn("widened_producer_output", result.reasons)
 
+    def test_openapi_comparison_binds_component_schemas_and_response_headers(self) -> None:
+        base = _openapi(
+            {
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "headers": {
+                            "X-Correlation-ID": {
+                                "required": True,
+                                "schema": {"type": "string", "maxLength": 128},
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/Result"}
+                            }
+                        },
+                    }
+                }
+            }
+        )
+        base["components"] = {
+            "securitySchemes": {},
+            "schemas": {
+                "Result": _json_schema({"value": {"type": "string"}}, ["value"])
+            },
+        }
+        removed_header = copy.deepcopy(base)
+        del removed_header["paths"]["/items"]["get"]["responses"]["200"]["headers"]
+        changed_component = copy.deepcopy(base)
+        changed_component["components"]["schemas"]["Result"]["properties"]["value"] = {
+            "type": "integer"
+        }
+        for label, head in (
+            ("response header", removed_header),
+            ("component schema", changed_component),
+        ):
+            with self.subTest(label=label):
+                result = ARCH.compare_contracts(
+                    self._record(base, kind="openapi"),
+                    self._record(head, kind="openapi"),
+                    "bidirectional",
+                )
+                self.assertEqual(result.status, "incompatible")
+
     def test_openapi_comparison_rejects_added_status_required_parameter_and_scheme_change(
         self,
     ) -> None:
@@ -1799,6 +1917,75 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(result.status, "incompatible")
         self.assertIn("same_version_semantic_change", result.reasons)
+
+    def test_shipped_schema_keywords_are_bounded_and_one_of_stays_unsupported(self) -> None:
+        supported = {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "closed fixture",
+            "type": "object",
+            "properties": {
+                "version": {"const": 1},
+                "packet": {"$ref": "task-packet.v1.json"},
+                "items": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "uniqueItems": True,
+                },
+                "terminal": {"type": ["string", "null"]},
+            },
+            "required": ["version", "packet", "items", "terminal"],
+            "additionalProperties": False,
+            "allOf": [
+                {
+                    "if": {"properties": {"terminal": {"const": None}}},
+                    "then": {"properties": {"version": {"const": 1}}},
+                }
+            ],
+        }
+        record = self._record(supported)
+        self.assertEqual(
+            ARCH.compare_contracts(record, record, "consumer_accepts_old").status,
+            "compatible",
+        )
+        mutations = []
+        for path, value, expected_status in (
+            (("properties", "version", "const"), 2, "incompatible"),
+            (("properties", "packet", "$ref"), "other.v1.json", "incompatible"),
+            (("properties", "items", "uniqueItems"), False, "compatible"),
+            (("allOf", 0, "then", "properties", "version", "const"), 2, "incompatible"),
+        ):
+            changed = copy.deepcopy(supported)
+            target = changed
+            for key in path[:-1]:
+                target = target[key]
+            target[path[-1]] = value
+            mutations.append((changed, expected_status))
+        for changed, expected_status in mutations:
+            with self.subTest(changed=changed):
+                result = ARCH.compare_contracts(
+                    record, self._record(changed), "consumer_accepts_old"
+                )
+                self.assertEqual(result.status, expected_status)
+        consumer_narrowed = copy.deepcopy(supported)
+        consumer_narrowed["properties"]["items"]["uniqueItems"] = True
+        consumer_base = copy.deepcopy(consumer_narrowed)
+        consumer_base["properties"]["items"]["uniqueItems"] = False
+        self.assertEqual(
+            ARCH.compare_contracts(
+                self._record(consumer_base),
+                self._record(consumer_narrowed),
+                "consumer_accepts_old",
+            ).status,
+            "incompatible",
+        )
+        unsafe = copy.deepcopy(supported)
+        unsafe["properties"]["terminal"]["oneOf"] = [{"type": "string"}]
+        self.assertEqual(
+            ARCH.compare_contracts(
+                record, self._record(unsafe), "consumer_accepts_old"
+            ).status,
+            "unsupported",
+        )
 
     def test_contract_comparison_malformed_unknown_and_event_meaning_fail_typed(self) -> None:
         malformed_cases = (
