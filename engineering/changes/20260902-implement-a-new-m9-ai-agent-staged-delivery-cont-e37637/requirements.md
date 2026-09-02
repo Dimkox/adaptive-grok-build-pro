@@ -6,7 +6,7 @@
 
 - [x] `AC-001`: Task 1 implements seven closed frozen V1 record shapes, canonical digests and exact bindings with no cryptographic or external capability.
 - [x] `AC-002`: Task 2 implements deterministic fail-closed metric completeness, freshness, consistency and threshold semantics.
-- [ ] `AC-003`: Tasks 3–4 enforce recovery as a strict subset of the pre-authorized promotion and keep production human-owned.
+- [x] `AC-003`: Tasks 3–4 enforce recovery as a strict subset of the pre-authorized promotion and keep production human-owned.
 - [x] `AC-004`: M4→M9 connectivity, blocker owners, deadline, release and rollback are explicit.
 - [x] `AC-005`: Tasks 1–4 are authorized as separate strict-TDD commits using only synthetic opaque exact identities and pure local behavior.
 
