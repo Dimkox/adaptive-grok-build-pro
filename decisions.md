@@ -349,6 +349,10 @@ Return an exact existing attestation without creating or mutating evidence, even
 
 Serialize attestation recording and proposal persistence through the same task/run/manifest locks, require READ COMMITTED inside both capability functions, and reserve an unconsumed attestation's sequence against every non-artifact proposal. A crash after the attestation commits can leave one bounded immutable reservation; retaining or reconciling that orphan is recovery-policy scope, not evidence that the race was eliminated.
 
+## 2026-09-02 — Recover released execution manifests without inventing provider facts
+
+Scan only nonterminal manifests whose M4 run and capacity allocation are both durably released, release the fake workspace first, then append one control-plane `orphaned` stage event without creating a proposal or WorkspaceResult. Keep cleanup success and failure in idempotent fixed-code ledgers so retries remain observable without storing raw exceptions or changing factual execution evidence.
+
 ## 2026-09-01 — Lock trusted authority inside intake without granting row mutation
 
 Use fixed-search-path security-definer predicates that take a row lock on the exact repository/policy/action subject, and invoke them after intake identity serialization in the insertion transaction. This prevents revocation TOCTOU while retaining an EXECUTE-only runtime boundary.

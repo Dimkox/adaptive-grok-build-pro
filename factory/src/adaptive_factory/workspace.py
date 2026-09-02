@@ -268,6 +268,11 @@ class FakeWorkspaceBroker:
             raise WorkspaceError("network_forbidden")
         self._policies[handle] = policy
 
+    def release(self, handle: WorkspaceHandle) -> str:
+        if self._policies.pop(handle, None) is None:
+            return "fake_absent"
+        return "fake_released"
+
     def _policy(self, handle: WorkspaceHandle) -> WorkspacePolicy:
         try:
             return self._policies[handle]

@@ -54,6 +54,23 @@ class WorkspaceTests(unittest.TestCase):
         self.assertTrue(decision.allowed)
         self.assertEqual(decision.code, "allowed")
 
+    def test_fake_workspace_release_is_idempotent_and_revokes_every_operation(self):
+        broker = FakeWorkspaceBroker()
+        broker.register(handle(), policy())
+        git = FakeGitBroker(broker)
+        self.assertEqual(broker.release(handle()), "fake_released")
+        self.assertEqual(broker.release(handle()), "fake_absent")
+        operations = (
+            lambda: broker.authorize(handle(), operation="read", path="factory/src/a.py"),
+            lambda: broker.sanitize_environment(handle(), {"LANG": "C.UTF-8"}),
+            lambda: git.perform(handle(), "status"),
+        )
+        for operation in operations:
+            with self.subTest(operation=operation), self.assertRaisesRegex(
+                WorkspaceError, "unknown_workspace",
+            ):
+                operation()
+
     def test_traversal_absolute_git_symlink_and_cross_task_are_denied(self):
         broker = FakeWorkspaceBroker(symlinks=("factory/src/link",))
         broker.register(handle(), policy())

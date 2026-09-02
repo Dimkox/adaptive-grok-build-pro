@@ -351,3 +351,7 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-02 — Carried an over-indented unchanged test line
 
 **Root cause:** A broad context patch accidentally moved an unchanged helper return under the wrong block, and the edit was inspected before an immediate compile check. Every context-heavy test patch now gets `py_compile` before its first test invocation.
+
+## 2026-09-02 — Treated an inert guard as sufficient systemd validation
+
+**Root cause:** `ExecCondition=/usr/bin/false` was treated as sufficient while future `ExecStart` binaries did not exist and the syscall-filter syntax had not been checked by systemd itself. Source-only units now use installed false stubs and must pass native `systemd-analyze verify`.

@@ -118,6 +118,11 @@ class MigrationTests(unittest.TestCase):
             "execution_finalize_context",
             "execution_finalize_commit",
             "execution_result_for_run",
+            "execution_recovery_candidates",
+            "execution_orphan_terminalize",
+            "execution_recovery_cleanup_failed",
+            "execution_recovery_cleanup_succeeded",
+            "execution_recovery_cleanup_failures",
             "security definer set search_path=pg_catalog,factory",
             "revoke all",
         ):

@@ -50,6 +50,34 @@ CREATE TABLE factory.execution_manifests (
 CREATE INDEX execution_manifests_recovery ON factory.execution_manifests(updated_at,run_id)
   WHERE terminal_at IS NULL;
 
+CREATE TABLE factory.execution_recovery_cleanup_failures (
+  run_id uuid PRIMARY KEY,
+  manifest_digest char(64) NOT NULL UNIQUE,
+  failure_code text NOT NULL CHECK (failure_code='workspace_cleanup_failed'),
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  FOREIGN KEY (manifest_digest,run_id)
+    REFERENCES factory.execution_manifests(manifest_digest,run_id) ON DELETE RESTRICT
+);
+
+CREATE TABLE factory.execution_recovery_cleanup_successes (
+  run_id uuid PRIMARY KEY,
+  manifest_digest char(64) NOT NULL UNIQUE,
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  FOREIGN KEY (manifest_digest,run_id)
+    REFERENCES factory.execution_manifests(manifest_digest,run_id) ON DELETE RESTRICT
+);
+
+ALTER TABLE factory.metric_counters
+  ADD COLUMN execution_claimed bigint NOT NULL DEFAULT 0 CHECK (execution_claimed>=0),
+  ADD COLUMN execution_stage_transitions bigint NOT NULL DEFAULT 0 CHECK (execution_stage_transitions>=0),
+  ADD COLUMN execution_note_proposals bigint NOT NULL DEFAULT 0 CHECK (execution_note_proposals>=0),
+  ADD COLUMN execution_artifact_proposals bigint NOT NULL DEFAULT 0 CHECK (execution_artifact_proposals>=0),
+  ADD COLUMN execution_usage_proposals bigint NOT NULL DEFAULT 0 CHECK (execution_usage_proposals>=0),
+  ADD COLUMN execution_terminal_proposals bigint NOT NULL DEFAULT 0 CHECK (execution_terminal_proposals>=0),
+  ADD COLUMN execution_orphaned bigint NOT NULL DEFAULT 0 CHECK (execution_orphaned>=0),
+  ADD COLUMN execution_workspace_released bigint NOT NULL DEFAULT 0 CHECK (execution_workspace_released>=0),
+  ADD COLUMN execution_cleanup_failed bigint NOT NULL DEFAULT 0 CHECK (execution_cleanup_failed>=0);
+
 CREATE TABLE factory.execution_stage_events (
   stage_event_id bigserial PRIMARY KEY,
   manifest_digest char(64) NOT NULL REFERENCES factory.execution_manifests(manifest_digest) ON DELETE RESTRICT,
@@ -180,6 +208,10 @@ BEGIN
   );
   INSERT INTO factory.execution_stage_events(manifest_digest,stage_sequence,stage)
     VALUES (p_manifest_digest,1,'prepared');
+  UPDATE factory.metric_counters SET
+    execution_claimed=execution_claimed+1,
+    execution_stage_transitions=execution_stage_transitions+1
+    WHERE singleton;
   RETURN true;
 EXCEPTION WHEN unique_violation OR check_violation OR foreign_key_violation THEN
   RETURN false;
@@ -231,6 +263,8 @@ BEGIN
     WHERE manifest_digest=manifest;
   INSERT INTO factory.execution_stage_events(manifest_digest,stage_sequence,stage)
     VALUES (manifest,next_sequence,p_stage);
+  UPDATE factory.metric_counters SET
+    execution_stage_transitions=execution_stage_transitions+1 WHERE singleton;
   RETURN true;
 END;
 $$;
@@ -558,6 +592,12 @@ BEGIN
   ) VALUES (
     gen_random_uuid(),p_task_id,p_run_id,p_packet_digest,p_sequence,p_idempotency_key,p_kind,p_body
   );
+  UPDATE factory.metric_counters SET
+    execution_note_proposals=execution_note_proposals+CASE WHEN p_kind='note' THEN 1 ELSE 0 END,
+    execution_artifact_proposals=execution_artifact_proposals+CASE WHEN p_kind='artifact' THEN 1 ELSE 0 END,
+    execution_usage_proposals=execution_usage_proposals+CASE WHEN p_kind='usage' THEN 1 ELSE 0 END,
+    execution_terminal_proposals=execution_terminal_proposals+CASE WHEN p_kind='terminal' THEN 1 ELSE 0 END
+    WHERE singleton;
   RETURN true;
 EXCEPTION WHEN unique_violation OR check_violation OR foreign_key_violation OR data_exception THEN
   RETURN false;
@@ -1138,6 +1178,8 @@ BEGIN
     WHERE execution_manifests.manifest_digest=v_manifest_digest;
   INSERT INTO factory.execution_stage_events(manifest_digest,stage_sequence,stage)
     VALUES (v_manifest_digest,next_sequence,target_stage);
+  UPDATE factory.metric_counters SET
+    execution_stage_transitions=execution_stage_transitions+1 WHERE singleton;
   UPDATE factory.attempts SET
     failure_class=CASE WHEN target_stage='failed' THEN terminal_failure_class ELSE NULL END,
     failure_code=CASE WHEN target_stage='failed' THEN terminal_failure_class ELSE NULL END,
@@ -1165,8 +1207,125 @@ EXCEPTION WHEN unique_violation OR check_violation OR foreign_key_violation THEN
 END;
 $$;
 
+CREATE FUNCTION factory.execution_recovery_candidates(
+  p_limit integer,p_updated_at timestamptz,p_run_id uuid
+) RETURNS TABLE(
+  task_id uuid,run_id uuid,manifest_digest char(64),workspace_handle text,updated_at timestamptz
+)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+BEGIN
+  IF p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 100
+    OR ((p_updated_at IS NULL) IS DISTINCT FROM (p_run_id IS NULL))
+  THEN RETURN; END IF;
+  RETURN QUERY
+    SELECT m.task_id,m.run_id,m.manifest_digest,m.workspace_handle,m.updated_at
+    FROM factory.execution_manifests m
+    JOIN factory.runs r ON r.run_id=m.run_id AND r.task_id=m.task_id
+    JOIN factory.capacity_allocations a ON a.run_id=m.run_id AND a.task_id=m.task_id
+    WHERE m.terminal_at IS NULL AND r.released_at IS NOT NULL AND a.released_at IS NOT NULL
+      AND (p_updated_at IS NULL OR (m.updated_at,m.run_id)>(p_updated_at,p_run_id))
+    ORDER BY m.updated_at,m.run_id LIMIT p_limit;
+END;
+$$;
+
+CREATE FUNCTION factory.execution_orphan_terminalize(
+  p_run_id uuid,p_manifest_digest char(64)
+) RETURNS text
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+DECLARE
+  v_terminal_at timestamptz;
+  v_manifest_digest char(64);
+  v_next_sequence bigint;
+BEGIN
+  IF p_run_id IS NULL OR p_manifest_digest IS NULL THEN
+    RETURN 'not_eligible';
+  END IF;
+  SELECT m.manifest_digest,m.terminal_at INTO v_manifest_digest,v_terminal_at
+    FROM factory.execution_manifests m
+    WHERE m.run_id=p_run_id AND m.manifest_digest=p_manifest_digest
+    FOR UPDATE;
+  IF NOT FOUND THEN RETURN 'not_eligible'; END IF;
+  IF v_terminal_at IS NOT NULL THEN RETURN 'already_terminal'; END IF;
+  PERFORM 1 FROM factory.runs r
+    JOIN factory.capacity_allocations a ON a.run_id=r.run_id AND a.task_id=r.task_id
+    WHERE r.run_id=p_run_id AND r.released_at IS NOT NULL AND a.released_at IS NOT NULL
+    FOR UPDATE OF r,a;
+  IF NOT FOUND THEN RETURN 'not_eligible'; END IF;
+  SELECT COALESCE(max(e.stage_sequence),0)+1 INTO v_next_sequence
+    FROM factory.execution_stage_events e WHERE e.manifest_digest=v_manifest_digest;
+  UPDATE factory.execution_manifests SET
+    stage='orphaned',terminal_at=clock_timestamp(),updated_at=clock_timestamp()
+    WHERE manifest_digest=v_manifest_digest AND terminal_at IS NULL;
+  IF NOT FOUND THEN RETURN 'already_terminal'; END IF;
+  INSERT INTO factory.execution_stage_events(manifest_digest,stage_sequence,stage)
+    VALUES (v_manifest_digest,v_next_sequence,'orphaned');
+  UPDATE factory.metric_counters SET
+    execution_stage_transitions=execution_stage_transitions+1,
+    execution_orphaned=execution_orphaned+1
+    WHERE singleton;
+  RETURN 'orphaned';
+END;
+$$;
+
+CREATE FUNCTION factory.execution_recovery_cleanup_succeeded(
+  p_run_id uuid,p_manifest_digest char(64)
+) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+DECLARE
+  v_manifest_digest char(64);
+BEGIN
+  IF p_run_id IS NULL OR p_manifest_digest IS NULL THEN RETURN false; END IF;
+  SELECT m.manifest_digest INTO v_manifest_digest
+    FROM factory.execution_manifests m
+    WHERE m.run_id=p_run_id AND m.manifest_digest=p_manifest_digest
+    FOR UPDATE;
+  IF NOT FOUND OR NOT EXISTS (
+    SELECT 1 FROM factory.runs r
+    JOIN factory.capacity_allocations a ON a.run_id=r.run_id AND a.task_id=r.task_id
+    WHERE r.run_id=p_run_id AND r.released_at IS NOT NULL AND a.released_at IS NOT NULL
+  ) THEN RETURN false; END IF;
+  INSERT INTO factory.execution_recovery_cleanup_successes(run_id,manifest_digest)
+    VALUES (p_run_id,v_manifest_digest) ON CONFLICT DO NOTHING;
+  IF NOT FOUND THEN RETURN false; END IF;
+  UPDATE factory.metric_counters SET
+    execution_workspace_released=execution_workspace_released+1 WHERE singleton;
+  RETURN true;
+END;
+$$;
+
+CREATE FUNCTION factory.execution_recovery_cleanup_failed(
+  p_run_id uuid,p_manifest_digest char(64)
+) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+DECLARE
+  v_manifest_digest char(64);
+BEGIN
+  IF p_run_id IS NULL OR p_manifest_digest IS NULL THEN RETURN false; END IF;
+  SELECT m.manifest_digest INTO v_manifest_digest
+    FROM factory.execution_manifests m
+    WHERE m.run_id=p_run_id AND m.manifest_digest=p_manifest_digest
+      AND m.terminal_at IS NULL
+    FOR UPDATE;
+  IF NOT FOUND OR NOT EXISTS (
+    SELECT 1 FROM factory.runs r
+    JOIN factory.capacity_allocations a ON a.run_id=r.run_id AND a.task_id=r.task_id
+    WHERE r.run_id=p_run_id AND r.released_at IS NOT NULL AND a.released_at IS NOT NULL
+  ) THEN RETURN false; END IF;
+  INSERT INTO factory.execution_recovery_cleanup_failures(
+    run_id,manifest_digest,failure_code
+  ) VALUES (p_run_id,v_manifest_digest,'workspace_cleanup_failed')
+  ON CONFLICT DO NOTHING;
+  IF NOT FOUND THEN RETURN false; END IF;
+  UPDATE factory.metric_counters SET execution_cleanup_failed=execution_cleanup_failed+1
+    WHERE singleton;
+  RETURN true;
+END;
+$$;
+
 REVOKE ALL ON factory.execution_packets,factory.execution_manifests,
   factory.execution_stage_events,factory.execution_proposals,factory.workspace_results FROM PUBLIC,factory_runtime;
+REVOKE ALL ON factory.execution_recovery_cleanup_failures,
+  factory.execution_recovery_cleanup_successes FROM PUBLIC,factory_runtime;
 REVOKE ALL ON factory.execution_artifact_attestations FROM PUBLIC,factory_runtime,factory_artifact_attestor;
 REVOKE ALL ON FUNCTION factory.execution_start(uuid,uuid,text,bigint,char,char,char,text,text,jsonb,jsonb)
   FROM PUBLIC;
@@ -1186,6 +1345,10 @@ REVOKE ALL ON FUNCTION factory.execution_record_artifact_attestation(jsonb)
 REVOKE ALL ON FUNCTION factory.execution_result_by_digest(uuid,char) FROM PUBLIC;
 REVOKE ALL ON FUNCTION factory.execution_finalize_context(uuid,uuid,text,bigint,char,char) FROM PUBLIC;
 REVOKE ALL ON FUNCTION factory.execution_finalize_commit(uuid,uuid,text,bigint,char,char,char,jsonb,jsonb) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.execution_recovery_candidates(integer,timestamptz,uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.execution_orphan_terminalize(uuid,char) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.execution_recovery_cleanup_succeeded(uuid,char) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.execution_recovery_cleanup_failed(uuid,char) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION factory.execution_start(uuid,uuid,text,bigint,char,char,char,text,text,jsonb,jsonb)
   TO factory_runtime;
 GRANT EXECUTE ON FUNCTION factory.execution_advance(uuid,uuid,text,bigint,char,char,text)
@@ -1200,6 +1363,10 @@ GRANT EXECUTE ON FUNCTION factory.execution_has_packet(uuid) TO factory_runtime;
 GRANT EXECUTE ON FUNCTION factory.execution_result_by_digest(uuid,char) TO factory_runtime;
 GRANT EXECUTE ON FUNCTION factory.execution_finalize_context(uuid,uuid,text,bigint,char,char) TO factory_runtime;
 GRANT EXECUTE ON FUNCTION factory.execution_finalize_commit(uuid,uuid,text,bigint,char,char,char,jsonb,jsonb) TO factory_runtime;
+GRANT EXECUTE ON FUNCTION factory.execution_recovery_candidates(integer,timestamptz,uuid) TO factory_runtime;
+GRANT EXECUTE ON FUNCTION factory.execution_orphan_terminalize(uuid,char) TO factory_runtime;
+GRANT EXECUTE ON FUNCTION factory.execution_recovery_cleanup_succeeded(uuid,char) TO factory_runtime;
+GRANT EXECUTE ON FUNCTION factory.execution_recovery_cleanup_failed(uuid,char) TO factory_runtime;
 GRANT USAGE ON SCHEMA factory TO factory_artifact_attestor;
 GRANT EXECUTE ON FUNCTION factory.execution_record_artifact_attestation(jsonb)
   TO factory_artifact_attestor;

@@ -18,6 +18,7 @@ from .execution_contracts import RunManifestV1, TaskPacketV1, WorkspaceResultV1,
 from .migrations import discover_migrations
 from .models import Actor, ExecutionGrant, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskProjection, TaskStatus
 from .protocol import CanonicalEvent, PROTOCOL_VERSION
+from .recovery import ExecutionRecoveryCandidate, ExecutionRecoveryCursor
 from .state import classify_retry
 from .workspace import (
     ArtifactAttestationUnavailable,
@@ -301,6 +302,10 @@ class PostgresFactoryStore:
             reserved_cost, observed_cost, reserved_tokens, observed_tokens, reserved_wall,
             observed_output, blocked, kills, reconciliation_runs,
             reconciliation_candidates, repaired,
+            execution_claimed, execution_stage_transitions,
+            execution_note_proposals, execution_artifact_proposals,
+            execution_usage_proposals, execution_terminal_proposals,
+            execution_orphaned, execution_workspace_released, execution_cleanup_failed,
         ) = row
         return {
             "factory_intake_and_rejection_outcomes_total": {
@@ -318,7 +323,80 @@ class PostgresFactoryStore:
                 "active_kills": kills, "reconciliation_runs": reconciliation_runs,
                 "reconciliation_candidates": reconciliation_candidates, "repaired": repaired,
             },
+            "factory_execution_claim_and_stage_outcomes_total": {
+                "claimed": execution_claimed, "stage_transitions": execution_stage_transitions,
+            },
+            "factory_execution_protocol_and_proposal_outcomes_total": {
+                "note": execution_note_proposals, "artifact": execution_artifact_proposals,
+                "usage": execution_usage_proposals, "terminal": execution_terminal_proposals,
+            },
+            "factory_execution_orphan_and_cleanup_outcomes_total": {
+                "orphaned": execution_orphaned,
+                "workspace_released": execution_workspace_released,
+                "cleanup_failed": execution_cleanup_failed,
+            },
         }
+
+    def execution_recovery_candidates(
+        self, *, limit: int, cursor: ExecutionRecoveryCursor | None,
+    ) -> tuple[ExecutionRecoveryCandidate, ...]:
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise StoreError("invalid execution recovery limit")
+        if cursor is not None and not isinstance(cursor, ExecutionRecoveryCursor):
+            raise StoreError("invalid execution recovery cursor")
+        with self._connect() as connection, connection.transaction(), connection.cursor() as db:
+            db.execute("SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='5s'")
+            db.execute(
+                "SELECT * FROM factory.execution_recovery_candidates(%s,%s,%s)",
+                (
+                    limit,
+                    None if cursor is None else cursor.updated_at,
+                    None if cursor is None else cursor.run_id,
+                ),
+            )
+            rows = db.fetchall()
+        return tuple(
+            ExecutionRecoveryCandidate(
+                str(task_id), str(run_id), manifest_digest.strip(), workspace_handle, updated_at,
+            )
+            for task_id, run_id, manifest_digest, workspace_handle, updated_at in rows
+        )
+
+    def record_execution_cleanup_success(self, candidate: ExecutionRecoveryCandidate) -> None:
+        if not isinstance(candidate, ExecutionRecoveryCandidate):
+            raise StoreError("invalid execution recovery candidate")
+        with self._connect() as connection, connection.transaction(), connection.cursor() as db:
+            db.execute("SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='5s'")
+            db.execute(
+                "SELECT factory.execution_recovery_cleanup_succeeded(%s,%s)",
+                (candidate.run_id, candidate.manifest_digest),
+            )
+            db.fetchone()
+
+    def terminalize_execution_orphan(self, candidate: ExecutionRecoveryCandidate) -> str:
+        if not isinstance(candidate, ExecutionRecoveryCandidate):
+            raise StoreError("invalid execution recovery candidate")
+        with self._connect() as connection, connection.transaction(), connection.cursor() as db:
+            db.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            db.execute(
+                "SELECT factory.execution_orphan_terminalize(%s,%s)",
+                (candidate.run_id, candidate.manifest_digest),
+            )
+            outcome = db.fetchone()[0]
+        if outcome not in {"orphaned", "already_terminal", "not_eligible"}:
+            raise StoreError("invalid execution recovery outcome")
+        return outcome
+
+    def record_execution_cleanup_failure(self, candidate: ExecutionRecoveryCandidate) -> None:
+        if not isinstance(candidate, ExecutionRecoveryCandidate):
+            raise StoreError("invalid execution recovery candidate")
+        with self._connect() as connection, connection.transaction(), connection.cursor() as db:
+            db.execute("SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='5s'")
+            db.execute(
+                "SELECT factory.execution_recovery_cleanup_failed(%s,%s)",
+                (candidate.run_id, candidate.manifest_digest),
+            )
+            db.fetchone()
 
     def record_fence_rejection(self) -> None:
         with self._connect(connect_timeout=1) as connection, connection.cursor() as cursor:

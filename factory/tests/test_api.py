@@ -84,6 +84,9 @@ class FakeService:
             "factory_intake_and_rejection_outcomes_total": {},
             "factory_lease_reclaim_and_fence_rejection_total": {},
             "factory_capacity_budget_kill_and_reconcile_outcomes_total": {},
+            "factory_execution_claim_and_stage_outcomes_total": {},
+            "factory_execution_protocol_and_proposal_outcomes_total": {},
+            "factory_execution_orphan_and_cleanup_outcomes_total": {},
         }
 
 
