@@ -1,6 +1,6 @@
 # Release packages
 
-Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). The `2.0.13` files are the retained final local M4 candidate with SHA-256 `5b29b7e8e439d1409c3f72757199d20de8f6f4c62bd1df972a37d13f615d9d0e`; M5 never overwrites them. `2.0.14` is reserved for the current M5 local provisional candidate and will be built once from a clean exact source commit. Neither identity claims a tag or GitHub Release, and the most recently published release remains `v2.0.12`.
+Tracked release artifacts and the reserved next local candidate identity. Scratch rebuilds go to `dist/` (gitignored). The `2.0.13` files are the retained final local M4 candidate with SHA-256 `5b29b7e8e439d1409c3f72757199d20de8f6f4c62bd1df972a37d13f615d9d0e`; M5 never overwrites them. `2.0.14` is the current M5 local provisional candidate and its zip is generated only from a clean exact source commit in a separate artifact-only commit. Neither identity claims a tag or GitHub Release, and the most recently published release remains `v2.0.12`.
 
 | File | Version |
 | --- | --- |
@@ -18,6 +18,7 @@ Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). The `2.0
 | `adaptive-grok-build-pro-v2.0.11.zip` | 2.0.11 |
 | `adaptive-grok-build-pro-v2.0.12.zip` | 2.0.12 |
 | `adaptive-grok-build-pro-v2.0.13.zip` | 2.0.13 (final local M4 candidate; retained) |
+| `adaptive-grok-build-pro-v2.0.14.zip` | 2.0.14 (local provisional M5 candidate; no tag/release) |
 
 Each zip has a sibling `.sha256`. Rebuild:
 

@@ -445,3 +445,7 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 **Symptom:** A replacement ref or inherited repository override could make release packaging succeed with bytes outside the raw repository `HEAD`.
 **Root cause:** Release and parity-test Git subprocesses inherited replace, graft, repository, index, object and config interpretation controls from their environment.
 **Correction:** Bind release Git commands to canonical `ROOT`, strip ambient Git controls, disable replacements and grafts, and keep the parity reader independently sanitized.
+
+## 2026-09-02 — Trusted a conflict-free test auto-merge across a transaction boundary
+
+**Root cause:** M5 kept a metrics probe shaped for the older direct-connection path while the merged store moved that read into the common bounded transaction; Git saw no textual conflict, but the probe lacked `transaction()` delegation and asserted the obsolete SQL shape. Dependency restacks must rerun the live integration test and align test doubles with the complete real connection interface, including parameterized transaction bounds.

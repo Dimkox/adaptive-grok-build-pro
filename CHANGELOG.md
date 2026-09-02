@@ -8,7 +8,7 @@ M5 isolated-execution local provisional candidate, normally restacked on final l
 - Normal-restacks M5 Tasks 1-6 from exact source `141e51e75b2bb337fa3bb1544639c6c46c287309` on exact M4 predecessor `571cad7877431ac5ab5779b53fe9f7effd6859ce`
 - Preserves M4 migration `013_persisted_infrastructure_retry_limit.sql` and adds contiguous M5 migration `014_execution_plane.sql`, bounded database transactions, single-transaction cancellation and fail-closed runtime/attestor roles
 - Records source as implemented but provisional; exact-head verification and independent review remain pending, rootless live-host isolation and a trusted live Git snapshot remain blocked, and PR/external/merge/delivery evidence is absent
-- Reserves distinct tracked local artifact identity `packages/adaptive-grok-build-pro-v2.0.14.zip`; it will be built once from a clean exact M5 source commit without overwriting final M4 `2.0.13`. No tag or GitHub Release publication is claimed
+- Reserves distinct tracked local artifact identity `packages/adaptive-grok-build-pro-v2.0.14.zip`; it is generated only from a clean exact M5 source commit in a separate artifact-only commit without overwriting final M4 `2.0.13`. No tag or GitHub Release publication is claimed
 
 ## 2.0.13 — 2026-09-02
 

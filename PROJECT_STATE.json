@@ -25,11 +25,11 @@
     "route_id": "37b05f579320",
     "branch": "milestone/m5-isolated-execution-provisional-m4",
     "change_package": "engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f",
-    "status": "local_m5_provisional_candidate_exact_head_verification_pending",
+    "status": "local_m5_provisional_source_gate_passed_package_gate_pending",
     "highest_implemented_milestone": "M4",
     "current_provisional_milestone": "M5",
     "next_roadmap_milestone": "M5",
-    "next_action": "Commit the normal restack on exact M4 predecessor 571cad7877431ac5ab5779b53fe9f7effd6859ce, run fresh focused and disposable-PostgreSQL M5 verification, then create one clean exact source commit and build the distinct 2.0.14 artifact in a separate artifact-only commit. Rootless live-host isolation and the trusted live Git snapshot remain blocking exit evidence; PR, external Trust CI, merge and delivery remain absent.",
+    "next_action": "Materialize the distinct 2.0.14 artifact-only commit from the clean exact M5 source commit if it is absent, then run current-head package/full verification and route-selected reviews. Rootless live-host isolation and the trusted live Git snapshot remain blocking exit evidence; PR, external Trust CI, protected-branch merge and delivery remain absent.",
     "m4_dimensions": {
       "implementation_source": {
         "status": "implemented_local_candidate",
@@ -84,7 +84,14 @@
       "local_exact_head_verification": {
         "status": "pending_current_exact_head",
         "head_sha": null,
-        "notes": "Earlier focused evidence does not bind the current final-restack source/package commits; fresh M5 evidence is required."
+        "pre_artifact_source_gate": {
+          "merge_checkpoint": "d2b8c875c30bb57d5dbdadbef0bd7cf20377aed9",
+          "merge_tree": "a314816a52fab19592d7e85793682741e1798777",
+          "factory_unit_api_contracts": "182/182 passed with 58 truthful no-database skips",
+          "disposable_postgresql_17": "182/182 passed plus actual restart/reconciliation",
+          "root_suite": "539/540 passed; the sole intended RED was the not-yet-built 2.0.14 artifact"
+        },
+        "notes": "Focused source and disposable-PostgreSQL evidence passed before the clean source/package commit boundary. It is not a current exact-head full verifier receipt and does not replace final package verification or independent review."
       },
       "rootless_live_host_isolation": {
         "status": "blocked",
@@ -351,7 +358,7 @@
     "M5": {
       "implementation": {"status": "provisional_locally_restacked", "commit": "141e51e75b2bb337fa3bb1544639c6c46c287309", "evidence": "milestone/m5-isolated-execution-provisional-m4", "notes": "Tasks 1-6 source from exact clean head 141e51e75b2bb337fa3bb1544639c6c46c287309 is normal-restacked locally on final exact M4 predecessor 571cad7877431ac5ab5779b53fe9f7effd6859ce. M4 migration 013 is preserved and M5 execution is contiguous migration 014. This is provisional local source integration only, not M5 acceptance or delivery."},
       "review": {"status": "pending_final", "commit": "141e51e75b2bb337fa3bb1544639c6c46c287309", "evidence": [], "notes": "A final review wave remains pending after accepted-M4 restack and rootless live-host isolation proof."},
-      "stack_integration": {"status": "local_restack_provisional", "base_branch": "integration/m4-main-20260902", "base_commit": "571cad7877431ac5ab5779b53fe9f7effd6859ce", "base_tree": "9d29f25d3af4fc9f97bbb8b3d4970906b69338fd", "prior_local_merge_checkpoint": "9eab0b361f8132a356dc668d5cc0e0ba5d6744f3", "current_candidate_identity": "repository tree containing this PROJECT_STATE.json", "pull_request": null, "merge_commit": null, "notes": "The current tree normal-merges final exact M4 predecessor 571cad7 and resolves migration numbering as immutable M4 013 plus M5 014. The merge is local/provisional and cannot establish M5 acceptance, delivery or external authority; fresh checksum/upgrade/restart/package evidence is required."},
+      "stack_integration": {"status": "local_restack_provisional", "base_branch": "integration/m4-main-20260902", "base_commit": "571cad7877431ac5ab5779b53fe9f7effd6859ce", "base_tree": "9d29f25d3af4fc9f97bbb8b3d4970906b69338fd", "prior_local_merge_checkpoint": "9eab0b361f8132a356dc668d5cc0e0ba5d6744f3", "final_m4_merge_checkpoint": "d2b8c875c30bb57d5dbdadbef0bd7cf20377aed9", "final_m4_merge_tree": "a314816a52fab19592d7e85793682741e1798777", "merge_parents": ["860c3d1389e0b8022d1ce550eaaca088b7f1ad9b", "571cad7877431ac5ab5779b53fe9f7effd6859ce"], "current_candidate_identity": "repository tree containing this PROJECT_STATE.json", "pull_request": null, "merge_commit": null, "notes": "The local merge checkpoint normally integrates final exact M4 predecessor 571cad7 and resolves migration numbering as immutable M4 013 plus M5 014. It is a local/provisional dependency restack, not a protected-branch merge, and cannot establish M5 acceptance, delivery or external authority."},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
       "external_gate": {"status": "blocked", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null, "notes": "Rootless live-host isolation proof, a trusted live Git snapshot, final M5 reviews and a later exact PR SHA are still required."}
     },
@@ -403,6 +410,8 @@
         "restack_predecessor": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
         "restack_predecessor_tree": "9d29f25d3af4fc9f97bbb8b3d4970906b69338fd",
         "prior_local_merge_checkpoint": "9eab0b361f8132a356dc668d5cc0e0ba5d6744f3",
+        "final_m4_merge_checkpoint": "d2b8c875c30bb57d5dbdadbef0bd7cf20377aed9",
+        "final_m4_merge_tree": "a314816a52fab19592d7e85793682741e1798777",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "purpose": "Tasks 1-6 are locally normal-restacked provisionally on final M4 predecessor 571cad7 with M4 migration 013 plus M5 migration 014. Refresh checksum/upgrade/restart/package evidence, then prove rootless live-host isolation and trusted Git snapshot before review or acceptance."
       },

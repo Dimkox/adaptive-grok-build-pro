@@ -3407,6 +3407,7 @@ class PostgresFactoryTests(unittest.TestCase):
         observed = threading.Event()
         proceed = threading.Event()
         statements = []
+        executions = []
         real_connection = self.store._connect()
 
         class ProbeCursor:
@@ -3426,6 +3427,7 @@ class PostgresFactoryTests(unittest.TestCase):
             def execute(self, statement, parameters=None):
                 text = str(statement).lower()
                 statements.append(text)
+                executions.append((text, parameters))
                 result = self.inner.execute(statement, parameters)
                 if (
                     "from factory.runs" in text and "filter (where state='leased'" in text
@@ -3444,6 +3446,9 @@ class PostgresFactoryTests(unittest.TestCase):
             def __exit__(self, *args):
                 return real_connection.__exit__(*args)
 
+            def __getattr__(self, name):
+                return getattr(real_connection, name)
+
             def cursor(self):
                 return ProbeCursor(real_connection.cursor())
 
@@ -3458,9 +3463,14 @@ class PostgresFactoryTests(unittest.TestCase):
         leases = metrics["factory_lease_reclaim_and_fence_rejection_total"]["live_leases"]
         capacity = metrics["factory_capacity_budget_kill_and_reconcile_outcomes_total"]["active_capacity"]
         self.assertIn((leases, capacity), {(1, 1), (0, 0)})
-        self.assertIn("set local statement_timeout='5s'", statements)
-        self.assertIn("set local lock_timeout='500ms'", statements)
-        data_statements = [item for item in statements if item.startswith("select")]
+        self.assertIn(
+            (
+                "select set_config('lock_timeout',%s,true),set_config('statement_timeout',%s,true)",
+                ("500ms", "5s"),
+            ),
+            executions,
+        )
+        data_statements = [item for item in statements if "read_metrics_snapshot" in item]
         self.assertEqual(len(data_statements), 1)
         self.assertIn("read_metrics_snapshot", data_statements[0])
 

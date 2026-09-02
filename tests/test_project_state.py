@@ -30,6 +30,8 @@ M4_FAILED_VERIFY_FINGERPRINT = "f0efa89e689dbe47c701a4d301e97361ee671e299ef2f32b
 M5_PROVISIONAL_SHA = "141e51e75b2bb337fa3bb1544639c6c46c287309"
 M5_RESTACK_PREDECESSOR_SHA = M4_FINAL_SHA
 M5_PRIOR_LOCAL_MERGE_CHECKPOINT_SHA = "9eab0b361f8132a356dc668d5cc0e0ba5d6744f3"
+M5_FINAL_M4_MERGE_CHECKPOINT_SHA = "d2b8c875c30bb57d5dbdadbef0bd7cf20377aed9"
+M5_FINAL_M4_MERGE_TREE = "a314816a52fab19592d7e85793682741e1798777"
 M6_TASK1_SHA = "3def83eb915ca68e66379269526ffa64822a1104"
 M6_TASK2_SHA = "a8ca0f3afffbd9ef5584825252f9a669a324d2a5"
 M6_PROVISIONAL_SHA = "f3b2c0d07116686b27feab4b60166e8a7402d672"
@@ -249,6 +251,18 @@ class ProjectStateTests(unittest.TestCase):
             m5["stack_integration"]["prior_local_merge_checkpoint"],
             M5_PRIOR_LOCAL_MERGE_CHECKPOINT_SHA,
         )
+        self.assertEqual(
+            (
+                m5["stack_integration"]["final_m4_merge_checkpoint"],
+                m5["stack_integration"]["final_m4_merge_tree"],
+                m5["stack_integration"]["merge_parents"],
+            ),
+            (
+                M5_FINAL_M4_MERGE_CHECKPOINT_SHA,
+                M5_FINAL_M4_MERGE_TREE,
+                ["860c3d1389e0b8022d1ce550eaaca088b7f1ad9b", M4_FINAL_SHA],
+            ),
+        )
         self.assertIsNone(m5["main_delivery"]["merge_commit"])
         m6 = state["milestones"]["M6"]
         self.assertEqual(m6["implementation"]["commit"], M6_PROVISIONAL_SHA)
@@ -283,7 +297,7 @@ class ProjectStateTests(unittest.TestCase):
         delivery = self.state["active_delivery"]
         dimensions = delivery["m5_dimensions"]
         self.assertEqual(delivery["route_id"], "37b05f579320")
-        self.assertTrue(delivery["next_action"].startswith("Commit the normal restack on exact M4"))
+        self.assertTrue(delivery["next_action"].startswith("Materialize the distinct 2.0.14"))
         self.assertEqual(
             dimensions["implementation_source"],
             {
@@ -517,6 +531,13 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(
             inventory["active"][1]["prior_local_merge_checkpoint"],
             M5_PRIOR_LOCAL_MERGE_CHECKPOINT_SHA,
+        )
+        self.assertEqual(
+            (
+                inventory["active"][1]["final_m4_merge_checkpoint"],
+                inventory["active"][1]["final_m4_merge_tree"],
+            ),
+            (M5_FINAL_M4_MERGE_CHECKPOINT_SHA, M5_FINAL_M4_MERGE_TREE),
         )
         self.assertEqual(inventory["active"][2]["task1_head"], M6_TASK1_SHA)
         self.assertEqual(inventory["active"][2]["task2_head"], M6_TASK2_SHA)
