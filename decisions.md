@@ -345,6 +345,10 @@ Require a trusted workspace observer to produce an authority-bound artifact enve
 
 Return an exact existing attestation without creating or mutating evidence, even after the proposal channel advances or closes, while applying terminal, count, and sequence gates to fresh inserts only. Atomic `execution_propose` consumption still binds the attestation to the exact unconsumed sequence, and service command replay bypasses observer and recorder calls entirely.
 
+## 2026-09-02 — Reserve artifact proposal sequences under read committed locks
+
+Serialize attestation recording and proposal persistence through the same task/run/manifest locks, require READ COMMITTED inside both capability functions, and reserve an unconsumed attestation's sequence against every non-artifact proposal. A crash after the attestation commits can leave one bounded immutable reservation; retaining or reconciling that orphan is recovery-policy scope, not evidence that the race was eliminated.
+
 ## 2026-09-01 — Lock trusted authority inside intake without granting row mutation
 
 Use fixed-search-path security-definer predicates that take a row lock on the exact repository/policy/action subject, and invoke them after intake identity serialization in the insertion transaction. This prevents revocation TOCTOU while retaining an EXECUTE-only runtime boundary.

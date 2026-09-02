@@ -1,5 +1,9 @@
 import unittest
+from unittest.mock import patch
 
+import psycopg
+
+from adaptive_factory.store import PostgresArtifactAttestationStore
 from adaptive_factory.workspace import (
     ArtifactAttestationRequest,
     ArtifactAttestationUnavailable,
@@ -29,6 +33,20 @@ def policy():
 
 
 class WorkspaceTests(unittest.TestCase):
+    def test_artifact_attestor_database_errors_are_typed_and_fixed_reason(self):
+        store = PostgresArtifactAttestationStore("postgresql://fixture.invalid/factory")
+        with patch.object(
+            store, "_connect", side_effect=psycopg.OperationalError("fixture failure"),
+        ):
+            result = store.record_artifact_attestation(object())
+        self.assertEqual(
+            (result.status, result.disposition, result.reason),
+            (
+                "unavailable", "needs_human",
+                "trusted_artifact_attestation_unavailable",
+            ),
+        )
+
     def test_fake_workspace_allows_only_bound_relative_paths(self):
         broker = FakeWorkspaceBroker()
         broker.register(handle(), policy())

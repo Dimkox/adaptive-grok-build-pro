@@ -1,4 +1,6 @@
 import unittest
+from contextlib import redirect_stderr
+from io import StringIO
 from unittest.mock import patch
 
 from adaptive_factory.migrations import AppliedMigration, MigrationError, discover_migrations, plan_migrations
@@ -6,6 +8,22 @@ from factory.tests import run_disposable_exit
 
 
 class MigrationTests(unittest.TestCase):
+    def test_exit_runner_accepts_only_repo_owned_postgres_images(self):
+        self.assertEqual(
+            run_disposable_exit._parse_args([]).postgres_image,
+            "postgres:17-alpine",
+        )
+        self.assertEqual(
+            run_disposable_exit._parse_args([
+                "--postgres-image", "postgres:15-alpine",
+            ]).postgres_image,
+            "postgres:15-alpine",
+        )
+        with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+            run_disposable_exit._parse_args([
+                "--postgres-image", "postgres:latest",
+            ])
+
     def test_exit_runner_waits_for_final_pid1_postmaster_and_readiness(self):
         completed = type("Completed", (), {"returncode": 0})()
         with patch.object(run_disposable_exit.subprocess, "run", side_effect=[completed, completed]) as run:

@@ -266,6 +266,9 @@ DECLARE
   v_evidence text;
   v_secret_pattern CONSTANT text := '(-----BEGIN|-----END|sk-|ghp_|github_pat_|(AKIA|ASIA)[A-Z0-9]{16}|bearer[ \t]+|authorization[ \t]*[=:]|["'']?([a-z0-9]+[_-])*(api[_-]?key|access[_-]?token|session[_-]?token|client[_-]?secret|refresh[_-]?token|password|credential|secret[_-]?key|private[_-]?key|token|secret)([_-][a-z0-9]+)*["'']?[ \t]*[:=])';
 BEGIN
+  IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN
+    RETURN false;
+  END IF;
   IF p_task_id IS NULL OR p_run_id IS NULL OR p_owner IS NULL OR p_fence IS NULL
     OR p_legacy_packet_digest IS NULL OR p_packet_digest IS NULL OR p_sequence IS NULL
     OR p_idempotency_key IS NULL OR p_kind IS NULL OR p_body IS NULL
@@ -341,7 +344,8 @@ BEGIN
       )
       OR EXISTS (
         SELECT 1 FROM jsonb_array_elements_text(p_body->'evidence') path
-        WHERE path='' OR path LIKE '/%' OR path LIKE '%//%' OR path LIKE '%/'
+        WHERE COALESCE(octet_length(path),0) NOT BETWEEN 1 AND 1024
+          OR path LIKE '/%' OR path LIKE '%//%' OR path LIKE '%/'
           OR path ~ '(^|/)(\.|\.\.|\.git)(/|$)'
           OR NOT EXISTS (
             SELECT 1 FROM jsonb_array_elements_text(v_allowed_paths) root
@@ -527,6 +531,14 @@ BEGIN
     RETURN false;
   END IF;
 
+  IF p_kind<>'artifact' AND EXISTS (
+    SELECT 1 FROM factory.execution_artifact_attestations a
+    WHERE a.run_id=p_run_id AND a.producer_sequence=p_sequence
+      AND a.consumed_at IS NULL
+  ) THEN
+    RETURN false;
+  END IF;
+
   IF p_kind='artifact' THEN
     UPDATE factory.execution_artifact_attestations a
       SET consumed_at=clock_timestamp(),consumed_proposal_digest=p_idempotency_key
@@ -695,6 +707,9 @@ DECLARE
   v_max_events bigint;
   v_secret_pattern CONSTANT text := '(-----BEGIN|-----END|sk-|ghp_|github_pat_|(AKIA|ASIA)[A-Z0-9]{16}|bearer[ \t]+|authorization[ \t]*[=:]|["'']?([a-z0-9]+[_-])*(api[_-]?key|access[_-]?token|session[_-]?token|client[_-]?secret|refresh[_-]?token|password|credential|secret[_-]?key|private[_-]?key|token|secret)([_-][a-z0-9]+)*["'']?[ \t]*[:=])';
 BEGIN
+  IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed' THEN
+    RETURN NULL;
+  END IF;
   IF p_request IS NULL OR jsonb_typeof(p_request) IS DISTINCT FROM 'object'
     OR NOT (p_request ?& ARRAY[
       'task_id','run_id','repository_id','packet_digest','workspace_handle',

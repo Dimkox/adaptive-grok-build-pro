@@ -1168,7 +1168,6 @@ class PostgresFactoryStore:
                 return self._stored_execution_proposal(
                     cursor, grant, event, prior
                 )
-            self._lock_grant(cursor, grant)
             cursor.execute(
                 "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb)",
                 (
