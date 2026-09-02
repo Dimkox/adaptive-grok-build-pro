@@ -164,6 +164,7 @@ class InstallerTests(unittest.TestCase):
             "factory/README.md",
             "factory/compose.yaml",
             "factory/contracts/openapi/factory-control.v1.json",
+            "factory/contracts/openapi/factory-execution.v1.json",
             "factory/contracts/schemas/execution-event.v1.json",
             "factory/contracts/schemas/execution-invocation.v1.json",
             "factory/contracts/schemas/task-packet.v1.json",

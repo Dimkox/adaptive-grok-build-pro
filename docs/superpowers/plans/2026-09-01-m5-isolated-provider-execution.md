@@ -111,7 +111,8 @@
 - Modify: `factory/src/adaptive_factory/store.py`
 - Modify: `factory/src/adaptive_factory/service.py`
 - Modify: `factory/src/adaptive_factory/api.py`
-- Modify: `factory/contracts/openapi/factory-control.v1.json`
+- Preserve byte-identical: `factory/contracts/openapi/factory-control.v1.json`
+- Create: `factory/contracts/openapi/factory-execution.v1.json`
 - Create: `factory/tests/test_execution_service.py`
 - Modify: `factory/tests/test_migrations.py`
 - Modify: `factory/tests/test_api.py`
@@ -124,7 +125,7 @@
 - [ ] **Step 2: Confirm RED.** Run `PYTHONPATH=factory/src python3 -m unittest factory.tests.test_migrations factory.tests.test_execution_service -v`; expect migration/version and missing execution failures.
 - [ ] **Step 3: Implement additive schema and pure fake-store vertical slice.** Persist immutable packet/manifest first, append stages/proposals, and validate every operation against live task/run/owner/fence/allocation/packet/deadline/budget/idempotency.
 - [ ] **Step 4: Write failing API contract tests.** Cover auth/scope/repository/body bounds, exact responses, idempotency conflict, stale fence and absence of provider-native or secret fields.
-- [ ] **Step 5: Implement thin endpoints/OpenAPI.** Reuse M4 authentication/error/correlation boundaries; never accept executable/provider path or environment fields.
+- [ ] **Step 5: Implement thin endpoints/OpenAPI.** Reuse M4 authentication/error boundaries, keep legacy request-identity semantics unchanged, and apply secret-free identities only to the six execution endpoints. Describe those disjoint same-server routes in the additive execution fragment; retain the M4 control baseline byte-identically and never present it as full unified discovery. Never accept executable/provider path or environment fields.
 - [ ] **Step 6: Confirm GREEN and commit.** Run the three focused modules plus existing service/API tests, then commit with `feat(factory): integrate fenced execution lifecycle`.
 
 ### Task 5: Recover orphans, expose bounded metrics and freeze systemd sources

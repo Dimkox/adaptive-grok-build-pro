@@ -82,6 +82,11 @@ class Authenticator:
 def _request_id(value: str | None, name: str) -> str:
     if not value or not HEADER_ID.fullmatch(value):
         raise HTTPException(400, f"valid {name} header required")
+    return value
+
+
+def _execution_request_id(value: str | None, name: str) -> str:
+    value = _request_id(value, name)
     try:
         secret_free_identity(value, 128)
     except BrokerError as exc:
@@ -91,6 +96,15 @@ def _request_id(value: str | None, name: str) -> str:
 
 def _command_key(value: str | None) -> str:
     return canonical_digest({"contract": "adaptive-factory.command/v1", "idempotency_key": _request_id(value, "Idempotency-Key")})
+
+
+def _execution_command_key(value: str | None) -> str:
+    return canonical_digest(
+        {
+            "contract": "adaptive-factory.command/v1",
+            "idempotency_key": _execution_request_id(value, "Idempotency-Key"),
+        }
+    )
 
 
 def _closed(payload: Any, expected: set[str], *, optional: set[str] | None = None) -> Mapping[str, Any]:
@@ -363,8 +377,8 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         x_correlation_id: str | None = Header(None),
     ):
         actor = authenticator.authenticate(authorization, "task:execute")
-        key = _command_key(idempotency_key)
-        correlation = _request_id(x_correlation_id, "X-Correlation-ID")
+        key = _execution_command_key(idempotency_key)
+        correlation = _execution_request_id(x_correlation_id, "X-Correlation-ID")
         fields = {
             "role",
             "repositories",
@@ -405,8 +419,8 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         x_correlation_id: str | None = Header(None),
     ):
         actor = authenticator.authenticate(authorization, "task:execute")
-        key = _command_key(idempotency_key)
-        correlation = _request_id(x_correlation_id, "X-Correlation-ID")
+        key = _execution_command_key(idempotency_key)
+        correlation = _execution_request_id(x_correlation_id, "X-Correlation-ID")
         payload = _closed(payload, {"grant", "packet_digest", "stage"})
         try:
             stage = ExecutionStage(payload["stage"])
@@ -433,8 +447,8 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         idempotency_key: str | None,
         correlation_id: str | None,
     ):
-        key = _command_key(idempotency_key)
-        correlation = _request_id(correlation_id, "X-Correlation-ID")
+        key = _execution_command_key(idempotency_key)
+        correlation = _execution_request_id(correlation_id, "X-Correlation-ID")
         proposal = service.commit_execution_proposal(
             _grant(payload["grant"]),
             packet_digest=_digest(payload["packet_digest"], "packet_digest"),

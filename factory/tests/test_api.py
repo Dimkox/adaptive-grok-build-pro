@@ -114,6 +114,25 @@ class ApiTests(unittest.TestCase):
         payload["m0_authority"]["observed_at"] = datetime.now(timezone.utc).isoformat()
         return payload
 
+    @staticmethod
+    def execution_claim_payload():
+        packet = __import__(
+            "factory.tests.test_execution_contracts", fromlist=["valid_packet"]
+        ).valid_packet()
+        return {
+            "role": "writer",
+            "repositories": ["owner/repository"],
+            "lease_seconds": 60,
+            "provider": packet["provider"],
+            "capability_policy": packet["capability_policy"],
+            "plan": packet["plan"],
+            "workspace_handle": packet["workspace_handle"],
+            "prompt_template_digest": "7" * 64,
+            "role_definition_digest": "8" * 64,
+            "tool_policy_digest": "9" * 64,
+            "output_schema_digest": "a" * 64,
+        }
+
     def test_mutation_requires_bearer_idempotency_and_correlation(self):
         self.assertEqual(self.client.post("/v1/tasks", json=self.payload()).status_code, 401)
         missing = {"Authorization": f"Bearer {self.token}"}
@@ -123,13 +142,87 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.headers["X-Correlation-ID"], "correlation-001")
         self.assertNotIn(self.token, response.text)
 
-    def test_secret_shaped_request_identity_is_rejected_before_service(self):
+    def test_legacy_request_identity_retains_m4_syntax_only_contract(self):
+        identity = "ghp_" + "abcdefghijklmnopqrstuvwxyz1234567890"
+        payload = self.payload()
+        payload["request_id"] = identity
         response = self.client.post(
             "/v1/tasks",
-            headers={**self.auth, "X-Correlation-ID": "ghp_abcdefghijklmnopqrstuvwxyz1234567890"},
-            json=self.payload(),
+            headers={
+                **self.auth,
+                "Idempotency-Key": identity,
+                "X-Correlation-ID": identity,
+            },
+            json=payload,
         )
-        self.assertEqual(response.status_code, 400, response.text)
+        self.assertEqual(response.status_code, 201, response.text)
+
+    def test_all_execution_request_identities_reject_secret_shapes_before_service(self):
+        token = "execution-" + "identity-" + "credential"
+        actor = Actor(
+            "worker-01",
+            "worker",
+            frozenset({"task:execute"}),
+            frozenset({"owner/repository"}),
+        )
+        client = TestClient(create_app(self.service, Authenticator({token: actor})))
+        secret_identity = "ghp_" + "abcdefghijklmnopqrstuvwxyz1234567890"
+        base_headers = {
+            "Authorization": f"Bearer {token}",
+            "Idempotency-Key": "execution-identity-001",
+            "X-Correlation-ID": "execution-correlation-001",
+        }
+        grant = {
+            "task_id": "00000000-0000-0000-0000-000000000001",
+            "run_id": "00000000-0000-0000-0000-000000000002",
+            "owner": "worker-01",
+            "role": "writer",
+            "fence": 7,
+            "expires_at": "2026-09-02T01:00:00Z",
+            "packet_digest": "0" * 64,
+        }
+        common = {"grant": grant, "packet_digest": "d" * 64, "sequence": 3}
+        cases = {
+            "claims": self.execution_claim_payload(),
+            "stages": {"grant": grant, "packet_digest": "d" * 64, "stage": "running"},
+            "notes": {
+                **common,
+                "note_type": "finding",
+                "body": "safe",
+                "evidence": [],
+            },
+            "artifacts": {
+                **common,
+                "artifact_class": "patch",
+                "path": "factory/change.patch",
+                "sha256": "e" * 64,
+                "size_bytes": 12,
+                "media_type": "text/plain",
+            },
+            "usage": {
+                **common,
+                "provider_call_id": "fixture-call",
+                "price_table_digest": "f" * 64,
+                "input_tokens": 1,
+                "output_tokens": 2,
+                "reasoning_tokens": 0,
+                "cost_usd_micros": 3,
+                "output_bytes": 4,
+            },
+            "terminal": {
+                **common,
+                "terminal_type": "run.completed",
+                "summary": "fixture complete",
+            },
+        }
+        for header_name in ("Idempotency-Key", "X-Correlation-ID"):
+            headers = {**base_headers, header_name: secret_identity}
+            for endpoint, payload in cases.items():
+                with self.subTest(header=header_name, endpoint=endpoint):
+                    response = client.post(
+                        f"/v1/execution/{endpoint}", headers=headers, json=payload
+                    )
+                    self.assertEqual(response.status_code, 400, response.text)
         self.assertEqual(self.service.calls, [])
 
     def test_api_has_no_execution_external_write_or_systemd_endpoint(self):
@@ -149,20 +242,7 @@ class ApiTests(unittest.TestCase):
         token = "-".join(("execution", "worker", "credential"))
         actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
         client = TestClient(create_app(self.service, Authenticator({token: actor})))
-        packet = __import__("factory.tests.test_execution_contracts", fromlist=["valid_packet"]).valid_packet()
-        payload = {
-            "role": "writer",
-            "repositories": ["owner/repository"],
-            "lease_seconds": 60,
-            "provider": packet["provider"],
-            "capability_policy": packet["capability_policy"],
-            "plan": packet["plan"],
-            "workspace_handle": packet["workspace_handle"],
-            "prompt_template_digest": "7" * 64,
-            "role_definition_digest": "8" * 64,
-            "tool_policy_digest": "9" * 64,
-            "output_schema_digest": "a" * 64,
-        }
+        payload = self.execution_claim_payload()
         headers = {"Authorization": f"Bearer {token}", "Idempotency-Key": "execution-001", "X-Correlation-ID": "execution-correlation"}
         self.assertEqual(client.post("/v1/execution/claims", headers=headers, json=payload).status_code, 200)
         payload["provider_command"] = "codex exec"
@@ -300,21 +380,21 @@ class ApiTests(unittest.TestCase):
         )
         self.assertNotIn("internal database detail", response.text)
 
-        contract = json.loads(
-            (Path(__file__).resolve().parents[1] / "contracts/openapi/factory-control.v1.json").read_text(
+        contract_root = Path(__file__).resolve().parents[1] / "contracts/openapi"
+        control_contract = json.loads(
+            (contract_root / "factory-control.v1.json").read_text(
                 encoding="utf-8"
             )
         )
-        mutation_paths = (
+        execution_contract = json.loads(
+            (contract_root / "factory-execution.v1.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        control_mutation_paths = (
             "/v1/tasks",
             "/v1/tasks/{task_id}/cancel",
             "/v1/claims",
-            "/v1/execution/claims",
-            "/v1/execution/stages",
-            "/v1/execution/notes",
-            "/v1/execution/artifacts",
-            "/v1/execution/usage",
-            "/v1/execution/terminal",
             "/v1/heartbeats",
             "/v1/proposals",
             "/v1/budget-reservations",
@@ -322,15 +402,24 @@ class ApiTests(unittest.TestCase):
             "/v1/kill-switches",
             "/v1/reconcile",
         )
-        for path in mutation_paths:
+        for path in control_mutation_paths:
             with self.subTest(path=path):
-                self.assertIn("503", contract["paths"][path]["post"]["responses"])
+                self.assertIn(
+                    "503", control_contract["paths"][path]["post"]["responses"]
+                )
+        for path in execution_contract["paths"]:
+            with self.subTest(path=path):
+                self.assertIn(
+                    "503", execution_contract["paths"][path]["post"]["responses"]
+                )
         for path in ("/health/ready", "/v1/tasks", "/v1/tasks/{task_id}"):
             with self.subTest(path=path):
-                self.assertIn("503", contract["paths"][path]["get"]["responses"])
-        readiness_unavailable = contract["paths"]["/health/ready"]["get"]["responses"]["503"][
-            "description"
-        ]
+                self.assertIn(
+                    "503", control_contract["paths"][path]["get"]["responses"]
+                )
+        readiness_unavailable = control_contract["paths"]["/health/ready"]["get"][
+            "responses"
+        ]["503"]["description"]
         for required_semantic in (
             "database unavailable or timed out",
             "schema",

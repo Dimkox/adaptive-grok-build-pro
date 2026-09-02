@@ -384,3 +384,7 @@ Cancel and supersede may terminalize directly only while `current_run_id IS NULL
 ## 2026-09-02 — Keep shared execution value types below workspace adapters
 
 Place `WorkspaceHandle` in the dependency-neutral model layer and re-export it through the workspace module for compatibility. Recovery can then consume the value type without crossing the declared execution-core-to-workspace boundary or weakening the architecture rule.
+
+## 2026-09-02 — Version additive execution routes as a separate contract fragment
+
+Retain the M4 `factory-control.v1.json` blob byte-identically and describe only the six new same-server `/v1/execution/*` routes in `factory-execution.v1.json`. This preserves the frozen bidirectional baseline, prevents route/operation-ID collisions, and records the real additive M5 surface without inventing a `/v2` runtime namespace or weakening compatibility fitness.

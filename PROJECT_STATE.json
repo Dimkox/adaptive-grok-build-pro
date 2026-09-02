@@ -98,14 +98,13 @@
           "factory_without_database": "182/182 passed with 58 truthful no-database skips",
           "focused_recovery_workspace_api_broker_service": "71/71 passed",
           "architecture_model_fitness_structure": "155/155 passed",
-          "static_repairs": "architecture validate and diagram parity, Ruff, Bandit and route-range secret scan passed",
+          "static_repairs": "architecture validate and diagram parity, Ruff, Bandit and route-range secret scan passed; frozen control-v1 plus additive execution-v1 contract remediation is focused green",
           "remaining_fitness": [
-            "FIT-TRUST-CI-SEPARATION: implementation and trust-ci mutations are mixed across the route range",
-            "FIT-BOUNDED-ARCHITECTURE-CHANGE: 1753964 changed bytes exceed 1000000 and 41232 changed lines exceed 10820"
+            "FIT-BOUNDED-ARCHITECTURE-CHANGE: 1011544 changed bytes exceed 1000000 and 13122 changed lines exceed 10820 on the exact final-M4-to-M5 range; successor slicing is required"
           ],
           "package_status": "The tracked 2.0.14 artifact from bc370d7 is stale after the source repairs and must not be rebuilt until the successor-slice boundary is resolved."
         },
-        "notes": "Focused source, static and disposable-PostgreSQL evidence is provisional. The exact route verifier is not passing because the stacked range violates frozen separation and bounded-change fitness; those rules are not weakened, and no current exact-head verifier receipt or independent review exists."
+        "notes": "Focused source, static and disposable-PostgreSQL evidence is provisional. Exact final-M4-to-M5 change separation and contract compatibility now pass, but the route verifier is not passing because the range still violates the frozen bounded-change fitness ceiling; that rule is not weakened, and no current exact-head verifier receipt or independent review exists."
       },
       "rootless_live_host_isolation": {
         "status": "blocked",

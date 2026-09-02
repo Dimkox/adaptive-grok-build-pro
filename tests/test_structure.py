@@ -23,6 +23,19 @@ class StructureTests(unittest.TestCase):
             raise AssertionError(f"unsafe OpenAPI schema reference: {reference!r}")
         return openapi["components"]["schemas"][reference[len(prefix):]]
 
+    def test_factory_control_v1_retains_exact_m4_baseline(self) -> None:
+        baseline = ROOT / "factory/contracts/openapi/factory-control.v1.json"
+        raw = baseline.read_bytes()
+        self.assertEqual(
+            hashlib.sha256(raw).hexdigest(),
+            "83f180e664d199fe37ded7b02d60b9e40f44ce777e0244c680a435bd3a975db4",
+        )
+        git_blob = b"blob " + str(len(raw)).encode("ascii") + b"\0" + raw
+        self.assertEqual(
+            hashlib.sha1(git_blob, usedforsecurity=False).hexdigest(),
+            "33256c53f83e35491254be3842789355f71b61b9",
+        )
+
     def test_m3_route_binds_exact_reviewed_m2_fingerprint(self) -> None:
         route_path = (
             ROOT
@@ -261,29 +274,21 @@ class StructureTests(unittest.TestCase):
             document = json.loads((ROOT / relative).read_text(encoding="utf-8"))
             assert_closed_objects(document, relative)
 
-        openapi_path = ROOT / "factory/contracts/openapi/factory-control.v1.json"
+        control_openapi = json.loads(
+            (ROOT / "factory/contracts/openapi/factory-control.v1.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        openapi_path = ROOT / "factory/contracts/openapi/factory-execution.v1.json"
         openapi = json.loads(openapi_path.read_text(encoding="utf-8"))
+        self.assertEqual(openapi["info"]["version"], "1.0.0")
         expected_operations = {
-            ("GET", "/health/live", "healthLive"),
-            ("GET", "/health/ready", "healthReady"),
-            ("GET", "/metrics", "readMetrics"),
-            ("GET", "/v1/tasks", "listTasks"),
-            ("POST", "/v1/tasks", "submitTask"),
-            ("GET", "/v1/tasks/{task_id}", "getTask"),
-            ("POST", "/v1/tasks/{task_id}/cancel", "cancelTask"),
-            ("POST", "/v1/claims", "claimLegacyTask"),
             ("POST", "/v1/execution/claims", "claimExecution"),
             ("POST", "/v1/execution/stages", "advanceExecution"),
             ("POST", "/v1/execution/notes", "proposeExecutionNote"),
             ("POST", "/v1/execution/artifacts", "proposeExecutionArtifact"),
             ("POST", "/v1/execution/usage", "reportExecutionUsage"),
             ("POST", "/v1/execution/terminal", "proposeExecutionTerminal"),
-            ("POST", "/v1/heartbeats", "heartbeatLease"),
-            ("POST", "/v1/proposals", "releaseProposal"),
-            ("POST", "/v1/budget-reservations", "reserveBudget"),
-            ("POST", "/v1/usage-observations", "observeUsage"),
-            ("POST", "/v1/kill-switches", "setKillSwitch"),
-            ("POST", "/v1/reconcile", "reconcileFactory"),
         }
         operations = {
             (method.upper(), path, operation.get("operationId"))
@@ -294,6 +299,14 @@ class StructureTests(unittest.TestCase):
         self.assertEqual(operations, expected_operations)
         operation_ids = {operation_id for _, _, operation_id in operations}
         self.assertEqual(len(operation_ids), len(operations))
+        control_operations = {
+            (method.upper(), path, operation.get("operationId"))
+            for path, path_item in control_openapi["paths"].items()
+            for method, operation in path_item.items()
+            if method in {"get", "post", "put", "patch", "delete"}
+        }
+        self.assertFalse({path for _, path, _ in operations} & {path for _, path, _ in control_operations})
+        self.assertFalse(operation_ids & {operation_id for _, _, operation_id in control_operations})
         self.assertEqual(
             sum(
                 len(operation["responses"])
@@ -301,7 +314,7 @@ class StructureTests(unittest.TestCase):
                 for method, operation in path_item.items()
                 if method in {"get", "post", "put", "patch", "delete"}
             ),
-            140,
+            48,
         )
 
         for method, path, operation_id in sorted(operations):
@@ -310,22 +323,14 @@ class StructureTests(unittest.TestCase):
                 (parameter["in"], parameter["name"]): parameter
                 for parameter in operation.get("parameters", [])
             }
-            if path not in {"/health/live", "/health/ready"}:
-                self.assertTrue(
-                    parameters[("header", "Authorization")]["required"],
-                    operation_id,
-                )
-            if method == "POST":
-                for name in ("Idempotency-Key", "X-Correlation-ID"):
-                    self.assertTrue(
-                        parameters[("header", name)]["required"], operation_id
-                    )
-                body = operation.get("requestBody", {})
-                self.assertTrue(body.get("required"), operation_id)
-                request_schema = body["content"]["application/json"]["schema"]
-                request_schema = self._resolve_openapi_schema(openapi, request_schema)
-                self.assertEqual(request_schema.get("type"), "object", operation_id)
-                self.assertIs(request_schema.get("additionalProperties"), False, operation_id)
+            for name in ("Authorization", "Idempotency-Key", "X-Correlation-ID"):
+                self.assertTrue(parameters[("header", name)]["required"], operation_id)
+            body = operation.get("requestBody", {})
+            self.assertTrue(body.get("required"), operation_id)
+            request_schema = body["content"]["application/json"]["schema"]
+            request_schema = self._resolve_openapi_schema(openapi, request_schema)
+            self.assertEqual(request_schema.get("type"), "object", operation_id)
+            self.assertIs(request_schema.get("additionalProperties"), False, operation_id)
             for status, response in operation["responses"].items():
                 self.assertRegex(status, r"^[1-5][0-9]{2}$")
                 self.assertIn("content", response, f"{operation_id}:{status}")
@@ -336,9 +341,9 @@ class StructureTests(unittest.TestCase):
                 for status, response in operation["responses"].items()
                 if status.startswith("2")
             )
-            if path not in {"/health/live", "/health/ready", "/metrics"}:
-                self.assertIn("X-Correlation-ID", success.get("headers", {}), operation_id)
+            self.assertIn("X-Correlation-ID", success.get("headers", {}), operation_id)
 
+        self.assertEqual(len(openapi["components"]["schemas"]), 16)
         assert_closed_objects(openapi["components"]["schemas"], "openapi/components/schemas")
 
         package = ROOT / "engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f"

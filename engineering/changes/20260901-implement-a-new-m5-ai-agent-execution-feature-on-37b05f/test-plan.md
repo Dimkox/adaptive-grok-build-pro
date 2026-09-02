@@ -13,12 +13,12 @@
 | P0 | canonical SQL cross-binding, terminal-derived M4 transition, result-row/digest corruption rejection | migration/store + disposable PostgreSQL adversarial tests |
 | P0 | execution orphan/cancel cleanup cannot leave M5 rows, capacity, or factual result in an ambiguous state | reconciliation/restart PostgreSQL tests |
 | P0 | every execution request/response/event/nested object is closed and inventoried | JSON Schema/OpenAPI/architecture contract tests |
-| P0 | OpenAPI inventories 20 operation IDs, 15 required JSON bodies, 50 request headers, 140 explicit response variants including bounded database-unavailable responses on all runtime reads and all 15 mutations, 18 success response headers and 38 closed component schemas | root structure + conservative architecture comparator tests |
+| P0 | byte-identical retained M4 control baseline plus additive execution OpenAPI inventories exactly six disjoint `/v1/execution/*` operation IDs, 6 required JSON bodies, 18 required request headers, 48 explicit response variants, 6 success correlation headers and 16 closed reachable component schemas | root structure + conservative architecture comparator tests |
 | P0 | recovery emits one orphan stage/event only, cleans workspace first, preserves attestation/result tables and is keyset/idempotency safe | fake recovery + disposable PostgreSQL + actual restart probe |
 | P0 | unit topology has fixed commands/users/hardening/limits and no activation path | systemd source parser tests |
 | P1 | note/artifact/usage/terminal bounds, redaction, idempotency | broker tests |
 | P1 | restart reconciliation is bounded, ordered and idempotent | fake store/recovery tests |
 | P1 | low-cardinality execution metrics and docs/installer/architecture | integration and root structure tests |
-| P1 | installer copies all M5 sources, four schemas, OpenAPI, fixtures/tests and exactly four inert units without activation/migration/runtime side effects | installer parity tests |
+| P1 | installer copies all M5 sources, four schemas, both same-server OpenAPI artifacts, fixtures/tests and exactly four inert units without activation/migration/runtime side effects | installer parity tests |
 
 Every behavior follows observed RED -> minimal GREEN -> refactor. No test makes a live provider/network call or reads credentials. PostgreSQL/container checks run only where the existing disposable harness is available; this host's missing rootless isolation tooling is recorded as a blocked M5 exit, not converted into a skipped success.

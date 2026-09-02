@@ -1166,7 +1166,7 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 10)
+        self.assertEqual(len(records), 11)
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
@@ -1174,10 +1174,48 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertEqual(factory_api.kind, "openapi")
         self.assertEqual(factory_api.role, "bidirectional")
         self.assertNotIn("/v1/providers/run", documents[factory_api.id]["paths"])
+        execution_api = next(
+            record
+            for record in records
+            if record.id == "CONTRACT-FACTORY-EXECUTION-OPENAPI-V1"
+        )
+        self.assertEqual(execution_api.path, "factory/contracts/openapi/factory-execution.v1.json")
+        self.assertEqual(execution_api.version, "1")
+        self.assertEqual(execution_api.role, "bidirectional")
+        self.assertEqual(documents[execution_api.id]["info"]["version"], "1.0.0")
+        self.assertEqual(
+            set(documents[execution_api.id]["paths"]),
+            {
+                "/v1/execution/claims",
+                "/v1/execution/stages",
+                "/v1/execution/notes",
+                "/v1/execution/artifacts",
+                "/v1/execution/usage",
+                "/v1/execution/terminal",
+            },
+        )
+        local_api = next(
+            node for node in snapshot.system["nodes"]
+            if node["id"] == "NODE-FACTORY-LOCAL-API"
+        )
+        self.assertEqual(
+            set(local_api["public_contracts"]),
+            {
+                "CONTRACT-FACTORY-CONTROL-OPENAPI",
+                "CONTRACT-FACTORY-EXECUTION-OPENAPI-V1",
+            },
+        )
+        self.assertEqual(
+            ARCH.compare_contracts(
+                execution_api, execution_api, execution_api.compatibility
+            ).status,
+            "compatible",
+        )
         execution_contracts = {
             record.id: (record.kind, record.role, record.compatibility, record.path)
             for record in records
             if record.id.startswith("CONTRACT-FACTORY-EXECUTION-")
+            and record.kind != "openapi"
         }
         self.assertEqual(
             execution_contracts,
