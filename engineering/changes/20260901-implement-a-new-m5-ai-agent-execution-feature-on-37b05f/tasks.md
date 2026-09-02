@@ -2,7 +2,7 @@
 
 - [x] Establish route-bound durable package and approved exact-M4 scope.
 - [x] Freeze M5 design and implementation plan; self-review and commit.
-- [ ] TDD immutable schemas, packet/manifest contracts, protocol parser, and adapter fixtures (packet/schema RED-GREEN complete; protocol/adapters next).
+- [x] TDD immutable schemas, packet/manifest contracts, protocol parser, and adapter fixtures.
 - [ ] TDD proposal brokers, workspace/Git abstractions, host capability probe, and fake-runtime adversarial cases.
 - [ ] TDD additive migration `013`, explicit execution claims/stages/proposals, and legacy compatibility.
 - [ ] TDD restart/orphan recovery, bounded metrics, and predefined systemd source topology.

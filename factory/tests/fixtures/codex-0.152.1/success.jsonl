@@ -1,0 +1,5 @@
+{"type":"thread.started","thread_id":"fixture-thread"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"type":"reasoning","text":"private scratch"}}
+{"type":"item.completed","item":{"type":"agent_message","text":"bounded conclusion","evidence":["factory/src/adaptive_factory/contracts.py"]}}
+{"type":"turn.completed","usage":{"input_tokens":10,"output_tokens":4,"reasoning_tokens":2,"cost_usd_micros":30,"output_bytes":20,"price_table_digest":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},"final":{"status":"completed","summary":"fixture complete"}}
