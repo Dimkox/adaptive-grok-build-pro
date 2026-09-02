@@ -168,6 +168,40 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertTrue(factory_edges)
         self.assertTrue(all(edge["network_policy"] in {"no_network", "local_only"} for edge in factory_edges))
 
+    def test_m6_provisional_contract_graph_is_complete_and_authority_bounded(self) -> None:
+        roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
+        edges = (
+            "M4ExactEvidence <--> M5BridgeBlocked",
+            "M5BridgeBlocked <--> M6Subject",
+            "M6Subject <--> M6Evidence",
+            "M6Evidence <--> M7ShadowBundle",
+            "M7ShadowBundle <--> M8TrustProfile",
+            "M8TrustProfile <--> M9DeliveryEvidence",
+        )
+        for edge in edges:
+            self.assertIn(edge, roadmap, edge)
+        for binding in (
+            "task_packet_digest",
+            "run_manifest_digest",
+            "workspace_result_digest",
+            "semantic_subject_digest",
+            "semantic_verdict_digest",
+            "ready_for_pr_bundle_digest",
+            "trust_profile_digest",
+            "signed_artifact_digest",
+            "exact_base_sha",
+            "exact_head_sha",
+        ):
+            self.assertIn(binding, roadmap, binding)
+        for boundary in (
+            "at least 30 human-accepted tasks",
+            "current autonomy ceiling remains L2",
+            "human-owned production",
+            "any producer digest or exact SHA mutation invalidates every downstream consumer",
+            "cannot grant merge, deployment, production, Trust CI, or human-approval authority",
+        ):
+            self.assertIn(boundary, roadmap, boundary)
+
     def _repo(self, system: dict | None = None, rules: dict | None = None):
         temp = tempfile.TemporaryDirectory()
         root = Path(temp.name)

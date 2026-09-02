@@ -7,6 +7,8 @@ Route: `82aac86a3bf9`
 Provisional base: `94fc5ad878e6b15df6418303caada49a3b93bf4c`  
 Planning deadline: `2026-09-08T00:00:00+03:00` (calendar coordination only; never a product deadline or quality-gate waiver)
 
+Connectivity: [README](../../../README.md) ↔ [roadmap](../../../DARK_FACTORY_ROADMAP.md) ↔ [design](../../../docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md) ↔ [plan](../../../docs/superpowers/plans/2026-09-01-m6-semantic-validation-provisional.md) ↔ this package / [release](release.md) / [rollback](rollback.md) / [evidence](evidence/README.md).
+
 ## Problem and outcome
 
 The M4 tree has no M5 `TaskPacket`, `RunManifest`, or `WorkspaceResult`. Adding M6 storage, API, state transitions, or runtime wiring now would fabricate interfaces and collide with M4 meanings: `RunRole` has reader/writer, attempts `1..3` are infrastructure attempts, `repair_count` accounts for worker loss, and successful work ends at `ready_for_human`.

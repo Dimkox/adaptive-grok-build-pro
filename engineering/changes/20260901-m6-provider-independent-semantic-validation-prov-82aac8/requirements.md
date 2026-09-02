@@ -18,3 +18,5 @@
 - [ ] M6-012: local evidence claims only this provisional slice, never full M6 or M7 completion.
 
 Unknown/missing fields, unknown versions, duplicates/unsorted sets, invalid Unicode/IDs/SHA/digests, non-exact coverage, stale bindings, identity collision, forbidden validator capability, reused context, cycle zero/four, recurrence, and exhausted limits fail closed. Narrative is bounded but excluded from recurrence identity. Collections cap at 256; results expose bounded reason codes and no chain-of-thought.
+
+Connectivity: [README](../../../README.md) ↔ [roadmap](../../../DARK_FACTORY_ROADMAP.md) ↔ [design](../../../docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md) ↔ [plan](../../../docs/superpowers/plans/2026-09-01-m6-semantic-validation-provisional.md) ↔ [package](brief.md) / [release](release.md) / [rollback](rollback.md) / [evidence](evidence/README.md).

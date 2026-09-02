@@ -9,3 +9,5 @@
 | P1 | current M6 docs/contracts stay linked and factual | `tests/test_structure.py`, `tests/test_architecture_model.py` |
 
 Focused command: `cd factory && uv run python -m unittest tests.test_semantic_contracts tests.test_semantic_adjudication tests.test_semantic_repair -v`. Root structure/architecture tests verify README↔roadmap↔spec/plan/package/release/rollback/evidence connectivity and the factual contract graph. No live provider, network, database, credential, holdout, or systemd test is authorized.
+
+Connectivity: [README](../../../README.md) ↔ [roadmap](../../../DARK_FACTORY_ROADMAP.md) ↔ [design](../../../docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md) ↔ [plan](../../../docs/superpowers/plans/2026-09-01-m6-semantic-validation-provisional.md) ↔ [package](brief.md) / [release](release.md) / [rollback](rollback.md) / [evidence](evidence/README.md).

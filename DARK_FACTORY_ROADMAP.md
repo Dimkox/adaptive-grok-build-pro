@@ -739,6 +739,33 @@ Current status: provisional source branch `milestone/m6-semantic-validation-prov
 
 Add backpressure inside the agent loop so incorrect implementations stop early, produce structured findings, and undergo a finite repair process.
 
+## Current provisional M4 slice and dependency graph
+
+The current branch implements only a pure provider-independent slice on exact M4 base `94fc5ad878e6b15df6418303caada49a3b93bf4c`: closed `SemanticSubjectV1`, `SemanticFindingV1`, `SemanticCoverageV1`, `SemanticVerdictV1`, and `RepairDirectiveV1` contracts; deterministic adjudication; and a pure cycle policy. It is not full M6. The factual M5 `TaskPacket`, `RunManifest`, and `WorkspaceResult` bridge is `BLOCKED`, so durable store/API/runtime/fence/idempotency/restart/provider work remains unimplemented. Deadline `2026-09-08T00:00:00+03:00` is planning only; parallel development still merges/restacks in dependency order.
+
+Current links: [README](README.md) ↔ this roadmap ↔ [M6 design](docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md) ↔ [plan](docs/superpowers/plans/2026-09-01-m6-semantic-validation-provisional.md) ↔ [package](engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/brief.md) / [release](engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/release.md) / [rollback](engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/rollback.md) / [evidence](engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/evidence/README.md).
+
+```mermaid
+flowchart LR
+  M4ExactEvidence <--> M5BridgeBlocked
+  M5BridgeBlocked <--> M6Subject
+  M6Subject <--> M6Evidence
+  M6Evidence <--> M7ShadowBundle
+  M7ShadowBundle <--> M8TrustProfile
+  M8TrustProfile <--> M9DeliveryEvidence
+```
+
+| Producer | Consumer | Required binding | Status and rollback |
+| --- | --- | --- | --- |
+| M4 exact evidence | factual M5 bridge | `exact_base_sha`, `exact_head_sha`, spec/architecture/authority/evidence digests | M4 facts exist; bridge is `BLOCKED`; no inferred adapter |
+| M5 `TaskPacket` + `RunManifest` + `WorkspaceResult` | M6 `SemanticSubjectV1` | `task_packet_digest`, `run_manifest_digest`, `workspace_result_digest`, `exact_base_sha`, `exact_head_sha` | future versioned bridge only; incompatible shape requires new M6 version |
+| M6 subject/findings/coverage | M6 verdict/directive | `semantic_subject_digest`, typed finding identities, exact coverage, `semantic_verdict_digest`, residual-risk envelope | provisional pure code; repair reissues fresh exact-state evidence or escalates |
+| M6 exact verdict/findings/coverage/residual-risk envelope | M7 immutable shadow ready-for-PR bundle | `semantic_subject_digest`, `semantic_verdict_digest`, `semantic_evidence_envelope_digest`, `exact_head_sha`, `ready_for_pr_bundle_digest` | roadmap-only; rollback supersedes bundle and retains prior evidence |
+| M7 human decisions | M8 trust profile/demotion | `ready_for_pr_bundle_digest`, cohort identity, `trust_profile_digest`; at least 30 human-accepted tasks | roadmap-only; current autonomy ceiling remains L2; material mutation starts a new cohort and any trigger demotes |
+| M8 profile + exact merged artifact | M9 preview/staging/canary/recovery | `trust_profile_digest`, `signed_artifact_digest`, exact merged SHA, recovery evidence digest | roadmap-only; halt/rollback on thresholds; human-owned production |
+
+Invalidation rule: any producer digest or exact SHA mutation invalidates every downstream consumer. Forward recovery creates a new version/digest and retains superseded evidence; it never edits an accepted envelope in place. These repository contracts cannot grant merge, deployment, production, Trust CI, or human-approval authority. M7-M9 remain roadmap-only and do not become current architecture merely because their nodes and digests are documented here.
+
 ## Required roles
 
 ```text

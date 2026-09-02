@@ -11,3 +11,5 @@
 - [ ] Parent decides later route verification/reviews; this implementer creates no reviewer/receipt wave.
 - [ ] BLOCKED on factual M5: persistence, API/events, lifecycle, migrations, fences, idempotency, restart and provider integration.
 - [ ] BLOCKED until M7: PR evidence and delivery integration.
+
+Connectivity: [README](../../../README.md) ↔ [roadmap](../../../DARK_FACTORY_ROADMAP.md) ↔ [design](../../../docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md) ↔ [plan](../../../docs/superpowers/plans/2026-09-01-m6-semantic-validation-provisional.md) ↔ [package](brief.md) / [release](release.md) / [rollback](rollback.md) / [evidence](evidence/README.md).

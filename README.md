@@ -12,6 +12,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 - M3 controlled knowledge and debt is accepted at exact merge `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` on accepted M2 `022411b05924618cfde0cb97b8c8aff4955e6013`: strict target-owned governance registries, bounded no-follow loading, reviewed rule lifecycle, conflict detection, canonical-example/debt semantics, non-authoritative Markdown projections, exact `GovernanceHandoffV1`, executable architecture fitness, governance-bound local receipts, and safe installer distribution are implemented. The shipped registries remain empty; repository-authored approval-looking fields are not external authority and no active rule/example or closed debt is fabricated.
 - M4 durable factory control plane is the current local source candidate on that exact M3 base: the separate [`factory/`](factory/) package provides trusted-M0-bound frozen intake, twelve isolated checksum PostgreSQL migrations, explicit local owner/runtime bootstrap, effective least-privilege runtime roles, durable command replay, fenced leases, database-authoritative capacity/accounting, kills, audit-v2 hash chains, bounded reconciliation, a fixed-row transactional metrics snapshot and an authenticated UDS-only server/CLI. Product anchor `94fc5ad` passed its direct PostgreSQL/root evidence, but the subsequent exact verifier exposed Bandit handling and official-image final-postmaster readiness defects; the current repair tree therefore has no final M4 completion claim until its successor SHA passes all gates. See the [M4 package status](factory/README.md), [program roadmap](DARK_FACTORY_ROADMAP.md) and [deadline schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
 - Development is parallel only at the source-work level: M5 branch `milestone/m5-isolated-execution-provisional-m4` / route `37b05f579320` and M6 branch `milestone/m6-semantic-validation-provisional-m4` / route `82aac86a3bf9` are provisional descendants of `94fc5ad`. M5 is blocked on a suitable rootless-isolation host; both branches must restack and pass dependency-ordered merge/Trust CI gates (M4 → M5 → M6). No M4/M5/M6 completion, push, external-check or merge claim exists, and the hard program deadline remains **2026-09-08 00:00 UTC+3** without waiving any gate.
+- M6 is now dependency-restacked on exact stable M5 bridge `61db79f07904ae5facb244c34b26c8383504dd88`: five closed semantic contracts, strict parsers, deterministic adjudication and the pure same-original-writer/fresh-context cycle policy `1..3` are present. Durable M5↔M6 binding and semantic persistence remain under implementation and unaccepted; M7-M9 remain roadmap-only. Planning deadline `2026-09-08T00:00:00+03:00` waives no verification or external merge gate.
 - Independent CI candidate: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
 - Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. The PR #2 bootstrap exception is revoked. PR #5 is not mergeable while that Check Run is `action_required`.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
@@ -73,6 +74,12 @@ Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, execu
 - [`trust-ci/`](trust-ci/) — external merge trust, deployed independently
 - [`factory/`](factory/) — local M4 task control plane; no execution or merge authority
 - [`DARK_FACTORY_ROADMAP.md`](DARK_FACTORY_ROADMAP.md) — dependency-ordered M0-M9 program status and hard deadline
+- [M6 provisional design](docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md)
+- [M6 provisional implementation plan](docs/superpowers/plans/2026-09-01-m6-semantic-validation-provisional.md)
+- [M6 durable package](engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/brief.md)
+- [M6 release boundary](engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/release.md)
+- [M6 rollback boundary](engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/rollback.md)
+- [M6 provisional evidence index](engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/evidence/README.md)
 - [`engineering/runbooks/`](engineering/runbooks/)
 - [`packages/`](packages/)
 - [`examples/bitrix-module/`](examples/bitrix-module/)
@@ -86,6 +93,7 @@ Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, execu
 - Strict executable architecture with deterministic digests, exact-state diff, drift, fitness, and projection-only diagrams
 - Controlled governance with candidate-only agent input, reviewed lifecycle, exact evidence digests, canonical examples, and intentional-debt records
 - Separate durable local factory control with immutable handoffs, fenced PostgreSQL scheduling, bounded recovery and Unix-socket administration
+- Provider-independent provisional semantic contracts, exact-state adjudication and a pure bounded repair policy without M5 runtime integration
 - Local verification / review receipts via `scripts/grok_*.py`
 - Multi-agent discipline described in `AGENTS.md`
 - `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`

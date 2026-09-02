@@ -148,6 +148,17 @@ class StructureTests(unittest.TestCase):
             "schemas/canonical-example.schema.json",
             "schemas/governance-handoff-v1.schema.json",
             "scripts/grok_governance.py",
+            "factory/src/adaptive_factory/semantic_contracts.py",
+            "factory/src/adaptive_factory/semantic_adjudication.py",
+            "factory/src/adaptive_factory/semantic_repair.py",
+            "factory/contracts/jsonschema/semantic-subject.v1.schema.json",
+            "factory/contracts/jsonschema/semantic-finding.v1.schema.json",
+            "factory/contracts/jsonschema/semantic-coverage.v1.schema.json",
+            "factory/contracts/jsonschema/semantic-verdict.v1.schema.json",
+            "factory/contracts/jsonschema/repair-directive.v1.schema.json",
+            "docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md",
+            "docs/superpowers/plans/2026-09-01-m6-semantic-validation-provisional.md",
+            "engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/brief.md",
         )
         for relative in required:
             self.assertTrue((ROOT / relative).exists(), relative)
@@ -209,6 +220,46 @@ class StructureTests(unittest.TestCase):
         self.assertIsNotNone(mermaid)
         edge_lines = [line for line in mermaid.group(1).splitlines() if re.search(r"\S+ --- \S+", line)]
         self.assertEqual(len(edge_lines), len(list(itertools.combinations(nodes, 2))))
+
+    def test_m6_current_docs_are_bidirectionally_connected_and_factual(self) -> None:
+        package = "engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8"
+        paths = {
+            "readme": ROOT / "README.md",
+            "roadmap": ROOT / "DARK_FACTORY_ROADMAP.md",
+            "factory": ROOT / "factory/README.md",
+            "spec": ROOT / "docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md",
+            "plan": ROOT / "docs/superpowers/plans/2026-09-01-m6-semantic-validation-provisional.md",
+            "package": ROOT / package / "brief.md",
+            "release": ROOT / package / "release.md",
+            "rollback": ROOT / package / "rollback.md",
+            "evidence": ROOT / package / "evidence/README.md",
+        }
+        text = {name: path.read_text(encoding="utf-8") for name, path in paths.items()}
+        for relative in (
+            "DARK_FACTORY_ROADMAP.md",
+            "docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md",
+            "docs/superpowers/plans/2026-09-01-m6-semantic-validation-provisional.md",
+            f"{package}/brief.md",
+            f"{package}/release.md",
+            f"{package}/rollback.md",
+            f"{package}/evidence/README.md",
+        ):
+            self.assertIn(relative, text["readme"], relative)
+        self.assertIn("README.md", text["roadmap"])
+        for name in ("spec", "plan", "package", "release", "rollback", "evidence"):
+            self.assertIn("README.md", text[name], name)
+            self.assertIn("DARK_FACTORY_ROADMAP.md", text[name], name)
+        combined = "\n".join(text.values())
+        for marker in (
+            "94fc5ad878e6b15df6418303caada49a3b93bf4c",
+            "TaskPacket",
+            "RunManifest",
+            "WorkspaceResult",
+            "BLOCKED",
+            "not full M6",
+            "2026-09-08T00:00:00+03:00",
+        ):
+            self.assertIn(marker, combined, marker)
 
     def test_architecture_authority_and_manual_adoption_are_documented(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

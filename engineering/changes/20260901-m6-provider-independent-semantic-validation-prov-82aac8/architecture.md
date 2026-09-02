@@ -28,3 +28,5 @@ Any mutation to requirements, exact SHA/digests, writer/context, risk or diff po
 TaskPacket input selection, RunManifest validator assignment, WorkspaceResult projection, provider event ingestion, durable stores, SQL fencing/idempotency, lifecycle transitions, repair child runs, cost/duration accounting, API/events, restart recovery and immutable evidence publication cannot be factual until M5. M7 PR evidence is later. Dependency-ordered restack/merge must place the eventual bridge after accepted M5; calendar deadline `2026-09-08T00:00:00+03:00` cannot change that order.
 
 There is no runtime consumer, so rollout is inert. Revert pure-slice commits if M5 requires v2; no data/runtime/external recovery exists.
+
+Connectivity: [README](../../../README.md) ↔ [roadmap](../../../DARK_FACTORY_ROADMAP.md) ↔ [design](../../../docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md) ↔ [plan](../../../docs/superpowers/plans/2026-09-01-m6-semantic-validation-provisional.md) ↔ [package](brief.md) / [release](release.md) / [rollback](rollback.md) / [evidence](evidence/README.md).

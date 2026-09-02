@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md`
 
+**Connectivity:** [README](../../../README.md) ↔ [roadmap](../../../DARK_FACTORY_ROADMAP.md) ↔ [design](../specs/2026-09-01-m6-semantic-validation-provisional-design.md) ↔ this plan ↔ [package](../../../engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/brief.md) / [release](../../../engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/release.md) / [rollback](../../../engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/rollback.md) / [evidence](../../../engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/evidence/README.md).
+
 ## Global Constraints
 
 - Exact provisional base `94fc5ad878e6b15df6418303caada49a3b93bf4c`; deadline `2026-09-08T00:00:00+03:00` is planning only.

@@ -4,7 +4,7 @@
 
 User-approved provisional design for exact M4 base `94fc5ad878e6b15df6418303caada49a3b93bf4c`. M5 `TaskPacket`, `RunManifest`, and `WorkspaceResult` do not exist there. Only provider-independent wire contracts and pure policy are frozen; persistence, API, runtime, lifecycle and restart wait for factual M5.
 
-Canonical package: [`engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/`](../../../engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/brief.md). Current topology: [README](../../../README.md) ↔ [roadmap](../../../DARK_FACTORY_ROADMAP.md) ↔ this design ↔ [plan](../plans/2026-09-01-m6-semantic-validation-provisional.md) ↔ [release](../../../engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/release.md) / [rollback](../../../engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/rollback.md) / [ledger](../../../engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/implementation-ledger.md).
+Canonical package: [`engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/`](../../../engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/brief.md). Current topology: [README](../../../README.md) ↔ [roadmap](../../../DARK_FACTORY_ROADMAP.md) ↔ this design ↔ [plan](../plans/2026-09-01-m6-semantic-validation-provisional.md) ↔ [release](../../../engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/release.md) / [rollback](../../../engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/rollback.md) / [evidence](../../../engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/evidence/README.md) / [ledger](../../../engineering/changes/20260901-m6-provider-independent-semantic-validation-prov-82aac8/implementation-ledger.md).
 
 ## Contract graph
 
@@ -17,11 +17,16 @@ M6 SemanticSubjectV1
   ↔ SemanticFindingV1 + SemanticCoverageV1
   ↔ deterministic SemanticVerdictV1
   ↔ bounded RepairDirectiveV1 cycles 1..3
-  ↕ (later, after full M6 evidence)
-M7 PR evidence
+  ↕ M7 immutable shadow ready-for-PR bundle (roadmap only)
+  ↕ M8 >=30-human-accepted cohort, trust profile and immediate demotion (roadmap only; ceiling L2)
+  ↕ M9 signed exact artifact, preview/staging/canary/recovery (roadmap only; production human-owned)
 ```
 
 The graph is bidirectional because later evidence must trace back to exact inputs, while mutations of those inputs invalidate downstream evidence. The provisional code implements only the M6 middle contracts and pure arrows; both outer bridges remain non-runtime documentation.
+
+M4 produces exact `exact_base_sha`/`exact_head_sha` plus spec, architecture, authority and evidence digests. A future factual M5 bridge must add `task_packet_digest`, `run_manifest_digest`, and `workspace_result_digest`; M6 consumes them through a separately versioned adapter and produces `semantic_subject_digest`, `semantic_verdict_digest`, and a residual-risk evidence-envelope digest. M7 would consume that exact envelope into `ready_for_pr_bundle_digest`; M8 would consume at least 30 human-accepted tasks into `trust_profile_digest` with immediate demotion; M9 would consume that profile plus `signed_artifact_digest` and exact merged SHA for preview, staging, canary and recovery.
+
+Any producer digest/SHA mutation invalidates every downstream consumer. Recovery appends a new version/digest and retains superseded evidence. None of these local records grants merge, Trust CI, human approval, deployment or production authority; M7-M9 remain roadmap-only and current autonomy stays L2.
 
 ## Contracts
 
