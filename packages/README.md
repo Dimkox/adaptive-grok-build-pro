@@ -26,4 +26,6 @@ python3 scripts/package_stack.py
 cp dist/adaptive-grok-build-pro-v$(tr -d '[:space:]' < VERSION).zip* packages/
 ```
 
+Production rebuilds package only the filtered regular-file inventory and exact bytes of a clean Git `HEAD`; ignored and untracked files are excluded even when present locally. The prior `aa12e7c` 14/14 local verifier receipt is historical and stale for this follow-up because release rereview found ambient ignored/untracked files in that candidate; fresh exact-head verification and review are still required.
+
 `.env` and private keys are never packaged.

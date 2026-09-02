@@ -382,3 +382,14 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Ruff and JSON validation could not find repository-relative targets, producing no product evidence.
 **Root cause:** A mixed verification batch used `packages/` as its working directory; commands with root-relative paths must run from the repository root, while only the sidecar check should change directories.
+
+## 2026-09-02 — Shared ambient inventory between packager and verifier
+
+**Symptom:** Five ignored/untracked evidence files entered the ZIP while the common-mode parity test passed.
+**Root cause:** Both packager and verifier used the ambient filesystem `rglob` inventory instead of an independent exact Git-tree authority.
+**Correction:** Release artifact inventory and bytes must equal the filtered tracked exact `HEAD`, and the shipped-artifact test must derive its expectation independently from Git objects.
+
+## 2026-09-02 — Compared untracked permission bits with Git tree modes
+
+**Symptom:** The first rebuilt artifact matched HEAD inventory and bytes but the regression rejected a clean non-executable file whose worktree mode was `0664` while Git normalized it to `0644`.
+**Root cause:** The test compared full POSIX permission bits even though Git records only the executable distinction and the release invariant requires exact inventory, bytes and hashes.

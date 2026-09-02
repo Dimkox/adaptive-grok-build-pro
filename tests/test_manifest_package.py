@@ -10,7 +10,7 @@ import tempfile
 import types
 import unittest
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,6 +24,66 @@ SPEC = importlib.util.spec_from_file_location('package_stack', ROOT / 'scripts/p
 PACKAGE = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
 SPEC.loader.exec_module(PACKAGE)
+
+
+def _head_release_sources(root: Path) -> dict[str, tuple[bytes, int]]:
+    tree = subprocess.run(
+        ['git', 'ls-tree', '-r', '-z', 'HEAD'],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    ).stdout
+    objects: list[tuple[str, str, int]] = []
+    excluded_parts = {
+        '.git', '__pycache__', '.pytest_cache', 'node_modules', 'vendor', '.venv',
+        'dist', 'build', '.idea', '.vscode', 'htmlcov', '.ruff_cache',
+    }
+    excluded_files = {'MANIFEST.sha256', '.coverage', '.env', 'err.log'}
+    for record in tree.rstrip(b'\0').split(b'\0') if tree else []:
+        metadata, encoded_path = record.split(b'\t', 1)
+        mode, kind, object_id = metadata.decode('ascii').split(' ')
+        relative = os.fsdecode(encoded_path)
+        path = PurePosixPath(relative)
+        if kind != 'blob' or mode not in {'100644', '100755'}:
+            continue
+        if path.name in excluded_files or any(part in excluded_parts for part in path.parts):
+            continue
+        if (path.name == '.env' or path.name.startswith('.env.')) and path.name != '.env.example':
+            continue
+        if path.name.endswith(('.pem', '.key', '.p12', '.pfx')):
+            continue
+        if relative.startswith('.grok-stack/runtime/') and relative != '.grok-stack/runtime/.gitkeep':
+            continue
+        if '20260817-' in relative or path.name.endswith('-pin.env'):
+            continue
+        if path.name == '.coverage' or path.name.startswith('.coverage.'):
+            continue
+        if relative.endswith(('.pyc', '.pyo', '.zip', '.sha256')):
+            continue
+        objects.append((relative, object_id, int(mode, 8)))
+
+    batch = subprocess.run(
+        ['git', 'cat-file', '--batch'],
+        cwd=root,
+        input=''.join(f'{object_id}\n' for _relative, object_id, _mode in objects).encode('ascii'),
+        check=True,
+        capture_output=True,
+    ).stdout
+    cursor = 0
+    sources: dict[str, tuple[bytes, int]] = {}
+    for relative, expected_object_id, mode in objects:
+        header_end = batch.index(b'\n', cursor)
+        object_id, kind, encoded_size = batch[cursor:header_end].decode('ascii').split(' ')
+        size = int(encoded_size)
+        content_start = header_end + 1
+        content_end = content_start + size
+        if object_id != expected_object_id or kind != 'blob' or batch[content_end:content_end + 1] != b'\n':
+            raise AssertionError(f'invalid git cat-file batch response for {relative}')
+        sources[relative] = (batch[content_start:content_end], mode)
+        cursor = content_end + 1
+    if cursor != len(batch):
+        raise AssertionError('unexpected trailing git cat-file batch output')
+    return dict(sorted(sources.items()))
 
 
 class StreamingChecksumPath(type(Path())):
@@ -168,6 +228,64 @@ class ManifestTests(unittest.TestCase):
 
 
 class PackageTests(unittest.TestCase):
+    @staticmethod
+    def _init_release_repository(root: Path) -> None:
+        root.mkdir()
+        subprocess.run(['git', 'init', '-q'], cwd=root, check=True)
+        (root / 'VERSION').write_text('2.0.13\n', encoding='utf-8')
+        (root / 'README.md').write_text('tracked\n', encoding='utf-8')
+        (root / '.gitignore').write_text('ignored.txt\n', encoding='utf-8')
+        subprocess.run(['git', 'add', 'VERSION', 'README.md', '.gitignore'], cwd=root, check=True)
+        subprocess.run(
+            [
+                'git', '-c', 'user.name=Package Test', '-c', 'user.email=package@example.invalid',
+                'commit', '-q', '-m', 'fixture',
+            ],
+            cwd=root,
+            check=True,
+        )
+
+    def test_release_cli_packages_only_clean_tracked_head_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            self._init_release_repository(root)
+            (root / 'ignored.txt').write_text('ignored\n', encoding='utf-8')
+            (root / 'untracked.txt').write_text('untracked\n', encoding='utf-8')
+            output = Path(tmp) / 'publish' / 'project.zip'
+
+            with (
+                patch.object(PACKAGE, 'ROOT', root),
+                patch.object(sys, 'argv', ['package_stack.py', '--output', str(output)]),
+            ):
+                PACKAGE.main()
+
+            with zipfile.ZipFile(output) as archive:
+                self.assertEqual(
+                    archive.namelist(),
+                    [
+                        'adaptive-grok-build-pro/.gitignore',
+                        'adaptive-grok-build-pro/MANIFEST.sha256',
+                        'adaptive-grok-build-pro/README.md',
+                        'adaptive-grok-build-pro/VERSION',
+                    ],
+                )
+
+    def test_release_cli_rejects_modified_tracked_head_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            self._init_release_repository(root)
+            (root / 'README.md').write_text('modified after commit\n', encoding='utf-8')
+            output = Path(tmp) / 'publish' / 'project.zip'
+
+            with (
+                patch.object(PACKAGE, 'ROOT', root),
+                patch.object(sys, 'argv', ['package_stack.py', '--output', str(output)]),
+                self.assertRaisesRegex(PACKAGE.PackageError, 'tracked HEAD'),
+            ):
+                PACKAGE.main()
+
+            self.assertFalse(output.exists())
+
     def test_archive_rejects_private_parent_below_writable_nonsticky_ancestor(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'project'
@@ -613,11 +731,11 @@ class PackageTests(unittest.TestCase):
             self.assertNotIn('build/adaptive-trust-ci-pin.env', rels)
             self.assertFalse(any('20260817-' in rel for rel in rels))
 
-    def test_shipped_zip_exactly_matches_current_included_source(self) -> None:
+    def test_shipped_zip_exactly_matches_filtered_tracked_head(self) -> None:
         version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
         self.assertEqual(version, '2.0.13')
-        source_files = included_files(ROOT)
-        rels = [path.relative_to(ROOT).as_posix() for path in source_files]
+        sources = _head_release_sources(ROOT)
+        rels = list(sources)
         self.assertFalse(any(rel.startswith('.github/workflows/') for rel in rels))
         self.assertNotIn('.github/dependabot.yml', rels)
         self.assertNotIn('.grok-stack/templates/ci/github-actions.yml', rels)
@@ -632,20 +750,26 @@ class PackageTests(unittest.TestCase):
                 names = archive.namelist()
                 prefix = 'adaptive-grok-build-pro/'
                 source_members = {
-                    f'{prefix}{path.relative_to(ROOT).as_posix()}': path
-                    for path in source_files
+                    f'{prefix}{relative}': source
+                    for relative, source in sources.items()
                 }
                 manifest_member = f'{prefix}MANIFEST.sha256'
                 self.assertEqual(names, sorted([*source_members, manifest_member]))
+                expected_manifest = ''.join(
+                    f'{hashlib.sha256(content).hexdigest()}  {relative}\n'
+                    for relative, (content, _mode) in sources.items()
+                ).encode('utf-8')
                 self.assertEqual(
                     archive.read(manifest_member),
-                    MANIFEST.render_manifest(ROOT, files=source_files),
+                    expected_manifest,
                 )
-                for member, source in source_members.items():
+                for member, (content, mode) in source_members.items():
                     self.assertTrue(
-                        archive.read(member) == source.read_bytes(),
-                        f'archive member differs from current source: {source.relative_to(ROOT)}',
+                        archive.read(member) == content,
+                        f'archive member differs from exact HEAD source: {member.removeprefix(prefix)}',
                     )
+                    archive_mode = archive.getinfo(member).external_attr >> 16
+                    self.assertEqual(bool(archive_mode & 0o111), bool(mode & 0o111))
                 self.assertEqual(archive.read(f'{prefix}VERSION').decode('utf-8').strip(), '2.0.13')
                 self.assertFalse(any('.github/workflows/' in name for name in names))
                 self.assertFalse(any(name.endswith('dependabot.yml') for name in names))

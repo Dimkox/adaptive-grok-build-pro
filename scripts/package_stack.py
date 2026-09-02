@@ -5,6 +5,7 @@ import hashlib
 import os
 import secrets
 import stat
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
@@ -13,7 +14,14 @@ from typing import BinaryIO, NamedTuple
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
-from adaptive_grok.manifest import READ_CHUNK_BYTES, render_manifest, snapshot_files, stream_entry
+from adaptive_grok.manifest import (
+    READ_CHUNK_BYTES,
+    ManifestEntry,
+    is_included_relative_path,
+    render_manifest,
+    snapshot_files,
+    stream_entry,
+)
 from adaptive_grok.util import find_root
 
 FIXED_ZIP_TIME = (2026, 8, 14, 0, 0, 0)
@@ -58,6 +66,13 @@ class _TemporaryArchive(NamedTuple):
     file: BinaryIO
     device: int
     inode: int
+
+
+class _TrackedHeadFile(NamedTuple):
+    path: Path
+    relative_path: str
+    object_id: str
+    mode: int
 
 
 def _path_chain(path: Path) -> list[Path]:
@@ -464,8 +479,143 @@ def _validate_published_entry(
     raise PackageError(f'published archive {label} does not match the verified descriptor')
 
 
-def write_archive(root: Path, output: Path) -> str:
-    entries = snapshot_files(root)
+def _git_command(root: Path, arguments: list[str]) -> subprocess.CompletedProcess[bytes]:
+    try:
+        return subprocess.run(
+            ['git', *arguments],
+            cwd=root,
+            check=False,
+            capture_output=True,
+        )
+    except OSError as exc:
+        raise PackageError('cannot inspect tracked HEAD for release packaging') from exc
+
+
+def _require_clean_tracked_head(root: Path) -> Path:
+    canonical_root = root.resolve(strict=True)
+    top_level = _git_command(canonical_root, ['rev-parse', '--show-toplevel'])
+    if top_level.returncode != 0:
+        raise PackageError('release packaging requires a Git repository at tracked HEAD')
+    try:
+        repository_root = Path(os.fsdecode(top_level.stdout).strip()).resolve(strict=True)
+    except OSError as exc:
+        raise PackageError('cannot resolve the tracked HEAD repository root') from exc
+    if repository_root != canonical_root:
+        raise PackageError('release packaging root must be the tracked HEAD repository root')
+    for arguments in (
+        ['diff', '--quiet', '--no-ext-diff', '--ignore-submodules=none', 'HEAD', '--'],
+        ['diff', '--cached', '--quiet', '--no-ext-diff', '--ignore-submodules=none', 'HEAD', '--'],
+    ):
+        result = _git_command(canonical_root, arguments)
+        if result.returncode == 1:
+            raise PackageError('release packaging requires a clean tracked HEAD')
+        if result.returncode != 0:
+            raise PackageError('cannot verify the clean tracked HEAD for release packaging')
+    return canonical_root
+
+
+def _tracked_head_files(root: Path) -> list[_TrackedHeadFile]:
+    result = _git_command(root, ['ls-tree', '-r', '-z', 'HEAD'])
+    if result.returncode != 0:
+        raise PackageError('cannot read tracked HEAD inventory for release packaging')
+    files: list[_TrackedHeadFile] = []
+    for record in result.stdout.rstrip(b'\0').split(b'\0') if result.stdout else []:
+        try:
+            metadata, encoded_path = record.split(b'\t', 1)
+            mode, kind, object_id = metadata.decode('ascii').split(' ')
+            relative_path = os.fsdecode(encoded_path)
+            parsed_mode = int(mode, 8)
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise PackageError('tracked HEAD inventory is malformed') from exc
+        if kind != 'blob' or mode not in {'100644', '100755'}:
+            continue
+        if not is_included_relative_path(relative_path):
+            continue
+        files.append(_TrackedHeadFile(root / relative_path, relative_path, object_id, parsed_mode))
+    return sorted(files, key=lambda item: item.relative_path)
+
+
+def _head_blob_digests(
+    root: Path,
+    files: list[_TrackedHeadFile],
+) -> dict[str, tuple[int, str]]:
+    try:
+        process = subprocess.Popen(
+            ['git', 'cat-file', '--batch'],
+            cwd=root,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+    except OSError as exc:
+        raise PackageError('cannot read tracked HEAD content for release packaging') from exc
+    digests: dict[str, tuple[int, str]] = {}
+    try:
+        if process.stdin is None or process.stdout is None:
+            raise PackageError('cannot bind tracked HEAD content for release packaging')
+        for file in files:
+            process.stdin.write(f'{file.object_id}\n'.encode('ascii'))
+            process.stdin.flush()
+            header = process.stdout.readline()
+            try:
+                object_id, kind, encoded_size = header.decode('ascii').rstrip('\n').split(' ')
+                size = int(encoded_size)
+            except (ValueError, UnicodeDecodeError) as exc:
+                raise PackageError('tracked HEAD content response is malformed') from exc
+            if object_id != file.object_id or kind != 'blob' or size < 0:
+                raise PackageError('tracked HEAD content identity is inconsistent')
+            digest = hashlib.sha256()
+            remaining = size
+            while remaining:
+                chunk = process.stdout.read(min(READ_CHUNK_BYTES, remaining))
+                if not chunk:
+                    raise PackageError('tracked HEAD content ended unexpectedly')
+                digest.update(chunk)
+                remaining -= len(chunk)
+            if process.stdout.read(1) != b'\n':
+                raise PackageError('tracked HEAD content boundary is malformed')
+            digests[file.relative_path] = (size, digest.hexdigest())
+    except (BrokenPipeError, OSError) as exc:
+        raise PackageError('cannot read tracked HEAD content for release packaging') from exc
+    finally:
+        if process.stdin is not None:
+            try:
+                process.stdin.close()
+            except BrokenPipeError:
+                pass
+        returncode = process.wait()
+        if process.stdout is not None:
+            process.stdout.close()
+    if returncode != 0:
+        raise PackageError('cannot read tracked HEAD content for release packaging')
+    return digests
+
+
+def _release_entries_from_tracked_head(root: Path) -> list[ManifestEntry]:
+    canonical_root = _require_clean_tracked_head(root)
+    files = _tracked_head_files(canonical_root)
+    entries = snapshot_files(canonical_root, files=[file.path for file in files])
+    head_digests = _head_blob_digests(canonical_root, files)
+    tracked_by_path = {file.relative_path: file for file in files}
+    for entry in entries:
+        tracked = tracked_by_path[entry.relative_path]
+        size, digest = head_digests[entry.relative_path]
+        if entry.identity.size != size or entry.digest != digest:
+            raise PackageError(f'release source differs from tracked HEAD: {entry.relative_path}')
+        if bool(entry.identity.mode & 0o111) != bool(tracked.mode & 0o111):
+            raise PackageError(f'release source mode differs from tracked HEAD: {entry.relative_path}')
+    _require_clean_tracked_head(canonical_root)
+    return entries
+
+
+def write_archive(
+    root: Path,
+    output: Path,
+    *,
+    entries: list[ManifestEntry] | None = None,
+) -> str:
+    if entries is None:
+        entries = snapshot_files(root)
     manifest = render_manifest(root, entries=entries)
     members = [
         (entry.relative_path, entry.identity.mode, entry)
@@ -540,7 +690,8 @@ def main() -> None:
     root = find_root(ROOT)
     output = Path(args.output) if args.output else root / _default_output(root)
     output = output.resolve()
-    digest = write_archive(root, output)
+    entries = _release_entries_from_tracked_head(root)
+    digest = write_archive(root, output, entries=entries)
     print(output)
     print(digest)
 

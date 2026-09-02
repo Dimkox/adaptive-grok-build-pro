@@ -4,7 +4,7 @@ import hashlib
 import os
 import stat
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import BinaryIO
 
 EXCLUDED_PARTS = {
@@ -54,6 +54,24 @@ def _is_secret_path(rel: str, name: str) -> bool:
     return name.endswith(SECRET_SUFFIXES)
 
 
+def is_included_relative_path(relative: str | PurePosixPath) -> bool:
+    path = PurePosixPath(relative)
+    if path.is_absolute() or not path.parts or any(part in {'', '.', '..'} for part in path.parts):
+        return False
+    rel = path.as_posix()
+    if path.name in EXCLUDED_FILES or any(part in EXCLUDED_PARTS for part in path.parts):
+        return False
+    if _is_secret_path(rel, path.name):
+        return False
+    if rel.startswith('.grok-stack/runtime/') and rel != '.grok-stack/runtime/.gitkeep':
+        return False
+    if '20260817-' in rel or path.name.endswith('-pin.env'):
+        return False
+    if path.name == '.coverage' or path.name.startswith('.coverage.'):
+        return False
+    return not rel.endswith(('.pyc', '.pyo', '.zip', '.sha256'))
+
+
 def included_files(root: Path) -> list[Path]:
     canonical_root = root.resolve(strict=True)
     result: list[Path] = []
@@ -64,20 +82,8 @@ def included_files(root: Path) -> list[Path]:
             raise ManifestError(f'cannot inspect package source path: {path.relative_to(canonical_root)}') from exc
         if not stat.S_ISREG(metadata.st_mode):
             continue
-        if path.name in EXCLUDED_FILES or any(part in EXCLUDED_PARTS for part in path.parts):
-            continue
         rel = path.relative_to(canonical_root).as_posix()
-        if _is_secret_path(rel, path.name):
-            continue
-        if rel.startswith('.grok-stack/runtime/') and rel != '.grok-stack/runtime/.gitkeep':
-            continue
-        if '20260817-' in rel:
-            continue
-        if path.name.endswith('-pin.env'):
-            continue
-        if path.name == '.coverage' or path.name.startswith('.coverage.'):
-            continue
-        if rel.endswith(('.pyc', '.pyo', '.zip', '.sha256')):
+        if not is_included_relative_path(rel):
             continue
         result.append(path)
     return sorted(result, key=lambda item: item.relative_to(canonical_root).as_posix())
