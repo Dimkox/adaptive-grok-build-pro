@@ -11,7 +11,7 @@
 | prior signed artifact | `BLOCKED` | exact externally verified artifact eligible for restore | mismatch, expiry or resource change |
 | nonproduction environment | `BLOCKED` | named separately authorized preview/staging/canary resource set and observation source | environment/policy/authorization change |
 | exercised recovery | `BLOCKED` | observed restoration of exact prior signed artifact in authorized nonproduction environment | artifact/environment/policy change |
-| source-only Tasks 1–4 | authorized / not started | strict TDD against synthetic opaque identities; sole `ai_implementer` write owner | any design/scope change |
+| source-only Tasks 1–4 | Task 1 complete locally; Tasks 2–4 pending | Task 1 witnessed missing-module RED followed by 11-test GREEN; strict TDD against synthetic opaque identities; sole `ai_implementer` write owner | any contract/design/scope change |
 | Task 5 integration | `BLOCKED` | separately opened task after applicable source and dependency gates | any source/design/restack change |
 | local verification/reviews | not started | verification, code, test, security, release receipts on final source fingerprint | any repository change |
 | PR/external Trust CI | not authorized | separate delegated branch/PR operations and App-owned check on exact head | new head/base/policy/holdout |

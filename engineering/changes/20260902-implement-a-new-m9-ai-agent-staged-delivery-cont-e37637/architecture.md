@@ -4,11 +4,11 @@
 
 ## Current behavior
 
-M9 is roadmap-only. This branch starts from provisional M4 source `9fe779ab9f90719201acfd01160d3452658ff075`; it does not contain an accepted M5→M8 predecessor chain, accepted M8 profile/cohort, signed delivery input, nonproduction environment or recovery proof.
+M9 Task 1 now provides pure local closed contracts and canonical digests. This branch starts from provisional M4 source `9fe779ab9f90719201acfd01160d3452658ff075`; it does not contain an accepted M5→M8 predecessor chain, accepted M8 profile/cohort, signed delivery input, nonproduction environment or recovery proof.
 
 ## Proposed behavior
 
-Future M9 source is a pure local deterministic library. It accepts closed immutable records whose authority was verified elsewhere, evaluates one complete observation set, and advances a dry-run state machine only through `preview → staging → bounded_canary → production`. `production` is not executable: it always yields `needs_human`.
+Tasks 1–4 M9 source is a pure local deterministic library. It accepts closed immutable records whose authority was verified elsewhere, evaluates one complete observation set, and advances a dry-run state machine only through `preview → staging → bounded_canary → production`. `production` is not executable: it always yields `needs_human`.
 
 ## Components and boundaries
 

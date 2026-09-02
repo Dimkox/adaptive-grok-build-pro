@@ -1,8 +1,10 @@
 # Test Plan — M9 Staged Delivery and Recovery
 
-This checkpoint runs only canonical-spec, structure, link, diff and whitespace validation. The scenarios below are the mandatory future TDD suite; they are not claimed as implemented.
+The source-only checkpoint runs each scenario under strict TDD; a scenario is claimed only after its witnessed RED and fresh GREEN evidence.
 
-| Priority | Scenario | Future evidence |
+Task 1 contract evidence is now implemented: the exact command first failed because `adaptive_delivery.contracts` was absent, then passed 11 tests after the minimal contract module was added. Evaluator, recovery, controller and integration scenarios remain pending.
+
+| Priority | Scenario | Required evidence |
 | --- | --- | --- |
 | P0 | every closed record rejects unknown/missing fields, malformed SHA/digests, noncanonical time, bad exposure and unbound authority | contract unit + JSON Schema tests |
 | P0 | exact artifact/SBOM/provenance/M8 profile/cohort/policy/holdout/image/environment/prior-artifact mismatch denies | table-driven evaluator tests |
@@ -15,7 +17,7 @@ This checkpoint runs only canonical-spec, structure, link, diff and whitespace v
 | P1 | metrics/audit expose only closed labels, digests, times and aggregates, never bodies/PII/secrets | redaction/contract tests |
 | P1 | schemas, architecture inventory/diagrams, README and roadmap remain consistent | repository structure/architecture tests |
 
-## Future focused commands
+## Focused commands
 
 ```bash
 python3 -m unittest discover -s delivery/tests -p 'test_*.py' -v
