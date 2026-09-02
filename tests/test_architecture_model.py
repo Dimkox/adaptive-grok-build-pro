@@ -204,6 +204,15 @@ class ArchitectureModelTests(unittest.TestCase):
             self.assertEqual(edge["failure_behavior"]["mode"], "fail_closed")
             self.assertEqual(edge["failure_behavior"]["terminal_action"], "reject")
 
+        execution_edges = {
+            "EDGE-FACTORY-CONTROL-EXECUTION-CORE",
+            "EDGE-FACTORY-ADAPTERS-EXECUTION-CORE",
+            "EDGE-FACTORY-CONTROL-PROPOSAL-BROKER",
+            "EDGE-FACTORY-PROPOSAL-BROKER-EXECUTION-CORE",
+            *workspace_edges,
+        }
+        self.assertTrue(all(edges[edge_id]["authentication"] == "local_os" for edge_id in execution_edges))
+
         adapter_edges = [
             edge
             for edge in snapshot.system["edges"]
