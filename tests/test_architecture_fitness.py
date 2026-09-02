@@ -3400,6 +3400,128 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "fail")
         self.assertIn("CONTRACT-TEST", " ".join(result.findings))
 
+    def test_contract_compatibility_rechecks_unchanged_declared_ref_dependents(self) -> None:
+        for changed_contract, expected_status in (
+            ("CONTRACT-COMMON", "fail"),
+            ("CONTRACT-UNRELATED", "pass"),
+        ):
+            with self.subTest(changed_contract=changed_contract):
+                system = _system()
+                system["contracts"] = [
+                    {
+                        "id": "CONTRACT-EVENT",
+                        "kind": "event",
+                        "path": "engineering/contracts/event.json",
+                        "version": "1",
+                        "role": "consumer",
+                        "compatibility": "consumer_accepts_old",
+                    },
+                    {
+                        "id": "CONTRACT-COMMON",
+                        "kind": "json_schema",
+                        "path": "engineering/contracts/common.json",
+                        "version": "1",
+                        "role": "consumer",
+                        "compatibility": "consumer_accepts_old",
+                    },
+                    {
+                        "id": "CONTRACT-UNRELATED",
+                        "kind": "json_schema",
+                        "path": "engineering/contracts/unrelated.json",
+                        "version": "1",
+                        "role": "consumer",
+                        "compatibility": "consumer_accepts_old",
+                    },
+                ]
+                system["nodes"][0]["public_contracts"] = [
+                    item["id"] for item in system["contracts"]
+                ]
+                rules = _rules()
+                rules["contract_policies"] = [
+                    {
+                        "id": "FIT-CONTRACT",
+                        "contract_kinds": ["event", "json_schema"],
+                        "compatibility": "consumer_accepts_old",
+                        "severity": "error",
+                    }
+                ]
+                repo = GitArchitectureRepo(self)
+                repo.model(system, rules)
+                repo.write_json(
+                    "engineering/contracts/event.json", {"$ref": "common.json"}
+                )
+                repo.write_json(
+                    "engineering/contracts/common.json",
+                    {"type": "integer", "description": "money is cents"},
+                )
+                repo.write_json(
+                    "engineering/contracts/unrelated.json",
+                    {"type": "string", "description": "unrelated alpha"},
+                )
+                base = repo.commit("declared ref baseline")
+                path = (
+                    "engineering/contracts/common.json"
+                    if changed_contract == "CONTRACT-COMMON"
+                    else "engineering/contracts/unrelated.json"
+                )
+                changed = (
+                    {"type": "integer", "description": "money is dollars"}
+                    if changed_contract == "CONTRACT-COMMON"
+                    else {"type": "string", "description": "unrelated beta"}
+                )
+                repo.write_json(path, changed)
+                head = repo.commit("description-only dependency change")
+                result = self._results(self._evaluate(repo, base, head))[
+                    "contract_compatibility"
+                ]
+                self.assertEqual(result.status, expected_status)
+                if expected_status == "fail":
+                    self.assertIn("CONTRACT-EVENT", " ".join(result.findings))
+
+    def test_contract_compatibility_has_one_aggregate_comparison_budget(self) -> None:
+        system = _system()
+        system["contracts"] = [
+            {
+                "id": f"CONTRACT-{suffix}",
+                "kind": "json_schema",
+                "path": f"engineering/contracts/{suffix.lower()}.json",
+                "version": "1",
+                "role": "consumer",
+                "compatibility": "consumer_accepts_old",
+            }
+            for suffix in ("A", "B", "C")
+        ]
+        system["nodes"][0]["public_contracts"] = [
+            item["id"] for item in system["contracts"]
+        ]
+        rules = _rules()
+        rules["contract_policies"] = [
+            {
+                "id": "FIT-CONTRACT",
+                "contract_kinds": ["json_schema"],
+                "compatibility": "consumer_accepts_old",
+                "severity": "error",
+            }
+        ]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        for suffix in ("a", "b", "c"):
+            repo.write_json(
+                f"engineering/contracts/{suffix}.json",
+                {"type": "string", "description": f"{suffix} base"},
+            )
+        base = repo.commit("aggregate comparison baseline")
+        repo.write_json(
+            "engineering/contracts/c.json",
+            {"type": "string", "description": "c head"},
+        )
+        head = repo.commit("aggregate comparison change")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+        with patch.object(ARCHITECTURE, "MAX_PARSED_NODES", 5):
+            result = FIT._contract_compatibility(diff._head_state.snapshot, diff)
+        self.assertEqual(result.status, "unsupported")
+        self.assertIn("unsupported compatibility semantics", " ".join(result.findings))
+
     def test_added_contracts_must_have_supported_baseline_semantics(self) -> None:
         system = _system()
         rules = _rules()
