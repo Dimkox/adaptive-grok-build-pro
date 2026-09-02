@@ -287,16 +287,33 @@ class StructureTests(unittest.TestCase):
                 for method, operation in path_item.items()
                 if method in {"get", "post", "put", "patch", "delete"}
             ),
-            48,
+            54,
         )
 
         for method, path, operation_id in sorted(execution_operations):
             operation = execution["paths"][path][method.lower()]
+            self.assertEqual(
+                set(operation["responses"]),
+                {"200", "400", "401", "403", "409", "413", "422", "500", "503"},
+                operation_id,
+            )
             parameters = {
                 (parameter["in"], parameter["name"]): parameter
                 for parameter in operation.get("parameters", [])
             }
             self.assertEqual(operation.get("security"), [{"bearerAuth": []}])
+            self.assertEqual(
+                operation["responses"]["500"],
+                {
+                    "description": "internal integrity failure",
+                    "content": {
+                        "application/json": {
+                            "schema": {"$ref": "#/components/schemas/Error"}
+                        }
+                    },
+                },
+                operation_id,
+            )
             self.assertNotIn(("header", "Authorization"), parameters)
             for name in ("Idempotency-Key", "X-Correlation-ID"):
                 self.assertTrue(

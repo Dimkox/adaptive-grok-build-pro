@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 import math
+import re
 from types import MappingProxyType
 from typing import Any, Iterable, Mapping
 
@@ -42,6 +43,17 @@ _FORBIDDEN_KEYS = frozenset(
         "native_stream",
     }
 )
+_NOTE_TYPES_V1 = frozenset({"finding", "conclusion", "decision.record"})
+MAX_DURABLE_PATH_BYTES = 1024
+_STRUCTURAL_SECRET = re.compile(
+    r"(?i)(?:-----BEGIN|-----END|(?:sk-|ghp_|github_pat_)[A-Za-z0-9_-]+|"
+    r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b|\bBearer[ \t]+[A-Za-z0-9._~+/=-]+|"
+    r"(?<![A-Za-z0-9_-])(?:[A-Za-z0-9]+[_-])*Authorization[ \t]*[=:]|"
+    r"(?<![A-Za-z0-9_-])(?:[\"'])?(?:[a-z0-9]+[_-])*(?:api[_-]?key|"
+    r"access[_-]?token|session[_-]?token|client[_-]?secret|refresh[_-]?token|"
+    r"password|credential|secret[_-]?key|private[_-]?key|token|secret)"
+    r"(?:[_-][a-z0-9]+)*(?:[\"'])?(?![A-Za-z0-9_-])[ \t]*[:=])"
+)
 _PAYLOAD_FIELDS = {
     "adapter.ready": frozenset(
         {"provider_id", "adapter_id", "adapter_version", "native_version", "model_id", "capabilities"}
@@ -71,6 +83,19 @@ class ProtocolError(ValueError):
     def __init__(self, code: str, detail: str = "") -> None:
         super().__init__(f"{code}: {detail}" if detail else code)
         self.code = code
+
+
+def validate_note_type(value: object) -> str:
+    """Return a closed durable note category or reject private/native streams."""
+    if not isinstance(value, str):
+        raise ProtocolError("payload_fields")
+    if value not in _NOTE_TYPES_V1:
+        raise ProtocolError("forbidden_content", "note_type")
+    return value
+
+
+def contains_structural_secret(value: str) -> bool:
+    return bool(_STRUCTURAL_SECRET.search(value))
 
 
 @dataclass(frozen=True)
@@ -146,6 +171,75 @@ def _walk(value: Any, limits: ProtocolLimits, *, depth: int = 1, count: list[int
         raise ProtocolError("invalid_value")
 
 
+def validate_event_payload(
+    event_type: str,
+    payload: Any,
+    limits: ProtocolLimits | None = None,
+) -> None:
+    limits = limits or ProtocolLimits()
+    if not isinstance(event_type, str) or event_type not in _EVENTS:
+        raise ProtocolError("unknown_event")
+    _walk(payload, limits)
+    allowed = _PAYLOAD_FIELDS.get(event_type)
+    if allowed is None or not isinstance(payload, dict) or not set(payload).issubset(allowed):
+        raise ProtocolError("payload_fields")
+    if event_type == "adapter.ready":
+        if set(payload) < {"provider_id", "capabilities"}:
+            raise ProtocolError("payload_fields")
+        if any(
+            name in payload and not isinstance(payload[name], str)
+            for name in allowed - {"capabilities"}
+        ):
+            raise ProtocolError("payload_fields")
+        capabilities = payload["capabilities"]
+        if (
+            not isinstance(capabilities, list)
+            or not all(isinstance(value, str) for value in capabilities)
+            or tuple(capabilities) != tuple(sorted(set(capabilities)))
+        ):
+            raise ProtocolError("capability_list")
+        return
+    if set(payload) != allowed:
+        raise ProtocolError("payload_fields")
+    if event_type in {"run.started", "stage.reported"}:
+        if not all(isinstance(value, str) for value in payload.values()):
+            raise ProtocolError("payload_fields")
+    elif event_type == "note.proposed":
+        validate_note_type(payload["note_type"])
+        if (
+            not isinstance(payload["body"], str)
+            or not isinstance(payload["evidence"], list)
+            or not all(isinstance(value, str) for value in payload["evidence"])
+        ):
+            raise ProtocolError("payload_fields")
+    elif event_type == "artifact.proposed":
+        if (
+            not all(
+                isinstance(payload[name], str)
+                for name in ("artifact_class", "path", "sha256", "media_type")
+            )
+            or type(payload["size_bytes"]) is not int
+        ):
+            raise ProtocolError("payload_fields")
+    elif event_type == "usage.reported":
+        if (
+            not isinstance(payload["provider_call_id"], str)
+            or not isinstance(payload["price_table_digest"], str)
+            or any(
+                type(payload[name]) is not int
+                for name in (
+                    "input_tokens", "output_tokens", "reasoning_tokens",
+                    "cost_usd_micros", "output_bytes",
+                )
+            )
+        ):
+            raise ProtocolError("payload_fields")
+    elif event_type in _TERMINAL and not all(
+        isinstance(value, str) for value in payload.values()
+    ):
+        raise ProtocolError("payload_fields")
+
+
 def _freeze(value: Any) -> Any:
     if isinstance(value, dict):
         return MappingProxyType({key: _freeze(item) for key, item in sorted(value.items())})
@@ -171,6 +265,31 @@ class CanonicalEvent:
     sequence: int
     event_type: str
     payload: Mapping[str, Any]
+
+    @classmethod
+    def from_payload(
+        cls,
+        *,
+        task_id: str,
+        run_id: str,
+        packet_digest: str,
+        sequence: int,
+        event_type: str,
+        payload: Any,
+        limits: ProtocolLimits | None = None,
+    ) -> "CanonicalEvent":
+        if type(sequence) is not int or sequence < 1:
+            raise ProtocolError("invalid_sequence")
+        validate_event_payload(event_type, payload, limits)
+        return cls(
+            PROTOCOL_VERSION,
+            task_id,
+            run_id,
+            packet_digest,
+            sequence,
+            event_type,
+            _freeze(dict(payload)),
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -257,32 +376,27 @@ class EventStreamParser:
         if type(value["sequence"]) is not int or value["sequence"] != len(self._events) + 1:
             raise ProtocolError("invalid_sequence")
         event_type = value["event_type"]
-        if event_type not in _EVENTS:
+        if not isinstance(event_type, str) or event_type not in _EVENTS:
             raise ProtocolError("unknown_event")
         required_capability = _CAPABILITY.get(event_type)
         if required_capability and required_capability not in self.capabilities:
             raise ProtocolError("undeclared_capability", required_capability)
         payload = value["payload"]
-        if not isinstance(payload, dict) or not set(payload).issubset(_PAYLOAD_FIELDS[event_type]):
-            raise ProtocolError("payload_fields")
+        validate_event_payload(event_type, payload, self.limits)
         if event_type == "adapter.ready":
-            if set(payload) < {"provider_id", "capabilities"}:
-                raise ProtocolError("payload_fields")
             capabilities = payload["capabilities"]
-            if not isinstance(capabilities, list) or tuple(capabilities) != tuple(sorted(set(capabilities))):
-                raise ProtocolError("capability_list")
             if not set(capabilities).issubset(self.capabilities):
                 raise ProtocolError("undeclared_capability")
         if event_type in _TERMINAL:
             self._terminal = True
-        return CanonicalEvent(
-            PROTOCOL_VERSION,
-            self.task_id,
-            self.run_id,
-            self.packet_digest,
-            value["sequence"],
-            event_type,
-            _freeze(payload),
+        return CanonicalEvent.from_payload(
+            task_id=self.task_id,
+            run_id=self.run_id,
+            packet_digest=self.packet_digest,
+            sequence=value["sequence"],
+            event_type=event_type,
+            payload=payload,
+            limits=self.limits,
         )
 
     def finish(self) -> tuple[CanonicalEvent, ...]:

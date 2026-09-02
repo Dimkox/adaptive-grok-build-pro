@@ -10,6 +10,7 @@ import uuid
 
 from adaptive_factory.migrations import PostgresMigrator, discover_migrations
 from adaptive_factory.api import Authenticator, create_app
+from adaptive_factory.contracts import canonical_digest
 from adaptive_factory.models import Actor, ExecutionStage, FailureClass, RunRole, TaskStatus
 from adaptive_factory.service import AuthorizationError, FactoryService
 from adaptive_factory.store import BudgetError, FenceError, PostgresFactoryStore, StoreError
@@ -57,7 +58,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.workspace_results, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
+                "TRUNCATE factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
             )
             cursor.execute("SELECT to_regclass('factory.metric_counters_pre_012_untrusted')")
             if cursor.fetchone()[0] is not None:
@@ -269,7 +270,7 @@ class PostgresFactoryTests(unittest.TestCase):
             self.service.commit_execution_proposal(
                 execution.lease, packet_digest=execution.packet_digest, sequence=2,
                 event_type="note.proposed",
-                payload={"note_type": "late", "body": "late", "evidence": []}, actor=WORKER,
+                payload={"note_type": "finding", "body": "late", "evidence": []}, actor=WORKER,
             )
         import psycopg
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
@@ -283,10 +284,10 @@ class PostgresFactoryTests(unittest.TestCase):
                 (execution.lease.run_id,) * 5,
             )
             self.assertEqual(cursor.fetchone(), (1, 4, 3, 1, "token [REDACTED]"))
-        self.assertEqual(
-            self.service.release(execution.lease, outcome="completed", actor=WORKER, now=NOW),
-            TaskStatus.READY_FOR_HUMAN,
-        )
+        self.assertEqual(result.m4_status, TaskStatus.READY_FOR_HUMAN.value)
+        self.assertEqual(self.store.get_task(task.task_id).status, TaskStatus.READY_FOR_HUMAN)
+        with self.assertRaises(FenceError):
+            self.service.release(execution.lease, outcome="completed", actor=WORKER, now=NOW)
         reader = Actor("m6-reader", "operator", frozenset({"task:read"}), frozenset({task.repository_id}))
         bundle = self.service.get_workspace_result(
             task.task_id, result.workspace_result_digest, actor=reader,
@@ -348,6 +349,16 @@ class PostgresFactoryTests(unittest.TestCase):
             *,
             owner: str | None = None,
         ) -> bool:
+            body = {
+                "task_id": execution.lease.task_id,
+                "run_id": execution.lease.run_id,
+                "packet_digest": execution.packet_digest,
+                "fence": execution.lease.fence,
+                "sequence": sequence,
+                "author_role": execution.lease.role.value,
+                **body,
+                "idempotency_key": idempotency_key,
+            }
             with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
                 cursor.execute("SET LOCAL ROLE factory_runtime")
                 cursor.execute(
@@ -367,16 +378,50 @@ class PostgresFactoryTests(unittest.TestCase):
                 )
                 return bool(cursor.fetchone()[0])
 
+        def proposal_key(execution, sequence: int, kind: str, body: dict) -> str:
+            event_type = (
+                body["terminal_type"]
+                if kind == "terminal"
+                else {
+                    "note": "note.proposed",
+                    "artifact": "artifact.proposed",
+                    "usage": "usage.reported",
+                }[kind]
+            )
+            semantic = dict(body)
+            if kind == "note":
+                semantic.pop("author_role", None)
+            return canonical_digest(
+                {
+                    "contract": "adaptive-factory.execution-proposal/v1",
+                    "task_id": execution.lease.task_id,
+                    "run_id": execution.lease.run_id,
+                    "packet_digest": execution.packet_digest,
+                    "fence": execution.lease.fence,
+                    "author_role": execution.lease.role.value,
+                    "sequence": sequence,
+                    "event_type": event_type,
+                    "body": semantic,
+                }
+            )
+
         task, execution = start("execution-propose-monotonic")
-        first_key = "1" * 64
-        terminal_key = "2" * 64
         note = {
             "author_role": "writer",
             "note_type": "finding",
             "body": "bounded",
             "evidence": [],
         }
-        terminal = {"terminal_type": "run.failed", "failure_class": "validation", "diagnostic": "bounded"}
+        terminal = {
+            "author_role": "writer",
+            "terminal_type": "run.failed",
+            "failure_class": "validation",
+            "reason": None,
+            "diagnostic": "bounded",
+            "summary": "validation: bounded",
+        }
+        first_key = proposal_key(execution, 1, "note", note)
+        terminal_key = proposal_key(execution, 2, "terminal", terminal)
 
         self.assertFalse(
             propose(execution, 1, "6" * 64, "note", note, owner="forged-worker")
@@ -469,22 +514,26 @@ class PostgresFactoryTests(unittest.TestCase):
             "execution-propose-max-events", max_events=max_events
         )
         for sequence in range(1, max_events + 1):
+            bounded_note = {**note, "body": f"event-{sequence}"}
             self.assertTrue(
                 propose(
                     bounded,
                     sequence,
-                    f"{sequence:064x}",
+                    proposal_key(bounded, sequence, "note", bounded_note),
                     "note",
-                    {**note, "body": f"event-{sequence}"},
+                    bounded_note,
                 )
             )
+        over_limit_note = {**note, "body": "over-limit"}
         self.assertFalse(
             propose(
                 bounded,
                 max_events + 1,
-                f"{max_events + 1:064x}",
+                proposal_key(
+                    bounded, max_events + 1, "note", over_limit_note
+                ),
                 "note",
-                {**note, "body": "over-limit"},
+                over_limit_note,
             )
         )
 
@@ -1942,7 +1991,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
                     self.assertEqual(
                         [item.version for item in PostgresMigrator(upgrade_url).apply()],
-                        [13, 14],
+                        [13, 14, 15, 16],
                     )
                     upgraded_store = PostgresFactoryStore(upgrade_url)
                     upgraded_service = FactoryService(upgraded_store)
@@ -2227,7 +2276,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12, 13, 14], "ready", 14, True,
+                    [9, 10, 11, 12, 13, 14, 15, 16], "ready", 16, True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
@@ -2909,7 +2958,7 @@ class PostgresFactoryTests(unittest.TestCase):
         runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
         result = bootstrap_local(DATABASE_URL, login, password, runtime_url)
         self.assertEqual(result["database_role"], "factory_runtime")
-        self.assertEqual(result["schema_version"], 14)
+        self.assertEqual(result["schema_version"], 16)
         self.assertEqual(PostgresMigrator(DATABASE_URL).apply(expected_runtime_login=login), ())
         with psycopg.connect(runtime_url) as connection, connection.cursor() as cursor:
             cursor.execute("SET ROLE factory_runtime")

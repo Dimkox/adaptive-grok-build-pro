@@ -4,7 +4,7 @@
 
 **Goal:** Add a provider-neutral, fixture-tested, persistence-integrated M5 execution source plane while preserving factual M4 claim semantics and explicitly blocking unavailable OS-isolation exit evidence.
 
-**Architecture:** Pure immutable contracts and a bounded protocol parser define the trust boundary before persistence. Exact-version fixture adapters feed proposal/workspace brokers; successor migration `014` and new execution endpoints bind every mutation to the existing M4 task/run/owner/fence/allocation/deadline/budget invariants. Source-controlled systemd units and fake-runtime tests are locally verifiable, while live provider and rootless-host operations stay absent.
+**Architecture:** Pure immutable contracts and a bounded protocol parser define the trust boundary before persistence. Exact-version fixture adapters feed proposal/workspace brokers; immutable successor migration `014`, forward-only canonical expand overlay `015`, DROP-only contract migration `016`, and new execution endpoints bind every mutation to the existing M4 task/run/owner/fence/allocation/deadline/budget invariants. Source-controlled systemd units and fake-runtime tests are locally verifiable, while live provider and rootless-host operations stay absent.
 
 **Tech Stack:** Python 3.11+, frozen dataclasses, canonical JSON/JSONL, JSON Schema 2020-12, FastAPI, PostgreSQL 15+, `unittest`, source-controlled systemd units.
 
@@ -33,6 +33,8 @@
 - `factory/src/adaptive_factory/brokers.py`: note/artifact/usage/terminal validation and redaction.
 - `factory/src/adaptive_factory/workspace.py`: workspace/Git protocols, fake runtime and host capability report.
 - `factory/src/adaptive_factory/resources/014_execution_plane.sql`: successor-slice execution persistence and capabilities after M4 `013`.
+- `factory/src/adaptive_factory/resources/015_execution_canonical_persistence.sql`: forward-only canonical proposal/attestation/result overlay; after quiescing old finalizers, lock proposals then results, preserve compatible non-final `014` evidence, and refuse legacy finalized rows or unattested artifacts before mutation.
+- `factory/src/adaptive_factory/resources/016_contract_execution_canonical_persistence.sql`: DROP-only contract phase that removes the superseded 64-KiB proposal-body check and global snapshot uniqueness after `015` installs their canonical successors in the same migrator transaction.
 - `factory/src/adaptive_factory/{models,store,service,api}.py`: execution projections, transactions/use cases and endpoints.
 - `factory/src/adaptive_factory/recovery.py`: bounded orphan reconciliation.
 - `factory/systemd/`: predefined supervisor/reader/writer/broker source units.

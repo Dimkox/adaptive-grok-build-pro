@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from adaptive_factory.protocol import EventStreamParser, ProtocolError, ProtocolLimits
+from adaptive_factory.protocol import CanonicalEvent, EventStreamParser, ProtocolError, ProtocolLimits
 
 
 TASK = "task-001"
@@ -66,7 +66,7 @@ class ProtocolTests(unittest.TestCase):
         cases.append(([wrong], "identity_mismatch"))
         cases.append(([event(2, "run.completed", {"summary": "x"})], "invalid_sequence"))
         cases.append(([event(1, "artifact.proposed", {"artifact_class": "report", "path": "a", "sha256": "b" * 64, "size_bytes": 1, "media_type": "text/plain"})], "undeclared_capability"))
-        cases.append(([event(1, "run.completed", {"summary": "x"}), event(2, "note.proposed", {"note_type": "x", "body": "x", "evidence": []})], "after_terminal"))
+        cases.append(([event(1, "run.completed", {"summary": "x"}), event(2, "note.proposed", {"note_type": "finding", "body": "x", "evidence": []})], "after_terminal"))
         for values, code in cases:
             with self.subTest(code=code), self.assertRaisesRegex(ProtocolError, code):
                 stream = parser()
@@ -77,6 +77,66 @@ class ProtocolTests(unittest.TestCase):
         for key in ("reasoning", "scratchpad", "chain_of_thought", "analysis", "raw_prompt", "stdout", "stderr", "native_stream"):
             with self.subTest(key=key), self.assertRaisesRegex(ProtocolError, "forbidden_content"):
                 parser().feed(line(event(1, "run.completed", {"summary": "safe", key: "secret"})))
+
+    def test_forbidden_note_categories_cannot_become_durable_metadata(self):
+        for note_type in (
+            "analysis", "Reasoning", "scratch-pad", " raw prompt ",
+            "model_analysis", "private-reasoning", "raw_prompt_dump",
+            "private_thoughts", "hidden_cot", "raw_response",
+            "internal_deliberation", "late", "x",
+        ):
+            with self.subTest(note_type=note_type), self.assertRaisesRegex(
+                ProtocolError, "forbidden_content"
+            ):
+                parser().feed(line(event(
+                    1, "note.proposed",
+                    {"note_type": note_type, "body": "safe", "evidence": []},
+                )))
+        for note_type in ("finding", "conclusion", "decision.record"):
+            stream = parser()
+            stream.feed(line(event(
+                1, "note.proposed",
+                {"note_type": note_type, "body": "safe", "evidence": []},
+            )))
+
+    def test_every_payload_field_is_closed_and_scalar_typed(self):
+        cases = (
+            ("run.completed", {"summary": {"value": "not text"}}),
+            ("run.failed", {"failure_class": "protocol", "diagnostic": ["not", "text"]}),
+            ("run.needs_human", {"reason": "operator", "diagnostic": {"value": "not text"}}),
+            ("note.proposed", {"note_type": "finding", "body": "safe", "evidence": [1]}),
+            (
+                "artifact.proposed",
+                {
+                    "artifact_class": "report", "path": "report.json", "sha256": "b" * 64,
+                    "size_bytes": 1.5, "media_type": "application/json",
+                },
+            ),
+        )
+        capabilities = ("artifacts", "notes", "structured_output", "usage")
+        for event_type, payload in cases:
+            with self.subTest(event_type=event_type), self.assertRaisesRegex(
+                ProtocolError, "payload_fields"
+            ):
+                EventStreamParser(TASK, RUN, PACKET, capabilities).feed(
+                    line(event(1, event_type, payload))
+                )
+
+    def test_event_type_is_a_known_scalar_before_membership_or_payload_lookup(self):
+        for event_type in ({}, []):
+            with self.subTest(event_type=event_type), self.assertRaisesRegex(
+                ProtocolError, "unknown_event"
+            ):
+                EventStreamParser(TASK, RUN, PACKET, ("structured_output",)).feed(
+                    line(event(1, event_type, {"summary": "done"}))
+                )
+            with self.subTest(direct=event_type), self.assertRaisesRegex(
+                ProtocolError, "unknown_event"
+            ):
+                CanonicalEvent.from_payload(
+                    task_id=TASK, run_id=RUN, packet_digest=PACKET, sequence=1,
+                    event_type=event_type, payload={"summary": "done"},
+                )
 
     def test_line_stream_event_depth_and_node_limits_fail_before_retention(self):
         cases = [

@@ -368,3 +368,15 @@ When exact-predecessor fitness fails closed with `unsupported added-contract bas
 ## 2026-09-02 — Make proposal monotonicity a database capability invariant
 
 Enforce live task/run/allocation/packet/role bindings, exact replay identity, contiguous sequence, authoritative `max_events`, and terminal lockout inside the `factory_runtime` security-definer function, not only in the parser and Python broker. Check the limit before indexed terminal and last-sequence probes so the durable boundary stays logarithmic rather than rescanning the whole stream for every event.
+
+## 2026-09-02 — Reject noncanonical result text before terminal persistence
+
+Apply the WorkspaceResult NFC, C0-control and 4096-byte rules to `run.failed` diagnostic and `run.needs_human` reason in both the broker and SQL capability boundary, so a persisted terminal can always be finalized. The broader protocol-wide NFC/control gap for completed summaries, notes and non-result diagnostics remains a bounded successor item rather than silently expanding this persistence slice.
+
+## 2026-09-02 — Harden provisional execution persistence forward-only
+
+Keep slice-02 migration `014` byte-identical; express canonical proposal, attestation and result enforcement as non-destructive expand migration `015`, then retire only superseded constraints in DROP-only contract migration `016` within the same migrator transaction. Because `014` was never accepted or published, rollout quiesces old finalizers and the expand gate preserves compatible live non-final evidence but fails atomically before DDL or mutation for any legacy workspace result or unattested artifact proposal, rather than inventing trust. This is a bounded release invariant, not a universal production-upgrade claim; integrated M6 starts at `017`.
+
+## 2026-09-02 — Keep artifact verification retry-safe and read-only
+
+Require trusted artifact verification to be deterministic and idempotent by canonical request digest, with no external mutation or authority grant. This permits concurrent duplicate broker reads while replay-first persistence still commits exactly one durable attestation, proposal, and command; it does not claim exactly-once broker invocation.

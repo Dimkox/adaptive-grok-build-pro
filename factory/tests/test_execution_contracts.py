@@ -95,6 +95,9 @@ def valid_workspace_result():
         "note_manifest_digest": "7" * 64,
         "usage_evidence_digest": "8" * 64,
         "diagnostics_digest": "9" * 64,
+        "m4_status": "ready_for_human",
+        "failure_class": None,
+        "failure_reason": None,
     }
 
 
@@ -167,6 +170,7 @@ class ExecutionContractTests(unittest.TestCase):
         self.assertEqual(result.workspace_result_digest, replay.workspace_result_digest)
         self.assertNotEqual(result.workspace_result_digest, result.task_packet_digest)
         self.assertEqual(result.terminal_stage, "completed")
+        self.assertEqual(result.m4_status, "ready_for_human")
         with self.assertRaises(FrozenInstanceError):
             result.exact_head_sha = "f" * 40
 

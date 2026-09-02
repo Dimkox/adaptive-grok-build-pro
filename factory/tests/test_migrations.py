@@ -20,8 +20,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 15)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 14)
+        self.assertEqual([item.version for item in migrations], list(range(1, 17)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 16)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -79,12 +79,57 @@ class MigrationTests(unittest.TestCase):
             self.assertIn(marker, sql)
         self.assertNotIn("on delete cascade", sql)
 
-    def test_execution_migration_is_additive_and_capability_shaped(self):
-        migration = discover_migrations()[-1]
-        self.assertEqual(migration.name, "014_execution_plane.sql")
-        lowered = migration.sql.lower()
-        self.assertNotIn("drop ", lowered)
+    def test_execution_migrations_are_immutable_forward_only_and_capability_shaped(self):
+        execution, canonical, contract = discover_migrations()[-3:]
+        self.assertEqual(execution.name, "014_execution_plane.sql")
+        self.assertEqual(
+            execution.sha256,
+            "997f3010ebdfc203931b6a629ec79d515e10b6614f3c13e0763f8a16cbea5b01",
+        )
+        self.assertEqual(canonical.name, "015_execution_canonical_persistence.sql")
+        self.assertEqual(contract.name, "016_contract_execution_canonical_persistence.sql")
+        lowered = "\n".join((execution.sql, canonical.sql, contract.sql)).lower()
+        self.assertNotIn("drop table", canonical.sql.lower())
+        self.assertNotIn("delete from", canonical.sql.lower())
+        self.assertNotIn("drop constraint", canonical.sql.lower())
+        contract_statements = tuple(
+            line.strip()
+            for line in contract.sql.splitlines()
+            if line.strip() and not line.lstrip().startswith("--")
+        )
+        self.assertEqual(
+            contract_statements,
+            (
+                "ALTER TABLE factory.execution_proposals",
+                "DROP CONSTRAINT execution_proposals_body_check;",
+                "ALTER TABLE factory.workspace_results",
+                "DROP CONSTRAINT workspace_results_workspace_snapshot_digest_key;",
+            ),
+        )
         self.assertNotIn("alter table factory.tasks", lowered)
+        self.assertNotIn("data_exception", canonical.sql.lower())
+        self.assertEqual(canonical.sql.lower().count("exception when"), 1)
+        self.assertIn("pg_input_is_valid(p_request->>'task_id','uuid')", lowered)
+        self.assertIn("pg_input_is_valid(p_request->>'fence','bigint')", lowered)
+        executable = [
+            line.strip()
+            for line in canonical.sql.splitlines()
+            if line.strip() and not line.lstrip().startswith("--")
+        ]
+        self.assertEqual(
+            executable[0],
+            "LOCK TABLE factory.execution_proposals, factory.workspace_results IN ACCESS EXCLUSIVE MODE;",
+        )
+        self.assertIn("migration 015 refuses legacy finalized workspace rows", lowered)
+        self.assertIn("migration 015 refuses unattested legacy artifact proposals", lowered)
+        self.assertNotIn(
+            "drop constraint workspace_results_run_manifest_digest_fkey",
+            lowered,
+        )
+        self.assertNotIn(
+            "drop constraint workspace_results_run_id_terminal_proposal_digest_fkey",
+            lowered,
+        )
         for marker in (
             "execution_packets",
             "execution_manifests",
