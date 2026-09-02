@@ -1,8 +1,9 @@
 from datetime import datetime, timezone
 import unittest
 
-from adaptive_factory.execution_contracts import ExecutionContractError, WorkspaceResultV1
-from adaptive_factory.models import Actor, ExecutionStage, LeaseGrant, RunRole
+from adaptive_factory.adapters import AdapterConformance, AdapterRegistry, TrustedExecutionProfile
+from adaptive_factory.execution_contracts import ExecutionContractError, ExecutionSelectionV1, WorkspaceResultV1
+from adaptive_factory.models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskStatus
 from adaptive_factory.service import AuthorizationError, FactoryService
 from adaptive_factory.brokers import ProposalContext
 from adaptive_factory.workspace import WorkspaceSnapshotRequest, WorkspaceSnapshotUnavailable, WorkspaceSnapshotV1
@@ -41,14 +42,35 @@ def selection():
     }
 
 
+def trusted_registry(value=None, *, roles=("reader", "writer")):
+    selected = ExecutionSelectionV1.from_dict(value or selection())
+    provider = selected.provider
+    conformance = AdapterConformance(
+        provider_id=provider.provider_id,
+        native_version=provider.native_version,
+        distribution_digest_hint=provider.native_digest,
+        capabilities=provider.capabilities,
+        missing_capabilities=(),
+        fixture_conformant=True,
+        execution_eligible=True,
+        adapter_id=provider.adapter_id,
+        adapter_version=provider.adapter_version,
+        adapter_digest=provider.adapter_digest,
+        native_digest=provider.native_digest,
+    )
+    return AdapterRegistry((TrustedExecutionProfile(selected, conformance, roles),))
+
+
 class FakeExecutionStore:
-    def __init__(self):
+    def __init__(self, *, grant=GRANT, start_error=None):
         self.calls = []
         self.finalized = {}
+        self.grant = grant
+        self.start_error = start_error
 
     def claim(self, request, actor, now, **kwargs):
         self.calls.append(("claim", request, actor, kwargs))
-        return GRANT
+        return self.grant
 
     def get_task(self, task_id):
         from adaptive_factory.models import TaskProjection, TaskStatus
@@ -74,8 +96,14 @@ class FakeExecutionStore:
 
     def start_execution(self, grant, packet, manifest, actor, **kwargs):
         self.calls.append(("start", grant, packet, manifest, actor, kwargs))
+        if self.start_error is not None:
+            raise self.start_error
         from adaptive_factory.models import ExecutionGrant
         return ExecutionGrant(grant, packet.packet_digest, manifest.manifest_digest, manifest.workspace_handle, manifest.provider_id, ExecutionStage.PREPARED)
+
+    def release(self, grant, outcome, actor, now, **kwargs):
+        self.calls.append(("release", grant, outcome, actor, now, kwargs))
+        return TaskStatus.RETRY if outcome is FailureClass.DATABASE_UNAVAILABLE else TaskStatus.NEEDS_HUMAN
 
     def advance_execution(self, grant, packet_digest, stage, actor, **kwargs):
         self.calls.append(("advance", grant, packet_digest, stage, actor, kwargs))
@@ -143,9 +171,23 @@ class TrustedTestSnapshotBroker:
 
 
 class ExecutionServiceTests(unittest.TestCase):
+    def test_self_asserted_selection_is_rejected_without_trusted_registry(self):
+        store = FakeExecutionStore()
+        with self.assertRaisesRegex(ExecutionContractError, "provider_ineligible"):
+            FactoryService(store).claim_execution(
+                owner=WORKER.actor_id,
+                role=RunRole.WRITER,
+                repositories=("owner/repository",),
+                lease_seconds=60,
+                selection=selection(),
+                actor=WORKER,
+                now=NOW,
+            )
+        self.assertEqual(store.calls, [])
+
     def test_explicit_execution_claim_preserves_legacy_digest_and_persists_manifest(self):
         store = FakeExecutionStore()
-        result = FactoryService(store).claim_execution(
+        result = FactoryService(store, execution_registry=trusted_registry()).claim_execution(
             owner=WORKER.actor_id,
             role=RunRole.WRITER,
             repositories=("owner/repository",),
@@ -161,6 +203,55 @@ class ExecutionServiceTests(unittest.TestCase):
         self.assertEqual(result.provider_id, "codex")
         self.assertEqual(result.stage, ExecutionStage.PREPARED)
         self.assertEqual(tuple(item[0] for item in store.calls), ("claim", "material", "start"))
+
+    def test_reader_selection_cannot_request_write_capabilities(self):
+        store = FakeExecutionStore()
+        with self.assertRaisesRegex(ExecutionContractError, "role_capability_forbidden"):
+            FactoryService(store, execution_registry=trusted_registry()).claim_execution(
+                owner=WORKER.actor_id,
+                role=RunRole.READER,
+                repositories=("owner/repository",),
+                lease_seconds=60,
+                selection=selection(),
+                actor=WORKER,
+                now=NOW,
+            )
+        self.assertEqual(store.calls, [])
+
+    def test_post_claim_start_failure_releases_capacity_with_typed_outcome(self):
+        store = FakeExecutionStore(start_error=RuntimeError("packet persistence unavailable"))
+        with self.assertRaisesRegex(RuntimeError, "packet persistence unavailable"):
+            FactoryService(store, execution_registry=trusted_registry()).claim_execution(
+                owner=WORKER.actor_id,
+                role=RunRole.WRITER,
+                repositories=("owner/repository",),
+                lease_seconds=60,
+                selection=selection(),
+                actor=WORKER,
+                now=NOW,
+                idempotency_key="b" * 64,
+                correlation_id="claim-cleanup",
+            )
+        self.assertEqual(tuple(item[0] for item in store.calls), ("claim", "material", "start", "release"))
+        self.assertIs(store.calls[-1][2], FailureClass.DATABASE_UNAVAILABLE)
+
+    def test_claimed_role_mismatch_fails_closed_and_releases_capacity(self):
+        forged = LeaseGrant(
+            GRANT.task_id, GRANT.run_id, GRANT.owner, RunRole.READER,
+            GRANT.fence, GRANT.expires_at, GRANT.packet_digest,
+        )
+        store = FakeExecutionStore(grant=forged)
+        with self.assertRaisesRegex(ExecutionContractError, "grant_identity_mismatch"):
+            FactoryService(store, execution_registry=trusted_registry()).claim_execution(
+                owner=WORKER.actor_id,
+                role=RunRole.WRITER,
+                repositories=("owner/repository",),
+                lease_seconds=60,
+                selection=selection(),
+                actor=WORKER,
+                now=NOW,
+            )
+        self.assertEqual(tuple(item[0] for item in store.calls), ("claim", "release"))
 
     def test_invalid_or_ineligible_selection_fails_before_m4_claim(self):
         store = FakeExecutionStore()

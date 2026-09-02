@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .base import AdapterError
+from .base import AdapterConformance, AdapterError, AdapterRegistry, TrustedExecutionProfile
 from .codex import CodexAdapter
 from .grok import GrokAdapter
 
@@ -18,4 +18,12 @@ def select_adapter(provider_id: str, *, native_version: str, require_execution_e
     return adapter
 
 
-__all__ = ["AdapterError", "CodexAdapter", "GrokAdapter", "select_adapter"]
+__all__ = [
+    "AdapterConformance",
+    "AdapterError",
+    "AdapterRegistry",
+    "CodexAdapter",
+    "GrokAdapter",
+    "TrustedExecutionProfile",
+    "select_adapter",
+]
