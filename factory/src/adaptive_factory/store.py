@@ -894,7 +894,7 @@ class PostgresFactoryStore:
     def proposal_context(self, grant: LeaseGrant, packet_digest: str) -> ProposalContext:
         with self._transaction() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
-            self._lock_grant(cursor, grant)
+            locked_grant = self._lock_grant(cursor, grant)
             cursor.execute(
                 "SELECT factory.execution_proposal_context(%s,%s,%s,%s,%s,%s)",
                 (
@@ -913,7 +913,7 @@ class PostgresFactoryStore:
                 grant.owner,
                 grant.fence,
                 packet_digest,
-                grant.role.value,
+                locked_grant[1],
                 tuple(body["capability_policy"]["artifact_classes"]),
                 min(65_536, limits["max_output_bytes"]),
                 limits["max_output_bytes"],
@@ -1260,13 +1260,22 @@ class PostgresFactoryStore:
             FROM factory.runs r JOIN factory.tasks t ON t.task_id=r.task_id
             JOIN factory.capacity_allocations a ON a.run_id=r.run_id
             JOIN factory.attempts at ON at.run_id=r.run_id
-            WHERE r.run_id=%s AND r.task_id=%s AND r.owner_id=%s AND r.fence=%s AND r.packet_digest=%s
+            WHERE r.run_id=%s AND r.task_id=%s AND r.owner_id=%s AND r.role=%s
+            AND r.fence=%s AND r.packet_digest=%s
             AND r.state='leased' AND r.released_at IS NULL
             AND a.released_at IS NULL
             AND (%s OR r.lease_expires_at>clock_timestamp())
             AND t.current_run_id=r.run_id AND t.current_fence=r.fence AND t.state='leased' AND t.deadline_at>clock_timestamp()
             FOR UPDATE OF r,t""",
-            (grant.run_id, grant.task_id, grant.owner, grant.fence, grant.packet_digest, allow_expired),
+            (
+                grant.run_id,
+                grant.task_id,
+                grant.owner,
+                grant.role.value,
+                grant.fence,
+                grant.packet_digest,
+                allow_expired,
+            ),
         )
         row = cursor.fetchone()
         if not row:
