@@ -6,6 +6,7 @@ import re
 from typing import Any, Mapping
 
 from .contracts import canonical_digest
+from .models import FailureClass
 from .protocol import CanonicalEvent
 
 
@@ -97,6 +98,9 @@ class TerminalProposal:
     sequence: int
     terminal_type: str
     summary: str
+    failure_class: str | None
+    reason: str | None
+    diagnostic: str | None
     idempotency_key: str
 
 
@@ -279,20 +283,43 @@ class ProposalBroker:
             if set(event.payload) != {"summary"}:
                 raise BrokerError("terminal_fields")
             summary = event.payload["summary"]
+            failure_class = reason = diagnostic = None
         elif event.event_type == "run.failed":
             if set(event.payload) != {"failure_class", "diagnostic"}:
                 raise BrokerError("terminal_fields")
-            summary = f"{event.payload['failure_class']}: {event.payload['diagnostic']}"
+            failure_class = event.payload["failure_class"]
+            diagnostic = event.payload["diagnostic"]
+            if not isinstance(failure_class, str) or not isinstance(diagnostic, str):
+                raise BrokerError("terminal_fields")
+            try:
+                failure_class = FailureClass(failure_class).value
+            except ValueError as exc:
+                raise BrokerError("failure_class") from exc
+            reason = None
+            summary = f"{failure_class}: {diagnostic}"
         else:
             if set(event.payload) != {"reason", "diagnostic"}:
                 raise BrokerError("terminal_fields")
-            summary = f"{event.payload['reason']}: {event.payload['diagnostic']}"
+            reason = event.payload["reason"]
+            diagnostic = event.payload["diagnostic"]
+            if not isinstance(reason, str) or not isinstance(diagnostic, str):
+                raise BrokerError("terminal_fields")
+            failure_class = None
+            summary = f"{reason}: {diagnostic}"
         if not isinstance(summary, str):
             raise BrokerError("terminal_fields")
         summary = _redact(summary)
         if len(summary.encode("utf-8")) > context.max_note_bytes:
             raise BrokerError("terminal_too_large")
-        values = {"terminal_type": event.event_type, "summary": summary}
+        reason = _redact(reason) if reason is not None else None
+        diagnostic = _redact(diagnostic) if diagnostic is not None else None
+        values = {
+            "terminal_type": event.event_type,
+            "summary": summary,
+            "failure_class": failure_class,
+            "reason": reason,
+            "diagnostic": diagnostic,
+        }
         proposal = TerminalProposal(
             context.task_id,
             context.run_id,
@@ -301,6 +328,9 @@ class ProposalBroker:
             event.sequence,
             event.event_type,
             summary,
+            failure_class,
+            reason,
+            diagnostic,
             _key(event, context, values),
         )
         self._terminal.add(identity)

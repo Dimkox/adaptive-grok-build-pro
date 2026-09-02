@@ -339,3 +339,11 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-02 — Set an execution limit in the non-authoritative test input
 
 **Root cause:** The proposal-limit test changed the selection fixture even though `TaskPacketV1.limits` is derived from the accepted M4 intake. Authority-bound tests must mutate the authoritative intake fact and assert the derived packet, not a selection field that execution intentionally ignores.
+
+## 2026-09-02 — Invoked a shell helper with Python
+
+**Root cause:** The controller ran the shell script `sdd-workspace` through `python3` without first checking its shebang or file type, producing a `SyntaxError`; retrying the same provided script through `bash` worked.
+
+## 2026-09-02 — Guessed a root test module name
+
+**Root cause:** The first focused root command named `tests.test_architecture` without enumerating the repository's actual test modules, producing an import error; listing `tests/` identified `test_architecture_fitness` and `test_architecture_model`, and the corrected 148-test suite passed.

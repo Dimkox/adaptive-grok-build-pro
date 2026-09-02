@@ -881,6 +881,28 @@ class PostgresFactoryStore:
                 raise StoreError("stored workspace manifest mismatch")
             result = WorkspaceResultV1.from_dict(value["result"])
             snapshot = WorkspaceSnapshotV1.from_dict(value["snapshot"])
+            row = value["row"]
+            expected_row = {
+                "workspace_result_digest": result.workspace_result_digest,
+                "task_id": result.task_id,
+                "run_id": result.run_id,
+                "task_packet_digest": result.task_packet_digest,
+                "run_manifest_digest": result.run_manifest_digest,
+                "exact_head_sha": result.exact_head_sha,
+                "workspace_snapshot_digest": result.workspace_snapshot_digest,
+                "terminal_stage": result.terminal_stage,
+                "terminal_proposal_digest": result.terminal_proposal_digest,
+                "terminal_proposal_kind": "terminal",
+                "artifact_manifest_digest": result.artifact_manifest_digest,
+                "note_manifest_digest": result.note_manifest_digest,
+                "usage_evidence_digest": result.usage_evidence_digest,
+                "diagnostics_digest": result.diagnostics_digest,
+                "m4_status": result.m4_status,
+                "failure_class": result.failure_class,
+                "failure_reason": result.failure_reason,
+            }
+            if row != expected_row:
+                raise StoreError("stored workspace row mismatch")
             if (
                 result.task_id != packet.task_id
                 or result.run_id != packet.run_id
@@ -935,7 +957,6 @@ class PostgresFactoryStore:
                     correlation_id, {"result": result.to_dict()},
                 )
                 return result
-            self._lock_grant(cursor, grant)
             cursor.execute(
                 "SELECT factory.execution_finalize_context(%s,%s,%s,%s,%s,%s)",
                 (
@@ -973,6 +994,9 @@ class PostgresFactoryStore:
                     "diagnostics_digest": workspace_evidence_digest(
                         "diagnostics", context["diagnostic_digests"]
                     ),
+                    "m4_status": context["m4_status"],
+                    "failure_class": context["failure_class"],
+                    "failure_reason": context["failure_reason"],
                 }
             )
             cursor.execute(
@@ -986,6 +1010,35 @@ class PostgresFactoryStore:
             )
             if not cursor.fetchone()[0]:
                 raise FenceError("execution finalization rejected")
+            status = TaskStatus(result.m4_status)
+            release_key = canonical_digest(
+                {
+                    "action": "execution_finalize",
+                    "fence": grant.fence,
+                    "run_id": grant.run_id,
+                    "target": status.value,
+                }
+            )
+            self._event(
+                cursor,
+                grant.task_id,
+                actor,
+                "released",
+                release_key,
+                {"target": status.value, "workspace_result_digest": result.workspace_result_digest},
+                mandatory_cleanup=True,
+            )
+            self._audit(
+                cursor,
+                grant.task_id,
+                actor,
+                "execution_finalize",
+                f"run:{grant.run_id}",
+                status.value,
+                correlation_id or release_key,
+                {"fence": grant.fence, "workspace_result_digest": result.workspace_result_digest},
+                grant.run_id,
+            )
             self._record_command(
                 cursor, idempotency_key, actor, "execution_finalize", request_digest,
                 correlation_id, {"result": result.to_dict()},
@@ -1012,7 +1065,6 @@ class PostgresFactoryStore:
     def workspace_snapshot_request(self, grant: LeaseGrant, packet_digest: str) -> WorkspaceSnapshotRequest:
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
-            self._lock_grant(cursor, grant)
             cursor.execute(
                 "SELECT factory.execution_finalize_context(%s,%s,%s,%s,%s,%s)",
                 (
@@ -1055,6 +1107,8 @@ class PostgresFactoryStore:
             if bundle is None:
                 raise KeyError(workspace_result_digest)
             result, snapshot, packet, manifest = bundle
+            if result.workspace_result_digest != workspace_result_digest:
+                raise StoreError("requested workspace result digest mismatch")
             return {"result": result, "snapshot": snapshot, "packet": packet, "manifest": manifest}
 
     @staticmethod
@@ -1246,6 +1300,12 @@ class PostgresFactoryStore:
             replay, prior, request_digest = self._command_replay(cursor, idempotency_key, actor, "release", command)
             if replay:
                 return TaskStatus(prior["status"])
+            cursor.execute(
+                "SELECT factory.execution_has_packet(%s)",
+                (grant.run_id,),
+            )
+            if cursor.fetchone()[0]:
+                raise FenceError("M5 execution outcome is derived only by finalization")
             result = self._release_locked(cursor, grant, outcome, actor, correlation_id=correlation_id)
             self._record_command(cursor, idempotency_key, actor, "release", request_digest, correlation_id, {"status": result.value})
             return result
