@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-This is the approved implementation design for route `37b05f579320`, branch `milestone/m5-isolated-execution-provisional-m4`, and change [`20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f`](../../../engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md). It specializes the canonical [model-agnostic factory design](2026-08-26-model-agnostic-autonomous-factory-design.md) for M5 source work on exact current M4 review base `460a8a01a6394cac710b4e3f9eea3d94d4beef89`; the former provisional anchor `94fc5ad878e6b15df6418303caada49a3b93bf4c` is lineage only after the conflict-free restack.
+This is the approved implementation design for route `37b05f579320` and change [`20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f`](../../../engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md). It specializes the canonical [model-agnostic factory design](2026-08-26-model-agnostic-autonomous-factory-design.md) for four bounded M5 successor slices rooted at exact final local M4 `571cad7877431ac5ab5779b53fe9f7effd6859ce`; slice 01 product is checkpoint `9ba284eeeb21b36e8b484c9f25a5f7c8ea8077c1`, its truth-bound head `34dd6184fc506bb927699b382f13546e59503974` is the exact predecessor for slice 02, and `94fc5ad`, `460a8a0` and aggregate `141e51e7` are historical lineage only.
 
 The calendar target is `2026-09-08 00:00 UTC+3`. M5 and M6 may develop in parallel on isolated branches, but external integration is dependency ordered: accepted M4, then M5, then M6. This document grants no push, PR, merge, deployment, systemd activation, live provider call, credential access, or Trust CI/human-key operation.
 
@@ -84,7 +84,7 @@ Terminal proposals are recommendations, never state-selection authority. The con
 
 ## Persistence, API and lifecycle
 
-Additive migration `013_execution_plane.sql` creates immutable packet, manifest, stage, canonical event, note, artifact and terminal-proposal tables plus fixed execution metrics. Existing tables/columns/constraints/functions remain unchanged. Runtime gets explicit EXECUTE/INSERT-only capabilities through fixed-search-path functions; no generic DML or policy mutation.
+Successor slice 02 adds contiguous migration `014_execution_plane.sql` after M4 migration `013`; it creates immutable packet, manifest, stage, canonical event, note, artifact and terminal-proposal tables plus fixed execution metrics. Existing tables/columns/constraints/functions remain unchanged. Runtime gets explicit EXECUTE/INSERT-only capabilities through fixed-search-path functions; no generic DML or policy mutation.
 
 New endpoints are `/v1/execution/claims`, `/v1/execution/stages`, `/v1/execution/notes`, `/v1/execution/artifacts`, `/v1/execution/usage`, and `/v1/execution/terminal`. All use the current actor authentication, body cap, idempotency/correlation boundary, and M4 live-fence checks. `/v1/claims` and its OpenAPI response remain byte-for-byte semantically legacy.
 

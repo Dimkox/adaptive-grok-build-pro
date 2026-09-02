@@ -70,8 +70,8 @@ def _shipped_git_command(
     )
 
 
-def _head_release_sources(root: Path) -> dict[str, tuple[bytes, int]]:
-    head = _shipped_git_command(root, ['rev-parse', '--verify', 'HEAD^{commit}']).stdout.strip()
+def _release_sources(root: Path, commit: str) -> dict[str, tuple[bytes, int]]:
+    head = _shipped_git_command(root, ['rev-parse', '--verify', f'{commit}^{{commit}}']).stdout.strip()
     tree_oid = _shipped_git_command(
         root,
         ['rev-parse', '--verify', f'{head.decode("ascii")}^{{tree}}'],
@@ -372,17 +372,17 @@ module.main()
         subprocess.run(['git', 'reset', '-q', '--hard', 'HEAD'], cwd=root, check=True)
         return raw, replacement
 
-    def test_head_release_source_helper_ignores_replace_refs(self) -> None:
+    def test_release_source_helper_ignores_replace_refs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'project'
-            self._replacement_release_repository(root)
+            raw, _replacement = self._replacement_release_repository(root)
 
             self.assertEqual((root / 'README.md').read_bytes(), b'replacement-two\n')
             self.assertEqual(
                 subprocess.check_output(['git', 'status', '--porcelain=v1'], cwd=root),
                 b'',
             )
-            self.assertEqual(_head_release_sources(root)['README.md'][0], b'raw-one\n')
+            self.assertEqual(_release_sources(root, raw)['README.md'][0], b'raw-one\n')
 
     def test_release_cli_never_packages_replace_ref_content(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1236,10 +1236,11 @@ module.main()
             self.assertNotIn('build/adaptive-trust-ci-pin.env', rels)
             self.assertFalse(any('20260817-' in rel for rel in rels))
 
-    def test_shipped_zip_exactly_matches_filtered_tracked_head(self) -> None:
+    def test_shipped_m4_zip_exactly_matches_its_immutable_source_commit(self) -> None:
         version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
         self.assertEqual(version, '2.0.13')
-        sources = _head_release_sources(ROOT)
+        packaged_source = '571cad7877431ac5ab5779b53fe9f7effd6859ce'
+        sources = _release_sources(ROOT, packaged_source)
         rels = list(sources)
         self.assertFalse(any(rel.startswith('.github/workflows/') for rel in rels))
         self.assertNotIn('.github/dependabot.yml', rels)
@@ -1250,6 +1251,7 @@ module.main()
             self.assertTrue(zip_path.is_file())
             self.assertTrue(sidecar_path.is_file())
             digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+            self.assertEqual(digest, '5b29b7e8e439d1409c3f72757199d20de8f6f4c62bd1df972a37d13f615d9d0e')
             self.assertEqual(sidecar_path.read_text(encoding='utf-8'), f'{digest}  {zip_path.name}\n')
             with zipfile.ZipFile(zip_path) as archive:
                 names = archive.namelist()
@@ -1271,7 +1273,7 @@ module.main()
                 for member, (content, mode) in source_members.items():
                     self.assertTrue(
                         archive.read(member) == content,
-                        f'archive member differs from exact HEAD source: {member.removeprefix(prefix)}',
+                        f'archive member differs from exact M4 source: {member.removeprefix(prefix)}',
                     )
                     archive_mode = archive.getinfo(member).external_attr >> 16
                     self.assertEqual(bool(archive_mode & 0o111), bool(mode & 0o111))
