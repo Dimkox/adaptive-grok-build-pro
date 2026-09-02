@@ -6,6 +6,7 @@ import hashlib
 from typing import Any, ClassVar, Mapping
 
 from .contracts import ContractError, HEX40, HEX64, _closed, _hex, _id, _time, canonical_json
+from .m7_autonomy_wire import M7AutonomyWireHandoffV1
 
 
 MAX_COHORT_TASKS = 10_000
@@ -18,10 +19,11 @@ RECOMMENDATION_REASONS = frozenset(
         "qualified",
         "already_at_ceiling",
         "cohort_replay",
-        "factual_m7_missing",
+        "m7_bundle_blocked",
+        "m7_acceptance_missing",
+        "m7_currentness_missing",
         "tuple_expired",
         "insufficient_acceptances",
-        "ineligible_task",
         "human_acceptance_missing",
         "audit_rate_insufficient",
         "audit_day_gap",
@@ -121,19 +123,18 @@ class AutonomyTupleV1(_AutonomyValue):
     schema_version: int
     repository_id: str
     task_class: str
-    m4_product_sha: str
-    m5_product_sha: str
-    m6_product_sha: str
-    m7_product_sha: str
-    m7_exact_head_sha: str
+    m7_change_class: str
+    m7_cohort_key_digest: str
+    provider_mapping_digest: str
     agent_digest: str
+    validator_digest: str
     provider_digest: str
     model_digest: str
     prompt_digest: str
     policy_digest: str
-    runner_image_digest: str
+    runner_digest: str
     holdout_digest: str
-    authority_observation_digest: str
+    authority_digest: str
     authority_ceiling: str
     expires_at: datetime
 
@@ -144,23 +145,19 @@ class AutonomyTupleV1(_AutonomyValue):
         _identifier(self.repository_id, "repository_id")
         if self.task_class != "low_risk_text_only":
             raise ContractError("unsupported_task_class")
+        _identifier(self.m7_change_class, "m7_change_class")
         for name in (
-            "m4_product_sha",
-            "m5_product_sha",
-            "m6_product_sha",
-            "m7_product_sha",
-            "m7_exact_head_sha",
-        ):
-            _hex(getattr(self, name), name, HEX40)
-        for name in (
+            "m7_cohort_key_digest",
+            "provider_mapping_digest",
             "agent_digest",
+            "validator_digest",
             "provider_digest",
             "model_digest",
             "prompt_digest",
             "policy_digest",
-            "runner_image_digest",
+            "runner_digest",
             "holdout_digest",
-            "authority_observation_digest",
+            "authority_digest",
         ):
             _hex(getattr(self, name), name, HEX64)
         if self.authority_ceiling != "L2":
@@ -180,23 +177,18 @@ class AutonomyTupleV1(_AutonomyValue):
             _version(data["schema_version"], "autonomy_tuple"),
             _identifier(data["repository_id"], "repository_id"),
             data["task_class"],
-            _hex(data["m4_product_sha"], "m4_product_sha", HEX40),
-            _hex(data["m5_product_sha"], "m5_product_sha", HEX40),
-            _hex(data["m6_product_sha"], "m6_product_sha", HEX40),
-            _hex(data["m7_product_sha"], "m7_product_sha", HEX40),
-            _hex(data["m7_exact_head_sha"], "m7_exact_head_sha", HEX40),
+            _identifier(data["m7_change_class"], "m7_change_class"),
+            _hex(data["m7_cohort_key_digest"], "m7_cohort_key_digest", HEX64),
+            _hex(data["provider_mapping_digest"], "provider_mapping_digest", HEX64),
             _hex(data["agent_digest"], "agent_digest", HEX64),
+            _hex(data["validator_digest"], "validator_digest", HEX64),
             _hex(data["provider_digest"], "provider_digest", HEX64),
             _hex(data["model_digest"], "model_digest", HEX64),
             _hex(data["prompt_digest"], "prompt_digest", HEX64),
             _hex(data["policy_digest"], "policy_digest", HEX64),
-            _hex(data["runner_image_digest"], "runner_image_digest", HEX64),
+            _hex(data["runner_digest"], "runner_digest", HEX64),
             _hex(data["holdout_digest"], "holdout_digest", HEX64),
-            _hex(
-                data["authority_observation_digest"],
-                "authority_observation_digest",
-                HEX64,
-            ),
+            _hex(data["authority_digest"], "authority_digest", HEX64),
             data["authority_ceiling"],
             _timestamp(data["expires_at"], "expires_at"),
         )
@@ -206,19 +198,18 @@ class AutonomyTupleV1(_AutonomyValue):
             "schema_version": self.schema_version,
             "repository_id": self.repository_id,
             "task_class": self.task_class,
-            "m4_product_sha": self.m4_product_sha,
-            "m5_product_sha": self.m5_product_sha,
-            "m6_product_sha": self.m6_product_sha,
-            "m7_product_sha": self.m7_product_sha,
-            "m7_exact_head_sha": self.m7_exact_head_sha,
+            "m7_change_class": self.m7_change_class,
+            "m7_cohort_key_digest": self.m7_cohort_key_digest,
+            "provider_mapping_digest": self.provider_mapping_digest,
             "agent_digest": self.agent_digest,
+            "validator_digest": self.validator_digest,
             "provider_digest": self.provider_digest,
             "model_digest": self.model_digest,
             "prompt_digest": self.prompt_digest,
             "policy_digest": self.policy_digest,
-            "runner_image_digest": self.runner_image_digest,
+            "runner_digest": self.runner_digest,
             "holdout_digest": self.holdout_digest,
-            "authority_observation_digest": self.authority_observation_digest,
+            "authority_digest": self.authority_digest,
             "authority_ceiling": self.authority_ceiling,
             "expires_at": _timestamp_dict(self.expires_at),
         }
@@ -232,8 +223,8 @@ class CohortTaskEvidenceV1(_AutonomyValue):
     run_id: str
     exact_head_sha: str
     observed_at: datetime
-    eligible: bool
-    human_accepted: bool
+    m7_bundle_digest: str
+    m7_outcome_digest: str
     audit_sampled: bool
     audit_accepted: bool
     human_acceptance_receipt_digest: str
@@ -256,7 +247,9 @@ class CohortTaskEvidenceV1(_AutonomyValue):
         _hex(self.exact_head_sha, "exact_head_sha", HEX40)
         if not isinstance(self.observed_at, datetime) or self.observed_at.tzinfo is None:
             raise ContractError("invalid_time", "observed_at")
-        for name in ("eligible", "human_accepted", "audit_sampled", "audit_accepted"):
+        for name in ("m7_bundle_digest", "m7_outcome_digest"):
+            _hex(getattr(self, name), name, HEX64)
+        for name in ("audit_sampled", "audit_accepted"):
             _boolean(getattr(self, name), name)
         if self.audit_accepted and not self.audit_sampled:
             raise ContractError("invalid_audit_state")
@@ -288,8 +281,8 @@ class CohortTaskEvidenceV1(_AutonomyValue):
             _identifier(data["run_id"], "run_id"),
             _hex(data["exact_head_sha"], "exact_head_sha", HEX40),
             _timestamp(data["observed_at"], "observed_at"),
-            _boolean(data["eligible"], "eligible"),
-            _boolean(data["human_accepted"], "human_accepted"),
+            _hex(data["m7_bundle_digest"], "m7_bundle_digest", HEX64),
+            _hex(data["m7_outcome_digest"], "m7_outcome_digest", HEX64),
             _boolean(data["audit_sampled"], "audit_sampled"),
             _boolean(data["audit_accepted"], "audit_accepted"),
             _hex(
@@ -320,8 +313,8 @@ class CohortTaskEvidenceV1(_AutonomyValue):
             "run_id": self.run_id,
             "exact_head_sha": self.exact_head_sha,
             "observed_at": _timestamp_dict(self.observed_at),
-            "eligible": self.eligible,
-            "human_accepted": self.human_accepted,
+            "m7_bundle_digest": self.m7_bundle_digest,
+            "m7_outcome_digest": self.m7_outcome_digest,
             "audit_sampled": self.audit_sampled,
             "audit_accepted": self.audit_accepted,
             "human_acceptance_receipt_digest": self.human_acceptance_receipt_digest,
@@ -341,8 +334,7 @@ class CohortEvidenceV1(_AutonomyValue):
     schema_version: int
     autonomy_tuple: AutonomyTupleV1
     tasks: tuple[CohortTaskEvidenceV1, ...]
-    factual_m7_restack_observed: bool
-    factual_m7_receipt_digest: str
+    m7_handoff: M7AutonomyWireHandoffV1
     window_started_at: datetime
     window_ended_at: datetime
     minimum_human_acceptances: int
@@ -374,8 +366,56 @@ class CohortEvidenceV1(_AutonomyValue):
                 raise ContractError("duplicate_identity", name)
         if any(task.tuple_digest != self.autonomy_tuple.digest for task in self.tasks):
             raise ContractError("tuple_mismatch")
-        _boolean(self.factual_m7_restack_observed, "factual_m7_restack_observed")
-        _hex(self.factual_m7_receipt_digest, "factual_m7_receipt_digest", HEX64)
+        if not isinstance(self.m7_handoff, M7AutonomyWireHandoffV1):
+            raise ContractError("invalid_contract", "m7_handoff")
+        cohort = self.m7_handoff.cohort
+        provider_mapping = self.m7_handoff.provider_mapping
+        tuple_bindings = {
+            "repository_id": cohort.repository_id,
+            "m7_change_class": cohort.change_class,
+            "m7_cohort_key_digest": cohort.key_digest,
+            "provider_mapping_digest": provider_mapping.digest,
+            "agent_digest": cohort.agent_digest,
+            "validator_digest": cohort.validator_digest,
+            "provider_digest": provider_mapping.provider_digest,
+            "model_digest": cohort.model_digest,
+            "prompt_digest": cohort.prompt_digest,
+            "policy_digest": cohort.policy_digest,
+            "runner_digest": cohort.runner_digest,
+            "holdout_digest": cohort.holdout_digest,
+            "authority_digest": cohort.authority_digest,
+        }
+        for name, expected in tuple_bindings.items():
+            if getattr(self.autonomy_tuple, name) != expected:
+                raise ContractError("tuple_mismatch", name)
+        if len(self.tasks) != len(cohort.outcomes):
+            raise ContractError("m7_outcome_mismatch", "task_count")
+        if len({task.m7_bundle_digest for task in self.tasks}) != len(self.tasks):
+            raise ContractError("duplicate_identity", "m7_bundle_digest")
+        if len({task.m7_outcome_digest for task in self.tasks}) != len(self.tasks):
+            raise ContractError("duplicate_identity", "m7_outcome_digest")
+        bundles_by_digest = {
+            item.bundle_digest: item for item in self.m7_handoff.bundles
+        }
+        outcomes_by_digest = {
+            item.digest: item for item in self.m7_handoff.cohort.outcomes
+        }
+        for task in self.tasks:
+            try:
+                bundle = bundles_by_digest[task.m7_bundle_digest]
+                outcome = outcomes_by_digest[task.m7_outcome_digest]
+            except KeyError as exc:
+                raise ContractError("m7_outcome_mismatch", "task_link") from exc
+            if outcome.bundle_digest != bundle.bundle_digest:
+                raise ContractError("m7_outcome_mismatch", "bundle_digest")
+            if (task.task_id, task.run_id, task.exact_head_sha) != (
+                bundle.task_id,
+                bundle.run_id,
+                bundle.exact_head_sha,
+            ):
+                raise ContractError("m7_outcome_mismatch", "task_identity")
+            if task.human_acceptance_receipt_digest != outcome.human_evidence_digest:
+                raise ContractError("m7_outcome_mismatch", "human_receipt")
         if (
             not isinstance(self.window_started_at, datetime)
             or self.window_started_at.tzinfo is None
@@ -438,8 +478,7 @@ class CohortEvidenceV1(_AutonomyValue):
             _version(data["schema_version"], "cohort_evidence"),
             AutonomyTupleV1.from_dict(data["autonomy_tuple"]),
             tuple(CohortTaskEvidenceV1.from_dict(task) for task in tasks),
-            _boolean(data["factual_m7_restack_observed"], "factual_m7_restack_observed"),
-            _hex(data["factual_m7_receipt_digest"], "factual_m7_receipt_digest", HEX64),
+            M7AutonomyWireHandoffV1.from_dict(data["m7_handoff"]),
             _timestamp(data["window_started_at"], "window_started_at"),
             _timestamp(data["window_ended_at"], "window_ended_at"),
             _integer(data["minimum_human_acceptances"], "minimum_human_acceptances", 30, MAX_COHORT_TASKS),
@@ -473,8 +512,7 @@ class CohortEvidenceV1(_AutonomyValue):
             "schema_version": self.schema_version,
             "autonomy_tuple": self.autonomy_tuple.to_dict(),
             "tasks": [task.to_dict() for task in self.tasks],
-            "factual_m7_restack_observed": self.factual_m7_restack_observed,
-            "factual_m7_receipt_digest": self.factual_m7_receipt_digest,
+            "m7_handoff": self.m7_handoff.to_dict(),
             "window_started_at": _timestamp_dict(self.window_started_at),
             "window_ended_at": _timestamp_dict(self.window_ended_at),
             "minimum_human_acceptances": self.minimum_human_acceptances,
@@ -695,12 +733,18 @@ def _cohort_profile(
     halted: bool,
 ) -> AutonomyProfileV1:
     tasks = cohort.tasks
+    outcomes_by_digest = {
+        outcome.digest: outcome for outcome in cohort.m7_handoff.cohort.outcomes
+    }
+    outcomes = tuple(outcomes_by_digest[task.m7_outcome_digest] for task in tasks)
     return AutonomyProfileV1(
         schema_version=1,
         tuple_digest=cohort.autonomy_tuple.digest,
         cohort_digest=cohort.digest,
         current_level=current_level,
-        accepted_task_count=sum(task.eligible and task.human_accepted for task in tasks),
+        accepted_task_count=sum(
+            outcome.human_decision == "merged_accepted" for outcome in outcomes
+        ),
         audit_sample_count=sum(task.audit_sampled for task in tasks),
         audit_accepted_count=sum(task.audit_accepted for task in tasks),
         minimum_quality_score_millionths=min(
@@ -730,11 +774,13 @@ def _cohort_gate_reason(
     profile: AutonomyProfileV1,
 ) -> str | None:
     tasks = cohort.tasks
-    if not cohort.factual_m7_restack_observed:
-        return "factual_m7_missing"
-    if any(not task.eligible for task in tasks):
-        return "ineligible_task"
-    if any(not task.human_accepted for task in tasks):
+    outcomes_by_digest = {
+        outcome.digest: outcome for outcome in cohort.m7_handoff.cohort.outcomes
+    }
+    if any(
+        outcomes_by_digest[task.m7_outcome_digest].human_decision != "merged_accepted"
+        for task in tasks
+    ):
         return "human_acceptance_missing"
     if profile.accepted_task_count < cohort.minimum_human_acceptances:
         return "insufficient_acceptances"
@@ -767,6 +813,15 @@ def _cohort_gate_reason(
         return "latency_above_threshold"
     if profile.total_demotion_triggers > cohort.maximum_demotion_triggers:
         return "demotion_fact_present"
+    if any(
+        bundle.status == "blocked_pending_durable_lookup"
+        for bundle in cohort.m7_handoff.bundles
+    ):
+        return "m7_bundle_blocked"
+    if not cohort.m7_handoff.external_acceptance_available:
+        return "m7_acceptance_missing"
+    if not cohort.m7_handoff.currentness_available:
+        return "m7_currentness_missing"
     return None
 
 

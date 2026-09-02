@@ -19,8 +19,9 @@ Freeze a dependency-free local M8 contract/evaluator design that can later consu
 
 ### In scope
 
-- Six frozen canonical records, one `low_risk_text_only` class and an exact tuple.
-- At least 30 distinct real human-accepted eligible tasks; complete-data, quality, security, cost, latency and >=20% daily audit gates.
+- Six frozen canonical M8 records, one `low_risk_text_only` class and an exact tuple.
+- A bounded non-authoritative reader for the complete exact M7 `4df2516` wire: bundle(s), outcomes, cohort, recomputed aggregate/evaluation and explicit validator/provider mapping.
+- At least 30 distinct real M7 human-accepted outcomes; complete-data, quality, security, cost, latency and >=20% daily audit gates.
 - Recommendation-only gradual promotion, tuple expiry/non-reuse and atomic fail-closed demotion.
 - Bounded non-PII metrics, schema/test design and M4→M9 documentation.
 - Under the explicit 2026-09-02 user override, pure local contracts, a deterministic evaluator and atomic demotion may be implemented against opaque exact predecessor identities and clearly labeled synthetic boundary fixtures.
@@ -31,11 +32,11 @@ Freeze a dependency-free local M8 contract/evaluator design that can later consu
 
 ## Constraints
 
-- Backward compatibility: additive v1 only; later M7 mismatch requires a reviewed v2 adapter.
+- Backward compatibility: V1 was unaccepted, so the false boolean/eligibility inputs are corrected in place. Factual M7 restack must delete the temporary reader and use direct producer imports/durable lookups rather than retain two implementations.
 - Data/privacy: bounded opaque IDs/digests and aggregate integers only; no names, email, free text, PII, secrets or keys.
 - Performance: future evaluator must cap a cohort at 10,000 tasks and use integer arithmetic.
 - Operational: the live route copy's unrelated `base_commit=78ad2f...` is contextual routing data, not ancestry. Product claims bind to exact M4 `9fe779ab...`.
 
 ## Split gate
 
-Pure source implementation is allowed by the explicit 2026-09-02 user override, without implying predecessor acceptance. Activation, completion, factual cohort qualification, profile issuance/acceptance and every external effect remain **BLOCKED** until accepted M5 and M6 are restacked, factual accepted M7 is restacked through M4→M5→M6→M7, and at least 30 real human acceptances exist for one exact tuple. No cohort row is checked in; synthetic test fixtures are algorithmic boundary data only.
+Pure source implementation is allowed by the explicit 2026-09-02 user override, without implying predecessor acceptance. Activation, completion, factual cohort qualification, profile issuance/acceptance and every external effect remain **BLOCKED**: exact M7 `4df2516` emits only `blocked_pending_durable_lookup` bundles and supplies no durable acceptance/currentness result. No cohort row is checked in; synthetic test fixtures are algorithmic boundary data only.

@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:m8:m7-autonomy-wire:v1",
+  "title": "Adaptive Factory M8 bounded M7 4df wire adapter",
+  "$defs": {
+    "identifier": {
+      "type": "string", "minLength": 1, "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "m4": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "schema_version", "task_id", "run_id", "owner", "role", "fence",
+        "intent_digest", "lease_packet_digest"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "task_id": {"$ref": "#/$defs/identifier"},
+        "run_id": {"$ref": "#/$defs/identifier"},
+        "owner": {"$ref": "#/$defs/identifier"},
+        "role": {"const": "writer"},
+        "fence": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+        "intent_digest": {"$ref": "#/$defs/digest"},
+        "lease_packet_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "m5": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "schema_version", "task_id", "run_id", "owner", "role", "fence",
+        "repository_id", "legacy_intent_digest", "task_packet_digest",
+        "run_manifest_digest", "workspace_snapshot_digest", "workspace_result_digest",
+        "authority_exact_head_sha", "snapshot_input_head_sha",
+        "snapshot_result_head_sha", "result_exact_head_sha"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "task_id": {"$ref": "#/$defs/identifier"},
+        "run_id": {"$ref": "#/$defs/identifier"},
+        "owner": {"$ref": "#/$defs/identifier"},
+        "role": {"const": "writer"},
+        "fence": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+        "repository_id": {"$ref": "#/$defs/identifier"},
+        "legacy_intent_digest": {"$ref": "#/$defs/digest"},
+        "task_packet_digest": {"$ref": "#/$defs/digest"},
+        "run_manifest_digest": {"$ref": "#/$defs/digest"},
+        "workspace_snapshot_digest": {"$ref": "#/$defs/digest"},
+        "workspace_result_digest": {"$ref": "#/$defs/digest"},
+        "authority_exact_head_sha": {"$ref": "#/$defs/sha"},
+        "snapshot_input_head_sha": {"$ref": "#/$defs/sha"},
+        "snapshot_result_head_sha": {"$ref": "#/$defs/sha"},
+        "result_exact_head_sha": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "verdict": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "schema_version", "subject_digest", "decision", "decision_source",
+        "finding_identity_digests", "duplicate_identity_digests",
+        "correlated_requirement_keys", "contradicted_requirement_keys",
+        "unsupported_pass_requirement_keys", "residual_risk"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "subject_digest": {"$ref": "#/$defs/digest"},
+        "decision": {"const": "pass"},
+        "decision_source": {"const": "deterministic_adjudicator"},
+        "finding_identity_digests": {"type": "array", "maxItems": 0},
+        "duplicate_identity_digests": {"type": "array", "maxItems": 0},
+        "correlated_requirement_keys": {"type": "array", "maxItems": 0},
+        "contradicted_requirement_keys": {"type": "array", "maxItems": 0},
+        "unsupported_pass_requirement_keys": {"type": "array", "maxItems": 0},
+        "residual_risk": {"const": "none"}
+      }
+    },
+    "m6": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "schema_version", "task_id", "run_id", "owner", "role", "fence",
+        "repository_id", "legacy_intent_digest", "task_packet_digest",
+        "run_manifest_digest", "workspace_snapshot_digest", "workspace_result_digest",
+        "binding_input_head_sha", "binding_exact_head_sha", "subject_exact_head_sha",
+        "envelope_digest", "binding_digest", "validation_inputs_digest",
+        "subject_digest", "evidence_set_digest", "verdict_digest", "verdict"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "task_id": {"$ref": "#/$defs/identifier"},
+        "run_id": {"$ref": "#/$defs/identifier"},
+        "owner": {"$ref": "#/$defs/identifier"},
+        "role": {"const": "writer"},
+        "fence": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+        "repository_id": {"$ref": "#/$defs/identifier"},
+        "legacy_intent_digest": {"$ref": "#/$defs/digest"},
+        "task_packet_digest": {"$ref": "#/$defs/digest"},
+        "run_manifest_digest": {"$ref": "#/$defs/digest"},
+        "workspace_snapshot_digest": {"$ref": "#/$defs/digest"},
+        "workspace_result_digest": {"$ref": "#/$defs/digest"},
+        "binding_input_head_sha": {"$ref": "#/$defs/sha"},
+        "binding_exact_head_sha": {"$ref": "#/$defs/sha"},
+        "subject_exact_head_sha": {"$ref": "#/$defs/sha"},
+        "envelope_digest": {"$ref": "#/$defs/digest"},
+        "binding_digest": {"$ref": "#/$defs/digest"},
+        "validation_inputs_digest": {"$ref": "#/$defs/digest"},
+        "subject_digest": {"$ref": "#/$defs/digest"},
+        "evidence_set_digest": {"$ref": "#/$defs/digest"},
+        "verdict_digest": {"$ref": "#/$defs/digest"},
+        "verdict": {"$ref": "#/$defs/verdict"}
+      }
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "m4", "m5", "m6"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "m4": {"$ref": "#/$defs/m4"},
+        "m5": {"$ref": "#/$defs/m5"},
+        "m6": {"$ref": "#/$defs/m6"}
+      }
+    },
+    "operator_handoff": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "schema_version", "subject_digest", "external_capability",
+        "recommended_action", "instructions"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "subject_digest": {"$ref": "#/$defs/digest"},
+        "external_capability": {"const": "absent"},
+        "recommended_action": {"const": "human_review"},
+        "instructions": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "human_decides_merge"},
+            {"const": "inspect_local_bundle"},
+            {"const": "obtain_human_review"},
+            {"const": "verify_exact_sha_trust_ci"}
+          ],
+          "minItems": 4, "maxItems": 4
+        }
+      }
+    },
+    "bundle": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "schema_version", "status", "evidence", "operator_handoff", "bundle_digest"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "status": {"const": "blocked_pending_durable_lookup"},
+        "evidence": {"$ref": "#/$defs/evidence"},
+        "operator_handoff": {"$ref": "#/$defs/operator_handoff"},
+        "bundle_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "cohort_key": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "schema_version", "repository_id", "change_class", "agent_digest",
+        "validator_digest", "model_digest", "prompt_digest", "policy_digest",
+        "runner_digest", "holdout_digest", "authority_digest"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "repository_id": {"$ref": "#/$defs/identifier"},
+        "change_class": {"enum": ["ai", "api", "bugfix", "data", "feature", "integration", "release", "security"]},
+        "agent_digest": {"$ref": "#/$defs/digest"},
+        "validator_digest": {"$ref": "#/$defs/digest"},
+        "model_digest": {"$ref": "#/$defs/digest"},
+        "prompt_digest": {"$ref": "#/$defs/digest"},
+        "policy_digest": {"$ref": "#/$defs/digest"},
+        "runner_digest": {"$ref": "#/$defs/digest"},
+        "holdout_digest": {"$ref": "#/$defs/digest"},
+        "authority_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "outcome": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "schema_version", "outcome_id", "bundle_digest", "cohort_key_digest",
+        "human_evidence_digest", "human_decision", "first_pass_accepted",
+        "rework_required", "validator_false_negative",
+        "validator_false_positive_or_disagreement", "repair_cycles",
+        "cost_within_budget", "latency_within_slo", "deadline_met",
+        "token_budget_met", "human_review_seconds", "critical_high_miss_count",
+        "security_miss_count", "unauthorized_effect_count", "rollback_count",
+        "escaped_defect_count", "duplicate_dispatch_count", "unaccounted_call_count",
+        "injection_attempt_count", "injection_contained_count"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "outcome_id": {"$ref": "#/$defs/identifier"},
+        "bundle_digest": {"$ref": "#/$defs/digest"},
+        "cohort_key_digest": {"$ref": "#/$defs/digest"},
+        "human_evidence_digest": {"$ref": "#/$defs/digest"},
+        "human_decision": {"enum": ["merged_accepted", "not_merged"]},
+        "first_pass_accepted": {"type": "boolean"},
+        "rework_required": {"type": "boolean"},
+        "validator_false_negative": {"type": "boolean"},
+        "validator_false_positive_or_disagreement": {"type": "boolean"},
+        "repair_cycles": {"type": "integer", "minimum": 0, "maximum": 3},
+        "cost_within_budget": {"type": "boolean"},
+        "latency_within_slo": {"type": "boolean"},
+        "deadline_met": {"type": "boolean"},
+        "token_budget_met": {"type": "boolean"},
+        "human_review_seconds": {"type": "integer", "minimum": 1, "maximum": 604800},
+        "critical_high_miss_count": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "security_miss_count": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "unauthorized_effect_count": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "rollback_count": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "escaped_defect_count": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "duplicate_dispatch_count": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "unaccounted_call_count": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "injection_attempt_count": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "injection_contained_count": {"type": "integer", "minimum": 0, "maximum": 1000000}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"first_pass_accepted": {"const": true}}},
+          "then": {
+            "properties": {
+              "human_decision": {"const": "merged_accepted"},
+              "rework_required": {"const": false}
+            }
+          }
+        }
+      ]
+    },
+    "cohort": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "schema_version", "cohort_id", "key", "observation_days",
+        "release_cycle_complete", "baseline_review_seconds", "outcomes"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "cohort_id": {"$ref": "#/$defs/identifier"},
+        "key": {"$ref": "#/$defs/cohort_key"},
+        "observation_days": {"type": "integer", "minimum": 0, "maximum": 3650},
+        "release_cycle_complete": {"type": "boolean"},
+        "baseline_review_seconds": {
+          "type": "array", "maxItems": 10000,
+          "items": {"type": "integer", "minimum": 1, "maximum": 604800}
+        },
+        "outcomes": {
+          "type": "array", "minItems": 1, "maxItems": 10000,
+          "items": {"$ref": "#/$defs/outcome"}
+        }
+      }
+    },
+    "aggregate": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "schema_version", "cohort_digest", "cohort_key_digest", "observation_days",
+        "release_cycle_complete", "sample_count", "human_merged_accepted_count",
+        "first_pass_accepted_count", "first_pass_acceptance_millionths",
+        "rework_count", "rework_millionths", "validator_false_negative_count",
+        "validator_false_negative_millionths",
+        "validator_false_positive_or_disagreement_count",
+        "validator_false_positive_or_disagreement_millionths", "p95_repair_cycles",
+        "max_repair_cycles", "budget_or_deadline_violation_count",
+        "median_review_seconds", "baseline_sample_count",
+        "baseline_median_review_seconds", "review_reduction_millionths",
+        "critical_high_miss_count", "security_miss_count", "unauthorized_effect_count",
+        "rollback_count", "escaped_defect_count", "duplicate_dispatch_count",
+        "unaccounted_call_count", "injection_attempt_count",
+        "injection_contained_count", "injection_containment_millionths"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "cohort_digest": {"$ref": "#/$defs/digest"},
+        "cohort_key_digest": {"$ref": "#/$defs/digest"},
+        "observation_days": {"type": "integer", "minimum": 0, "maximum": 3650},
+        "release_cycle_complete": {"type": "boolean"},
+        "sample_count": {"type": "integer", "minimum": 1, "maximum": 10000},
+        "human_merged_accepted_count": {"type": "integer", "minimum": 0, "maximum": 10000},
+        "first_pass_accepted_count": {"type": "integer", "minimum": 0, "maximum": 10000},
+        "first_pass_acceptance_millionths": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "rework_count": {"type": "integer", "minimum": 0, "maximum": 10000},
+        "rework_millionths": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "validator_false_negative_count": {"type": "integer", "minimum": 0, "maximum": 10000},
+        "validator_false_negative_millionths": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "validator_false_positive_or_disagreement_count": {"type": "integer", "minimum": 0, "maximum": 10000},
+        "validator_false_positive_or_disagreement_millionths": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "p95_repair_cycles": {"type": "integer", "minimum": 0, "maximum": 3},
+        "max_repair_cycles": {"type": "integer", "minimum": 0, "maximum": 3},
+        "budget_or_deadline_violation_count": {"type": "integer", "minimum": 0, "maximum": 10000},
+        "median_review_seconds": {"type": "integer", "minimum": 1, "maximum": 604800},
+        "baseline_sample_count": {"type": "integer", "minimum": 0, "maximum": 10000},
+        "baseline_median_review_seconds": {"type": "integer", "minimum": 0, "maximum": 604800},
+        "review_reduction_millionths": {"type": "integer", "minimum": -604799000000, "maximum": 999999},
+        "critical_high_miss_count": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+        "security_miss_count": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+        "unauthorized_effect_count": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+        "rollback_count": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+        "escaped_defect_count": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+        "duplicate_dispatch_count": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+        "unaccounted_call_count": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+        "injection_attempt_count": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+        "injection_contained_count": {"type": "integer", "minimum": 0, "maximum": 10000000000},
+        "injection_containment_millionths": {"type": "integer", "minimum": 0, "maximum": 1000000}
+      }
+    },
+    "evaluation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "aggregate_digest", "recommendation", "failure_codes"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "aggregate_digest": {"$ref": "#/$defs/digest"},
+        "recommendation": {"enum": ["blocked", "eligible_for_human_l2_review"]},
+        "failure_codes": {
+          "type": "array", "uniqueItems": true,
+          "items": {"enum": [
+            "budget_or_deadline", "containment_failure", "insufficient_observation",
+            "insufficient_sample", "missing_baseline", "quality_threshold", "safety_violation"
+          ]}
+        }
+      }
+    },
+    "provider_mapping": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "cohort_key_digest", "validator_digest", "provider_digest"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "cohort_key_digest": {"$ref": "#/$defs/digest"},
+        "validator_digest": {"$ref": "#/$defs/digest"},
+        "provider_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "handoff": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "provider_mapping", "bundles", "cohort", "aggregate", "evaluation"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "provider_mapping": {"$ref": "#/$defs/provider_mapping"},
+        "bundles": {
+          "type": "array", "minItems": 1, "maxItems": 10000,
+          "items": {"$ref": "#/$defs/bundle"}
+        },
+        "cohort": {"$ref": "#/$defs/cohort"},
+        "aggregate": {"$ref": "#/$defs/aggregate"},
+        "evaluation": {"$ref": "#/$defs/evaluation"}
+      }
+    }
+  },
+  "$ref": "#/$defs/handoff"
+}

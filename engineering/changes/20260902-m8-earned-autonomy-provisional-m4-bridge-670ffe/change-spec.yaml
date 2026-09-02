@@ -1,14 +1,14 @@
 {
   "acceptance_criteria": [
-    {"id":"AC-001","statement":"Six closed canonical v1 records bind each task and profile to one exact repository class M4 M5 M6 M7 provider model prompt policy image holdout and authority-ceiling tuple","evidence":[{"receipt":"test_review"}]},
-    {"id":"AC-002","statement":"Promotion is a deterministic recommendation capped at L2 and remains blocked without factual M7 restack at least 30 distinct eligible human acceptances complete data configured quality security cost latency thresholds and continuing sampled audit","evidence":[{"receipt":"test_review"},{"receipt":"security_review"}]},
+    {"id":"AC-001","statement":"Six closed canonical M8 v1 records consume a full closed exact M7 wire whose bundle outcome cohort aggregate evaluation and predecessor digest equality chains are recomputed and whose validator and provider identities remain separate","evidence":[{"receipt":"test_review"}]},
+    {"id":"AC-002","statement":"Promotion is a deterministic recommendation capped at L2 and remains blocked while any M7 bundle is blocked pending durable lookup or durable external acceptance currentness at least 30 distinct human acceptances complete thresholds and continuing sampled audit are absent","evidence":[{"receipt":"test_review"},{"receipt":"security_review"}]},
     {"id":"AC-003","statement":"Security or authorization failure incorrect merge rollback escaped defect invalid attestation policy bypass and unexplained regression atomically demote the exact profile and halt new action recommendations","evidence":[{"receipt":"test_review"},{"receipt":"security_review"}]},
     {"id":"AC-004","statement":"Material tuple changes and expiry prevent profile reuse while repository records signatures and authority remain recommendation-only opaque verified inputs and never keys","evidence":[{"receipt":"code_review"},{"receipt":"security_review"}]},
-    {"id":"AC-005","statement":"README roadmap schedule release rollback and milestone ledger preserve dependency order M4 through M9 and the 2026-09-08 00:00 UTC+3 deadline without claiming cohort completion","evidence":[{"test":"tests/test_structure.py"},{"receipt":"release_review"}]}
+    {"id":"AC-005","statement":"The M8 change package preserves dependency order M4 through M9 and the 2026-09-08 00:00 UTC+3 deadline without claiming cohort completion","evidence":[{"receipt":"release_review"}]}
   ],
   "approvals": {"required_scopes":["architecture","security","release"]},
   "change_id": "20260902-m8-earned-autonomy-provisional-m4-bridge-670ffe",
-  "contracts":{"events":[],"json_schema":[],"openapi":[]},
+  "contracts":{"events":[],"json_schema":["factory/contracts/jsonschema/earned-autonomy.v1.schema.json","factory/contracts/jsonschema/m7-autonomy-wire.v1.schema.json"],"openapi":[]},
   "forbidden_outcomes":[
     {"id":"FORBID-001","statement":"M8 activates a profile completes a cohort opens or merges a pull request performs an external operation or reaches L3 or L4","evidence":[{"receipt":"security_review"}]},
     {"id":"FORBID-002","statement":"Repository-authored data keys signatures names or boolean claims create verified authority or self-promotion","evidence":[{"receipt":"security_review"}]},
@@ -17,13 +17,13 @@
   ],
   "invariants":[
     {"id":"INV-001","statement":"Authority ceiling is L2 and every output authorizes no external action","evidence":[{"receipt":"security_review"}]},
-    {"id":"INV-002","statement":"A qualifying cohort has at least 30 distinct eligible human-accepted tasks under one unexpired exact tuple with no missing fields","evidence":[{"receipt":"test_review"}]},
+    {"id":"INV-002","statement":"A qualifying cohort has at least 30 distinct M7 human-accepted outcomes under one unexpired exact tuple and a durable external accepted current lookup; caller booleans cannot satisfy either condition","evidence":[{"receipt":"test_review"}]},
     {"id":"INV-003","statement":"Sampled audit covers at least 20 percent of cohort tasks and at least one task on every represented UTC cohort day","evidence":[{"receipt":"test_review"}]},
     {"id":"INV-004","statement":"Metrics and identifiers are bounded and contain no PII free text secrets or credentials","evidence":[{"receipt":"security_review"}]}
   ],
   "objective": {
     "id": "OBJ-001",
-    "statement":"Specify a pure local earned-autonomy evaluator and frozen v1 contracts on exact M4 9fe779ab9f90719201acfd01160d3452658ff075 for later factual M7 alignment",
+    "statement":"Correct the pure local earned-autonomy evaluator and frozen v1 contracts against the complete provisional exact M7 4df2516fa3a137fa730d08733fb9e338768232fb wire without creating authority",
     "success_metric":"m8_provisional_design_gate",
     "target":"Pure local source may proceed; activation, factual qualification and profile acceptance remain blocked until factual M7 restack and at least 30 real human acceptances"
   },

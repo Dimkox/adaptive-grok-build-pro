@@ -4,7 +4,7 @@
 
 **Goal:** Build closed recommendation-only M8 contracts and a deterministic fail-closed evaluator after the factual-evidence block clears.
 
-**Architecture:** One dependency-free `autonomy.py` module owns immutable parsing/evaluation; one closed JSON Schema freezes wire shapes. No persistence, API, event, key, network or external action exists.
+**Architecture:** `autonomy.py` owns immutable M8 parsing/evaluation. Until M7 ancestry is restacked, temporary `m7_autonomy_wire.py` validates the exact `4df2516` producer wire without importing authority; two closed JSON Schemas freeze the boundaries. No persistence, API, event, key, network or external action exists.
 
 **Tech Stack:** Python 3.11 standard library, `unittest`, JSON Schema document.
 
@@ -13,13 +13,14 @@
 ## Global Constraints
 
 - Exact provisional base `9fe779ab9f90719201acfd01160d3452658ff075`; route `670ffe5522e0`.
-- The explicit 2026-09-02 user override permits Tasks 1–3 as pure local source work against opaque exact predecessor identities and clearly labeled synthetic fixtures. Task 4 integration, activation, completion, factual cohort qualification, profile issuance/acceptance and external effects still require factual accepted M7 restack and >=30 real eligible human acceptances.
+- The explicit 2026-09-02 user override permits Tasks 1–3 as pure local source work against exact M7 `4df2516` wire identities and clearly labeled synthetic fixtures. Activation, completion, factual cohort qualification, profile issuance/acceptance and external effects still require factual accepted/current M7 restack and >=30 real human acceptances.
+- The temporary wire adapter must be removed, not retained as a second producer implementation, when factual M7 ancestry and durable lookup become available.
 - `low_risk_text_only` only; audit >=20% and >=1 sample/day; complete bounded non-PII data.
 - L2 ceiling; L3/L4 unreachable; recommendation only; no activation, external write, merge, key, secret, persistence or fabricated cohort.
 
 ### Task 1: Closed contracts
 
-**Files:** create `factory/tests/test_autonomy.py`, `factory/tests/test_autonomy_schema.py`, `factory/src/adaptive_factory/autonomy.py`, `factory/contracts/jsonschema/earned-autonomy.v1.schema.json`.
+**Files:** create `factory/tests/test_autonomy.py`, `factory/tests/test_autonomy_schema.py`, `factory/src/adaptive_factory/autonomy.py`, temporary `factory/src/adaptive_factory/m7_autonomy_wire.py`, and the two M8 JSON Schemas.
 
 **Interfaces:** produce the six exact `*V1` records named in the design, each with `from_dict()` and canonical `to_dict()` behavior.
 
@@ -53,9 +54,9 @@
 - [ ] Re-run focused tests and observe GREEN.
 - [ ] Commit the demotion slice.
 
-### Task 4: Integration documentation
+### Task 4: Integration documentation (parent-owned after factual restack)
 
-**Files:** modify `architecture/system.yaml`, `README.md`, `DARK_FACTORY_ROADMAP.md`, `factory/README.md`, `tests/test_structure.py`, and this package ledger.
+**Files:** later modify `architecture/system.yaml`, `README.md`, `DARK_FACTORY_ROADMAP.md`, `factory/README.md`, `tests/test_structure.py`, and this package ledger. The bounded correction does not touch root release identity or receipts.
 
 **Interfaces:** register the additive schema and M4→M9 dependency/authority boundaries without adding runtime edges.
 

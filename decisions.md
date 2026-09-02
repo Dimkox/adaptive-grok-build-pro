@@ -340,3 +340,7 @@ Use fixed-search-path security-definer predicates that take a row lock on the ex
 ## 2026-09-02 — Separate M8 source construction from earned authority
 
 Allow pure closed contracts, deterministic evaluation and atomic demotion to proceed against opaque exact predecessor identities and synthetic boundary fixtures, while keeping activation, factual qualification, profile acceptance and external effects blocked. This preserves fast parallel source work without converting provisional repository data into authority.
+
+## 2026-09-02 — Make provisional cross-milestone reads complete but non-authoritative
+
+When ancestry is unavailable, consume the complete producer wire, recompute every defined digest/equality chain, and omit caller-settable acceptance/currentness entirely. Bind validator and provider through a separate explicit mapping, then delete the compatibility reader once factual ancestry permits direct producer imports.

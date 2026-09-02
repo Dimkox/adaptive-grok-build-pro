@@ -10,7 +10,7 @@ No application exists. Revert this additive documentation/spec commit through no
 
 ## Data recovery / forward-fix
 
-No data exists. Preserve later factual cohort evidence externally; never rewrite it to fit v1. If v1 is adopted, add a closed reviewed v2 adapter rather than mutate v1 meaning.
+No data exists. Preserve later factual cohort evidence externally; never rewrite it to fit v1. On factual M7 restack, forward-fix by deleting the temporary duplicate reader and importing the producer contracts plus durable lookup boundary.
 
 ## Verification after rollback
 

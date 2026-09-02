@@ -330,3 +330,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 ## 2026-09-02 — Gate commits on expected upstream identities
 
 The first M8 source-override checkpoint observed that M7 advanced but still committed because observation and commit were bundled without an equality guard. Require exact expected M4/M5/M6/M7 heads in a failing shell condition before every later M8 commit, then update the ledger and re-audit overlap whenever the guard trips.
+
+## 2026-09-02 — Replaced a test file and dropped established mutation boundaries
+
+**Symptom:** The first M8 wire rewrite preserved the three new REDs but removed prior coverage for gate thresholds, bounds, ordering, frozen inputs, expiry and halted profiles.
+**Root cause:** The tests were rewritten around the new fixture topology instead of treating the previous mutation inventory as a compatibility contract; the missing cases were restored before commit.

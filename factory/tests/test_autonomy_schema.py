@@ -13,11 +13,14 @@ from adaptive_factory.autonomy import (
     DemotionDecisionV1,
     PromotionRecommendationV1,
 )
+from adaptive_factory.m7_autonomy_wire import M7ProviderMappingV1
+from factory.tests.test_autonomy import valid_cohort_payload, valid_handoff_payload
 
 
 FACTORY_ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_ROOT = FACTORY_ROOT / "contracts" / "jsonschema"
 M8_SCHEMA_NAME = "earned-autonomy.v1.schema.json"
+M7_WIRE_SCHEMA_NAME = "m7-autonomy-wire.v1.schema.json"
 
 
 def object_nodes(value: object):
@@ -34,6 +37,9 @@ def object_nodes(value: object):
 class AutonomySchemaTests(unittest.TestCase):
     def setUp(self):
         self.schema = json.loads((SCHEMA_ROOT / M8_SCHEMA_NAME).read_text(encoding="utf-8"))
+        self.wire_schema = json.loads(
+            (SCHEMA_ROOT / M7_WIRE_SCHEMA_NAME).read_text(encoding="utf-8")
+        )
 
     def test_m8_schema_inventory_and_dialect_are_exact(self):
         actual = {
@@ -47,18 +53,24 @@ class AutonomySchemaTests(unittest.TestCase):
         duplicate_names = set() if not duplicate_root.exists() else {
             path.name for path in duplicate_root.glob("*autonomy*.json")
         }
-        self.assertEqual(actual, {M8_SCHEMA_NAME})
+        self.assertEqual(actual, {M8_SCHEMA_NAME, M7_WIRE_SCHEMA_NAME})
         self.assertEqual(duplicate_names, set())
         self.assertEqual(self.schema["$schema"], "https://json-schema.org/draft/2020-12/schema")
         self.assertEqual(self.schema["$id"], "urn:adaptive-factory:m8:earned-autonomy:v1")
 
     def test_every_object_shape_is_closed_complete_and_versioned(self):
-        for index, node in enumerate(object_nodes(self.schema)):
-            with self.subTest(object=index):
-                self.assertIs(node.get("additionalProperties"), False)
-                self.assertEqual(set(node.get("required", [])), set(node.get("properties", {})))
-                if "schema_version" in node.get("properties", {}):
-                    self.assertEqual(node["properties"]["schema_version"], {"const": 1})
+        for schema_name, schema in (
+            (M8_SCHEMA_NAME, self.schema),
+            (M7_WIRE_SCHEMA_NAME, self.wire_schema),
+        ):
+            for index, node in enumerate(object_nodes(schema)):
+                with self.subTest(schema=schema_name, object=index):
+                    self.assertIs(node.get("additionalProperties"), False)
+                    self.assertEqual(
+                        set(node.get("required", [])), set(node.get("properties", {}))
+                    )
+                    if "schema_version" in node.get("properties", {}):
+                        self.assertEqual(node["properties"]["schema_version"], {"const": 1})
 
     def test_schema_fields_match_all_six_python_records(self):
         parity = (
@@ -75,6 +87,25 @@ class AutonomySchemaTests(unittest.TestCase):
                     set(self.schema["$defs"][definition]["properties"]),
                     {field.name for field in fields(contract)},
                 )
+
+        self.assertEqual(
+            set(self.wire_schema["$defs"]["provider_mapping"]["properties"]),
+            {field.name for field in fields(M7ProviderMappingV1)},
+        )
+
+    def test_synthetic_closed_values_have_exact_root_schema_shapes(self):
+        self.assertEqual(
+            set(valid_handoff_payload()),
+            set(self.wire_schema["$defs"]["handoff"]["properties"]),
+        )
+        self.assertEqual(
+            set(valid_cohort_payload()),
+            set(self.schema["$defs"]["cohort_evidence"]["properties"]),
+        )
+        self.assertEqual(
+            self.schema["$defs"]["cohort_evidence"]["properties"]["m7_handoff"],
+            {"$ref": f'{self.wire_schema["$id"]}#/$defs/handoff'},
+        )
 
     def test_schema_freezes_authority_limits_and_has_no_effect_surface(self):
         definitions = self.schema["$defs"]
@@ -104,6 +135,17 @@ class AutonomySchemaTests(unittest.TestCase):
         }
         for node in object_nodes(self.schema):
             self.assertTrue(forbidden.isdisjoint(node.get("properties", {})))
+
+        wire_properties = {
+            field
+            for node in object_nodes(self.wire_schema)
+            for field in node.get("properties", {})
+        }
+        self.assertTrue(
+            {"acceptance_status", "currentness_status", "factual_m7_restack_observed"}.isdisjoint(
+                wire_properties
+            )
+        )
 
 
 if __name__ == "__main__":
