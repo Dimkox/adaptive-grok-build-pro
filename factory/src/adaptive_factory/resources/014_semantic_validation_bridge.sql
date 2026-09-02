@@ -179,13 +179,37 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
         WHERE intent.source_type='api'
           AND trim(proposal.child_proposal_digest)=intent.source_id
           AND trim(proposal.child_proposal_digest)=intent.source_digest
-      ) THEN EXISTS (
-        SELECT 1
-        FROM factory.semantic_child_task_bindings binding
-        WHERE binding.child_task_id=p_task_id
-          AND trim(binding.child_intent_digest)=intent.intent_digest
-          AND trim(binding.child_proposal_digest)=intent.source_id
-          AND trim(binding.child_proposal_digest)=intent.source_digest
+      ) THEN (
+        p_intake_actor_kind='repair_broker'
+        AND p_intake_actor_id='semantic-repair-child-broker'
+        AND EXISTS (
+          SELECT 1
+          FROM factory.semantic_child_task_bindings binding
+          WHERE binding.child_task_id=p_task_id
+            AND trim(binding.child_intent_digest)=intent.intent_digest
+            AND trim(binding.child_proposal_digest)=intent.source_id
+            AND trim(binding.child_proposal_digest)=intent.source_digest
+        )
+        AND EXISTS (
+          SELECT 1
+          FROM factory.tasks claim_task
+          JOIN factory.m0_authority_observations observation
+            ON observation.observed_at=
+              (intent.body#>>'{m0_authority,observed_at}')::timestamptz
+            AND observation.check_name=
+              intent.body#>>'{m0_authority,check_name}'
+            AND observation.exact_head_sha=
+              (intent.body#>>'{m0_authority,exact_head_sha}')::char(40)
+            AND observation.repository_id=intent.repository_id
+            AND observation.policy_digest=intent.policy_digest
+          WHERE claim_task.task_id=p_task_id
+            AND claim_task.intent_id=intent.intent_id
+            AND claim_task.intake_actor_kind=p_intake_actor_kind
+            AND claim_task.intake_actor_id=p_intake_actor_id
+            AND claim_task.accepted_at-observation.observed_at
+              BETWEEN interval '0 seconds' AND interval '300 seconds'
+            AND observation.revoked_at IS NULL
+        )
       )
       ELSE true
     END
@@ -1333,6 +1357,9 @@ BEGIN
       AND revoked_at IS NULL;
   IF v_child_task.task_id IS NULL OR v_child_intent.intent_id IS NULL
     OR v_parent_task.task_id IS NULL OR v_parent_intent.intent_id IS NULL
+    OR v_child_task.intake_actor_kind IS DISTINCT FROM 'repair_broker'
+    OR v_child_task.intake_actor_id IS DISTINCT FROM
+      'semantic-repair-child-broker'
     OR v_child_observation.observation_id IS NULL
     OR v_parent_observation.observation_id IS NULL
     OR v_child_task.accepted_at<v_child.created_at

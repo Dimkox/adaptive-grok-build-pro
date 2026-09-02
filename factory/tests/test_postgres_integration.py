@@ -1991,6 +1991,16 @@ class PostgresFactoryTests(unittest.TestCase):
             self.assertEqual(semantic_store.bind_repair_child(binding), binding)
             return binding
 
+        def claimable(fixture):
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT factory.semantic_task_claimable(
+                      task_id,intent_id,intake_actor_kind,intake_actor_id
+                    ) FROM factory.tasks WHERE task_id=%s""",
+                    (fixture["task"].task_id,),
+                )
+                return cursor.fetchone()[0]
+
         wrong_broker_source = canonical_digest(
             {"case": "repair-broker-wrong-proposal-source"}
         )
@@ -2040,6 +2050,11 @@ class PostgresFactoryTests(unittest.TestCase):
             intake_only=True,
             intake_actor=OPERATOR,
         )
+        with self.assertRaisesRegex(StoreError, "binding rejected"):
+            semantic_store.bind_repair_child(
+                binding_for(repair, unbound_api_candidate)
+            )
+        self.assertFalse(claimable(unbound_api_candidate))
         self.assertIsNone(
             self.service.claim(
                 owner=WORKER.actor_id,
@@ -2350,6 +2365,76 @@ class PostgresFactoryTests(unittest.TestCase):
             ),
             ("needs_human", "budget_exhausted", None),
         )
+
+        revoked_authority_root = self.semantic_repair_fixture(
+            namespace="revoked-authority-root",
+            source_id="m6-revoked-authority-root",
+            result_head_sha="d" * 40,
+            finding_rule="rule-revoked-authority-root",
+        )
+        revoked_authority_parent = semantic_store.request_repair(
+            revoked_authority_root["task"].task_id,
+            request_for(revoked_authority_root, 1, None, "b" * 64),
+            idempotency_key=canonical_digest({"case": "revoked-authority-root"}),
+        )
+        revoked_authority_child = self.semantic_repair_fixture(
+            namespace="revoked-authority-child",
+            source_id=revoked_authority_parent.child_proposal_digest,
+            child_source_digest=revoked_authority_parent.child_proposal_digest,
+            parent_repair=revoked_authority_parent,
+            result_head_sha="e" * 40,
+            intake_only=True,
+        )
+        bind_child(revoked_authority_parent, revoked_authority_child)
+        self.assertTrue(claimable(revoked_authority_child))
+        revoked_intake = revoked_authority_child["intake"]
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE factory.m0_authority_observations
+                SET revoked_at=clock_timestamp()
+                WHERE observed_at=%s AND check_name=%s AND exact_head_sha=%s
+                  AND repository_id=%s AND policy_digest=%s
+                  AND revoked_at IS NULL
+                RETURNING revoked_at""",
+                (
+                    revoked_intake.m0_authority.observed_at,
+                    revoked_intake.m0_authority.check_name,
+                    revoked_intake.m0_authority.exact_head_sha,
+                    revoked_intake.repository_id,
+                    revoked_intake.policy_digest,
+                ),
+            )
+            self.assertIsNotNone(cursor.fetchone()[0])
+        self.assertFalse(claimable(revoked_authority_child))
+        self.assertIsNone(
+            self.service.claim(
+                owner=WORKER.actor_id,
+                role=RunRole.WRITER,
+                repositories=(task.repository_id,),
+                lease_seconds=60,
+                actor=WORKER,
+                now=datetime.now(timezone.utc),
+                idempotency_key=canonical_digest(
+                    {"case": "revoked-authority-child-claim"}
+                ),
+            )
+        )
+        self.assertEqual(
+            self.store.get_task(revoked_authority_child["task"].task_id).status,
+            TaskStatus.QUEUED,
+        )
+        self.assertEqual(
+            self.service.cancel(
+                revoked_authority_child["task"].task_id,
+                reason="repair child authority revoked before claim",
+                idempotency_key=canonical_digest(
+                    {"case": "revoked-authority-child-cancel"}
+                ),
+                actor=OPERATOR,
+                now=datetime.now(timezone.utc),
+            ).status,
+            TaskStatus.CANCELLED,
+        )
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
                 """SELECT
@@ -2362,7 +2447,7 @@ class PostgresFactoryTests(unittest.TestCase):
                   WHERE verdict_digest=%s)""",
                 (verdict.digest,),
             )
-            self.assertEqual(cursor.fetchone(), (6, 6, 5, 16, 9, "repair"))
+            self.assertEqual(cursor.fetchone(), (7, 7, 6, 16, 10, "repair"))
         forged_verdict = {
             **verdict.to_dict(),
             "decision": "pass",
