@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Exact local M4 base: `9fe779ab9f90719201acfd01160d3452658ff075`.
-- M5 `161199bb163e0ba84ac1b32010be87f113df5e86` descends from local M4 but is not an accepted runtime dependency; M6 `5c5c37136f20404a927fd2ad7621ad0f7fcae8e6` remains provisional on older M5 bridge `61db79f07904ae5facb244c34b26c8383504dd88`.
+- M5 `141e51e75b2bb337fa3bb1544639c6c46c287309` descends from local M4 but is not an accepted runtime dependency; M6 `5c5c37136f20404a927fd2ad7621ad0f7fcae8e6` remains provisional on older M5 bridge `61db79f07904ae5facb244c34b26c8383504dd88`.
 - Output is only `ready_for_human`; maximum recommendation is `eligible_for_human_l2_review`.
 - No service/API/store/migration, provider, network, credential, push, PR, merge, release or deploy surface.
 - Hard deadline `2026-09-08 00:00 UTC+3` never waives a gate.
@@ -34,7 +34,7 @@
 
 - [x] **Step 1: Audit current provisional dependencies**
 
-M5 `161199b…` and M6 `5c5c371…` both have merge-base M4 `9fe779…`, but their mutual merge-base is older M5 `61db79f…`. Latest M5 changed `execution_contracts.py` from the M6-carried blob `d9cb3c8…` to `e4237bf…` by closing the `WorkspaceResultV1` M4 disposition; M6 still exposes no task/run/fence/packet/result linkage. The planned M7 product files have no exact changed-path overlap with either branch, so use opaque exact bridges and keep activation blocked.
+M5 `141e51e…` and M6 `5c5c371…` both have merge-base M4 `9fe779…`, but their mutual merge-base is older M5 `61db79f…`. Current M5 retains execution-contract blob `e4237bf…` and closes existing TaskPacket/ExecutionEvent/OpenAPI schema descriptions without changing the Python producer fields; M6 carries old execution blob `d9cb3c8…` and still exposes no task/run/fence/packet/result linkage. M5's documentation/architecture paths overlap future M7 documentation work, but the M7 source/schema paths remain disjoint, so opaque pure contracts stand and activation stays blocked.
 
 - [ ] **Step 2: Write failing tests**
 
