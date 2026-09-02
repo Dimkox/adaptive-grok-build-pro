@@ -22,7 +22,7 @@ M4 accepted intent + legacy lease
 - `adapters/`: provider-native fixture translators and explicit conformance registry; no process/network invocation.
 - `brokers.py`: note/artifact/usage/terminal validation and redaction.
 - `workspace.py`: workspace/Git protocols, handle/path/environment policy, fake isolated runtime, host capability probe.
-- migration `013`: append-only execution packets/manifests/events/notes/artifacts and execution-stage constraints/functions.
+- successor migration `014` after immutable M4 `013`: append-only execution packets/manifests/events/notes/artifacts and execution-stage constraints/functions.
 - store/service/API: explicit execution operations checked against task/run/owner/fence/packet/live allocation/deadline/budget.
 - `factory/systemd/`: fixed source unit topology only.
 
@@ -32,7 +32,7 @@ Packet control fields never originate from repository text or native provider ev
 
 ## Recovery and rollout
 
-On restart, a bounded reconciler scans at most 100 incomplete manifests in deterministic key order. A manifest with no live matching M4 lease becomes `orphaned`, gains one safe terminal proposal, releases broker-owned workspace state, and cannot accept later events. Rollout is source-only and feature-dark: migration/API/unit files are not applied, started, or enabled by this task. Forward-fix uses migration `014+`; migration `013` is never rewritten after acceptance.
+On restart, a bounded reconciler scans at most 100 incomplete manifests in deterministic key order. A manifest with no live matching M4 lease becomes `orphaned`, gains one safe terminal proposal, releases broker-owned workspace state, and cannot accept later events. Rollout is source-only and feature-dark: migration/API/unit files are not applied, started, or enabled by this task. Slice 01 contains no migration; successor slice 02 adds migration `014`, and any accepted-M5 forward-fix uses `015+` without rewriting M4 `013` or M5 `014`.
 
 ## Decision ledger
 

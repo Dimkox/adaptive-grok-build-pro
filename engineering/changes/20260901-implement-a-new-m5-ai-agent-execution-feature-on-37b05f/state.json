@@ -24,6 +24,6 @@
   "route_id": "37b05f579320",
   "schema_version": 1,
   "status": "approved",
-  "title": "Implement a new M5 AI agent execution feature on exact M4 product base 94fc5ad: canonical immutable packets, provider-neutral JSON API and JSONL protocol, Codex and Grok conformance adapters, workspace and note brokers, credential and network isolation, predefined systemd source topology, bounded usage and cancellation, restart and orphan recovery, adversarial local verification. Local source only; no live provider calls or secret values.",
+  "title": "Materialize M5 as bounded successor slices rooted at exact final local M4 571cad7: slice 01 contracts, adapters, brokers and architecture ownership; later slices add migration/API, recovery/systemd and final integration. Local source only; no live provider calls, secrets, package publication or delivery authority.",
   "updated_at": "2026-09-02T00:00:32+00:00"
 }

@@ -15,7 +15,10 @@ CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
 CURRENT_MAIN_SHA = "78ad2f679d38dc3244e716c586332417e610089c"
 SEO_MERGE_SHA = "8ab4e57038dec2e07f01aaa0b207813a387358f4"
-M4_PRODUCT_SHA = "4f75558770f2f332b32b4a47fe6afa61fcc524ec"
+M4_PRODUCT_SHA = "571cad7877431ac5ab5779b53fe9f7effd6859ce"
+M4_FINAL_TREE = "9d29f25d3af4fc9f97bbb8b3d4970906b69338fd"
+M4_FINAL_FINGERPRINT = "2f9b3ec2dd6f73e887bf375a02870dd91b8a322807e9383e6bd171e2113dba1b"
+M4_FINAL_ARTIFACT_SHA256 = "5b29b7e8e439d1409c3f72757199d20de8f6f4c62bd1df972a37d13f615d9d0e"
 M4_SOURCE_SHA = "460a8a01a6394cac710b4e3f9eea3d94d4beef89"
 M4_INTEGRATION_SHA = "da7ec8d7d40f52663aba1ff59bf03ccf209395b0"
 M4_SCANNER_REPAIR_SHA = "5a6cdfb7a129e02724c632f78c31de6406d6863a"
@@ -23,13 +26,15 @@ M4_RELEASE_STATE_BASE_SHA = "56e12b2b394436ee227c66d78b1caba8f7317c78"
 M4_RELEASE_STATE_BASE_FINGERPRINT = "e27caec9d2de459ef26bea49b99b93b5b7326a9c84c89b97f4ec482c237d4add"
 M4_FAILED_VERIFY_SHA = "547ee628812fbf098f337a854f68edf660091ead"
 M4_FAILED_VERIFY_FINGERPRINT = "f0efa89e689dbe47c701a4d301e97361ee671e299ef2f32b5295b908e182e768"
-M5_PROVISIONAL_SHA = "141e51e75b2bb337fa3bb1544639c6c46c287309"
+M5_SLICE1_SHA = "9ba284eeeb21b36e8b484c9f25a5f7c8ea8077c1"
+M5_SLICE1_TREE = "177112f6a862d88cb867f92235b30ea6bad890ec"
 M6_TASK1_SHA = "3def83eb915ca68e66379269526ffa64822a1104"
 M6_TASK2_SHA = "a8ca0f3afffbd9ef5584825252f9a669a324d2a5"
 M6_PROVISIONAL_SHA = "f3b2c0d07116686b27feab4b60166e8a7402d672"
 M7_PROVISIONAL_SHA = "c8b450f494b3d44b580556c6a612b21a3a780368"
 M8_STARTING_SHA = "46a6c8eba6b5bd8e4654f3041e52061cdd1a15d6"
-M8_PROVISIONAL_SHA = "5735e762b8d7571887f6fa4ac9cf10cd1fad1954"
+M8_PROVISIONAL_SHA = "5499c582d403c6955324b935cbb8799b38257f5f"
+M8_PROVISIONAL_TREE = "ef49d8016d0cff15e0b06d8db4201e22656d7c04"
 M9_DESIGN_SHA = "055051e26e26bf08fa85376523ba6632afcca747"
 M9_PROVISIONAL_SHA = "000301796ac19c518ede110b97b9de09dc077cbd"
 MILESTONES = {f"M{number}" for number in range(10)}
@@ -89,11 +94,11 @@ class ProjectStateTests(unittest.TestCase):
             "M1": ("complete", "passed", "merged", "partial", "success"),
             "M2": ("complete", "passed", "merged", "not_delivered", "success"),
             "M3": ("complete", "passed", "merged", "not_delivered", "success"),
-            "M4": ("complete", "pending_refresh", "local_integrated_candidate", "not_delivered", "not_run"),
-            "M5": ("provisional_source_complete", "pending_final", "blocked_on_m4_acceptance", "not_delivered", "blocked"),
+            "M4": ("complete", "five_local_reviews_passed", "final_local_gate_complete", "not_delivered", "not_run"),
+            "M5": ("provisional_successor_slice_01", "pending_slice_pr_and_external_gate", "slice_01_rooted_on_final_local_m4", "not_delivered", "not_run"),
             "M6": ("provisional_task3_source", "not_started", "blocked_on_m5_acceptance", "not_delivered", "not_run"),
             "M7": ("provisional_algorithm_source", "not_started", "blocked_on_m6_acceptance", "not_delivered", "not_run"),
-            "M8": ("provisional_task1_source", "not_started", "blocked_on_m7_acceptance", "not_delivered", "not_run"),
+            "M8": ("provisional_evaluator_source", "not_started", "blocked_on_m7_acceptance", "not_delivered", "not_run"),
             "M9": ("provisional_task1_source", "not_started", "blocked_on_m8_acceptance", "not_delivered", "not_run"),
         }
         for milestone, statuses in expected.items():
@@ -139,7 +144,7 @@ class ProjectStateTests(unittest.TestCase):
                 "implementation": M4_PRODUCT_SHA,
                 "review": M4_PRODUCT_SHA,
                 "stack_base": "origin/main",
-                "stack_pr": None,
+                "stack_pr": 21,
                 "gate_head": None,
             },
         }
@@ -158,24 +163,22 @@ class ProjectStateTests(unittest.TestCase):
                 self.assertEqual(actual["external_gate"]["head_sha"], exact["gate_head"])
 
         m4 = state["milestones"]["M4"]
-        self.assertEqual(m4["implementation"]["source_evidence_head"], M4_SOURCE_SHA)
+        self.assertEqual(m4["implementation"]["source_evidence_head"], M4_PRODUCT_SHA)
+        self.assertEqual(m4["implementation"]["tree"], M4_FINAL_TREE)
+        self.assertEqual(m4["implementation"]["artifact_sha256"], M4_FINAL_ARTIFACT_SHA256)
         self.assertEqual(m4["implementation"]["integration_baseline"], M4_INTEGRATION_SHA)
         self.assertEqual(
             m4["implementation"]["latest_committed_repair_checkpoint"],
-            M4_RELEASE_STATE_BASE_SHA,
+            M4_PRODUCT_SHA,
         )
-        self.assertEqual(
-            m4["implementation"]["current_candidate_identity"],
-            "repository tree containing this PROJECT_STATE.json",
-        )
-        self.assertEqual(m4["review"]["evidence_head"], M4_SOURCE_SHA)
+        self.assertEqual(m4["review"]["evidence_head"], M4_PRODUCT_SHA)
         self.assertEqual(m4["stack_integration"]["base_commit"], CURRENT_MAIN_SHA)
         self.assertEqual(m4["stack_integration"]["source_head"], M4_SOURCE_SHA)
         self.assertEqual(m4["stack_integration"]["merge_parents"], [M4_SOURCE_SHA, CURRENT_MAIN_SHA])
         self.assertEqual(m4["stack_integration"]["intermediate_code_head"], M4_INTEGRATION_SHA)
         self.assertEqual(
             m4["stack_integration"]["latest_committed_repair_checkpoint"],
-            M4_RELEASE_STATE_BASE_SHA,
+            M4_PRODUCT_SHA,
         )
         self.assertEqual(
             m4["stack_integration"]["intermediate_local_verification"],
@@ -206,12 +209,12 @@ class ProjectStateTests(unittest.TestCase):
             m4["stack_integration"]["release_state_local_verification"],
             {
                 "status": "passed",
-                "head_sha": M4_RELEASE_STATE_BASE_SHA,
-                "tree_fingerprint": M4_RELEASE_STATE_BASE_FINGERPRINT,
+                "head_sha": M4_PRODUCT_SHA,
+                "tree_sha": M4_FINAL_TREE,
+                "tree_fingerprint": M4_FINAL_FINGERPRINT,
                 "checks_passed": 14,
                 "checks_total": 14,
-                "created_at": "2026-09-02T10:51:29Z",
-                "notes": "Exact baseline receipt only; the current follow-up changes source and package bytes, so the receipt does not transfer.",
+                "notes": "Final exact-head local M4 evidence; it does not transfer to M5 or create external acceptance.",
             },
         )
         self.assertIsNone(m4["stack_integration"]["merge_commit"])
@@ -221,8 +224,11 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(m4["external_gate"]["source_gitguardian_status"], "failure_metadata_only")
 
         m5 = state["milestones"]["M5"]
-        self.assertEqual(m5["implementation"]["commit"], M5_PROVISIONAL_SHA)
-        self.assertEqual(m5["stack_integration"]["base_commit"], "94fc5ad878e6b15df6418303caada49a3b93bf4c")
+        self.assertEqual(m5["implementation"]["commit"], M5_SLICE1_SHA)
+        self.assertEqual(m5["implementation"]["tree"], M5_SLICE1_TREE)
+        self.assertEqual(m5["stack_integration"]["base_commit"], M4_PRODUCT_SHA)
+        self.assertEqual(m5["stack_integration"]["source_pull_request"], 21)
+        self.assertFalse(m5["stack_integration"]["source_pull_request_contains_base_commit"])
         self.assertIsNone(m5["main_delivery"]["merge_commit"])
         m6 = state["milestones"]["M6"]
         self.assertEqual(m6["implementation"]["commit"], M6_PROVISIONAL_SHA)
@@ -249,6 +255,15 @@ class ProjectStateTests(unittest.TestCase):
         m8 = state["milestones"]["M8"]
         self.assertEqual(m8["implementation"]["starting_head"], M8_STARTING_SHA)
         self.assertEqual(m8["implementation"]["commit"], M8_PROVISIONAL_SHA)
+        self.assertEqual(m8["implementation"]["tree"], M8_PROVISIONAL_TREE)
+        self.assertEqual(
+            m8["implementation"]["local_evidence"],
+            {
+                "focused": "23/23 passed",
+                "factory": "93 passed with 30 expected PostgreSQL skips",
+                "fitness_and_budget": "passed",
+            },
+        )
         m9 = state["milestones"]["M9"]
         self.assertEqual(m9["implementation"]["prior_design_head"], M9_DESIGN_SHA)
         self.assertEqual(m9["implementation"]["commit"], M9_PROVISIONAL_SHA)
@@ -257,13 +272,16 @@ class ProjectStateTests(unittest.TestCase):
         dimensions = self.state["active_delivery"]["m4_dimensions"]
         self.assertTrue(
             self.state["active_delivery"]["next_action"].startswith(
-                "Run local exact-head verification and all route-selected reviews"
+                "Keep slice 01 as the bounded first M5 successor"
             )
         )
         self.assertEqual(
             dimensions["implementation_source"],
             {
-                "status": "implemented_local_candidate",
+                "status": "implemented_local_gate_complete",
+                "head_sha": M4_PRODUCT_SHA,
+                "tree_sha": M4_FINAL_TREE,
+                "artifact_sha256": M4_FINAL_ARTIFACT_SHA256,
                 "components": [
                     "typed_intake_and_task_state",
                     "postgresql_migrations_001_013",
@@ -285,18 +303,25 @@ class ProjectStateTests(unittest.TestCase):
                 )
             },
             {
-                "local_exact_head_verification": "receipt_required_for_current_exact_head",
-                "independent_review": "rereview_required_for_current_exact_head",
+                "local_exact_head_verification": "passed_local_only",
+                "independent_review": "five_local_reviews_passed",
                 "pr_external_merge_delivery": "not_delivered",
             },
         )
+        self.assertEqual(dimensions["pr_external_merge_delivery"]["pull_request"], 21)
+        self.assertFalse(dimensions["pr_external_merge_delivery"]["contains_current_candidate"])
+        m5 = self.state["active_delivery"]["m5_dimensions"]
+        self.assertEqual(m5["current_slice"]["implementation_checkpoint"], M5_SLICE1_SHA)
+        self.assertEqual(m5["current_slice"]["implementation_tree"], M5_SLICE1_TREE)
+        self.assertEqual(m5["current_slice"]["package_status"], "not_created_for_source_slice")
+        self.assertEqual(m5["local_verification"]["exact_predecessor_fitness"], "passed_all_applicable_categories")
         self.assertEqual(
             self.state["milestones"]["M4"]["implementation"]["source_status"],
-            "implemented_local_candidate",
+            "implemented_local_gate_complete",
         )
         self.assertEqual(
             self.state["milestones"]["M5"]["implementation"]["status"],
-            "provisional_source_complete",
+            "provisional_successor_slice_01",
         )
 
     def test_local_git_objects_corrobate_durable_stack_proof_when_available(self) -> None:
@@ -465,27 +490,25 @@ class ProjectStateTests(unittest.TestCase):
             [(item["route_id"], item["branch"]) for item in inventory["active"]],
             [
                 ("b7f288f1e81e", "integration/m4-main-20260902"),
-                ("37b05f579320", "milestone/m5-isolated-execution-provisional-m4"),
+                ("37b05f579320", "milestone/m5-successor-01-contracts-brokers"),
                 ("82aac86a3bf9", "milestone/m6-semantic-validation-provisional-m4"),
                 ("e5911c3f8721", "milestone/m7-shadow-handoff-provisional-m4"),
                 ("670ffe5522e0", "milestone/m8-earned-autonomy-provisional-m4"),
                 ("e376373492fe", "milestone/m9-staged-recovery-provisional-m4"),
             ],
         )
-        self.assertEqual(inventory["active"][0]["source_head"], M4_SOURCE_SHA)
-        self.assertEqual(inventory["active"][0]["base_head"], CURRENT_MAIN_SHA)
-        self.assertEqual(inventory["active"][0]["intermediate_code_head"], M4_INTEGRATION_SHA)
-        self.assertEqual(
-            inventory["active"][0]["latest_committed_repair_checkpoint"],
-            M4_RELEASE_STATE_BASE_SHA,
-        )
-        self.assertEqual(inventory["active"][1]["head"], M5_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][0]["head"], M4_PRODUCT_SHA)
+        self.assertEqual(inventory["active"][0]["tree"], M4_FINAL_TREE)
+        self.assertEqual(inventory["active"][0]["artifact_sha256"], M4_FINAL_ARTIFACT_SHA256)
+        self.assertEqual(inventory["active"][1]["head"], M5_SLICE1_SHA)
+        self.assertEqual(inventory["active"][1]["tree"], M5_SLICE1_TREE)
         self.assertEqual(inventory["active"][2]["task1_head"], M6_TASK1_SHA)
         self.assertEqual(inventory["active"][2]["task2_head"], M6_TASK2_SHA)
         self.assertEqual(inventory["active"][2]["head"], M6_PROVISIONAL_SHA)
         self.assertEqual(inventory["active"][3]["head"], M7_PROVISIONAL_SHA)
         self.assertEqual(inventory["active"][4]["starting_head"], M8_STARTING_SHA)
         self.assertEqual(inventory["active"][4]["head"], M8_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][4]["tree"], M8_PROVISIONAL_TREE)
         self.assertEqual(inventory["active"][5]["prior_design_head"], M9_DESIGN_SHA)
         self.assertEqual(inventory["active"][5]["head"], M9_PROVISIONAL_SHA)
         self.assertIn(1, {item.get("pull_request") for item in inventory["superseded"]})

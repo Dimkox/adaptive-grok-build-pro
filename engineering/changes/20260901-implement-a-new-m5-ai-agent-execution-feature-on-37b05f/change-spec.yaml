@@ -4,13 +4,13 @@
     {"id":"AC-002","statement":"Bounded provider-neutral JSON and JSONL parsing rejects malformed mismatched reasoning-bearing flooding and invalid terminal streams","evidence":[{"test":"factory/tests/test_protocol.py"},{"receipt":"security_review"}]},
     {"id":"AC-003","statement":"Exact-version Codex and Grok fixture adapters normalize only allowlisted projections with no live call fallback or unproven eligibility","evidence":[{"test":"factory/tests/test_adapters.py"},{"receipt":"test_review"},{"receipt":"security_review"}]},
     {"id":"AC-004","statement":"Proposal and workspace brokers enforce fence packet role path digest provenance redaction budget credential egress and external-write boundaries","evidence":[{"test":"factory/tests/test_brokers.py"},{"test":"factory/tests/test_workspace.py"},{"receipt":"security_review"}]},
-    {"id":"AC-005","statement":"Additive migration 013 and explicit execution API persist fenced packet manifest stage proposal usage terminal and orphan facts while preserving M4 claims","evidence":[{"test":"factory/tests/test_api.py"},{"test":"factory/tests/test_execution_service.py"},{"test":"factory/tests/test_migrations.py"},{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"code_review"}]},
+    {"id":"AC-005","statement":"Successor migration 014 after immutable M4 migration 013 and a separate additive execution API contract persist fenced packet manifest stage proposal usage terminal and orphan facts while preserving M4 claims","evidence":[{"test":"factory/tests/test_api.py"},{"test":"factory/tests/test_execution_service.py"},{"test":"factory/tests/test_migrations.py"},{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"code_review"}]},
     {"id":"AC-006","statement":"Predefined systemd source topology recovery metrics installer architecture and documentation are bounded and do not install activate or claim unavailable host isolation","evidence":[{"test":"tests/test_structure.py"},{"receipt":"release_review"}]},
     {"id":"AC-007","statement":"All locally feasible verification and independent route reviews bind one final tree while M5 OS isolation exit remains explicitly blocked","evidence":[{"receipt":"verification"},{"receipt":"code_review"},{"receipt":"test_review"},{"receipt":"security_review"},{"receipt":"release_review"}]}
   ],
   "approvals":{"required_scopes":["architecture","security","release"]},
   "change_id":"20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f",
-  "contracts":{"events":["factory/contracts/schemas/execution-event.v1.json"],"json_schema":["factory/contracts/schemas/task-packet.v1.json","factory/contracts/schemas/execution-invocation.v1.json","factory/contracts/schemas/execution-event.v1.json"],"openapi":["factory/contracts/openapi/factory-control.v1.json"]},
+  "contracts":{"events":["factory/contracts/schemas/execution-event.v1.json"],"json_schema":["factory/contracts/schemas/task-packet.v1.json","factory/contracts/schemas/execution-invocation.v1.json","factory/contracts/schemas/execution-event.v1.json"],"openapi":[]},
   "forbidden_outcomes":[
     {"id":"FORBID-001","statement":"M5 invokes a live provider network external write GitHub deployment production or systemd activation path","evidence":[{"receipt":"security_review"}]},
     {"id":"FORBID-002","statement":"M5 reads stores logs or transmits credentials Trust CI material human keys chain of thought raw native streams or unrestricted output","evidence":[{"receipt":"security_review"}]},
@@ -22,7 +22,7 @@
     {"id":"INV-003","statement":"Provider identity adapter native version model capability and eligibility are explicit and never selected from untrusted content","evidence":[{"receipt":"security_review"}]},
     {"id":"INV-004","statement":"Durable data is canonical bounded allowlisted redacted proposal evidence without private reasoning","evidence":[{"receipt":"security_review"}]}
   ],
-  "objective":{"id":"OBJ-001","statement":"Add a provider-neutral locally testable isolated execution source plane on exact current M4 review base 460a8a01a6394cac710b4e3f9eea3d94d4beef89","success_metric":"m5_locally_feasible_source_gate","target":"All source fixture fake-runtime migration API systemd and recovery checks pass while unavailable OS isolation remains explicitly blocked"},
+  "objective":{"id":"OBJ-001","statement":"Materialize a provider-neutral locally testable isolated execution plane as four bounded successors rooted at exact final local M4 571cad7877431ac5ab5779b53fe9f7effd6859ce","success_metric":"m5_bounded_successor_source_gates","target":"Every slice passes fitness against its immediate predecessor while rootless live-host isolation remains explicitly blocked"},
   "observability":[
     {"id":"SIG-001","metric":"factory_execution_claim_and_stage_outcomes_total","proves":["OBJ-001"]},
     {"id":"SIG-002","metric":"factory_execution_protocol_and_proposal_outcomes_total","proves":["OBJ-001"]},
