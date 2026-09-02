@@ -47,6 +47,92 @@ class MetricsUnavailable(StoreError):
     pass
 
 
+def _validate_capability_session(cursor, capability_role: str, label: str) -> None:
+    cursor.execute(
+        """SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
+        rolreplication,rolbypassrls,COALESCE(rolconfig,ARRAY[]::text[])
+        FROM pg_roles WHERE rolname=session_user"""
+    )
+    identity = cursor.fetchone()
+    if identity is None or identity[:7] != (True, False, False, False, False, False, False) \
+            or tuple(identity[7]) != ():
+        raise StoreError(f"{label} login is not least privilege")
+    if cursor.connection.info.server_version >= 160000:
+        cursor.execute(
+            """SELECT r.rolname,m.admin_option,m.inherit_option,m.set_option
+            FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.roleid
+            JOIN pg_roles u ON u.oid=m.member WHERE u.rolname=session_user"""
+        )
+        membership = cursor.fetchall()
+        expected_membership = [(capability_role, False, False, True)]
+    else:
+        cursor.execute(
+            """SELECT r.rolname,m.admin_option FROM pg_auth_members m
+            JOIN pg_roles r ON r.oid=m.roleid JOIN pg_roles u ON u.oid=m.member
+            WHERE u.rolname=session_user"""
+        )
+        membership = cursor.fetchall()
+        expected_membership = [(capability_role, False)]
+    if membership != expected_membership:
+        raise StoreError(f"{label} login has excess role membership")
+    cursor.execute(
+        """SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
+        rolreplication,rolbypassrls,COALESCE(rolconfig,ARRAY[]::text[])
+        FROM pg_roles WHERE rolname=%s""",
+        (capability_role,),
+    )
+    capability = cursor.fetchone()
+    expected_config = (
+        ("search_path=factory, pg_catalog",) if capability_role == "factory_runtime" else ()
+    )
+    if capability is None or capability[:7] != (False, False, False, False, False, False, False) \
+            or tuple(capability[7]) != expected_config:
+        raise StoreError(f"{label} capability role is not isolated")
+    cursor.execute(
+        """SELECT EXISTS(SELECT 1 FROM pg_auth_members m
+        JOIN pg_roles member ON member.oid=m.member WHERE member.rolname=%s)""",
+        (capability_role,),
+    )
+    if cursor.fetchone()[0]:
+        raise StoreError(f"{label} capability role is not isolated")
+    cursor.execute(
+        """WITH login AS (SELECT oid FROM pg_roles WHERE rolname=session_user)
+        SELECT
+          (SELECT datdba=(SELECT oid FROM login) FROM pg_database WHERE datname=current_database())
+          OR EXISTS(SELECT 1 FROM pg_namespace WHERE nspowner=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_class WHERE relowner=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_proc WHERE proowner=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_type WHERE typowner=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_database d
+            CROSS JOIN LATERAL aclexplode(d.datacl) a
+            WHERE d.datacl IS NOT NULL AND a.grantee=(SELECT oid FROM login)
+              AND NOT (
+                d.datname=current_database() AND a.privilege_type='CONNECT'
+                AND NOT a.is_grantable
+              ))
+          OR EXISTS(SELECT 1 FROM pg_namespace n
+            CROSS JOIN LATERAL aclexplode(n.nspacl) a
+            WHERE n.nspacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_class c
+            CROSS JOIN LATERAL aclexplode(c.relacl) a
+            WHERE c.relacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_attribute c
+            CROSS JOIN LATERAL aclexplode(c.attacl) a
+            WHERE c.attacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_proc p
+            CROSS JOIN LATERAL aclexplode(p.proacl) a
+            WHERE p.proacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_type t
+            CROSS JOIN LATERAL aclexplode(t.typacl) a
+            WHERE t.typacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_default_acl d
+            CROSS JOIN LATERAL aclexplode(d.defaclacl) a
+            WHERE d.defaclrole=(SELECT oid FROM login) OR a.grantee=(SELECT oid FROM login))"""
+    )
+    if cursor.fetchone()[0]:
+        raise StoreError(f"{label} login has direct database authority")
+
+
 @dataclass(frozen=True)
 class IntakeResult:
     task: TaskProjection
@@ -77,28 +163,18 @@ class PostgresArtifactAttestationStore:
     def _connect(self):
         import psycopg
 
-        connection = psycopg.connect(self.database_url)
+        connection = psycopg.connect(self.database_url, connect_timeout=5)
         try:
             with connection.cursor() as cursor:
-                cursor.execute(
-                    """SELECT session_user,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
-                    pg_has_role(session_user,'factory_artifact_attestor','MEMBER'),
-                    pg_has_role(session_user,'factory_runtime','MEMBER')
-                    FROM pg_roles WHERE rolname=session_user"""
+                cursor.execute("SET search_path=pg_catalog")
+                cursor.execute("SET lock_timeout='5s'; SET statement_timeout='5s'")
+                _validate_capability_session(
+                    cursor, "factory_artifact_attestor", "artifact attestor"
                 )
-                identity = cursor.fetchone()
-                if identity is None or identity[1:] != (False, False, False, False, True, False):
-                    raise StoreError("artifact attestor login is not least privilege")
-                cursor.execute(
-                    """SELECT COALESCE(array_agg(r.rolname ORDER BY r.rolname),ARRAY[]::name[])
-                    FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.roleid
-                    JOIN pg_roles u ON u.oid=m.member WHERE u.rolname=session_user"""
-                )
-                if tuple(cursor.fetchone()[0]) != ("factory_artifact_attestor",):
-                    raise StoreError("artifact attestor login has excess role membership")
                 cursor.execute("SET ROLE factory_artifact_attestor")
-                cursor.execute("SELECT current_user")
-                if cursor.fetchone()[0] != "factory_artifact_attestor":
+                cursor.execute("SET search_path=pg_catalog,factory")
+                cursor.execute("SELECT current_user,current_setting('search_path')")
+                if cursor.fetchone() != ("factory_artifact_attestor", "pg_catalog, factory"):
                     raise StoreError("artifact attestor capability unavailable")
             return connection
         except Exception:
@@ -114,12 +190,18 @@ class PostgresArtifactAttestationStore:
     def record_artifact_attestation(
         self, attestation: ArtifactAttestationV1
     ) -> ArtifactAttestationV1 | ArtifactAttestationUnavailable:
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT factory.execution_record_artifact_attestation(%s::jsonb)",
-                (json.dumps(attestation.to_dict(), sort_keys=True, separators=(",", ":")),),
-            )
-            value = cursor.fetchone()[0]
+        import psycopg
+
+        try:
+            with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+                cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+                cursor.execute(
+                    "SELECT factory.execution_record_artifact_attestation(%s::jsonb)",
+                    (json.dumps(attestation.to_dict(), sort_keys=True, separators=(",", ":")),),
+                )
+                value = cursor.fetchone()[0]
+        except psycopg.Error:
+            return ArtifactAttestationUnavailable(reason="trusted_artifact_attestation_unavailable")
         if value is None:
             return ArtifactAttestationUnavailable(reason="trusted_artifact_attestation_rejected")
         if isinstance(value, str):
@@ -142,7 +224,14 @@ class PostgresFactoryStore:
         options = {} if connect_timeout is None else {"connect_timeout": connect_timeout}
         connection = psycopg.connect(self.database_url, **options)
         try:
-            connection.execute("SET ROLE factory_runtime")
+            with connection.cursor() as cursor:
+                cursor.execute("SET search_path=pg_catalog")
+                _validate_capability_session(cursor, "factory_runtime", "runtime")
+                cursor.execute("SET ROLE factory_runtime")
+                cursor.execute("SET search_path=pg_catalog,factory")
+                cursor.execute("SELECT current_user,current_setting('search_path')")
+                if cursor.fetchone() != ("factory_runtime", "pg_catalog, factory"):
+                    raise StoreError("runtime capability unavailable")
         except Exception:
             connection.close()
             raise
@@ -152,11 +241,14 @@ class PostgresFactoryStore:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute("SELECT current_user,COALESCE(max(version),0) FROM factory.schema_migrations")
             role, version = cursor.fetchone()
+            cursor.execute("SELECT session_user")
+            session_user = cursor.fetchone()[0]
             capacity_consistent = self._capacity_consistent(cursor)
             accounting_consistent = self._accounting_consistent(cursor)
             return {
                 "status": "ready" if version == len(discover_migrations()) and capacity_consistent and accounting_consistent else "not_ready",
                 "database_role": role,
+                "session_user": session_user,
                 "schema_version": version,
                 "capacity_consistent": capacity_consistent,
                 "accounting_consistent": accounting_consistent,

@@ -10,12 +10,12 @@ from pathlib import Path
 import subprocess
 import sys
 import time
-import re
 import uuid
 
 SOURCE = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SOURCE))
 
+from adaptive_factory.admin import provision_runtime_login
 from adaptive_factory.migrations import PostgresMigrator
 from adaptive_factory.models import Actor, RunRole
 from adaptive_factory.service import FactoryService
@@ -33,6 +33,15 @@ def main() -> int:
         raise SystemExit(f"{args.database_url_env} and {args.container_name_env} are required")
     PostgresMigrator(database_url).apply()
     import psycopg
+    from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+    runtime_login = "factory_restart_runtime"
+    runtime_password = "local-restart-runtime-test"
+    provision_runtime_login(database_url, runtime_login, runtime_password)
+    runtime_url = make_conninfo(**{
+        **conninfo_to_dict(database_url), "user": runtime_login,
+        "password": runtime_password,
+    })
 
     now = datetime.now(timezone.utc).replace(microsecond=0)
     policy_digest = "0123456789ab" + "9" * 52
@@ -62,7 +71,7 @@ def main() -> int:
     }
     operator = Actor("operator", "operator", frozenset({"task:submit", "factory:reconcile"}), frozenset({"*"}))
     lost_worker = Actor("lost-worker", "worker", frozenset({"task:claim", "task:heartbeat"}), frozenset({"probe/repository"}))
-    service = FactoryService(PostgresFactoryStore(database_url))
+    service = FactoryService(PostgresFactoryStore(runtime_url))
     service.intake(payload, actor=operator, now=now)
     old = service.claim(owner=lost_worker.actor_id, role=RunRole.READER, repositories=("probe/repository",), lease_seconds=30, actor=lost_worker, now=now)
     with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -73,7 +82,12 @@ def main() -> int:
         ["docker", "port", container_name, "5432/tcp"], check=True, text=True, capture_output=True, timeout=10
     ).stdout.strip()
     new_port = int(published.rsplit(":", 1)[1])
-    database_url = re.sub(r"(?<=@)127\.0\.0\.1:\d+(?=/)", f"127.0.0.1:{new_port}", database_url, count=1)
+    database_url = make_conninfo(**{
+        **conninfo_to_dict(database_url), "port": new_port,
+    })
+    runtime_url = make_conninfo(**{
+        **conninfo_to_dict(runtime_url), "port": new_port,
+    })
     deadline = time.monotonic() + 30
     while True:
         try:
@@ -85,7 +99,7 @@ def main() -> int:
                 raise SystemExit("PostgreSQL did not become ready after actual restart")
             time.sleep(0.25)
 
-    fresh = FactoryService(PostgresFactoryStore(database_url))
+    fresh = FactoryService(PostgresFactoryStore(runtime_url))
     first = fresh.reconcile(actor=operator, now=datetime.now(timezone.utc))
     second = fresh.reconcile(actor=operator, now=datetime.now(timezone.utc))
     new_worker = Actor("new-worker", "worker", frozenset({"task:claim"}), frozenset({"probe/repository"}))

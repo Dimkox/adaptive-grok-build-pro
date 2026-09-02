@@ -7,7 +7,13 @@ from typing import Any, Mapping
 
 from .contracts import canonical_digest
 from .models import FailureClass
-from .protocol import CanonicalEvent, ProtocolError, validate_note_type
+from .protocol import (
+    CanonicalEvent,
+    MAX_DURABLE_PATH_BYTES,
+    ProtocolError,
+    contains_structural_secret,
+    validate_note_type,
+)
 
 
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -150,7 +156,7 @@ def _redact(value: str, max_bytes: int) -> str:
 
 
 def _secret_free(value: str, maximum: int, code: str = "secret_identity") -> str:
-    if _redact(value, maximum) != value:
+    if contains_structural_secret(value) or _redact(value, maximum) != value:
         raise BrokerError(code)
     return value
 
@@ -162,7 +168,7 @@ def secret_free_identity(value: str, maximum: int = 128) -> str:
 def _safe_path(value: Any, code: str) -> str:
     if not isinstance(value, str) or not value or "\x00" in value:
         raise BrokerError(code)
-    _secret_free(value, 1024)
+    _secret_free(value, MAX_DURABLE_PATH_BYTES)
     path = PurePosixPath(value)
     if path.is_absolute() or ".." in path.parts or ".git" in path.parts or str(path) != value:
         raise BrokerError(code)

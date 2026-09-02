@@ -6,6 +6,7 @@ import re
 from typing import Callable, Mapping
 
 from .contracts import canonical_digest
+from .protocol import MAX_DURABLE_PATH_BYTES, contains_structural_secret
 
 
 _CREDENTIAL_NAME = re.compile(r"(?i)(?:key|token|secret|password|credential|trust_ci|openai|github|grok)")
@@ -171,7 +172,11 @@ class ArtifactAttestationRequest:
         if not isinstance(data["artifact_class"], str) or not _IDENTIFIER.fullmatch(data["artifact_class"]):
             raise WorkspaceError("artifact_attestation_class")
         path = data["path"]
-        if not isinstance(path, str) or not path or "\x00" in path:
+        if (
+            not isinstance(path, str) or not path or "\x00" in path
+            or len(path.encode("utf-8")) > MAX_DURABLE_PATH_BYTES
+            or contains_structural_secret(path)
+        ):
             raise WorkspaceError("artifact_attestation_path")
         candidate = PurePosixPath(path)
         if candidate.is_absolute() or ".." in candidate.parts or ".git" in candidate.parts or str(candidate) != path:

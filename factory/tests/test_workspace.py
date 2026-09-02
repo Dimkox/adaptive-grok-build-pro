@@ -111,6 +111,17 @@ class WorkspaceTests(unittest.TestCase):
             "author_role": "writer", "artifact_class": "report", "path": "factory/src/a.py",
             "sha256": "c" * 64, "size_bytes": 12, "media_type": "text/x-python",
         })
+        for unsafe_path in (
+            "factory/src/password=hunter2",
+            "factory/src/ghp_secret",
+            "factory/src/../outside",
+            "factory/src/.git/config",
+            "factory/src/" + "x" * (1025 - len("factory/src/")),
+        ):
+            with self.subTest(unsafe_path=unsafe_path), self.assertRaises(WorkspaceError):
+                ArtifactAttestationRequest.from_facts({
+                    **request.to_dict(), "path": unsafe_path,
+                })
         value = {
             "contract_version": 1, **request.to_dict(), "source": "trusted_workspace_broker",
         }

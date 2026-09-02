@@ -18,6 +18,7 @@ from .protocol import CanonicalEvent
 from .workspace import (
     ArtifactAttestationRequest,
     ArtifactAttestationV1,
+    WorkspaceError,
     WorkspaceSnapshotUnavailable,
     WorkspaceSnapshotV1,
 )
@@ -328,21 +329,24 @@ class FactoryService:
             roots = tuple(PurePosixPath(value) for value in context.allowed_paths)
             if not any(path == root or root in path.parents for root in roots):
                 raise ExecutionContractError("path_forbidden")
-            request = ArtifactAttestationRequest.from_facts({
-                "task_id": context.task_id,
-                "run_id": context.run_id,
-                "repository_id": context.repository_id,
-                "packet_digest": context.packet_digest,
-                "workspace_handle": context.workspace_handle,
-                "producer_sequence": event.sequence,
-                "fence": grant.fence,
-                "author_role": context.role,
-                "artifact_class": event.payload["artifact_class"],
-                "path": event.payload["path"],
-                "sha256": event.payload["sha256"],
-                "size_bytes": event.payload["size_bytes"],
-                "media_type": event.payload["media_type"],
-            })
+            try:
+                request = ArtifactAttestationRequest.from_facts({
+                    "task_id": context.task_id,
+                    "run_id": context.run_id,
+                    "repository_id": context.repository_id,
+                    "packet_digest": context.packet_digest,
+                    "workspace_handle": context.workspace_handle,
+                    "producer_sequence": event.sequence,
+                    "fence": grant.fence,
+                    "author_role": context.role,
+                    "artifact_class": event.payload["artifact_class"],
+                    "path": event.payload["path"],
+                    "sha256": event.payload["sha256"],
+                    "size_bytes": event.payload["size_bytes"],
+                    "media_type": event.payload["media_type"],
+                })
+            except WorkspaceError as exc:
+                raise ExecutionContractError("artifact_attestation_invalid") from exc
             if self.artifact_broker is None:
                 raise ExecutionContractError("artifact_attestation_unavailable")
             attestation = self.artifact_broker.attest_artifact(request)

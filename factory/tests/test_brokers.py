@@ -70,6 +70,8 @@ class BrokerTests(unittest.TestCase):
         for note_type in (
             "analysis", "Reasoning", "scratch-pad", " raw prompt ",
             "model_analysis", "private-reasoning", "raw_prompt_dump",
+            "private_thoughts", "hidden_cot", "raw_response",
+            "internal_deliberation", "late", "x",
         ):
             with self.subTest(note_type=note_type), self.assertRaisesRegex(
                 BrokerError, "forbidden_note_type"
@@ -178,9 +180,17 @@ class BrokerTests(unittest.TestCase):
         self.assertNotIn("equals-tail", proposal.body)
         self.assertNotIn("http-tail", proposal.body)
         self.assertNotIn("proxy-tail", proposal.body)
-        for event_type, payload in (
-            ("note.proposed", {"note_type": "ghp_secret", "body": "safe", "evidence": []}),
-            ("note.proposed", {"note_type": "finding", "body": "safe", "evidence": ["factory/ghp_secret"]}),
+        for event_type, payload, error in (
+            (
+                "note.proposed",
+                {"note_type": "ghp_secret", "body": "safe", "evidence": []},
+                "forbidden_note_type",
+            ),
+            (
+                "note.proposed",
+                {"note_type": "finding", "body": "safe", "evidence": ["factory/ghp_secret"]},
+                "secret_identity",
+            ),
             (
                 "usage.reported",
                 {
@@ -192,10 +202,11 @@ class BrokerTests(unittest.TestCase):
                     "cost_usd_micros": 1,
                     "output_bytes": 1,
                 },
+                "secret_identity",
             ),
         ):
             with self.subTest(event_type=event_type), self.assertRaisesRegex(
-                BrokerError, "secret_identity"
+                BrokerError, error
             ):
                 ProposalBroker().accept(
                     event(2, event_type, payload), context(), owner="writer-01", fence=7,

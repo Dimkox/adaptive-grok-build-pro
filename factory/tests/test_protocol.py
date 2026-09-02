@@ -66,7 +66,7 @@ class ProtocolTests(unittest.TestCase):
         cases.append(([wrong], "identity_mismatch"))
         cases.append(([event(2, "run.completed", {"summary": "x"})], "invalid_sequence"))
         cases.append(([event(1, "artifact.proposed", {"artifact_class": "report", "path": "a", "sha256": "b" * 64, "size_bytes": 1, "media_type": "text/plain"})], "undeclared_capability"))
-        cases.append(([event(1, "run.completed", {"summary": "x"}), event(2, "note.proposed", {"note_type": "x", "body": "x", "evidence": []})], "after_terminal"))
+        cases.append(([event(1, "run.completed", {"summary": "x"}), event(2, "note.proposed", {"note_type": "finding", "body": "x", "evidence": []})], "after_terminal"))
         for values, code in cases:
             with self.subTest(code=code), self.assertRaisesRegex(ProtocolError, code):
                 stream = parser()
@@ -82,6 +82,8 @@ class ProtocolTests(unittest.TestCase):
         for note_type in (
             "analysis", "Reasoning", "scratch-pad", " raw prompt ",
             "model_analysis", "private-reasoning", "raw_prompt_dump",
+            "private_thoughts", "hidden_cot", "raw_response",
+            "internal_deliberation", "late", "x",
         ):
             with self.subTest(note_type=note_type), self.assertRaisesRegex(
                 ProtocolError, "forbidden_content"

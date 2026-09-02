@@ -2,6 +2,20 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='factory_artifact_attestor') THEN
     CREATE ROLE factory_artifact_attestor NOLOGIN NOINHERIT;
   END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_roles r WHERE r.rolname IN ('factory_runtime','factory_artifact_attestor')
+      AND (r.rolcanlogin OR r.rolinherit OR r.rolsuper OR r.rolcreaterole OR r.rolcreatedb
+        OR r.rolreplication OR r.rolbypassrls
+        OR (r.rolname='factory_runtime' AND r.rolconfig IS DISTINCT FROM
+          ARRAY['search_path=factory, pg_catalog']::text[])
+        OR (r.rolname='factory_artifact_attestor'
+          AND COALESCE(array_length(r.rolconfig,1),0)>0))
+  ) OR EXISTS (
+    SELECT 1 FROM pg_auth_members m JOIN pg_roles member ON member.oid=m.member
+    WHERE member.rolname IN ('factory_runtime','factory_artifact_attestor')
+  ) THEN
+    RAISE EXCEPTION 'unsafe capability role: runtime and artifact attestor must be isolated NOLOGIN NOINHERIT roles';
+  END IF;
 END $$;
 
 CREATE TABLE factory.execution_packets (
@@ -76,7 +90,7 @@ CREATE TABLE factory.execution_artifact_attestations (
   repository_id text NOT NULL CHECK (octet_length(repository_id) BETWEEN 1 AND 128),
   workspace_handle text NOT NULL CHECK (workspace_handle ~ '^workspace:[0-9a-f]{64}$'),
   artifact_class text NOT NULL CHECK (artifact_class ~ '^[A-Za-z][A-Za-z0-9._-]{0,127}$'),
-  path text NOT NULL CHECK (octet_length(path) BETWEEN 1 AND 4096),
+  path text NOT NULL CHECK (octet_length(path) BETWEEN 1 AND 1024),
   sha256 char(64) NOT NULL CHECK (sha256 ~ '^[0-9a-f]{64}$'),
   size_bytes bigint NOT NULL CHECK (size_bytes BETWEEN 0 AND 1000000000),
   media_type text NOT NULL CHECK (media_type ~ '^[a-z0-9.+-]+/[a-z0-9.+-]+$'),
@@ -314,14 +328,7 @@ BEGIN
       OR jsonb_typeof(p_body->'body') IS DISTINCT FROM 'string'
       OR jsonb_typeof(p_body->'evidence') IS DISTINCT FROM 'array'
       OR COALESCE(octet_length(p_body->>'note_type'),0) NOT BETWEEN 1 AND 64
-      OR p_body->>'note_type' !~ '^[A-Za-z][A-Za-z0-9._-]{0,63}$'
-      OR EXISTS (
-        SELECT 1 FROM unnest(ARRAY[
-          'analysis','reasoning','scratchpad','chainofthought','rawprompt',
-          'prompt','stdout','stderr','nativestream'
-        ]) marker
-        WHERE regexp_replace(lower(p_body->>'note_type'),'[^a-z0-9]+','','g') LIKE '%' || marker || '%'
-      )
+      OR p_body->>'note_type' NOT IN ('finding','conclusion','decision.record')
       OR COALESCE(octet_length(p_body->>'body'),0)>
          LEAST(65536,(v_packet#>>'{limits,max_output_bytes}')::bigint)
       OR p_body->>'note_type' ~* v_secret_pattern
@@ -682,6 +689,11 @@ DECLARE
   v_body jsonb;
   v_canonical text;
   v_existing jsonb;
+  v_event_count bigint;
+  v_max_sequence bigint;
+  v_has_terminal boolean;
+  v_max_events bigint;
+  v_secret_pattern CONSTANT text := '(-----BEGIN|-----END|sk-|ghp_|github_pat_|(AKIA|ASIA)[A-Z0-9]{16}|bearer[ \t]+|authorization[ \t]*[=:]|["'']?([a-z0-9]+[_-])*(api[_-]?key|access[_-]?token|session[_-]?token|client[_-]?secret|refresh[_-]?token|password|credential|secret[_-]?key|private[_-]?key|token|secret)([_-][a-z0-9]+)*["'']?[ \t]*[:=])';
 BEGIN
   IF p_request IS NULL OR jsonb_typeof(p_request) IS DISTINCT FROM 'object'
     OR NOT (p_request ?& ARRAY[
@@ -714,6 +726,10 @@ BEGIN
     OR p_request->>'size_bytes' !~ '^(0|[1-9][0-9]{0,9})$'
     OR p_request->>'sha256' !~ '^[0-9a-f]{64}$'
     OR p_request->>'media_type' !~ '^[a-z0-9.+-]+/[a-z0-9.+-]+$'
+    OR COALESCE(octet_length(p_request->>'path'),0) NOT BETWEEN 1 AND 1024
+    OR p_request->>'path' LIKE '/%' OR p_request->>'path' LIKE '%//%'
+    OR p_request->>'path' LIKE '%/' OR p_request->>'path' ~ '(^|/)(\.|\.\.|\.git)(/|$)'
+    OR p_request->>'path' ~* v_secret_pattern
   THEN RETURN NULL; END IF;
 
   SELECT p.body,t.repository_id,m.workspace_handle,r.role,r.fence
@@ -780,6 +796,15 @@ BEGIN
     WHERE run_id=(p_request->>'run_id')::uuid
       AND producer_sequence=(p_request->>'producer_sequence')::bigint;
   IF FOUND THEN RETURN CASE WHEN v_existing=v_body THEN v_existing ELSE NULL END; END IF;
+  v_max_events=(v_packet#>>'{limits,max_events}')::bigint;
+  SELECT count(*),COALESCE(max(producer_sequence),0),
+         COALESCE(bool_or(proposal_kind='terminal'),false)
+    INTO v_event_count,v_max_sequence,v_has_terminal
+    FROM factory.execution_proposals WHERE run_id=(p_request->>'run_id')::uuid;
+  IF v_max_events IS NULL OR v_max_events NOT BETWEEN 1 AND 100000
+    OR v_has_terminal OR v_event_count>=v_max_events
+    OR (p_request->>'producer_sequence')::bigint<>v_max_sequence+1
+  THEN RETURN NULL; END IF;
   INSERT INTO factory.execution_artifact_attestations(
     artifact_attestation_digest,task_id,run_id,packet_digest,producer_sequence,fence,
     author_role,repository_id,workspace_handle,artifact_class,path,sha256,size_bytes,media_type,body

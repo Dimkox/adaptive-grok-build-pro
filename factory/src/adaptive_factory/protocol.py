@@ -43,11 +43,17 @@ _FORBIDDEN_KEYS = frozenset(
         "native_stream",
     }
 )
-_NOTE_TYPE = re.compile(r"^[A-Za-z][A-Za-z0-9._-]{0,63}$")
-_FORBIDDEN_NOTE_TYPES = frozenset({
-    "analysis", "reasoning", "scratchpad", "chainofthought", "rawprompt",
-    "prompt", "stdout", "stderr", "nativestream",
-})
+_NOTE_TYPES_V1 = frozenset({"finding", "conclusion", "decision.record"})
+MAX_DURABLE_PATH_BYTES = 1024
+_STRUCTURAL_SECRET = re.compile(
+    r"(?i)(?:-----BEGIN|-----END|(?:sk-|ghp_|github_pat_)[A-Za-z0-9_-]+|"
+    r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b|\bBearer[ \t]+[A-Za-z0-9._~+/=-]+|"
+    r"(?<![A-Za-z0-9_-])(?:[A-Za-z0-9]+[_-])*Authorization[ \t]*[=:]|"
+    r"(?<![A-Za-z0-9_-])(?:[\"'])?(?:[a-z0-9]+[_-])*(?:api[_-]?key|"
+    r"access[_-]?token|session[_-]?token|client[_-]?secret|refresh[_-]?token|"
+    r"password|credential|secret[_-]?key|private[_-]?key|token|secret)"
+    r"(?:[_-][a-z0-9]+)*(?:[\"'])?(?![A-Za-z0-9_-])[ \t]*[:=])"
+)
 _PAYLOAD_FIELDS = {
     "adapter.ready": frozenset(
         {"provider_id", "adapter_id", "adapter_version", "native_version", "model_id", "capabilities"}
@@ -83,12 +89,13 @@ def validate_note_type(value: object) -> str:
     """Return a closed durable note category or reject private/native streams."""
     if not isinstance(value, str):
         raise ProtocolError("payload_fields")
-    normalized = re.sub(r"[^a-z0-9]+", "", value.casefold())
-    if any(marker in normalized for marker in _FORBIDDEN_NOTE_TYPES):
+    if value not in _NOTE_TYPES_V1:
         raise ProtocolError("forbidden_content", "note_type")
-    if not _NOTE_TYPE.fullmatch(value):
-        raise ProtocolError("payload_fields")
     return value
+
+
+def contains_structural_secret(value: str) -> bool:
+    return bool(_STRUCTURAL_SECRET.search(value))
 
 
 @dataclass(frozen=True)
