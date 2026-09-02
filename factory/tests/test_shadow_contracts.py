@@ -1,5 +1,7 @@
 from copy import deepcopy
-from dataclasses import FrozenInstanceError
+from dataclasses import fields, FrozenInstanceError
+import json
+from pathlib import Path
 import unittest
 
 from adaptive_factory.contracts import ContractError, canonical_digest
@@ -10,8 +12,45 @@ from adaptive_factory.shadow_contracts import (
     M6SemanticBridgeV1,
     OperatorHandoffProposalV1,
     ReadyForPrBundleV1,
+    ShadowCohortKeyV1,
+    ShadowCohortV1,
+    ShadowOutcomeV1,
     ShadowTaskEvidenceV1,
 )
+
+
+FACTORY_ROOT = Path(__file__).resolve().parents[1]
+SCHEMA_ROOT = FACTORY_ROOT / "contracts" / "jsonschema"
+M7_SCHEMA_NAMES = {
+    "m7-predecessor-bridges.v1.schema.json",
+    "operator-handoff-proposal.v1.schema.json",
+    "ready-for-pr-bundle.v1.schema.json",
+    "shadow-cohort.v1.schema.json",
+    "shadow-outcome.v1.schema.json",
+    "shadow-task-evidence.v1.schema.json",
+}
+
+
+def load_m7_schemas() -> dict[str, dict[str, object]]:
+    return {
+        name: json.loads((SCHEMA_ROOT / name).read_text(encoding="utf-8"))
+        for name in sorted(M7_SCHEMA_NAMES)
+    }
+
+
+def dataclass_field_names(contract: type[object]) -> set[str]:
+    return {field.name for field in fields(contract)}
+
+
+def object_nodes(value: object):
+    if isinstance(value, dict):
+        if value.get("type") == "object":
+            yield value
+        for nested in value.values():
+            yield from object_nodes(nested)
+    elif isinstance(value, list):
+        for nested in value:
+            yield from object_nodes(nested)
 
 
 def valid_bridges() -> dict[str, dict[str, object]]:
@@ -237,6 +276,90 @@ class ShadowContractTests(unittest.TestCase):
         payload["status"] = "ready_for_pr"
         with self.assertRaisesRegex(ContractError, "invalid_bundle_status"):
             ReadyForPrBundleV1.from_dict(payload)
+
+    def test_m7_schema_inventory_and_dialect_are_exact(self):
+        self.assertTrue(SCHEMA_ROOT.is_dir())
+        actual = {
+            path.name
+            for path in SCHEMA_ROOT.glob("*.json")
+            if json.loads(path.read_text(encoding="utf-8")).get("$id", "").startswith(
+                "urn:adaptive-factory:m7:"
+            )
+        }
+        self.assertEqual(actual, M7_SCHEMA_NAMES)
+        for name, schema in load_m7_schemas().items():
+            with self.subTest(name=name):
+                self.assertEqual(schema["$schema"], "https://json-schema.org/draft/2020-12/schema")
+
+    def test_every_m7_schema_object_is_closed_complete_and_versioned(self):
+        for name, schema in load_m7_schemas().items():
+            for index, node in enumerate(object_nodes(schema)):
+                with self.subTest(name=name, object=index):
+                    self.assertIs(node.get("additionalProperties"), False)
+                    self.assertEqual(set(node.get("required", [])), set(node.get("properties", {})))
+                    properties = node.get("properties", {})
+                    if "schema_version" in properties:
+                        self.assertEqual(properties["schema_version"], {"const": 1})
+
+    def test_m7_schema_fields_match_python_v1_surfaces(self):
+        schemas = load_m7_schemas()
+        predecessors = schemas["m7-predecessor-bridges.v1.schema.json"]
+        for definition, contract in (
+            ("m4", M4ControlPlaneBridgeV1),
+            ("m5", M5ExecutionBridgeV1),
+            ("m6", M6SemanticBridgeV1),
+        ):
+            self.assertEqual(
+                set(predecessors["$defs"][definition]["properties"]),
+                dataclass_field_names(contract),
+            )
+        parity = (
+            ("shadow-task-evidence.v1.schema.json", ShadowTaskEvidenceV1),
+            ("operator-handoff-proposal.v1.schema.json", OperatorHandoffProposalV1),
+            ("ready-for-pr-bundle.v1.schema.json", ReadyForPrBundleV1),
+            ("shadow-outcome.v1.schema.json", ShadowOutcomeV1),
+            ("shadow-cohort.v1.schema.json", ShadowCohortV1),
+        )
+        for name, contract in parity:
+            with self.subTest(name=name):
+                self.assertEqual(set(schemas[name]["properties"]), dataclass_field_names(contract))
+        cohort_key = schemas["shadow-cohort.v1.schema.json"]["$defs"]["cohort_key"]
+        self.assertEqual(set(cohort_key["properties"]), dataclass_field_names(ShadowCohortKeyV1))
+
+    def test_m7_schema_enums_are_authority_safe_and_have_no_remote_fields(self):
+        schemas = load_m7_schemas()
+        predecessors = schemas["m7-predecessor-bridges.v1.schema.json"]["$defs"]
+        for name in ("m4", "m5", "m6"):
+            self.assertEqual(predecessors[name]["properties"]["dependency_state"], {"const": "accepted"})
+        self.assertEqual(predecessors["m6"]["properties"]["semantic_decision"], {"const": "pass"})
+        self.assertEqual(predecessors["m6"]["properties"]["coverage_millionths"], {"const": 1_000_000})
+
+        proposal = schemas["operator-handoff-proposal.v1.schema.json"]["properties"]
+        self.assertEqual(proposal["external_capability"], {"const": "absent"})
+        self.assertEqual(proposal["recommended_action"], {"const": "human_review"})
+        self.assertEqual(
+            [item["const"] for item in proposal["instructions"]["prefixItems"]],
+            list(MANUAL_HANDOFF_INSTRUCTIONS),
+        )
+        bundle = schemas["ready-for-pr-bundle.v1.schema.json"]["properties"]
+        self.assertEqual(bundle["status"], {"const": "ready_for_human"})
+
+        forbidden = {
+            "auto_merge",
+            "command",
+            "credential",
+            "merge",
+            "network",
+            "pull_request",
+            "push",
+            "remote_target",
+            "token",
+            "url",
+        }
+        for name, schema in schemas.items():
+            for node in object_nodes(schema):
+                with self.subTest(name=name):
+                    self.assertTrue(forbidden.isdisjoint(node.get("properties", {})))
 
 
 if __name__ == "__main__":

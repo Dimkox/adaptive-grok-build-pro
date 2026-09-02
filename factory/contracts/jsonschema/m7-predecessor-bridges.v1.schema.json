@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:m7:predecessor-bridges:v1",
+  "title": "Adaptive Factory M7 Predecessor Bridges V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "m4", "m5", "m6"],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "fence": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+    "m4": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "product_sha",
+        "dependency_state",
+        "task_id",
+        "run_id",
+        "fence",
+        "task_packet_digest",
+        "exact_head_sha",
+        "task_record_digest",
+        "control_plane_evidence_digest"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "product_sha": {"$ref": "#/$defs/sha"},
+        "dependency_state": {"const": "accepted"},
+        "task_id": {"$ref": "#/$defs/identifier"},
+        "run_id": {"$ref": "#/$defs/identifier"},
+        "fence": {"$ref": "#/$defs/fence"},
+        "task_packet_digest": {"$ref": "#/$defs/digest"},
+        "exact_head_sha": {"$ref": "#/$defs/sha"},
+        "task_record_digest": {"$ref": "#/$defs/digest"},
+        "control_plane_evidence_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "m5": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "product_sha",
+        "dependency_state",
+        "task_id",
+        "run_id",
+        "fence",
+        "task_packet_digest",
+        "exact_head_sha",
+        "run_manifest_digest",
+        "workspace_result_digest",
+        "execution_authority_digest"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "product_sha": {"$ref": "#/$defs/sha"},
+        "dependency_state": {"const": "accepted"},
+        "task_id": {"$ref": "#/$defs/identifier"},
+        "run_id": {"$ref": "#/$defs/identifier"},
+        "fence": {"$ref": "#/$defs/fence"},
+        "task_packet_digest": {"$ref": "#/$defs/digest"},
+        "exact_head_sha": {"$ref": "#/$defs/sha"},
+        "run_manifest_digest": {"$ref": "#/$defs/digest"},
+        "workspace_result_digest": {"$ref": "#/$defs/digest"},
+        "execution_authority_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "m6": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "product_sha",
+        "dependency_state",
+        "task_id",
+        "run_id",
+        "fence",
+        "task_packet_digest",
+        "exact_head_sha",
+        "semantic_subject_digest",
+        "semantic_verdict_digest",
+        "semantic_evidence_digest",
+        "semantic_decision",
+        "coverage_millionths",
+        "contradicted_requirement_count",
+        "unsupported_pass_requirement_count"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "product_sha": {"$ref": "#/$defs/sha"},
+        "dependency_state": {"const": "accepted"},
+        "task_id": {"$ref": "#/$defs/identifier"},
+        "run_id": {"$ref": "#/$defs/identifier"},
+        "fence": {"$ref": "#/$defs/fence"},
+        "task_packet_digest": {"$ref": "#/$defs/digest"},
+        "exact_head_sha": {"$ref": "#/$defs/sha"},
+        "semantic_subject_digest": {"$ref": "#/$defs/digest"},
+        "semantic_verdict_digest": {"$ref": "#/$defs/digest"},
+        "semantic_evidence_digest": {"$ref": "#/$defs/digest"},
+        "semantic_decision": {"const": "pass"},
+        "coverage_millionths": {"const": 1000000},
+        "contradicted_requirement_count": {"const": 0},
+        "unsupported_pass_requirement_count": {"const": 0}
+      }
+    }
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "m4": {"$ref": "#/$defs/m4"},
+    "m5": {"$ref": "#/$defs/m5"},
+    "m6": {"$ref": "#/$defs/m6"}
+  }
+}
