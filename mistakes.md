@@ -372,3 +372,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** A controller invoked API tests with system Python and hit a missing FastAPI import, producing no product evidence.
 **Root cause:** The command bypassed the factory-managed environment; focused factory checks must use `uv run --project factory ...`.
+
+## 2026-09-02 — Assumed the default package output path was trusted
+
+**Symptom:** The first `package_stack.py` run rejected `dist/` before creating an artifact because a repository ancestor grants group rename authority.
+**Root cause:** Secure packaging validates the whole output ancestor chain; in a shared workspace, generate into a private trusted temporary directory and copy the verified zip and sidecar to the tracked package path.

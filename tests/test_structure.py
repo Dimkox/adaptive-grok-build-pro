@@ -170,7 +170,13 @@ class StructureTests(unittest.TestCase):
     def test_version_identity_matches_readme(self) -> None:
         version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+        roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
+        self.assertEqual(version, "2.0.13")
         self.assertTrue(readme.startswith(f"# Adaptive Grok Build Pro v{version}\n"))
+        self.assertIn("Identity: **2.0.13**", readme)
+        self.assertTrue(changelog.startswith("# Changelog\n\n## 2.0.13 — 2026-09-02\n"))
+        self.assertIn("product version: 2.0.13", roadmap)
 
     def test_readme_stack_graph_is_complete(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

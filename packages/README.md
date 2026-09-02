@@ -1,6 +1,6 @@
 # Release packages
 
-Tracked copies of published artifacts. Scratch rebuilds go to `dist/` (gitignored).
+Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). The `2.0.13` files are a local candidate and do not claim a tag or GitHub Release; the most recently published release remains `v2.0.12`.
 
 | File | Version |
 | --- | --- |
@@ -17,6 +17,7 @@ Tracked copies of published artifacts. Scratch rebuilds go to `dist/` (gitignore
 | `adaptive-grok-build-pro-v2.0.10.zip` | 2.0.10 |
 | `adaptive-grok-build-pro-v2.0.11.zip` | 2.0.11 |
 | `adaptive-grok-build-pro-v2.0.12.zip` | 2.0.12 |
+| `adaptive-grok-build-pro-v2.0.13.zip` | 2.0.13 (local candidate) |
 
 Each zip has a sibling `.sha256`. Rebuild:
 
