@@ -6,7 +6,7 @@
 | M5 | accepted execution-profile digest | committed provisional source-map head `141e51e75b2bb337fa3bb1544639c6c46c287309`; concurrent verification/package updates dirty | opaque identity only; acceptance blocked |
 | M6 | accepted validator-profile digest | clean provisional semantic-bridge head `3def83eb915ca68e66379269526ffa64822a1104` | opaque identity only; acceptance blocked |
 | M7 | accepted exact head, shadow bundle, real human decisions | clean provisional source/docs head `c8b450f494b3d44b580556c6a612b21a3a780368`; two architecture-drift paths remain and no factual cohort exists | source-only shape reference; factual qualification blocked |
-| M8 | exact tuple/profile/recommendation/demotion | current pre-source checkpoint `a1934f7ae8817cec844eb76300e9f86c76a64689`; pure source explicitly allowed | recommendation-only, L2 ceiling; activation blocked |
+| M8 | exact tuple/profile/recommendation/demotion | closed-record checkpoint `5735e762b8d7571887f6fa4ac9cf10cd1fad1954`; this successor tree adds pure deterministic evaluation and atomic demotion with synthetic boundary tests only | source present; factual cohort/profile acceptance and activation blocked; recommendation-only, L2 ceiling |
 | M9 | exact signed delivery/recovery outcomes | roadmap only | no delivery authority; future feedback only |
 
 No row is an attestation or acceptance record. Historical evidence packages are untouched.

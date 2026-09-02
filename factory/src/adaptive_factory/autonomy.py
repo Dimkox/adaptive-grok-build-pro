@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 from datetime import datetime, timezone
 import hashlib
 from typing import Any, ClassVar, Mapping
@@ -384,6 +384,13 @@ class CohortEvidenceV1(_AutonomyValue):
             or self.window_started_at >= self.window_ended_at
         ):
             raise ContractError("invalid_time", "cohort_window")
+        if self.window_ended_at > self.autonomy_tuple.expires_at:
+            raise ContractError("invalid_time", "cohort_after_tuple_expiry")
+        if any(
+            task.observed_at >= self.autonomy_tuple.expires_at
+            for task in self.tasks
+        ):
+            raise ContractError("invalid_time", "task_at_or_after_tuple_expiry")
         if any(
             not self.window_started_at <= task.observed_at <= self.window_ended_at
             for task in self.tasks
@@ -613,13 +620,21 @@ class PromotionRecommendationV1(_AutonomyValue):
             raise ContractError("invalid_transition")
         if self.reason_code not in RECOMMENDATION_REASONS:
             raise ContractError("invalid_reason")
-        if self.reason_code == "qualified" and LEVELS.index(recommended) != LEVELS.index(current) + 1:
+        advances = LEVELS.index(recommended) == LEVELS.index(current) + 1
+        if advances != (self.reason_code == "qualified"):
             raise ContractError("invalid_transition")
         if not isinstance(self.evaluated_at, datetime) or self.evaluated_at.tzinfo is None:
             raise ContractError("invalid_time", "evaluated_at")
         if not isinstance(self.expires_at, datetime) or self.expires_at.tzinfo is None:
             raise ContractError("invalid_time", "expires_at")
-        if self.evaluated_at >= self.expires_at:
+        expired_result = self.reason_code == "tuple_expired"
+        if expired_result and (
+            self.evaluated_at < self.expires_at
+            or current != "L0"
+            or recommended != "L0"
+        ):
+            raise ContractError("invalid_expired_recommendation")
+        if not expired_result and self.evaluated_at >= self.expires_at:
             raise ContractError("invalid_time", "recommendation_expiry")
         if self.separate_activation_required is not True:
             raise ContractError("separate_activation_required")
@@ -656,6 +671,160 @@ class PromotionRecommendationV1(_AutonomyValue):
             "separate_activation_required": self.separate_activation_required,
             "external_action_authorized": self.external_action_authorized,
         }
+
+
+def _aware_time(value: Any, name: str) -> datetime:
+    if not isinstance(value, datetime) or value.tzinfo is None:
+        raise ContractError("invalid_time", name)
+    return value
+
+
+def _bounded_sum(values: tuple[int, ...]) -> int:
+    return min(sum(values), MAX_COUNT)
+
+
+def _nearest_rank_p95(values: tuple[int, ...]) -> int:
+    ordered = sorted(values)
+    rank = (95 * len(ordered) + 99) // 100
+    return ordered[rank - 1]
+
+
+def _cohort_profile(
+    cohort: CohortEvidenceV1,
+    current_level: str,
+    halted: bool,
+) -> AutonomyProfileV1:
+    tasks = cohort.tasks
+    return AutonomyProfileV1(
+        schema_version=1,
+        tuple_digest=cohort.autonomy_tuple.digest,
+        cohort_digest=cohort.digest,
+        current_level=current_level,
+        accepted_task_count=sum(task.eligible and task.human_accepted for task in tasks),
+        audit_sample_count=sum(task.audit_sampled for task in tasks),
+        audit_accepted_count=sum(task.audit_accepted for task in tasks),
+        minimum_quality_score_millionths=min(
+            task.quality_score_millionths for task in tasks
+        ),
+        total_security_failures=_bounded_sum(
+            tuple(task.security_failure_count for task in tasks)
+        ),
+        total_authorization_failures=_bounded_sum(
+            tuple(task.authorization_failure_count for task in tasks)
+        ),
+        total_duplicate_dispatches=_bounded_sum(
+            tuple(task.duplicate_dispatch_count for task in tasks)
+        ),
+        maximum_cost_usd_micros=max(task.cost_usd_micros for task in tasks),
+        p95_latency_ms=_nearest_rank_p95(tuple(task.latency_ms for task in tasks)),
+        total_demotion_triggers=_bounded_sum(
+            tuple(task.demotion_trigger_count for task in tasks)
+        ),
+        expires_at=cohort.autonomy_tuple.expires_at,
+        halted=halted,
+    )
+
+
+def _cohort_gate_reason(
+    cohort: CohortEvidenceV1,
+    profile: AutonomyProfileV1,
+) -> str | None:
+    tasks = cohort.tasks
+    if not cohort.factual_m7_restack_observed:
+        return "factual_m7_missing"
+    if any(not task.eligible for task in tasks):
+        return "ineligible_task"
+    if any(not task.human_accepted for task in tasks):
+        return "human_acceptance_missing"
+    if profile.accepted_task_count < cohort.minimum_human_acceptances:
+        return "insufficient_acceptances"
+    if (
+        profile.audit_sample_count * 1_000_000
+        < len(tasks) * cohort.minimum_audit_rate_millionths
+    ):
+        return "audit_rate_insufficient"
+    represented_days = {task.observed_at.astimezone(timezone.utc).date() for task in tasks}
+    sampled_days = {
+        task.observed_at.astimezone(timezone.utc).date()
+        for task in tasks
+        if task.audit_sampled
+    }
+    if not represented_days.issubset(sampled_days):
+        return "audit_day_gap"
+    if profile.audit_accepted_count != profile.audit_sample_count:
+        return "audit_rejected"
+    if profile.minimum_quality_score_millionths < cohort.minimum_quality_score_millionths:
+        return "quality_below_threshold"
+    if profile.total_security_failures > cohort.maximum_security_failures:
+        return "security_failure"
+    if profile.total_authorization_failures > cohort.maximum_authorization_failures:
+        return "authorization_failure"
+    if profile.total_duplicate_dispatches > cohort.maximum_duplicate_dispatches:
+        return "duplicate_dispatch"
+    if profile.maximum_cost_usd_micros > cohort.maximum_cost_usd_micros:
+        return "cost_above_threshold"
+    if profile.p95_latency_ms > cohort.maximum_latency_ms:
+        return "latency_above_threshold"
+    if profile.total_demotion_triggers > cohort.maximum_demotion_triggers:
+        return "demotion_fact_present"
+    return None
+
+
+def evaluate_autonomy(
+    cohort: CohortEvidenceV1,
+    existing_profile: AutonomyProfileV1 | None,
+    evaluated_at: datetime,
+) -> tuple[AutonomyProfileV1, PromotionRecommendationV1]:
+    """Compute a recommendation-only profile snapshot from closed factual shapes."""
+    if not isinstance(cohort, CohortEvidenceV1):
+        raise ContractError("invalid_contract", "cohort")
+    evaluated_at = _aware_time(evaluated_at, "evaluated_at")
+    if evaluated_at < cohort.window_ended_at:
+        raise ContractError("invalid_time", "cohort_window_open")
+    tuple_digest = cohort.autonomy_tuple.digest
+    if existing_profile is not None and not isinstance(existing_profile, AutonomyProfileV1):
+        raise ContractError("invalid_contract", "existing_profile")
+    if existing_profile is not None:
+        if existing_profile.tuple_digest != tuple_digest:
+            raise ContractError("tuple_mismatch", "existing_profile")
+        if existing_profile.expires_at != cohort.autonomy_tuple.expires_at:
+            raise ContractError("profile_expiry_mismatch")
+
+    expired = evaluated_at >= cohort.autonomy_tuple.expires_at
+    current_level = "L0" if expired or existing_profile is None else existing_profile.current_level
+    halted = bool(existing_profile and existing_profile.halted and not expired)
+    profile = _cohort_profile(cohort, current_level, halted)
+
+    if expired:
+        reason = "tuple_expired"
+    elif halted:
+        reason = "halted_profile"
+    elif existing_profile is not None and existing_profile.cohort_digest == cohort.digest:
+        reason = "cohort_replay"
+    else:
+        reason = _cohort_gate_reason(cohort, profile)
+
+    if reason is None and current_level == cohort.autonomy_tuple.authority_ceiling:
+        reason = "already_at_ceiling"
+    if reason is None:
+        reason = "qualified"
+        recommended_level = LEVELS[LEVELS.index(current_level) + 1]
+    else:
+        recommended_level = current_level
+
+    recommendation = PromotionRecommendationV1(
+        schema_version=1,
+        tuple_digest=tuple_digest,
+        cohort_digest=cohort.digest,
+        current_level=current_level,
+        recommended_level=recommended_level,
+        reason_code=reason,
+        evaluated_at=evaluated_at,
+        expires_at=cohort.autonomy_tuple.expires_at,
+        separate_activation_required=True,
+        external_action_authorized=False,
+    )
+    return profile, recommendation
 
 
 @dataclass(frozen=True)
@@ -716,3 +885,42 @@ class DemotionDecisionV1(_AutonomyValue):
             "halt": self.halt,
             "external_action_authorized": self.external_action_authorized,
         }
+
+
+def demote_profile(
+    profile: AutonomyProfileV1,
+    trigger_facts: frozenset[str],
+    observed_at: datetime,
+) -> tuple[AutonomyProfileV1, DemotionDecisionV1]:
+    """Return one immutable L0/halted profile and its highest-priority reason."""
+    if not isinstance(profile, AutonomyProfileV1):
+        raise ContractError("invalid_contract", "profile")
+    if not isinstance(trigger_facts, frozenset):
+        raise ContractError("invalid_contract", "trigger_facts")
+    if not trigger_facts or not trigger_facts.issubset(DEMOTION_TRIGGERS):
+        raise ContractError("invalid_demotion_trigger")
+    observed_at = _aware_time(observed_at, "observed_at")
+    selected_trigger = next(
+        trigger for trigger in DEMOTION_TRIGGERS if trigger in trigger_facts
+    )
+    updated_profile = replace(
+        profile,
+        current_level="L0",
+        total_demotion_triggers=min(
+            MAX_COUNT,
+            profile.total_demotion_triggers + len(trigger_facts),
+        ),
+        halted=True,
+    )
+    decision = DemotionDecisionV1(
+        schema_version=1,
+        profile_digest=profile.digest,
+        tuple_digest=profile.tuple_digest,
+        trigger=selected_trigger,
+        prior_level=profile.current_level,
+        resulting_level="L0",
+        effective_at=observed_at,
+        halt=True,
+        external_action_authorized=False,
+    )
+    return updated_profile, decision
