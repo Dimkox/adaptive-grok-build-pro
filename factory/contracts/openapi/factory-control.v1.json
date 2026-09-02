@@ -171,6 +171,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "bounded database read unavailable or timed out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       },
@@ -444,6 +454,16 @@
           },
           "422": {
             "description": "task id invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "bounded database read unavailable or timed out",
             "content": {
               "application/json": {
                 "schema": {

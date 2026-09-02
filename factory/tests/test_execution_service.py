@@ -231,7 +231,7 @@ class ExecutionServiceTests(unittest.TestCase):
         for name in mutation_methods:
             with self.subTest(name=name):
                 source = inspect.getsource(getattr(PostgresFactoryStore, name))
-                self.assertIn("with self._mutation() as", source)
+                self.assertIn("with self._transaction(", source)
                 self.assertNotIn("with self._connect(", source)
 
     def test_self_asserted_selection_is_rejected_without_trusted_registry(self):

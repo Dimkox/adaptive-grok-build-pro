@@ -301,7 +301,7 @@ class StructureTests(unittest.TestCase):
                 for method, operation in path_item.items()
                 if method in {"get", "post", "put", "patch", "delete"}
             ),
-            138,
+            140,
         )
 
         for method, path, operation_id in sorted(operations):

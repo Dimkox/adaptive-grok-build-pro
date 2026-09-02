@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -219,6 +220,7 @@ class PostgresArtifactAttestationStore:
 
 
 class PostgresFactoryStore:
+    _CONNECT_TIMEOUT_SECONDS = 5
     _MUTATION_LOCK_TIMEOUT = "5s"
     _MUTATION_STATEMENT_TIMEOUT = "5s"
 
@@ -227,12 +229,25 @@ class PostgresFactoryStore:
             raise StoreError("database URL is required")
         self.database_url = database_url
 
-    def _connect(self, *, connect_timeout: int | None = None):
+    def _connect(
+        self,
+        *,
+        connect_timeout: int | None = None,
+        lock_timeout: str | None = None,
+        statement_timeout: str | None = None,
+    ):
         import psycopg
 
-        options = {} if connect_timeout is None else {"connect_timeout": connect_timeout}
-        connection = psycopg.connect(self.database_url, **options)
+        connect_timeout = connect_timeout or self._CONNECT_TIMEOUT_SECONDS
+        lock_timeout = lock_timeout or self._MUTATION_LOCK_TIMEOUT
+        statement_timeout = statement_timeout or self._MUTATION_STATEMENT_TIMEOUT
+        connection = None
         try:
+            connection = psycopg.connect(
+                self.database_url,
+                connect_timeout=connect_timeout,
+                options=f"-c lock_timeout={lock_timeout} -c statement_timeout={statement_timeout}",
+            )
             with connection.cursor() as cursor:
                 cursor.execute("SET search_path=pg_catalog")
                 _validate_capability_session(cursor, "factory_runtime", "runtime")
@@ -241,35 +256,71 @@ class PostgresFactoryStore:
                 cursor.execute("SELECT current_user,current_setting('search_path')")
                 if cursor.fetchone() != ("factory_runtime", "pg_catalog, factory"):
                     raise StoreError("runtime capability unavailable")
-        except Exception:
-            connection.close()
-            raise
-        return connection
-
-    def _set_transaction_bounds(self, cursor) -> None:
-        cursor.execute(
-            "SELECT set_config('lock_timeout',%s,true),set_config('statement_timeout',%s,true)",
-            (self._MUTATION_LOCK_TIMEOUT, self._MUTATION_STATEMENT_TIMEOUT),
-        )
-
-    @contextmanager
-    def _mutation(self):
-        import psycopg
-
-        try:
-            with self._connect(connect_timeout=5) as connection:
-                with connection.transaction(), connection.cursor() as cursor:
-                    self._set_transaction_bounds(cursor)
-                    yield cursor
         except (
+            psycopg.InterfaceError,
             psycopg.OperationalError,
             psycopg.errors.LockNotAvailable,
             psycopg.errors.QueryCanceled,
         ) as exc:
-            raise StoreUnavailable("database mutation unavailable") from exc
+            if connection is not None:
+                connection.close()
+            raise StoreUnavailable("database unavailable") from exc
+        except Exception:
+            if connection is not None:
+                connection.close()
+            raise
+        return connection
+
+    def _set_transaction_bounds(
+        self,
+        cursor,
+        *,
+        lock_timeout: str | None = None,
+        statement_timeout: str | None = None,
+    ) -> None:
+        cursor.execute(
+            "SELECT set_config('lock_timeout',%s,true),set_config('statement_timeout',%s,true)",
+            (
+                lock_timeout or self._MUTATION_LOCK_TIMEOUT,
+                statement_timeout or self._MUTATION_STATEMENT_TIMEOUT,
+            ),
+        )
+
+    @contextmanager
+    def _transaction(
+        self,
+        *,
+        connect_timeout: int | None = None,
+        lock_timeout: str | None = None,
+        statement_timeout: str | None = None,
+    ):
+        import psycopg
+
+        try:
+            with self._connect(
+                connect_timeout=connect_timeout,
+                lock_timeout=lock_timeout,
+                statement_timeout=statement_timeout,
+            ) as connection:
+                with connection.transaction(), connection.cursor() as cursor:
+                    self._set_transaction_bounds(
+                        cursor,
+                        lock_timeout=lock_timeout,
+                        statement_timeout=statement_timeout,
+                    )
+                    yield cursor
+        except StoreUnavailable:
+            raise
+        except (
+            psycopg.InterfaceError,
+            psycopg.OperationalError,
+            psycopg.errors.LockNotAvailable,
+            psycopg.errors.QueryCanceled,
+        ) as exc:
+            raise StoreUnavailable("database unavailable") from exc
 
     def readiness(self) -> dict[str, object]:
-        with self._connect() as connection, connection.cursor() as cursor:
+        with self._transaction() as cursor:
             cursor.execute("SELECT current_user,COALESCE(max(version),0) FROM factory.schema_migrations")
             role, version = cursor.fetchone()
             cursor.execute("SELECT session_user")
@@ -319,9 +370,7 @@ class PostgresFactoryStore:
 
     def metrics(self) -> dict[str, dict[str, int]]:
         try:
-            with self._connect() as connection, connection.cursor() as cursor:
-                cursor.execute("SET LOCAL statement_timeout='5s'")
-                cursor.execute("SET LOCAL lock_timeout='500ms'")
+            with self._transaction(lock_timeout="500ms", statement_timeout="5s") as cursor:
                 cursor.execute("SELECT * FROM factory.read_metrics_snapshot()")
                 row = cursor.fetchone()
         except Exception as exc:
@@ -374,8 +423,7 @@ class PostgresFactoryStore:
             raise StoreError("invalid execution recovery limit")
         if cursor is not None and not isinstance(cursor, ExecutionRecoveryCursor):
             raise StoreError("invalid execution recovery cursor")
-        with self._connect() as connection, connection.transaction(), connection.cursor() as db:
-            db.execute("SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='5s'")
+        with self._transaction(lock_timeout="500ms", statement_timeout="5s") as db:
             db.execute(
                 "SELECT * FROM factory.execution_recovery_candidates(%s,%s,%s)",
                 (
@@ -395,7 +443,7 @@ class PostgresFactoryStore:
     def record_execution_cleanup_success(self, candidate: ExecutionRecoveryCandidate) -> None:
         if not isinstance(candidate, ExecutionRecoveryCandidate):
             raise StoreError("invalid execution recovery candidate")
-        with self._mutation() as db:
+        with self._transaction(lock_timeout="500ms", statement_timeout="5s") as db:
             db.execute("SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='5s'")
             db.execute(
                 "SELECT factory.execution_recovery_cleanup_succeeded(%s,%s)",
@@ -406,7 +454,7 @@ class PostgresFactoryStore:
     def terminalize_execution_orphan(self, candidate: ExecutionRecoveryCandidate) -> str:
         if not isinstance(candidate, ExecutionRecoveryCandidate):
             raise StoreError("invalid execution recovery candidate")
-        with self._mutation() as db:
+        with self._transaction() as db:
             db.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
             db.execute(
                 "SELECT factory.execution_orphan_terminalize(%s,%s)",
@@ -420,7 +468,7 @@ class PostgresFactoryStore:
     def record_execution_cleanup_failure(self, candidate: ExecutionRecoveryCandidate) -> None:
         if not isinstance(candidate, ExecutionRecoveryCandidate):
             raise StoreError("invalid execution recovery candidate")
-        with self._mutation() as db:
+        with self._transaction(lock_timeout="500ms", statement_timeout="5s") as db:
             db.execute("SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='5s'")
             db.execute(
                 "SELECT factory.execution_recovery_cleanup_failed(%s,%s)",
@@ -429,9 +477,11 @@ class PostgresFactoryStore:
             db.fetchone()
 
     def record_fence_rejection(self) -> None:
-        with self._connect(connect_timeout=1) as connection, connection.cursor() as cursor:
-            cursor.execute("SET LOCAL lock_timeout='100ms'")
-            cursor.execute("SET LOCAL statement_timeout='250ms'")
+        with self._transaction(
+            connect_timeout=1,
+            lock_timeout="100ms",
+            statement_timeout="250ms",
+        ) as cursor:
             cursor.execute("SELECT factory.increment_fence_rejected()")
 
     def _command_replay(self, cursor, key: str | None, actor: Actor, action: str, request: dict):
@@ -590,7 +640,7 @@ class PostgresFactoryStore:
         cursor.execute("UPDATE factory.audit_heads SET last_digest=%s WHERE task_id=%s", (digest, task_id))
 
     def intake(self, intake: TaskIntakeV1, actor: Actor, now: datetime) -> IntakeResult:
-        with self._mutation() as cursor:
+        with self._transaction() as cursor:
             cursor.execute(
                 "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
                 (f"{intake.repository_id}\x1f{intake.source_type}\x1f{intake.source_id}",),
@@ -707,12 +757,15 @@ class PostgresFactoryStore:
             )
 
     def get_task(self, task_id: str) -> TaskProjection:
-        with self._connect() as connection, connection.cursor() as cursor:
-            cursor.execute(self._task_select() + " WHERE t.task_id=%s", (task_id,))
-            row = cursor.fetchone()
-            if not row:
-                raise KeyError(task_id)
-            return self._projection(row)
+        with self._transaction() as cursor:
+            return self._get_task(cursor, task_id)
+
+    def _get_task(self, cursor, task_id: str) -> TaskProjection:
+        cursor.execute(self._task_select() + " WHERE t.task_id=%s", (task_id,))
+        row = cursor.fetchone()
+        if not row:
+            raise KeyError(task_id)
+        return self._projection(row)
 
     def list_tasks(
         self, *, repository_id: str | None = None, limit: int = 100, cursor_task_id: str | None = None
@@ -727,14 +780,12 @@ class PostgresFactoryStore:
             conditions.append("t.task_id>%s")
             params.append(cursor_task_id)
         where = " WHERE " + " AND ".join(conditions) if conditions else ""
-        with self._connect() as connection, connection.cursor() as db:
-            db.execute("SET statement_timeout='5s'")
+        with self._transaction() as db:
             db.execute(self._task_select() + where + " ORDER BY t.task_id LIMIT %s", (*params, limit))
             return tuple(self._projection(row) for row in db.fetchall())
 
     def verify_audit_chain(self, task_id: str) -> bool:
-        with self._connect() as connection, connection.cursor() as cursor:
-            cursor.execute("SET statement_timeout='5s'")
+        with self._transaction() as cursor:
             cursor.execute(
                 """SELECT previous_digest,current_digest,task_id,run_id,correlation_id,actor_id,action,resource,reason,created_at,metadata,digest_version
                 FROM factory.audit_log WHERE task_id=%s ORDER BY audit_id LIMIT 100001""",
@@ -783,7 +834,7 @@ class PostgresFactoryStore:
         return bool(cursor.fetchone()[0])
 
     def claim(self, request, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> LeaseGrant | None:
-        with self._mutation() as cursor:
+        with self._transaction() as cursor:
             command = {
                 "owner": request.owner,
                 "role": request.role.value,
@@ -827,19 +878,50 @@ class PostgresFactoryStore:
             if not row:
                 return no_grant()
             task_id, repository_id, packet_digest, deadline, infrastructure_retries = row
+            cursor.execute("SELECT COALESCE(max(attempt_no),0)+1 FROM factory.attempts WHERE task_id=%s", (task_id,))
+            attempt_no = cursor.fetchone()[0]
+            if attempt_no > infrastructure_retries + 1:
+                completed_attempts = attempt_no - 1
+                evidence = {
+                    "attempts": completed_attempts,
+                    "infrastructure_retries": infrastructure_retries,
+                }
+                key = canonical_digest(
+                    {
+                        "action": "retry_exhausted",
+                        "task_id": str(task_id),
+                        **evidence,
+                    }
+                )
+                cursor.execute(
+                    "UPDATE factory.tasks SET state='dead',terminal_at=clock_timestamp(),updated_at=clock_timestamp() WHERE task_id=%s",
+                    (task_id,),
+                )
+                self._event(
+                    cursor,
+                    str(task_id),
+                    actor,
+                    "retry_exhausted",
+                    key,
+                    evidence,
+                    mandatory_cleanup=True,
+                )
+                self._audit(
+                    cursor,
+                    str(task_id),
+                    actor,
+                    "claim",
+                    f"task:{task_id}",
+                    "retry_exhausted",
+                    correlation_id or idempotency_key or key,
+                    evidence,
+                )
+                return no_grant()
             cursor.execute(
                 "INSERT INTO factory.lease_sequences(task_id,last_fence) VALUES (%s,1) ON CONFLICT(task_id) DO UPDATE SET last_fence=factory.lease_sequences.last_fence+1 RETURNING last_fence",
                 (task_id,),
             )
             fence = cursor.fetchone()[0]
-            cursor.execute("SELECT COALESCE(max(attempt_no),0)+1 FROM factory.attempts WHERE task_id=%s", (task_id,))
-            attempt_no = cursor.fetchone()[0]
-            if attempt_no > infrastructure_retries + 1:
-                cursor.execute(
-                    "UPDATE factory.tasks SET state='dead',terminal_at=clock_timestamp(),updated_at=clock_timestamp() WHERE task_id=%s",
-                    (task_id,),
-                )
-                return no_grant()
             run_id = uuid.uuid4()
             cursor.execute(
                 "SELECT LEAST(clock_timestamp()+(%s * interval '1 second'),%s)", (request.lease_seconds, deadline)
@@ -890,8 +972,7 @@ class PostgresFactoryStore:
             return grant
 
     def execution_material(self, grant: LeaseGrant) -> dict[str, object]:
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
-            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+        with self._transaction() as cursor:
             self._lock_grant(cursor, grant)
             cursor.execute(
                 """SELECT t.repository_id,t.packet_digest,t.deadline_at,i.body
@@ -934,7 +1015,7 @@ class PostgresFactoryStore:
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
     ) -> ExecutionGrant:
-        with self._mutation() as cursor:
+        with self._transaction() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
             self._lock_grant(cursor, grant)
             command = {
@@ -1020,7 +1101,7 @@ class PostgresFactoryStore:
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
     ) -> ExecutionStage:
-        with self._mutation() as cursor:
+        with self._transaction() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
             self._lock_grant(cursor, grant)
             command = {"run_id": grant.run_id, "packet_digest": packet_digest, "stage": stage.value}
@@ -1055,8 +1136,7 @@ class PostgresFactoryStore:
             return stage
 
     def proposal_context(self, grant: LeaseGrant, packet_digest: str) -> ProposalContext:
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
-            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+        with self._transaction() as cursor:
             locked_grant = self._lock_grant(cursor, grant)
             cursor.execute(
                 "SELECT factory.execution_proposal_context(%s,%s,%s,%s,%s,%s)",
@@ -1214,7 +1294,7 @@ class PostgresFactoryStore:
         if idempotency_key is None:
             return None
         command = self._execution_proposal_command(grant, event)
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+        with self._transaction() as cursor:
             replay, prior, _request_digest = self._command_replay(
                 cursor, idempotency_key, actor, "execution_propose", command
             )
@@ -1264,7 +1344,7 @@ class PostgresFactoryStore:
             raise StoreError("execution proposal does not match command")
         body = asdict(proposal)
         command = self._execution_proposal_command(grant, event)
-        with self._mutation() as cursor:
+        with self._transaction() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
             replay, prior, request_digest = self._command_replay(
                 cursor, idempotency_key, actor, "execution_propose", command
@@ -1367,7 +1447,7 @@ class PostgresFactoryStore:
             "run_id": grant.run_id,
             "packet_digest": packet_digest,
         }
-        with self._mutation() as cursor:
+        with self._transaction() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
             replay, prior, request_digest = self._command_replay(
                 cursor, idempotency_key, actor, "execution_finalize", command
@@ -1487,15 +1567,14 @@ class PostgresFactoryStore:
         if idempotency_key is None:
             return None
         command = {"task_id": grant.task_id, "run_id": grant.run_id, "packet_digest": packet_digest}
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+        with self._transaction() as cursor:
             replay, prior, _request_digest = self._command_replay(
                 cursor, idempotency_key, actor, "execution_finalize", command
             )
             return WorkspaceResultV1.from_dict(prior["result"]) if replay else None
 
     def workspace_snapshot_request(self, grant: LeaseGrant, packet_digest: str) -> WorkspaceSnapshotRequest:
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
-            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+        with self._transaction() as cursor:
             cursor.execute(
                 "SELECT factory.execution_finalize_context(%s,%s,%s,%s,%s,%s)",
                 (
@@ -1528,8 +1607,7 @@ class PostgresFactoryStore:
             )
 
     def workspace_result(self, task_id: str, workspace_result_digest: str):
-        with self._connect() as connection, connection.cursor() as cursor:
-            cursor.execute("SET statement_timeout='5s'")
+        with self._transaction() as cursor:
             cursor.execute(
                 "SELECT factory.execution_result_by_digest(%s,%s)",
                 (task_id, workspace_result_digest),
@@ -1657,7 +1735,7 @@ class PostgresFactoryStore:
         return row
 
     def heartbeat(self, grant: LeaseGrant, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> LeaseGrant:
-        with self._mutation() as cursor:
+        with self._transaction() as cursor:
             command = {"grant": {"task_id": grant.task_id, "run_id": grant.run_id, "owner": grant.owner, "role": grant.role.value, "fence": grant.fence, "packet_digest": grant.packet_digest}}
             replay, prior, request_digest = self._command_replay(cursor, idempotency_key, actor, "heartbeat", command)
             if replay:
@@ -1757,7 +1835,7 @@ class PostgresFactoryStore:
         return target
 
     def release(self, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> TaskStatus:
-        with self._mutation() as cursor:
+        with self._transaction() as cursor:
             outcome_value = outcome.value if isinstance(outcome, FailureClass) else outcome
             command = {"task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence, "outcome": outcome_value}
             replay, prior, request_digest = self._command_replay(cursor, idempotency_key, actor, "release", command)
@@ -1783,7 +1861,7 @@ class PostgresFactoryStore:
             or not HEX64.fullmatch(key)
         ):
             raise BudgetError("invalid budget evidence")
-        with self._mutation() as cursor:
+        with self._transaction() as cursor:
             command = {
                 "task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence,
                 "cost_usd_micros": cost, "token_units": tokens, "wall_seconds": wall,
@@ -1861,7 +1939,7 @@ class PostgresFactoryStore:
             raise BudgetError("invalid usage evidence")
         blocked_reason = None
         result = None
-        with self._mutation() as cursor:
+        with self._transaction() as cursor:
             command = {
                 "task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence,
                 "provider_call_id": provider_call_id, "price_table_digest": price_table_digest,
@@ -1982,7 +2060,7 @@ class PostgresFactoryStore:
             raise StoreError("invalid kill scope")
         if not HEX64.fullmatch(key) or not reason or len(reason) > 128:
             raise StoreError("invalid kill evidence")
-        with self._mutation() as cursor:
+        with self._transaction() as cursor:
             command = {"scope": scope, "enabled": enabled, "reason": reason}
             replay, prior, request_digest = self._command_replay(cursor, key, actor, "set_kill", command)
             if replay:
@@ -1999,7 +2077,7 @@ class PostgresFactoryStore:
     def reconcile(self, actor: Actor, now: datetime, limit: int, cursor_id: str | None, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> ReconcileResult:
         repaired = 0
         last = None
-        with self._mutation() as cursor:
+        with self._transaction() as cursor:
             if not self._capacity_consistent(cursor):
                 raise StoreError("capacity counters do not match live allocations")
             command = {"limit": limit, "cursor": cursor_id}
@@ -2047,16 +2125,29 @@ class PostgresFactoryStore:
             self._record_command(cursor, idempotency_key, actor, "reconcile", request_digest, correlation_id, {"candidates": result.candidates, "repaired": result.repaired, "cursor": result.cursor})
         return result
 
-    def cancel(self, task_id: str, reason: str, key: str, actor: Actor, now: datetime, *, correlation_id: str | None = None) -> TaskProjection:
-        with self._mutation() as cursor:
+    def cancel(
+        self,
+        task_id: str,
+        reason: str,
+        key: str,
+        actor: Actor,
+        now: datetime,
+        *,
+        correlation_id: str | None = None,
+        authorize_repository: Callable[[str], None] | None = None,
+    ) -> TaskProjection:
+        with self._transaction() as cursor:
+            task = self._get_task(cursor, task_id)
+            if authorize_repository is not None:
+                authorize_repository(task.repository_id)
             command = {"task_id": task_id, "reason": reason}
             replay, _prior, request_digest = self._command_replay(cursor, key, actor, "cancel", command)
             if replay:
-                return self.get_task(task_id)
+                return self._get_task(cursor, task_id)
             if self._terminalize_task(cursor, task_id, TaskStatus.CANCELLED):
                 self._event(
                     cursor, task_id, actor, "cancelled", key, {"reason": reason}, mandatory_cleanup=True
                 )
                 self._audit(cursor, task_id, actor, "cancel", f"task:{task_id}", reason, correlation_id or key)
             self._record_command(cursor, key, actor, "cancel", request_digest, correlation_id, {"task_id": task_id})
-        return self.get_task(task_id)
+            return self._get_task(cursor, task_id)

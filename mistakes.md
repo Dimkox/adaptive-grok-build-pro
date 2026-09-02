@@ -417,3 +417,8 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-02 — Reused a stale architecture command spelling
 
 **Root cause:** Historical evidence named a conceptual `diagram-check`, but the current CLI exposes `diagram --check`; I invoked the remembered label before consulting current help. Verification commands must be taken from the checked-out CLI parser/help rather than prose shorthand from an older checkpoint.
+
+## 2026-09-02 — Ran root-relative checks from the package directory
+
+**Symptom:** Ruff and JSON validation could not find repository-relative targets, producing no product evidence.
+**Root cause:** A mixed verification batch used `packages/` as its working directory; commands with root-relative paths must run from the repository root, while only the sidecar check should change directories.
