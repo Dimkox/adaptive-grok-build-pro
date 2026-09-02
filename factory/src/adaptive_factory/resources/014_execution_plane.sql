@@ -57,6 +57,29 @@ CREATE TABLE factory.execution_proposals (
 CREATE UNIQUE INDEX execution_proposals_one_terminal
   ON factory.execution_proposals(run_id) WHERE proposal_kind='terminal';
 
+CREATE TABLE factory.workspace_results (
+  workspace_result_digest char(64) PRIMARY KEY CHECK (workspace_result_digest ~ '^[0-9a-f]{64}$'),
+  task_id uuid NOT NULL,
+  run_id uuid NOT NULL UNIQUE,
+  task_packet_digest char(64) NOT NULL,
+  run_manifest_digest char(64) NOT NULL UNIQUE,
+  exact_head_sha char(40) NOT NULL CHECK (exact_head_sha ~ '^[0-9a-f]{40}$'),
+  workspace_snapshot_digest char(64) NOT NULL UNIQUE CHECK (workspace_snapshot_digest ~ '^[0-9a-f]{64}$'),
+  terminal_stage text NOT NULL CHECK (terminal_stage IN ('completed','failed','needs_human')),
+  terminal_proposal_digest char(64) NOT NULL,
+  artifact_manifest_digest char(64) NOT NULL CHECK (artifact_manifest_digest ~ '^[0-9a-f]{64}$'),
+  note_manifest_digest char(64) NOT NULL CHECK (note_manifest_digest ~ '^[0-9a-f]{64}$'),
+  usage_evidence_digest char(64) NOT NULL CHECK (usage_evidence_digest ~ '^[0-9a-f]{64}$'),
+  diagnostics_digest char(64) NOT NULL CHECK (diagnostics_digest ~ '^[0-9a-f]{64}$'),
+  workspace_snapshot jsonb NOT NULL CHECK (octet_length(workspace_snapshot::text) <= 65536),
+  body jsonb NOT NULL CHECK (octet_length(body::text) <= 65536),
+  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  FOREIGN KEY (task_packet_digest,run_id) REFERENCES factory.execution_packets(packet_digest,run_id) ON DELETE RESTRICT,
+  FOREIGN KEY (run_manifest_digest) REFERENCES factory.execution_manifests(manifest_digest) ON DELETE RESTRICT,
+  FOREIGN KEY (run_id,terminal_proposal_digest) REFERENCES factory.execution_proposals(run_id,idempotency_key) ON DELETE RESTRICT,
+  FOREIGN KEY (run_id,task_id) REFERENCES factory.runs(run_id,task_id) ON DELETE RESTRICT
+);
+
 CREATE FUNCTION factory.execution_start(
   p_task_id uuid,
   p_run_id uuid,
@@ -139,16 +162,14 @@ BEGIN
     FOR UPDATE;
   IF NOT FOUND THEN RETURN false; END IF;
   IF NOT (
-    (current_stage='prepared' AND p_stage IN ('running','failed','needs_human','cancelled')) OR
-    (current_stage='running' AND p_stage IN ('collecting','failed','needs_human','cancelled')) OR
-    (current_stage='collecting' AND p_stage IN ('completed','failed','needs_human','cancelled'))
+    (current_stage='prepared' AND p_stage='running') OR
+    (current_stage='running' AND p_stage='collecting')
   ) THEN RETURN false; END IF;
 
   SELECT COALESCE(max(stage_sequence),0)+1 INTO next_sequence
     FROM factory.execution_stage_events WHERE manifest_digest=manifest;
   UPDATE factory.execution_manifests SET stage=p_stage,updated_at=clock_timestamp(),
-    terminal_at=CASE WHEN p_stage IN ('completed','failed','needs_human','cancelled')
-      THEN clock_timestamp() ELSE NULL END
+    terminal_at=NULL
     WHERE manifest_digest=manifest;
   INSERT INTO factory.execution_stage_events(manifest_digest,stage_sequence,stage)
     VALUES (manifest,next_sequence,p_stage);
@@ -224,8 +245,181 @@ LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
     AND r.lease_expires_at>clock_timestamp() AND t.deadline_at>clock_timestamp()
 $$;
 
+CREATE FUNCTION factory.execution_result_for_run(p_task_id uuid,p_run_id uuid) RETURNS jsonb
+LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+  SELECT jsonb_build_object(
+    'result',w.body,
+    'snapshot',w.workspace_snapshot,
+    'packet',p.body,
+    'manifest',m.body
+  )
+  FROM factory.workspace_results w
+  JOIN factory.execution_packets p ON p.run_id=w.run_id AND p.packet_digest=w.task_packet_digest
+  JOIN factory.execution_manifests m ON m.run_id=w.run_id AND m.manifest_digest=w.run_manifest_digest
+  WHERE w.task_id=p_task_id AND w.run_id=p_run_id
+$$;
+
+CREATE FUNCTION factory.execution_result_by_digest(
+  p_task_id uuid,p_workspace_result_digest char(64)
+) RETURNS jsonb
+LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+  SELECT jsonb_build_object(
+    'result',w.body,
+    'snapshot',w.workspace_snapshot,
+    'packet',p.body,
+    'manifest',m.body
+  )
+  FROM factory.workspace_results w
+  JOIN factory.execution_packets p ON p.run_id=w.run_id AND p.packet_digest=w.task_packet_digest
+  JOIN factory.execution_manifests m ON m.run_id=w.run_id AND m.manifest_digest=w.run_manifest_digest
+  WHERE w.task_id=p_task_id AND w.workspace_result_digest=p_workspace_result_digest
+$$;
+
+CREATE FUNCTION factory.execution_finalize_context(
+  p_task_id uuid,
+  p_run_id uuid,
+  p_owner text,
+  p_fence bigint,
+  p_legacy_packet_digest char(64),
+  p_packet_digest char(64)
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+DECLARE
+  result jsonb;
+BEGIN
+  PERFORM 1 FROM factory.tasks t
+    JOIN factory.runs r ON r.run_id=t.current_run_id AND r.task_id=t.task_id
+    JOIN factory.capacity_allocations a ON a.run_id=r.run_id AND a.task_id=t.task_id
+    JOIN factory.execution_packets p ON p.run_id=r.run_id AND p.task_id=t.task_id
+    JOIN factory.execution_manifests m ON m.run_id=p.run_id AND m.packet_digest=p.packet_digest
+    WHERE t.task_id=p_task_id AND r.run_id=p_run_id AND r.owner_id=p_owner
+      AND r.fence=p_fence AND r.packet_digest=p_legacy_packet_digest
+      AND t.packet_digest=p_legacy_packet_digest AND t.current_fence=p_fence
+      AND p.packet_digest=p_packet_digest AND t.state='leased' AND r.state='leased'
+      AND r.released_at IS NULL AND a.released_at IS NULL AND m.terminal_at IS NULL
+      AND r.lease_expires_at>clock_timestamp() AND t.deadline_at>clock_timestamp()
+    FOR UPDATE OF t,r,m;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  IF (SELECT count(*) FROM factory.execution_proposals WHERE run_id=p_run_id)>1000 THEN
+    RETURN NULL;
+  END IF;
+  SELECT jsonb_build_object(
+    'repository_id',t.repository_id,
+    'workspace_handle',m.workspace_handle,
+    'input_head_sha',p.body#>>'{authority,exact_head_sha}',
+    'run_manifest_digest',m.manifest_digest,
+    'terminal_stage',CASE terminal.body->>'terminal_type'
+      WHEN 'run.completed' THEN 'completed'
+      WHEN 'run.failed' THEN 'failed'
+      WHEN 'run.needs_human' THEN 'needs_human'
+      ELSE NULL END,
+    'terminal_proposal_digest',trim(terminal.idempotency_key),
+    'artifact_digests',COALESCE((SELECT jsonb_agg(trim(x.idempotency_key) ORDER BY trim(x.idempotency_key)) FROM factory.execution_proposals x WHERE x.run_id=p_run_id AND x.proposal_kind='artifact'),'[]'::jsonb),
+    'note_digests',COALESCE((SELECT jsonb_agg(trim(x.idempotency_key) ORDER BY trim(x.idempotency_key)) FROM factory.execution_proposals x WHERE x.run_id=p_run_id AND x.proposal_kind='note'),'[]'::jsonb),
+    'usage_digests',COALESCE((SELECT jsonb_agg(trim(x.idempotency_key) ORDER BY trim(x.idempotency_key)) FROM factory.execution_proposals x WHERE x.run_id=p_run_id AND x.proposal_kind='usage'),'[]'::jsonb),
+    'diagnostic_digests','[]'::jsonb
+  ) INTO result
+  FROM factory.tasks t
+  JOIN factory.execution_packets p ON p.task_id=t.task_id AND p.run_id=p_run_id AND p.packet_digest=p_packet_digest
+  JOIN factory.execution_manifests m ON m.run_id=p.run_id AND m.packet_digest=p.packet_digest
+  JOIN factory.execution_proposals terminal ON terminal.run_id=p.run_id AND terminal.proposal_kind='terminal'
+  WHERE t.task_id=p_task_id;
+  IF result->>'terminal_stage' IS NULL THEN RETURN NULL; END IF;
+  RETURN result;
+END;
+$$;
+
+CREATE FUNCTION factory.execution_finalize_commit(
+  p_task_id uuid,
+  p_run_id uuid,
+  p_owner text,
+  p_fence bigint,
+  p_legacy_packet_digest char(64),
+  p_packet_digest char(64),
+  p_workspace_result_digest char(64),
+  p_snapshot jsonb,
+  p_result jsonb
+) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+DECLARE
+  current_stage text;
+  v_manifest_digest char(64);
+  manifest_workspace text;
+  repository text;
+  input_head text;
+  terminal_type text;
+  terminal_digest char(64);
+  target_stage text;
+  next_sequence bigint;
+BEGIN
+  IF octet_length(p_snapshot::text)>65536 OR octet_length(p_result::text)>65536 THEN RETURN false; END IF;
+  SELECT m.stage,m.manifest_digest,m.workspace_handle,t.repository_id,
+    p.body#>>'{authority,exact_head_sha}',terminal.body->>'terminal_type',terminal.idempotency_key
+    INTO current_stage,v_manifest_digest,manifest_workspace,repository,input_head,terminal_type,terminal_digest
+  FROM factory.tasks t
+  JOIN factory.runs r ON r.run_id=t.current_run_id AND r.task_id=t.task_id
+  JOIN factory.capacity_allocations a ON a.run_id=r.run_id AND a.task_id=t.task_id
+  JOIN factory.execution_packets p ON p.run_id=r.run_id AND p.task_id=t.task_id
+  JOIN factory.execution_manifests m ON m.run_id=p.run_id AND m.packet_digest=p.packet_digest
+  JOIN factory.execution_proposals terminal ON terminal.run_id=p.run_id AND terminal.proposal_kind='terminal'
+  WHERE t.task_id=p_task_id AND r.run_id=p_run_id AND r.owner_id=p_owner
+    AND r.fence=p_fence AND r.packet_digest=p_legacy_packet_digest
+    AND t.packet_digest=p_legacy_packet_digest AND t.current_fence=p_fence
+    AND p.packet_digest=p_packet_digest AND t.state='leased' AND r.state='leased'
+    AND r.released_at IS NULL AND a.released_at IS NULL AND m.terminal_at IS NULL
+    AND r.lease_expires_at>clock_timestamp() AND t.deadline_at>clock_timestamp()
+  FOR UPDATE OF t,r,m,terminal;
+  IF NOT FOUND THEN RETURN false; END IF;
+  target_stage=CASE terminal_type
+    WHEN 'run.completed' THEN 'completed'
+    WHEN 'run.failed' THEN 'failed'
+    WHEN 'run.needs_human' THEN 'needs_human'
+    ELSE NULL END;
+  IF target_stage IS NULL OR (target_stage='completed' AND current_stage<>'collecting') THEN RETURN false; END IF;
+  IF target_stage='completed' AND NOT EXISTS (
+    SELECT 1 FROM factory.usage_observations u WHERE u.task_id=p_task_id AND u.run_id=p_run_id
+  ) THEN RETURN false; END IF;
+  IF target_stage='completed' AND EXISTS (
+    SELECT 1 FROM factory.budget_reservations b WHERE b.task_id=p_task_id AND b.released_at IS NULL
+  ) THEN RETURN false; END IF;
+  IF p_snapshot->>'source'<>'trusted_git_broker'
+    OR p_snapshot->>'repository_id'<>repository
+    OR p_snapshot->>'workspace_handle'<>manifest_workspace
+    OR p_snapshot->>'input_head_sha'<>input_head
+    OR p_result->>'task_id'<>p_task_id::text
+    OR p_result->>'run_id'<>p_run_id::text
+    OR p_result->>'task_packet_digest'<>trim(p_packet_digest)
+    OR p_result->>'run_manifest_digest'<>trim(v_manifest_digest)
+    OR p_result->>'exact_head_sha'<>p_snapshot->>'result_head_sha'
+    OR p_result->>'workspace_snapshot_digest'<>p_snapshot->>'workspace_snapshot_digest'
+    OR p_result->>'workspace_result_digest'<>trim(p_workspace_result_digest)
+    OR p_result->>'terminal_stage'<>target_stage
+    OR p_result->>'terminal_proposal_digest'<>trim(terminal_digest)
+  THEN RETURN false; END IF;
+  INSERT INTO factory.workspace_results(
+    workspace_result_digest,task_id,run_id,task_packet_digest,run_manifest_digest,exact_head_sha,
+    workspace_snapshot_digest,terminal_stage,terminal_proposal_digest,artifact_manifest_digest,
+    note_manifest_digest,usage_evidence_digest,diagnostics_digest,workspace_snapshot,body
+  ) VALUES (
+    p_workspace_result_digest,p_task_id,p_run_id,p_packet_digest,v_manifest_digest,
+    p_result->>'exact_head_sha',p_result->>'workspace_snapshot_digest',target_stage,terminal_digest,
+    p_result->>'artifact_manifest_digest',p_result->>'note_manifest_digest',
+    p_result->>'usage_evidence_digest',p_result->>'diagnostics_digest',p_snapshot,p_result
+  );
+  SELECT COALESCE(max(stage_sequence),0)+1 INTO next_sequence
+    FROM factory.execution_stage_events WHERE execution_stage_events.manifest_digest=v_manifest_digest;
+  UPDATE factory.execution_manifests SET stage=target_stage,updated_at=clock_timestamp(),terminal_at=clock_timestamp()
+    WHERE execution_manifests.manifest_digest=v_manifest_digest;
+  INSERT INTO factory.execution_stage_events(manifest_digest,stage_sequence,stage)
+    VALUES (v_manifest_digest,next_sequence,target_stage);
+  RETURN true;
+EXCEPTION WHEN unique_violation OR check_violation OR foreign_key_violation THEN
+  RETURN false;
+END;
+$$;
+
 REVOKE ALL ON factory.execution_packets,factory.execution_manifests,
-  factory.execution_stage_events,factory.execution_proposals FROM PUBLIC,factory_runtime;
+  factory.execution_stage_events,factory.execution_proposals,factory.workspace_results FROM PUBLIC,factory_runtime;
 REVOKE ALL ON FUNCTION factory.execution_start(uuid,uuid,text,bigint,char,char,char,text,text,jsonb,jsonb)
   FROM PUBLIC;
 REVOKE ALL ON FUNCTION factory.execution_advance(uuid,uuid,text,bigint,char,char,text)
@@ -234,6 +428,10 @@ REVOKE ALL ON FUNCTION factory.execution_propose(uuid,uuid,text,bigint,char,char
   FROM PUBLIC;
 REVOKE ALL ON FUNCTION factory.execution_proposal_context(uuid,uuid,text,bigint,char,char)
   FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.execution_result_for_run(uuid,uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.execution_result_by_digest(uuid,char) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.execution_finalize_context(uuid,uuid,text,bigint,char,char) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.execution_finalize_commit(uuid,uuid,text,bigint,char,char,char,jsonb,jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION factory.execution_start(uuid,uuid,text,bigint,char,char,char,text,text,jsonb,jsonb)
   TO factory_runtime;
 GRANT EXECUTE ON FUNCTION factory.execution_advance(uuid,uuid,text,bigint,char,char,text)
@@ -242,3 +440,7 @@ GRANT EXECUTE ON FUNCTION factory.execution_propose(uuid,uuid,text,bigint,char,c
   TO factory_runtime;
 GRANT EXECUTE ON FUNCTION factory.execution_proposal_context(uuid,uuid,text,bigint,char,char)
   TO factory_runtime;
+GRANT EXECUTE ON FUNCTION factory.execution_result_for_run(uuid,uuid) TO factory_runtime;
+GRANT EXECUTE ON FUNCTION factory.execution_result_by_digest(uuid,char) TO factory_runtime;
+GRANT EXECUTE ON FUNCTION factory.execution_finalize_context(uuid,uuid,text,bigint,char,char) TO factory_runtime;
+GRANT EXECUTE ON FUNCTION factory.execution_finalize_commit(uuid,uuid,text,bigint,char,char,char,jsonb,jsonb) TO factory_runtime;

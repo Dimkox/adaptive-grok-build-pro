@@ -4,6 +4,8 @@ from adaptive_factory.workspace import (
     FakeGitBroker,
     FakeWorkspaceBroker,
     HostIsolationReport,
+    WorkspaceSnapshotUnavailable,
+    WorkspaceSnapshotV1,
     WorkspaceError,
     WorkspaceHandle,
     WorkspacePolicy,
@@ -71,6 +73,32 @@ class WorkspaceTests(unittest.TestCase):
         ready = HostIsolationReport.probe(ready_tools.get, lambda: (True, "ok"))
         self.assertEqual(ready.status, "ready")
         self.assertEqual(ready.reasons, ())
+
+    def test_trusted_workspace_snapshot_is_closed_and_binds_output_head(self):
+        value = {
+            "contract_version": 1,
+            "repository_id": "owner/repository",
+            "workspace_handle": handle().value,
+            "input_head_sha": "1" * 40,
+            "result_head_sha": "2" * 40,
+            "diff_digest": "3" * 64,
+            "diff_lines": 12,
+            "source": "trusted_git_broker",
+        }
+        first = WorkspaceSnapshotV1.from_facts(value)
+        changed = dict(value, result_head_sha="4" * 40)
+        self.assertNotEqual(first.workspace_snapshot_digest, WorkspaceSnapshotV1.from_facts(changed).workspace_snapshot_digest)
+        for invalid in (dict(value, source="provider"), dict(value, reported_head="5" * 40)):
+            with self.assertRaises(WorkspaceError):
+                WorkspaceSnapshotV1.from_facts(invalid)
+
+    def test_fake_git_broker_reports_snapshot_unavailable_without_claiming_git_evidence(self):
+        broker = FakeWorkspaceBroker()
+        broker.register(handle(), policy())
+        result = FakeGitBroker(broker).snapshot(handle())
+        self.assertIsInstance(result, WorkspaceSnapshotUnavailable)
+        self.assertEqual((result.status, result.disposition), ("unavailable", "needs_human"))
+        self.assertFalse(hasattr(result, "result_head_sha"))
 
 
 if __name__ == "__main__":

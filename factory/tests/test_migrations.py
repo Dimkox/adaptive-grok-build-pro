@@ -94,6 +94,10 @@ class MigrationTests(unittest.TestCase):
             "execution_advance",
             "execution_propose",
             "execution_proposal_context",
+            "workspace_results",
+            "execution_finalize_context",
+            "execution_finalize_commit",
+            "execution_result_for_run",
             "security definer set search_path=pg_catalog,factory",
             "revoke all",
         ):
