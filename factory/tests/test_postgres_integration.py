@@ -1959,12 +1959,130 @@ class PostgresFactoryTests(unittest.TestCase):
         result = bootstrap_local(DATABASE_URL, login, password, runtime_url)
         self.assertEqual(result["database_role"], "factory_runtime")
         self.assertEqual(result["schema_version"], 12)
+        self.assertEqual(PostgresMigrator(DATABASE_URL).apply(expected_runtime_login=login), ())
         with psycopg.connect(runtime_url) as connection, connection.cursor() as cursor:
             cursor.execute("SET ROLE factory_runtime")
             cursor.execute("SELECT session_user,current_user")
             self.assertEqual(cursor.fetchone(), (login, "factory_runtime"))
         with psycopg.connect(DATABASE_URL) as connection:
             connection.execute("DROP ROLE IF EXISTS " + login)
+
+    def test_bootstrap_rejects_unsafe_factory_role_attributes_and_memberships(self):
+        import psycopg
+        from adaptive_factory.admin import BootstrapError, bootstrap_local
+        from psycopg import sql
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        def assert_rejected_before_login(login: str, password: str) -> None:
+            runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
+            with self.assertRaises(BootstrapError):
+                bootstrap_local(DATABASE_URL, login, password, runtime_url)
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute("SELECT 1 FROM pg_roles WHERE rolname=%s", (login,))
+                self.assertIsNone(cursor.fetchone())
+
+        with self.subTest(boundary="unsafe capability attribute"):
+            login = "factory_unsafe_attribute_test"
+            password = "unsafe-attribute-test-password"
+            try:
+                with psycopg.connect(DATABASE_URL) as connection:
+                    connection.execute("ALTER ROLE factory_runtime CREATEDB")
+                assert_rejected_before_login(login, password)
+            finally:
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute("ALTER ROLE factory_runtime NOCREATEDB")
+                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login)))
+
+        with self.subTest(boundary="factory role is member of another role"):
+            login = "factory_unsafe_parent_test"
+            password = "unsafe-parent-membership-password"
+            parent = "factory_unexpected_parent_test"
+            try:
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(sql.SQL("CREATE ROLE {} NOLOGIN NOINHERIT").format(sql.Identifier(parent)))
+                    cursor.execute(
+                        sql.SQL("GRANT {} TO factory_runtime").format(sql.Identifier(parent))
+                    )
+                assert_rejected_before_login(login, password)
+            finally:
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        sql.SQL("REVOKE {} FROM factory_runtime").format(sql.Identifier(parent))
+                    )
+                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login)))
+                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(parent)))
+
+        with self.subTest(boundary="factory role has an unexpected member"):
+            login = "factory_unsafe_member_target"
+            password = "unsafe-member-target-password"
+            member = "factory_unexpected_member_test"
+            try:
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(sql.SQL("CREATE ROLE {} NOLOGIN NOINHERIT").format(sql.Identifier(member)))
+                    cursor.execute(
+                        sql.SQL("GRANT factory_runtime TO {}").format(sql.Identifier(member))
+                    )
+                assert_rejected_before_login(login, password)
+            finally:
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        sql.SQL("REVOKE factory_runtime FROM {}").format(sql.Identifier(member))
+                    )
+                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login)))
+                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(member)))
+
+    def test_bootstrap_rejects_service_login_with_unexpected_membership(self):
+        import psycopg
+        from adaptive_factory.admin import BootstrapError, bootstrap_local
+        from psycopg import sql
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        login = "factory_unsafe_service_test"
+        password = "unsafe-service-login-password"
+        unexpected_role = "factory_unexpected_service_role"
+        runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
+        try:
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    sql.SQL("CREATE ROLE {} NOLOGIN NOINHERIT").format(sql.Identifier(unexpected_role))
+                )
+                cursor.execute(
+                    sql.SQL(
+                        "CREATE ROLE {} LOGIN NOINHERIT NOSUPERUSER NOCREATEROLE "
+                        "NOCREATEDB NOREPLICATION NOBYPASSRLS PASSWORD {}"
+                    ).format(sql.Identifier(login), sql.Literal(password))
+                )
+                cursor.execute(
+                    sql.SQL("GRANT {} TO {}").format(
+                        sql.Identifier(unexpected_role), sql.Identifier(login)
+                    )
+                )
+            with self.assertRaises(BootstrapError):
+                bootstrap_local(DATABASE_URL, login, password, runtime_url)
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT parent.rolname
+                    FROM pg_auth_members membership
+                    JOIN pg_roles parent ON parent.oid=membership.roleid
+                    JOIN pg_roles member ON member.oid=membership.member
+                    WHERE member.rolname=%s ORDER BY parent.rolname""",
+                    (login,),
+                )
+                self.assertEqual(cursor.fetchall(), [(unexpected_role,)])
+        finally:
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    sql.SQL("REVOKE factory_runtime FROM {}").format(sql.Identifier(login))
+                )
+                cursor.execute(
+                    sql.SQL("REVOKE {} FROM {}").format(
+                        sql.Identifier(unexpected_role), sql.Identifier(login)
+                    )
+                )
+                cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login)))
+                cursor.execute(
+                    sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(unexpected_role))
+                )
 
     def test_roles_are_isolated_and_audit_is_append_only_and_verifiable(self):
         task = self.submit(source="audit-role-check").task

@@ -4,7 +4,12 @@ import argparse
 import os
 import re
 
-from .migrations import PostgresMigrator, discover_migrations
+from .migrations import (
+    PostgresMigrator,
+    RoleSafetyError,
+    discover_migrations,
+    validate_factory_role_boundary,
+)
 from .store import PostgresFactoryStore
 
 
@@ -21,26 +26,44 @@ def provision_runtime_login(owner_url: str, login: str, password: str) -> None:
     import psycopg
     from psycopg import sql
 
-    with psycopg.connect(owner_url) as connection, connection.transaction(), connection.cursor() as cursor:
-        cursor.execute("SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb FROM pg_roles WHERE rolname=%s", (login,))
-        existing = cursor.fetchone()
-        if existing is None:
-            cursor.execute(
-                sql.SQL("CREATE ROLE {} LOGIN NOINHERIT NOSUPERUSER NOCREATEROLE NOCREATEDB PASSWORD {}").format(
-                    sql.Identifier(login), sql.Literal(password)
+    try:
+        with psycopg.connect(owner_url) as connection, connection.transaction(), connection.cursor() as cursor:
+            validate_factory_role_boundary(
+                cursor,
+                expected_runtime_login=login,
+                allow_missing_groups=False,
+                require_runtime_membership=False,
+            )
+            cursor.execute("SELECT 1 FROM pg_roles WHERE rolname=%s", (login,))
+            if cursor.fetchone() is None:
+                cursor.execute(
+                    sql.SQL(
+                        "CREATE ROLE {} LOGIN NOINHERIT NOSUPERUSER NOCREATEROLE "
+                        "NOCREATEDB NOREPLICATION NOBYPASSRLS PASSWORD {}"
+                    ).format(sql.Identifier(login), sql.Literal(password))
                 )
+            else:
+                cursor.execute(
+                    sql.SQL("ALTER ROLE {} PASSWORD {}").format(sql.Identifier(login), sql.Literal(password))
+                )
+            cursor.execute(sql.SQL("GRANT factory_runtime TO {}").format(sql.Identifier(login)))
+            validate_factory_role_boundary(
+                cursor,
+                expected_runtime_login=login,
+                allow_missing_groups=False,
+                require_runtime_membership=True,
             )
-        elif existing != (True, False, False, False, False):
-            raise BootstrapError("existing runtime login has unsafe attributes")
-        else:
-            cursor.execute(
-                sql.SQL("ALTER ROLE {} PASSWORD {}").format(sql.Identifier(login), sql.Literal(password))
-            )
-        cursor.execute(sql.SQL("GRANT factory_runtime TO {}").format(sql.Identifier(login)))
+    except RoleSafetyError as exc:
+        raise BootstrapError("database role boundary validation failed") from exc
 
 
 def bootstrap_local(owner_url: str, login: str, password: str, runtime_url: str) -> dict[str, object]:
-    PostgresMigrator(owner_url).apply()
+    if not owner_url or not LOGIN_NAME.fullmatch(login) or not 16 <= len(password) <= 1024:
+        raise BootstrapError("bounded owner URL, runtime login and password are required")
+    try:
+        PostgresMigrator(owner_url).apply(expected_runtime_login=login)
+    except RoleSafetyError as exc:
+        raise BootstrapError("database role boundary validation failed") from exc
     provision_runtime_login(owner_url, login, password)
     readiness = PostgresFactoryStore(runtime_url).readiness()
     if readiness.get("status") != "ready" or readiness.get("schema_version") != len(discover_migrations()):
@@ -54,7 +77,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     owner_url = os.environ.get("FACTORY_MIGRATOR_DATABASE_URL", "")
     if args.command == "migrate":
-        applied = PostgresMigrator(owner_url).apply()
+        login = os.environ.get("FACTORY_RUNTIME_LOGIN") or None
+        applied = PostgresMigrator(owner_url).apply(expected_runtime_login=login)
         print(f"schema_version={len(discover_migrations())} applied={len(applied)}")
         return 0
     login = os.environ.get("FACTORY_RUNTIME_LOGIN", "")

@@ -9,9 +9,16 @@ from typing import Iterable
 
 MIGRATION_NAME = re.compile(r"^(\d{3})_([a-z0-9_]+)\.sql$")
 ADVISORY_LOCK_KEY = 6_164_374_679_002_001
+FACTORY_GROUP_ROLES = ("factory_migrator", "factory_runtime", "factory_audit_reader")
+SAFE_GROUP_ATTRIBUTES = (False, False, False, False, False, False, False)
+SAFE_LOGIN_ATTRIBUTES = (True, False, False, False, False, False, False)
 
 
 class MigrationError(RuntimeError):
+    pass
+
+
+class RoleSafetyError(MigrationError):
     pass
 
 
@@ -64,6 +71,61 @@ def plan_migrations(available: Iterable[Migration], applied: Iterable[AppliedMig
     return available[len(applied) :]
 
 
+def validate_factory_role_boundary(
+    cursor,
+    *,
+    expected_runtime_login: str | None,
+    allow_missing_groups: bool,
+    require_runtime_membership: bool,
+) -> None:
+    cursor.execute(
+        """SELECT rolname,rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
+        rolreplication,rolbypassrls FROM pg_roles WHERE rolname=ANY(%s)""",
+        (list(FACTORY_GROUP_ROLES),),
+    )
+    group_roles = {row[0]: row[1:] for row in cursor.fetchall()}
+    if not allow_missing_groups and set(group_roles) != set(FACTORY_GROUP_ROLES):
+        raise RoleSafetyError("factory group role boundary is incomplete")
+    if any(attributes != SAFE_GROUP_ATTRIBUTES for attributes in group_roles.values()):
+        raise RoleSafetyError("factory group role has unsafe attributes")
+
+    login_exists = False
+    if expected_runtime_login is not None:
+        cursor.execute(
+            """SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
+            rolreplication,rolbypassrls FROM pg_roles WHERE rolname=%s""",
+            (expected_runtime_login,),
+        )
+        login_attributes = cursor.fetchone()
+        login_exists = login_attributes is not None
+        if login_exists and login_attributes != SAFE_LOGIN_ATTRIBUTES:
+            raise RoleSafetyError("factory service login has unsafe attributes")
+
+    cursor.execute(
+        """SELECT parent.rolname,member.rolname,membership.admin_option,
+        COALESCE((to_jsonb(membership)->>'inherit_option')::boolean,false),
+        COALESCE((to_jsonb(membership)->>'set_option')::boolean,true)
+        FROM pg_auth_members membership
+        JOIN pg_roles parent ON parent.oid=membership.roleid
+        JOIN pg_roles member ON member.oid=membership.member
+        WHERE parent.rolname=ANY(%s) OR member.rolname=ANY(%s) OR member.rolname=%s""",
+        (list(FACTORY_GROUP_ROLES), list(FACTORY_GROUP_ROLES), expected_runtime_login),
+    )
+    runtime_membership = False
+    for parent, member, admin_option, inherit_option, set_option in cursor.fetchall():
+        safe_runtime_membership = (
+            expected_runtime_login is not None
+            and parent == "factory_runtime"
+            and member == expected_runtime_login
+            and (admin_option, inherit_option, set_option) == (False, False, True)
+        )
+        if not safe_runtime_membership:
+            raise RoleSafetyError("factory role membership boundary is unsafe")
+        runtime_membership = True
+    if require_runtime_membership and (not login_exists or not runtime_membership):
+        raise RoleSafetyError("factory service login membership is incomplete")
+
+
 class PostgresMigrator:
     def __init__(self, database_url: str) -> None:
         if not database_url:
@@ -81,7 +143,7 @@ class PostgresMigrator:
                 cursor.execute("SELECT version, name, sha256 FROM factory.schema_migrations ORDER BY version")
                 return tuple(AppliedMigration(*row) for row in cursor.fetchall())
 
-    def apply(self) -> tuple[Migration, ...]:
+    def apply(self, *, expected_runtime_login: str | None = None) -> tuple[Migration, ...]:
         import psycopg
 
         available = discover_migrations()
@@ -91,6 +153,12 @@ class PostgresMigrator:
                 cursor.execute("SET LOCAL lock_timeout = '5s'")
                 cursor.execute("SET LOCAL statement_timeout = '5s'")
                 cursor.execute("SELECT pg_advisory_xact_lock(%s)", (ADVISORY_LOCK_KEY,))
+                validate_factory_role_boundary(
+                    cursor,
+                    expected_runtime_login=expected_runtime_login,
+                    allow_missing_groups=True,
+                    require_runtime_membership=False,
+                )
                 cursor.execute("CREATE SCHEMA IF NOT EXISTS factory")
                 cursor.execute("""CREATE TABLE IF NOT EXISTS factory.schema_migrations (
                     version integer PRIMARY KEY, name text UNIQUE NOT NULL,
@@ -100,9 +168,22 @@ class PostgresMigrator:
                 pending = plan_migrations(available, (AppliedMigration(*row) for row in cursor.fetchall()))
                 for migration in pending:
                     cursor.execute(migration.sql)
+                    if migration.version == 1:
+                        validate_factory_role_boundary(
+                            cursor,
+                            expected_runtime_login=expected_runtime_login,
+                            allow_missing_groups=False,
+                            require_runtime_membership=False,
+                        )
                     cursor.execute(
                         "INSERT INTO factory.schema_migrations(version,name,sha256) VALUES (%s,%s,%s)",
                         (migration.version, migration.name, migration.sha256),
                     )
                     applied_now.append(migration)
+                validate_factory_role_boundary(
+                    cursor,
+                    expected_runtime_login=expected_runtime_login,
+                    allow_missing_groups=False,
+                    require_runtime_membership=False,
+                )
         return tuple(applied_now)
