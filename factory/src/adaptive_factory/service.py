@@ -6,9 +6,16 @@ from typing import Iterable
 
 from .brokers import ProposalBroker
 from .contracts import TaskIntakeV1, canonical_digest
-from .execution_contracts import ExecutionSelectionV1, PROTOCOL_VERSION, RunManifestV1, TaskPacketV1
+from .execution_contracts import (
+    ExecutionContractError,
+    ExecutionSelectionV1,
+    PROTOCOL_VERSION,
+    RunManifestV1,
+    TaskPacketV1,
+)
 from .models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole
 from .protocol import CanonicalEvent
+from .workspace import WorkspaceSnapshotUnavailable, WorkspaceSnapshotV1
 from .store import FenceError
 
 
@@ -25,8 +32,9 @@ class ClaimRequest:
 
 
 class FactoryService:
-    def __init__(self, store) -> None:
+    def __init__(self, store, *, snapshot_broker=None) -> None:
         self.store = store
+        self.snapshot_broker = snapshot_broker
 
     def readiness(self):
         return self.store.readiness()
@@ -54,6 +62,12 @@ class FactoryService:
         task = self.store.get_task(task_id)
         self._require(actor, "task:read", task.repository_id)
         return task
+
+    def get_workspace_result(self, task_id: str, workspace_result_digest: str, *, actor: Actor):
+        self._require(actor, "task:read")
+        task = self.store.get_task(task_id)
+        self._require(actor, "task:read", task.repository_id)
+        return self.store.workspace_result(task_id, workspace_result_digest)
 
     def list_tasks(self, *, repository_id: str, limit: int, cursor: str | None, actor: Actor):
         self._require(actor, "task:list", repository_id)
@@ -182,13 +196,51 @@ class FactoryService:
         correlation_id: str | None = None,
     ):
         self._require_grant_actor(grant, actor, "task:execute")
-        if stage is ExecutionStage.ORPHANED:
-            raise AuthorizationError("orphaned is reconciliation-only")
+        if stage in {
+            ExecutionStage.COMPLETED,
+            ExecutionStage.FAILED,
+            ExecutionStage.NEEDS_HUMAN,
+            ExecutionStage.CANCELLED,
+            ExecutionStage.ORPHANED,
+        }:
+            raise ExecutionContractError("terminal_requires_finalize")
         return self._fenced(
             lambda: self.store.advance_execution(
                 grant,
                 packet_digest,
                 stage,
+                actor,
+                idempotency_key=idempotency_key,
+                correlation_id=correlation_id,
+            )
+        )
+
+    def finalize_execution(
+        self,
+        grant: LeaseGrant,
+        *,
+        packet_digest: str,
+        actor: Actor,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ):
+        self._require_grant_actor(grant, actor, "task:execute")
+        replay = self.store.execution_finalization_replay(
+            grant, packet_digest, actor, idempotency_key=idempotency_key
+        )
+        if replay is not None:
+            return replay
+        if self.snapshot_broker is None:
+            raise ExecutionContractError("workspace_snapshot_unavailable")
+        request = self.store.workspace_snapshot_request(grant, packet_digest)
+        snapshot = self.snapshot_broker.snapshot(request)
+        if not isinstance(snapshot, WorkspaceSnapshotV1):
+            raise ExecutionContractError("workspace_snapshot_unavailable")
+        return self._fenced(
+            lambda: self.store.finalize_execution(
+                grant,
+                packet_digest,
+                snapshot,
                 actor,
                 idempotency_key=idempotency_key,
                 correlation_id=correlation_id,
