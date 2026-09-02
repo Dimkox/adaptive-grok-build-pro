@@ -231,8 +231,8 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
         SELECT 1
         FROM factory.semantic_child_proposals proposal
         WHERE intent.source_type='api'
-          AND trim(proposal.child_proposal_digest)=intent.source_id
-          AND trim(proposal.child_proposal_digest)=intent.source_digest
+          AND intent.source_id=trim(intent.source_digest)
+          AND proposal.child_proposal_digest=intent.source_digest
       ) THEN (
         p_intake_actor_kind='repair_broker'
         AND p_intake_actor_id='semantic-repair-child-broker'

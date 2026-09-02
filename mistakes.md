@@ -376,6 +376,6 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 
 **Root cause:** Repair-source reservation required `source_id == source_digest`, but ordinary task replacement is keyed only by `source_id`, so a different digest bypassed the guard and superseded a bound child. Security mediation must cover the full durable collision key before replay, identity insertion, or supersession.
 
-## 2026-09-02 — Normalized an indexed digest column inside its predicate
+## 2026-09-02 — Normalized indexed digests inside hot-path predicates
 
-**Root cause:** The repair-source mediator wrapped fixed-width indexed digest columns in `trim()`, turning exact point lookups into full index or sequential scans. Validate the text input first, cast that input to the indexed `char(64)` type, and leave the indexed column bare in every equality predicate.
+**Root cause:** Repair intake and claim predicates wrapped fixed-width indexed digest columns in `trim()`, while the first remediation plan-tested only intake and left a full proposal-index scan per claim candidate. Validate or compare the non-indexed input separately, leave indexed `char(64)` columns bare, and plan-test every security-definer hot path sharing the pattern.

@@ -2897,7 +2897,7 @@ class PostgresFactoryTests(unittest.TestCase):
             ),
         )
 
-    def test_repair_intake_status_uses_exact_digest_index_conditions(self):
+    def test_semantic_repair_functions_use_exact_digest_index_conditions(self):
         import psycopg
 
         repository_id = "owner/m6-repair-status-indexes"
@@ -3010,6 +3010,27 @@ class PostgresFactoryTests(unittest.TestCase):
                 "digest_mismatch",
             )
 
+        ordinary_payload = self.payload(
+            repository=repository_id,
+            source="ordinary-api-" + "x" * 64,
+        )
+        ordinary_payload["source_type"] = "api"
+        ordinary = self.service.intake(
+            ordinary_payload,
+            actor=OPERATOR,
+            now=datetime.now(timezone.utc),
+        )
+        with self.store._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT factory.semantic_task_claimable(
+                task_id,intent_id,intake_actor_kind,intake_actor_id,%s,'writer')
+                FROM factory.tasks WHERE task_id=%s""",
+                (WORKER.actor_id, ordinary.task.task_id),
+            )
+            ordinary_claimable = cursor.fetchone()[0]
+        with self.subTest(stage="unknown-long-api-source-remains-ordinary"):
+            self.assertTrue(ordinary_claimable)
+
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
                 """CREATE TEMP TABLE repair_intake_plan_args (
@@ -3076,6 +3097,58 @@ class PostgresFactoryTests(unittest.TestCase):
                     self.assertIn("Index Cond", scan, plan)
                     self.assertIn("child_proposal_digest", scan["Index Cond"])
                     self.assertIn("p_source_id", scan["Index Cond"])
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """CREATE TEMP TABLE semantic_claimable_plan_args (
+                p_task_id uuid,
+                p_intent_id uuid,
+                p_intake_actor_kind text,
+                p_intake_actor_id text,
+                p_requested_owner text,
+                p_requested_role text
+                ) ON COMMIT DROP"""
+            )
+            cursor.execute(
+                """INSERT INTO semantic_claimable_plan_args
+                SELECT task_id,intent_id,intake_actor_kind,intake_actor_id,%s,'writer'
+                FROM factory.tasks WHERE task_id=%s""",
+                (WORKER.actor_id, child["task"].task_id),
+            )
+            cursor.execute("ANALYZE semantic_claimable_plan_args")
+            cursor.execute(
+                """SELECT p.prosrc
+                FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+                WHERE n.nspname='factory'
+                  AND p.proname='semantic_task_claimable'
+                  AND p.pronargs=6"""
+            )
+            function_body = cursor.fetchone()[0].strip().removesuffix(";")
+            cursor.execute("SET LOCAL enable_seqscan=off")
+            cursor.execute("SET LOCAL enable_bitmapscan=off")
+            cursor.execute(
+                "EXPLAIN (FORMAT JSON, COSTS OFF) "
+                + function_body
+                + " FROM semantic_claimable_plan_args"
+            )
+            claimable_plan = cursor.fetchone()[0][0]["Plan"]
+
+        proposal_scans = [
+            node
+            for node in plan_nodes(claimable_plan)
+            if node.get("Relation Name") == "semantic_child_proposals"
+            and node.get("Alias") == "proposal"
+        ]
+        with self.subTest(stage="claimable-proposal-index-plan"):
+            self.assertTrue(proposal_scans, claimable_plan)
+            for scan in proposal_scans:
+                self.assertEqual(
+                    scan.get("Index Name"),
+                    "semantic_child_proposals_pkey",
+                )
+                self.assertIn("Index Cond", scan, claimable_plan)
+                self.assertIn("child_proposal_digest", scan["Index Cond"])
+                self.assertIn("source_digest", scan["Index Cond"])
 
     def test_execution_lifecycle_persists_new_digest_stages_and_redacted_proposal(self):
         task = self.submit(source="m5-execution-lifecycle").task
