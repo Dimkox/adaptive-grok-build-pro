@@ -15,12 +15,90 @@
     "role": {"enum": ["reader", "writer"]},
     "repository_id": {"type": "string", "minLength": 1, "maxLength": 128},
     "legacy_intent_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "authority": {"type": "object"},
-    "provider": {"type": "object"},
-    "capability_policy": {"type": "object"},
-    "plan": {"type": "object"},
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exact_base_sha", "exact_head_sha", "route_id", "change_id", "spec_digest", "architecture_digest", "governance_digest", "policy_digest", "prompt_template_digest", "role_definition_digest", "tool_policy_digest", "output_schema_digest"],
+      "properties": {
+        "exact_base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "exact_head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "route_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "change_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "spec_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "architecture_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "governance_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "policy_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "prompt_template_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "role_definition_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "tool_policy_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "output_schema_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider_id", "adapter_id", "adapter_version", "adapter_digest", "native_version", "native_digest", "model_id", "capabilities", "eligible"],
+      "properties": {
+        "provider_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "adapter_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "adapter_version": {"type": "string", "minLength": 1, "maxLength": 128},
+        "adapter_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "native_version": {"type": "string", "minLength": 1, "maxLength": 128},
+        "native_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "model_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "capabilities": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 128}, "maxItems": 32, "uniqueItems": true},
+        "eligible": {"const": true}
+      }
+    },
+    "capability_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed_paths", "allowed_tools", "network_destinations", "artifact_classes", "environment_names"],
+      "properties": {
+        "allowed_paths": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 1024}, "maxItems": 128, "uniqueItems": true},
+        "allowed_tools": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 128}, "maxItems": 128, "uniqueItems": true},
+        "network_destinations": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 512}, "maxItems": 0, "uniqueItems": true},
+        "artifact_classes": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 128}, "maxItems": 32, "uniqueItems": true},
+        "environment_names": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 128}, "maxItems": 128, "uniqueItems": true}
+      }
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stages"],
+      "properties": {
+        "stages": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "owner", "wall_seconds"],
+            "properties": {
+              "name": {"enum": ["prepare", "invoke", "collect", "finalize"]},
+              "owner": {"enum": ["broker", "adapter", "control_plane"]},
+              "wall_seconds": {"type": "integer", "minimum": 1, "maximum": 14400}
+            }
+          }
+        }
+      }
+    },
     "workspace_handle": {"type": "string", "pattern": "^workspace:[0-9a-f]{64}$"},
     "acceptance_ids": {"type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": {"type": "string", "pattern": "^AC-[0-9]{3,6}$"}},
-    "limits": {"type": "object"}
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["wall_seconds", "max_cost_usd_micros", "max_token_units", "max_output_bytes", "max_events", "infrastructure_retries", "semantic_repairs"],
+      "properties": {
+        "wall_seconds": {"type": "integer", "minimum": 1, "maximum": 14400},
+        "max_cost_usd_micros": {"type": "integer", "minimum": 0, "maximum": 25000000},
+        "max_token_units": {"type": "integer", "minimum": 0, "maximum": 2000000},
+        "max_output_bytes": {"type": "integer", "minimum": 0, "maximum": 10000000},
+        "max_events": {"type": "integer", "minimum": 1, "maximum": 100000},
+        "infrastructure_retries": {"type": "integer", "minimum": 0, "maximum": 2},
+        "semantic_repairs": {"type": "integer", "minimum": 0, "maximum": 3}
+      }
+    }
   }
 }

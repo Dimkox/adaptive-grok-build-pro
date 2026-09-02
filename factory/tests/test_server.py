@@ -7,16 +7,36 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import patch
 
 import httpx
 import uvicorn
 
 from adaptive_factory.api import Authenticator, create_app
 from adaptive_factory.models import Actor
-from adaptive_factory.server import ServerError, load_actors, prepare_unix_socket
+from adaptive_factory.server import ServerError, build_app, load_actors, prepare_unix_socket
+from adaptive_factory.settings import FactorySettings
 
 
 class ServerTests(unittest.TestCase):
+    def test_attestor_dsn_alone_never_becomes_a_workspace_observer(self):
+        settings = FactorySettings(
+            "postgresql://runtime", Path("/run/factory.sock"), Path("/run/actors.json"),
+            "postgresql://attestor",
+        )
+        with (
+            patch("adaptive_factory.server.PostgresFactoryStore") as runtime_store,
+            patch("adaptive_factory.server.PostgresArtifactAttestationStore") as attestor_store,
+            patch("adaptive_factory.server.load_actors", return_value={}),
+            patch("adaptive_factory.server.Authenticator"),
+            patch("adaptive_factory.server.create_app", side_effect=lambda service, auth: service),
+        ):
+            service = build_app(settings)
+        runtime_store.assert_called_once_with(settings.database_url)
+        attestor_store.assert_called_once_with(settings.artifact_attestor_database_url)
+        self.assertIsNone(service.artifact_broker)
+        self.assertIs(service.artifact_attestation_store, attestor_store.return_value)
+
     def test_authenticated_request_reaches_real_unix_socket(self):
         class Service:
             @staticmethod

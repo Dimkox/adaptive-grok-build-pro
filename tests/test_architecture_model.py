@@ -202,6 +202,181 @@ class ArchitectureModelTests(unittest.TestCase):
         ):
             self.assertIn(boundary, roadmap, boundary)
 
+    def test_factory_execution_components_have_local_default_deny_ownership(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        nodes = {node["id"]: node for node in snapshot.system["nodes"]}
+        expected_paths = {
+            "NODE-FACTORY-EXECUTION-CORE": {
+                "factory/src/adaptive_factory/execution_contracts.py",
+                "factory/src/adaptive_factory/protocol.py",
+                "factory/src/adaptive_factory/recovery.py",
+            },
+            "NODE-FACTORY-PROVIDER-ADAPTERS": {
+                "factory/src/adaptive_factory/adapters/__init__.py",
+                "factory/src/adaptive_factory/adapters/base.py",
+                "factory/src/adaptive_factory/adapters/codex.py",
+                "factory/src/adaptive_factory/adapters/grok.py",
+            },
+            "NODE-FACTORY-PROPOSAL-BROKER": {"factory/src/adaptive_factory/brokers.py"},
+            "NODE-FACTORY-WORKSPACE-BROKER": {"factory/src/adaptive_factory/workspace.py"},
+        }
+        for node_id, paths in expected_paths.items():
+            node = nodes[node_id]
+            self.assertEqual(set(node["repository_paths"]), paths)
+            self.assertEqual(node["trust_domain"], "TD-FACTORY-CONTROL")
+            self.assertEqual(node["runtime"]["network"], "none")
+            self.assertEqual(node["secrets"], [])
+
+        edges = {edge["id"]: edge for edge in snapshot.system["edges"]}
+        workspace_edges = {
+            "EDGE-FACTORY-CONTROL-WORKSPACE",
+            "EDGE-FACTORY-WORKSPACE-CONTROL",
+        }
+        for edge_id in workspace_edges:
+            edge = edges[edge_id]
+            self.assertEqual(edge["network_policy"], "no_network")
+            self.assertEqual(edge["failure_behavior"]["mode"], "fail_closed")
+            self.assertEqual(edge["failure_behavior"]["terminal_action"], "reject")
+
+        adapter_edges = [
+            edge
+            for edge in snapshot.system["edges"]
+            if edge["from"] == "NODE-FACTORY-PROVIDER-ADAPTERS"
+            or edge["to"] == "NODE-FACTORY-PROVIDER-ADAPTERS"
+        ]
+        self.assertEqual(
+            {(edge["from"], edge["to"]) for edge in adapter_edges},
+            {
+                ("NODE-FACTORY-EXECUTION-CORE", "NODE-FACTORY-PROVIDER-ADAPTERS"),
+                ("NODE-FACTORY-PROVIDER-ADAPTERS", "NODE-FACTORY-EXECUTION-CORE"),
+            },
+        )
+        self.assertTrue(all(edge["network_policy"] == "no_network" for edge in adapter_edges))
+
+        policies = {rule["id"]: rule for rule in snapshot.rules["path_boundaries"]}
+        self.assertIn("FIT-FACTORY-ADAPTER-BOUNDARY", policies)
+        self.assertIn("FIT-FACTORY-EXECUTION-CORE-BOUNDARY", policies)
+        self.assertIn("FIT-FACTORY-PROPOSAL-BROKER-BOUNDARY", policies)
+        self.assertIn("FIT-FACTORY-WORKSPACE-BROKER-BOUNDARY", policies)
+        self.assertEqual(len(snapshot.system["nodes"]), 22)
+        self.assertEqual(len(snapshot.system["edges"]), 24)
+        adapter_forbidden = set(policies["FIT-FACTORY-ADAPTER-BOUNDARY"]["forbidden_dependency_prefixes"])
+        self.assertTrue(
+            {
+                "adaptive_factory.store",
+                "adaptive_factory.workspace",
+                "psycopg",
+                "celery",
+                "rq",
+                "git",
+                "requests",
+                "httpx",
+                "socket",
+                "subprocess",
+            }
+            <= adapter_forbidden
+        )
+        recovery_forbidden = set(
+            policies["FIT-FACTORY-EXECUTION-CORE-BOUNDARY"][
+                "forbidden_dependency_prefixes"
+            ]
+        )
+        self.assertTrue(
+            {
+                "adaptive_factory.adapters",
+                "adaptive_factory.brokers",
+                "adaptive_factory.store",
+                "psycopg",
+                "git",
+                "requests",
+                "socket",
+                "subprocess",
+            }
+            <= recovery_forbidden
+        )
+        execution_nodes = set(expected_paths)
+        external_or_privileged = {
+            "NODE-FACTORY-POSTGRES",
+            "NODE-TRUST-CI-API",
+            "NODE-TRUST-CI-POSTGRES",
+            "NODE-TRUST-CI-WORKER",
+            "NODE-GITHUB",
+            "NODE-DOCKER-ENGINE",
+            "NODE-ISOLATED-RUNNER",
+        }
+        self.assertFalse(
+            any(
+                (edge["from"] in execution_nodes and edge["to"] in external_or_privileged)
+                or (edge["to"] in execution_nodes and edge["from"] in external_or_privileged)
+                for edge in snapshot.system["edges"]
+            )
+        )
+
+    def test_factory_semantic_validation_is_inert_read_only_and_contract_closed(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        nodes = {node["id"]: node for node in snapshot.system["nodes"]}
+        semantic = nodes["NODE-FACTORY-SEMANTIC-VALIDATION"]
+        self.assertEqual(
+            set(semantic["repository_paths"]),
+            {
+                "factory/src/adaptive_factory/semantic_adjudication.py",
+                "factory/src/adaptive_factory/semantic_contracts.py",
+                "factory/src/adaptive_factory/semantic_repair.py",
+            },
+        )
+        self.assertEqual(semantic["runtime"]["network"], "none")
+        self.assertEqual(semantic["secrets"], [])
+        self.assertEqual(
+            set(semantic["public_contracts"]),
+            {
+                "CONTRACT-FACTORY-SEMANTIC-COVERAGE-V1",
+                "CONTRACT-FACTORY-SEMANTIC-FINDING-V1",
+                "CONTRACT-FACTORY-SEMANTIC-REPAIR-DIRECTIVE-V1",
+                "CONTRACT-FACTORY-SEMANTIC-SUBJECT-V1",
+                "CONTRACT-FACTORY-SEMANTIC-VERDICT-V1",
+            },
+        )
+
+        semantic_edges = [
+            edge
+            for edge in snapshot.system["edges"]
+            if semantic["id"] in {edge["from"], edge["to"]}
+        ]
+        self.assertEqual(
+            [(edge["from"], edge["to"]) for edge in semantic_edges],
+            [("NODE-FACTORY-EXECUTION-CORE", semantic["id"])],
+        )
+        self.assertEqual(semantic_edges[0]["network_policy"], "no_network")
+        self.assertEqual(semantic_edges[0]["failure_behavior"]["mode"], "fail_closed")
+        self.assertEqual(semantic_edges[0]["failure_behavior"]["terminal_action"], "reject")
+
+        policies = {rule["id"]: rule for rule in snapshot.rules["path_boundaries"]}
+        forbidden = set(
+            policies["FIT-FACTORY-SEMANTIC-VALIDATION-BOUNDARY"][
+                "forbidden_dependency_prefixes"
+            ]
+        )
+        self.assertTrue(
+            {
+                "adaptive_factory.adapters",
+                "adaptive_factory.api",
+                "adaptive_factory.brokers",
+                "adaptive_factory.execution_contracts",
+                "adaptive_factory.migrations",
+                "adaptive_factory.service",
+                "adaptive_factory.store",
+                "adaptive_factory.workspace",
+                "psycopg",
+                "git",
+                "requests",
+                "httpx",
+                "urllib",
+                "socket",
+                "subprocess",
+            }
+            <= forbidden
+        )
+
     def _repo(self, system: dict | None = None, rules: dict | None = None):
         temp = tempfile.TemporaryDirectory()
         root = Path(temp.name)
@@ -1089,7 +1264,7 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 6)
+        self.assertEqual(len(records), 15)
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
@@ -1097,6 +1272,111 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertEqual(factory_api.kind, "openapi")
         self.assertEqual(factory_api.role, "bidirectional")
         self.assertNotIn("/v1/providers/run", documents[factory_api.id]["paths"])
+        execution_contracts = {
+            record.id: (record.kind, record.role, record.compatibility, record.path)
+            for record in records
+            if record.id.startswith("CONTRACT-FACTORY-EXECUTION-")
+        }
+        self.assertEqual(
+            execution_contracts,
+            {
+                "CONTRACT-FACTORY-EXECUTION-EVENT-V1": (
+                    "event",
+                    "consumer",
+                    "consumer_accepts_old",
+                    "factory/contracts/schemas/execution-event.v1.json",
+                ),
+                "CONTRACT-FACTORY-EXECUTION-INVOCATION-V1": (
+                    "json_schema",
+                    "producer",
+                    "producer_accepted_by_old",
+                    "factory/contracts/schemas/execution-invocation.v1.json",
+                ),
+                "CONTRACT-FACTORY-EXECUTION-TASK-PACKET-V1": (
+                    "json_schema",
+                    "producer",
+                    "producer_accepted_by_old",
+                    "factory/contracts/schemas/task-packet.v1.json",
+                ),
+                "CONTRACT-FACTORY-EXECUTION-WORKSPACE-RESULT-V1": (
+                    "json_schema",
+                    "producer",
+                    "producer_accepted_by_old",
+                    "factory/contracts/schemas/workspace-result.v1.json",
+                ),
+            },
+        )
+        execution_core = next(
+            node
+            for node in snapshot.system["nodes"]
+            if node["id"] == "NODE-FACTORY-EXECUTION-CORE"
+        )
+        self.assertEqual(
+            set(execution_core["public_contracts"]), set(execution_contracts)
+        )
+        for record in records:
+            if record.id in execution_contracts:
+                with self.subTest(contract=record.id):
+                    result = ARCH.compare_contracts(
+                        record, record, record.compatibility
+                    )
+                    self.assertEqual(result.status, "compatible", result.reasons)
+        semantic_contracts = {
+            record.id: (record.kind, record.role, record.compatibility, record.path)
+            for record in records
+            if record.id.startswith("CONTRACT-FACTORY-SEMANTIC-")
+        }
+        self.assertEqual(
+            semantic_contracts,
+            {
+                "CONTRACT-FACTORY-SEMANTIC-COVERAGE-V1": (
+                    "json_schema",
+                    "consumer",
+                    "consumer_accepts_old",
+                    "factory/contracts/jsonschema/semantic-coverage.v1.schema.json",
+                ),
+                "CONTRACT-FACTORY-SEMANTIC-FINDING-V1": (
+                    "json_schema",
+                    "consumer",
+                    "consumer_accepts_old",
+                    "factory/contracts/jsonschema/semantic-finding.v1.schema.json",
+                ),
+                "CONTRACT-FACTORY-SEMANTIC-REPAIR-DIRECTIVE-V1": (
+                    "json_schema",
+                    "producer",
+                    "producer_accepted_by_old",
+                    "factory/contracts/jsonschema/repair-directive.v1.schema.json",
+                ),
+                "CONTRACT-FACTORY-SEMANTIC-SUBJECT-V1": (
+                    "json_schema",
+                    "consumer",
+                    "consumer_accepts_old",
+                    "factory/contracts/jsonschema/semantic-subject.v1.schema.json",
+                ),
+                "CONTRACT-FACTORY-SEMANTIC-VERDICT-V1": (
+                    "json_schema",
+                    "producer",
+                    "producer_accepted_by_old",
+                    "factory/contracts/jsonschema/semantic-verdict.v1.schema.json",
+                ),
+            },
+        )
+        semantic_node = next(
+            node
+            for node in snapshot.system["nodes"]
+            if node["id"] == "NODE-FACTORY-SEMANTIC-VALIDATION"
+        )
+        self.assertEqual(
+            set(semantic_node["public_contracts"]), set(semantic_contracts)
+        )
+        for record in records:
+            if record.id in semantic_contracts:
+                with self.subTest(contract=record.id):
+                    result = ARCH.compare_contracts(
+                        record, record, record.compatibility
+                    )
+                    self.assertEqual(result.status, "unsupported", result.reasons)
+                    self.assertEqual(result.reasons, ("unsupported_schema_keyword",))
         governance_handoff = next(
             record
             for record in records
@@ -1624,6 +1904,51 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertEqual(result.status, "incompatible")
         self.assertIn("widened_producer_output", result.reasons)
 
+    def test_openapi_comparison_binds_component_schemas_and_response_headers(self) -> None:
+        base = _openapi(
+            {
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "headers": {
+                            "X-Correlation-ID": {
+                                "required": True,
+                                "schema": {"type": "string", "maxLength": 128},
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {"$ref": "#/components/schemas/Result"}
+                            }
+                        },
+                    }
+                }
+            }
+        )
+        base["components"] = {
+            "securitySchemes": {},
+            "schemas": {
+                "Result": _json_schema({"value": {"type": "string"}}, ["value"])
+            },
+        }
+        removed_header = copy.deepcopy(base)
+        del removed_header["paths"]["/items"]["get"]["responses"]["200"]["headers"]
+        changed_component = copy.deepcopy(base)
+        changed_component["components"]["schemas"]["Result"]["properties"]["value"] = {
+            "type": "integer"
+        }
+        for label, head in (
+            ("response header", removed_header),
+            ("component schema", changed_component),
+        ):
+            with self.subTest(label=label):
+                result = ARCH.compare_contracts(
+                    self._record(base, kind="openapi"),
+                    self._record(head, kind="openapi"),
+                    "bidirectional",
+                )
+                self.assertEqual(result.status, "incompatible")
+
     def test_openapi_comparison_rejects_added_status_required_parameter_and_scheme_change(
         self,
     ) -> None:
@@ -1747,6 +2072,75 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(result.status, "incompatible")
         self.assertIn("same_version_semantic_change", result.reasons)
+
+    def test_shipped_schema_keywords_are_bounded_and_one_of_stays_unsupported(self) -> None:
+        supported = {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "closed fixture",
+            "type": "object",
+            "properties": {
+                "version": {"const": 1},
+                "packet": {"$ref": "task-packet.v1.json"},
+                "items": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "uniqueItems": True,
+                },
+                "terminal": {"type": ["string", "null"]},
+            },
+            "required": ["version", "packet", "items", "terminal"],
+            "additionalProperties": False,
+            "allOf": [
+                {
+                    "if": {"properties": {"terminal": {"const": None}}},
+                    "then": {"properties": {"version": {"const": 1}}},
+                }
+            ],
+        }
+        record = self._record(supported)
+        self.assertEqual(
+            ARCH.compare_contracts(record, record, "consumer_accepts_old").status,
+            "compatible",
+        )
+        mutations = []
+        for path, value, expected_status in (
+            (("properties", "version", "const"), 2, "incompatible"),
+            (("properties", "packet", "$ref"), "other.v1.json", "incompatible"),
+            (("properties", "items", "uniqueItems"), False, "compatible"),
+            (("allOf", 0, "then", "properties", "version", "const"), 2, "incompatible"),
+        ):
+            changed = copy.deepcopy(supported)
+            target = changed
+            for key in path[:-1]:
+                target = target[key]
+            target[path[-1]] = value
+            mutations.append((changed, expected_status))
+        for changed, expected_status in mutations:
+            with self.subTest(changed=changed):
+                result = ARCH.compare_contracts(
+                    record, self._record(changed), "consumer_accepts_old"
+                )
+                self.assertEqual(result.status, expected_status)
+        consumer_narrowed = copy.deepcopy(supported)
+        consumer_narrowed["properties"]["items"]["uniqueItems"] = True
+        consumer_base = copy.deepcopy(consumer_narrowed)
+        consumer_base["properties"]["items"]["uniqueItems"] = False
+        self.assertEqual(
+            ARCH.compare_contracts(
+                self._record(consumer_base),
+                self._record(consumer_narrowed),
+                "consumer_accepts_old",
+            ).status,
+            "incompatible",
+        )
+        unsafe = copy.deepcopy(supported)
+        unsafe["properties"]["terminal"]["oneOf"] = [{"type": "string"}]
+        self.assertEqual(
+            ARCH.compare_contracts(
+                record, self._record(unsafe), "consumer_accepts_old"
+            ).status,
+            "unsupported",
+        )
 
     def test_contract_comparison_malformed_unknown_and_event_meaning_fail_typed(self) -> None:
         malformed_cases = (

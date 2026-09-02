@@ -6,6 +6,7 @@ import re
 from typing import Callable, Mapping
 
 from .contracts import canonical_digest
+from .protocol import MAX_DURABLE_PATH_BYTES, contains_structural_secret
 
 
 _CREDENTIAL_NAME = re.compile(r"(?i)(?:key|token|secret|password|credential|trust_ci|openai|github|grok)")
@@ -13,6 +14,7 @@ _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 _HEX40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _WORKSPACE = re.compile(r"^workspace:[0-9a-f]{64}$")
+_MEDIA_TYPE = re.compile(r"^[a-z0-9.+-]+/[a-z0-9.+-]+$")
 
 
 class WorkspaceError(ValueError):
@@ -134,6 +136,126 @@ class WorkspaceSnapshotRequest:
     input_head_sha: str
 
 
+@dataclass(frozen=True)
+class ArtifactAttestationRequest:
+    task_id: str
+    run_id: str
+    repository_id: str
+    packet_digest: str
+    workspace_handle: str
+    producer_sequence: int
+    fence: int
+    author_role: str
+    artifact_class: str
+    path: str
+    sha256: str
+    size_bytes: int
+    media_type: str
+
+    @classmethod
+    def from_facts(cls, data: Mapping[str, object]) -> "ArtifactAttestationRequest":
+        if not isinstance(data, Mapping) or set(data) != set(cls.__dataclass_fields__):
+            raise WorkspaceError("artifact_attestation_fields")
+        identifiers = (data["task_id"], data["run_id"], data["repository_id"])
+        if any(not isinstance(value, str) or not _IDENTIFIER.fullmatch(value) for value in identifiers):
+            raise WorkspaceError("artifact_attestation_identity")
+        if not isinstance(data["packet_digest"], str) or not _HEX64.fullmatch(data["packet_digest"]):
+            raise WorkspaceError("artifact_attestation_packet")
+        if not isinstance(data["workspace_handle"], str) or not _WORKSPACE.fullmatch(data["workspace_handle"]):
+            raise WorkspaceError("artifact_attestation_workspace")
+        if type(data["producer_sequence"]) is not int or not 1 <= data["producer_sequence"] <= 100_000:
+            raise WorkspaceError("artifact_attestation_sequence")
+        if type(data["fence"]) is not int or not 1 <= data["fence"] < 2**63:
+            raise WorkspaceError("artifact_attestation_fence")
+        if data["author_role"] not in {"writer"}:
+            raise WorkspaceError("artifact_attestation_role")
+        if not isinstance(data["artifact_class"], str) or not _IDENTIFIER.fullmatch(data["artifact_class"]):
+            raise WorkspaceError("artifact_attestation_class")
+        path = data["path"]
+        if (
+            not isinstance(path, str) or not path or "\x00" in path
+            or len(path.encode("utf-8")) > MAX_DURABLE_PATH_BYTES
+            or contains_structural_secret(path)
+        ):
+            raise WorkspaceError("artifact_attestation_path")
+        candidate = PurePosixPath(path)
+        if candidate.is_absolute() or ".." in candidate.parts or ".git" in candidate.parts or str(candidate) != path:
+            raise WorkspaceError("artifact_attestation_path")
+        if not isinstance(data["sha256"], str) or not _HEX64.fullmatch(data["sha256"]):
+            raise WorkspaceError("artifact_attestation_digest")
+        if type(data["size_bytes"]) is not int or not 0 <= data["size_bytes"] <= 1_000_000_000:
+            raise WorkspaceError("artifact_attestation_size")
+        if not isinstance(data["media_type"], str) or not _MEDIA_TYPE.fullmatch(data["media_type"]):
+            raise WorkspaceError("artifact_attestation_media")
+        return cls(**data)
+
+    def to_dict(self) -> dict[str, object]:
+        return {name: getattr(self, name) for name in self.__dataclass_fields__}
+
+
+@dataclass(frozen=True)
+class ArtifactAttestationV1:
+    contract_version: int
+    task_id: str
+    run_id: str
+    repository_id: str
+    packet_digest: str
+    workspace_handle: str
+    producer_sequence: int
+    fence: int
+    author_role: str
+    artifact_class: str
+    path: str
+    sha256: str
+    size_bytes: int
+    media_type: str
+    source: str
+    artifact_attestation_digest: str
+
+    @classmethod
+    def from_facts(cls, data: Mapping[str, object]) -> "ArtifactAttestationV1":
+        fields = set(cls.__dataclass_fields__) - {"artifact_attestation_digest"}
+        if not isinstance(data, Mapping) or set(data) != fields:
+            raise WorkspaceError("artifact_attestation_fields")
+        if type(data["contract_version"]) is not int or data["contract_version"] != 1 \
+                or data["source"] != "trusted_workspace_broker":
+            raise WorkspaceError("artifact_attestation_source")
+        request = ArtifactAttestationRequest.from_facts(
+            {name: data[name] for name in ArtifactAttestationRequest.__dataclass_fields__}
+        )
+        values = {
+            "contract_version": 1,
+            **request.to_dict(),
+            "source": "trusted_workspace_broker",
+        }
+        digest = canonical_digest(
+            {"contract": "adaptive-factory.artifact-attestation/v1", **values}
+        )
+        return cls(**values, artifact_attestation_digest=digest)
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, object]) -> "ArtifactAttestationV1":
+        fields = set(cls.__dataclass_fields__)
+        if not isinstance(data, Mapping) or set(data) != fields:
+            raise WorkspaceError("artifact_attestation_fields")
+        result = cls.from_facts(
+            {name: data[name] for name in fields - {"artifact_attestation_digest"}}
+        )
+        if data["artifact_attestation_digest"] != result.artifact_attestation_digest:
+            raise WorkspaceError("artifact_attestation_digest_mismatch")
+        return result
+
+    def to_dict(self) -> dict[str, object]:
+        return {name: getattr(self, name) for name in self.__dataclass_fields__}
+
+
+@dataclass(frozen=True)
+class ArtifactAttestationUnavailable:
+    status: str = "unavailable"
+    disposition: str = "needs_human"
+    reason: str = "fake_runtime_no_artifact_evidence"
+
+
 class FakeWorkspaceBroker:
     def __init__(self, *, symlinks: tuple[str, ...] = ()) -> None:
         self._policies: dict[WorkspaceHandle, WorkspacePolicy] = {}
@@ -145,6 +267,11 @@ class FakeWorkspaceBroker:
         if policy.network_destinations:
             raise WorkspaceError("network_forbidden")
         self._policies[handle] = policy
+
+    def release(self, handle: WorkspaceHandle) -> str:
+        if self._policies.pop(handle, None) is None:
+            return "fake_absent"
+        return "fake_released"
 
     def _policy(self, handle: WorkspaceHandle) -> WorkspacePolicy:
         try:
@@ -188,6 +315,11 @@ class FakeWorkspaceBroker:
                     raise WorkspaceError("invalid_environment")
                 result[name] = value
         return result
+
+    def attest_artifact(
+        self, _request: ArtifactAttestationRequest
+    ) -> ArtifactAttestationUnavailable:
+        return ArtifactAttestationUnavailable()
 
 
 class FakeGitBroker:

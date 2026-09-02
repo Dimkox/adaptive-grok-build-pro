@@ -1,26 +1,4364 @@
 {
   "openapi": "3.1.0",
-  "info": {"title": "Adaptive Factory Local Control API", "version": "1.0.0"},
-  "paths": {
-    "/health/live": {"get": {"tags": ["health"], "responses": {"200": {"description": "live"}}}},
-    "/health/ready": {"get": {"tags": ["health"], "responses": {"200": {"description": "ready"}}}},
-    "/v1/tasks": {"get": {"description": "Requires task:list scope.", "tags": ["tasks"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "bounded list"}}}, "post": {"description": "Requires task:submit scope.", "tags": ["tasks"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "duplicate"}, "201": {"description": "created"}}}},
-    "/v1/tasks/{task_id}": {"get": {"description": "Requires task:read scope.", "tags": ["tasks"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "task"}, "404": {"description": "not found"}}}},
-    "/v1/tasks/{task_id}/cancel": {"post": {"description": "Requires task:cancel scope.", "tags": ["tasks"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "cancelled"}}}},
-    "/v1/claims": {"post": {"description": "Requires task:claim scope.", "tags": ["worker"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "claim result"}}}},
-    "/v1/execution/claims": {"post": {"description": "Requires task:execute and task:claim scopes. Creates a new immutable execution packet and manifest without changing the legacy claim digest.", "tags": ["execution"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "explicit execution claim or null"}, "409": {"description": "stale M4 fence or idempotency conflict"}, "422": {"description": "closed selection invalid or provider ineligible"}}}},
-    "/v1/execution/stages": {"post": {"description": "Requires task:execute scope and current M4 lease/fence plus M5 packet digest.", "tags": ["execution"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "append-only execution stage"}, "409": {"description": "stale fence packet or stage"}}}},
-    "/v1/execution/notes": {"post": {"description": "Requires task:execute scope; validates, redacts and appends a bounded note proposal under the live M4 fence and M5 packet.", "tags": ["execution"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "immutable note proposal"}, "409": {"description": "stale fence packet or terminal manifest"}, "422": {"description": "closed note invalid"}}}},
-    "/v1/execution/artifacts": {"post": {"description": "Requires task:execute scope; appends a content-addressed repository-contained artifact proposal under the live M4 fence and M5 packet.", "tags": ["execution"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "immutable artifact proposal"}, "409": {"description": "stale fence packet or terminal manifest"}, "422": {"description": "closed artifact invalid"}}}},
-    "/v1/execution/usage": {"post": {"description": "Requires task:execute scope; appends bounded provider usage evidence as a proposal and does not bypass M4 accounting settlement.", "tags": ["execution"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "immutable usage proposal"}, "409": {"description": "stale fence packet or terminal manifest"}, "422": {"description": "closed usage evidence invalid"}}}},
-    "/v1/execution/terminal": {"post": {"description": "Requires task:execute scope; appends one terminal recommendation without giving the provider state-transition authority.", "tags": ["execution"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "immutable terminal proposal"}, "409": {"description": "stale fence packet duplicate terminal or terminal manifest"}, "422": {"description": "closed terminal recommendation invalid"}}}},
-    "/v1/heartbeats": {"post": {"description": "Requires task:heartbeat scope.", "tags": ["worker"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "lease"}, "409": {"description": "stale_fence; authoritative conflict is preserved even if bounded metric recording is unavailable"}}}},
-    "/v1/proposals": {"post": {"description": "Requires task:release scope.", "tags": ["worker"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "release status"}, "409": {"description": "stale_fence; authoritative conflict is preserved even if bounded metric recording is unavailable"}}}},
-    "/v1/budget-reservations": {"post": {"description": "Requires task:budget scope and a current actor-bound lease.", "tags": ["worker"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "idempotent reservation identity"}, "409": {"description": "stale_fence or bounded budget conflict; stale-fence metric failure never changes the conflict"}}}},
-    "/v1/usage-observations": {"post": {"description": "Requires task:budget scope and settles current-run reservations.", "tags": ["worker"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "idempotent usage observation"}, "409": {"description": "stale_fence; authoritative conflict is preserved even if bounded metric recording is unavailable"}}}},
-    "/v1/kill-switches": {"post": {"description": "Requires factory:kill scope.", "tags": ["operator"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "kill state"}}}},
-    "/v1/reconcile": {"post": {"description": "Requires factory:reconcile scope.", "tags": ["operator"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "bounded repair result"}}}},
-    "/metrics": {"get": {"description": "Requires wildcard operator factory:reconcile scope; returns three fixed redacted families. Store-derived values come from one transactionally maintained fixed-row snapshot with fixed timeouts. Every final application 401/403 is counted once without labels in a process-local total that resets on restart; fence rejection is durable bounded best effort and can be omitted on timeout without changing stale_fence.", "tags": ["operator"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "bounded redacted fixed-snapshot metric families"}, "401": {"description": "authentication rejected and counted once"}, "403": {"description": "scope, actor-kind, repository or trusted-authority rejection counted once"}, "503": {"description": "bounded metrics snapshot unavailable or timed out"}}}}
+  "info": {
+    "title": "Adaptive Factory Local Control API",
+    "version": "1.0.0",
+    "description": "Closed source contract for M4 control and provisional M5 execution endpoints."
   },
-  "components": {"securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer"}}}
+  "paths": {
+    "/health/live": {
+      "get": {
+        "operationId": "healthLive",
+        "tags": [
+          "health"
+        ],
+        "responses": {
+          "200": {
+            "description": "live",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Live"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "healthReady",
+        "tags": [
+          "health"
+        ],
+        "responses": {
+          "200": {
+            "description": "ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Readiness"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "database or schema unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tasks": {
+      "get": {
+        "operationId": "listTasks",
+        "description": "Requires task:list scope.",
+        "tags": [
+          "tasks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "repository_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "bounded list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskList"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "query invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "submitTask",
+        "description": "Requires task:submit scope.",
+        "tags": [
+          "tasks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskIntake"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "duplicate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitTaskResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitTaskResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tasks/{task_id}": {
+      "get": {
+        "operationId": "getTask",
+        "description": "Requires task:read scope.",
+        "tags": [
+          "tasks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "task id invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tasks/{task_id}/cancel": {
+      "post": {
+        "operationId": "cancelTask",
+        "description": "Requires task:cancel scope.",
+        "tags": [
+          "tasks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/claims": {
+      "post": {
+        "operationId": "claimLegacyTask",
+        "description": "Legacy M4 claim; packet_digest remains intent_digest.",
+        "tags": [
+          "worker"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegacyClaimRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyClaimResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/execution/claims": {
+      "post": {
+        "operationId": "claimExecution",
+        "description": "Creates a provisional immutable M5 packet and manifest.",
+        "tags": [
+          "execution"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecutionClaimRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionClaimResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/execution/stages": {
+      "post": {
+        "operationId": "advanceExecution",
+        "description": "Appends a nonterminal execution stage.",
+        "tags": [
+          "execution"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdvanceExecutionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionStageResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/execution/notes": {
+      "post": {
+        "operationId": "proposeExecutionNote",
+        "description": "Appends a redacted bounded note proposal.",
+        "tags": [
+          "execution"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/execution/artifacts": {
+      "post": {
+        "operationId": "proposeExecutionArtifact",
+        "description": "Appends trusted content-attested artifact evidence.",
+        "tags": [
+          "execution"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArtifactRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/execution/usage": {
+      "post": {
+        "operationId": "reportExecutionUsage",
+        "description": "Appends bounded usage evidence.",
+        "tags": [
+          "execution"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsageProposalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/execution/terminal": {
+      "post": {
+        "operationId": "proposeExecutionTerminal",
+        "description": "Appends a factual terminal proposal without semantic approval.",
+        "tags": [
+          "execution"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TerminalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/heartbeats": {
+      "post": {
+        "operationId": "heartbeatLease",
+        "description": "Extends the current lease.",
+        "tags": [
+          "worker"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaseGrant"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaseGrant"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/proposals": {
+      "post": {
+        "operationId": "releaseProposal",
+        "description": "Applies the legacy M4 release boundary where M5 does not own finalization.",
+        "tags": [
+          "worker"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/budget-reservations": {
+      "post": {
+        "operationId": "reserveBudget",
+        "description": "Reserves bounded budget.",
+        "tags": [
+          "worker"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BudgetReservationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetReservationResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/usage-observations": {
+      "post": {
+        "operationId": "observeUsage",
+        "description": "Settles bounded usage.",
+        "tags": [
+          "worker"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsageObservationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageObservationResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/kill-switches": {
+      "post": {
+        "operationId": "setKillSwitch",
+        "description": "Sets a bounded operator kill switch.",
+        "tags": [
+          "operator"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KillRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KillResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reconcile": {
+      "post": {
+        "operationId": "reconcileFactory",
+        "description": "Runs bounded M4 reconciliation.",
+        "tags": [
+          "operator"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReconcileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReconcileResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Bounded request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "header invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "body too large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "operationId": "readMetrics",
+        "description": "Returns exactly six fixed low-cardinality families.",
+        "tags": [
+          "operator"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^Bearer .+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "bounded redacted fixed snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Metrics"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "authentication rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "scope denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "snapshot unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "error": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        }
+      },
+      "Live": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "const": "live"
+          }
+        }
+      },
+      "Readiness": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "database_role",
+          "schema_version"
+        ],
+        "properties": {
+          "status": {
+            "enum": [
+              "ready",
+              "not_ready"
+            ]
+          },
+          "database_role": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "session_user": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "schema_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "capacity_consistent": {
+            "type": "boolean"
+          },
+          "accounting_consistent": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LeaseGrant": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id",
+          "run_id",
+          "owner",
+          "role",
+          "fence",
+          "expires_at",
+          "packet_digest"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "run_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+          },
+          "role": {
+            "enum": [
+              "reader",
+              "writer"
+            ]
+          },
+          "fence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854776000
+          },
+          "expires_at": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "packet_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      },
+      "NullableLeaseGrant": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "additionalProperties": false,
+        "required": [
+          "task_id",
+          "run_id",
+          "owner",
+          "role",
+          "fence",
+          "expires_at",
+          "packet_digest"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "run_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+          },
+          "role": {
+            "enum": [
+              "reader",
+              "writer"
+            ]
+          },
+          "fence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854776000
+          },
+          "expires_at": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "packet_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      },
+      "ExecutionGrant": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "lease",
+          "packet_digest",
+          "manifest_digest",
+          "workspace_handle",
+          "provider_id",
+          "stage"
+        ],
+        "properties": {
+          "lease": {
+            "$ref": "#/components/schemas/LeaseGrant"
+          },
+          "packet_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "manifest_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "workspace_handle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^workspace:[0-9a-f]{64}$"
+          },
+          "provider_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "stage": {
+            "enum": [
+              "prepared",
+              "running",
+              "collecting",
+              "completed",
+              "failed",
+              "needs_human",
+              "cancelled",
+              "orphaned"
+            ]
+          }
+        }
+      },
+      "NullableExecutionGrant": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "additionalProperties": false,
+        "required": [
+          "lease",
+          "packet_digest",
+          "manifest_digest",
+          "workspace_handle",
+          "provider_id",
+          "stage"
+        ],
+        "properties": {
+          "lease": {
+            "$ref": "#/components/schemas/LeaseGrant"
+          },
+          "packet_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "manifest_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "workspace_handle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^workspace:[0-9a-f]{64}$"
+          },
+          "provider_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "stage": {
+            "enum": [
+              "prepared",
+              "running",
+              "collecting",
+              "completed",
+              "failed",
+              "needs_human",
+              "cancelled",
+              "orphaned"
+            ]
+          }
+        }
+      },
+      "Task": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id",
+          "repository_id",
+          "status",
+          "generation",
+          "intent_digest",
+          "packet_digest",
+          "deadline_at"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "repository_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "status": {
+            "enum": [
+              "inbox",
+              "triaged",
+              "waiting_design_approval",
+              "queued",
+              "leased",
+              "analyzing",
+              "implementing",
+              "verifying",
+              "reviewing",
+              "ready_for_human",
+              "retry",
+              "needs_human",
+              "dead",
+              "cancelled",
+              "superseded"
+            ]
+          },
+          "generation": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854776000
+          },
+          "intent_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "packet_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "deadline_at": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        }
+      },
+      "TaskList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            },
+            "maxItems": 100
+          }
+        }
+      },
+      "TaskIntake": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "contract_version",
+          "request_id",
+          "repository_id",
+          "source_type",
+          "source_id",
+          "source_digest",
+          "route_id",
+          "change_id",
+          "exact_base_sha",
+          "spec_digest",
+          "architecture",
+          "governance",
+          "policy_digest",
+          "m0_authority",
+          "acceptance_ids",
+          "limits"
+        ],
+        "properties": {
+          "contract_version": {
+            "const": 1
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "repository_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "source_type": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "source_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "source_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "route_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "change_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "exact_base_sha": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{40}$"
+          },
+          "spec_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "architecture": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "architecture_contract_version",
+              "architecture_digest",
+              "architecture_evidence_digest",
+              "exact_base_sha",
+              "exact_head_sha"
+            ],
+            "properties": {
+              "architecture_contract_version": {
+                "const": 1
+              },
+              "architecture_digest": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "architecture_evidence_digest": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "exact_base_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "exact_head_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              }
+            }
+          },
+          "governance": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "governance_contract_version",
+              "governance_digest",
+              "governance_evidence_digest",
+              "architecture_digest",
+              "exact_base_sha",
+              "exact_head_sha"
+            ],
+            "properties": {
+              "governance_contract_version": {
+                "const": 1
+              },
+              "governance_digest": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "governance_evidence_digest": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "architecture_digest": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "exact_base_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "exact_head_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              }
+            }
+          },
+          "policy_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "m0_authority": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [],
+            "properties": {
+              "observed_at": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "check_name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "exact_head_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "bootstrap_exception": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "issuer": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "scope": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "expires_at": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            }
+          },
+          "acceptance_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "maxItems": 256,
+            "uniqueItems": true
+          },
+          "limits": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "wall_seconds",
+              "max_cost_usd_micros",
+              "max_token_units",
+              "max_output_bytes",
+              "max_events",
+              "infrastructure_retries",
+              "semantic_repairs"
+            ],
+            "properties": {
+              "wall_seconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 14400
+              },
+              "max_cost_usd_micros": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 25000000
+              },
+              "max_token_units": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2000000
+              },
+              "max_output_bytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000000
+              },
+              "max_events": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 100000
+              },
+              "infrastructure_retries": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2
+              },
+              "semantic_repairs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3
+              }
+            }
+          }
+        }
+      },
+      "SubmitTaskResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task",
+          "created"
+        ],
+        "properties": {
+          "task": {
+            "$ref": "#/components/schemas/Task"
+          },
+          "created": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CancelRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      },
+      "LegacyClaimRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "repositories",
+          "lease_seconds"
+        ],
+        "properties": {
+          "role": {
+            "enum": [
+              "reader",
+              "writer"
+            ]
+          },
+          "repositories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "maxItems": 100,
+            "uniqueItems": true
+          },
+          "lease_seconds": {
+            "type": "integer",
+            "minimum": 30,
+            "maximum": 300
+          }
+        }
+      },
+      "LegacyClaimResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "grant"
+        ],
+        "properties": {
+          "grant": {
+            "$ref": "#/components/schemas/NullableLeaseGrant"
+          }
+        }
+      },
+      "ProviderSelection": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "provider_id",
+          "adapter_id",
+          "adapter_version",
+          "adapter_digest",
+          "native_version",
+          "native_digest",
+          "model_id",
+          "capabilities",
+          "eligible"
+        ],
+        "properties": {
+          "provider_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "adapter_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "adapter_version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "adapter_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "native_version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "native_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "model_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "maxItems": 32,
+            "uniqueItems": true
+          },
+          "eligible": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CapabilityPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "allowed_paths",
+          "allowed_tools",
+          "network_destinations",
+          "artifact_classes",
+          "environment_names"
+        ],
+        "properties": {
+          "allowed_paths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "maxItems": 128,
+            "uniqueItems": true
+          },
+          "allowed_tools": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "maxItems": 128,
+            "uniqueItems": true
+          },
+          "network_destinations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "maxItems": 32,
+            "uniqueItems": true
+          },
+          "artifact_classes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "maxItems": 32,
+            "uniqueItems": true
+          },
+          "environment_names": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "maxItems": 128,
+            "uniqueItems": true
+          }
+        }
+      },
+      "ExecutionPlan": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stages"
+        ],
+        "properties": {
+          "stages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "owner",
+                "wall_seconds"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "owner": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "wall_seconds": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 14400
+                }
+              }
+            },
+            "maxItems": 16
+          }
+        }
+      },
+      "ExecutionClaimRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "repositories",
+          "lease_seconds",
+          "provider",
+          "capability_policy",
+          "plan",
+          "workspace_handle",
+          "prompt_template_digest",
+          "role_definition_digest",
+          "tool_policy_digest",
+          "output_schema_digest"
+        ],
+        "properties": {
+          "role": {
+            "enum": [
+              "reader",
+              "writer"
+            ]
+          },
+          "repositories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "maxItems": 100,
+            "uniqueItems": true
+          },
+          "lease_seconds": {
+            "type": "integer",
+            "minimum": 30,
+            "maximum": 300
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderSelection"
+          },
+          "capability_policy": {
+            "$ref": "#/components/schemas/CapabilityPolicy"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/ExecutionPlan"
+          },
+          "workspace_handle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^workspace:[0-9a-f]{64}$"
+          },
+          "prompt_template_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "role_definition_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "tool_policy_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "output_schema_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      },
+      "ExecutionClaimResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "grant"
+        ],
+        "properties": {
+          "grant": {
+            "$ref": "#/components/schemas/NullableExecutionGrant"
+          }
+        }
+      },
+      "AdvanceExecutionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "grant",
+          "packet_digest",
+          "stage"
+        ],
+        "properties": {
+          "grant": {
+            "$ref": "#/components/schemas/LeaseGrant"
+          },
+          "packet_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "stage": {
+            "enum": [
+              "running",
+              "collecting"
+            ]
+          }
+        }
+      },
+      "ExecutionStageResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stage"
+        ],
+        "properties": {
+          "stage": {
+            "enum": [
+              "prepared",
+              "running",
+              "collecting",
+              "completed",
+              "failed",
+              "needs_human",
+              "cancelled",
+              "orphaned"
+            ]
+          }
+        }
+      },
+      "NoteRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "grant",
+          "packet_digest",
+          "sequence",
+          "note_type",
+          "body",
+          "evidence"
+        ],
+        "properties": {
+          "grant": {
+            "$ref": "#/components/schemas/LeaseGrant"
+          },
+          "packet_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "note_type": {
+            "enum": [
+              "finding",
+              "conclusion",
+              "decision.record"
+            ]
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 65536
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "maxItems": 64,
+            "uniqueItems": true
+          }
+        }
+      },
+      "ArtifactRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "grant",
+          "packet_digest",
+          "sequence",
+          "artifact_class",
+          "path",
+          "sha256",
+          "size_bytes",
+          "media_type"
+        ],
+        "properties": {
+          "grant": {
+            "$ref": "#/components/schemas/LeaseGrant"
+          },
+          "packet_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "artifact_class": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000
+          },
+          "media_type": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      },
+      "UsageProposalRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "grant",
+          "packet_digest",
+          "sequence",
+          "provider_call_id",
+          "price_table_digest",
+          "input_tokens",
+          "output_tokens",
+          "reasoning_tokens",
+          "cost_usd_micros",
+          "output_bytes"
+        ],
+        "properties": {
+          "grant": {
+            "$ref": "#/components/schemas/LeaseGrant"
+          },
+          "packet_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "provider_call_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "price_table_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "input_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000000
+          },
+          "output_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000000
+          },
+          "reasoning_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000000
+          },
+          "cost_usd_micros": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 25000000
+          },
+          "output_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000
+          }
+        }
+      },
+      "TerminalRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "grant",
+          "packet_digest",
+          "sequence",
+          "terminal_type"
+        ],
+        "properties": {
+          "grant": {
+            "$ref": "#/components/schemas/LeaseGrant"
+          },
+          "packet_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "terminal_type": {
+            "enum": [
+              "run.completed",
+              "run.failed",
+              "run.needs_human"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 65536
+          },
+          "failure_class": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "diagnostic": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 65536
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 65536
+          }
+        }
+      },
+      "Proposal": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id",
+          "run_id",
+          "packet_digest",
+          "fence",
+          "sequence",
+          "author_role",
+          "idempotency_key"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "run_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "packet_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "fence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854776000
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100000
+          },
+          "author_role": {
+            "enum": [
+              "reader",
+              "writer"
+            ]
+          },
+          "note_type": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 65536
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "maxItems": 64,
+            "uniqueItems": true
+          },
+          "artifact_class": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000
+          },
+          "media_type": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "artifact_attestation_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "provider_call_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "price_table_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "input_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000000
+          },
+          "output_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000000
+          },
+          "reasoning_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000000
+          },
+          "cost_usd_micros": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 25000000
+          },
+          "output_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000
+          },
+          "terminal_type": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 65536
+          },
+          "failure_class": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 65536
+          },
+          "diagnostic": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 65536
+          },
+          "idempotency_key": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      },
+      "ProposalResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "proposal"
+        ],
+        "properties": {
+          "proposal": {
+            "$ref": "#/components/schemas/Proposal"
+          }
+        }
+      },
+      "ReleaseRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "grant",
+          "outcome"
+        ],
+        "properties": {
+          "grant": {
+            "$ref": "#/components/schemas/LeaseGrant"
+          },
+          "outcome": {
+            "enum": [
+              "completed",
+              "database_unavailable",
+              "worker_lost",
+              "provider_transport_unavailable",
+              "temporary_resource_exhaustion",
+              "validation",
+              "policy",
+              "authentication",
+              "unsupported_capability",
+              "budget",
+              "security",
+              "stale_input",
+              "protocol",
+              "provider_quality"
+            ]
+          }
+        }
+      },
+      "ReleaseResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "enum": [
+              "inbox",
+              "triaged",
+              "waiting_design_approval",
+              "queued",
+              "leased",
+              "analyzing",
+              "implementing",
+              "verifying",
+              "reviewing",
+              "ready_for_human",
+              "retry",
+              "needs_human",
+              "dead",
+              "cancelled",
+              "superseded"
+            ]
+          }
+        }
+      },
+      "BudgetReservationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "grant",
+          "cost_usd_micros",
+          "token_units",
+          "wall_seconds",
+          "reason_digest"
+        ],
+        "properties": {
+          "grant": {
+            "$ref": "#/components/schemas/LeaseGrant"
+          },
+          "cost_usd_micros": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 25000000
+          },
+          "token_units": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000000
+          },
+          "wall_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 14400
+          },
+          "reason_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      },
+      "BudgetReservationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reservation_id"
+        ],
+        "properties": {
+          "reservation_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          }
+        }
+      },
+      "UsageObservationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "grant",
+          "provider_call_id",
+          "price_table_digest",
+          "cost_usd_micros",
+          "token_units",
+          "output_bytes"
+        ],
+        "properties": {
+          "grant": {
+            "$ref": "#/components/schemas/LeaseGrant"
+          },
+          "provider_call_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "price_table_digest": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "cost_usd_micros": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 25000000
+          },
+          "token_units": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000000
+          },
+          "output_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000
+          }
+        }
+      },
+      "UsageObservationResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observation_id",
+          "created"
+        ],
+        "properties": {
+          "observation_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "created": {
+            "type": "boolean"
+          }
+        }
+      },
+      "KillRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scope_key",
+          "enabled",
+          "reason"
+        ],
+        "properties": {
+          "scope_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 139
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        }
+      },
+      "KillResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "enabled"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReconcileRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          }
+        }
+      },
+      "ReconcileResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidates",
+          "repaired",
+          "cursor"
+        ],
+        "properties": {
+          "candidates": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "repaired": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128
+          }
+        }
+      },
+      "Metrics": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "factory_intake_and_rejection_outcomes_total",
+          "factory_lease_reclaim_and_fence_rejection_total",
+          "factory_capacity_budget_kill_and_reconcile_outcomes_total",
+          "factory_execution_claim_and_stage_outcomes_total",
+          "factory_execution_protocol_and_proposal_outcomes_total",
+          "factory_execution_orphan_and_cleanup_outcomes_total"
+        ],
+        "properties": {
+          "factory_intake_and_rejection_outcomes_total": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "accepted",
+              "superseded",
+              "queued",
+              "retry",
+              "dead",
+              "transition_events"
+            ],
+            "properties": {
+              "accepted": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "superseded": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "queued": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "retry": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "dead": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "transition_events": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              }
+            }
+          },
+          "factory_lease_reclaim_and_fence_rejection_total": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "live_leases",
+              "reclaimed",
+              "fence_rejected"
+            ],
+            "properties": {
+              "live_leases": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "reclaimed": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "fence_rejected": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              }
+            }
+          },
+          "factory_capacity_budget_kill_and_reconcile_outcomes_total": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "active_capacity",
+              "cost_reserved_micros",
+              "cost_observed_micros",
+              "tokens_reserved",
+              "tokens_observed",
+              "wall_reserved_seconds",
+              "output_observed_bytes",
+              "accounting_blocked",
+              "active_kills",
+              "reconciliation_runs",
+              "reconciliation_candidates",
+              "repaired",
+              "auth_rejected"
+            ],
+            "properties": {
+              "active_capacity": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "cost_reserved_micros": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "cost_observed_micros": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "tokens_reserved": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "tokens_observed": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "wall_reserved_seconds": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "output_observed_bytes": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "accounting_blocked": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "active_kills": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "reconciliation_runs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "reconciliation_candidates": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "repaired": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "auth_rejected": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              }
+            }
+          },
+          "factory_execution_claim_and_stage_outcomes_total": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "claimed",
+              "stage_transitions"
+            ],
+            "properties": {
+              "claimed": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "stage_transitions": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              }
+            }
+          },
+          "factory_execution_protocol_and_proposal_outcomes_total": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "note_proposals",
+              "artifact_proposals",
+              "usage_proposals",
+              "terminal_proposals"
+            ],
+            "properties": {
+              "note_proposals": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "artifact_proposals": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "usage_proposals": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "terminal_proposals": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              }
+            }
+          },
+          "factory_execution_orphan_and_cleanup_outcomes_total": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "orphaned",
+              "workspace_released",
+              "cleanup_failed"
+            ],
+            "properties": {
+              "orphaned": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "workspace_released": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              },
+              "cleanup_failed": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9223372036854776000
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }

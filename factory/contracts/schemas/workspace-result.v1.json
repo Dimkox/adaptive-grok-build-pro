@@ -8,7 +8,8 @@
     "contract_version", "task_id", "run_id", "task_packet_digest", "run_manifest_digest",
     "exact_head_sha", "workspace_snapshot_digest", "terminal_stage", "terminal_proposal_digest",
     "artifact_manifest_digest", "note_manifest_digest", "usage_evidence_digest",
-    "diagnostics_digest", "workspace_result_digest"
+    "diagnostics_digest", "m4_status", "failure_class", "failure_reason",
+    "workspace_result_digest"
   ],
   "properties": {
     "contract_version": {"const": 1},
@@ -24,6 +25,49 @@
     "note_manifest_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "usage_evidence_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "diagnostics_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "m4_status": {"enum": ["ready_for_human", "retry", "needs_human", "dead"]},
+    "failure_class": {
+      "type": ["string", "null"],
+      "enum": [
+        null, "database_unavailable", "worker_lost", "provider_transport_unavailable",
+        "temporary_resource_exhaustion", "validation", "policy", "authentication",
+        "unsupported_capability", "budget", "security", "stale_input", "protocol",
+        "provider_quality"
+      ]
+    },
+    "failure_reason": {"type": ["string", "null"], "minLength": 1, "maxLength": 4096},
     "workspace_result_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
-  }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"terminal_stage": {"const": "completed"}}},
+      "then": {
+        "properties": {
+          "m4_status": {"const": "ready_for_human"},
+          "failure_class": {"type": "null"},
+          "failure_reason": {"type": "null"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"terminal_stage": {"const": "failed"}}},
+      "then": {
+        "properties": {
+          "m4_status": {"enum": ["retry", "needs_human", "dead"]},
+          "failure_class": {"type": "string"},
+          "failure_reason": {"type": "string", "minLength": 1, "maxLength": 4096}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"terminal_stage": {"const": "needs_human"}}},
+      "then": {
+        "properties": {
+          "m4_status": {"const": "needs_human"},
+          "failure_class": {"type": "null"},
+          "failure_reason": {"type": "string", "minLength": 1, "maxLength": 4096}
+        }
+      }
+    }
+  ]
 }

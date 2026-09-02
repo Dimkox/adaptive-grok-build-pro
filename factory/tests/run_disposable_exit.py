@@ -3,11 +3,25 @@
 
 from __future__ import annotations
 
+import argparse
 import os
 import subprocess
 import tempfile
 import time
 import uuid
+
+
+POSTGRES_IMAGES = ("postgres:15-alpine", "postgres:17-alpine")
+
+
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--postgres-image",
+        choices=POSTGRES_IMAGES,
+        default="postgres:17-alpine",
+    )
+    return parser.parse_args(argv)
 
 
 def _run(command: list[str], *, environment: dict[str, str] | None = None, timeout: int = 300) -> None:
@@ -33,7 +47,8 @@ def _final_postgres_ready(name: str) -> bool:
     return ready.returncode == 0
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    args = _parse_args(argv)
     name = f"adaptive-factory-exit-{uuid.uuid4().hex[:12]}"
     password = f"local-{uuid.uuid4().hex}"
     environment = os.environ.copy()
@@ -45,7 +60,7 @@ def main() -> int:
             "-e", "POSTGRES_USER=factory_exit",
             "-e", f"POSTGRES_PASSWORD={password}",
             "-p", "127.0.0.1::5432",
-            "-d", "postgres:17-alpine",
+            "-d", args.postgres_image,
         ], timeout=60)
         published = subprocess.run(
             ["docker", "port", name, "5432/tcp"], check=True, text=True, capture_output=True, timeout=10

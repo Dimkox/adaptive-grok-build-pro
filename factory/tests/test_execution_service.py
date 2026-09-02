@@ -1,11 +1,19 @@
 from datetime import datetime, timezone
 import unittest
 
-from adaptive_factory.execution_contracts import ExecutionContractError, WorkspaceResultV1
-from adaptive_factory.models import Actor, ExecutionStage, LeaseGrant, RunRole
+from adaptive_factory.adapters import AdapterConformance, AdapterRegistry, TrustedExecutionProfile
+from adaptive_factory.execution_contracts import ExecutionContractError, ExecutionSelectionV1, WorkspaceResultV1
+from adaptive_factory.models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskStatus
 from adaptive_factory.service import AuthorizationError, FactoryService
 from adaptive_factory.brokers import ProposalContext
-from adaptive_factory.workspace import WorkspaceSnapshotRequest, WorkspaceSnapshotUnavailable, WorkspaceSnapshotV1
+from adaptive_factory.store import StoreError
+from adaptive_factory.workspace import (
+    ArtifactAttestationUnavailable,
+    ArtifactAttestationV1,
+    WorkspaceSnapshotRequest,
+    WorkspaceSnapshotUnavailable,
+    WorkspaceSnapshotV1,
+)
 from factory.tests.test_execution_contracts import valid_packet, valid_workspace_result
 
 
@@ -41,14 +49,36 @@ def selection():
     }
 
 
+def trusted_registry(value=None, *, roles=("reader", "writer")):
+    selected = ExecutionSelectionV1.from_dict(value or selection())
+    provider = selected.provider
+    conformance = AdapterConformance(
+        provider_id=provider.provider_id,
+        native_version=provider.native_version,
+        distribution_digest_hint=provider.native_digest,
+        capabilities=provider.capabilities,
+        missing_capabilities=(),
+        fixture_conformant=True,
+        execution_eligible=True,
+        adapter_id=provider.adapter_id,
+        adapter_version=provider.adapter_version,
+        adapter_digest=provider.adapter_digest,
+        native_digest=provider.native_digest,
+    )
+    return AdapterRegistry((TrustedExecutionProfile(selected, conformance, roles),))
+
+
 class FakeExecutionStore:
-    def __init__(self):
+    def __init__(self, *, grant=GRANT, start_error=None):
         self.calls = []
         self.finalized = {}
+        self.proposal_commands = {}
+        self.grant = grant
+        self.start_error = start_error
 
     def claim(self, request, actor, now, **kwargs):
         self.calls.append(("claim", request, actor, kwargs))
-        return GRANT
+        return self.grant
 
     def get_task(self, task_id):
         from adaptive_factory.models import TaskProjection, TaskStatus
@@ -74,8 +104,14 @@ class FakeExecutionStore:
 
     def start_execution(self, grant, packet, manifest, actor, **kwargs):
         self.calls.append(("start", grant, packet, manifest, actor, kwargs))
+        if self.start_error is not None:
+            raise self.start_error
         from adaptive_factory.models import ExecutionGrant
         return ExecutionGrant(grant, packet.packet_digest, manifest.manifest_digest, manifest.workspace_handle, manifest.provider_id, ExecutionStage.PREPARED)
+
+    def release(self, grant, outcome, actor, now, **kwargs):
+        self.calls.append(("release", grant, outcome, actor, now, kwargs))
+        return TaskStatus.RETRY if outcome is FailureClass.DATABASE_UNAVAILABLE else TaskStatus.NEEDS_HUMAN
 
     def advance_execution(self, grant, packet_digest, stage, actor, **kwargs):
         self.calls.append(("advance", grant, packet_digest, stage, actor, kwargs))
@@ -85,12 +121,25 @@ class FakeExecutionStore:
         self.calls.append(("proposal_context", grant, packet_digest))
         return ProposalContext(
             grant.task_id, grant.run_id, grant.owner, grant.fence, packet_digest,
-            grant.role.value, ("patch", "report"), 65_536, 1_000_000,
+            grant.role.value, "owner/repository", "workspace:" + "d" * 64,
+            ("artifacts", "factory/src"), ("patch", "report"), 65_536, 1_000_000,
             1_000_000, 1_000_000, 100_000, ("artifacts", "notes", "structured_output", "usage"),
         )
 
     def commit_execution_proposal(self, grant, proposal, actor, **kwargs):
         self.calls.append(("proposal", grant, proposal, actor, kwargs))
+        key = kwargs.get("idempotency_key")
+        if key is not None:
+            self.proposal_commands[key] = (kwargs["event"].to_dict(), proposal)
+        return proposal
+
+    def execution_proposal_replay(self, grant, event, actor, *, idempotency_key):
+        self.calls.append(("proposal_replay", grant, event, actor, idempotency_key))
+        if idempotency_key not in self.proposal_commands:
+            return None
+        prior_event, proposal = self.proposal_commands[idempotency_key]
+        if prior_event != event.to_dict():
+            raise StoreError("idempotency key reused with different command")
         return proposal
 
     def finalize_execution(self, grant, packet_digest, snapshot, actor, **kwargs):
@@ -142,10 +191,49 @@ class TrustedTestSnapshotBroker:
         })
 
 
+class TrustedTestArtifactBroker:
+    def __init__(self):
+        self.calls = 0
+        self.available = True
+
+    def attest_artifact(self, request):
+        self.calls += 1
+        if not self.available:
+            return ArtifactAttestationUnavailable()
+        return ArtifactAttestationV1.from_facts({
+            "contract_version": 1,
+            **request.to_dict(),
+            "source": "trusted_workspace_broker",
+        })
+
+
+class TrustedTestArtifactAttestationStore:
+    def __init__(self):
+        self.calls = 0
+
+    def record_artifact_attestation(self, attestation):
+        self.calls += 1
+        return attestation
+
+
 class ExecutionServiceTests(unittest.TestCase):
+    def test_self_asserted_selection_is_rejected_without_trusted_registry(self):
+        store = FakeExecutionStore()
+        with self.assertRaisesRegex(ExecutionContractError, "provider_ineligible"):
+            FactoryService(store).claim_execution(
+                owner=WORKER.actor_id,
+                role=RunRole.WRITER,
+                repositories=("owner/repository",),
+                lease_seconds=60,
+                selection=selection(),
+                actor=WORKER,
+                now=NOW,
+            )
+        self.assertEqual(store.calls, [])
+
     def test_explicit_execution_claim_preserves_legacy_digest_and_persists_manifest(self):
         store = FakeExecutionStore()
-        result = FactoryService(store).claim_execution(
+        result = FactoryService(store, execution_registry=trusted_registry()).claim_execution(
             owner=WORKER.actor_id,
             role=RunRole.WRITER,
             repositories=("owner/repository",),
@@ -161,6 +249,55 @@ class ExecutionServiceTests(unittest.TestCase):
         self.assertEqual(result.provider_id, "codex")
         self.assertEqual(result.stage, ExecutionStage.PREPARED)
         self.assertEqual(tuple(item[0] for item in store.calls), ("claim", "material", "start"))
+
+    def test_reader_selection_cannot_request_write_capabilities(self):
+        store = FakeExecutionStore()
+        with self.assertRaisesRegex(ExecutionContractError, "role_capability_forbidden"):
+            FactoryService(store, execution_registry=trusted_registry()).claim_execution(
+                owner=WORKER.actor_id,
+                role=RunRole.READER,
+                repositories=("owner/repository",),
+                lease_seconds=60,
+                selection=selection(),
+                actor=WORKER,
+                now=NOW,
+            )
+        self.assertEqual(store.calls, [])
+
+    def test_post_claim_start_failure_releases_capacity_with_typed_outcome(self):
+        store = FakeExecutionStore(start_error=RuntimeError("packet persistence unavailable"))
+        with self.assertRaisesRegex(RuntimeError, "packet persistence unavailable"):
+            FactoryService(store, execution_registry=trusted_registry()).claim_execution(
+                owner=WORKER.actor_id,
+                role=RunRole.WRITER,
+                repositories=("owner/repository",),
+                lease_seconds=60,
+                selection=selection(),
+                actor=WORKER,
+                now=NOW,
+                idempotency_key="b" * 64,
+                correlation_id="claim-cleanup",
+            )
+        self.assertEqual(tuple(item[0] for item in store.calls), ("claim", "material", "start", "release"))
+        self.assertIs(store.calls[-1][2], FailureClass.DATABASE_UNAVAILABLE)
+
+    def test_claimed_role_mismatch_fails_closed_and_releases_capacity(self):
+        forged = LeaseGrant(
+            GRANT.task_id, GRANT.run_id, GRANT.owner, RunRole.READER,
+            GRANT.fence, GRANT.expires_at, GRANT.packet_digest,
+        )
+        store = FakeExecutionStore(grant=forged)
+        with self.assertRaisesRegex(ExecutionContractError, "grant_identity_mismatch"):
+            FactoryService(store, execution_registry=trusted_registry()).claim_execution(
+                owner=WORKER.actor_id,
+                role=RunRole.WRITER,
+                repositories=("owner/repository",),
+                lease_seconds=60,
+                selection=selection(),
+                actor=WORKER,
+                now=NOW,
+            )
+        self.assertEqual(tuple(item[0] for item in store.calls), ("claim", "release"))
 
     def test_invalid_or_ineligible_selection_fails_before_m4_claim(self):
         store = FakeExecutionStore()
@@ -263,12 +400,80 @@ class ExecutionServiceTests(unittest.TestCase):
             correlation_id="correlation-003",
         )
         self.assertEqual(proposal.body, "token [REDACTED]")
-        self.assertEqual(tuple(item[0] for item in store.calls), ("proposal_context", "proposal"))
-        self.assertNotIn("ghp_", repr(store.calls[-1]))
+        self.assertEqual(
+            tuple(item[0] for item in store.calls),
+            ("proposal_replay", "proposal_context", "proposal"),
+        )
+        self.assertNotIn("ghp_", repr(store.calls[-1][2]))
+
+    def test_artifact_proposal_fails_closed_without_server_attestation(self):
+        store = FakeExecutionStore()
+        payload = {
+            "artifact_class": "report",
+            "path": "artifacts/report.json",
+            "sha256": "e" * 64,
+            "size_bytes": 12,
+            "media_type": "application/json",
+        }
+        for service in (
+            FactoryService(store),
+            FactoryService(store, artifact_broker=TrustedTestArtifactBroker()),
+        ):
+            with self.assertRaisesRegex(ExecutionContractError, "artifact_attestation_unavailable"):
+                service.commit_execution_proposal(
+                GRANT,
+                packet_digest="d" * 64,
+                sequence=1,
+                event_type="artifact.proposed",
+                payload=payload,
+                actor=WORKER,
+            )
+        self.assertEqual(tuple(item[0] for item in store.calls).count("proposal"), 0)
+
+    def test_trusted_artifact_attestation_is_exact_and_replay_precedes_broker(self):
+        store = FakeExecutionStore()
+        broker = TrustedTestArtifactBroker()
+        attestation_store = TrustedTestArtifactAttestationStore()
+        service = FactoryService(
+            store, artifact_broker=broker,
+            artifact_attestation_store=attestation_store,
+        )
+        payload = {
+            "artifact_class": "report",
+            "path": "artifacts/report.json",
+            "sha256": "e" * 64,
+            "size_bytes": 12,
+            "media_type": "application/json",
+        }
+        first = service.commit_execution_proposal(
+            GRANT, packet_digest="d" * 64, sequence=1,
+            event_type="artifact.proposed", payload=payload, actor=WORKER,
+            idempotency_key="a" * 64,
+        )
+        self.assertEqual((first.author_role, len(first.artifact_attestation_digest)), ("writer", 64))
+        broker.available = False
+        replay = service.commit_execution_proposal(
+            GRANT, packet_digest="d" * 64, sequence=1,
+            event_type="artifact.proposed", payload=dict(payload), actor=WORKER,
+            idempotency_key="a" * 64,
+        )
+        self.assertEqual(replay, first)
+        self.assertEqual(broker.calls, 1)
+        self.assertEqual(attestation_store.calls, 1)
+        before = tuple(item[0] for item in store.calls)
+        changed = dict(payload, sha256="f" * 64)
+        with self.assertRaisesRegex(StoreError, "different command"):
+            service.commit_execution_proposal(
+                GRANT, packet_digest="d" * 64, sequence=1,
+                event_type="artifact.proposed", payload=changed, actor=WORKER,
+                idempotency_key="a" * 64,
+            )
+        self.assertEqual(broker.calls, 1)
+        self.assertEqual(tuple(item[0] for item in store.calls)[len(before):], ("proposal_replay",))
 
     def test_proposal_identity_and_payload_are_closed_before_store_commit(self):
         store = FakeExecutionStore()
-        with self.assertRaisesRegex(ValueError, "note_fields"):
+        with self.assertRaisesRegex(ValueError, "payload_fields"):
             FactoryService(store).commit_execution_proposal(
                 GRANT,
                 packet_digest="d" * 64,
@@ -277,7 +482,68 @@ class ExecutionServiceTests(unittest.TestCase):
                 payload={"note_type": "finding", "body": "safe", "evidence": [], "command": "push"},
                 actor=WORKER,
             )
-        self.assertEqual(tuple(item[0] for item in store.calls), ("proposal_context",))
+        self.assertEqual(store.calls, [])
+
+    def test_direct_service_structured_text_is_rejected_before_replay(self):
+        cases = (
+            (
+                "note.proposed",
+                {"note_type": "finding", "body": {"reasoning": "private"}, "evidence": []},
+            ),
+            ("run.completed", {"summary": {"reasoning": "private"}}),
+        )
+        for event_type, payload in cases:
+            store = FakeExecutionStore()
+            with self.subTest(event_type=event_type), self.assertRaisesRegex(
+                ValueError, "forbidden_content"
+            ):
+                FactoryService(store).commit_execution_proposal(
+                    GRANT, packet_digest="d" * 64, sequence=1,
+                    event_type=event_type, payload=payload, actor=WORKER,
+                    idempotency_key="b" * 64,
+                )
+            self.assertEqual(store.calls, [])
+
+    def test_proposal_payload_is_frozen_before_replay_boundary(self):
+        payload = {"note_type": "finding", "body": "original", "evidence": []}
+        store = FakeExecutionStore()
+        original_replay = store.execution_proposal_replay
+
+        def mutating_replay(*args, **kwargs):
+            payload["body"] = "mutated after validation"
+            return original_replay(*args, **kwargs)
+
+        store.execution_proposal_replay = mutating_replay
+        proposal = FactoryService(store).commit_execution_proposal(
+            GRANT, packet_digest="d" * 64, sequence=1,
+            event_type="note.proposed", payload=payload, actor=WORKER,
+        )
+        self.assertEqual(proposal.body, "original")
+
+    def test_proposal_replay_still_requires_scope_kind_owner_and_repository(self):
+        store = FakeExecutionStore()
+        service = FactoryService(store)
+        payload = {"note_type": "finding", "body": "safe", "evidence": []}
+        service.commit_execution_proposal(
+            GRANT, packet_digest="d" * 64, sequence=1,
+            event_type="note.proposed", payload=payload, actor=WORKER,
+            idempotency_key="b" * 64,
+        )
+        denied = (
+            Actor("worker-01", "worker", frozenset(), frozenset({"owner/repository"})),
+            Actor("worker-01", "operator", frozenset({"task:execute"}), frozenset({"owner/repository"})),
+            Actor("other-worker", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"})),
+            Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"other/repository"})),
+        )
+        for actor in denied:
+            store.calls.clear()
+            with self.subTest(actor=actor), self.assertRaises(AuthorizationError):
+                service.commit_execution_proposal(
+                    GRANT, packet_digest="d" * 64, sequence=1,
+                    event_type="note.proposed", payload=dict(payload), actor=actor,
+                    idempotency_key="b" * 64,
+                )
+            self.assertEqual(store.calls, [])
 
 
 if __name__ == "__main__":

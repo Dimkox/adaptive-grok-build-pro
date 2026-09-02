@@ -1,13 +1,37 @@
 from pathlib import Path
+import json
 import unittest
 
-from adaptive_factory.adapters import AdapterError, CodexAdapter, GrokAdapter, select_adapter
+from adaptive_factory.adapters import (
+    AdapterError,
+    AdapterRegistry,
+    CodexAdapter,
+    GrokAdapter,
+    TrustedExecutionProfile,
+    select_adapter,
+)
+from adaptive_factory.execution_contracts import ExecutionContractError, ExecutionSelectionV1
+from factory.tests.test_execution_contracts import valid_packet
 
 
 FIXTURES = Path(__file__).with_name("fixtures")
 
 
 class AdapterTests(unittest.TestCase):
+    @staticmethod
+    def selection():
+        packet = valid_packet()
+        return ExecutionSelectionV1.from_dict({
+            "provider": packet["provider"],
+            "capability_policy": packet["capability_policy"],
+            "plan": packet["plan"],
+            "workspace_handle": packet["workspace_handle"],
+            "prompt_template_digest": "7" * 64,
+            "role_definition_digest": "8" * 64,
+            "tool_policy_digest": "9" * 64,
+            "output_schema_digest": "a" * 64,
+        })
+
     def test_codex_01521_fixture_projects_safe_canonical_lifecycle(self):
         adapter = CodexAdapter()
         events = adapter.translate(
@@ -54,6 +78,66 @@ class AdapterTests(unittest.TestCase):
                 run_id="run-001",
                 packet_digest="a" * 64,
             )
+
+    def test_structured_native_text_is_rejected_instead_of_stringified(self):
+        cases = (
+            (
+                CodexAdapter(),
+                (
+                    {"type": "turn.started"},
+                    {
+                        "type": "item.completed",
+                        "item": {
+                            "type": "agent_message",
+                            "text": {"reasoning": "private chain"},
+                            "evidence": [],
+                        },
+                    },
+                    {
+                        "type": "turn.completed",
+                        "usage": {
+                            "price_table_digest": "b" * 64,
+                            "input_tokens": 1,
+                            "output_tokens": 1,
+                            "reasoning_tokens": 0,
+                            "cost_usd_micros": 0,
+                            "output_bytes": 1,
+                        },
+                        "final": {"status": "completed", "summary": "done"},
+                    },
+                ),
+            ),
+            (
+                GrokAdapter(),
+                (
+                    {"event": "session_started"},
+                    {
+                        "event": "finished",
+                        "reason": {"analysis": "private chain"},
+                    },
+                ),
+            ),
+        )
+        for adapter, records in cases:
+            raw = b"".join(
+                json.dumps(record, separators=(",", ":")).encode() + b"\n"
+                for record in records
+            )
+            with self.subTest(adapter=type(adapter).__name__), self.assertRaisesRegex(
+                AdapterError, "invalid_native_text"
+            ):
+                adapter.translate(
+                    raw,
+                    task_id="task-001",
+                    run_id="run-001",
+                    packet_digest="a" * 64,
+                )
+
+    def test_current_adapter_cannot_be_promoted_by_caller_profile(self):
+        selected = self.selection()
+        registry = AdapterRegistry((TrustedExecutionProfile(selected, CodexAdapter.conformance, ("writer",)),))
+        with self.assertRaisesRegex(ExecutionContractError, "provider_ineligible"):
+            registry.resolve(selected, role="writer")
 
 
 if __name__ == "__main__":

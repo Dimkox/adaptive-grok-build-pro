@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import os
 import threading
@@ -6,14 +7,42 @@ import time
 import unittest
 import uuid
 
+from fastapi.testclient import TestClient
+
 from adaptive_factory.migrations import PostgresMigrator, discover_migrations
 from adaptive_factory.api import Authenticator, create_app
+from adaptive_factory.brokers import (
+    ArtifactProposal,
+    NoteProposal,
+    TerminalProposal,
+    UsageProposal,
+    proposal_idempotency_key,
+)
+from adaptive_factory.contracts import canonical_digest, canonical_json
+from adaptive_factory.execution_contracts import WorkspaceResultV1, workspace_evidence_digest
 from adaptive_factory.models import Actor, ExecutionStage, FailureClass, RunRole, TaskStatus
-from adaptive_factory.service import AuthorizationError, FactoryService
-from adaptive_factory.store import BudgetError, FenceError, PostgresFactoryStore, StoreError
-from adaptive_factory.workspace import WorkspaceSnapshotV1
+from adaptive_factory.protocol import CanonicalEvent
+from adaptive_factory.recovery import ExecutionRecovery
+from adaptive_factory.service import AuthorizationError, ExecutionContractError, FactoryService
+from adaptive_factory.store import (
+    BudgetError,
+    FenceError,
+    PostgresArtifactAttestationStore,
+    PostgresFactoryStore,
+    StoreError,
+)
+from adaptive_factory.workspace import (
+    ArtifactAttestationRequest,
+    ArtifactAttestationUnavailable,
+    ArtifactAttestationV1,
+    FakeWorkspaceBroker,
+    WorkspaceHandle,
+    WorkspacePolicy,
+    WorkspaceSnapshotV1,
+)
 from factory.tests.test_contracts import valid_intake
 from factory.tests.test_execution_contracts import valid_packet
+from factory.tests.test_execution_service import trusted_registry
 
 
 DATABASE_URL = os.environ.get("FACTORY_TEST_DATABASE_URL")
@@ -43,18 +72,83 @@ class TrustedPostgresTestSnapshotBroker:
         })
 
 
+class TrustedPostgresTestArtifactBroker:
+    def __init__(self):
+        self.calls = 0
+        self.available = True
+
+    def attest_artifact(self, request):
+        self.calls += 1
+        if not self.available:
+            return ArtifactAttestationUnavailable()
+        return ArtifactAttestationV1.from_facts({
+            "contract_version": 1,
+            **request.to_dict(),
+            "source": "trusted_workspace_broker",
+        })
+
+
+class CountingArtifactAttestationStore(PostgresArtifactAttestationStore):
+    def __init__(self, database_url):
+        super().__init__(database_url)
+        self.calls = 0
+
+    def record_artifact_attestation(self, attestation):
+        self.calls += 1
+        return super().record_artifact_attestation(attestation)
+
+
 @unittest.skipUnless(DATABASE_URL, "FACTORY_TEST_DATABASE_URL must name a disposable database")
 class PostgresFactoryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         PostgresMigrator(DATABASE_URL).apply()
+        from adaptive_factory.admin import provision_artifact_attestor_login, provision_runtime_login
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        cls.artifact_attestor_login = f"factory_artifact_test_{os.getpid()}"
+        cls.runtime_login = f"factory_runtime_test_{os.getpid()}"
+        cls.artifact_attestor_password = "local-artifact-attestor-test"
+        cls.runtime_password = "local-runtime-store-test"
+        provision_runtime_login(DATABASE_URL, cls.runtime_login, cls.runtime_password)
+        provision_artifact_attestor_login(
+            DATABASE_URL, cls.artifact_attestor_login, cls.artifact_attestor_password,
+            runtime_login="factory_service_test",
+        )
+        cls.artifact_attestor_url = make_conninfo(**{
+            **conninfo_to_dict(DATABASE_URL),
+            "user": cls.artifact_attestor_login,
+            "password": cls.artifact_attestor_password,
+        })
+        cls.runtime_url = make_conninfo(**{
+            **conninfo_to_dict(DATABASE_URL),
+            "user": cls.runtime_login,
+            "password": cls.runtime_password,
+        })
+
+    @classmethod
+    def tearDownClass(cls):
+        import psycopg
+        from psycopg import sql
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT current_database()")
+            cursor.execute(sql.SQL("REVOKE CONNECT ON DATABASE {} FROM {}").format(
+                sql.Identifier(cursor.fetchone()[0]), sql.Identifier(cls.runtime_login),
+            ))
+            cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(
+                sql.Identifier(cls.artifact_attestor_login)
+            ))
+            cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(
+                sql.Identifier(cls.runtime_login)
+            ))
 
     def setUp(self):
         import psycopg
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.workspace_results, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
+                "TRUNCATE factory.execution_recovery_cleanup_successes, factory.execution_recovery_cleanup_failures, factory.workspace_results, factory.execution_proposals, factory.execution_artifact_attestations, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
             )
             cursor.execute("SELECT to_regclass('factory.metric_counters_pre_012_untrusted')")
             if cursor.fetchone()[0] is not None:
@@ -74,7 +168,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     "06ecf1c875bc" + "9" * 52,
                 ),
             )
-        self.store = PostgresFactoryStore(DATABASE_URL)
+        self.store = PostgresFactoryStore(self.runtime_url)
         self.service = FactoryService(self.store)
 
     def payload(self, repository="owner/repository", source=None):
@@ -102,6 +196,938 @@ class PostgresFactoryTests(unittest.TestCase):
     def submit(self, repository="owner/repository", source=None):
         return self.service.intake(self.payload(repository, source), actor=OPERATOR, now=NOW)
 
+    def test_artifact_attestation_and_exact_replay_are_persisted_and_fenced(self):
+        import psycopg
+
+        repository = "owner/m5-artifact-attestation"
+        task = self.submit(repository=repository, source="m5-artifact-attestation").task
+        packet = valid_packet()
+        packet["provider"]["capabilities"] = ["artifacts", "notes", "structured_output"]
+        selection = {
+            "provider": packet["provider"],
+            "capability_policy": packet["capability_policy"],
+            "plan": packet["plan"],
+            "workspace_handle": packet["workspace_handle"],
+            "prompt_template_digest": "7" * 64,
+            "role_definition_digest": "8" * 64,
+            "tool_policy_digest": "9" * 64,
+            "output_schema_digest": "a" * 64,
+        }
+        execution = FactoryService(
+            self.store, execution_registry=trusted_registry(selection)
+        ).claim_execution(
+            owner=WORKER.actor_id, role=RunRole.WRITER,
+            repositories=(repository,), lease_seconds=60,
+            selection=selection, actor=WORKER, now=NOW,
+        )
+        broker = TrustedPostgresTestArtifactBroker()
+        attestation_store = CountingArtifactAttestationStore(self.artifact_attestor_url)
+        service = FactoryService(
+            self.store, artifact_broker=broker,
+            artifact_attestation_store=attestation_store,
+        )
+        payload = {
+            "artifact_class": "report",
+            "path": "factory/src/change.patch",
+            "sha256": "b" * 64,
+            "size_bytes": 12,
+            "media_type": "text/plain",
+        }
+        api_idempotency = "artifact-replay-001"
+        command_key = canonical_digest({
+            "contract": "adaptive-factory.command/v1",
+            "idempotency_key": api_idempotency,
+        })
+        artifact = service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest,
+            sequence=1, event_type="artifact.proposed", payload=payload,
+            actor=WORKER, idempotency_key=command_key,
+        )
+        direct_facts = (
+            execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+            execution.lease.fence, execution.lease.packet_digest, execution.packet_digest,
+        )
+        forged_role = replace(artifact, sequence=2, author_role="reader", idempotency_key="0" * 64)
+        forged_role = replace(
+            forged_role, idempotency_key=proposal_idempotency_key(forged_role)
+        )
+        forged_attestation = replace(
+            artifact, sequence=2, artifact_attestation_digest="f" * 64,
+            idempotency_key="0" * 64,
+        )
+        forged_attestation = replace(
+            forged_attestation,
+            idempotency_key=proposal_idempotency_key(forged_attestation),
+        )
+        reused_attestation = replace(artifact, sequence=2, idempotency_key="0" * 64)
+        reused_attestation = replace(
+            reused_attestation,
+            idempotency_key=proposal_idempotency_key(reused_attestation),
+        )
+        for forged in (
+            dict(forged_role.__dict__), dict(forged_attestation.__dict__),
+            dict(reused_attestation.__dict__),
+        ):
+            with self.subTest(forged=forged["author_role"] + forged["path"]):
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute("SET ROLE factory_runtime")
+                    cursor.execute(
+                        "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,2,%s,'artifact',%s::jsonb)",
+                        (*direct_facts, forged["idempotency_key"], psycopg.types.json.Jsonb(forged)),
+                    )
+                    self.assertFalse(cursor.fetchone()[0])
+        for secret in (
+            "OPENAI_API_KEY=fixture",
+            "-----BEGIN PRIVATE KEY-----\nfixture\n-----END PRIVATE KEY-----",
+        ):
+            forged_note = NoteProposal(
+                execution.lease.task_id, execution.lease.run_id, execution.packet_digest,
+                execution.lease.fence, 2, "writer", "finding", secret, (), "0" * 64,
+            )
+            forged_note = replace(
+                forged_note, idempotency_key=proposal_idempotency_key(forged_note)
+            )
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute("SET ROLE factory_runtime")
+                cursor.execute(
+                    "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,2,%s,'note',%s::jsonb)",
+                    (
+                        *direct_facts, forged_note.idempotency_key,
+                        psycopg.types.json.Jsonb(dict(forged_note.__dict__)),
+                    ),
+                )
+                self.assertFalse(cursor.fetchone()[0])
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT
+                has_table_privilege('factory_runtime','factory.execution_proposals','SELECT'),
+                has_function_privilege(
+                  'factory_runtime',
+                  'factory.execution_proposal_by_key(uuid,uuid,character)',
+                  'EXECUTE'
+                )"""
+            )
+            self.assertEqual(cursor.fetchone(), (False, True))
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+        terminal = self.service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest,
+            sequence=2, event_type="run.failed",
+            payload={"failure_class": "validation", "diagnostic": "fixture terminal"},
+            actor=WORKER, idempotency_key="c" * 64,
+        )
+        FactoryService(
+            self.store, snapshot_broker=TrustedPostgresTestSnapshotBroker()
+        ).finalize_execution(
+            execution.lease, packet_digest=execution.packet_digest, actor=WORKER,
+        )
+        broker.available = False
+        replay = service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest,
+            sequence=1, event_type="artifact.proposed", payload=dict(payload),
+            actor=WORKER, idempotency_key=command_key,
+        )
+        self.assertEqual(replay, artifact)
+        self.assertEqual(broker.calls, 1)
+        self.assertEqual(attestation_store.calls, 1)
+        event = CanonicalEvent.from_payload(
+            task_id=execution.lease.task_id, run_id=execution.lease.run_id,
+            packet_digest=execution.packet_digest, sequence=1,
+            event_type="artifact.proposed", payload=payload,
+        )
+        alternate = replace(
+            artifact, artifact_attestation_digest="f" * 64,
+            idempotency_key="0" * 64,
+        )
+        alternate = replace(
+            alternate, idempotency_key=proposal_idempotency_key(alternate)
+        )
+        direct_replay = self.store.commit_execution_proposal(
+            execution.lease, alternate, WORKER, event=event,
+            idempotency_key=command_key,
+        )
+        self.assertEqual(direct_replay, artifact)
+        wrong_event = CanonicalEvent.from_payload(
+            task_id=execution.lease.task_id, run_id=execution.lease.run_id,
+            packet_digest=execution.packet_digest, sequence=1,
+            event_type="note.proposed",
+            payload={"note_type": "finding", "body": "safe", "evidence": []},
+        )
+        with self.assertRaisesRegex(StoreError, "does not match command"):
+            self.store.commit_execution_proposal(
+                execution.lease, artifact, WORKER, event=wrong_event,
+            )
+        with self.assertRaisesRegex(StoreError, "different command"):
+            service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest,
+                sequence=1, event_type="artifact.proposed",
+                payload={**payload, "sha256": "d" * 64}, actor=WORKER,
+            idempotency_key=command_key,
+            )
+        with self.assertRaises(FenceError):
+            service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest,
+                sequence=3, event_type="artifact.proposed", payload=payload,
+                actor=WORKER, idempotency_key="e" * 64,
+            )
+        self.assertEqual(broker.calls, 1)
+        self.assertEqual(attestation_store.calls, 1)
+        self.assertEqual(
+            self.store.metrics()[
+                "factory_execution_protocol_and_proposal_outcomes_total"
+            ]["artifact"],
+            1,
+        )
+
+        grant_payload = {
+            "task_id": execution.lease.task_id, "run_id": execution.lease.run_id,
+            "owner": execution.lease.owner, "role": execution.lease.role.value,
+            "fence": execution.lease.fence,
+            "expires_at": execution.lease.expires_at.isoformat().replace("+00:00", "Z"),
+            "packet_digest": execution.lease.packet_digest,
+        }
+        unauthorized = Actor(
+            "worker", "worker", frozenset({"task:execute"}), frozenset({"other/repository"})
+        )
+        api = TestClient(create_app(
+            service, Authenticator({"api-worker": WORKER, "api-unauthorized": unauthorized})
+        ))
+        api_payload = {
+            "grant": grant_payload, "packet_digest": execution.packet_digest, "sequence": 1,
+            **payload,
+        }
+        api_headers = {
+            "Authorization": "Bearer api-worker", "Idempotency-Key": api_idempotency,
+            "X-Correlation-ID": "artifact-replay-correlation",
+        }
+        first_api_replay = api.post(
+            "/v1/execution/artifacts", headers=api_headers, json=api_payload
+        )
+        second_api_replay = api.post(
+            "/v1/execution/artifacts", headers=api_headers, json=api_payload
+        )
+        self.assertEqual(first_api_replay.status_code, 200, first_api_replay.text)
+        self.assertEqual(second_api_replay.status_code, 200, second_api_replay.text)
+        self.assertEqual(second_api_replay.content, first_api_replay.content)
+        changed_response = api.post(
+            "/v1/execution/artifacts", headers=api_headers,
+            json={**api_payload, "sha256": "d" * 64},
+        )
+        self.assertEqual(changed_response.status_code, 409, changed_response.text)
+        unauthorized_response = api.post(
+            "/v1/execution/artifacts",
+            headers={**api_headers, "Authorization": "Bearer api-unauthorized"},
+            json=api_payload,
+        )
+        self.assertEqual(unauthorized_response.status_code, 403, unauthorized_response.text)
+        self.assertEqual(broker.calls, 1)
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT body->>'author_role',body->>'artifact_attestation_digest',
+                trim(idempotency_key),
+                (SELECT result FROM factory.command_results WHERE idempotency_key=%s),
+                (SELECT trim(request_digest) FROM factory.command_results WHERE idempotency_key=%s),
+                (SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s)
+                FROM factory.execution_proposals
+                WHERE run_id=%s AND proposal_kind='artifact'""",
+                (command_key, command_key, execution.lease.run_id, execution.lease.run_id),
+            )
+            author_role, attestation_digest, persisted_key, command_result, request_digest, count = cursor.fetchone()
+        self.assertEqual((author_role, len(attestation_digest), persisted_key, count), ("writer", 64, artifact.idempotency_key, 2))
+        self.assertEqual(command_result, {
+            "proposal_kind": "artifact", "sequence": 1,
+            "proposal_idempotency_key": artifact.idempotency_key,
+        })
+        self.assertEqual(
+            request_digest,
+            canonical_digest(self.store._execution_proposal_command(execution.lease, event)),
+        )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE factory.execution_proposals SET body=to_jsonb(body::text)
+                WHERE run_id=%s AND proposal_kind='artifact'""",
+                (execution.lease.run_id,),
+            )
+        with self.assertRaisesRegex(StoreError, "persisted execution proposal is corrupt"):
+            service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest,
+                sequence=1, event_type="artifact.proposed", payload=dict(payload),
+                actor=WORKER, idempotency_key=command_key,
+            )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE factory.execution_proposals SET body=(body#>>'{}')::jsonb
+                WHERE run_id=%s AND proposal_kind='artifact'""",
+                (execution.lease.run_id,),
+            )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.command_results SET result=jsonb_set(result,'{sequence}','true'::jsonb) WHERE idempotency_key=%s",
+                (command_key,),
+            )
+        with self.assertRaisesRegex(StoreError, "persisted execution proposal command is corrupt"):
+            service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest,
+                sequence=1, event_type="artifact.proposed", payload=dict(payload),
+                actor=WORKER, idempotency_key=command_key,
+            )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE factory.command_results SET result=%s::jsonb
+                WHERE idempotency_key=%s""",
+                (
+                    psycopg.types.json.Jsonb({
+                        "proposal_kind": "artifact", "sequence": 1,
+                        "proposal_idempotency_key": terminal.idempotency_key,
+                    }),
+                    command_key,
+                ),
+            )
+        with self.assertRaisesRegex(StoreError, "persisted execution proposal is corrupt"):
+            service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest,
+                sequence=1, event_type="artifact.proposed", payload=dict(payload),
+                actor=WORKER, idempotency_key=command_key,
+            )
+
+    def test_runtime_cannot_forge_self_consistent_artifact_attestation(self):
+        import psycopg
+
+        repository = "owner/m5-runtime-forged-attestation"
+        task = self.submit(repository=repository, source="m5-runtime-forged-attestation").task
+        packet = valid_packet()
+        packet["provider"]["capabilities"] = ["artifacts", "notes", "structured_output"]
+        selection = {
+            "provider": packet["provider"], "capability_policy": packet["capability_policy"],
+            "plan": packet["plan"], "workspace_handle": packet["workspace_handle"],
+            "prompt_template_digest": "7" * 64, "role_definition_digest": "8" * 64,
+            "tool_policy_digest": "9" * 64, "output_schema_digest": "a" * 64,
+        }
+        execution = FactoryService(
+            self.store, execution_registry=trusted_registry(selection)
+        ).claim_execution(
+            owner=WORKER.actor_id, role=RunRole.WRITER, repositories=(repository,),
+            lease_seconds=60, selection=selection, actor=WORKER, now=NOW,
+        )
+        facts = {
+            "contract_version": 1, "task_id": execution.lease.task_id,
+            "run_id": execution.lease.run_id, "repository_id": repository,
+            "packet_digest": execution.packet_digest,
+            "workspace_handle": packet["workspace_handle"],
+            "producer_sequence": 1, "fence": execution.lease.fence,
+            "author_role": "writer", "artifact_class": "report",
+            "path": "factory/src/forged.patch", "sha256": "b" * 64,
+            "size_bytes": 12, "media_type": "text/plain",
+            "source": "trusted_workspace_broker",
+        }
+        attestation = ArtifactAttestationV1.from_facts(facts)
+        proposal = ArtifactProposal(
+            execution.lease.task_id, execution.lease.run_id, execution.packet_digest,
+            execution.lease.fence, 1, "writer", "report", facts["path"], facts["sha256"],
+            facts["size_bytes"], facts["media_type"],
+            attestation.artifact_attestation_digest, "0" * 64,
+        )
+        proposal = replace(proposal, idempotency_key=proposal_idempotency_key(proposal))
+        forbidden_note = NoteProposal(
+            execution.lease.task_id, execution.lease.run_id, execution.packet_digest,
+            execution.lease.fence, 1, "writer", "model_analysis", "safe finding", (), "0" * 64,
+        )
+        forbidden_note = replace(
+            forbidden_note, idempotency_key=proposal_idempotency_key(forbidden_note)
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute("SET ROLE factory_runtime")
+            cursor.execute(
+                "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,1,%s,'artifact',%s::jsonb)",
+                (
+                    execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+                    execution.lease.fence, execution.lease.packet_digest,
+                    execution.packet_digest, proposal.idempotency_key,
+                    psycopg.types.json.Jsonb(dict(proposal.__dict__)),
+                ),
+            )
+            self.assertFalse(cursor.fetchone()[0])
+            cursor.execute(
+                "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,1,%s,'note',%s::jsonb)",
+                (
+                    execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+                    execution.lease.fence, execution.lease.packet_digest,
+                    execution.packet_digest, forbidden_note.idempotency_key,
+                    psycopg.types.json.Jsonb(dict(forbidden_note.__dict__)),
+                ),
+            )
+            self.assertFalse(cursor.fetchone()[0])
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+
+    def test_direct_note_evidence_is_closed_bounded_and_path_safe(self):
+        import psycopg
+
+        repository = "owner/m5-direct-note-evidence"
+        task = self.submit(repository=repository, source="m5-direct-note-evidence").task
+        packet = valid_packet()
+        packet["provider"]["capabilities"] = ["notes", "structured_output"]
+        selection = {
+            "provider": packet["provider"], "capability_policy": packet["capability_policy"],
+            "plan": packet["plan"], "workspace_handle": packet["workspace_handle"],
+            "prompt_template_digest": "7" * 64, "role_definition_digest": "8" * 64,
+            "tool_policy_digest": "9" * 64, "output_schema_digest": "a" * 64,
+        }
+        execution = FactoryService(
+            self.store, execution_registry=trusted_registry(selection)
+        ).claim_execution(
+            owner=WORKER.actor_id, role=RunRole.WRITER, repositories=(repository,),
+            lease_seconds=60, selection=selection, actor=WORKER, now=NOW,
+        )
+        direct_facts = (
+            execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+            execution.lease.fence, execution.lease.packet_digest, execution.packet_digest,
+        )
+
+        def proposal(note_type="finding", evidence=()):
+            value = NoteProposal(
+                execution.lease.task_id, execution.lease.run_id, execution.packet_digest,
+                execution.lease.fence, 1, "writer", note_type, "bounded finding",
+                tuple(evidence), "0" * 64,
+            )
+            return replace(value, idempotency_key=proposal_idempotency_key(value))
+
+        exact_1024 = "factory/src/" + "x" * (1024 - len("factory/src/"))
+        exact_1025 = exact_1024 + "x"
+        self.assertEqual((len(exact_1024.encode()), len(exact_1025.encode())), (1024, 1025))
+        rejected = (
+            proposal("x"), proposal("late"), proposal("private_thoughts"),
+            proposal(evidence=("",)),
+            proposal(evidence=("factory/src/../outside",)),
+            proposal(evidence=("factory/src/.git/config",)),
+            proposal(evidence=(exact_1025,)),
+        )
+        with self.store._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            for invalid in rejected:
+                cursor.execute(
+                    "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,1,%s,'note',%s::jsonb)",
+                    (*direct_facts, invalid.idempotency_key,
+                     psycopg.types.json.Jsonb(dict(invalid.__dict__))),
+                )
+                self.assertFalse(cursor.fetchone()[0], invalid)
+            accepted = proposal(evidence=(exact_1024,))
+            cursor.execute(
+                "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,1,%s,'note',%s::jsonb)",
+                (*direct_facts, accepted.idempotency_key,
+                 psycopg.types.json.Jsonb(dict(accepted.__dict__))),
+            )
+            self.assertTrue(cursor.fetchone()[0])
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+
+    def test_artifact_attestation_sequence_reservation_serializes_both_interleavings(self):
+        import psycopg
+
+        def claim(label):
+            repository = f"owner/{label}"
+            task = self.submit(repository=repository, source=label).task
+            packet = valid_packet()
+            packet["provider"]["capabilities"] = ["artifacts", "notes", "structured_output", "usage"]
+            selection = {
+                "provider": packet["provider"],
+                "capability_policy": packet["capability_policy"],
+                "plan": packet["plan"], "workspace_handle": packet["workspace_handle"],
+                "prompt_template_digest": "7" * 64, "role_definition_digest": "8" * 64,
+                "tool_policy_digest": "9" * 64, "output_schema_digest": "a" * 64,
+            }
+            execution = FactoryService(
+                self.store, execution_registry=trusted_registry(selection)
+            ).claim_execution(
+                owner=WORKER.actor_id, role=RunRole.WRITER, repositories=(repository,),
+                lease_seconds=60, selection=selection, actor=WORKER, now=NOW,
+            )
+            return task, packet, execution, repository
+
+        def attestation(packet, execution, repository):
+            return ArtifactAttestationV1.from_facts({
+                "contract_version": 1, "task_id": execution.lease.task_id,
+                "run_id": execution.lease.run_id, "repository_id": repository,
+                "packet_digest": execution.packet_digest,
+                "workspace_handle": packet["workspace_handle"],
+                "producer_sequence": 1, "fence": execution.lease.fence,
+                "author_role": "writer", "artifact_class": "report",
+                "path": "factory/src/result.patch", "sha256": "b" * 64,
+                "size_bytes": 12, "media_type": "text/plain",
+                "source": "trusted_workspace_broker",
+            })
+
+        def note(execution):
+            value = NoteProposal(
+                execution.lease.task_id, execution.lease.run_id, execution.packet_digest,
+                execution.lease.fence, 1, "writer", "finding", "competing note", (), "0" * 64,
+            )
+            return replace(value, idempotency_key=proposal_idempotency_key(value))
+
+        def execute_propose(store, execution, proposal, kind):
+            with store._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+                cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+                cursor.execute(
+                    "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,1,%s,%s,%s::jsonb)",
+                    (
+                        execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+                        execution.lease.fence, execution.lease.packet_digest,
+                        execution.packet_digest, proposal.idempotency_key, kind,
+                        psycopg.types.json.Jsonb(dict(proposal.__dict__)),
+                    ),
+                )
+                return cursor.fetchone()[0]
+
+        def wait_for_lock(application_name):
+            deadline = time.monotonic() + 4
+            while time.monotonic() < deadline:
+                with psycopg.connect(DATABASE_URL) as observer, observer.cursor() as cursor:
+                    cursor.execute(
+                        """SELECT count(*) FROM pg_stat_activity
+                        WHERE datname=current_database() AND application_name=%s
+                          AND state='active' AND wait_event_type='Lock'""",
+                        (application_name,),
+                    )
+                    if cursor.fetchone()[0] == 1:
+                        return
+                time.sleep(0.02)
+            self.fail(f"{application_name} did not block on the execution authority lock")
+
+        task, packet, execution, repository = claim("m5-proposal-first-reservation")
+        proposal_first = note(execution)
+        runtime = self.store._connect()
+        proposal_first_pool = ThreadPoolExecutor(max_workers=1)
+        try:
+            with runtime.cursor() as cursor:
+                cursor.execute(
+                    "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,1,%s,'note',%s::jsonb)",
+                    (
+                        execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+                        execution.lease.fence, execution.lease.packet_digest,
+                        execution.packet_digest, proposal_first.idempotency_key,
+                        psycopg.types.json.Jsonb(dict(proposal_first.__dict__)),
+                    ),
+                )
+                self.assertTrue(cursor.fetchone()[0])
+            recorder_url = psycopg.conninfo.make_conninfo(
+                self.artifact_attestor_url, application_name="m5_attestor_after_proposal",
+            )
+            recorder = PostgresArtifactAttestationStore(recorder_url)
+            future = proposal_first_pool.submit(
+                recorder.record_artifact_attestation,
+                attestation(packet, execution, repository),
+            )
+            wait_for_lock("m5_attestor_after_proposal")
+            runtime.commit()
+            rejected = future.result(timeout=10)
+            self.assertIsInstance(rejected, ArtifactAttestationUnavailable)
+        finally:
+            runtime.rollback()
+            runtime.close()
+            proposal_first_pool.shutdown(wait=True, cancel_futures=True)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_artifact_attestations WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+        self.service.cancel(
+            task.task_id, reason="bounded proposal-first cleanup",
+            idempotency_key="1" * 64, actor=OPERATOR, now=NOW,
+        )
+
+        task, packet, execution, repository = claim("m5-attestation-first-reservation")
+        reserved = attestation(packet, execution, repository)
+        attestor = PostgresArtifactAttestationStore(self.artifact_attestor_url)._connect()
+        attestation_first_pool = ThreadPoolExecutor(max_workers=1)
+        try:
+            with attestor.cursor() as cursor:
+                cursor.execute(
+                    "SELECT factory.execution_record_artifact_attestation(%s::jsonb)",
+                    (psycopg.types.json.Jsonb(reserved.to_dict()),),
+                )
+                self.assertEqual(
+                    cursor.fetchone()[0]["artifact_attestation_digest"],
+                    reserved.artifact_attestation_digest,
+                )
+            competing_store = PostgresFactoryStore(psycopg.conninfo.make_conninfo(
+                self.runtime_url, application_name="m5_note_after_attestation",
+            ))
+            future = attestation_first_pool.submit(
+                execute_propose, competing_store, execution, note(execution), "note",
+            )
+            wait_for_lock("m5_note_after_attestation")
+            attestor.commit()
+            self.assertFalse(future.result(timeout=10))
+        finally:
+            attestor.rollback()
+            attestor.close()
+            attestation_first_pool.shutdown(wait=True, cancel_futures=True)
+
+        usage = UsageProposal(
+            execution.lease.task_id, execution.lease.run_id, execution.packet_digest,
+            execution.lease.fence, 1, "writer", "reserved-sequence-call", "d" * 64,
+            1, 1, 0, 1, 1, "0" * 64,
+        )
+        usage = replace(usage, idempotency_key=proposal_idempotency_key(usage))
+        terminal = TerminalProposal(
+            execution.lease.task_id, execution.lease.run_id, execution.packet_digest,
+            execution.lease.fence, 1, "writer", "run.completed", "bounded complete",
+            None, None, None, "0" * 64,
+        )
+        terminal = replace(terminal, idempotency_key=proposal_idempotency_key(terminal))
+        self.assertFalse(execute_propose(self.store, execution, usage, "usage"))
+        self.assertFalse(execute_propose(self.store, execution, terminal, "terminal"))
+
+        artifact = ArtifactProposal(
+            execution.lease.task_id, execution.lease.run_id, execution.packet_digest,
+            execution.lease.fence, 1, "writer", "report", reserved.path, reserved.sha256,
+            reserved.size_bytes, reserved.media_type,
+            reserved.artifact_attestation_digest, "0" * 64,
+        )
+        artifact = replace(artifact, idempotency_key=proposal_idempotency_key(artifact))
+        self.assertTrue(execute_propose(self.store, execution, artifact, "artifact"))
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT a.consumed_at,p.proposal_kind,
+                (SELECT count(*) FROM factory.execution_artifact_attestations WHERE run_id=a.run_id),
+                (SELECT count(*) FROM factory.execution_proposals WHERE run_id=a.run_id)
+                FROM factory.execution_artifact_attestations a
+                JOIN factory.execution_proposals p USING (run_id,producer_sequence)
+                WHERE a.run_id=%s""",
+                (execution.lease.run_id,),
+            )
+            consumed_at, proposal_kind, attestation_count, proposal_count = cursor.fetchone()
+            self.assertEqual((proposal_kind, attestation_count, proposal_count), ("artifact", 1, 1))
+        self.assertTrue(execute_propose(self.store, execution, artifact, "artifact"))
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT consumed_at,
+                (SELECT count(*) FROM factory.execution_artifact_attestations WHERE run_id=a.run_id),
+                (SELECT count(*) FROM factory.execution_proposals WHERE run_id=a.run_id)
+                FROM factory.execution_artifact_attestations a WHERE run_id=%s""",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone(), (consumed_at, 1, 1))
+        self.service.cancel(
+            task.task_id, reason="bounded attestation-first cleanup",
+            idempotency_key="2" * 64, actor=OPERATOR, now=NOW,
+        )
+
+    def test_execution_capabilities_reject_repeatable_read_snapshots(self):
+        import psycopg
+
+        def claim(label):
+            repository = f"owner/{label}"
+            task = self.submit(repository=repository, source=label).task
+            packet = valid_packet()
+            packet["provider"]["capabilities"] = ["artifacts", "notes", "structured_output"]
+            selection = {
+                "provider": packet["provider"],
+                "capability_policy": packet["capability_policy"],
+                "plan": packet["plan"], "workspace_handle": packet["workspace_handle"],
+                "prompt_template_digest": "7" * 64, "role_definition_digest": "8" * 64,
+                "tool_policy_digest": "9" * 64, "output_schema_digest": "a" * 64,
+            }
+            execution = FactoryService(
+                self.store, execution_registry=trusted_registry(selection)
+            ).claim_execution(
+                owner=WORKER.actor_id, role=RunRole.WRITER, repositories=(repository,),
+                lease_seconds=60, selection=selection, actor=WORKER, now=NOW,
+            )
+            return task, packet, execution, repository
+
+        task, _packet, execution, _repository = claim("m5-rr-proposal")
+        note = NoteProposal(
+            execution.lease.task_id, execution.lease.run_id, execution.packet_digest,
+            execution.lease.fence, 1, "writer", "finding", "bounded", (), "0" * 64,
+        )
+        note = replace(note, idempotency_key=proposal_idempotency_key(note))
+        with self.store._connect() as connection:
+            connection.commit()
+            with connection.transaction(), connection.cursor() as cursor:
+                cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+                cursor.execute(
+                    "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,1,%s,'note',%s::jsonb)",
+                    (
+                        execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+                        execution.lease.fence, execution.lease.packet_digest,
+                        execution.packet_digest, note.idempotency_key,
+                        psycopg.types.json.Jsonb(dict(note.__dict__)),
+                    ),
+                )
+                self.assertFalse(cursor.fetchone()[0])
+        self.service.cancel(
+            task.task_id, reason="bounded RR proposal cleanup",
+            idempotency_key="3" * 64, actor=OPERATOR, now=NOW,
+        )
+
+        task, packet, execution, repository = claim("m5-rr-attestation")
+        reserved = ArtifactAttestationV1.from_facts({
+            "contract_version": 1, "task_id": execution.lease.task_id,
+            "run_id": execution.lease.run_id, "repository_id": repository,
+            "packet_digest": execution.packet_digest,
+            "workspace_handle": packet["workspace_handle"],
+            "producer_sequence": 1, "fence": execution.lease.fence,
+            "author_role": "writer", "artifact_class": "report",
+            "path": "factory/src/result.patch", "sha256": "b" * 64,
+            "size_bytes": 12, "media_type": "text/plain",
+            "source": "trusted_workspace_broker",
+        })
+        with PostgresArtifactAttestationStore(self.artifact_attestor_url)._connect() as connection:
+            connection.commit()
+            with connection.transaction(), connection.cursor() as cursor:
+                cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+                cursor.execute(
+                    "SELECT factory.execution_record_artifact_attestation(%s::jsonb)",
+                    (psycopg.types.json.Jsonb(reserved.to_dict()),),
+                )
+                self.assertIsNone(cursor.fetchone()[0])
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT
+                (SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s),
+                (SELECT count(*) FROM factory.execution_artifact_attestations WHERE run_id=%s)""",
+                (execution.lease.run_id, execution.lease.run_id),
+            )
+            self.assertEqual(cursor.fetchone(), (0, 0))
+        self.service.cancel(
+            task.task_id, reason="bounded RR attestation cleanup",
+            idempotency_key="4" * 64, actor=OPERATOR, now=NOW,
+        )
+
+    def test_artifact_recorder_rejects_out_of_order_terminal_and_event_limit_without_poisoning(self):
+        import psycopg
+
+        def claim(label: str, max_events: int):
+            intake = self.payload(source=label)
+            intake["limits"]["max_events"] = max_events
+            task = self.service.intake(intake, actor=OPERATOR, now=NOW).task
+            packet = valid_packet()
+            packet["provider"]["capabilities"] = ["artifacts", "notes", "structured_output"]
+            selection = {
+                "provider": packet["provider"],
+                "capability_policy": packet["capability_policy"],
+                "plan": packet["plan"],
+                "workspace_handle": packet["workspace_handle"],
+                "prompt_template_digest": "7" * 64,
+                "role_definition_digest": "8" * 64,
+                "tool_policy_digest": "9" * 64,
+                "output_schema_digest": "a" * 64,
+            }
+            execution = FactoryService(
+                self.store, execution_registry=trusted_registry(selection)
+            ).claim_execution(
+                owner=WORKER.actor_id, role=RunRole.WRITER,
+                repositories=("owner/repository",), lease_seconds=60,
+                selection=selection, actor=WORKER, now=NOW,
+            )
+            broker = TrustedPostgresTestArtifactBroker()
+            recorder = PostgresArtifactAttestationStore(self.artifact_attestor_url)
+            return task, packet, execution, broker, recorder, FactoryService(
+                self.store, artifact_broker=broker,
+                artifact_attestation_store=recorder,
+            )
+
+        artifact = {
+            "artifact_class": "report", "path": "factory/src/result.patch",
+            "sha256": "b" * 64, "size_bytes": 12, "media_type": "text/plain",
+        }
+
+        task, packet, execution, _, _, service = claim("attestation-out-of-order", 4)
+        with self.assertRaises((ExecutionContractError, FenceError)):
+            service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest, sequence=2,
+                event_type="artifact.proposed", payload=artifact, actor=WORKER,
+            )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_artifact_attestations WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+        service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest, sequence=1,
+            event_type="artifact.proposed", payload=artifact, actor=WORKER,
+        )
+        self.service.cancel(
+            task.task_id, reason="bounded test cleanup", idempotency_key="1" * 64,
+            actor=OPERATOR, now=NOW,
+        )
+
+        task, packet, execution, _, _, service = claim("attestation-unsafe-path", 4)
+        exact_1024 = "factory/src/" + "x" * (1024 - len("factory/src/"))
+        exact_1025 = exact_1024 + "x"
+        self.assertEqual(
+            (len(exact_1024.encode()), len(exact_1025.encode())), (1024, 1025),
+        )
+        for unsafe_path in (
+            "factory/src/password=hunter2", "factory/src/ghp_secret",
+            "factory/src/../outside", "factory/src/.git/config",
+            exact_1025,
+        ):
+            with self.subTest(unsafe_path=unsafe_path), self.assertRaises(ExecutionContractError):
+                service.commit_execution_proposal(
+                    execution.lease, packet_digest=execution.packet_digest, sequence=1,
+                    event_type="artifact.proposed", payload={**artifact, "path": unsafe_path},
+                    actor=WORKER,
+                )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_artifact_attestations WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+            raw = {
+                "contract_version": 1,
+                "task_id": execution.lease.task_id,
+                "run_id": execution.lease.run_id,
+                "repository_id": "owner/repository",
+                "packet_digest": execution.packet_digest,
+                "workspace_handle": packet["workspace_handle"],
+                "producer_sequence": 1,
+                "fence": execution.lease.fence,
+                "author_role": "writer",
+                "artifact_class": artifact["artifact_class"],
+                "path": "factory/src/result.patch",
+                "sha256": artifact["sha256"],
+                "size_bytes": artifact["size_bytes"],
+                "media_type": artifact["media_type"],
+                "source": "trusted_workspace_broker",
+            }
+            cursor.execute("SET ROLE factory_artifact_attestor")
+            for unsafe_path in (
+                "factory/src/ghp_secret",
+                "factory/src/../outside",
+                "factory/src/.git/config",
+                exact_1025,
+            ):
+                direct = {**raw, "path": unsafe_path}
+                direct["artifact_attestation_digest"] = canonical_digest({
+                    "contract": "adaptive-factory.artifact-attestation/v1", **direct,
+                })
+                cursor.execute(
+                    "SELECT factory.execution_record_artifact_attestation(%s::jsonb)",
+                    (psycopg.types.json.Jsonb(direct),),
+                )
+                self.assertIsNone(cursor.fetchone()[0])
+                cursor.execute("RESET ROLE")
+                cursor.execute(
+                    "SELECT count(*) FROM factory.execution_artifact_attestations WHERE run_id=%s",
+                    (execution.lease.run_id,),
+                )
+                self.assertEqual(cursor.fetchone()[0], 0)
+                cursor.execute("SET ROLE factory_artifact_attestor")
+            exact = {**raw, "path": exact_1024}
+            exact["artifact_attestation_digest"] = canonical_digest({
+                "contract": "adaptive-factory.artifact-attestation/v1", **exact,
+            })
+            cursor.execute(
+                "SELECT factory.execution_record_artifact_attestation(%s::jsonb)",
+                (psycopg.types.json.Jsonb(exact),),
+            )
+            self.assertEqual(
+                cursor.fetchone()[0]["artifact_attestation_digest"],
+                exact["artifact_attestation_digest"],
+            )
+            cursor.execute("RESET ROLE")
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_artifact_attestations WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+        service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest, sequence=1,
+            event_type="artifact.proposed", payload={**artifact, "path": exact_1024},
+            actor=WORKER,
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT count(*),bool_and(consumed_at IS NOT NULL)
+                FROM factory.execution_artifact_attestations WHERE run_id=%s""",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone(), (1, True))
+        self.service.cancel(
+            task.task_id, reason="bounded test cleanup", idempotency_key="4" * 64,
+            actor=OPERATOR, now=NOW,
+        )
+
+        task, packet, execution, _, _, service = claim("attestation-event-limit", 2)
+        for sequence, note_type in ((1, "finding"), (2, "conclusion")):
+            service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest, sequence=sequence,
+                event_type="note.proposed",
+                payload={"note_type": note_type, "body": "bounded", "evidence": []},
+                actor=WORKER,
+            )
+        with self.assertRaises((ExecutionContractError, FenceError)):
+            service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest, sequence=3,
+                event_type="artifact.proposed", payload=artifact, actor=WORKER,
+            )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_artifact_attestations WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+        self.service.cancel(
+            task.task_id, reason="bounded test cleanup", idempotency_key="2" * 64,
+            actor=OPERATOR, now=NOW,
+        )
+
+        task, packet, execution, broker, recorder, service = claim("attestation-terminal", 4)
+        service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest, sequence=1,
+            event_type="run.failed",
+            payload={"failure_class": "validation", "diagnostic": "bounded"},
+            actor=WORKER,
+        )
+        request = ArtifactAttestationRequest.from_facts({
+            "task_id": execution.lease.task_id, "run_id": execution.lease.run_id,
+            "repository_id": "owner/repository", "packet_digest": execution.packet_digest,
+            "workspace_handle": packet["workspace_handle"], "producer_sequence": 2,
+            "fence": execution.lease.fence, "author_role": "writer",
+            "artifact_class": artifact["artifact_class"], "path": artifact["path"],
+            "sha256": artifact["sha256"], "size_bytes": artifact["size_bytes"],
+            "media_type": artifact["media_type"],
+        })
+        observed = broker.attest_artifact(request)
+        self.assertIsInstance(
+            recorder.record_artifact_attestation(observed), ArtifactAttestationUnavailable
+        )
+        with self.assertRaises(FenceError):
+            service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest, sequence=2,
+                event_type="artifact.proposed", payload=artifact, actor=WORKER,
+            )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_artifact_attestations WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+        self.service.cancel(
+            task.task_id, reason="bounded test cleanup", idempotency_key="3" * 64,
+            actor=OPERATOR, now=NOW,
+        )
+
     def test_execution_lifecycle_persists_new_digest_stages_and_redacted_proposal(self):
         task = self.submit(source="m5-execution-lifecycle").task
         packet = valid_packet()
@@ -116,7 +1142,7 @@ class PostgresFactoryTests(unittest.TestCase):
             "tool_policy_digest": "9" * 64,
             "output_schema_digest": "a" * 64,
         }
-        execution = self.service.claim_execution(
+        execution = FactoryService(self.store, execution_registry=trusted_registry(selection)).claim_execution(
             owner=WORKER.actor_id, role=RunRole.WRITER, repositories=(task.repository_id,),
             lease_seconds=60, selection=selection, actor=WORKER, now=NOW,
             idempotency_key="b" * 64, correlation_id="m5-execution-claim",
@@ -156,6 +1182,12 @@ class PostgresFactoryTests(unittest.TestCase):
             event_type="run.completed", payload={"summary": "fixture complete"},
             actor=WORKER, idempotency_key="f" * 64, correlation_id="m5-terminal",
         )
+        for forged_outcome in ("completed", FailureClass.VALIDATION):
+            with self.subTest(forged_outcome=forged_outcome), self.assertRaises(FenceError):
+                self.service.release(
+                    execution.lease, outcome=forged_outcome, actor=WORKER, now=NOW,
+                )
+        self.assertEqual(self.store.get_task(task.task_id).status, TaskStatus.LEASED)
         for index, stage in enumerate((ExecutionStage.RUNNING, ExecutionStage.COLLECTING), start=4):
             self.service.advance_execution(
                 execution.lease, packet_digest=execution.packet_digest, stage=stage,
@@ -163,6 +1195,22 @@ class PostgresFactoryTests(unittest.TestCase):
             )
         snapshot_broker = TrustedPostgresTestSnapshotBroker()
         finalizer = FactoryService(self.store, snapshot_broker=snapshot_broker)
+        import psycopg
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.tasks SET accounting_blocked=true WHERE task_id=%s",
+                (task.task_id,),
+            )
+        with self.assertRaises(FenceError):
+            finalizer.finalize_execution(
+                execution.lease, packet_digest=execution.packet_digest, actor=WORKER,
+            )
+        self.assertEqual(snapshot_broker.calls, 0)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.tasks SET accounting_blocked=false WHERE task_id=%s",
+                (task.task_id,),
+            )
         result = finalizer.finalize_execution(
             execution.lease, packet_digest=execution.packet_digest,
             actor=WORKER, idempotency_key="7" * 64, correlation_id="m5-finalize",
@@ -174,13 +1222,17 @@ class PostgresFactoryTests(unittest.TestCase):
         self.assertEqual(result.workspace_result_digest, result_replay.workspace_result_digest)
         self.assertEqual(snapshot_broker.calls, 1)
         self.assertEqual((result.exact_head_sha, result.terminal_stage), ("4" * 40, "completed"))
+        self.assertEqual(
+            (result.m4_status, result.failure_class, result.failure_reason),
+            ("ready_for_human", None, None),
+        )
+        self.assertEqual(self.store.get_task(task.task_id).status, TaskStatus.READY_FOR_HUMAN)
         with self.assertRaises(FenceError):
             self.service.commit_execution_proposal(
                 execution.lease, packet_digest=execution.packet_digest, sequence=2,
                 event_type="note.proposed",
-                payload={"note_type": "late", "body": "late", "evidence": []}, actor=WORKER,
+                payload={"note_type": "finding", "body": "late", "evidence": []}, actor=WORKER,
             )
-        import psycopg
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
                 """SELECT
@@ -192,10 +1244,8 @@ class PostgresFactoryTests(unittest.TestCase):
                 (execution.lease.run_id,) * 5,
             )
             self.assertEqual(cursor.fetchone(), (1, 4, 3, 1, "token [REDACTED]"))
-        self.assertEqual(
-            self.service.release(execution.lease, outcome="completed", actor=WORKER, now=NOW),
-            TaskStatus.READY_FOR_HUMAN,
-        )
+        with self.assertRaises(FenceError):
+            self.service.release(execution.lease, outcome="completed", actor=WORKER, now=NOW)
         reader = Actor("m6-reader", "operator", frozenset({"task:read"}), frozenset({task.repository_id}))
         bundle = self.service.get_workspace_result(
             task.task_id, result.workspace_result_digest, actor=reader,
@@ -203,9 +1253,667 @@ class PostgresFactoryTests(unittest.TestCase):
         self.assertEqual(bundle["result"].workspace_result_digest, result.workspace_result_digest)
         self.assertEqual((bundle["snapshot"].diff_digest, bundle["snapshot"].diff_lines), ("6" * 64, 12))
         self.assertEqual(bundle["packet"].provider.profile_digest, bundle["packet"].provider.profile_digest)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.workspace_results SET exact_head_sha=%s WHERE run_id=%s",
+                ("5" * 40, execution.lease.run_id),
+            )
+        with self.assertRaises(StoreError):
+            self.store.workspace_result(task.task_id, result.workspace_result_digest)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.workspace_results SET exact_head_sha=%s WHERE run_id=%s",
+                (result.exact_head_sha, execution.lease.run_id),
+            )
+            cursor.execute(
+                "UPDATE factory.workspace_results SET workspace_result_digest=%s WHERE run_id=%s",
+                ("f" * 64, execution.lease.run_id),
+            )
+        with self.assertRaises(StoreError):
+            self.store.workspace_result(task.task_id, "f" * 64)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.workspace_results SET workspace_result_digest=%s WHERE run_id=%s",
+                (result.workspace_result_digest, execution.lease.run_id),
+            )
+        with self.assertRaises(psycopg.errors.ForeignKeyViolation):
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE factory.execution_proposals SET proposal_kind='note' WHERE run_id=%s AND proposal_kind='terminal'",
+                    (execution.lease.run_id,),
+                )
+        other_repository = "owner/m5-cross-run-integrity"
+        other_task = self.submit(
+            repository=other_repository, source="m5-cross-run-integrity"
+        ).task
+        other_execution = FactoryService(
+            self.store, execution_registry=trusted_registry(selection)
+        ).claim_execution(
+            owner=WORKER.actor_id, role=RunRole.WRITER,
+            repositories=(other_repository,), lease_seconds=60,
+            selection=selection, actor=WORKER, now=NOW,
+        )
+        other_terminal = self.service.commit_execution_proposal(
+            other_execution.lease, packet_digest=other_execution.packet_digest,
+            sequence=1, event_type="run.failed",
+            payload={"failure_class": "validation", "diagnostic": "other run"},
+            actor=WORKER,
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT trim(manifest_digest) FROM factory.execution_manifests WHERE run_id=%s",
+                (other_execution.lease.run_id,),
+            )
+            other_manifest_digest = cursor.fetchone()[0]
+        substitutions = (
+            ("run_manifest_digest", other_manifest_digest),
+            ("terminal_proposal_digest", other_terminal.idempotency_key),
+        )
+        for column, value in substitutions:
+            with self.subTest(cross_run_column=column), self.assertRaises(
+                psycopg.errors.ForeignKeyViolation
+            ):
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        f"UPDATE factory.workspace_results SET {column}=%s WHERE run_id=%s",
+                        (value, execution.lease.run_id),
+                    )
         wrong_repo = Actor("other-reader", "operator", frozenset({"task:read"}), frozenset({"other/repository"}))
         with self.assertRaises(AuthorizationError):
             self.service.get_workspace_result(task.task_id, result.workspace_result_digest, actor=wrong_repo)
+
+    def test_terminal_result_atomically_derives_m4_failure_disposition(self):
+        cases = (
+            ("retry", "run.failed", {"failure_class": "database_unavailable", "diagnostic": "temporary outage"}, 1, None, TaskStatus.RETRY),
+            ("reserved", "run.failed", {"failure_class": "database_unavailable", "diagnostic": "reservation open"}, 1, "reservation", TaskStatus.NEEDS_HUMAN),
+            ("events", "run.failed", {"failure_class": "database_unavailable", "diagnostic": "event budget full"}, 1, "event_limit", TaskStatus.NEEDS_HUMAN),
+            ("nonretryable", "run.failed", {"failure_class": "validation", "diagnostic": "invalid output"}, 1, None, TaskStatus.NEEDS_HUMAN),
+            ("exhausted", "run.failed", {"failure_class": "database_unavailable", "diagnostic": "third outage"}, 3, None, TaskStatus.DEAD),
+            ("human", "run.needs_human", {"reason": "policy decision", "diagnostic": "operator required"}, 1, None, TaskStatus.NEEDS_HUMAN),
+        )
+        for source, terminal_type, payload, attempt_no, setup, expected_status in cases:
+            with self.subTest(source=source):
+                repository = f"owner/m5-terminal-{source}"
+                task = self.submit(repository=repository, source=f"m5-terminal-{source}").task
+                packet = valid_packet()
+                packet["provider"]["capabilities"] = ["structured_output"]
+                selection = {
+                    "provider": packet["provider"],
+                    "capability_policy": packet["capability_policy"],
+                    "plan": packet["plan"],
+                    "workspace_handle": packet["workspace_handle"],
+                    "prompt_template_digest": "7" * 64,
+                    "role_definition_digest": "8" * 64,
+                    "tool_policy_digest": "9" * 64,
+                    "output_schema_digest": "a" * 64,
+                }
+                execution = FactoryService(
+                    self.store, execution_registry=trusted_registry(selection)
+                ).claim_execution(
+                    owner=WORKER.actor_id,
+                    role=RunRole.WRITER,
+                    repositories=(task.repository_id,),
+                    lease_seconds=60,
+                    selection=selection,
+                    actor=WORKER,
+                    now=NOW,
+                )
+                if attempt_no != 1:
+                    import psycopg
+                    with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                        cursor.execute(
+                            "UPDATE factory.attempts SET attempt_no=%s WHERE run_id=%s",
+                            (attempt_no, execution.lease.run_id),
+                        )
+                if setup == "reservation":
+                    self.service.reserve_budget(
+                        execution.lease,
+                        cost_usd_micros=0,
+                        token_units=0,
+                        wall_seconds=1,
+                        reason_digest="b" * 64,
+                        idempotency_key="c" * 64,
+                        actor=WORKER,
+                    )
+                elif setup == "event_limit":
+                    import psycopg
+                    with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                        cursor.execute(
+                            """UPDATE factory.tasks SET event_limit=(
+                              SELECT count(*) FROM factory.task_events
+                              WHERE task_id=%s AND NOT mandatory_cleanup
+                            ) WHERE task_id=%s""",
+                            (task.task_id, task.task_id),
+                        )
+                self.service.commit_execution_proposal(
+                    execution.lease,
+                    packet_digest=execution.packet_digest,
+                    sequence=1,
+                    event_type=terminal_type,
+                    payload=payload,
+                    actor=WORKER,
+                )
+                result = FactoryService(
+                    self.store, snapshot_broker=TrustedPostgresTestSnapshotBroker()
+                ).finalize_execution(
+                    execution.lease,
+                    packet_digest=execution.packet_digest,
+                    actor=WORKER,
+                )
+                self.assertEqual(result.m4_status, expected_status.value)
+                self.assertEqual(self.store.get_task(task.task_id).status, expected_status)
+                expected_failure = payload.get("failure_class")
+                expected_reason = payload.get("diagnostic") if expected_failure else payload.get("reason")
+                self.assertEqual((result.failure_class, result.failure_reason), (expected_failure, expected_reason))
+                import psycopg
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT released_at IS NOT NULL FROM factory.runs WHERE run_id=%s",
+                        (execution.lease.run_id,),
+                    )
+                    self.assertTrue(cursor.fetchone()[0])
+                    if setup == "reservation":
+                        cursor.execute(
+                            "SELECT accounting_blocked FROM factory.tasks WHERE task_id=%s",
+                            (task.task_id,),
+                        )
+                        self.assertTrue(cursor.fetchone()[0])
+
+    def test_finalize_db_hash_parity_and_forged_result_rolls_back(self):
+        import hashlib
+        import psycopg
+
+        canonical = {"failure": "quoted \"snowman ☃\""}
+        domain = "adaptive-factory.workspace-notes/v1"
+        evidence = ["a" * 64, "b" * 64]
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT trim(factory.execution_contract_hash(NULL,%s)),trim(factory.execution_contract_hash(%s,%s))",
+                (canonical_json(canonical).decode(), domain, canonical_json(evidence).decode()),
+            )
+            plain, separated = cursor.fetchone()
+        self.assertEqual(plain, canonical_digest(canonical))
+        self.assertEqual(
+            separated,
+            hashlib.sha256(domain.encode() + b"\0" + canonical_json(evidence)).hexdigest(),
+        )
+
+        repository = "owner/m5-forged-finalize"
+        task = self.submit(repository=repository, source="m5-forged-finalize").task
+        packet = valid_packet()
+        packet["provider"]["capabilities"] = ["structured_output"]
+        selection = {
+            "provider": packet["provider"], "capability_policy": packet["capability_policy"],
+            "plan": packet["plan"], "workspace_handle": packet["workspace_handle"],
+            "prompt_template_digest": "7" * 64, "role_definition_digest": "8" * 64,
+            "tool_policy_digest": "9" * 64, "output_schema_digest": "a" * 64,
+        }
+        execution = FactoryService(
+            self.store, execution_registry=trusted_registry(selection)
+        ).claim_execution(
+            owner=WORKER.actor_id, role=RunRole.WRITER, repositories=(repository,),
+            lease_seconds=60, selection=selection, actor=WORKER, now=NOW,
+        )
+        terminal = self.service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest, sequence=1,
+            event_type="run.failed",
+            payload={"failure_class": "validation", "diagnostic": "quoted \"snowman ☃\""},
+            actor=WORKER,
+        )
+        request = self.store.workspace_snapshot_request(execution.lease, execution.packet_digest)
+        snapshot = TrustedPostgresTestSnapshotBroker().snapshot(request)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT trim(manifest_digest) FROM factory.execution_manifests WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            manifest_digest = cursor.fetchone()[0]
+        result = WorkspaceResultV1.from_facts({
+            "contract_version": 1, "task_id": execution.lease.task_id,
+            "run_id": execution.lease.run_id, "task_packet_digest": execution.packet_digest,
+            "run_manifest_digest": manifest_digest, "exact_head_sha": snapshot.result_head_sha,
+            "workspace_snapshot_digest": snapshot.workspace_snapshot_digest,
+            "terminal_stage": "failed", "terminal_proposal_digest": terminal.idempotency_key,
+            "artifact_manifest_digest": workspace_evidence_digest("artifacts", []),
+            "note_manifest_digest": workspace_evidence_digest("notes", []),
+            "usage_evidence_digest": workspace_evidence_digest("usage", []),
+            "diagnostics_digest": workspace_evidence_digest("diagnostics", []),
+            "m4_status": "needs_human", "failure_class": "validation",
+            "failure_reason": "quoted \"snowman ☃\"",
+        })
+        forged = result.to_dict()
+        forged["artifact_manifest_digest"] = "f" * 64
+        forged["workspace_result_digest"] = "e" * 64
+        unknown_snapshot = snapshot.to_dict()
+        unknown_snapshot.pop("contract_version")
+        unknown_snapshot["unknown"] = 1
+        missing_result = result.to_dict()
+        missing_result.pop("m4_status")
+        null_result = result.to_dict()
+        null_result["workspace_result_digest"] = None
+        fractional_snapshot = snapshot.to_dict()
+        fractional_snapshot["diff_lines"] = 1.5
+        direct_cases = (
+            (snapshot.to_dict(), forged, forged["workspace_result_digest"]),
+            (unknown_snapshot, result.to_dict(), result.workspace_result_digest),
+            (snapshot.to_dict(), missing_result, result.workspace_result_digest),
+            (snapshot.to_dict(), null_result, result.workspace_result_digest),
+            (fractional_snapshot, result.to_dict(), result.workspace_result_digest),
+            (None, result.to_dict(), result.workspace_result_digest),
+            (snapshot.to_dict(), None, result.workspace_result_digest),
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute("SET ROLE factory_runtime")
+            for direct_snapshot, direct_result, direct_digest in direct_cases:
+                cursor.execute(
+                    "SELECT factory.execution_finalize_commit(%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb)",
+                    (
+                        execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+                        execution.lease.fence, execution.lease.packet_digest, execution.packet_digest,
+                        direct_digest, psycopg.types.json.Jsonb(direct_snapshot),
+                        psycopg.types.json.Jsonb(direct_result),
+                    ),
+                )
+                self.assertFalse(cursor.fetchone()[0])
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT t.state,r.released_at IS NULL,a.released_at IS NULL,
+                at.finished_at IS NULL,(SELECT count(*) FROM factory.workspace_results WHERE run_id=r.run_id)
+                FROM factory.tasks t JOIN factory.runs r ON r.run_id=t.current_run_id
+                JOIN factory.capacity_allocations a ON a.run_id=r.run_id
+                JOIN factory.attempts at ON at.run_id=r.run_id WHERE t.task_id=%s""",
+                (task.task_id,),
+            )
+            self.assertEqual(cursor.fetchone(), ("leased", True, True, True, 0))
+            cursor.execute(
+                """SELECT
+                (SELECT count(*) FROM factory.task_events WHERE task_id=%s),
+                (SELECT count(*) FROM factory.audit_log WHERE task_id=%s),
+                (SELECT count(*) FROM factory.execution_stage_events e
+                  JOIN factory.execution_manifests m USING(manifest_digest) WHERE m.run_id=%s)""",
+                (task.task_id, task.task_id, execution.lease.run_id),
+            )
+            before_counts = cursor.fetchone()
+        from unittest.mock import patch
+        with patch.object(self.store, "_audit", side_effect=RuntimeError("injected audit failure")):
+            with self.assertRaisesRegex(RuntimeError, "injected audit failure"):
+                FactoryService(
+                    self.store, snapshot_broker=TrustedPostgresTestSnapshotBroker()
+                ).finalize_execution(
+                    execution.lease, packet_digest=execution.packet_digest, actor=WORKER,
+                )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT t.state,r.released_at IS NULL,a.released_at IS NULL,
+                at.finished_at IS NULL,m.terminal_at IS NULL,
+                (SELECT count(*) FROM factory.workspace_results WHERE run_id=r.run_id),
+                (SELECT count(*) FROM factory.task_events WHERE task_id=t.task_id),
+                (SELECT count(*) FROM factory.audit_log WHERE task_id=t.task_id),
+                (SELECT count(*) FROM factory.execution_stage_events e WHERE e.manifest_digest=m.manifest_digest)
+                FROM factory.tasks t JOIN factory.runs r ON r.run_id=t.current_run_id
+                JOIN factory.capacity_allocations a ON a.run_id=r.run_id
+                JOIN factory.attempts at ON at.run_id=r.run_id
+                JOIN factory.execution_manifests m ON m.run_id=r.run_id WHERE t.task_id=%s""",
+                (task.task_id,),
+            )
+            rolled_back = cursor.fetchone()
+        self.assertEqual(rolled_back[:6], ("leased", True, True, True, True, 0))
+        self.assertEqual(rolled_back[6:], before_counts)
+        successful = FactoryService(
+            self.store, snapshot_broker=TrustedPostgresTestSnapshotBroker()
+        ).finalize_execution(
+            execution.lease, packet_digest=execution.packet_digest, actor=WORKER,
+        )
+        self.assertEqual(successful.workspace_result_digest, result.workspace_result_digest)
+        expected_release_key = canonical_digest({
+            "action": "execution_finalize", "fence": execution.lease.fence,
+            "run_id": execution.lease.run_id, "target": "needs_human",
+        })
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT t.current_run_id IS NULL,a.released_at IS NOT NULL,
+                (SELECT count(*) FROM factory.workspace_results WHERE run_id=%s),
+                at.failure_digest,
+                (SELECT trim(idempotency_key) FROM factory.task_events
+                  WHERE task_id=t.task_id AND action='released' ORDER BY event_sequence DESC LIMIT 1),
+                (SELECT action FROM factory.audit_log
+                  WHERE task_id=t.task_id ORDER BY audit_id DESC LIMIT 1)
+                FROM factory.tasks t JOIN factory.capacity_allocations a ON a.task_id=t.task_id
+                JOIN factory.attempts at ON at.task_id=t.task_id
+                WHERE t.task_id=%s""",
+                (execution.lease.run_id, task.task_id),
+            )
+            final_state = cursor.fetchone()
+        self.assertEqual(
+            final_state,
+            (
+                True, True, 1, canonical_digest({"failure": "validation"}),
+                expected_release_key, "execution_finalize",
+            ),
+        )
+
+    def test_finalize_and_cancel_share_capacity_then_task_lock_order(self):
+        repository = "owner/m5-finalize-cancel-race"
+        task = self.submit(repository=repository, source="m5-finalize-cancel-race").task
+        packet = valid_packet()
+        packet["provider"]["capabilities"] = ["structured_output"]
+        selection = {
+            "provider": packet["provider"], "capability_policy": packet["capability_policy"],
+            "plan": packet["plan"], "workspace_handle": packet["workspace_handle"],
+            "prompt_template_digest": "7" * 64, "role_definition_digest": "8" * 64,
+            "tool_policy_digest": "9" * 64, "output_schema_digest": "a" * 64,
+        }
+        execution = FactoryService(
+            self.store, execution_registry=trusted_registry(selection)
+        ).claim_execution(
+            owner=WORKER.actor_id, role=RunRole.WRITER, repositories=(repository,),
+            lease_seconds=60, selection=selection, actor=WORKER, now=NOW,
+        )
+        self.service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest, sequence=1,
+            event_type="run.failed",
+            payload={"failure_class": "validation", "diagnostic": "race"}, actor=WORKER,
+        )
+        import psycopg
+
+        cancel_store = PostgresFactoryStore(
+            psycopg.conninfo.make_conninfo(self.runtime_url, application_name="m5_cancel_waiter")
+        )
+        finalize_store = PostgresFactoryStore(
+            psycopg.conninfo.make_conninfo(self.runtime_url, application_name="m5_finalize_waiter")
+        )
+        cancel_service = FactoryService(cancel_store)
+        finalizer = FactoryService(
+            finalize_store, snapshot_broker=TrustedPostgresTestSnapshotBroker()
+        )
+
+        def wait_until_capacity_blocked(application_name):
+            deadline = time.monotonic() + 4
+            while time.monotonic() < deadline:
+                with psycopg.connect(DATABASE_URL) as observer, observer.cursor() as cursor:
+                    cursor.execute(
+                        """SELECT count(*) FROM pg_stat_activity
+                        WHERE datname=current_database() AND application_name=%s
+                          AND state='active' AND wait_event_type='Lock'""",
+                        (application_name,),
+                    )
+                    if cursor.fetchone()[0] == 1:
+                        return
+                time.sleep(0.02)
+            self.fail(f"{application_name} did not block on the capacity lock")
+
+        blocker = psycopg.connect(DATABASE_URL, application_name="m5_capacity_blocker")
+        try:
+            with blocker.cursor() as cursor:
+                cursor.execute(
+                    "SELECT scope_key FROM factory.capacity_counters "
+                    "WHERE scope_key='global:writer' FOR UPDATE"
+                )
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                cancel_future = pool.submit(
+                    cancel_service.cancel, task.task_id, reason="operator race",
+                    idempotency_key="d" * 64, actor=OPERATOR, now=NOW,
+                )
+                wait_until_capacity_blocked("m5_cancel_waiter")
+                finalize_future = pool.submit(
+                    finalizer.finalize_execution, execution.lease,
+                    packet_digest=execution.packet_digest, actor=WORKER,
+                )
+                wait_until_capacity_blocked("m5_finalize_waiter")
+                blocker.rollback()
+                cancelled = cancel_future.result(timeout=10)
+                with self.assertRaises(FenceError):
+                    finalize_future.result(timeout=10)
+        finally:
+            blocker.rollback()
+            blocker.close()
+        self.assertEqual(cancelled.status, TaskStatus.CANCELLED)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT t.current_run_id IS NULL,a.released_at IS NOT NULL,
+                (SELECT count(*) FROM factory.workspace_results WHERE run_id=%s)
+                FROM factory.tasks t JOIN factory.capacity_allocations a ON a.task_id=t.task_id
+                WHERE t.task_id=%s""",
+                (execution.lease.run_id, task.task_id),
+            )
+            current_cleared, allocation_released, result_count = cursor.fetchone()
+        self.assertEqual((current_cleared, allocation_released, result_count), (True, True, 0))
+
+    def test_forged_grant_role_is_rejected_by_authoritative_run_lock(self):
+        task = self.submit(source="m5-forged-grant-role").task
+        grant = self.service.claim(
+            owner=WORKER.actor_id,
+            role=RunRole.WRITER,
+            repositories=(task.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        forged = type(grant)(
+            grant.task_id,
+            grant.run_id,
+            grant.owner,
+            RunRole.READER,
+            grant.fence,
+            grant.expires_at,
+            grant.packet_digest,
+        )
+        with self.assertRaises(FenceError):
+            self.service.heartbeat(forged, actor=WORKER, now=NOW)
+
+    def test_execution_proposals_are_consecutive_bounded_and_terminal(self):
+        def claim_execution(source, max_events):
+            intake = self.payload(source=source)
+            intake["limits"]["max_events"] = max_events
+            task = self.service.intake(intake, actor=OPERATOR, now=NOW).task
+            packet = valid_packet()
+            packet["provider"]["capabilities"] = ["notes", "structured_output", "usage"]
+            selection = {
+                "provider": packet["provider"],
+                "capability_policy": packet["capability_policy"],
+                "plan": packet["plan"],
+                "workspace_handle": packet["workspace_handle"],
+                "prompt_template_digest": "7" * 64,
+                "role_definition_digest": "8" * 64,
+                "tool_policy_digest": "9" * 64,
+                "output_schema_digest": "a" * 64,
+            }
+            execution = FactoryService(
+                self.store, execution_registry=trusted_registry(selection)
+            ).claim_execution(
+                owner=WORKER.actor_id,
+                role=RunRole.WRITER,
+                repositories=(task.repository_id,),
+                lease_seconds=60,
+                selection=selection,
+                actor=WORKER,
+                now=NOW,
+            )
+            return execution
+
+        bounded = claim_execution("m5-proposal-limit", 2)
+        for sequence in (1, 2):
+            self.service.commit_execution_proposal(
+                bounded.lease,
+                packet_digest=bounded.packet_digest,
+                sequence=sequence,
+                event_type="note.proposed",
+                payload={"note_type": "finding", "body": f"note-{sequence}", "evidence": []},
+                actor=WORKER,
+            )
+        with self.assertRaises(FenceError):
+            self.service.commit_execution_proposal(
+                bounded.lease,
+                packet_digest=bounded.packet_digest,
+                sequence=3,
+                event_type="note.proposed",
+                payload={"note_type": "finding", "body": "over-limit", "evidence": []},
+                actor=WORKER,
+            )
+        self.service.cancel(
+            bounded.lease.task_id,
+            reason="proposal limit test cleanup",
+            idempotency_key="f" * 64,
+            actor=OPERATOR,
+            now=NOW,
+        )
+
+        execution = claim_execution("m5-proposal-order", 3)
+        note = self.service.commit_execution_proposal(
+            execution.lease,
+            packet_digest=execution.packet_digest,
+            sequence=1,
+            event_type="note.proposed",
+            payload={"note_type": "finding", "body": "first", "evidence": []},
+            actor=WORKER,
+        )
+        with self.assertRaises(FenceError):
+            self.service.commit_execution_proposal(
+                execution.lease,
+                packet_digest=execution.packet_digest,
+                sequence=3,
+                event_type="usage.reported",
+                payload={
+                    "provider_call_id": "gap-call",
+                    "price_table_digest": "d" * 64,
+                    "input_tokens": 1,
+                    "output_tokens": 1,
+                    "reasoning_tokens": 0,
+                    "cost_usd_micros": 1,
+                    "output_bytes": 1,
+                },
+                actor=WORKER,
+            )
+        self.service.commit_execution_proposal(
+            execution.lease,
+            packet_digest=execution.packet_digest,
+            sequence=2,
+            event_type="usage.reported",
+            payload={
+                "provider_call_id": "ordered-call",
+                "price_table_digest": "d" * 64,
+                "input_tokens": 1,
+                "output_tokens": 1,
+                "reasoning_tokens": 0,
+                "cost_usd_micros": 1,
+                "output_bytes": 1,
+            },
+            actor=WORKER,
+        )
+        terminal_key = "e" * 64
+        terminal = self.service.commit_execution_proposal(
+            execution.lease,
+            packet_digest=execution.packet_digest,
+            sequence=3,
+            event_type="run.completed",
+            payload={"summary": "complete"},
+            actor=WORKER,
+            idempotency_key=terminal_key,
+        )
+        replay = self.service.commit_execution_proposal(
+            execution.lease,
+            packet_digest=execution.packet_digest,
+            sequence=3,
+            event_type="run.completed",
+            payload={"summary": "complete"},
+            actor=WORKER,
+            idempotency_key=terminal_key,
+        )
+        self.assertEqual(replay.idempotency_key, terminal.idempotency_key)
+        import psycopg
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT idempotency_key,body FROM factory.execution_proposals WHERE run_id=%s AND producer_sequence=3",
+                (execution.lease.run_id,),
+            )
+            persisted_key, persisted_body = cursor.fetchone()
+            direct_facts = (
+                execution.lease.task_id,
+                execution.lease.run_id,
+                execution.lease.owner,
+                execution.lease.fence,
+                execution.lease.packet_digest,
+                execution.packet_digest,
+            )
+            cursor.execute(
+                "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,3,%s,'terminal',%s::jsonb)",
+                (*direct_facts, persisted_key, psycopg.types.json.Jsonb(persisted_body)),
+            )
+            self.assertTrue(cursor.fetchone()[0])
+            cursor.execute(
+                "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,3,%s,'terminal',%s::jsonb)",
+                (*direct_facts, "0" * 64, psycopg.types.json.Jsonb(persisted_body)),
+            )
+            self.assertFalse(cursor.fetchone()[0])
+            cursor.execute(
+                "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,2,%s,'terminal',%s::jsonb)",
+                (*direct_facts, persisted_key, psycopg.types.json.Jsonb(persisted_body)),
+            )
+            self.assertFalse(cursor.fetchone()[0])
+        with self.assertRaises(FenceError):
+            self.service.commit_execution_proposal(
+                execution.lease,
+                packet_digest=execution.packet_digest,
+                sequence=4,
+                event_type="note.proposed",
+                payload={"note_type": "finding", "body": "late", "evidence": []},
+                actor=WORKER,
+            )
+
+        self.service.observe_usage(
+            execution.lease,
+            provider_call_id="ordered-call",
+            price_table_digest="d" * 64,
+            cost_usd_micros=1,
+            token_units=2,
+            output_bytes=1,
+            actor=WORKER,
+        )
+        for stage in (ExecutionStage.RUNNING, ExecutionStage.COLLECTING):
+            self.service.advance_execution(
+                execution.lease,
+                packet_digest=execution.packet_digest,
+                stage=stage,
+                actor=WORKER,
+            )
+        finalizer = FactoryService(
+            self.store, snapshot_broker=TrustedPostgresTestSnapshotBroker()
+        )
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            finalize_future = pool.submit(
+                finalizer.finalize_execution,
+                execution.lease,
+                packet_digest=execution.packet_digest,
+                actor=WORKER,
+            )
+            late_future = pool.submit(
+                self.service.commit_execution_proposal,
+                execution.lease,
+                packet_digest=execution.packet_digest,
+                sequence=4,
+                event_type="note.proposed",
+                payload={"note_type": "finding", "body": "concurrent-late", "evidence": []},
+                actor=WORKER,
+            )
+            result = finalize_future.result(timeout=10)
+            with self.assertRaises(FenceError):
+                late_future.result(timeout=10)
+        self.assertEqual(
+            result.note_manifest_digest,
+            workspace_evidence_digest("notes", [note.idempotency_key]),
+        )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT producer_sequence,proposal_kind FROM factory.execution_proposals WHERE run_id=%s ORDER BY producer_sequence",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchall(), [(1, "note"), (2, "usage"), (3, "terminal")])
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s",
+                (bounded.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 2)
 
     def authority_payload(self, kind: str, source: str, suffix: int):
         import psycopg
@@ -403,7 +2111,7 @@ class PostgresFactoryTests(unittest.TestCase):
                 payload, table, key_column, identity = self.authority_payload(
                     kind, f"revoked-after-{kind}", offset
                 )
-                store = PausingStore(DATABASE_URL)
+                store = PausingStore(self.runtime_url)
                 service = FactoryService(store)
 
                 def intake_then_commit():
@@ -975,6 +2683,332 @@ class PostgresFactoryTests(unittest.TestCase):
             )
         )
 
+    def test_execution_recovery_is_fenced_idempotent_and_artifact_blind(self):
+        import psycopg
+
+        repository = "owner/m5-recovery"
+        task = self.submit(repository=repository, source="m5-recovery").task
+        packet = valid_packet()
+        packet["provider"]["capabilities"] = sorted(
+            {*packet["provider"]["capabilities"], "artifacts"}
+        )
+        selection = {
+            "provider": packet["provider"],
+            "capability_policy": packet["capability_policy"],
+            "plan": packet["plan"],
+            "workspace_handle": packet["workspace_handle"],
+            "prompt_template_digest": "7" * 64,
+            "role_definition_digest": "8" * 64,
+            "tool_policy_digest": "9" * 64,
+            "output_schema_digest": "a" * 64,
+        }
+        execution_service = FactoryService(
+            self.store, execution_registry=trusted_registry(selection),
+        )
+        execution = execution_service.claim_execution(
+            owner=WORKER.actor_id, role=RunRole.WRITER, repositories=(repository,),
+            lease_seconds=60, selection=selection, actor=WORKER, now=NOW,
+        )
+        workspace = FakeWorkspaceBroker()
+        handle = WorkspaceHandle(
+            execution.lease.task_id, execution.lease.run_id, execution.workspace_handle,
+        )
+        workspace.register(
+            handle,
+            WorkspacePolicy(("factory/src",), ("read", "write"), ("LANG",), ()),
+        )
+        attestation = TrustedPostgresTestArtifactBroker().attest_artifact(
+            ArtifactAttestationRequest.from_facts({
+                "task_id": execution.lease.task_id,
+                "run_id": execution.lease.run_id,
+                "repository_id": repository,
+                "packet_digest": execution.packet_digest,
+                "workspace_handle": execution.workspace_handle,
+                "producer_sequence": 1,
+                "fence": execution.lease.fence,
+                "author_role": "writer",
+                "artifact_class": "report",
+                "path": "factory/src/recovery-evidence.patch",
+                "sha256": "b" * 64,
+                "size_bytes": 12,
+                "media_type": "text/plain",
+            })
+        )
+        recorded = PostgresArtifactAttestationStore(
+            self.artifact_attestor_url,
+        ).record_artifact_attestation(attestation)
+        self.assertEqual(recorded, attestation)
+        self.assertEqual(self.store.execution_recovery_candidates(limit=100, cursor=None), ())
+        with psycopg.connect(DATABASE_URL) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE factory.capacity_allocations SET released_at=clock_timestamp() WHERE run_id=%s",
+                    (execution.lease.run_id,),
+                )
+                cursor.execute(
+                    "SELECT count(*) FROM factory.execution_recovery_candidates(100,NULL,NULL)"
+                )
+                self.assertEqual(cursor.fetchone()[0], 0)
+                cursor.execute(
+                    "UPDATE factory.capacity_allocations SET released_at=NULL WHERE run_id=%s",
+                    (execution.lease.run_id,),
+                )
+                cursor.execute(
+                    "UPDATE factory.runs SET released_at=clock_timestamp() WHERE run_id=%s",
+                    (execution.lease.run_id,),
+                )
+                cursor.execute(
+                    "SELECT count(*) FROM factory.execution_recovery_candidates(100,NULL,NULL)"
+                )
+                self.assertEqual(cursor.fetchone()[0], 0)
+                cursor.execute(
+                    "UPDATE factory.capacity_allocations SET released_at=clock_timestamp() WHERE run_id=%s",
+                    (execution.lease.run_id,),
+                )
+                cursor.execute(
+                    "SELECT count(*) FROM factory.execution_recovery_candidates(100,NULL,NULL)"
+                )
+                self.assertEqual(cursor.fetchone()[0], 1)
+            connection.rollback()
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+        self.assertEqual(self.service.reconcile(actor=OPERATOR, now=NOW).repaired, 1)
+        candidates = self.store.execution_recovery_candidates(limit=100, cursor=None)
+        self.assertEqual(len(candidates), 1)
+        candidate = candidates[0]
+        self.assertEqual(
+            (candidate.task_id, candidate.run_id, candidate.manifest_digest),
+            (task.task_id, execution.lease.run_id, execution.manifest_digest),
+        )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT to_jsonb(t),to_jsonb(r),to_jsonb(a),to_jsonb(at),
+                (SELECT count(*) FROM factory.execution_artifact_attestations),
+                (SELECT count(*) FROM factory.execution_proposals WHERE run_id=r.run_id),
+                (SELECT count(*) FROM factory.workspace_results WHERE run_id=r.run_id)
+                FROM factory.tasks t JOIN factory.runs r ON r.task_id=t.task_id
+                JOIN factory.capacity_allocations a ON a.run_id=r.run_id
+                JOIN factory.attempts at ON at.run_id=r.run_id
+                WHERE r.run_id=%s""",
+                (execution.lease.run_id,),
+            )
+            immutable_before = cursor.fetchone()
+            cursor.execute(
+                "SELECT to_jsonb(a) FROM factory.execution_artifact_attestations a WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            attestation_before = cursor.fetchone()[0]
+        self.store.record_execution_cleanup_failure(candidate)
+        self.store.record_execution_cleanup_failure(candidate)
+        result = ExecutionRecovery(self.store, workspace).reconcile(limit=100)
+        replay = ExecutionRecovery(self.store, workspace).reconcile(limit=100)
+        self.assertEqual(
+            (result.candidates, result.orphaned, result.cursor, replay.candidates),
+            (1, 1, candidate.cursor, 0),
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT to_jsonb(t),to_jsonb(r),to_jsonb(a),to_jsonb(at),
+                (SELECT count(*) FROM factory.execution_artifact_attestations),
+                (SELECT count(*) FROM factory.execution_proposals WHERE run_id=r.run_id),
+                (SELECT count(*) FROM factory.workspace_results WHERE run_id=r.run_id)
+                FROM factory.tasks t JOIN factory.runs r ON r.task_id=t.task_id
+                JOIN factory.capacity_allocations a ON a.run_id=r.run_id
+                JOIN factory.attempts at ON at.run_id=r.run_id
+                WHERE r.run_id=%s""",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone(), immutable_before)
+            cursor.execute(
+                "SELECT to_jsonb(a) FROM factory.execution_artifact_attestations a WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], attestation_before)
+            cursor.execute(
+                """SELECT m.stage,m.terminal_at IS NOT NULL,
+                count(e.stage_event_id),count(e.stage_event_id) FILTER (WHERE e.stage='orphaned')
+                FROM factory.execution_manifests m
+                JOIN factory.execution_stage_events e USING(manifest_digest)
+                WHERE m.run_id=%s GROUP BY m.stage,m.terminal_at""",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone(), ("orphaned", True, 2, 1))
+            cursor.execute(
+                "SELECT count(*),min(failure_code),max(failure_code) FROM factory.execution_recovery_cleanup_failures"
+            )
+            self.assertEqual(cursor.fetchone(), (1, "workspace_cleanup_failed", "workspace_cleanup_failed"))
+            cursor.execute(
+                """SELECT
+                (SELECT count(*) FROM factory.execution_recovery_cleanup_successes),
+                execution_claimed,execution_stage_transitions,execution_orphaned,
+                execution_workspace_released,execution_cleanup_failed
+                FROM factory.metric_counters WHERE singleton"""
+            )
+            self.assertEqual(cursor.fetchone(), (1, 1, 2, 1, 1, 1))
+        with self.assertRaises(FenceError):
+            self.service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest, sequence=1,
+                event_type="note.proposed",
+                payload={"note_type": "finding", "body": "late", "evidence": []},
+                actor=WORKER,
+            )
+        replacement = execution_service.claim_execution(
+            owner=WORKER.actor_id, role=RunRole.WRITER, repositories=(repository,),
+            lease_seconds=60, selection=selection, actor=WORKER, now=NOW,
+        )
+        self.assertGreater(replacement.lease.fence, execution.lease.fence)
+
+    def test_execution_recovery_capabilities_and_metrics_are_fixed(self):
+        import psycopg
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT
+                has_function_privilege('factory_runtime','factory.execution_recovery_candidates(integer,timestamptz,uuid)','EXECUTE'),
+                has_function_privilege('factory_runtime','factory.execution_orphan_terminalize(uuid,char)','EXECUTE'),
+                has_function_privilege('factory_runtime','factory.execution_recovery_cleanup_failed(uuid,char)','EXECUTE'),
+                has_function_privilege('factory_runtime','factory.execution_recovery_cleanup_succeeded(uuid,char)','EXECUTE'),
+                has_function_privilege('public','factory.execution_orphan_terminalize(uuid,char)','EXECUTE'),
+                has_function_privilege('factory_artifact_attestor','factory.execution_orphan_terminalize(uuid,char)','EXECUTE'),
+                has_table_privilege('factory_runtime','factory.execution_recovery_cleanup_failures','SELECT'),
+                has_table_privilege('factory_runtime','factory.execution_manifests','UPDATE')"""
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                (True, True, True, True, False, False, False, False),
+            )
+            cursor.execute(
+                "SELECT lower(pg_get_functiondef('factory.execution_orphan_terminalize(uuid,char)'::regprocedure))"
+            )
+            terminalizer = cursor.fetchone()[0]
+            cursor.execute(
+                """SELECT string_agg(lower(pg_get_functiondef(p.oid)),E'\\n' ORDER BY p.proname)
+                FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+                WHERE n.nspname='factory' AND p.proname IN (
+                  'execution_recovery_candidates','execution_orphan_terminalize',
+                  'execution_recovery_cleanup_failed','execution_recovery_cleanup_succeeded')"""
+            )
+            all_recovery_functions = cursor.fetchone()[0]
+            self.assertNotIn("execution_artifact_attestations", all_recovery_functions)
+        for forbidden in (
+            "execution_proposals", "workspace_results", "execution_artifact_attestations",
+            "update factory.tasks", "update factory.runs", "update factory.attempts",
+            "update factory.capacity_allocations",
+        ):
+            self.assertNotIn(forbidden, terminalizer)
+        metrics = self.store.metrics()
+        self.assertEqual(
+            tuple(metrics),
+            (
+                "factory_intake_and_rejection_outcomes_total",
+                "factory_lease_reclaim_and_fence_rejection_total",
+                "factory_capacity_budget_kill_and_reconcile_outcomes_total",
+                "factory_execution_claim_and_stage_outcomes_total",
+                "factory_execution_protocol_and_proposal_outcomes_total",
+                "factory_execution_orphan_and_cleanup_outcomes_total",
+            ),
+        )
+        self.assertEqual(
+            set(metrics["factory_execution_claim_and_stage_outcomes_total"]),
+            {"claimed", "stage_transitions"},
+        )
+        self.assertEqual(
+            set(metrics["factory_execution_protocol_and_proposal_outcomes_total"]),
+            {"note", "artifact", "usage", "terminal"},
+        )
+        self.assertEqual(
+            set(metrics["factory_execution_orphan_and_cleanup_outcomes_total"]),
+            {"orphaned", "workspace_released", "cleanup_failed"},
+        )
+
+    def test_execution_recovery_keysets_and_terminalizes_concurrently_once(self):
+        import psycopg
+
+        def released_candidate(label):
+            repository = f"owner/{label}"
+            task = self.submit(repository=repository, source=label).task
+            packet = valid_packet()
+            selection = {
+                "provider": packet["provider"],
+                "capability_policy": packet["capability_policy"],
+                "plan": packet["plan"],
+                "workspace_handle": packet["workspace_handle"],
+                "prompt_template_digest": "7" * 64,
+                "role_definition_digest": "8" * 64,
+                "tool_policy_digest": "9" * 64,
+                "output_schema_digest": "a" * 64,
+            }
+            execution = FactoryService(
+                self.store, execution_registry=trusted_registry(selection),
+            ).claim_execution(
+                owner=WORKER.actor_id, role=RunRole.WRITER, repositories=(repository,),
+                lease_seconds=60, selection=selection, actor=WORKER, now=NOW,
+            )
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=%s",
+                    (execution.lease.run_id,),
+                )
+            self.assertEqual(self.service.reconcile(actor=OPERATOR, now=NOW).repaired, 1)
+            return execution
+
+        first = released_candidate("m5-keyset-first")
+        second = released_candidate("m5-keyset-second")
+        all_candidates = self.store.execution_recovery_candidates(limit=100, cursor=None)
+        self.assertEqual(
+            {item.run_id for item in all_candidates},
+            {first.lease.run_id, second.lease.run_id},
+        )
+        self.assertEqual(
+            tuple(item.cursor for item in all_candidates),
+            tuple(sorted(item.cursor for item in all_candidates)),
+        )
+        page_one = self.store.execution_recovery_candidates(limit=1, cursor=None)
+        page_two = self.store.execution_recovery_candidates(limit=1, cursor=page_one[0].cursor)
+        self.assertEqual(page_one + page_two, all_candidates)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute("SET LOCAL enable_seqscan=off")
+            cursor.execute(
+                """EXPLAIN (FORMAT JSON) SELECT m.task_id,m.run_id,m.manifest_digest,
+                m.workspace_handle,m.updated_at FROM factory.execution_manifests m
+                JOIN factory.runs r ON r.run_id=m.run_id AND r.task_id=m.task_id
+                JOIN factory.capacity_allocations a ON a.run_id=m.run_id AND a.task_id=m.task_id
+                WHERE m.terminal_at IS NULL AND r.released_at IS NOT NULL
+                  AND a.released_at IS NOT NULL ORDER BY m.updated_at,m.run_id LIMIT 100"""
+            )
+            self.assertIn("execution_manifests_recovery", str(cursor.fetchone()[0]))
+
+        first_candidate, second_candidate = all_candidates
+        self.store.record_execution_cleanup_success(first_candidate)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            outcomes = sorted(pool.map(
+                lambda _index: self.store.terminalize_execution_orphan(first_candidate),
+                range(2),
+            ))
+        self.assertEqual(outcomes, ["already_terminal", "orphaned"])
+        # A terminalizer racing ahead cannot erase the independently observed cleanup.
+        self.assertEqual(
+            self.store.terminalize_execution_orphan(second_candidate), "orphaned",
+        )
+        self.store.record_execution_cleanup_success(second_candidate)
+        self.store.record_execution_cleanup_success(second_candidate)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT
+                (SELECT count(*) FROM factory.execution_stage_events e
+                  JOIN factory.execution_manifests m USING(manifest_digest)
+                  WHERE m.run_id=%s AND e.stage='orphaned'),
+                (SELECT count(*) FROM factory.execution_recovery_cleanup_successes),
+                (SELECT execution_orphaned FROM factory.metric_counters WHERE singleton),
+                (SELECT execution_workspace_released FROM factory.metric_counters WHERE singleton)""",
+                (first_candidate.run_id,),
+            )
+            self.assertEqual(cursor.fetchone(), (1, 2, 2, 2))
+
     def test_release_metrics_inventory_tracks_durable_operations_and_rejections(self):
         import psycopg
         from fastapi.testclient import TestClient
@@ -1039,11 +3073,26 @@ class PostgresFactoryTests(unittest.TestCase):
                 "factory_intake_and_rejection_outcomes_total",
                 "factory_lease_reclaim_and_fence_rejection_total",
                 "factory_capacity_budget_kill_and_reconcile_outcomes_total",
+                "factory_execution_claim_and_stage_outcomes_total",
+                "factory_execution_protocol_and_proposal_outcomes_total",
+                "factory_execution_orphan_and_cleanup_outcomes_total",
             },
         )
         intake = metrics["factory_intake_and_rejection_outcomes_total"]
         leases = metrics["factory_lease_reclaim_and_fence_rejection_total"]
         operations = metrics["factory_capacity_budget_kill_and_reconcile_outcomes_total"]
+        self.assertEqual(
+            set(metrics["factory_execution_claim_and_stage_outcomes_total"]),
+            {"claimed", "stage_transitions"},
+        )
+        self.assertEqual(
+            set(metrics["factory_execution_protocol_and_proposal_outcomes_total"]),
+            {"note", "artifact", "usage", "terminal"},
+        )
+        self.assertEqual(
+            set(metrics["factory_execution_orphan_and_cleanup_outcomes_total"]),
+            {"orphaned", "workspace_released", "cleanup_failed"},
+        )
         self.assertEqual(set(intake), {"accepted", "superseded", "queued", "retry", "dead", "transition_events"})
         self.assertEqual(set(leases), {"live_leases", "reclaimed", "fence_rejected"})
         self.assertEqual(
@@ -1184,7 +3233,7 @@ class PostgresFactoryTests(unittest.TestCase):
             with ThreadPoolExecutor(max_workers=1) as pool:
                 future = pool.submit(self.store.metrics)
                 self.assertTrue(observed.wait(2), statements)
-                other = FactoryService(PostgresFactoryStore(DATABASE_URL))
+                other = FactoryService(PostgresFactoryStore(self.runtime_url))
                 other.release(grant, outcome=FailureClass.WORKER_LOST, actor=WORKER, now=NOW)
                 proceed.set()
                 metrics = future.result(timeout=2)
@@ -1583,7 +3632,12 @@ class PostgresFactoryTests(unittest.TestCase):
                 )
 
             applied = PostgresMigrator(upgrade_url).apply()
-            upgraded_store = PostgresFactoryStore(upgrade_url)
+            from psycopg.conninfo import conninfo_to_dict, make_conninfo
+            upgraded_runtime_url = make_conninfo(**{
+                **conninfo_to_dict(upgrade_url), "user": self.runtime_login,
+                "password": self.runtime_password,
+            })
+            upgraded_store = PostgresFactoryStore(upgraded_runtime_url)
             upgraded_service = FactoryService(upgraded_store)
             readiness = upgraded_store.readiness()
             self.assertEqual(
@@ -1885,22 +3939,136 @@ class PostgresFactoryTests(unittest.TestCase):
 
     def test_shipped_local_bootstrap_provisions_effective_runtime_login(self):
         import psycopg
-        from adaptive_factory.admin import bootstrap_local
+        from adaptive_factory.admin import BootstrapError, bootstrap_local, provision_runtime_login
 
         login = "factory_service_test"
+        attestor_login = "factory_artifact_service_test"
+        unsafe_login = "factory_unsafe_dual_test"
+        mismatch_login = "factory_mismatch_test"
+        from psycopg import sql
+
+        def cleanup_bootstrap_roles():
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                for role in (login, attestor_login, unsafe_login, mismatch_login):
+                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(role)))
+
+        self.addCleanup(cleanup_bootstrap_roles)
         password = "-".join(("local", "runtime", "bootstrap", "test"))
+        attestor_password = "-".join(("local", "artifact", "attestor", "test"))
         from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
         runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
-        result = bootstrap_local(DATABASE_URL, login, password, runtime_url)
+        attestor_url = make_conninfo(**{
+            **conninfo_to_dict(DATABASE_URL), "user": attestor_login,
+            "password": attestor_password,
+        })
+        with self.assertRaisesRegex(BootstrapError, "runtime readiness validation failed"):
+            bootstrap_local(
+                DATABASE_URL, mismatch_login, "local-runtime-mismatch-test",
+                self.runtime_url,
+            )
+        result = bootstrap_local(
+            DATABASE_URL, login, password, runtime_url,
+            attestor_login, attestor_password, attestor_url,
+        )
         self.assertEqual(result["database_role"], "factory_runtime")
+        self.assertEqual(result["artifact_attestor_database_role"], "factory_artifact_attestor")
         self.assertEqual(result["schema_version"], 13)
         with psycopg.connect(runtime_url) as connection, connection.cursor() as cursor:
             cursor.execute("SET ROLE factory_runtime")
             cursor.execute("SELECT session_user,current_user")
             self.assertEqual(cursor.fetchone(), (login, "factory_runtime"))
-        with psycopg.connect(DATABASE_URL) as connection:
-            connection.execute("DROP ROLE IF EXISTS " + login)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "CREATE ROLE factory_unsafe_dual_test LOGIN NOINHERIT PASSWORD 'local-unsafe-dual-test'"
+            )
+            cursor.execute("GRANT factory_artifact_attestor TO factory_unsafe_dual_test")
+        with self.assertRaisesRegex(BootstrapError, "unsafe role membership"):
+            provision_runtime_login(
+                DATABASE_URL, unsafe_login, "local-unsafe-dual-test"
+            )
+    def test_store_and_migration_reject_owner_or_transitively_privileged_capability_roles(self):
+        import psycopg
+        from psycopg import sql
+
+        with self.assertRaisesRegex(StoreError, "runtime login is not least privilege"):
+            PostgresFactoryStore(DATABASE_URL).readiness()
+        with self.assertRaisesRegex(StoreError, "artifact attestor login is not least privilege"):
+            PostgresArtifactAttestationStore(DATABASE_URL).readiness()
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT current_database()")
+            database_name = cursor.fetchone()[0]
+            cursor.execute(sql.SQL("GRANT CONNECT ON DATABASE {} TO {}").format(
+                sql.Identifier(database_name), sql.Identifier(self.runtime_login),
+            ))
+        self.assertEqual(self.store.readiness()["status"], "ready")
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(sql.SQL(
+                "GRANT CONNECT ON DATABASE {} TO {} WITH GRANT OPTION"
+            ).format(sql.Identifier(database_name), sql.Identifier(self.runtime_login)))
+        try:
+            with self.assertRaisesRegex(StoreError, "direct database authority"):
+                self.store.readiness()
+        finally:
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(sql.SQL(
+                    "REVOKE GRANT OPTION FOR CONNECT ON DATABASE {} FROM {}"
+                ).format(sql.Identifier(database_name), sql.Identifier(self.runtime_login)))
+        self.assertEqual(self.store.readiness()["status"], "ready")
+
+        hostile_runtime = PostgresFactoryStore(psycopg.conninfo.make_conninfo(
+            self.runtime_url, options="-csearch_path=public,pg_catalog",
+        ))
+        with hostile_runtime._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT current_setting('search_path')")
+            self.assertEqual(cursor.fetchone()[0], "pg_catalog, factory")
+        hostile_attestor = PostgresArtifactAttestationStore(psycopg.conninfo.make_conninfo(
+            self.artifact_attestor_url, options="-csearch_path=public,pg_catalog",
+        ))
+        with hostile_attestor._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT current_setting('search_path'),current_setting('lock_timeout'),"
+                "current_setting('statement_timeout')"
+            )
+            self.assertEqual(cursor.fetchone(), ("pg_catalog, factory", "5s", "5s"))
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(sql.SQL("GRANT SELECT (task_id) ON factory.tasks TO {}").format(
+                sql.Identifier(self.runtime_login),
+            ))
+        try:
+            with self.assertRaisesRegex(StoreError, "direct database authority"):
+                self.store.readiness()
+        finally:
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(sql.SQL("REVOKE SELECT (task_id) ON factory.tasks FROM {}").format(
+                    sql.Identifier(self.runtime_login),
+                ))
+                cursor.execute(sql.SQL("REVOKE CONNECT ON DATABASE {} FROM {}").format(
+                    sql.Identifier(database_name), sql.Identifier(self.runtime_login),
+                ))
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute("GRANT pg_read_all_data TO factory_runtime")
+        try:
+            with self.assertRaisesRegex(StoreError, "runtime capability role is not isolated"):
+                self.store.readiness()
+        finally:
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute("REVOKE pg_read_all_data FROM factory_runtime")
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute("GRANT pg_read_all_data TO factory_artifact_attestor")
+        try:
+            with self.assertRaisesRegex(StoreError, "artifact attestor capability role is not isolated"):
+                PostgresArtifactAttestationStore(self.artifact_attestor_url).readiness()
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                with self.assertRaisesRegex(Exception, "unsafe capability role"):
+                    cursor.execute(discover_migrations()[-1].sql)
+        finally:
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute("REVOKE pg_read_all_data FROM factory_artifact_attestor")
 
     def test_roles_are_isolated_and_audit_is_append_only_and_verifiable(self):
         task = self.submit(source="audit-role-check").task
@@ -1912,11 +4080,32 @@ class PostgresFactoryTests(unittest.TestCase):
             cursor.execute("CREATE SCHEMA IF NOT EXISTS trust_ci; REVOKE ALL ON SCHEMA trust_ci FROM PUBLIC")
             cursor.execute(
                 "SELECT rolname,rolcanlogin,rolsuper,rolcreaterole FROM pg_roles WHERE rolname=ANY(%s) ORDER BY rolname",
-                (["factory_audit_reader", "factory_migrator", "factory_runtime"],),
+                (["factory_artifact_attestor", "factory_audit_reader", "factory_migrator", "factory_runtime"],),
             )
             roles = cursor.fetchall()
-            self.assertEqual([row[0] for row in roles], ["factory_audit_reader", "factory_migrator", "factory_runtime"])
+            self.assertEqual(
+                [row[0] for row in roles],
+                ["factory_artifact_attestor", "factory_audit_reader", "factory_migrator", "factory_runtime"],
+            )
             self.assertTrue(all(row[1:] == (False, False, False) for row in roles))
+            cursor.execute(
+                """SELECT
+                has_function_privilege('factory_runtime','factory.execution_record_artifact_attestation(jsonb)','EXECUTE'),
+                has_function_privilege('factory_artifact_attestor','factory.execution_record_artifact_attestation(jsonb)','EXECUTE'),
+                has_table_privilege('factory_runtime','factory.execution_artifact_attestations','SELECT'),
+                has_table_privilege('factory_artifact_attestor','factory.execution_artifact_attestations','SELECT'),
+                has_table_privilege('factory_runtime','factory.execution_artifact_attestations','UPDATE'),
+                has_table_privilege('factory_artifact_attestor','factory.execution_artifact_attestations','UPDATE'),
+                has_function_privilege('factory_artifact_attestor',
+                  'factory.execution_propose(uuid,uuid,text,bigint,character,character,bigint,character,text,jsonb)',
+                  'EXECUTE'),
+                pg_has_role('factory_runtime','factory_artifact_attestor','MEMBER'),
+                pg_has_role('factory_artifact_attestor','factory_runtime','MEMBER')"""
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                (False, True, False, False, False, False, False, False, False),
+            )
             cursor.execute(
                 "SELECT has_schema_privilege('factory_runtime','trust_ci','USAGE'), has_table_privilege('factory_runtime','factory.audit_log','UPDATE'), has_table_privilege('factory_runtime','factory.audit_log','DELETE')"
             )

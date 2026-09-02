@@ -333,6 +333,34 @@ Encode 20/10/1 identities and ceilings as schema constraints, revoke raw runtime
 
 Treat an unreleased canonical allocation as part of the worker fence and deny runtime direct allocation updates. This keeps heartbeat, release and accounting fail-closed if privileged out-of-band drift hides an allocation, without implicitly repairing counters.
 
+## 2026-09-02 — Derive factual execution disposition under the M4 release locks
+
+Derive the M4 target from the persisted terminal proposal, attempt, accounting, reservation, and event-budget facts only after taking capacity then task/run locks, and persist the WorkspaceResult in that transaction. This prevents caller-selected semantic mismatch while retaining M4 retry/accounting parity and deterministic cancellation ordering.
+
+## 2026-09-02 — Replay canonical proposals through a narrow capability
+
+Keep direct table reads revoked and expose only one fixed-search-path exact task/run/proposal-digest envelope function for replay. Recompute and cross-check the typed proposal key in the store so post-terminal replay needs neither a live lease nor renewed workspace attestation while corrupted or redirected evidence fails closed.
+
+## 2026-09-02 — Separate workspace observation from durable artifact authority
+
+Require a trusted workspace observer to produce an authority-bound artifact envelope, then let a distinct least-privilege PostgreSQL capability record and atomically consume that exact envelope. Keeping both capabilities absent or separate by default prevents a runtime worker, owner DSN, or recorder-only deployment from blessing caller-asserted file facts.
+
+## 2026-09-02 — Replay immutable artifact attestations before fresh-channel gates
+
+Return an exact existing attestation without creating or mutating evidence, even after the proposal channel advances or closes, while applying terminal, count, and sequence gates to fresh inserts only. Atomic `execution_propose` consumption still binds the attestation to the exact unconsumed sequence, and service command replay bypasses observer and recorder calls entirely.
+
+## 2026-09-02 — Reserve artifact proposal sequences under read committed locks
+
+Serialize attestation recording and proposal persistence through the same task/run/manifest locks, require READ COMMITTED inside both capability functions, and reserve an unconsumed attestation's sequence against every non-artifact proposal. A crash after the attestation commits can leave one bounded immutable reservation; retaining or reconciling that orphan is recovery-policy scope, not evidence that the race was eliminated.
+
+## 2026-09-02 — Recover released execution manifests without inventing provider facts
+
+Scan only nonterminal manifests whose M4 run and capacity allocation are both durably released, release the fake workspace first, then append one control-plane `orphaned` stage event without creating a proposal or WorkspaceResult. Keep cleanup success and failure in idempotent fixed-code ledgers so retries remain observable without storing raw exceptions or changing factual execution evidence.
+
 ## 2026-09-01 — Lock trusted authority inside intake without granting row mutation
 
 Use fixed-search-path security-definer predicates that take a row lock on the exact repository/policy/action subject, and invoke them after intake identity serialization in the insertion transaction. This prevents revocation TOCTOU while retaining an EXECUTE-only runtime boundary.
+
+## 2026-09-02 — Inventory semantic schemas without pretending comparator support
+
+Register all five M6 schemas and their owner while retaining fail-closed `unsupported_schema_keyword` results for `$defs` and `format`. This preserves architecture drift and ownership evidence without weakening compatibility checks or claiming reference/format semantics the comparator does not implement.

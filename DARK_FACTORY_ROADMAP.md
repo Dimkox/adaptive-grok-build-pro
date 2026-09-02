@@ -113,9 +113,9 @@ At the roadmap baseline, the public branch response showed `main` without requir
 | Semantic validator/adjudicator | Provisional M6 source work | Route `82aac86a3bf9` on `milestone/m6-semantic-validation-provisional-m4`; restack after accepted M5 and retain independent verdict authority |
 | Controlled learning | Missing | Replace automatic Markdown promotion with reviewed rule lifecycle |
 | Debt/slop ledger | Missing | Track deliberate debt, owner, cost, trigger, and deadline |
-| Durable factory task queue | M4 local source candidate | Product anchor `94fc5ad`; close current verifier repair, reviews and dependency-ordered external gates before any completion claim |
-| Background implementation environment | Provisional M5 source work, host-blocked | Route `37b05f579320` on `milestone/m5-isolated-execution-provisional-m4`; suitable rootless-isolation host remains a blocker and the branch must restack after accepted M4 |
-| Immutable implementation run manifest | Missing | Record model, prompt, tools, policy, costs, and provenance |
+| Durable factory task queue | Separate M4 local candidate | `01a10f5` exists locally but is not this M5 branch's parent, not pushed and not merged; dependency-ordered external gates remain open |
+| Background implementation environment | Provisional M5 source work, host-blocked | Route `37b05f579320` on `milestone/m5-isolated-execution-provisional-m4`; Task 5 checkpoint `161199b` requires restack, rootless isolation and a trusted live Git snapshot broker |
+| Immutable implementation run manifest | Provisional M5 source | Exact packet/profile/manifest/proposal/result digest contracts exist; live trusted result-head evidence remains blocked |
 | WIP, cost, and PR flood controls | Missing | Add hard per-repository and global limits |
 | Automated PR lifecycle | Missing | Create branch, commit, PR, evidence summary, and supersession logic |
 | Shadow-mode metrics | Missing | Measure quality and human disagreement before autonomy |
@@ -205,7 +205,7 @@ M1 + M2 + M3
 
 Milestones M1, M2, and M3 may be developed in parallel only after M0 has a live proof or an explicitly documented bootstrap exception approved by the user. M4 must consume their stable interfaces rather than inventing replacements.
 
-Current execution is parallel only for reversible source development: M4 repair follows product anchor `94fc5ad`; M5 branch `milestone/m5-isolated-execution-provisional-m4` / route `37b05f579320` and M6 branch `milestone/m6-semantic-validation-provisional-m4` / route `82aac86a3bf9` are provisional descendants. Acceptance, PR delivery, merge and Trust CI remain strictly dependency ordered M4 → M5 → M6, and each downstream branch must restack onto its accepted predecessor. M5 additionally remains blocked on a suitable rootless-isolation host. The hard deadline is **2026-09-08 00:00 UTC+3**; no M4/M5/M6 completion or external action is claimed merely from source presence or calendar pressure. See the [root current state](README.md), [M4 package](factory/README.md) and [active schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
+Current execution is parallel only for reversible source development. Separate local M4 candidate `01a10f5` is not the parent of the M5 branch, not pushed and not merged; M5 still descends from `460a8a01a6394cac710b4e3f9eea3d94d4beef89`, with `94fc5ad878e6b15df6418303caada49a3b93bf4c` retained as historical lineage. M5 route `37b05f579320` and M6 route `82aac86a3bf9` remain provisional; M6 paused at `5c5c371` still targets old M5 bridge `61db79f`. Acceptance, PR delivery, merge and Trust CI remain dependency ordered M4 → M5 → M6, and each downstream branch must restack onto its accepted predecessor. M5 remains `BLOCKED` on a suitable rootless-isolation host and trusted live Git snapshot broker. The hard deadline is **2026-09-08 00:00 UTC+3**; no completion or external authority follows from source presence or calendar pressure. See the [root current state](README.md), [factory source map](factory/README.md), [M5 design](docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md), [plan](docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md), [package](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md), [release](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/release.md), [rollback](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/rollback.md) and [evidence](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/evidence/README.md).
 
 ## 7.1 Exact milestone handoff contracts
 
@@ -658,7 +658,13 @@ updated_at
 
 # M5 — Isolated Background Execution Plane
 
-Current status: provisional source branch `milestone/m5-isolated-execution-provisional-m4`, route `37b05f579320`, starts from M4 anchor `94fc5ad` and must restack after M4 acceptance. A suitable rootless-isolation host is a real exit-gate blocker; no M5 completion, push, external check or merge is claimed.
+Current status: provisional source branch `milestone/m5-isolated-execution-provisional-m4`, route `37b05f579320`, still descends from exact M4 review base `460a8a01a6394cac710b4e3f9eea3d94d4beef89` and historical anchor `94fc5ad878e6b15df6418303caada49a3b93bf4c`. Separate local M4 candidate `01a10f5` is not its parent, not pushed and not merged. Task 5 source checkpoint `161199bb163e0ba84ac1b32010be87f113df5e86` adds bounded orphan recovery, six fixed metrics and four inert systemd topology files; rootless OS isolation and a trusted live Git snapshot broker remain `BLOCKED`, so no M5 completion, push, external check or merge is claimed.
+
+Navigation: [root current state](README.md) ↔ [factory source map](factory/README.md) ↔ [M5 design](docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md) ↔ [plan](docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md) ↔ [active package](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md) / [release](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/release.md) / [rollback](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/rollback.md) / [evidence](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/evidence/README.md).
+
+The current M5 factual boundary is four closed execution schemas plus a closed 20-operation OpenAPI surface. M4 state/lease/fence/allocation/budget facts bind the exact `TaskPacketV1`, provider profile and `RunManifestV1`; canonical proposals and a trusted workspace snapshot bind `WorkspaceResultV1`. Recovery appends only one control-plane `orphaned` stage/event after fake-workspace cleanup—no terminal proposal and no WorkspaceResult fabrication.
+
+M6 paused at `5c5c371` is `BLOCKED` pending dependency-ordered restack: it consumes old M5 bridge `61db79f`, lacks current `m4_status`, `failure_class`, `failure_reason` and exact task/run/fence/packet/result linkage. The future semantic subject must bind immutable M5 packet/manifest/proposal/snapshot/result digests; provider facts are not authority, fake brokers are not authority and no component may self-approve. That result may later feed M6 verdict → M7 shadow bundle → M8 profile after at least 30 human-accepted outcomes with demotion and an L2 ceiling → M9 preview/staging/canary/recovery; any SHA/digest change invalidates downstream evidence and production remains human-owned.
 
 ## Objective
 
@@ -733,7 +739,7 @@ output contract
 
 # M6 — Independent Semantic Validation, Meta-Review, and Bounded Repair
 
-Current status: provisional source branch `milestone/m6-semantic-validation-provisional-m4`, route `82aac86a3bf9`, starts from M4 anchor `94fc5ad` for parallel development only. It must restack first onto accepted M4/M5 in dependency order and has no completion, push, external check or merge claim.
+Current status: M6 paused at `5c5c371` on provisional route `82aac86a3bf9`. It remains based on old M5 bridge `61db79f`, has no factual exact task/run/fence/packet/result linkage, and must restack first onto accepted M4/M5 in dependency order; no compatibility, completion, push, external check or merge is claimed.
 
 ## Objective
 

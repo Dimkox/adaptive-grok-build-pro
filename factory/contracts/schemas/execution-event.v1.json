@@ -12,6 +12,38 @@
     "packet_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "sequence": {"type": "integer", "minimum": 1, "maximum": 100000},
     "event_type": {"enum": ["adapter.ready", "run.started", "stage.reported", "note.proposed", "artifact.proposed", "usage.reported", "run.completed", "run.failed", "run.needs_human"]},
-    "payload": {"type": "object"}
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "provider_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "adapter_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "adapter_version": {"type": "string", "minLength": 1, "maxLength": 128},
+        "native_version": {"type": "string", "minLength": 1, "maxLength": 128},
+        "model_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "capabilities": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 128}, "maxItems": 32, "uniqueItems": true},
+        "stage": {"type": "string", "minLength": 1, "maxLength": 128},
+        "status": {"type": "string", "minLength": 1, "maxLength": 128},
+        "note_type": {"enum": ["finding", "conclusion", "decision.record"]},
+        "body": {"type": "string", "minLength": 1, "maxLength": 65536},
+        "evidence": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 1024}, "maxItems": 128, "uniqueItems": true},
+        "artifact_class": {"type": "string", "minLength": 1, "maxLength": 128},
+        "path": {"type": "string", "minLength": 1, "maxLength": 1024},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "size_bytes": {"type": "integer", "minimum": 0, "maximum": 10000000},
+        "media_type": {"type": "string", "minLength": 1, "maxLength": 128},
+        "provider_call_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "price_table_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "input_tokens": {"type": "integer", "minimum": 0, "maximum": 2000000},
+        "output_tokens": {"type": "integer", "minimum": 0, "maximum": 2000000},
+        "reasoning_tokens": {"type": "integer", "minimum": 0, "maximum": 2000000},
+        "cost_usd_micros": {"type": "integer", "minimum": 0, "maximum": 25000000},
+        "output_bytes": {"type": "integer", "minimum": 0, "maximum": 10000000},
+        "summary": {"type": "string", "minLength": 1, "maxLength": 65536},
+        "failure_class": {"type": "string", "minLength": 1, "maxLength": 128},
+        "diagnostic": {"type": "string", "minLength": 1, "maxLength": 65536},
+        "reason": {"type": "string", "minLength": 1, "maxLength": 65536}
+      }
+    }
   }
 }

@@ -13,6 +13,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class StructureTests(unittest.TestCase):
+    @staticmethod
+    def _resolve_openapi_schema(openapi: dict, schema: dict) -> dict:
+        reference = schema.get("$ref") if isinstance(schema, dict) else None
+        if reference is None:
+            return schema
+        prefix = "#/components/schemas/"
+        if not isinstance(reference, str) or not reference.startswith(prefix):
+            raise AssertionError(f"unsafe OpenAPI schema reference: {reference!r}")
+        return openapi["components"]["schemas"][reference[len(prefix):]]
+
     def test_m3_route_binds_exact_reviewed_m2_fingerprint(self) -> None:
         route_path = (
             ROOT
@@ -260,7 +270,151 @@ class StructureTests(unittest.TestCase):
             "2026-09-08T00:00:00+03:00",
         ):
             self.assertIn(marker, combined, marker)
+    def test_m5_execution_contracts_openapi_and_current_docs_are_connected(self) -> None:
+        schema_dir = ROOT / "factory/contracts/schemas"
+        expected_schema_paths = {
+            "factory/contracts/schemas/execution-event.v1.json",
+            "factory/contracts/schemas/execution-invocation.v1.json",
+            "factory/contracts/schemas/task-packet.v1.json",
+            "factory/contracts/schemas/workspace-result.v1.json",
+        }
+        self.assertEqual(
+            {
+                path.relative_to(ROOT).as_posix()
+                for path in schema_dir.glob("*.json")
+            },
+            expected_schema_paths,
+        )
 
+        def assert_closed_objects(value, label: str) -> None:
+            if isinstance(value, dict):
+                if value.get("type") == "object":
+                    self.assertIs(value.get("additionalProperties"), False, label)
+                    self.assertTrue(
+                        set(value.get("required", []))
+                        <= set(value.get("properties", {})),
+                        label,
+                    )
+                for key, child in value.items():
+                    assert_closed_objects(child, f"{label}/{key}")
+            elif isinstance(value, list):
+                for index, child in enumerate(value):
+                    assert_closed_objects(child, f"{label}/{index}")
+
+        for relative in sorted(expected_schema_paths):
+            document = json.loads((ROOT / relative).read_text(encoding="utf-8"))
+            assert_closed_objects(document, relative)
+
+        openapi_path = ROOT / "factory/contracts/openapi/factory-control.v1.json"
+        openapi = json.loads(openapi_path.read_text(encoding="utf-8"))
+        expected_operations = {
+            ("GET", "/health/live", "healthLive"),
+            ("GET", "/health/ready", "healthReady"),
+            ("GET", "/metrics", "readMetrics"),
+            ("GET", "/v1/tasks", "listTasks"),
+            ("POST", "/v1/tasks", "submitTask"),
+            ("GET", "/v1/tasks/{task_id}", "getTask"),
+            ("POST", "/v1/tasks/{task_id}/cancel", "cancelTask"),
+            ("POST", "/v1/claims", "claimLegacyTask"),
+            ("POST", "/v1/execution/claims", "claimExecution"),
+            ("POST", "/v1/execution/stages", "advanceExecution"),
+            ("POST", "/v1/execution/notes", "proposeExecutionNote"),
+            ("POST", "/v1/execution/artifacts", "proposeExecutionArtifact"),
+            ("POST", "/v1/execution/usage", "reportExecutionUsage"),
+            ("POST", "/v1/execution/terminal", "proposeExecutionTerminal"),
+            ("POST", "/v1/heartbeats", "heartbeatLease"),
+            ("POST", "/v1/proposals", "releaseProposal"),
+            ("POST", "/v1/budget-reservations", "reserveBudget"),
+            ("POST", "/v1/usage-observations", "observeUsage"),
+            ("POST", "/v1/kill-switches", "setKillSwitch"),
+            ("POST", "/v1/reconcile", "reconcileFactory"),
+        }
+        operations = {
+            (method.upper(), path, operation.get("operationId"))
+            for path, path_item in openapi["paths"].items()
+            for method, operation in path_item.items()
+            if method in {"get", "post", "put", "patch", "delete"}
+        }
+        self.assertEqual(operations, expected_operations)
+        operation_ids = {operation_id for _, _, operation_id in operations}
+        self.assertEqual(len(operation_ids), len(operations))
+
+        for method, path, operation_id in sorted(operations):
+            operation = openapi["paths"][path][method.lower()]
+            parameters = {
+                (parameter["in"], parameter["name"]): parameter
+                for parameter in operation.get("parameters", [])
+            }
+            if path not in {"/health/live", "/health/ready"}:
+                self.assertTrue(
+                    parameters[("header", "Authorization")]["required"],
+                    operation_id,
+                )
+            if method == "POST":
+                for name in ("Idempotency-Key", "X-Correlation-ID"):
+                    self.assertTrue(
+                        parameters[("header", name)]["required"], operation_id
+                    )
+                body = operation.get("requestBody", {})
+                self.assertTrue(body.get("required"), operation_id)
+                request_schema = body["content"]["application/json"]["schema"]
+                request_schema = self._resolve_openapi_schema(openapi, request_schema)
+                self.assertEqual(request_schema.get("type"), "object", operation_id)
+                self.assertIs(request_schema.get("additionalProperties"), False, operation_id)
+            for status, response in operation["responses"].items():
+                self.assertRegex(status, r"^[1-5][0-9]{2}$")
+                self.assertIn("content", response, f"{operation_id}:{status}")
+                for media in response["content"].values():
+                    self.assertIn("schema", media, f"{operation_id}:{status}")
+            success = next(
+                response
+                for status, response in operation["responses"].items()
+                if status.startswith("2")
+            )
+            if path not in {"/health/live", "/health/ready", "/metrics"}:
+                self.assertIn("X-Correlation-ID", success.get("headers", {}), operation_id)
+
+        assert_closed_objects(openapi["components"]["schemas"], "openapi/components/schemas")
+
+        package = ROOT / "engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f"
+        current_docs = {
+            "README": ROOT / "README.md",
+            "roadmap": ROOT / "DARK_FACTORY_ROADMAP.md",
+            "factory": ROOT / "factory/README.md",
+            "architecture": package / "architecture.md",
+            "tasks": package / "tasks.md",
+            "schedule": package / "schedule.md",
+            "release": package / "release.md",
+            "rollback": package / "rollback.md",
+            "evidence": package / "evidence/README.md",
+        }
+        texts = {name: path.read_text(encoding="utf-8") for name, path in current_docs.items()}
+        combined = "\n".join(texts.values())
+        for fact in (
+            "161199bb163e0ba84ac1b32010be87f113df5e86",
+            "01a10f5",
+            "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
+            "94fc5ad878e6b15df6418303caada49a3b93bf4c",
+            "37b05f579320",
+            "2026-09-08 00:00 UTC+3",
+            "BLOCKED",
+        ):
+            self.assertIn(fact, combined)
+        for phrase in (
+            "no WorkspaceResult fabrication",
+            "restack",
+            "not pushed",
+            "not merged",
+            "M6 paused",
+            "provider facts are not authority",
+            "production remains human-owned",
+        ):
+            self.assertIn(phrase, combined)
+        for name, text in texts.items():
+            if name in {"README", "roadmap", "factory"}:
+                self.assertIn("2026-09-01-m5-isolated-provider-execution-design.md", text, name)
+                self.assertIn("2026-09-01-m5-isolated-provider-execution.md", text, name)
+                self.assertIn(package.name, text, name)
     def test_architecture_authority_and_manual_adoption_are_documented(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         quickstart = (ROOT / "QUICKSTART.md").read_text(encoding="utf-8")

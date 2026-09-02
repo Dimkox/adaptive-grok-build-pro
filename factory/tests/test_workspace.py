@@ -1,6 +1,13 @@
 import unittest
+from unittest.mock import patch
 
+import psycopg
+
+from adaptive_factory.store import PostgresArtifactAttestationStore
 from adaptive_factory.workspace import (
+    ArtifactAttestationRequest,
+    ArtifactAttestationUnavailable,
+    ArtifactAttestationV1,
     FakeGitBroker,
     FakeWorkspaceBroker,
     HostIsolationReport,
@@ -26,12 +33,43 @@ def policy():
 
 
 class WorkspaceTests(unittest.TestCase):
+    def test_artifact_attestor_database_errors_are_typed_and_fixed_reason(self):
+        store = PostgresArtifactAttestationStore("postgresql://fixture.invalid/factory")
+        with patch.object(
+            store, "_connect", side_effect=psycopg.OperationalError("fixture failure"),
+        ):
+            result = store.record_artifact_attestation(object())
+        self.assertEqual(
+            (result.status, result.disposition, result.reason),
+            (
+                "unavailable", "needs_human",
+                "trusted_artifact_attestation_unavailable",
+            ),
+        )
+
     def test_fake_workspace_allows_only_bound_relative_paths(self):
         broker = FakeWorkspaceBroker()
         broker.register(handle(), policy())
         decision = broker.authorize(handle(), operation="write", path="factory/src/a.py")
         self.assertTrue(decision.allowed)
         self.assertEqual(decision.code, "allowed")
+
+    def test_fake_workspace_release_is_idempotent_and_revokes_every_operation(self):
+        broker = FakeWorkspaceBroker()
+        broker.register(handle(), policy())
+        git = FakeGitBroker(broker)
+        self.assertEqual(broker.release(handle()), "fake_released")
+        self.assertEqual(broker.release(handle()), "fake_absent")
+        operations = (
+            lambda: broker.authorize(handle(), operation="read", path="factory/src/a.py"),
+            lambda: broker.sanitize_environment(handle(), {"LANG": "C.UTF-8"}),
+            lambda: git.perform(handle(), "status"),
+        )
+        for operation in operations:
+            with self.subTest(operation=operation), self.assertRaisesRegex(
+                WorkspaceError, "unknown_workspace",
+            ):
+                operation()
 
     def test_traversal_absolute_git_symlink_and_cross_task_are_denied(self):
         broker = FakeWorkspaceBroker(symlinks=("factory/src/link",))
@@ -99,6 +137,56 @@ class WorkspaceTests(unittest.TestCase):
         self.assertIsInstance(result, WorkspaceSnapshotUnavailable)
         self.assertEqual((result.status, result.disposition), ("unavailable", "needs_human"))
         self.assertFalse(hasattr(result, "result_head_sha"))
+
+    def test_artifact_attestation_is_closed_exact_and_content_bound(self):
+        request = ArtifactAttestationRequest.from_facts({
+            "task_id": "task-001", "run_id": "run-001",
+            "repository_id": "owner/repository", "packet_digest": "b" * 64,
+            "workspace_handle": handle().value, "producer_sequence": 1, "fence": 7,
+            "author_role": "writer", "artifact_class": "report", "path": "factory/src/a.py",
+            "sha256": "c" * 64, "size_bytes": 12, "media_type": "text/x-python",
+        })
+        for unsafe_path in (
+            "factory/src/password=hunter2",
+            "factory/src/ghp_secret",
+            "factory/src/../outside",
+            "factory/src/.git/config",
+            "factory/src/" + "x" * (1025 - len("factory/src/")),
+        ):
+            with self.subTest(unsafe_path=unsafe_path), self.assertRaises(WorkspaceError):
+                ArtifactAttestationRequest.from_facts({
+                    **request.to_dict(), "path": unsafe_path,
+                })
+        value = {
+            "contract_version": 1, **request.to_dict(), "source": "trusted_workspace_broker",
+        }
+        attestation = ArtifactAttestationV1.from_facts(value)
+        self.assertEqual(
+            ArtifactAttestationV1.from_dict(attestation.to_dict()), attestation
+        )
+        changed = dict(value, sha256="d" * 64)
+        self.assertNotEqual(
+            ArtifactAttestationV1.from_facts(changed).artifact_attestation_digest,
+            attestation.artifact_attestation_digest,
+        )
+        for invalid in (
+            dict(value, source="provider"), dict(value, symlink=False),
+            dict(value, contract_version=True),
+        ):
+            with self.subTest(invalid=invalid), self.assertRaises(WorkspaceError):
+                ArtifactAttestationV1.from_facts(invalid)
+
+    def test_fake_workspace_artifact_attestation_is_truthfully_unavailable(self):
+        request = ArtifactAttestationRequest.from_facts({
+            "task_id": "task-001", "run_id": "run-001",
+            "repository_id": "owner/repository", "packet_digest": "b" * 64,
+            "workspace_handle": handle().value, "producer_sequence": 1, "fence": 7,
+            "author_role": "writer", "artifact_class": "report", "path": "factory/src/a.py",
+            "sha256": "c" * 64, "size_bytes": 12, "media_type": "text/x-python",
+        })
+        result = FakeWorkspaceBroker().attest_artifact(request)
+        self.assertIsInstance(result, ArtifactAttestationUnavailable)
+        self.assertFalse(hasattr(result, "artifact_attestation_digest"))
 
 
 if __name__ == "__main__":

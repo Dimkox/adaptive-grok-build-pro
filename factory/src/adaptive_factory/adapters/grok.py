@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .base import AdapterConformance, AdapterError, canonicalize, event, native_records
+from .base import AdapterConformance, AdapterError, canonicalize, event, native_records, native_text
 
 
 class GrokAdapter:
@@ -47,7 +47,7 @@ class GrokAdapter:
                         "note.proposed",
                         {
                             "note_type": "conclusion",
-                            "body": str(record.get("text", "")),
+                            "body": native_text(record.get("text", "")),
                             "evidence": record.get("evidence", []),
                         },
                     )
@@ -67,11 +67,11 @@ class GrokAdapter:
                         identity,
                         len(output) + 1,
                         "run.needs_human",
-                        {"reason": "provider_ineligible", "diagnostic": str(record.get("reason", ""))},
+                        {"reason": "provider_ineligible", "diagnostic": native_text(record.get("reason", ""))},
                     )
                 )
             else:
-                raise AdapterError("unknown_native_event", str(native_type))
+                raise AdapterError("unknown_native_event")
         return canonicalize(
             output,
             task_id=task_id,

@@ -10,7 +10,7 @@
   ],
   "approvals":{"required_scopes":["architecture","security","release"]},
   "change_id":"20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f",
-  "contracts":{"events":["factory/contracts/schemas/execution-event.v1.json"],"json_schema":["factory/contracts/schemas/task-packet.v1.json","factory/contracts/schemas/execution-invocation.v1.json","factory/contracts/schemas/execution-event.v1.json"],"openapi":["factory/contracts/openapi/factory-control.v1.json"]},
+  "contracts":{"events":["factory/contracts/schemas/execution-event.v1.json"],"json_schema":["factory/contracts/schemas/task-packet.v1.json","factory/contracts/schemas/execution-invocation.v1.json","factory/contracts/schemas/execution-event.v1.json","factory/contracts/schemas/workspace-result.v1.json"],"openapi":["factory/contracts/openapi/factory-control.v1.json"]},
   "forbidden_outcomes":[
     {"id":"FORBID-001","statement":"M5 invokes a live provider network external write GitHub deployment production or systemd activation path","evidence":[{"receipt":"security_review"}]},
     {"id":"FORBID-002","statement":"M5 reads stores logs or transmits credentials Trust CI material human keys chain of thought raw native streams or unrestricted output","evidence":[{"receipt":"security_review"}]},

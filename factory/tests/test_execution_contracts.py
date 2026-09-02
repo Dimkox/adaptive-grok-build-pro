@@ -95,6 +95,9 @@ def valid_workspace_result():
         "note_manifest_digest": "7" * 64,
         "usage_evidence_digest": "8" * 64,
         "diagnostics_digest": "9" * 64,
+        "m4_status": "ready_for_human",
+        "failure_class": None,
+        "failure_reason": None,
     }
 
 
@@ -193,6 +196,35 @@ class ExecutionContractTests(unittest.TestCase):
         mismatched["workspace_result_digest"] = "f" * 64
         with self.assertRaisesRegex(ExecutionContractError, "digest_mismatch"):
             WorkspaceResultV1.from_dict(mismatched)
+
+    def test_workspace_result_m4_disposition_is_closed_and_terminal_correlated(self):
+        failed = valid_workspace_result()
+        failed.update(
+            terminal_stage="failed",
+            m4_status="retry",
+            failure_class="database_unavailable",
+            failure_reason="temporary database outage",
+        )
+        self.assertEqual(WorkspaceResultV1.from_facts(failed).m4_status, "retry")
+        needs_human = valid_workspace_result()
+        needs_human.update(
+            terminal_stage="needs_human",
+            m4_status="needs_human",
+            failure_reason="operator decision required",
+        )
+        self.assertIsNone(WorkspaceResultV1.from_facts(needs_human).failure_class)
+        invalid = [
+            dict(valid_workspace_result(), m4_status="retry"),
+            dict(valid_workspace_result(), failure_class="validation"),
+            dict(failed, failure_class="invented"),
+            dict(failed, m4_status={"retry": True}),
+            dict(failed, failure_reason=None),
+            dict(needs_human, failure_class="policy"),
+            dict(needs_human, failure_reason=None),
+        ]
+        for value in invalid:
+            with self.subTest(value=value), self.assertRaises(ExecutionContractError):
+                WorkspaceResultV1.from_facts(value)
 
     def test_workspace_result_schema_is_closed_and_names_m6_bridge_digests(self):
         schema = json.loads((ROOT / "contracts" / "schemas" / "workspace-result.v1.json").read_text())

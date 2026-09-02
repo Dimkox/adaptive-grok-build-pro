@@ -13,9 +13,12 @@ from adaptive_factory.api import Authenticator, create_app
 from adaptive_factory.cli import main as cli_main
 from adaptive_factory.contracts import TaskIntakeV1
 from adaptive_factory.models import Actor, TaskProjection, TaskStatus
+from adaptive_factory.protocol import CanonicalEvent
 from adaptive_factory.service import FactoryService
 from adaptive_factory.settings import SettingsError, read_token_file
 from adaptive_factory.store import IntakeResult
+from adaptive_factory.protocol import ProtocolError
+from adaptive_factory.workspace import WorkspaceError
 from factory.tests.test_contracts import valid_intake
 
 
@@ -62,6 +65,12 @@ class FakeService:
         return kwargs["stage"]
 
     def commit_execution_proposal(self, *args, **kwargs):
+        grant = args[0]
+        CanonicalEvent.from_payload(
+            task_id=grant.task_id, run_id=grant.run_id,
+            packet_digest=kwargs["packet_digest"], sequence=kwargs["sequence"],
+            event_type=kwargs["event_type"], payload=kwargs["payload"],
+        )
         self.calls.append(("commit_execution_proposal", args, kwargs))
         return {"proposal_kind": kwargs["event_type"], "sequence": kwargs["sequence"]}
 
@@ -75,6 +84,9 @@ class FakeService:
             "factory_intake_and_rejection_outcomes_total": {},
             "factory_lease_reclaim_and_fence_rejection_total": {},
             "factory_capacity_budget_kill_and_reconcile_outcomes_total": {},
+            "factory_execution_claim_and_stage_outcomes_total": {},
+            "factory_execution_protocol_and_proposal_outcomes_total": {},
+            "factory_execution_orphan_and_cleanup_outcomes_total": {},
         }
 
 
@@ -109,6 +121,15 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.headers["X-Correlation-ID"], "correlation-001")
         self.assertNotIn(self.token, response.text)
+
+    def test_secret_shaped_request_identity_is_rejected_before_service(self):
+        response = self.client.post(
+            "/v1/tasks",
+            headers={**self.auth, "X-Correlation-ID": "ghp_abcdefghijklmnopqrstuvwxyz1234567890"},
+            json=self.payload(),
+        )
+        self.assertEqual(response.status_code, 400, response.text)
+        self.assertEqual(self.service.calls, [])
 
     def test_api_has_no_execution_external_write_or_systemd_endpoint(self):
         paths = set(self.client.get("/openapi.json").json()["paths"])
@@ -170,6 +191,70 @@ class ApiTests(unittest.TestCase):
                 self.assertEqual(response.status_code, 200, response.text)
         unsafe = {**common, **cases["notes"], "provider_command": "codex exec"}
         self.assertEqual(client.post("/v1/execution/notes", headers=headers, json=unsafe).status_code, 422)
+        forged_attestation = {
+            **common,
+            **cases["artifacts"],
+            "artifact_attestation_digest": "a" * 64,
+        }
+        self.assertEqual(
+            client.post(
+                "/v1/execution/artifacts", headers=headers, json=forged_attestation
+            ).status_code,
+            422,
+        )
+        forbidden_note = client.post(
+            "/v1/execution/notes", headers=headers,
+            json={**common, "note_type": "analysis", "body": "safe", "evidence": []},
+        )
+        self.assertEqual(forbidden_note.status_code, 422, forbidden_note.text)
+
+    def test_malformed_execution_payloads_return_bounded_422(self):
+        class RejectingProposalService(FakeService):
+            def commit_execution_proposal(self, *args, **kwargs):
+                if kwargs["event_type"] == "note.proposed":
+                    raise ProtocolError("invalid_text")
+                raise WorkspaceError("artifact_attestation_digest")
+
+        token = "malformed-proposal-credential"
+        actor = Actor(
+            "worker-01", "worker", frozenset({"task:execute"}),
+            frozenset({"owner/repository"}),
+        )
+        client = TestClient(create_app(RejectingProposalService(), Authenticator({token: actor})))
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Idempotency-Key": "malformed-001",
+            "X-Correlation-ID": "malformed-correlation",
+        }
+        grant = {
+            "task_id": "00000000-0000-0000-0000-000000000001",
+            "run_id": "00000000-0000-0000-0000-000000000002",
+            "owner": "worker-01", "role": "writer", "fence": 7,
+            "expires_at": "2026-09-02T01:00:00Z", "packet_digest": "0" * 64,
+        }
+        common = {"grant": grant, "packet_digest": "d" * 64, "sequence": 1}
+        note = client.post(
+            "/v1/execution/notes", headers=headers,
+            json={**common, "note_type": "finding", "body": 1, "evidence": []},
+        )
+        self.assertEqual(note.status_code, 422, note.text)
+        self.assertEqual(note.json(), {"error": "invalid", "code": "invalid_text"})
+        artifact = client.post(
+            "/v1/execution/artifacts", headers=headers,
+            json={
+                **common, "artifact_class": "patch", "path": "factory/a.patch",
+                "sha256": "bad", "size_bytes": 1, "media_type": "bad media",
+            },
+        )
+        self.assertEqual(artifact.status_code, 422, artifact.text)
+        self.assertEqual(
+            artifact.json(), {"error": "invalid", "code": "artifact_attestation_digest"}
+        )
+        terminal = client.post(
+            "/v1/execution/terminal", headers=headers,
+            json={**common, "terminal_type": {}, "summary": "done"},
+        )
+        self.assertEqual(terminal.status_code, 422, terminal.text)
 
     def test_body_over_one_mebibyte_is_rejected_without_parsing(self):
         response = self.client.post(

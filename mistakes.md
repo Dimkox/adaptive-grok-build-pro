@@ -331,3 +331,31 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 ## 2026-09-02 — Continued downstream writing across a changed upstream SHA
 
 Any upstream SHA change pauses downstream writing and triggers both a three-way path-overlap audit and contract-compatibility audit before restacking. Module isolation alone is insufficient because shared tests, documentation, migrations, and behavioral interfaces can change without direct source-file overlap.
+
+## 2026-09-02 — Deferred root architecture drift behind factory-only verification
+
+**Root cause:** Factory-only suites were treated as a sufficient slice gate, so eight new execution sources reached stable commits before the root verifier checked executable architecture ownership. Every product-source slice must run root architecture validate and drift before its stable commit, even when final full verification remains centrally owned.
+
+## 2026-09-02 — Set an execution limit in the non-authoritative test input
+
+**Root cause:** The proposal-limit test changed the selection fixture even though `TaskPacketV1.limits` is derived from the accepted M4 intake. Authority-bound tests must mutate the authoritative intake fact and assert the derived packet, not a selection field that execution intentionally ignores.
+
+## 2026-09-02 — Invoked a shell helper with Python
+
+**Root cause:** The controller ran the shell script `sdd-workspace` through `python3` without first checking its shebang or file type, producing a `SyntaxError`; retrying the same provided script through `bash` worked.
+
+## 2026-09-02 — Guessed a root test module name
+
+**Root cause:** The first focused root command named `tests.test_architecture` without enumerating the repository's actual test modules, producing an import error; listing `tests/` identified `test_architecture_fitness` and `test_architecture_model`, and the corrected 148-test suite passed.
+
+## 2026-09-02 — Carried an over-indented unchanged test line
+
+**Root cause:** A broad context patch accidentally moved an unchanged helper return under the wrong block, and the edit was inspected before an immediate compile check. Every context-heavy test patch now gets `py_compile` before its first test invocation.
+
+## 2026-09-02 — Treated an inert guard as sufficient systemd validation
+
+**Root cause:** `ExecCondition=/usr/bin/false` was treated as sufficient while future `ExecStart` binaries did not exist and the syscall-filter syntax had not been checked by systemd itself. Source-only units now use installed false stubs and must pass native `systemd-analyze verify`.
+
+## 2026-09-02 — Created a virtual environment inside the drift boundary
+
+**Root cause:** Running `uv run` without an external environment path created `factory/.venv`, and the fail-closed architecture drift scan correctly treated its files as undeclared sources. The generated directory was moved to the desktop trash and subsequent M6 commands must use an environment outside the repository tree.

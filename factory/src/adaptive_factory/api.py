@@ -12,12 +12,14 @@ from typing import Any, Mapping
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from .brokers import BrokerError
+from .brokers import BrokerError, secret_free_identity
 from .contracts import ContractError, canonical_digest
 from .execution_contracts import ExecutionContractError
 from .models import Actor, ExecutionStage, LeaseGrant, RunRole
+from .protocol import ProtocolError
 from .service import AuthorizationError
 from .store import AuthorityError, BudgetError, FenceError, MetricsUnavailable, StoreError
+from .workspace import WorkspaceError
 
 
 MAX_BODY_BYTES = 1_048_576
@@ -73,6 +75,10 @@ class Authenticator:
 def _request_id(value: str | None, name: str) -> str:
     if not value or not HEADER_ID.fullmatch(value):
         raise HTTPException(400, f"valid {name} header required")
+    try:
+        secret_free_identity(value, 128)
+    except BrokerError as exc:
+        raise HTTPException(400, f"valid {name} header required") from exc
     return value
 
 
@@ -163,6 +169,14 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
 
     @app.exception_handler(BrokerError)
     async def broker_error(_request: Request, error: BrokerError):
+        return JSONResponse({"error": "invalid", "code": error.code}, status_code=422)
+
+    @app.exception_handler(ProtocolError)
+    async def protocol_error(_request: Request, error: ProtocolError):
+        return JSONResponse({"error": "invalid", "code": error.code}, status_code=422)
+
+    @app.exception_handler(WorkspaceError)
+    async def workspace_error(_request: Request, error: WorkspaceError):
         return JSONResponse({"error": "invalid", "code": error.code}, status_code=422)
 
     @app.exception_handler(AuthorizationError)
@@ -491,7 +505,7 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
             "run.failed": {"failure_class", "diagnostic"},
             "run.needs_human": {"reason", "diagnostic"},
         }
-        expected = terminal_fields.get(terminal_type)
+        expected = terminal_fields.get(terminal_type) if isinstance(terminal_type, str) else None
         if expected is None or set(payload) != common | expected:
             raise HTTPException(422, "invalid terminal proposal")
         return execution_proposal(

@@ -8,6 +8,7 @@ from adaptive_factory.brokers import (
     ProposalContext,
     TerminalProposal,
     UsageProposal,
+    proposal_idempotency_key,
 )
 from adaptive_factory.protocol import CanonicalEvent
 
@@ -25,6 +26,9 @@ def context(**overrides):
         "fence": 7,
         "packet_digest": PACKET,
         "role": "writer",
+        "repository_id": "owner/repository",
+        "workspace_handle": "workspace:" + "d" * 64,
+        "allowed_paths": ("artifacts", "factory"),
         "allowed_artifact_classes": ("patch", "report"),
         "max_note_bytes": 4096,
         "max_artifact_bytes": 1_000_000,
@@ -62,15 +66,235 @@ class BrokerTests(unittest.TestCase):
         self.assertEqual(proposal.evidence, ("factory/src/a.py",))
         self.assertEqual(len(proposal.idempotency_key), 64)
 
+    def test_forbidden_note_categories_are_rejected_before_proposal_creation(self):
+        for note_type in (
+            "analysis", "Reasoning", "scratch-pad", " raw prompt ",
+            "model_analysis", "private-reasoning", "raw_prompt_dump",
+            "private_thoughts", "hidden_cot", "raw_response",
+            "internal_deliberation", "late", "x",
+        ):
+            with self.subTest(note_type=note_type), self.assertRaisesRegex(
+                BrokerError, "forbidden_note_type"
+            ):
+                ProposalBroker().accept(
+                    event(
+                        1, "note.proposed",
+                        {"note_type": note_type, "body": "safe", "evidence": []},
+                    ),
+                    context(), owner="writer-01", fence=7,
+                )
+
+    def test_redaction_covers_bearer_aws_keyed_secrets_and_complete_pem(self):
+        secret_text = (
+            "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.payload.signature "
+            "aws=AKIAABCDEFGHIJKLMNOP api_key=fixture-secret "
+            "AWS_SECRET_ACCESS_KEY=aws-secret client_secret=client-secret "
+            "refresh_token=refresh-secret credential=credential-secret "
+            "OPENAI_API_KEY=openai-secret GITHUB_TOKEN=github-secret "
+            "AWS_SESSION_TOKEN=session-secret DATABASE_PASSWORD=db-secret "
+            "SECRET_KEY=key-secret PRIVATE_KEY=private-secret TOKEN=token-secret "
+            "{\"api_key\":\"json-secret\"} {'access_token':'python-secret'}\n"
+            "-----BEGIN PRIVATE KEY-----\nprivate-material\n-----END PRIVATE KEY-----"
+        )
+        proposal = ProposalBroker().accept(
+            event(
+                1,
+                "note.proposed",
+                {"note_type": "finding", "body": secret_text, "evidence": []},
+            ),
+            context(), owner="writer-01", fence=7,
+        )
+        for forbidden in (
+            "Bearer", "AKIA", "fixture-secret", "aws-secret", "client-secret",
+            "refresh-secret", "credential-secret", "private-material",
+            "openai-secret", "github-secret", "session-secret", "db-secret",
+            "key-secret", "private-secret", "token-secret", "json-secret",
+            "python-secret",
+        ):
+            with self.subTest(forbidden=forbidden):
+                self.assertNotIn(forbidden, proposal.body)
+        self.assertIn("[REDACTED]", proposal.body)
+        with self.assertRaisesRegex(BrokerError, "secret_content"):
+            ProposalBroker().accept(
+                event(
+                    2,
+                    "note.proposed",
+                    {
+                        "note_type": "finding",
+                        "body": "-----BEGIN PRIVATE KEY-----\nincomplete",
+                        "evidence": [],
+                    },
+                ),
+                context(), owner="writer-01", fence=7,
+            )
+
+    def test_raw_secret_size_is_bounded_before_redaction(self):
+        large_pem = (
+            "-----BEGIN PRIVATE KEY-----\n"
+            + "x" * 256
+            + "\n-----END PRIVATE KEY-----"
+        )
+        with self.assertRaisesRegex(BrokerError, "note_too_large"):
+            ProposalBroker().accept(
+                event(
+                    1, "note.proposed",
+                    {"note_type": "finding", "body": large_pem, "evidence": []},
+                ),
+                context(max_note_bytes=64), owner="writer-01", fence=7,
+            )
+
+    def test_authorization_bearer_redaction_consumes_the_credential_tail(self):
+        credential = "TOKEN-credential-tail"
+        proposal = ProposalBroker().accept(
+            event(
+                1, "note.proposed",
+                {
+                    "note_type": "finding",
+                    "body": f"Authorization: Bearer {credential}",
+                    "evidence": [],
+                },
+            ),
+            context(), owner="writer-01", fence=7,
+        )
+        self.assertNotIn(credential, proposal.body)
+
+    def test_all_authorization_schemes_and_secret_shaped_identity_fields_fail_closed(self):
+        proposal = ProposalBroker().accept(
+            event(
+                1,
+                "note.proposed",
+                {
+                    "note_type": "finding",
+                    "body": "Authorization: Basic Zml4dHVyZS1jcmVkZW50aWFs\n"
+                    "Authorization: Token fixture-tail\n"
+                    "Authorization=Basic equals-tail\n"
+                    "HTTP_AUTHORIZATION=Basic http-tail\n"
+                    "PROXY_AUTHORIZATION: Basic proxy-tail",
+                    "evidence": [],
+                },
+            ),
+            context(), owner="writer-01", fence=7,
+        )
+        self.assertNotIn("Zml4dHVyZS1jcmVkZW50aWFs", proposal.body)
+        self.assertNotIn("fixture-tail", proposal.body)
+        self.assertNotIn("equals-tail", proposal.body)
+        self.assertNotIn("http-tail", proposal.body)
+        self.assertNotIn("proxy-tail", proposal.body)
+        for event_type, payload, error in (
+            (
+                "note.proposed",
+                {"note_type": "ghp_secret", "body": "safe", "evidence": []},
+                "forbidden_note_type",
+            ),
+            (
+                "note.proposed",
+                {"note_type": "finding", "body": "safe", "evidence": ["factory/ghp_secret"]},
+                "secret_identity",
+            ),
+            (
+                "usage.reported",
+                {
+                    "provider_call_id": "client_secret=fixture-tail",
+                    "price_table_digest": "a" * 64,
+                    "input_tokens": 1,
+                    "output_tokens": 1,
+                    "reasoning_tokens": 0,
+                    "cost_usd_micros": 1,
+                    "output_bytes": 1,
+                },
+                "secret_identity",
+            ),
+        ):
+            with self.subTest(event_type=event_type), self.assertRaisesRegex(
+                BrokerError, error
+            ):
+                ProposalBroker().accept(
+                    event(2, event_type, payload), context(), owner="writer-01", fence=7,
+                )
+
+    def test_structured_note_and_terminal_text_is_never_stringified(self):
+        cases = (
+            event(
+                1, "note.proposed",
+                {"note_type": "finding", "body": {"reasoning": "private"}, "evidence": []},
+            ),
+            event(1, "run.completed", {"summary": {"reasoning": "private"}}),
+            event(
+                1, "run.failed",
+                {"failure_class": "protocol", "diagnostic": {"reasoning": "private"}},
+            ),
+        )
+        for value in cases:
+            with self.subTest(event_type=value.event_type), self.assertRaisesRegex(
+                BrokerError, "(?:executable_note|terminal_fields)"
+            ):
+                ProposalBroker().accept(value, context(), owner="writer-01", fence=7)
+
+    def test_note_and_artifact_must_stay_in_authoritative_allowed_paths(self):
+        cases = (
+            event(
+                1, "note.proposed",
+                {"note_type": "finding", "body": "safe", "evidence": ["outside/a.py"]},
+            ),
+            event(
+                1, "artifact.proposed",
+                {
+                    "artifact_class": "report", "path": "outside/report.json",
+                    "sha256": "b" * 64, "size_bytes": 1, "media_type": "application/json",
+                },
+            ),
+        )
+        for value in cases:
+            with self.subTest(event_type=value.event_type), self.assertRaisesRegex(
+                BrokerError, "path_forbidden"
+            ):
+                ProposalBroker().accept(value, context(), owner="writer-01", fence=7)
+
+    def test_artifact_requires_server_side_attestation(self):
+        value = event(
+            1, "artifact.proposed",
+            {
+                "artifact_class": "report", "path": "artifacts/report.json",
+                "sha256": "b" * 64, "size_bytes": 20, "media_type": "application/json",
+            },
+        )
+        with self.assertRaisesRegex(BrokerError, "artifact_attestation"):
+            ProposalBroker().accept(value, context(), owner="writer-01", fence=7)
+
     def test_artifact_usage_and_terminal_are_closed_values(self):
         broker = ProposalBroker()
-        artifact = broker.accept(event(1, "artifact.proposed", {"artifact_class": "report", "path": "artifacts/report.json", "sha256": "b" * 64, "size_bytes": 20, "media_type": "application/json"}), context(), owner="writer-01", fence=7)
+        artifact = broker.accept(event(1, "artifact.proposed", {"artifact_class": "report", "path": "artifacts/report.json", "sha256": "b" * 64, "size_bytes": 20, "media_type": "application/json"}), context(), owner="writer-01", fence=7, artifact_attestation_digest="d" * 64)
         usage = broker.accept(event(2, "usage.reported", {"provider_call_id": "call-1", "price_table_digest": "c" * 64, "input_tokens": 10, "output_tokens": 4, "reasoning_tokens": 2, "cost_usd_micros": 30, "output_bytes": 20}), context(), owner="writer-01", fence=7)
         terminal = broker.accept(event(3, "run.completed", {"summary": "complete"}), context(), owner="writer-01", fence=7)
         self.assertIsInstance(artifact, ArtifactProposal)
         self.assertIsInstance(usage, UsageProposal)
         self.assertIsInstance(terminal, TerminalProposal)
         self.assertEqual(usage.total_tokens, 16)
+        self.assertEqual((artifact.author_role, artifact.artifact_attestation_digest), ("writer", "d" * 64))
+        self.assertEqual(proposal_idempotency_key(artifact), artifact.idempotency_key)
+
+    def test_artifact_digest_binds_authoritative_role_and_attestation(self):
+        value = event(
+            1, "artifact.proposed",
+            {
+                "artifact_class": "report", "path": "artifacts/report.json",
+                "sha256": "b" * 64, "size_bytes": 20, "media_type": "application/json",
+            },
+        )
+        writer = ProposalBroker().accept(
+            value, context(), owner="writer-01", fence=7,
+            artifact_attestation_digest="d" * 64,
+        )
+        reader = ProposalBroker().accept(
+            value, context(role="reader"), owner="writer-01", fence=7,
+            artifact_attestation_digest="d" * 64,
+        )
+        changed_attestation = ProposalBroker().accept(
+            value, context(), owner="writer-01", fence=7,
+            artifact_attestation_digest="e" * 64,
+        )
+        self.assertNotEqual(writer.idempotency_key, reader.idempotency_key)
+        self.assertNotEqual(writer.idempotency_key, changed_attestation.idempotency_key)
 
     def test_stale_identity_owner_or_fence_fails(self):
         cases = [

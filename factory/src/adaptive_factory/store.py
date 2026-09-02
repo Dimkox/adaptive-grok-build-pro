@@ -6,12 +6,26 @@ import json
 import uuid
 
 from .contracts import HEX64, TaskIntakeV1, canonical_digest
-from .brokers import ArtifactProposal, NoteProposal, ProposalContext, TerminalProposal, UsageProposal
+from .brokers import (
+    ArtifactProposal,
+    NoteProposal,
+    ProposalContext,
+    TerminalProposal,
+    UsageProposal,
+    proposal_idempotency_key,
+)
 from .execution_contracts import RunManifestV1, TaskPacketV1, WorkspaceResultV1, workspace_evidence_digest
 from .migrations import discover_migrations
 from .models import Actor, ExecutionGrant, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskProjection, TaskStatus
+from .protocol import CanonicalEvent, PROTOCOL_VERSION
+from .recovery import ExecutionRecoveryCandidate, ExecutionRecoveryCursor
 from .state import classify_retry
-from .workspace import WorkspaceSnapshotRequest, WorkspaceSnapshotV1
+from .workspace import (
+    ArtifactAttestationUnavailable,
+    ArtifactAttestationV1,
+    WorkspaceSnapshotRequest,
+    WorkspaceSnapshotV1,
+)
 
 
 class StoreError(RuntimeError):
@@ -34,6 +48,92 @@ class MetricsUnavailable(StoreError):
     pass
 
 
+def _validate_capability_session(cursor, capability_role: str, label: str) -> None:
+    cursor.execute(
+        """SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
+        rolreplication,rolbypassrls,COALESCE(rolconfig,ARRAY[]::text[])
+        FROM pg_roles WHERE rolname=session_user"""
+    )
+    identity = cursor.fetchone()
+    if identity is None or identity[:7] != (True, False, False, False, False, False, False) \
+            or tuple(identity[7]) != ():
+        raise StoreError(f"{label} login is not least privilege")
+    if cursor.connection.info.server_version >= 160000:
+        cursor.execute(
+            """SELECT r.rolname,m.admin_option,m.inherit_option,m.set_option
+            FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.roleid
+            JOIN pg_roles u ON u.oid=m.member WHERE u.rolname=session_user"""
+        )
+        membership = cursor.fetchall()
+        expected_membership = [(capability_role, False, False, True)]
+    else:
+        cursor.execute(
+            """SELECT r.rolname,m.admin_option FROM pg_auth_members m
+            JOIN pg_roles r ON r.oid=m.roleid JOIN pg_roles u ON u.oid=m.member
+            WHERE u.rolname=session_user"""
+        )
+        membership = cursor.fetchall()
+        expected_membership = [(capability_role, False)]
+    if membership != expected_membership:
+        raise StoreError(f"{label} login has excess role membership")
+    cursor.execute(
+        """SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
+        rolreplication,rolbypassrls,COALESCE(rolconfig,ARRAY[]::text[])
+        FROM pg_roles WHERE rolname=%s""",
+        (capability_role,),
+    )
+    capability = cursor.fetchone()
+    expected_config = (
+        ("search_path=factory, pg_catalog",) if capability_role == "factory_runtime" else ()
+    )
+    if capability is None or capability[:7] != (False, False, False, False, False, False, False) \
+            or tuple(capability[7]) != expected_config:
+        raise StoreError(f"{label} capability role is not isolated")
+    cursor.execute(
+        """SELECT EXISTS(SELECT 1 FROM pg_auth_members m
+        JOIN pg_roles member ON member.oid=m.member WHERE member.rolname=%s)""",
+        (capability_role,),
+    )
+    if cursor.fetchone()[0]:
+        raise StoreError(f"{label} capability role is not isolated")
+    cursor.execute(
+        """WITH login AS (SELECT oid FROM pg_roles WHERE rolname=session_user)
+        SELECT
+          (SELECT datdba=(SELECT oid FROM login) FROM pg_database WHERE datname=current_database())
+          OR EXISTS(SELECT 1 FROM pg_namespace WHERE nspowner=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_class WHERE relowner=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_proc WHERE proowner=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_type WHERE typowner=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_database d
+            CROSS JOIN LATERAL aclexplode(d.datacl) a
+            WHERE d.datacl IS NOT NULL AND a.grantee=(SELECT oid FROM login)
+              AND NOT (
+                d.datname=current_database() AND a.privilege_type='CONNECT'
+                AND NOT a.is_grantable
+              ))
+          OR EXISTS(SELECT 1 FROM pg_namespace n
+            CROSS JOIN LATERAL aclexplode(n.nspacl) a
+            WHERE n.nspacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_class c
+            CROSS JOIN LATERAL aclexplode(c.relacl) a
+            WHERE c.relacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_attribute c
+            CROSS JOIN LATERAL aclexplode(c.attacl) a
+            WHERE c.attacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_proc p
+            CROSS JOIN LATERAL aclexplode(p.proacl) a
+            WHERE p.proacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_type t
+            CROSS JOIN LATERAL aclexplode(t.typacl) a
+            WHERE t.typacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_default_acl d
+            CROSS JOIN LATERAL aclexplode(d.defaclacl) a
+            WHERE d.defaclrole=(SELECT oid FROM login) OR a.grantee=(SELECT oid FROM login))"""
+    )
+    if cursor.fetchone()[0]:
+        raise StoreError(f"{label} login has direct database authority")
+
+
 @dataclass(frozen=True)
 class IntakeResult:
     task: TaskProjection
@@ -53,6 +153,66 @@ class UsageResult:
     created: bool
 
 
+class PostgresArtifactAttestationStore:
+    """Dedicated capability boundary; its login must not inherit factory_runtime."""
+
+    def __init__(self, database_url: str) -> None:
+        if not database_url:
+            raise StoreError("artifact attestor database URL is required")
+        self.database_url = database_url
+
+    def _connect(self):
+        import psycopg
+
+        connection = psycopg.connect(self.database_url, connect_timeout=5)
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SET search_path=pg_catalog")
+                cursor.execute("SET lock_timeout='5s'; SET statement_timeout='5s'")
+                _validate_capability_session(
+                    cursor, "factory_artifact_attestor", "artifact attestor"
+                )
+                cursor.execute("SET ROLE factory_artifact_attestor")
+                cursor.execute("SET search_path=pg_catalog,factory")
+                cursor.execute("SELECT current_user,current_setting('search_path')")
+                if cursor.fetchone() != ("factory_artifact_attestor", "pg_catalog, factory"):
+                    raise StoreError("artifact attestor capability unavailable")
+            return connection
+        except Exception:
+            connection.close()
+            raise
+
+    def readiness(self) -> dict[str, str]:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT session_user,current_user")
+            session_user, current_user = cursor.fetchone()
+            return {"session_user": session_user, "database_role": current_user}
+
+    def record_artifact_attestation(
+        self, attestation: ArtifactAttestationV1
+    ) -> ArtifactAttestationV1 | ArtifactAttestationUnavailable:
+        import psycopg
+
+        try:
+            with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+                cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+                cursor.execute(
+                    "SELECT factory.execution_record_artifact_attestation(%s::jsonb)",
+                    (json.dumps(attestation.to_dict(), sort_keys=True, separators=(",", ":")),),
+                )
+                value = cursor.fetchone()[0]
+        except psycopg.Error:
+            return ArtifactAttestationUnavailable(reason="trusted_artifact_attestation_unavailable")
+        if value is None:
+            return ArtifactAttestationUnavailable(reason="trusted_artifact_attestation_rejected")
+        if isinstance(value, str):
+            value = json.loads(value)
+        try:
+            return ArtifactAttestationV1.from_dict(value)
+        except (TypeError, ValueError) as exc:
+            raise StoreError("corrupt artifact attestation envelope") from exc
+
+
 class PostgresFactoryStore:
     def __init__(self, database_url: str) -> None:
         if not database_url:
@@ -65,7 +225,14 @@ class PostgresFactoryStore:
         options = {} if connect_timeout is None else {"connect_timeout": connect_timeout}
         connection = psycopg.connect(self.database_url, **options)
         try:
-            connection.execute("SET ROLE factory_runtime")
+            with connection.cursor() as cursor:
+                cursor.execute("SET search_path=pg_catalog")
+                _validate_capability_session(cursor, "factory_runtime", "runtime")
+                cursor.execute("SET ROLE factory_runtime")
+                cursor.execute("SET search_path=pg_catalog,factory")
+                cursor.execute("SELECT current_user,current_setting('search_path')")
+                if cursor.fetchone() != ("factory_runtime", "pg_catalog, factory"):
+                    raise StoreError("runtime capability unavailable")
         except Exception:
             connection.close()
             raise
@@ -75,11 +242,14 @@ class PostgresFactoryStore:
         with self._connect() as connection, connection.cursor() as cursor:
             cursor.execute("SELECT current_user,COALESCE(max(version),0) FROM factory.schema_migrations")
             role, version = cursor.fetchone()
+            cursor.execute("SELECT session_user")
+            session_user = cursor.fetchone()[0]
             capacity_consistent = self._capacity_consistent(cursor)
             accounting_consistent = self._accounting_consistent(cursor)
             return {
                 "status": "ready" if version == len(discover_migrations()) and capacity_consistent and accounting_consistent else "not_ready",
                 "database_role": role,
+                "session_user": session_user,
                 "schema_version": version,
                 "capacity_consistent": capacity_consistent,
                 "accounting_consistent": accounting_consistent,
@@ -132,6 +302,10 @@ class PostgresFactoryStore:
             reserved_cost, observed_cost, reserved_tokens, observed_tokens, reserved_wall,
             observed_output, blocked, kills, reconciliation_runs,
             reconciliation_candidates, repaired,
+            execution_claimed, execution_stage_transitions,
+            execution_note_proposals, execution_artifact_proposals,
+            execution_usage_proposals, execution_terminal_proposals,
+            execution_orphaned, execution_workspace_released, execution_cleanup_failed,
         ) = row
         return {
             "factory_intake_and_rejection_outcomes_total": {
@@ -149,7 +323,80 @@ class PostgresFactoryStore:
                 "active_kills": kills, "reconciliation_runs": reconciliation_runs,
                 "reconciliation_candidates": reconciliation_candidates, "repaired": repaired,
             },
+            "factory_execution_claim_and_stage_outcomes_total": {
+                "claimed": execution_claimed, "stage_transitions": execution_stage_transitions,
+            },
+            "factory_execution_protocol_and_proposal_outcomes_total": {
+                "note": execution_note_proposals, "artifact": execution_artifact_proposals,
+                "usage": execution_usage_proposals, "terminal": execution_terminal_proposals,
+            },
+            "factory_execution_orphan_and_cleanup_outcomes_total": {
+                "orphaned": execution_orphaned,
+                "workspace_released": execution_workspace_released,
+                "cleanup_failed": execution_cleanup_failed,
+            },
         }
+
+    def execution_recovery_candidates(
+        self, *, limit: int, cursor: ExecutionRecoveryCursor | None,
+    ) -> tuple[ExecutionRecoveryCandidate, ...]:
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise StoreError("invalid execution recovery limit")
+        if cursor is not None and not isinstance(cursor, ExecutionRecoveryCursor):
+            raise StoreError("invalid execution recovery cursor")
+        with self._connect() as connection, connection.transaction(), connection.cursor() as db:
+            db.execute("SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='5s'")
+            db.execute(
+                "SELECT * FROM factory.execution_recovery_candidates(%s,%s,%s)",
+                (
+                    limit,
+                    None if cursor is None else cursor.updated_at,
+                    None if cursor is None else cursor.run_id,
+                ),
+            )
+            rows = db.fetchall()
+        return tuple(
+            ExecutionRecoveryCandidate(
+                str(task_id), str(run_id), manifest_digest.strip(), workspace_handle, updated_at,
+            )
+            for task_id, run_id, manifest_digest, workspace_handle, updated_at in rows
+        )
+
+    def record_execution_cleanup_success(self, candidate: ExecutionRecoveryCandidate) -> None:
+        if not isinstance(candidate, ExecutionRecoveryCandidate):
+            raise StoreError("invalid execution recovery candidate")
+        with self._connect() as connection, connection.transaction(), connection.cursor() as db:
+            db.execute("SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='5s'")
+            db.execute(
+                "SELECT factory.execution_recovery_cleanup_succeeded(%s,%s)",
+                (candidate.run_id, candidate.manifest_digest),
+            )
+            db.fetchone()
+
+    def terminalize_execution_orphan(self, candidate: ExecutionRecoveryCandidate) -> str:
+        if not isinstance(candidate, ExecutionRecoveryCandidate):
+            raise StoreError("invalid execution recovery candidate")
+        with self._connect() as connection, connection.transaction(), connection.cursor() as db:
+            db.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            db.execute(
+                "SELECT factory.execution_orphan_terminalize(%s,%s)",
+                (candidate.run_id, candidate.manifest_digest),
+            )
+            outcome = db.fetchone()[0]
+        if outcome not in {"orphaned", "already_terminal", "not_eligible"}:
+            raise StoreError("invalid execution recovery outcome")
+        return outcome
+
+    def record_execution_cleanup_failure(self, candidate: ExecutionRecoveryCandidate) -> None:
+        if not isinstance(candidate, ExecutionRecoveryCandidate):
+            raise StoreError("invalid execution recovery candidate")
+        with self._connect() as connection, connection.transaction(), connection.cursor() as db:
+            db.execute("SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='5s'")
+            db.execute(
+                "SELECT factory.execution_recovery_cleanup_failed(%s,%s)",
+                (candidate.run_id, candidate.manifest_digest),
+            )
+            db.fetchone()
 
     def record_fence_rejection(self) -> None:
         with self._connect(connect_timeout=1) as connection, connection.cursor() as cursor:
@@ -783,7 +1030,7 @@ class PostgresFactoryStore:
     def proposal_context(self, grant: LeaseGrant, packet_digest: str) -> ProposalContext:
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
-            self._lock_grant(cursor, grant)
+            locked_grant = self._lock_grant(cursor, grant)
             cursor.execute(
                 "SELECT factory.execution_proposal_context(%s,%s,%s,%s,%s,%s)",
                 (
@@ -802,7 +1049,10 @@ class PostgresFactoryStore:
                 grant.owner,
                 grant.fence,
                 packet_digest,
-                grant.role.value,
+                locked_grant[1],
+                body["repository_id"],
+                body["workspace_handle"],
+                tuple(body["capability_policy"]["allowed_paths"]),
                 tuple(body["capability_policy"]["artifact_classes"]),
                 min(65_536, limits["max_output_bytes"]),
                 limits["max_output_bytes"],
@@ -812,12 +1062,148 @@ class PostgresFactoryStore:
                 tuple(body["provider"]["capabilities"]),
             )
 
+    @staticmethod
+    def _execution_proposal_command(grant: LeaseGrant, event: CanonicalEvent) -> dict:
+        return {
+            "contract": "adaptive-factory.execution-propose-command/v1",
+            "grant": {
+                "task_id": grant.task_id,
+                "run_id": grant.run_id,
+                "owner": grant.owner,
+                "role": grant.role.value,
+                "fence": grant.fence,
+                "legacy_packet_digest": grant.packet_digest,
+            },
+            "event": event.to_dict(),
+        }
+
+    @staticmethod
+    def _proposal_kind(event_type: str) -> str:
+        if event_type == "note.proposed":
+            return "note"
+        if event_type == "artifact.proposed":
+            return "artifact"
+        if event_type == "usage.reported":
+            return "usage"
+        if event_type in {"run.completed", "run.failed", "run.needs_human"}:
+            return "terminal"
+        raise StoreError("unsupported execution proposal")
+
+    @classmethod
+    def _stored_execution_proposal(
+        cls,
+        cursor,
+        grant: LeaseGrant,
+        event: CanonicalEvent,
+        result: dict,
+    ):
+        if not isinstance(result, dict) or set(result) != {
+            "proposal_kind", "sequence", "proposal_idempotency_key"
+        }:
+            raise StoreError("persisted execution proposal command is corrupt")
+        expected_kind = cls._proposal_kind(event.event_type)
+        proposal_digest = result["proposal_idempotency_key"]
+        if (
+            result["proposal_kind"] != expected_kind
+            or type(result["sequence"]) is not int
+            or result["sequence"] != event.sequence
+            or not isinstance(proposal_digest, str)
+            or not HEX64.fullmatch(proposal_digest)
+        ):
+            raise StoreError("persisted execution proposal command is corrupt")
+        cursor.execute(
+            "SELECT factory.execution_proposal_by_key(%s,%s,%s)",
+            (grant.task_id, grant.run_id, proposal_digest),
+        )
+        envelope = cursor.fetchone()[0]
+        if envelope is None:
+            raise StoreError("persisted execution proposal is missing")
+        if isinstance(envelope, str):
+            envelope = json.loads(envelope)
+        if not isinstance(envelope, dict) or set(envelope) != {
+            "task_id", "run_id", "packet_digest", "producer_sequence", "proposal_kind",
+            "idempotency_key", "body",
+        }:
+            raise StoreError("persisted execution proposal is corrupt")
+        task_id = envelope["task_id"]
+        run_id = envelope["run_id"]
+        packet_digest = envelope["packet_digest"]
+        sequence = envelope["producer_sequence"]
+        kind = envelope["proposal_kind"]
+        stored_digest = envelope["idempotency_key"]
+        body = envelope["body"]
+        if (
+            str(task_id) != grant.task_id
+            or str(run_id) != grant.run_id
+            or packet_digest != event.packet_digest
+            or sequence != event.sequence
+            or kind != expected_kind
+            or stored_digest != proposal_digest
+        ):
+            raise StoreError("persisted execution proposal is corrupt")
+        classes = {
+            "note": NoteProposal,
+            "artifact": ArtifactProposal,
+            "usage": UsageProposal,
+            "terminal": TerminalProposal,
+        }
+        proposal_type = classes.get(kind)
+        if proposal_type is None or not isinstance(body, dict) or set(body) != set(proposal_type.__dataclass_fields__):
+            raise StoreError("persisted execution proposal is corrupt")
+        try:
+            if proposal_type is NoteProposal:
+                if not isinstance(body.get("evidence"), list):
+                    raise TypeError("invalid persisted evidence")
+                body["evidence"] = tuple(body["evidence"])
+            proposal = proposal_type(**body)
+        except (TypeError, ValueError) as exc:
+            raise StoreError("persisted execution proposal is corrupt") from exc
+        if (
+            proposal.task_id != grant.task_id
+            or proposal.run_id != grant.run_id
+            or proposal.packet_digest != event.packet_digest
+            or proposal.fence != grant.fence
+            or proposal.author_role != grant.role.value
+            or proposal.sequence != sequence
+            or proposal.idempotency_key != stored_digest
+            or proposal.idempotency_key != proposal_digest
+            or proposal_idempotency_key(proposal) != proposal_digest
+            or (
+                isinstance(proposal, TerminalProposal)
+                and proposal.terminal_type != event.event_type
+            )
+        ):
+            raise StoreError("persisted execution proposal is corrupt")
+        return proposal
+
+    def execution_proposal_replay(
+        self,
+        grant: LeaseGrant,
+        event: CanonicalEvent,
+        actor: Actor,
+        *,
+        idempotency_key: str | None,
+    ):
+        if idempotency_key is None:
+            return None
+        command = self._execution_proposal_command(grant, event)
+        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            replay, prior, _request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "execution_propose", command
+            )
+            if not replay:
+                return None
+            return self._stored_execution_proposal(
+                cursor, grant, event, prior
+            )
+
     def commit_execution_proposal(
         self,
         grant: LeaseGrant,
         proposal,
         actor: Actor,
         *,
+        event: CanonicalEvent,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
     ):
@@ -830,22 +1216,36 @@ class PostgresFactoryStore:
         kind = kinds.get(type(proposal))
         if kind is None:
             raise StoreError("unsupported execution proposal")
+        expected_kind = self._proposal_kind(event.event_type)
+        if (
+            kind != expected_kind
+            or event.protocol_version != PROTOCOL_VERSION
+            or event.task_id != grant.task_id
+            or event.run_id != grant.run_id
+            or proposal.task_id != grant.task_id
+            or proposal.run_id != grant.run_id
+            or proposal.packet_digest != event.packet_digest
+            or proposal.fence != grant.fence
+            or proposal.sequence != event.sequence
+            or proposal.author_role != grant.role.value
+            or proposal.idempotency_key != proposal_idempotency_key(proposal)
+            or (
+                isinstance(proposal, TerminalProposal)
+                and proposal.terminal_type != event.event_type
+            )
+        ):
+            raise StoreError("execution proposal does not match command")
         body = asdict(proposal)
-        command = {
-            "run_id": grant.run_id,
-            "packet_digest": proposal.packet_digest,
-            "sequence": proposal.sequence,
-            "proposal_kind": kind,
-            "proposal_digest": canonical_digest(body),
-        }
+        command = self._execution_proposal_command(grant, event)
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
-            self._lock_grant(cursor, grant)
-            replay, _prior, request_digest = self._command_replay(
+            replay, prior, request_digest = self._command_replay(
                 cursor, idempotency_key, actor, "execution_propose", command
             )
             if replay:
-                return proposal
+                return self._stored_execution_proposal(
+                    cursor, grant, event, prior
+                )
             cursor.execute(
                 "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb)",
                 (
@@ -858,7 +1258,11 @@ class PostgresFactoryStore:
                 raise FenceError("stale execution proposal or fence")
             self._record_command(
                 cursor, idempotency_key, actor, "execution_propose", request_digest,
-                correlation_id, {"proposal_kind": kind, "sequence": proposal.sequence},
+                correlation_id, {
+                    "proposal_kind": kind,
+                    "sequence": proposal.sequence,
+                    "proposal_idempotency_key": proposal.idempotency_key,
+                },
             )
             return proposal
 
@@ -881,6 +1285,28 @@ class PostgresFactoryStore:
                 raise StoreError("stored workspace manifest mismatch")
             result = WorkspaceResultV1.from_dict(value["result"])
             snapshot = WorkspaceSnapshotV1.from_dict(value["snapshot"])
+            row = value["row"]
+            expected_row = {
+                "workspace_result_digest": result.workspace_result_digest,
+                "task_id": result.task_id,
+                "run_id": result.run_id,
+                "task_packet_digest": result.task_packet_digest,
+                "run_manifest_digest": result.run_manifest_digest,
+                "exact_head_sha": result.exact_head_sha,
+                "workspace_snapshot_digest": result.workspace_snapshot_digest,
+                "terminal_stage": result.terminal_stage,
+                "terminal_proposal_digest": result.terminal_proposal_digest,
+                "terminal_proposal_kind": "terminal",
+                "artifact_manifest_digest": result.artifact_manifest_digest,
+                "note_manifest_digest": result.note_manifest_digest,
+                "usage_evidence_digest": result.usage_evidence_digest,
+                "diagnostics_digest": result.diagnostics_digest,
+                "m4_status": result.m4_status,
+                "failure_class": result.failure_class,
+                "failure_reason": result.failure_reason,
+            }
+            if row != expected_row:
+                raise StoreError("stored workspace row mismatch")
             if (
                 result.task_id != packet.task_id
                 or result.run_id != packet.run_id
@@ -935,7 +1361,6 @@ class PostgresFactoryStore:
                     correlation_id, {"result": result.to_dict()},
                 )
                 return result
-            self._lock_grant(cursor, grant)
             cursor.execute(
                 "SELECT factory.execution_finalize_context(%s,%s,%s,%s,%s,%s)",
                 (
@@ -973,6 +1398,9 @@ class PostgresFactoryStore:
                     "diagnostics_digest": workspace_evidence_digest(
                         "diagnostics", context["diagnostic_digests"]
                     ),
+                    "m4_status": context["m4_status"],
+                    "failure_class": context["failure_class"],
+                    "failure_reason": context["failure_reason"],
                 }
             )
             cursor.execute(
@@ -986,6 +1414,35 @@ class PostgresFactoryStore:
             )
             if not cursor.fetchone()[0]:
                 raise FenceError("execution finalization rejected")
+            status = TaskStatus(result.m4_status)
+            release_key = canonical_digest(
+                {
+                    "action": "execution_finalize",
+                    "fence": grant.fence,
+                    "run_id": grant.run_id,
+                    "target": status.value,
+                }
+            )
+            self._event(
+                cursor,
+                grant.task_id,
+                actor,
+                "released",
+                release_key,
+                {"target": status.value, "workspace_result_digest": result.workspace_result_digest},
+                mandatory_cleanup=True,
+            )
+            self._audit(
+                cursor,
+                grant.task_id,
+                actor,
+                "execution_finalize",
+                f"run:{grant.run_id}",
+                status.value,
+                correlation_id or release_key,
+                {"fence": grant.fence, "workspace_result_digest": result.workspace_result_digest},
+                grant.run_id,
+            )
             self._record_command(
                 cursor, idempotency_key, actor, "execution_finalize", request_digest,
                 correlation_id, {"result": result.to_dict()},
@@ -1012,7 +1469,6 @@ class PostgresFactoryStore:
     def workspace_snapshot_request(self, grant: LeaseGrant, packet_digest: str) -> WorkspaceSnapshotRequest:
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
-            self._lock_grant(cursor, grant)
             cursor.execute(
                 "SELECT factory.execution_finalize_context(%s,%s,%s,%s,%s,%s)",
                 (
@@ -1055,6 +1511,8 @@ class PostgresFactoryStore:
             if bundle is None:
                 raise KeyError(workspace_result_digest)
             result, snapshot, packet, manifest = bundle
+            if result.workspace_result_digest != workspace_result_digest:
+                raise StoreError("requested workspace result digest mismatch")
             return {"result": result, "snapshot": snapshot, "packet": packet, "manifest": manifest}
 
     @staticmethod
@@ -1123,13 +1581,22 @@ class PostgresFactoryStore:
             FROM factory.runs r JOIN factory.tasks t ON t.task_id=r.task_id
             JOIN factory.capacity_allocations a ON a.run_id=r.run_id
             JOIN factory.attempts at ON at.run_id=r.run_id
-            WHERE r.run_id=%s AND r.task_id=%s AND r.owner_id=%s AND r.fence=%s AND r.packet_digest=%s
+            WHERE r.run_id=%s AND r.task_id=%s AND r.owner_id=%s AND r.role=%s
+            AND r.fence=%s AND r.packet_digest=%s
             AND r.state='leased' AND r.released_at IS NULL
             AND a.released_at IS NULL
             AND (%s OR r.lease_expires_at>clock_timestamp())
             AND t.current_run_id=r.run_id AND t.current_fence=r.fence AND t.state='leased' AND t.deadline_at>clock_timestamp()
             FOR UPDATE OF r,t""",
-            (grant.run_id, grant.task_id, grant.owner, grant.fence, grant.packet_digest, allow_expired),
+            (
+                grant.run_id,
+                grant.task_id,
+                grant.owner,
+                grant.role.value,
+                grant.fence,
+                grant.packet_digest,
+                allow_expired,
+            ),
         )
         row = cursor.fetchone()
         if not row:
@@ -1237,6 +1704,12 @@ class PostgresFactoryStore:
             replay, prior, request_digest = self._command_replay(cursor, idempotency_key, actor, "release", command)
             if replay:
                 return TaskStatus(prior["status"])
+            cursor.execute(
+                "SELECT factory.execution_has_packet(%s)",
+                (grant.run_id,),
+            )
+            if cursor.fetchone()[0]:
+                raise FenceError("M5 execution outcome is derived only by finalization")
             result = self._release_locked(cursor, grant, outcome, actor, correlation_id=correlation_id)
             self._record_command(cursor, idempotency_key, actor, "release", request_digest, correlation_id, {"status": result.value})
             return result
