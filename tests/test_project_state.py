@@ -5,6 +5,7 @@ import itertools
 import json
 import re
 import subprocess
+import sys
 import unittest
 from pathlib import Path
 
@@ -276,6 +277,55 @@ class ProjectStateTests(unittest.TestCase):
         self.assertIn("PR #19", start_here)
         self.assertIn("delivered", start_here)
         self.assertNotRegex(start_here, r"open PRs[^.;\n]*#19")
+
+    def test_m4_roadmap_matches_typed_state_machine_and_local_scope(self) -> None:
+        factory_src = str(ROOT / "factory" / "src")
+        if factory_src not in sys.path:
+            sys.path.insert(0, factory_src)
+        from adaptive_factory.models import TaskStatus
+
+        roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
+        m4 = re.search(r"^# M4 —.*?\n(.*?)(?=^---\n\n# M5 —)", roadmap, re.M | re.S)
+        self.assertIsNotNone(m4)
+        m4_text = m4.group(1)
+
+        state_section = _section(m4_text, "Factory task state machine")
+        blocks = re.findall(r"```text\n(.*?)```", state_section, re.S)
+        self.assertEqual(len(blocks), 2)
+        primary = re.findall(r"[a-z][a-z0-9_]*", blocks[0])
+        exceptional = re.findall(r"[a-z][a-z0-9_]*", blocks[1])
+        expected_primary = [
+            TaskStatus.INBOX,
+            TaskStatus.TRIAGED,
+            TaskStatus.WAITING_DESIGN_APPROVAL,
+            TaskStatus.QUEUED,
+            TaskStatus.LEASED,
+            TaskStatus.ANALYZING,
+            TaskStatus.IMPLEMENTING,
+            TaskStatus.VERIFYING,
+            TaskStatus.REVIEWING,
+            TaskStatus.READY_FOR_HUMAN,
+        ]
+        expected_exceptional = {
+            TaskStatus.RETRY,
+            TaskStatus.NEEDS_HUMAN,
+            TaskStatus.DEAD,
+            TaskStatus.CANCELLED,
+            TaskStatus.SUPERSEDED,
+        }
+        self.assertEqual(primary, [status.value for status in expected_primary])
+        self.assertEqual(set(exceptional), {status.value for status in expected_exceptional})
+        self.assertEqual(set(primary) | set(exceptional), {status.value for status in TaskStatus})
+        self.assertTrue({"waiting_approval", "pr_open", "ready", "merged"}.isdisjoint(primary + exceptional))
+
+        checked_items = "\n".join(
+            line for line in _section(m4_text, "Work items").splitlines() if line.startswith("- [x]")
+        )
+        self.assertNotRegex(checked_items, r"GitHub|open factory PR|PR age")
+        self.assertIn("authenticated manual API/CLI intake", checked_items)
+        self.assertIn("PostgreSQL `FOR UPDATE SKIP LOCKED` leases", checked_items)
+        self.assertEqual(self.state["milestones"]["M4"]["main_delivery"]["status"], "not_delivered")
+        self.assertEqual(self.state["milestones"]["M4"]["external_gate"]["status"], "not_run")
 
     def test_work_inventory_preserves_open_and_unresolved_continuation_work(self) -> None:
         inventory = self.state["work_inventory"]

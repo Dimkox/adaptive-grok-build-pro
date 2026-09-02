@@ -573,16 +573,14 @@ Current status: the M4 control plane under [`factory/`](factory/) has production
 ```text
 inbox
 → triaged
-→ waiting_approval
+→ waiting_design_approval
 → queued
 → leased
 → analyzing
 → implementing
 → verifying
 → reviewing
-→ pr_open
-→ ready
-→ merged
+→ ready_for_human
 ```
 
 Exceptional states:
@@ -595,44 +593,65 @@ cancelled
 superseded
 ```
 
+`ready_for_human` is M4's positive terminal state. GitHub/PR states such as `pr_open` and `merged` are deliberately absent: they belong to later delivery milestones, and Trust CI remains a separate authority domain.
+
 ## Minimum durable fields
 
 ```text
+intent_id
+intent_digest
+idempotency_key
 task_id
-repository
+repository_id
 source_type
 source_id
+source_digest
 route_id
 change_id
 spec_digest
 architecture_digest
-base_sha
-head_sha
-branch
-risk_pre
-risk_post
+governance_digest
+exact_base_sha
 policy_digest
-attempt
+acceptance_ids
+task_limits
+state
+generation
+packet_digest
+run_id
+attempt_no
+role
+fence
 lease_owner
 lease_expires_at
-budget
+deadline_at
+budget_reservations
+usage_observations
+event_sequence
+audit_digest
 created_at
 updated_at
 ```
 
+The immutable accepted-intent body also freezes both producer handoffs, including their exact head SHA. M4 does not own or persist a Git branch, pull request, merge state, or Trust CI result.
+
 ## Work items
 
-- [ ] Implement GitHub Issue intake plus authenticated manual API/CLI intake.
-- [ ] Derive an idempotency key that prevents duplicate active tasks for the same source, base SHA, and policy/spec version.
-- [ ] Use PostgreSQL `FOR UPDATE SKIP LOCKED` leases.
-- [ ] Add heartbeat, lease expiry, reclaim, bounded attempts, dead-letter, and reconciliation.
-- [ ] Cancel or supersede stale tasks when issue content, base SHA, or accepted spec changes.
-- [ ] Add global and per-repository kill switches.
-- [ ] Add per-repository concurrency limits.
-- [ ] Add hard limits for active tasks, open factory PRs, runtime, tokens, cost, repair cycles, and PR age.
-- [ ] Separate read-only analysis concurrency from single-writer concurrency.
-- [ ] Persist every state transition and actor in an append-only audit log.
-- [ ] Refuse dispatch when M0 Trust CI authority is unavailable unless the user records a named bootstrap exception.
+- [x] Implement authenticated manual API/CLI intake.
+- [ ] Add a GitHub Issue connector in a later GitHub-capable milestone; M4 only accepts an already projected, authenticated source record.
+- [x] Derive an idempotency key that prevents duplicate active tasks for the same source and frozen authority.
+- [x] Use PostgreSQL `FOR UPDATE SKIP LOCKED` leases.
+- [x] Add heartbeat, lease expiry, reclaim, bounded attempts, dead-letter, and reconciliation.
+- [x] Cancel or supersede stale tasks when source content or frozen authority changes.
+- [x] Add global and per-repository kill switches.
+- [x] Add global/per-repository reader limits and a single-writer limit.
+- [x] Add hard limits for runtime, tokens, cost, output, events, and repair cycles.
+- [ ] Add open-factory-PR and PR-age limits only after a later milestone owns GitHub PR delivery.
+- [x] Separate read-only analysis concurrency from single-writer concurrency.
+- [x] Persist every state transition and actor in an append-only audit log.
+- [x] Refuse dispatch when M0 Trust CI authority is unavailable unless the user records a named bootstrap exception.
+
+Checked M4 items denote locally implemented behavior only. They do not claim final review, external Trust CI acceptance, PR delivery, merge, deployment, or production activation.
 
 ## Exit criteria
 
