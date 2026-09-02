@@ -1,0 +1,29 @@
+{
+  "change_id": "20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f",
+  "created_at": "2026-09-01T23:53:15+00:00",
+  "history": [
+    {
+      "at": "2026-09-01T23:53:15+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-02T00:00:27+00:00",
+      "from": "draft",
+      "reason": "approved M5 scope acceptance criteria architecture and test plan written",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-02T00:00:32+00:00",
+      "from": "scoped",
+      "reason": "user approved canonical design and continuous M5 implementation",
+      "to": "approved"
+    }
+  ],
+  "route_id": "37b05f579320",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Implement a new M5 AI agent execution feature on exact M4 product base 94fc5ad: canonical immutable packets, provider-neutral JSON API and JSONL protocol, Codex and Grok conformance adapters, workspace and note brokers, credential and network isolation, predefined systemd source topology, bounded usage and cancellation, restart and orphan recovery, adversarial local verification. Local source only; no live provider calls or secret values.",
+  "updated_at": "2026-09-02T00:00:32+00:00"
+}
