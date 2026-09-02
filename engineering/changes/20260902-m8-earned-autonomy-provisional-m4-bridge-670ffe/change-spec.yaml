@@ -25,7 +25,7 @@
     "id": "OBJ-001",
     "statement":"Specify a pure local earned-autonomy evaluator and frozen v1 contracts on exact M4 9fe779ab9f90719201acfd01160d3452658ff075 for later factual M7 alignment",
     "success_metric":"m8_provisional_design_gate",
-    "target":"Implementation remains blocked until factual M7 restack and at least 30 real human acceptances"
+    "target":"Pure local source may proceed; activation, factual qualification and profile acceptance remain blocked until factual M7 restack and at least 30 real human acceptances"
   },
   "observability":[
     {"id":"SIG-001","metric":"autonomy_recommendation_outcome_bounded","proves":["OBJ-001"]},

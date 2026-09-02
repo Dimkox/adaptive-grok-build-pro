@@ -17,7 +17,7 @@ M4 identity -> M5 execution identity -> M6 validator identity
 
 ## Components and boundaries
 
-Future `factory/src/adaptive_factory/autonomy.py` owns immutable parsing, canonical identity, cohort aggregation, recommendations and demotion. Future `factory/contracts/schemas/earned-autonomy.v1.json` freezes the record shapes. No store, API, event, worker, key, network or external-effect adapter is added.
+Future `factory/src/adaptive_factory/autonomy.py` owns immutable parsing, canonical identity, cohort aggregation, recommendations and demotion. Future `factory/contracts/jsonschema/earned-autonomy.v1.schema.json` follows the M6/M7 schema inventory and freezes the record shapes; no duplicate M8 schema is placed under `factory/contracts/schemas/`. No store, API, event, worker, key, network or external-effect adapter is added.
 
 ## Data flow
 
@@ -48,7 +48,7 @@ Canonical governance JSON under `governance/` remains separately reviewed author
 - Repository evidence can produce only a recommendation; activation requires authority outside this package.
 - Opaque verified-input digests are never keys or signatures and are not verified here.
 - Every trigger returns L0 plus halted state in the same immutable result; L3/L4 are unrepresentable.
-- Implementation is blocked before RED because factual M7 and 30 real acceptances do not yet exist.
+- The explicit 2026-09-02 user override permits pure source RED→GREEN work with synthetic boundary fixtures; activation, factual qualification and profile acceptance remain blocked.
 
 ## Risks and mitigations
 

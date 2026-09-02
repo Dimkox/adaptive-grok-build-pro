@@ -3,6 +3,7 @@
 - [x] Freeze approved scope, exact M4 bridge, six records and authority limits.
 - [x] Record M4→M9 ledger, schedule, release and rollback.
 - [x] Write design and TDD implementation plan.
-- [ ] BLOCKED: obtain factual accepted M7 restack and >=30 real eligible human acceptances.
-- [ ] After unblock, begin RED contract tests before product source.
+- [x] Record the explicit source-only override and the 2026-09-02 upstream/path-overlap audit.
+- [ ] Execute pure local contract/evaluator/demotion work with RED tests before each source slice.
+- [ ] BLOCKED: obtain factual accepted M7 restack and >=30 real eligible human acceptances before activation, completion, factual qualification or profile acceptance.
 - [ ] Parent-owned later: verification, independent reviews, receipts, push and external gates.

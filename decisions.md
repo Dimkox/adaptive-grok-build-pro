@@ -336,3 +336,7 @@ Treat an unreleased canonical allocation as part of the worker fence and deny ru
 ## 2026-09-01 — Lock trusted authority inside intake without granting row mutation
 
 Use fixed-search-path security-definer predicates that take a row lock on the exact repository/policy/action subject, and invoke them after intake identity serialization in the insertion transaction. This prevents revocation TOCTOU while retaining an EXECUTE-only runtime boundary.
+
+## 2026-09-02 — Separate M8 source construction from earned authority
+
+Allow pure closed contracts, deterministic evaluation and atomic demotion to proceed against opaque exact predecessor identities and synthetic boundary fixtures, while keeping activation, factual qualification, profile acceptance and external effects blocked. This preserves fast parallel source work without converting provisional repository data into authority.

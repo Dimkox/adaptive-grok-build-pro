@@ -13,13 +13,13 @@
 ## Global Constraints
 
 - Exact provisional base `9fe779ab9f90719201acfd01160d3452658ff075`; route `670ffe5522e0`.
-- Do not execute this plan before factual accepted M7 restack and >=30 real eligible human acceptances.
+- The explicit 2026-09-02 user override permits Tasks 1–3 as pure local source work against opaque exact predecessor identities and clearly labeled synthetic fixtures. Task 4 integration, activation, completion, factual cohort qualification, profile issuance/acceptance and external effects still require factual accepted M7 restack and >=30 real eligible human acceptances.
 - `low_risk_text_only` only; audit >=20% and >=1 sample/day; complete bounded non-PII data.
 - L2 ceiling; L3/L4 unreachable; recommendation only; no activation, external write, merge, key, secret, persistence or fabricated cohort.
 
 ### Task 1: Closed contracts
 
-**Files:** create `factory/tests/test_autonomy.py`, `factory/tests/test_autonomy_schema.py`, `factory/src/adaptive_factory/autonomy.py`, `factory/contracts/schemas/earned-autonomy.v1.json`.
+**Files:** create `factory/tests/test_autonomy.py`, `factory/tests/test_autonomy_schema.py`, `factory/src/adaptive_factory/autonomy.py`, `factory/contracts/jsonschema/earned-autonomy.v1.schema.json`.
 
 **Interfaces:** produce the six exact `*V1` records named in the design, each with `from_dict()` and canonical `to_dict()` behavior.
 

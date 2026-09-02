@@ -4,7 +4,7 @@
 
 M8 is a pure local evaluator design, not an activation system. Its only eligible class is frozen as `low_risk_text_only`; six closed canonical v1 values bind complete cohort evidence to one exact material tuple and may issue recommendation-only `L0`, `L1`, or `L2` results. L3/L4, merge, network, credentials, persistence and production are absent.
 
-This design is provisional on exact M4 `9fe779ab9f90719201acfd01160d3452658ff075`. Implementation and cohort completion are **BLOCKED** until accepted M5/M6 and factual accepted M7 are dependency-restacked and at least 30 real human-accepted eligible tasks exist for one tuple. The repository contains no factual cohort rows.
+This design is provisional on exact M4 `9fe779ab9f90719201acfd01160d3452658ff075`. The explicit 2026-09-02 user override permits pure local contracts/evaluator/demotion implementation against opaque exact identities and synthetic algorithmic boundary fixtures. Activation, completion, factual cohort qualification and profile issuance/acceptance remain **BLOCKED** until accepted M5/M6 and factual accepted M7 are dependency-restacked and at least 30 real human-accepted eligible tasks exist for one tuple; the repository contains no factual cohort rows.
 
 ## Canonical records
 
@@ -29,4 +29,4 @@ Fixed priority is security failure, authorization failure, incorrect merge, roll
 
 ## Rollout, rollback and M9
 
-After the block clears, contracts/tests precede implementation under strict RED→GREEN TDD. M9 may later consume an exact unexpired profile and append delivery/rollback/regression outcomes, but gets no deployment authority from M8. Rollback is a reviewed revert before adoption or closed v2 forward adapter after adoption; factual evidence is never rewritten.
+Under the source-only override, contracts/tests precede Tasks 1–3 implementation under strict RED→GREEN TDD. M9 may later consume an exact unexpired accepted profile and append delivery/rollback/regression outcomes, but gets no deployment authority from M8. Rollback is a reviewed revert before adoption or closed v2 forward adapter after adoption; factual evidence is never rewritten.

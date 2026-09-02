@@ -23,10 +23,10 @@ Freeze a dependency-free local M8 contract/evaluator design that can later consu
 - At least 30 distinct real human-accepted eligible tasks; complete-data, quality, security, cost, latency and >=20% daily audit gates.
 - Recommendation-only gradual promotion, tuple expiry/non-reuse and atomic fail-closed demotion.
 - Bounded non-PII metrics, schema/test design and M4→M9 documentation.
+- Under the explicit 2026-09-02 user override, pure local contracts, a deterministic evaluator and atomic demotion may be implemented against opaque exact predecessor identities and clearly labeled synthetic boundary fixtures.
 
 ### Out of scope
 
-- Product code before factual M7 restack and >=30 real acceptances.
 - Cohort population, keys/signature verification, activation, persistence, APIs, PR/GitHub/Trust CI writes, L3/L4, auto-merge, deployment, production, credentials and network.
 
 ## Constraints
@@ -36,6 +36,6 @@ Freeze a dependency-free local M8 contract/evaluator design that can later consu
 - Performance: future evaluator must cap a cohort at 10,000 tasks and use integer arithmetic.
 - Operational: the live route copy's unrelated `base_commit=78ad2f...` is contextual routing data, not ancestry. Product claims bind to exact M4 `9fe779ab...`.
 
-## Hard block
+## Split gate
 
-M8 implementation, activation and cohort completion are **BLOCKED** until accepted M5 and M6 are restacked, factual accepted M7 is restacked through M4→M5→M6→M7, and at least 30 real human acceptances exist for one exact tuple. No cohort row is checked in. User design approval satisfies only the local scope/design gate.
+Pure source implementation is allowed by the explicit 2026-09-02 user override, without implying predecessor acceptance. Activation, completion, factual cohort qualification, profile issuance/acceptance and every external effect remain **BLOCKED** until accepted M5 and M6 are restacked, factual accepted M7 is restacked through M4→M5→M6→M7, and at least 30 real human acceptances exist for one exact tuple. No cohort row is checked in; synthetic test fixtures are algorithmic boundary data only.
