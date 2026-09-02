@@ -327,3 +327,7 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 ## 2026-09-01 — Extrapolated a local milestone ETA to the whole program
 
 **Root cause:** The M4 local implementation forecast was presented as program deadline confidence without checking downstream dependencies and external gates, especially the M8 human cohort and Trust CI. Future status reports must state local milestone forecasts separately from end-to-end deadline confidence and name unresolved human/external gates.
+
+## 2026-09-02 — Continued downstream writing across a changed upstream SHA
+
+Any upstream SHA change pauses downstream writing and triggers both a three-way path-overlap audit and contract-compatibility audit before restacking. Module isolation alone is insufficient because shared tests, documentation, migrations, and behavioral interfaces can change without direct source-file overlap.
