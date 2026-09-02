@@ -178,11 +178,11 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
     ) THEN 'ordinary'
     WHEN EXISTS (
       SELECT 1 FROM factory.semantic_child_proposals proposal
-      WHERE trim(proposal.child_proposal_digest)=p_source_id
-    ) AND p_source_id<>trim(p_source_digest) THEN 'digest_mismatch'
+      WHERE proposal.child_proposal_digest=p_source_id::char(64)
+    ) AND p_source_digest<>p_source_id::char(64) THEN 'digest_mismatch'
     WHEN EXISTS (
       SELECT 1 FROM factory.semantic_child_proposals proposal
-      WHERE trim(proposal.child_proposal_digest)=p_source_id
+      WHERE proposal.child_proposal_digest=p_source_id::char(64)
     ) AND (
       p_actor_kind<>'repair_broker'
       OR p_actor_id<>'semantic-repair-child-broker'
@@ -191,7 +191,7 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
       SELECT 1
       FROM factory.semantic_child_proposals proposal
       JOIN factory.tasks parent_task ON parent_task.task_id=proposal.parent_task_id
-      WHERE trim(proposal.child_proposal_digest)=p_source_id
+      WHERE proposal.child_proposal_digest=p_source_id::char(64)
         AND proposal.proposal_state='pending_handoff'
         AND proposal.body->>'proposal_state'='pending_handoff'
         AND parent_task.repository_id=p_repository_id
@@ -202,12 +202,12 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
     END
     WHEN NOT EXISTS (
       SELECT 1 FROM factory.semantic_child_proposals proposal
-      WHERE trim(proposal.child_proposal_digest)=p_source_id
+      WHERE proposal.child_proposal_digest=p_source_id::char(64)
         AND proposal.body->>'parent_exact_head_sha'=trim(p_exact_head_sha)
     ) THEN 'head_mismatch'
     WHEN EXISTS (
       SELECT 1 FROM factory.semantic_child_task_bindings binding
-      WHERE trim(binding.child_proposal_digest)=p_source_id
+      WHERE binding.child_proposal_digest=p_source_id::char(64)
     ) THEN 'bound'
     ELSE 'allowed'
   END

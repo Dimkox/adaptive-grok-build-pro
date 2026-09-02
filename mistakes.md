@@ -375,3 +375,7 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-02 — Narrowed a reservation below its supersession identity
 
 **Root cause:** Repair-source reservation required `source_id == source_digest`, but ordinary task replacement is keyed only by `source_id`, so a different digest bypassed the guard and superseded a bound child. Security mediation must cover the full durable collision key before replay, identity insertion, or supersession.
+
+## 2026-09-02 — Normalized an indexed digest column inside its predicate
+
+**Root cause:** The repair-source mediator wrapped fixed-width indexed digest columns in `trim()`, turning exact point lookups into full index or sequential scans. Validate the text input first, cast that input to the indexed `char(64)` type, and leave the indexed column bare in every equality predicate.

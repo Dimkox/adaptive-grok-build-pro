@@ -2897,6 +2897,186 @@ class PostgresFactoryTests(unittest.TestCase):
             ),
         )
 
+    def test_repair_intake_status_uses_exact_digest_index_conditions(self):
+        import psycopg
+
+        repository_id = "owner/m6-repair-status-indexes"
+        fixture = self.semantic_repair_fixture(
+            namespace="repair-status-index-root",
+            repository_id=repository_id,
+            source_id="repair-status-index-root",
+            result_head_sha="b" * 40,
+        )
+        published = fixture["published"]
+        request = SemanticRepairRequestV1.from_dict(
+            {
+                "schema_version": 1,
+                "subject_digest": published.subject.digest,
+                "verdict_digest": fixture["verdict"].digest,
+                "requested_cycle": 1,
+                "previous_child_proposal_digest": None,
+                "writer_id": published.subject.original_writer_id,
+                "context_digest": canonical_digest(
+                    {"case": "repair-status-index", "context": 1}
+                ),
+                "expected_workspace_result_digest": (
+                    fixture["result"].workspace_result_digest
+                ),
+                "expected_fence": published.binding.fence,
+                "expected_head_sha": published.subject.exact_head_sha,
+                "expected_base_sha": published.subject.exact_base_sha,
+                "expected_architecture_digest": (
+                    published.subject.architecture_digest
+                ),
+                "expected_authority_digest": published.subject.authority_digest,
+                "expected_diff_digest": published.subject.diff_digest,
+                "expected_risk_level": published.subject.risk_level,
+            }
+        )
+        semantic_store = PostgresSemanticCoordinatorStore(
+            self.semantic_coordinator_url
+        )
+        repair = semantic_store.request_repair(
+            fixture["task"].task_id,
+            request,
+            idempotency_key=canonical_digest(
+                {"case": "repair-status-index", "operation": "repair"}
+            ),
+        )
+        proposal_digest = repair.child_proposal_digest
+        parent_head = repair.child_proposal.parent_exact_head_sha
+
+        def status(source_id, source_digest, actor):
+            with self.store._connect() as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT factory.semantic_repair_intake_status(
+                    %s,'api',%s,%s,%s,%s,%s)""",
+                    (
+                        repository_id,
+                        source_id,
+                        source_digest,
+                        parent_head,
+                        actor.kind,
+                        actor.actor_id,
+                    ),
+                )
+                return cursor.fetchone()[0]
+
+        unknown_digest = "0" * 64
+        with self.subTest(stage="functional-pre-bound-matrix"):
+            self.assertEqual(status(unknown_digest, "1" * 64, OPERATOR), "ordinary")
+            self.assertEqual(
+                status(unknown_digest, unknown_digest, REPAIR_CHILD_BROKER),
+                "not_pending",
+            )
+            self.assertEqual(
+                status(proposal_digest, "2" * 64, OPERATOR),
+                "digest_mismatch",
+            )
+            self.assertEqual(
+                status(proposal_digest, proposal_digest, OPERATOR),
+                "actor_mismatch",
+            )
+            self.assertEqual(
+                status(proposal_digest, proposal_digest, REPAIR_CHILD_BROKER),
+                "allowed",
+            )
+
+        child = self.semantic_repair_fixture(
+            namespace="repair-status-index-child",
+            repository_id=repository_id,
+            source_id=proposal_digest,
+            child_source_digest=proposal_digest,
+            parent_repair=repair,
+            result_head_sha="c" * 40,
+            intake_only=True,
+        )
+        binding = RepairChildTaskBindingV1.from_dict(
+            {
+                "schema_version": 1,
+                "child_proposal_digest": proposal_digest,
+                "child_task_id": child["task"].task_id,
+                "child_intent_digest": child["intent_digest"],
+            }
+        )
+        self.assertEqual(semantic_store.bind_repair_child(binding), binding)
+        with self.subTest(stage="functional-post-bound-matrix"):
+            self.assertEqual(
+                status(proposal_digest, proposal_digest, REPAIR_CHILD_BROKER),
+                "bound",
+            )
+            self.assertEqual(
+                status(proposal_digest, "3" * 64, OPERATOR),
+                "digest_mismatch",
+            )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """CREATE TEMP TABLE repair_intake_plan_args (
+                p_repository_id text,
+                p_source_type text,
+                p_source_id text,
+                p_source_digest char(64),
+                p_exact_head_sha char(40),
+                p_actor_kind text,
+                p_actor_id text
+                ) ON COMMIT DROP"""
+            )
+            cursor.execute(
+                """INSERT INTO repair_intake_plan_args VALUES
+                (%s,'api',%s,%s,%s,'repair_broker',
+                 'semantic-repair-child-broker')""",
+                (repository_id, proposal_digest, proposal_digest, parent_head),
+            )
+            cursor.execute("ANALYZE repair_intake_plan_args")
+            cursor.execute(
+                """SELECT p.prosrc
+                FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+                WHERE n.nspname='factory'
+                  AND p.proname='semantic_repair_intake_status'
+                  AND p.pronargs=7"""
+            )
+            function_body = cursor.fetchone()[0].strip().removesuffix(";")
+            cursor.execute("SET LOCAL enable_seqscan=off")
+            cursor.execute("SET LOCAL enable_bitmapscan=off")
+            cursor.execute(
+                "EXPLAIN (FORMAT JSON, COSTS OFF) "
+                + function_body
+                + " FROM repair_intake_plan_args"
+            )
+            plan = cursor.fetchone()[0][0]["Plan"]
+
+        def plan_nodes(node):
+            yield node
+            for child_plan in node.get("Plans", ()):  # pragma: no branch
+                yield from plan_nodes(child_plan)
+
+        relation_scans = {
+            relation: [
+                node
+                for node in plan_nodes(plan)
+                if node.get("Relation Name") == relation
+            ]
+            for relation in (
+                "semantic_child_proposals",
+                "semantic_child_task_bindings",
+            )
+        }
+        expected_indexes = {
+            "semantic_child_proposals": "semantic_child_proposals_pkey",
+            "semantic_child_task_bindings": (
+                "semantic_child_task_bindings_child_proposal_digest_key"
+            ),
+        }
+        for relation, scans in relation_scans.items():
+            with self.subTest(stage="index-plan", relation=relation):
+                self.assertTrue(scans, plan)
+                for scan in scans:
+                    self.assertEqual(scan.get("Index Name"), expected_indexes[relation])
+                    self.assertIn("Index Cond", scan, plan)
+                    self.assertIn("child_proposal_digest", scan["Index Cond"])
+                    self.assertIn("p_source_id", scan["Index Cond"])
+
     def test_execution_lifecycle_persists_new_digest_stages_and_redacted_proposal(self):
         task = self.submit(source="m5-execution-lifecycle").task
         packet = valid_packet()
