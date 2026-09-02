@@ -671,6 +671,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
         def execute_propose(store, execution, proposal, kind):
             with store._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+                cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
                 cursor.execute(
                     "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,1,%s,%s,%s::jsonb)",
                     (
@@ -700,6 +701,7 @@ class PostgresFactoryTests(unittest.TestCase):
         task, packet, execution, repository = claim("m5-proposal-first-reservation")
         proposal_first = note(execution)
         runtime = self.store._connect()
+        proposal_first_pool = ThreadPoolExecutor(max_workers=1)
         try:
             with runtime.cursor() as cursor:
                 cursor.execute(
@@ -716,18 +718,18 @@ class PostgresFactoryTests(unittest.TestCase):
                 self.artifact_attestor_url, application_name="m5_attestor_after_proposal",
             )
             recorder = PostgresArtifactAttestationStore(recorder_url)
-            with ThreadPoolExecutor(max_workers=1) as pool:
-                future = pool.submit(
-                    recorder.record_artifact_attestation,
-                    attestation(packet, execution, repository),
-                )
-                wait_for_lock("m5_attestor_after_proposal")
-                runtime.commit()
-                rejected = future.result(timeout=10)
+            future = proposal_first_pool.submit(
+                recorder.record_artifact_attestation,
+                attestation(packet, execution, repository),
+            )
+            wait_for_lock("m5_attestor_after_proposal")
+            runtime.commit()
+            rejected = future.result(timeout=10)
             self.assertIsInstance(rejected, ArtifactAttestationUnavailable)
         finally:
             runtime.rollback()
             runtime.close()
+            proposal_first_pool.shutdown(wait=True, cancel_futures=True)
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
                 "SELECT count(*) FROM factory.execution_artifact_attestations WHERE run_id=%s",
@@ -742,6 +744,7 @@ class PostgresFactoryTests(unittest.TestCase):
         task, packet, execution, repository = claim("m5-attestation-first-reservation")
         reserved = attestation(packet, execution, repository)
         attestor = PostgresArtifactAttestationStore(self.artifact_attestor_url)._connect()
+        attestation_first_pool = ThreadPoolExecutor(max_workers=1)
         try:
             with attestor.cursor() as cursor:
                 cursor.execute(
@@ -755,16 +758,16 @@ class PostgresFactoryTests(unittest.TestCase):
             competing_store = PostgresFactoryStore(psycopg.conninfo.make_conninfo(
                 self.runtime_url, application_name="m5_note_after_attestation",
             ))
-            with ThreadPoolExecutor(max_workers=1) as pool:
-                future = pool.submit(
-                    execute_propose, competing_store, execution, note(execution), "note",
-                )
-                wait_for_lock("m5_note_after_attestation")
-                attestor.commit()
-                self.assertFalse(future.result(timeout=10))
+            future = attestation_first_pool.submit(
+                execute_propose, competing_store, execution, note(execution), "note",
+            )
+            wait_for_lock("m5_note_after_attestation")
+            attestor.commit()
+            self.assertFalse(future.result(timeout=10))
         finally:
             attestor.rollback()
             attestor.close()
+            attestation_first_pool.shutdown(wait=True, cancel_futures=True)
 
         usage = UsageProposal(
             execution.lease.task_id, execution.lease.run_id, execution.packet_digest,
@@ -958,10 +961,15 @@ class PostgresFactoryTests(unittest.TestCase):
         )
 
         task, packet, execution, _, _, service = claim("attestation-unsafe-path", 4)
+        exact_1024 = "factory/src/" + "x" * (1024 - len("factory/src/"))
+        exact_1025 = exact_1024 + "x"
+        self.assertEqual(
+            (len(exact_1024.encode()), len(exact_1025.encode())), (1024, 1025),
+        )
         for unsafe_path in (
             "factory/src/password=hunter2", "factory/src/ghp_secret",
             "factory/src/../outside", "factory/src/.git/config",
-            "factory/src/" + "x" * (1025 - len("factory/src/")),
+            exact_1025,
         ):
             with self.subTest(unsafe_path=unsafe_path), self.assertRaises(ExecutionContractError):
                 service.commit_execution_proposal(
@@ -995,7 +1003,9 @@ class PostgresFactoryTests(unittest.TestCase):
             cursor.execute("SET ROLE factory_artifact_attestor")
             for unsafe_path in (
                 "factory/src/ghp_secret",
-                "factory/src/" + "x" * (1025 - len("factory/src/")),
+                "factory/src/../outside",
+                "factory/src/.git/config",
+                exact_1025,
             ):
                 direct = {**raw, "path": unsafe_path}
                 direct["artifact_attestation_digest"] = canonical_digest({
@@ -1006,12 +1016,43 @@ class PostgresFactoryTests(unittest.TestCase):
                     (psycopg.types.json.Jsonb(direct),),
                 )
                 self.assertIsNone(cursor.fetchone()[0])
+                cursor.execute("RESET ROLE")
+                cursor.execute(
+                    "SELECT count(*) FROM factory.execution_artifact_attestations WHERE run_id=%s",
+                    (execution.lease.run_id,),
+                )
+                self.assertEqual(cursor.fetchone()[0], 0)
+                cursor.execute("SET ROLE factory_artifact_attestor")
+            exact = {**raw, "path": exact_1024}
+            exact["artifact_attestation_digest"] = canonical_digest({
+                "contract": "adaptive-factory.artifact-attestation/v1", **exact,
+            })
+            cursor.execute(
+                "SELECT factory.execution_record_artifact_attestation(%s::jsonb)",
+                (psycopg.types.json.Jsonb(exact),),
+            )
+            self.assertEqual(
+                cursor.fetchone()[0]["artifact_attestation_digest"],
+                exact["artifact_attestation_digest"],
+            )
             cursor.execute("RESET ROLE")
             cursor.execute(
                 "SELECT count(*) FROM factory.execution_artifact_attestations WHERE run_id=%s",
                 (execution.lease.run_id,),
             )
-            self.assertEqual(cursor.fetchone()[0], 0)
+            self.assertEqual(cursor.fetchone()[0], 1)
+        service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest, sequence=1,
+            event_type="artifact.proposed", payload={**artifact, "path": exact_1024},
+            actor=WORKER,
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT count(*),bool_and(consumed_at IS NOT NULL)
+                FROM factory.execution_artifact_attestations WHERE run_id=%s""",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone(), (1, True))
         self.service.cancel(
             task.task_id, reason="bounded test cleanup", idempotency_key="4" * 64,
             actor=OPERATOR, now=NOW,
