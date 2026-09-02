@@ -2,7 +2,7 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-02T05:10:27Z",
+  "observed_at": "2026-09-02T08:24:50Z",
   "observed_main_sha": "78ad2f679d38dc3244e716c586332417e610089c",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
@@ -23,11 +23,11 @@
     "route_id": "b7f288f1e81e",
     "branch": "integration/m4-main-20260902",
     "change_package": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288",
-    "status": "local_m4_integrated_candidate_verification",
+    "status": "local_m4_integrated_candidate_review",
     "highest_implemented_milestone": "M4",
-    "current_provisional_milestone": "M5",
-    "next_roadmap_milestone": "M6",
-    "next_action": "Verify and independently review the exact local M4 integration tree, then use PR-only delivery and the current external exact-head gate; finish and restack provisional M5 only after M4 is accepted."
+    "current_provisional_milestone": "M8",
+    "next_roadmap_milestone": "M9",
+    "next_action": "Re-run final verification after this documentation commit and complete five fresh M4 reviews/reports/receipts on one exact tree, then use PR-only delivery and the current external exact-head gate; accept and restack M5-M9 only in dependency order."
   },
   "milestones": {
     "M0": {
@@ -172,12 +172,13 @@
       "implementation": {
         "status": "complete",
         "commit": "4f75558770f2f332b32b4a47fe6afa61fcc524ec",
-        "candidate_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
+        "source_evidence_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
+        "integration_code_candidate": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
         "evidence": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/implementation-report.md",
-        "notes": "Production is locally complete; 460a8a01 freezes its verification and five independent review reports."
+        "notes": "Production is locally complete; da7ec8d7 is the current-main integration code candidate after three verifier-bypass repairs, not an accepted or delivered head."
       },
       "review": {
-        "status": "stale",
+        "status": "pending_refresh",
         "commit": "4f75558770f2f332b32b4a47fe6afa61fcc524ec",
         "evidence_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
         "evidence": [
@@ -187,7 +188,7 @@
           "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/data-review.md",
           "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/release-review.md"
         ],
-        "notes": "All five reports pass for the pre-integration M4 product/evidence tree; the current-main merge changes the repository tree and requires fresh exact-tree verification and reviews."
+        "notes": "The listed five reports pass only for the pre-integration tree. Five fresh reviews, reports and receipts remain pending for the final current-main integration tree."
       },
       "stack_integration": {
         "status": "local_integrated_candidate",
@@ -199,15 +200,24 @@
           "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
           "78ad2f679d38dc3244e716c586332417e610089c"
         ],
+        "code_candidate_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
+        "intermediate_local_verification": {
+          "status": "passed",
+          "head_sha": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
+          "checks_passed": 14,
+          "checks_total": 14,
+          "changed_files": 469,
+          "notes": "Exact-code-head preflight only; this documentation commit requires a final rerun before completion."
+        },
         "pull_request": null,
         "merge_commit": null,
-        "notes": "The candidate identity is the repository tree containing this ledger; a commit cannot embed its own SHA."
+        "notes": "The final candidate identity is the repository tree containing this state file; a commit cannot embed its own SHA."
       },
       "main_delivery": {
         "status": "not_delivered",
         "pull_request": null,
         "merge_commit": null,
-        "notes": "The local integration branch has not been pushed, opened as a successor PR, merged or delivered to main."
+        "notes": "The local integration branch has not been delivered through a successor PR, externally accepted, merged or delivered to main."
       },
       "external_gate": {
         "status": "not_run",
@@ -217,41 +227,41 @@
         "source_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
         "source_trust_ci_status": "success",
         "source_gitguardian_status": "failure_metadata_only",
-        "notes": "PR 21's source-head Trust CI success cannot transfer to the new merge tree. The integration does not inspect or dismiss the GitGuardian finding and has no external authority."
+        "notes": "PR 21's source-head Trust CI success cannot transfer to the new merge tree. Its GitGuardian FAILURE metadata remains unresolved; the integration does not inspect or dismiss the finding and has no external authority."
       }
     },
     "M5": {
-      "implementation": {"status": "provisional_finalizing", "commit": "64d55d4b11533c1da8aadb0c993b5b35926ac927", "evidence": "milestone/m5-isolated-execution-provisional-m4", "notes": "Source exists only on the provisional branch and does not constitute acceptance or delivery."},
-      "review": {"status": "changes_requested", "commit": "64d55d4b11533c1da8aadb0c993b5b35926ac927", "evidence": [], "notes": "Independent code review passed; security/test review requested a bounded follow-up before a final review wave."},
+      "implementation": {"status": "provisional_source_complete", "commit": "141e51e75b2bb337fa3bb1544639c6c46c287309", "evidence": "milestone/m5-isolated-execution-provisional-m4", "notes": "Tasks 1-6 source are complete only on the clean provisional branch and do not constitute acceptance or delivery."},
+      "review": {"status": "pending_final", "commit": "141e51e75b2bb337fa3bb1544639c6c46c287309", "evidence": [], "notes": "A final review wave remains pending after accepted-M4 restack and rootless live-host isolation proof."},
       "stack_integration": {"status": "blocked_on_m4_acceptance", "base_branch": "milestone/m4-durable-control-plane-accepted-m3", "base_commit": "94fc5ad878e6b15df6418303caada49a3b93bf4c", "pull_request": null, "merge_commit": null, "notes": "Must restack on the accepted M4 integration head."},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
-      "external_gate": {"status": "blocked", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null, "notes": "Suitable rootless-isolation host proof and accepted M4 predecessor are still required."}
+      "external_gate": {"status": "blocked", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null, "notes": "Rootless live-host isolation proof, final reviews and an accepted M4 predecessor are still required."}
     },
     "M6": {
-      "implementation": {"status": "provisional_paused", "commit": "5c5c37136f20404a927fd2ad7621ad0f7fcae8e6", "evidence": "milestone/m6-semantic-validation-provisional-m4", "notes": "Provisional source is paused until M5 is final and accepted."},
-      "review": {"status": "not_final", "commit": null, "evidence": []},
+      "implementation": {"status": "provisional_task1_bridge", "commit": "3def83eb915ca68e66379269526ffa64822a1104", "evidence": "milestone/m6-semantic-validation-provisional-m4", "notes": "Only the clean provisional Task-1 bridge exists; migration 014, service/API behavior, recovery and metrics remain pending."},
+      "review": {"status": "not_started", "commit": null, "evidence": [], "notes": "Final restack and reviews wait for accepted M5."},
       "stack_integration": {"status": "blocked_on_m5_acceptance", "base_branch": "milestone/m5-isolated-execution-provisional-m4", "pull_request": null, "merge_commit": null},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
       "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null, "notes": "No external gate is eligible before accepted M4 and M5 predecessors."}
     },
     "M7": {
-      "implementation": {"status": "not_started", "commit": null, "evidence": null},
-      "review": {"status": "not_reviewed", "commit": null, "evidence": []},
-      "stack_integration": {"status": "not_applicable", "base_branch": null, "pull_request": null, "merge_commit": null},
+      "implementation": {"status": "provisional_algorithm_source", "commit": "c8b450f494b3d44b580556c6a612b21a3a780368", "evidence": "milestone/m7-shadow-handoff-provisional-m4", "notes": "Clean provisional source has synthetic algorithm evidence only; it proves no runtime or real outcomes."},
+      "review": {"status": "not_started", "commit": null, "evidence": [], "notes": "Final reviews require accepted-M6 restack plus runtime and real-outcome evidence."},
+      "stack_integration": {"status": "blocked_on_m6_acceptance", "base_branch": "milestone/m6-semantic-validation-provisional-m4", "pull_request": null, "merge_commit": null},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
       "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
     },
     "M8": {
-      "implementation": {"status": "not_started", "commit": null, "evidence": "origin/milestone/a-plus-autopilot@90a5da294ec06e9fbbf8ea97d1c27c64484b9069 is design input only"},
-      "review": {"status": "not_reviewed", "commit": null, "evidence": []},
-      "stack_integration": {"status": "not_applicable", "base_branch": null, "pull_request": null, "merge_commit": null},
+      "implementation": {"status": "provisional_task1_source", "commit": "5735e762b8d7571887f6fa4ac9cf10cd1fad1954", "starting_head": "46a6c8eba6b5bd8e4654f3041e52061cdd1a15d6", "evidence": "milestone/m8-earned-autonomy-provisional-m4", "notes": "The clean provisional branch contains only the first source-only Task-1 closed-contract slice with synthetic fixtures; Tasks 2-3 remain pending."},
+      "review": {"status": "not_started", "commit": null, "evidence": [], "notes": "No factual trust profile, 30-real-task cohort, activation or acceptance exists."},
+      "stack_integration": {"status": "blocked_on_m7_acceptance", "base_branch": "milestone/m7-shadow-handoff-provisional-m4", "pull_request": null, "merge_commit": null},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
       "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
     },
     "M9": {
-      "implementation": {"status": "not_started", "commit": null, "evidence": null},
-      "review": {"status": "not_reviewed", "commit": null, "evidence": []},
-      "stack_integration": {"status": "not_applicable", "base_branch": null, "pull_request": null, "merge_commit": null},
+      "implementation": {"status": "design_only", "commit": "055051e26e26bf08fa85376523ba6632afcca747", "evidence": "milestone/m9-staged-recovery-provisional-m4", "notes": "A source-only override is planned, but no product source, real signed input, environment/recovery proof or production authority exists."},
+      "review": {"status": "not_started", "commit": null, "evidence": []},
+      "stack_integration": {"status": "blocked_on_m8_acceptance", "base_branch": "milestone/m8-earned-autonomy-provisional-m4", "pull_request": null, "merge_commit": null},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
       "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
     }
@@ -263,19 +273,39 @@
         "branch": "integration/m4-main-20260902",
         "source_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
         "base_head": "78ad2f679d38dc3244e716c586332417e610089c",
-        "purpose": "Verify and review the local M4 current-main integration candidate before PR-only delivery."
+        "code_candidate_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
+        "purpose": "Re-run final verification after the docs refresh and complete five fresh reviews/reports/receipts before PR-only delivery."
       },
       {
         "route_id": "37b05f579320",
         "branch": "milestone/m5-isolated-execution-provisional-m4",
-        "head": "64d55d4b11533c1da8aadb0c993b5b35926ac927",
-        "purpose": "Finish bounded review repairs and rootless-isolation evidence, then restack on accepted M4."
+        "head": "141e51e75b2bb337fa3bb1544639c6c46c287309",
+        "purpose": "Tasks 1-6 source complete provisionally; prove rootless live-host isolation, then restack/review on accepted M4."
       },
       {
         "route_id": "82aac86a3bf9",
         "branch": "milestone/m6-semantic-validation-provisional-m4",
-        "head": "5c5c37136f20404a927fd2ad7621ad0f7fcae8e6",
-        "purpose": "Paused provisional source; resume only after accepted M5."
+        "head": "3def83eb915ca68e66379269526ffa64822a1104",
+        "purpose": "Task-1 bridge only; finish migration 014, service/API, recovery and metrics, then restack/review after accepted M5."
+      },
+      {
+        "route_id": "e5911c3f8721",
+        "branch": "milestone/m7-shadow-handoff-provisional-m4",
+        "head": "c8b450f494b3d44b580556c6a612b21a3a780368",
+        "purpose": "Synthetic algorithm source only; restack after accepted M6 and add runtime/real-outcome proof plus reviews."
+      },
+      {
+        "route_id": "670ffe5522e0",
+        "branch": "milestone/m8-earned-autonomy-provisional-m4",
+        "starting_head": "46a6c8eba6b5bd8e4654f3041e52061cdd1a15d6",
+        "head": "5735e762b8d7571887f6fa4ac9cf10cd1fad1954",
+        "purpose": "First Task-1 source-only contract slice with synthetic fixtures; Tasks 2-3 and all factual cohort/activation gates remain pending."
+      },
+      {
+        "route_id": "e376373492fe",
+        "branch": "milestone/m9-staged-recovery-provisional-m4",
+        "head": "055051e26e26bf08fa85376523ba6632afcca747",
+        "purpose": "Design-only handoff; product source, real signed input, environment/recovery proof and production authority remain absent."
       }
     ],
     "open_pull_requests": [
