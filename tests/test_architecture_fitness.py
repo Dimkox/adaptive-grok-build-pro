@@ -3424,7 +3424,7 @@ class ArchitectureFitnessTests(unittest.TestCase):
         added["nodes"][0]["public_contracts"] = ["CONTRACT-UNSUPPORTED"]
         repo.model(added, rules)
         document = _json_schema({"value": {"type": "string"}})
-        document["properties"]["value"]["oneOf"] = [{"type": "string"}]
+        document["properties"]["value"]["dependentRequired"] = {"value": ["other"]}
         repo.write_json("engineering/contracts/unsupported.json", document)
         head = repo.commit("unsupported contract addition")
         report = self._evaluate(repo, base, head, pre_risk="yellow")
@@ -3432,6 +3432,101 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "unsupported")
         self.assertEqual(report.status, "fail")
         self.assertIn("CONTRACT-UNSUPPORTED", " ".join(result.findings))
+
+    def test_added_rich_factory_contracts_resolve_from_head_inventory(self) -> None:
+        system = _system()
+        rules = _rules()
+        rules["contract_policies"] = [
+            {
+                "id": "FIT-OPENAPI",
+                "contract_kinds": ["openapi"],
+                "compatibility": "bidirectional",
+                "severity": "error",
+            },
+            {
+                "id": "FIT-JSON-PRODUCER",
+                "contract_kinds": ["json_schema"],
+                "compatibility": "producer_accepted_by_old",
+                "severity": "error",
+            },
+            {
+                "id": "FIT-EVENT-CONSUMER",
+                "contract_kinds": ["event"],
+                "compatibility": "consumer_accepts_old",
+                "severity": "error",
+            },
+        ]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        base = repo.commit("factory contract predecessor")
+
+        contracts = [
+            {
+                "compatibility": "bidirectional",
+                "id": "CONTRACT-FACTORY-EXECUTION-OPENAPI",
+                "kind": "openapi",
+                "path": "factory/contracts/openapi/factory-execution.v1.json",
+                "role": "bidirectional",
+                "version": "1",
+            },
+            {
+                "compatibility": "consumer_accepts_old",
+                "id": "CONTRACT-FACTORY-EXECUTION-EVENT",
+                "kind": "event",
+                "path": "factory/contracts/schemas/execution-event.v1.json",
+                "role": "consumer",
+                "version": "1",
+            },
+            {
+                "compatibility": "producer_accepted_by_old",
+                "id": "CONTRACT-FACTORY-EXECUTION-INVOCATION",
+                "kind": "json_schema",
+                "path": "factory/contracts/schemas/execution-invocation.v1.json",
+                "role": "producer",
+                "version": "1",
+            },
+            {
+                "compatibility": "producer_accepted_by_old",
+                "id": "CONTRACT-FACTORY-TASK-PACKET",
+                "kind": "json_schema",
+                "path": "factory/contracts/schemas/task-packet.v1.json",
+                "role": "producer",
+                "version": "1",
+            },
+            {
+                "compatibility": "producer_accepted_by_old",
+                "id": "CONTRACT-FACTORY-WORKSPACE-RESULT",
+                "kind": "json_schema",
+                "path": "factory/contracts/schemas/workspace-result.v1.json",
+                "role": "producer",
+                "version": "1",
+            },
+        ]
+        added = copy.deepcopy(system)
+        added["contracts"] = contracts
+        added["nodes"][0]["public_contracts"] = [contracts[0]["id"]]
+        added["nodes"][1]["public_contracts"] = [
+            contract["id"] for contract in contracts[1:]
+        ]
+        repo.model(added, rules)
+        for contract in contracts:
+            source = ROOT / contract["path"]
+            repo.write_json(contract["path"], json.loads(source.read_text()))
+        head = repo.commit("add rich factory contracts")
+
+        result = self._results(self._evaluate(repo, base, head))[
+            "contract_compatibility"
+        ]
+        self.assertEqual(result.status, "pass", result.findings)
+        self.assertEqual(
+            set(result.applicability.scanned_scope),
+            {
+                *(contract["id"] for contract in contracts),
+                "FIT-OPENAPI",
+                "FIT-JSON-PRODUCER",
+                "FIT-EVENT-CONSUMER",
+            },
+        )
 
     def test_migration_history_and_required_phases_fail_closed(self) -> None:
         rules = _rules()
