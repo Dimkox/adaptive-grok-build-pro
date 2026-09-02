@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from .contracts import ContractError, canonical_digest
 from .models import Actor, LeaseGrant, RunRole
 from .service import AuthorizationError
-from .store import AuthorityError, BudgetError, FenceError, MetricsUnavailable, StoreError
+from .store import AuthorityError, BudgetError, FenceError, MetricsUnavailable, StoreError, StoreUnavailable
 
 
 MAX_BODY_BYTES = 1_048_576
@@ -170,6 +170,10 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
     @app.exception_handler(BudgetError)
     async def budget_error(_request: Request, _error: BudgetError):
         return JSONResponse({"error": "stopped", "code": "budget"}, status_code=409)
+
+    @app.exception_handler(StoreUnavailable)
+    async def store_unavailable(_request: Request, _error: StoreUnavailable):
+        return JSONResponse({"error": "unavailable", "code": "database"}, status_code=503)
 
     @app.exception_handler(StoreError)
     async def store_error(_request: Request, _error: StoreError):

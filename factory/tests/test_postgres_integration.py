@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from datetime import datetime, timedelta, timezone
+from functools import partial
 import os
 import threading
 import time
@@ -1787,6 +1788,96 @@ class PostgresFactoryTests(unittest.TestCase):
                     errors.append(exc)
         self.assertEqual(errors, [])
         self.assertEqual(self.store.get_task(task.task_id).status, TaskStatus.CANCELLED)
+
+    def test_api_mutation_families_fail_bounded_under_database_lock_contention(self):
+        import psycopg
+
+        class FastBoundStore(PostgresFactoryStore):
+            _MUTATION_LOCK_TIMEOUT = "100ms"
+            _MUTATION_STATEMENT_TIMEOUT = "500ms"
+
+        bounded = FastBoundStore(DATABASE_URL)
+        operations = []
+        for index, name in enumerate(("heartbeat", "release", "reserve", "observe"), start=1):
+            repository = f"bounds/{name}"
+            task = self.submit(repository=repository, source=f"bounded-{name}").task
+            grant = self.service.claim(
+                owner="bounded-worker",
+                role=RunRole.READER,
+                repositories=(repository,),
+                lease_seconds=60,
+                actor=WORKER,
+                now=NOW,
+            )
+            key = f"{index:064x}"
+            if name == "heartbeat":
+                operation = partial(bounded.heartbeat, grant, WORKER, NOW, idempotency_key=key)
+            elif name == "release":
+                operation = partial(
+                    bounded.release,
+                    grant, FailureClass.WORKER_LOST, WORKER, NOW, idempotency_key=key
+                )
+            elif name == "reserve":
+                operation = partial(bounded.reserve_budget, grant, 0, 0, 0, "a" * 64, key, WORKER)
+            else:
+                operation = partial(
+                    bounded.observe_usage,
+                    grant, "bounded-provider-call", "b" * 64, 0, 0, 0, WORKER,
+                    idempotency_key=key,
+                )
+            operations.append((name, "task", task.task_id, operation))
+
+        cancel_task = self.submit(repository="bounds/cancel", source="bounded-cancel").task
+        operations.append(
+            (
+                "cancel",
+                "task",
+                cancel_task.task_id,
+                lambda: bounded.cancel(
+                    cancel_task.task_id, "bounded", "5" * 64, OPERATOR, NOW
+                ),
+            )
+        )
+        kill_key = "6" * 64
+        operations.append(
+            (
+                "kill",
+                "advisory",
+                kill_key,
+                lambda: bounded.set_kill(
+                    "repository:bounds/kill", False, "bounded", kill_key, OPERATOR, NOW
+                ),
+            )
+        )
+
+        outcomes = {}
+        for name, lock_kind, identity, operation in operations:
+            with self.subTest(name=name):
+                blocker = psycopg.connect(DATABASE_URL)
+                if lock_kind == "task":
+                    blocker.execute(
+                        "SELECT task_id FROM factory.tasks WHERE task_id=%s FOR UPDATE", (identity,)
+                    )
+                else:
+                    blocker.execute(
+                        "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", (identity,)
+                    )
+                with ThreadPoolExecutor(max_workers=1) as pool:
+                    future = pool.submit(operation)
+                    try:
+                        future.result(timeout=0.5)
+                    except StoreError as exc:
+                        outcomes[name] = type(exc).__name__
+                    except FutureTimeout:
+                        outcomes[name] = "client_timeout"
+                    except Exception as exc:
+                        outcomes[name] = f"raw:{type(exc).__name__}"
+                    else:
+                        outcomes[name] = "returned"
+                    finally:
+                        blocker.rollback()
+                        blocker.close()
+        self.assertEqual(outcomes, {name: "StoreUnavailable" for name, *_rest in operations})
 
     def test_representative_hot_queries_use_task_scoped_indexes(self):
         import psycopg

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -15,7 +16,7 @@ from adaptive_factory.contracts import TaskIntakeV1
 from adaptive_factory.models import Actor, TaskProjection, TaskStatus
 from adaptive_factory.service import FactoryService
 from adaptive_factory.settings import SettingsError, read_token_file
-from adaptive_factory.store import IntakeResult
+from adaptive_factory.store import IntakeResult, StoreError
 from factory.tests.test_contracts import valid_intake
 
 
@@ -136,6 +137,38 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.json()["error"], "invalid")
         self.assertNotIn("shell_command", response.text)
+
+    def test_database_contention_returns_stable_bounded_unavailable_error(self):
+        from adaptive_factory import store as store_module
+
+        error_type = getattr(store_module, "StoreUnavailable", StoreError)
+        self.service.intake = mock.Mock(side_effect=error_type("internal database detail"))
+        response = self.client.post("/v1/tasks", headers=self.auth, json=self.payload())
+        self.assertEqual(
+            (response.status_code, response.json()),
+            (503, {"error": "unavailable", "code": "database"}),
+        )
+        self.assertNotIn("internal database detail", response.text)
+
+        contract = json.loads(
+            (Path(__file__).resolve().parents[1] / "contracts/openapi/factory-control.v1.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        mutation_paths = (
+            "/v1/tasks",
+            "/v1/tasks/{task_id}/cancel",
+            "/v1/claims",
+            "/v1/heartbeats",
+            "/v1/proposals",
+            "/v1/budget-reservations",
+            "/v1/usage-observations",
+            "/v1/kill-switches",
+            "/v1/reconcile",
+        )
+        for path in mutation_paths:
+            with self.subTest(path=path):
+                self.assertIn("503", contract["paths"][path]["post"]["responses"])
 
     def test_metrics_counts_auth_rejections_without_exposing_credentials(self):
         operator_token = "metrics-" + "operator-" + "credential"
