@@ -29,7 +29,7 @@
     "highest_implemented_milestone": "M4",
     "current_provisional_milestone": "M5",
     "next_roadmap_milestone": "M5",
-    "next_action": "Split the restacked M5 range into honest successor slices that satisfy the frozen change-separation and bounded-change fitness rules without weakening them, then rebuild the stale 2.0.14 artifact only from the resulting clean exact source commit. Rootless live-host isolation and the trusted live Git snapshot remain blocking exit evidence; final reviews, PR, external Trust CI, protected-branch merge and delivery remain absent.",
+    "next_action": "Split the restacked M5 range into honest successor slices that satisfy the frozen change-separation and bounded-change fitness rules without weakening them, then build the absent 2.0.14 artifact only from the resulting clean exact source commit. Rootless live-host isolation and the trusted live Git snapshot remain blocking exit evidence; final reviews, PR, external Trust CI, protected-branch merge and delivery remain absent.",
     "m4_dimensions": {
       "implementation_source": {
         "status": "implemented_local_candidate",
@@ -102,7 +102,7 @@
           "remaining_fitness": [
             "FIT-BOUNDED-ARCHITECTURE-CHANGE: 1011544 changed bytes exceed 1000000 and 13122 changed lines exceed 10820 on the exact final-M4-to-M5 range; successor slicing is required"
           ],
-          "package_status": "The tracked 2.0.14 artifact from bc370d7 is stale after the source repairs and must not be rebuilt until the successor-slice boundary is resolved."
+          "package_status": "Historical artifact checkpoint bc370d7 is preserved as test evidence but is excluded from this artifact-free source lineage; neither 2.0.14 package file exists here, and no artifact may be built until the successor-slice boundary is resolved."
         },
         "notes": "Focused source, static and disposable-PostgreSQL evidence is provisional. Exact final-M4-to-M5 change separation and contract compatibility now pass, but the route verifier is not passing because the range still violates the frozen bounded-change fitness ceiling; that rule is not weakened, and no current exact-head verifier receipt or independent review exists."
       },

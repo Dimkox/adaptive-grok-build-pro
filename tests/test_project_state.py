@@ -303,7 +303,7 @@ class ProjectStateTests(unittest.TestCase):
             )
         )
         self.assertIn("without weakening them", delivery["next_action"])
-        self.assertIn("stale 2.0.14 artifact", delivery["next_action"])
+        self.assertIn("absent 2.0.14 artifact", delivery["next_action"])
         self.assertEqual(
             dimensions["implementation_source"],
             {
