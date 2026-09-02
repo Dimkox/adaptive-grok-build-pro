@@ -1,0 +1,29 @@
+{
+  "change_id": "20260902-m8-earned-autonomy-provisional-m4-bridge-670ffe",
+  "created_at": "2026-09-02T00:27:20+00:00",
+  "history": [
+    {
+      "at": "2026-09-02T00:27:20+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-02T00:35:24+00:00",
+      "from": "draft",
+      "reason": "approved M8 scope, exact M4 bridge, acceptance criteria and factual-M7 implementation block recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-02T00:35:24+00:00",
+      "from": "scoped",
+      "reason": "user approved canonical design; approval grants no implementation, activation, merge or external authority",
+      "to": "approved"
+    }
+  ],
+  "route_id": "670ffe5522e0",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "M8 earned autonomy provisional M4 bridge",
+  "updated_at": "2026-09-02T00:35:24+00:00"
+}

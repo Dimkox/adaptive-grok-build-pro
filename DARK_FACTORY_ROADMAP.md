@@ -205,7 +205,7 @@ M1 + M2 + M3
 
 Milestones M1, M2, and M3 may be developed in parallel only after M0 has a live proof or an explicitly documented bootstrap exception approved by the user. M4 must consume their stable interfaces rather than inventing replacements.
 
-Current execution is parallel only for reversible source development: M4 repair follows product anchor `94fc5ad`; M5 branch `milestone/m5-isolated-execution-provisional-m4` / route `37b05f579320` and M6 branch `milestone/m6-semantic-validation-provisional-m4` / route `82aac86a3bf9` are provisional descendants. Acceptance, PR delivery, merge and Trust CI remain strictly dependency ordered M4 → M5 → M6, and each downstream branch must restack onto its accepted predecessor. M5 additionally remains blocked on a suitable rootless-isolation host. The hard deadline is **2026-09-08 00:00 UTC+3**; no M4/M5/M6 completion or external action is claimed merely from source presence or calendar pressure. See the [root current state](README.md), [M4 package](factory/README.md) and [active schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
+Current execution is parallel only for reversible source/design work: M5/M6 source, M7/M9 provisional branches and the M8 design package may be prepared from exact M4 evidence `9fe779ab9f90719201acfd01160d3452658ff075`. Acceptance, PR delivery, merge and Trust CI remain strictly dependency ordered M4 → M5 → M6 → M7 → M8 → M9, and every downstream branch must restack onto its accepted predecessor. M5 remains blocked on a suitable rootless-isolation host; M8 product implementation, activation and cohort completion are blocked until factual M7 restack and at least 30 real human acceptances for one exact tuple. The hard deadline is **2026-09-08 00:00 UTC+3**; no milestone completion or external action is claimed from source/design presence or calendar pressure. See the [root current state](README.md), [M4 package](factory/README.md), [active schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md) and [M8 provisional package](engineering/changes/20260902-m8-earned-autonomy-provisional-m4-bridge-670ffe/brief.md).
 
 ## 7.1 Exact milestone handoff contracts
 
@@ -217,7 +217,7 @@ Current execution is parallel only for reversible source development: M4 repair 
 | M7 → M8 | M7 emits an immutable shadow ready-for-PR bundle digest binding task/run/verdict/check/PR-head/human-decision and outcome metrics; M8 cohorts only exact trust-profile tuples. | At least 30 human-accepted tasks for the exact class/profile tuple, complete disagreement/rollback/security metrics and human merge for every PR; any tuple component or evidence mutation starts a new cohort. | Demote/discard the affected cohort and keep human merge; under current authority M8 is capped at L2, cannot auto-merge, rewrite historical decisions or activate governance. |
 | M8 → M9 | M8 emits a durable trust-profile digest and L2-or-lower decision bound to repository/class/models/prompts/policy/runner/holdout digests; M9 binds preview/staging/canary inputs to the exact merged SHA and signed artifact digest. | Accepted predecessor profiles, exact signed supply-chain artifact, reproducible preview/staging, explicit canary thresholds and exercised recovery; incident, rollback, policy/artifact/SHA change invalidates promotion and triggers demotion. | Halt/rollback the canary, preserve deployment evidence and demote the profile; production promotion remains human-owned and no agent gains production, signing-key, branch-protection or Trust CI authority. |
 
-M7-M9 are roadmap contracts only: no implementation, completion, cohort, preview, canary or external-delivery claim is made in the current tree.
+M7 and M9 remain roadmap/provisional contracts. M8 has a documentation-only design package; no M8 product implementation, completion, cohort, activation, preview, canary or external-delivery claim is made in the current tree.
 
 ---
 
@@ -895,7 +895,7 @@ security escalation rate
 
 # M8 — Earned and Revocable Low-Risk Autonomy
 
-Current status: roadmap only. Promotion requires at least 30 human-accepted tasks for one exact trust-profile tuple, immediate demotion remains mandatory, and current authority caps the system at L2 (automated recommendation, human merge).
+Current status: approved provisional design/package only on exact M4 evidence `9fe779ab9f90719201acfd01160d3452658ff075`. Product implementation, activation and cohort completion are blocked until factual accepted M7 restack and at least 30 real human-accepted tasks for one exact trust-profile tuple. Immediate demotion remains mandatory, and current authority caps the system at L2 (automated recommendation, human merge).
 
 ## Objective
 

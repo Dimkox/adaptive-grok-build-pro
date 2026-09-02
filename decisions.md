@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-09-02 — Freeze M8 design but block implementation on factual M7
+
+Allow the closed M8 contract/evaluator design to proceed on exact M4 evidence while withholding product code, activation and cohort claims until accepted M5/M6, factual restacked M7 and at least 30 real human acceptances exist for one exact tuple. This preserves parallel schedule discovery without converting provisional repository data into earned authority.
+
 <!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 > **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
 
