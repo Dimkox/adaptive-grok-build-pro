@@ -82,9 +82,14 @@ Terminal proposals are recommendations, never state-selection authority. The con
 
 `WorkspaceBroker` and `GitBroker` are capability protocols. Provider/adapters receive opaque workspace handles, never shared Git paths. The fake runtime models read/write/path/network/environment decisions and makes no OS-security claim. A host capability probe reports whether rootless namespaces, a sandbox launcher and slirp/pasta-style egress boundary exist.
 
+`ArtifactAttestationBroker.attest_artifact` is a deterministic, idempotent,
+read-only verification by canonical request digest. Concurrent identical reads
+may call the broker more than once, but cannot mutate external state or grant
+authority; the control plane persists exactly one attestation and proposal.
+
 ## Persistence, API and lifecycle
 
-Successor slice 02 adds contiguous migration `014_execution_plane.sql` after M4 migration `013`; it creates immutable packet, manifest, stage, canonical event, note, artifact and terminal-proposal tables plus fixed execution metrics. Existing tables/columns/constraints/functions remain unchanged. Runtime gets explicit EXECUTE/INSERT-only capabilities through fixed-search-path functions; no generic DML or policy mutation.
+Successor slice 02 adds contiguous migration `014_execution_plane.sql` after M4 migration `013`; it creates immutable packet, manifest, stage, canonical event, note, artifact and terminal-proposal tables. Slice 03 preserves `014` byte-identically, adds non-destructive expand overlay `015_execution_canonical_persistence.sql` for closed canonical proposals, trusted artifact attestations, cross-bound results and atomic M4 finalization, then applies DROP-only `016_contract_execution_canonical_persistence.sql` in the same migrator transaction to retire the superseded proposal-body and snapshot-uniqueness constraints. Because `014` was never accepted or published, rollout must quiesce old finalizers before `015` locks proposals then results. The expand gate may preserve compatible live non-final `014` rows but must refuse any legacy finalized workspace row or unattested artifact proposal atomically before DDL or mutation; it never fabricates attestation and is not a universal production-upgrade mechanism. Runtime and attestor get disjoint fixed-search-path capabilities with no generic DML or policy mutation. The later integrated M6 semantic migration starts at `017`.
 
 New endpoints are `/v1/execution/claims`, `/v1/execution/stages`, `/v1/execution/notes`, `/v1/execution/artifacts`, `/v1/execution/usage`, and `/v1/execution/terminal`. All use the current actor authentication, body cap, execution-only secret-shaped identity rejection, and M4 live-fence checks. They are described by the closed additive `factory-execution.v1.json` fragment on the same local server. The M4 `factory-control.v1.json` baseline remains byte-identical, retained/deprecated and intentionally is not unified discovery; both artifacts use the existing `/v1` wire namespace with no route or operation-ID collision.
 

@@ -9,14 +9,18 @@ from .contracts import TaskIntakeV1, canonical_digest
 from .execution_contracts import (
     ExecutionContractError,
     ExecutionSelectionV1,
-    PROTOCOL_VERSION,
     RunManifestV1,
     TaskPacketV1,
 )
 from .models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole
 from .protocol import CanonicalEvent
-from .workspace import WorkspaceSnapshotV1
-from .store import FenceError
+from .workspace import (
+    ArtifactAttestationRequest,
+    ArtifactAttestationV1,
+    WorkspaceError,
+    WorkspaceSnapshotV1,
+)
+from .store import FenceError, StoreUnavailable
 
 
 class AuthorizationError(PermissionError):
@@ -32,9 +36,19 @@ class ClaimRequest:
 
 
 class FactoryService:
-    def __init__(self, store, *, snapshot_broker=None, execution_registry=None) -> None:
+    def __init__(
+        self,
+        store,
+        *,
+        snapshot_broker=None,
+        artifact_broker=None,
+        artifact_attestation_store=None,
+        execution_registry=None,
+    ) -> None:
         self.store = store
         self.snapshot_broker = snapshot_broker
+        self.artifact_broker = artifact_broker
+        self.artifact_attestation_store = artifact_attestation_store
         self.execution_registry = execution_registry
 
     def readiness(self):
@@ -293,26 +307,111 @@ class FactoryService:
         self._require_grant_actor(grant, actor, "task:execute")
         if type(sequence) is not int or sequence < 1:
             raise ValueError("invalid proposal sequence")
-        context = self.store.proposal_context(grant, packet_digest)
-        event = CanonicalEvent(
-            PROTOCOL_VERSION,
-            grant.task_id,
-            grant.run_id,
-            packet_digest,
-            sequence,
-            event_type,
-            payload,
+        event = CanonicalEvent.from_payload(
+            task_id=grant.task_id,
+            run_id=grant.run_id,
+            packet_digest=packet_digest,
+            sequence=sequence,
+            event_type=event_type,
+            payload=payload,
         )
-        proposal = ProposalBroker().accept(event, context, owner=grant.owner, fence=grant.fence)
-        return self._fenced(
-            lambda: self.store.commit_execution_proposal(
+        replay = self.store.execution_proposal_replay(
+            grant, event, actor, idempotency_key=idempotency_key
+        )
+        if replay is not None:
+            return replay
+        try:
+            context = self.store.proposal_context(grant, packet_digest)
+            proposal_broker = ProposalBroker()
+            artifact_attestation_digest = None
+            if event_type == "artifact.proposed":
+                proposal_broker.accept(
+                    event,
+                    context,
+                    owner=grant.owner,
+                    fence=grant.fence,
+                    artifact_attestation_digest="0" * 64,
+                )
+                try:
+                    request = ArtifactAttestationRequest.from_facts({
+                        "task_id": context.task_id,
+                        "run_id": context.run_id,
+                        "repository_id": context.repository_id,
+                        "packet_digest": context.packet_digest,
+                        "workspace_handle": context.workspace_handle,
+                        "producer_sequence": event.sequence,
+                        "fence": grant.fence,
+                        "author_role": context.role,
+                        "artifact_class": event.payload["artifact_class"],
+                        "path": event.payload["path"],
+                        "sha256": event.payload["sha256"],
+                        "size_bytes": event.payload["size_bytes"],
+                        "media_type": event.payload["media_type"],
+                    })
+                except WorkspaceError as exc:
+                    raise ExecutionContractError("artifact_attestation_invalid") from exc
+                if self.artifact_broker is None:
+                    raise ExecutionContractError("artifact_attestation_unavailable")
+                attestation = self.artifact_broker.attest_artifact(request)
+                if not isinstance(attestation, ArtifactAttestationV1):
+                    raise ExecutionContractError("artifact_attestation_unavailable")
+                try:
+                    attestation = ArtifactAttestationV1.from_dict(attestation.to_dict())
+                except ValueError as exc:
+                    raise ExecutionContractError("artifact_attestation_invalid") from exc
+                if any(
+                    getattr(attestation, name) != value
+                    for name, value in request.to_dict().items()
+                ):
+                    raise ExecutionContractError("artifact_attestation_mismatch")
+                if self.artifact_attestation_store is None:
+                    raise ExecutionContractError("artifact_attestation_unavailable")
+                recorded = self.artifact_attestation_store.record_artifact_attestation(attestation)
+                if not isinstance(recorded, ArtifactAttestationV1):
+                    raise ExecutionContractError("artifact_attestation_unavailable")
+                try:
+                    recorded = ArtifactAttestationV1.from_dict(recorded.to_dict())
+                except ValueError as exc:
+                    raise ExecutionContractError("artifact_attestation_invalid") from exc
+                if recorded != attestation:
+                    raise ExecutionContractError("artifact_attestation_mismatch")
+                artifact_attestation_digest = attestation.artifact_attestation_digest
+            proposal = proposal_broker.accept(
+                event,
+                context,
+                owner=grant.owner,
+                fence=grant.fence,
+                artifact_attestation_digest=artifact_attestation_digest,
+            )
+            return self.store.commit_execution_proposal(
                 grant,
                 proposal,
                 actor,
+                event=event,
                 idempotency_key=idempotency_key,
                 correlation_id=correlation_id,
             )
-        )
+        except FenceError as error:
+            try:
+                replay = self.store.execution_proposal_replay(
+                    grant, event, actor, idempotency_key=idempotency_key
+                )
+            except FenceError:
+                replay = None
+            if replay is not None:
+                return replay
+            self._record_fence_rejection_best_effort()
+            raise error
+        except (StoreUnavailable, ExecutionContractError) as error:
+            try:
+                replay = self.store.execution_proposal_replay(
+                    grant, event, actor, idempotency_key=idempotency_key
+                )
+            except (FenceError, StoreUnavailable):
+                replay = None
+            if replay is not None:
+                return replay
+            raise error
 
     def _require_grant_actor(self, grant: LeaseGrant, actor: Actor, scope: str) -> None:
         self._require(actor, scope)

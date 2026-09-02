@@ -135,6 +135,16 @@
               }
             }
           },
+          "500": {
+            "description": "internal integrity failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "503": {
             "description": "database unavailable",
             "content": {
@@ -269,6 +279,16 @@
           },
           "422": {
             "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal integrity failure",
             "content": {
               "application/json": {
                 "schema": {
@@ -419,6 +439,16 @@
               }
             }
           },
+          "500": {
+            "description": "internal integrity failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "503": {
             "description": "database unavailable",
             "content": {
@@ -553,6 +583,16 @@
           },
           "422": {
             "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal integrity failure",
             "content": {
               "application/json": {
                 "schema": {
@@ -703,6 +743,16 @@
               }
             }
           },
+          "500": {
+            "description": "internal integrity failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "503": {
             "description": "database unavailable",
             "content": {
@@ -837,6 +887,16 @@
           },
           "422": {
             "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal integrity failure",
             "content": {
               "application/json": {
                 "schema": {

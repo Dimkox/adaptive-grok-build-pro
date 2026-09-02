@@ -10,6 +10,7 @@ import unicodedata
 from typing import Any, Mapping
 
 from .contracts import HEX40, HEX64, TaskLimitsV1
+from .models import FailureClass
 
 
 PROTOCOL_VERSION = "adaptive-factory.execution/v1"
@@ -106,7 +107,7 @@ def _domain_digest(domain: str, value: Any) -> str:
 def workspace_evidence_digest(kind: str, digests: Any) -> str:
     if kind not in {"artifacts", "notes", "usage", "diagnostics"}:
         raise ExecutionContractError("invalid_evidence_kind")
-    if not isinstance(digests, (list, tuple)) or len(digests) > 1_000:
+    if not isinstance(digests, (list, tuple)) or len(digests) > 100_000:
         raise ExecutionContractError("invalid_list", kind)
     parsed = tuple(_hex(value, kind, HEX64) for value in digests)
     if parsed != tuple(sorted(set(parsed))):
@@ -406,11 +407,14 @@ class WorkspaceResultV1:
     exact_head_sha: str
     workspace_snapshot_digest: str
     terminal_stage: str
-    terminal_proposal_digest: str | None
+    terminal_proposal_digest: str
     artifact_manifest_digest: str
     note_manifest_digest: str
     usage_evidence_digest: str
     diagnostics_digest: str
+    m4_status: str
+    failure_class: str | None
+    failure_reason: str | None
     workspace_result_digest: str
 
     @classmethod
@@ -424,6 +428,30 @@ class WorkspaceResultV1:
             raise ExecutionContractError("invalid_terminal")
         terminal_digest = data["terminal_proposal_digest"]
         terminal_digest = _hex(terminal_digest, "terminal_proposal_digest", HEX64)
+        m4_status = data["m4_status"]
+        if not isinstance(m4_status, str):
+            raise ExecutionContractError("invalid_m4_disposition")
+        failure_class = data["failure_class"]
+        failure_reason = data["failure_reason"]
+        if terminal == "completed":
+            if (
+                m4_status != "ready_for_human"
+                or failure_class is not None
+                or failure_reason is not None
+            ):
+                raise ExecutionContractError("invalid_m4_disposition")
+        elif terminal == "failed":
+            if m4_status not in {"retry", "needs_human", "dead"}:
+                raise ExecutionContractError("invalid_m4_disposition")
+            try:
+                failure_class = FailureClass(failure_class).value
+            except (TypeError, ValueError) as exc:
+                raise ExecutionContractError("invalid_failure_class") from exc
+            failure_reason = _text(failure_reason, "failure_reason", 4096)
+        else:
+            if m4_status != "needs_human" or failure_class is not None:
+                raise ExecutionContractError("invalid_m4_disposition")
+            failure_reason = _text(failure_reason, "failure_reason", 4096)
         values = {
             "contract_version": 1,
             "task_id": _identifier(data["task_id"], "task_id"),
@@ -442,6 +470,9 @@ class WorkspaceResultV1:
             "note_manifest_digest": _hex(data["note_manifest_digest"], "note_manifest_digest", HEX64),
             "usage_evidence_digest": _hex(data["usage_evidence_digest"], "usage_evidence_digest", HEX64),
             "diagnostics_digest": _hex(data["diagnostics_digest"], "diagnostics_digest", HEX64),
+            "m4_status": m4_status,
+            "failure_class": failure_class,
+            "failure_reason": failure_reason,
         }
         return cls(
             **values,

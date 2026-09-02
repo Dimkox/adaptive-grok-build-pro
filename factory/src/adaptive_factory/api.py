@@ -17,7 +17,15 @@ from .contracts import ContractError, canonical_digest
 from .execution_contracts import ExecutionContractError
 from .models import Actor, ExecutionStage, LeaseGrant, RunRole
 from .service import AuthorizationError
-from .store import AuthorityError, BudgetError, FenceError, MetricsUnavailable, StoreError, StoreUnavailable
+from .store import (
+    AuthorityError,
+    BudgetError,
+    FenceError,
+    IntegrityError,
+    MetricsUnavailable,
+    StoreError,
+    StoreUnavailable,
+)
 
 
 MAX_BODY_BYTES = 1_048_576
@@ -202,6 +210,12 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
     @app.exception_handler(StoreUnavailable)
     async def store_unavailable(_request: Request, _error: StoreUnavailable):
         return JSONResponse({"error": "unavailable", "code": "database"}, status_code=503)
+
+    @app.exception_handler(IntegrityError)
+    async def integrity_error(_request: Request, _error: IntegrityError):
+        return JSONResponse(
+            {"error": "internal", "code": "internal_integrity"}, status_code=500
+        )
 
     @app.exception_handler(StoreError)
     async def store_error(_request: Request, _error: StoreError):

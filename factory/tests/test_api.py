@@ -16,7 +16,7 @@ from adaptive_factory.contracts import TaskIntakeV1
 from adaptive_factory.models import Actor, TaskProjection, TaskStatus
 from adaptive_factory.service import FactoryService
 from adaptive_factory.settings import SettingsError, read_token_file
-from adaptive_factory.store import IntakeResult, StoreError
+from adaptive_factory.store import IntegrityError, IntakeResult, StoreError
 from factory.tests.test_contracts import valid_intake
 
 
@@ -377,6 +377,28 @@ class ApiTests(unittest.TestCase):
             "not ready",
         ):
             self.assertIn(required_semantic, readiness_unavailable)
+
+    def test_integrity_error_has_generic_500_without_database_detail(self):
+        self.service.intake = mock.Mock(
+            side_effect=IntegrityError("database integrity violation: private detail")
+        )
+        response = self.client.post("/v1/tasks", headers=self.auth, json=self.payload())
+        self.assertEqual(
+            (response.status_code, response.json()),
+            (500, {"error": "internal", "code": "internal_integrity"}),
+        )
+        self.assertNotIn("private detail", response.text)
+        contract = json.loads(
+            (
+                Path(__file__).resolve().parents[1]
+                / "contracts/openapi/factory-execution.v1.json"
+            ).read_text(encoding="utf-8")
+        )
+        for path in contract["paths"].values():
+            self.assertEqual(
+                path["post"]["responses"]["500"]["description"],
+                "internal integrity failure",
+            )
 
     def test_metrics_counts_auth_rejections_without_exposing_credentials(self):
         operator_token = "metrics-" + "operator-" + "credential"
