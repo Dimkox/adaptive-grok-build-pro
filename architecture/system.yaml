@@ -217,7 +217,7 @@
         "DATA-FACTORY-INTENT",
         "DATA-FACTORY-STATE"
       ],
-      "authentication": "none",
+      "authentication": "local_os",
       "direction": "from_to",
       "failure_behavior": {
         "correlation_id": "not_required",
@@ -241,7 +241,7 @@
         "DATA-FACTORY-INTENT",
         "DATA-FACTORY-STATE"
       ],
-      "authentication": "none",
+      "authentication": "local_os",
       "direction": "from_to",
       "failure_behavior": {
         "correlation_id": "not_required",
@@ -265,7 +265,7 @@
         "DATA-FACTORY-INTENT",
         "DATA-FACTORY-STATE"
       ],
-      "authentication": "none",
+      "authentication": "local_os",
       "direction": "from_to",
       "failure_behavior": {
         "correlation_id": "not_required",
@@ -288,7 +288,7 @@
       "allowed_data": [
         "DATA-FACTORY-STATE"
       ],
-      "authentication": "none",
+      "authentication": "local_os",
       "direction": "from_to",
       "failure_behavior": {
         "correlation_id": "required",
@@ -311,7 +311,7 @@
       "allowed_data": [
         "DATA-FACTORY-STATE"
       ],
-      "authentication": "none",
+      "authentication": "local_os",
       "direction": "from_to",
       "failure_behavior": {
         "correlation_id": "not_required",

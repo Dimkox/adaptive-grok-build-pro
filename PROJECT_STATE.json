@@ -25,11 +25,11 @@
     "route_id": "37b05f579320",
     "branch": "milestone/m5-isolated-execution-provisional-m4",
     "change_package": "engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f",
-    "status": "local_m5_provisional_source_gate_passed_package_gate_pending",
+    "status": "local_m5_provisional_source_repairs_focused_green_fitness_split_required",
     "highest_implemented_milestone": "M4",
     "current_provisional_milestone": "M5",
     "next_roadmap_milestone": "M5",
-    "next_action": "Materialize the distinct 2.0.14 artifact-only commit from the clean exact M5 source commit if it is absent, then run current-head package/full verification and route-selected reviews. Rootless live-host isolation and the trusted live Git snapshot remain blocking exit evidence; PR, external Trust CI, protected-branch merge and delivery remain absent.",
+    "next_action": "Split the restacked M5 range into honest successor slices that satisfy the frozen change-separation and bounded-change fitness rules without weakening them, then rebuild the stale 2.0.14 artifact only from the resulting clean exact source commit. Rootless live-host isolation and the trusted live Git snapshot remain blocking exit evidence; final reviews, PR, external Trust CI, protected-branch merge and delivery remain absent.",
     "m4_dimensions": {
       "implementation_source": {
         "status": "implemented_local_candidate",
@@ -82,7 +82,7 @@
         "notes": "Tasks 1-6 are locally implemented and normally restacked on the final local M4 predecessor. This status is source truth only, not M5 acceptance or delivery."
       },
       "local_exact_head_verification": {
-        "status": "pending_current_exact_head",
+        "status": "failed_range_fitness_repair_focused_green",
         "head_sha": null,
         "pre_artifact_source_gate": {
           "merge_checkpoint": "d2b8c875c30bb57d5dbdadbef0bd7cf20377aed9",
@@ -91,7 +91,21 @@
           "disposable_postgresql_17": "182/182 passed plus actual restart/reconciliation",
           "root_suite": "539/540 passed; the sole intended RED was the not-yet-built 2.0.14 artifact"
         },
-        "notes": "Focused source and disposable-PostgreSQL evidence passed before the clean source/package commit boundary. It is not a current exact-head full verifier receipt and does not replace final package verification or independent review."
+        "post_artifact_repair_gate": {
+          "artifact_checkpoint": "bc370d7b93254a78de9255dbcda535293a4ec7af",
+          "artifact_tree": "9bcfe52a9c28e2e333e1d44efbdd6ff6e47753ac",
+          "root_suite_before_repair": "540/540 passed",
+          "factory_without_database": "182/182 passed with 58 truthful no-database skips",
+          "focused_recovery_workspace_api_broker_service": "71/71 passed",
+          "architecture_model_fitness_structure": "155/155 passed",
+          "static_repairs": "architecture validate and diagram parity, Ruff, Bandit and route-range secret scan passed",
+          "remaining_fitness": [
+            "FIT-TRUST-CI-SEPARATION: implementation and trust-ci mutations are mixed across the route range",
+            "FIT-BOUNDED-ARCHITECTURE-CHANGE: 1753964 changed bytes exceed 1000000 and 41232 changed lines exceed 10820"
+          ],
+          "package_status": "The tracked 2.0.14 artifact from bc370d7 is stale after the source repairs and must not be rebuilt until the successor-slice boundary is resolved."
+        },
+        "notes": "Focused source, static and disposable-PostgreSQL evidence is provisional. The exact route verifier is not passing because the stacked range violates frozen separation and bounded-change fitness; those rules are not weakened, and no current exact-head verifier receipt or independent review exists."
       },
       "rootless_live_host_isolation": {
         "status": "blocked",

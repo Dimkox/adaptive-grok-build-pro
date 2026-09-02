@@ -8,7 +8,6 @@ from adaptive_factory.recovery import (
 )
 from adaptive_factory.workspace import (
     FakeWorkspaceBroker,
-    WorkspaceError,
     WorkspaceHandle,
     WorkspacePolicy,
 )

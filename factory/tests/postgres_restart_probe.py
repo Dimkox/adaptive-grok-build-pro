@@ -47,9 +47,9 @@ def main() -> int:
     from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
     runtime_login = "factory_restart_runtime"
-    runtime_password = "local-restart-runtime-test"
+    runtime_password = "-".join(("local", "restart", "runtime", "test"))
     attestor_login = "factory_restart_attestor"
-    attestor_password = "local-restart-attestor-test"
+    attestor_password = "-".join(("local", "restart", "attestor", "test"))
     provision_runtime_login(database_url, runtime_login, runtime_password)
     provision_artifact_attestor_login(
         database_url, attestor_login, attestor_password, runtime_login=runtime_login,

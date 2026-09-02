@@ -6,6 +6,7 @@ import re
 from typing import Callable, Mapping
 
 from .contracts import canonical_digest
+from .models import WorkspaceHandle
 from .protocol import MAX_DURABLE_PATH_BYTES, contains_structural_secret
 
 
@@ -21,13 +22,6 @@ class WorkspaceError(ValueError):
     def __init__(self, code: str, detail: str = "") -> None:
         super().__init__(f"{code}: {detail}" if detail else code)
         self.code = code
-
-
-@dataclass(frozen=True)
-class WorkspaceHandle:
-    task_id: str
-    run_id: str
-    value: str
 
 
 @dataclass(frozen=True)

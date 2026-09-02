@@ -64,6 +64,13 @@ class Actor:
 
 
 @dataclass(frozen=True)
+class WorkspaceHandle:
+    task_id: str
+    run_id: str
+    value: str
+
+
+@dataclass(frozen=True)
 class TaskProjection:
     task_id: str
     repository_id: str

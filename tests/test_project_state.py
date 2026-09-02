@@ -297,7 +297,13 @@ class ProjectStateTests(unittest.TestCase):
         delivery = self.state["active_delivery"]
         dimensions = delivery["m5_dimensions"]
         self.assertEqual(delivery["route_id"], "37b05f579320")
-        self.assertTrue(delivery["next_action"].startswith("Materialize the distinct 2.0.14"))
+        self.assertTrue(
+            delivery["next_action"].startswith(
+                "Split the restacked M5 range into honest successor slices"
+            )
+        )
+        self.assertIn("without weakening them", delivery["next_action"])
+        self.assertIn("stale 2.0.14 artifact", delivery["next_action"])
         self.assertEqual(
             dimensions["implementation_source"],
             {
@@ -327,7 +333,7 @@ class ProjectStateTests(unittest.TestCase):
                 )
             },
             {
-                "local_exact_head_verification": "pending_current_exact_head",
+                "local_exact_head_verification": "failed_range_fitness_repair_focused_green",
                 "rootless_live_host_isolation": "blocked",
                 "trusted_live_git_snapshot": "blocked",
                 "independent_review": "pending_current_exact_head",
