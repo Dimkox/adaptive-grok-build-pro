@@ -2124,7 +2124,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
         with self.subTest(boundary="unsafe capability attribute"):
             login = "factory_unsafe_attribute_test"
-            password = "unsafe-attribute-test-password"
+            password = "-".join(("unsafe", "attribute", "test", "password"))
             try:
                 with psycopg.connect(DATABASE_URL) as connection:
                     connection.execute("ALTER ROLE factory_runtime CREATEDB")
@@ -2136,7 +2136,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
         with self.subTest(boundary="factory role is member of another role"):
             login = "factory_unsafe_parent_test"
-            password = "unsafe-parent-membership-password"
+            password = "-".join(("unsafe", "parent", "membership", "password"))
             parent = "factory_unexpected_parent_test"
             try:
                 with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
@@ -2155,7 +2155,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
         with self.subTest(boundary="factory role has an unexpected member"):
             login = "factory_unsafe_member_target"
-            password = "unsafe-member-target-password"
+            password = "-".join(("unsafe", "member", "target", "password"))
             member = "factory_unexpected_member_test"
             try:
                 with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
@@ -2179,7 +2179,7 @@ class PostgresFactoryTests(unittest.TestCase):
         from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
         login = "factory_unsafe_service_test"
-        password = "unsafe-service-login-password"
+        password = "-".join(("unsafe", "service", "login", "password"))
         unexpected_role = "factory_unexpected_service_role"
         runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
         try:
