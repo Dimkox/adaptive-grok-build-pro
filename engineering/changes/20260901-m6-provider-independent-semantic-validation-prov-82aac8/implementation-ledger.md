@@ -6,7 +6,7 @@
 | Route and sole writer | FROZEN | `82aac86a3bf9`; `ai_implementer` |
 | Scope/design approval | SATISFIED | user-approved canonical design before dispatch |
 | Deadline | PLANNING | `2026-09-08T00:00:00+03:00`; no quality/dependency waiver |
-| Contract/schema layer | PLANNED | plan Task 1; M6-001/002/005/009/010 |
+| Contract/schema layer | VERIFIED | RED at `fc02fc3`: missing `adaptive_factory.semantic_contracts`; GREEN: 9/9 contract tests; five schemas parse as JSON |
 | Deterministic adjudication | PLANNED | plan Task 2; M6-002/003/004/005/009 |
 | Pure bounded repair | PLANNED | plan Task 3; M6-006/007/008/009 |
 | Current docs/connectivity tests | PLANNED | plan Task 4; M6-011/012 |
@@ -19,3 +19,8 @@
 | Reviews/receipts/push/PR/merge/deploy | DEFERRED TO PARENT | excluded from implementer dispatch |
 
 Product commits append exact SHA and observed RED/GREEN results here. Connectivity: [README](../../../README.md) ↔ [roadmap](../../../DARK_FACTORY_ROADMAP.md) ↔ [design](../../../docs/superpowers/specs/2026-09-01-m6-semantic-validation-provisional-design.md) ↔ [plan](../../../docs/superpowers/plans/2026-09-01-m6-semantic-validation-provisional.md) ↔ [release](release.md) / [rollback](rollback.md) / this ledger.
+
+## TDD evidence
+
+- Contracts RED: `cd factory && uv run python -m unittest tests.test_semantic_contracts -v` failed with expected `ModuleNotFoundError` before product code.
+- Contracts GREEN: the same command passed 9/9 on 2026-09-02 UTC. A follow-on shell used unavailable bare `python`; it did not invalidate the test result and was corrected to `uv run python` before commit.
