@@ -45,22 +45,22 @@
 
 **Files:** add `factory/src/adaptive_factory/resources/014_semantic_validation_bridge.sql`, update migration/installer tests, store capability classes, and semantic PostgreSQL tests.
 
-- [ ] RED static tests: contiguous 014, no rewrite/drop/cascade/broad grants, fixed `search_path`, roles/functions/tables/metrics declared.
-- [ ] RED disposable PostgreSQL tests when host exists: exact subject replay, divergent replay rejection, cross-run/digest/status/head substitution rejection, immutable evidence, direct DML denial, and role separation.
-- [ ] Add append-only subject/assignment/finding/coverage/verdict/directive/child-proposal/recovery records with exact redundant M5 bindings and idempotency request digests.
-- [ ] Add separate coordinator, validator, and adjudicator NOLOGIN/NOINHERIT roles; runtime/public have no semantic table DML and validator cannot adjudicate or finalize execution.
-- [ ] Add narrowly shaped store methods and exact canonical row verification. No live migration is applied.
-- [ ] GREEN focused migration/store/PostgreSQL tests; report honestly if disposable PostgreSQL is unavailable; update ledger and commit.
+- [x] RED static tests: contiguous 014, no rewrite/drop/cascade/broad grants, fixed `search_path`, roles/functions/tables/metrics declared.
+- [x] RED disposable PostgreSQL tests when host exists: exact subject replay, divergent replay rejection, cross-run/digest/status/head substitution rejection, immutable evidence, direct DML denial, and role separation.
+- [x] Add append-only subject/assignment/finding/coverage/verdict/directive/child-proposal/recovery records with exact redundant M5 bindings and idempotency request digests.
+- [x] Add separate coordinator, validator, and adjudicator NOLOGIN/NOINHERIT roles; runtime/public have no semantic table DML and validator cannot adjudicate or finalize execution.
+- [x] Add narrowly shaped store methods and exact canonical row verification. No live migration is applied.
+- [x] GREEN focused migration/store/PostgreSQL tests; report honestly if disposable PostgreSQL is unavailable; update ledger and commit.
 
 ### Task 3: Deterministic service and API integration
 
 **Files:** update semantic service/store, `api.py`, `server.py` if necessary, OpenAPI, JSON schemas, API/server tests.
 
-- [ ] RED contract tests for additive subject publish/read, assignment-bound finding/coverage, adjudication, exact verdict read, auth/repository isolation, idempotency, and closed request/response shapes.
-- [ ] Preserve legacy/M5 endpoints and statuses; do not expose raw provider/prompt/log/secret/source bodies.
-- [ ] Use semantic-specific scopes/capability stores. A writer or `task:execute` caller cannot append validator evidence or a verdict.
-- [ ] Recompute verdict from persisted canonical evidence before append; surface contradiction and unsupported-pass outcomes exactly.
-- [ ] Keep operation/schema inventory closed and architecture edges owned; update ledger and commit after GREEN.
+- [x] RED contract tests for additive subject publish/read, assignment-bound finding/coverage, adjudication, exact verdict read, auth/repository isolation, idempotency, and closed request/response shapes.
+- [x] Preserve legacy/M5 endpoints and statuses; do not expose raw provider/prompt/log/secret/source bodies.
+- [x] Use semantic-specific scopes/capability stores. A writer or `task:execute` caller cannot append validator evidence or a verdict.
+- [x] Recompute verdict from persisted canonical evidence before append; surface contradiction and unsupported-pass outcomes exactly.
+- [x] Keep operation/schema inventory closed and architecture edges owned; update ledger and commit after GREEN.
 
 ### Task 4: Bounded repair child proposal lifecycle
 

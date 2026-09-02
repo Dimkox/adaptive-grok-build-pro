@@ -15,7 +15,9 @@ from .settings import FactorySettings, SettingsError, read_private_file, read_to
 from .store import (
     PostgresArtifactAttestationStore,
     PostgresFactoryStore,
+    PostgresSemanticAdjudicatorStore,
     PostgresSemanticCoordinatorStore,
+    PostgresSemanticValidatorStore,
 )
 
 
@@ -42,7 +44,9 @@ def load_actors(path: Path) -> dict[str, Actor]:
         expected = {"actor_id", "kind", "scopes", "repositories", "token_file"}
         if not isinstance(record, dict) or set(record) != expected:
             raise ServerError("closed actor record required")
-        if record["kind"] not in {"client", "worker", "operator"}:
+        if record["kind"] not in {
+            "client", "worker", "operator", "validator", "adjudicator"
+        }:
             raise ServerError("invalid actor kind")
         if not all(isinstance(item, str) and item for item in record["scopes"] + record["repositories"]):
             raise ServerError("invalid actor authorization")
@@ -102,11 +106,21 @@ def build_app(settings: FactorySettings):
         PostgresSemanticCoordinatorStore(settings.semantic_coordinator_database_url)
         if settings.semantic_coordinator_database_url else None
     )
+    semantic_validator_store = (
+        PostgresSemanticValidatorStore(settings.semantic_validator_database_url)
+        if settings.semantic_validator_database_url else None
+    )
+    semantic_adjudicator_store = (
+        PostgresSemanticAdjudicatorStore(settings.semantic_adjudicator_database_url)
+        if settings.semantic_adjudicator_database_url else None
+    )
     return create_app(
         FactoryService(
             store,
             artifact_attestation_store=artifact_attestation_store,
             semantic_store=semantic_store,
+            semantic_validator_store=semantic_validator_store,
+            semantic_adjudicator_store=semantic_adjudicator_store,
         ),
         Authenticator(load_actors(settings.actors_file)),
     )

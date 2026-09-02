@@ -24,7 +24,15 @@ from .semantic_bridge import (
     SemanticExecutionBindingV1,
     SemanticValidationInputsV1,
 )
-from .semantic_contracts import SemanticSubjectV1
+from .semantic_adjudication import adjudicate
+from .semantic_contracts import (
+    MAX_ITEMS,
+    SemanticCoverageV1,
+    SemanticFindingV1,
+    SemanticSubjectV1,
+    SemanticVerdictV1,
+    ValidatorIdentityV1,
+)
 from .state import classify_retry
 from .workspace import (
     ArtifactAttestationUnavailable,
@@ -484,6 +492,458 @@ class PostgresSemanticCoordinatorStore:
         ):
             raise StoreError("requested semantic subject mismatch")
         return record
+
+    def create_assignment(
+        self,
+        subject: SemanticSubjectV1,
+        validator: ValidatorIdentityV1,
+        *,
+        idempotency_key: str,
+    ) -> dict[str, str]:
+        if not isinstance(subject, SemanticSubjectV1) or not isinstance(
+            validator, ValidatorIdentityV1
+        ):
+            raise StoreError("semantic assignment input is invalid")
+        validator.validate_for(subject)
+        assignment_document = {
+            "schema_version": 1,
+            "subject_digest": subject.digest,
+            "validator": validator.to_dict(),
+        }
+        assignment_digest = canonical_digest(assignment_document)
+        request_document = {
+            "contract": "adaptive-factory.semantic-assignment-command/v1",
+            "idempotency_key": idempotency_key,
+            "assignment_digest": assignment_digest,
+            "subject_digest": subject.digest,
+        }
+        request_canonical = canonical_json(request_document).decode("utf-8")
+        assignment_canonical = canonical_json(assignment_document).decode("utf-8")
+        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            cursor.execute(
+                "SELECT factory.semantic_create_assignment(%s,%s,%s,%s,%s)",
+                (
+                    idempotency_key,
+                    canonical_digest(request_document),
+                    request_canonical,
+                    assignment_digest,
+                    assignment_canonical,
+                ),
+            )
+            response = cursor.fetchone()[0]
+        if isinstance(response, str):
+            response = json.loads(response)
+        expected = {
+            "assignment_digest": assignment_digest,
+            "subject_digest": subject.digest,
+            "validator_id": validator.validator_id,
+        }
+        if response != expected:
+            raise StoreError("semantic assignment rejected")
+        return expected
+
+    @staticmethod
+    def _verdict_record(value) -> dict[str, object] | None:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = json.loads(value)
+        expected_keys = {
+            "verdict_digest",
+            "evidence_set_digest",
+            "subject_digest",
+            "verdict",
+        }
+        if not isinstance(value, dict) or set(value) != expected_keys:
+            raise StoreError("stored semantic verdict is corrupt")
+        try:
+            verdict = SemanticVerdictV1.from_dict(value["verdict"])
+        except (TypeError, ValueError) as exc:
+            raise StoreError("stored semantic verdict is corrupt") from exc
+        if (
+            value["verdict_digest"] != verdict.digest
+            or value["subject_digest"] != verdict.subject_digest
+            or not isinstance(value["evidence_set_digest"], str)
+            or not HEX64.fullmatch(value["evidence_set_digest"])
+        ):
+            raise StoreError("stored semantic verdict digest mismatch")
+        return {
+            "verdict_digest": verdict.digest,
+            "evidence_set_digest": value["evidence_set_digest"],
+            "subject_digest": verdict.subject_digest,
+            "verdict": verdict.to_dict(),
+        }
+
+    def verdict_by_subject(
+        self, task_id: str, subject_digest: str
+    ) -> dict[str, object]:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SET statement_timeout='5s'")
+            cursor.execute(
+                "SELECT factory.semantic_verdict_by_subject(%s,%s)",
+                (task_id, subject_digest),
+            )
+            record = self._verdict_record(cursor.fetchone()[0])
+        if record is None:
+            raise KeyError(subject_digest)
+        if record["subject_digest"] != subject_digest:
+            raise StoreError("requested semantic verdict mismatch")
+        return record
+
+
+class _PostgresSemanticRoleStore:
+    capability_role = ""
+    capability_label = "semantic"
+
+    def __init__(self, database_url: str) -> None:
+        if not database_url:
+            raise StoreError(f"{self.capability_label} database URL is required")
+        self.database_url = database_url
+
+    def _connect(self):
+        import psycopg
+
+        connection = psycopg.connect(self.database_url, connect_timeout=5)
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SET search_path=pg_catalog")
+                cursor.execute("SET lock_timeout='5s'; SET statement_timeout='5s'")
+                _validate_capability_session(
+                    cursor, self.capability_role, self.capability_label
+                )
+                cursor.execute(f"SET ROLE {self.capability_role}")
+                cursor.execute("SET search_path=pg_catalog,factory")
+                cursor.execute("SELECT current_user,current_setting('search_path')")
+                if cursor.fetchone() != (
+                    self.capability_role,
+                    "pg_catalog, factory",
+                ):
+                    raise StoreError(f"{self.capability_label} capability unavailable")
+            return connection
+        except Exception:
+            connection.close()
+            raise
+
+
+class PostgresSemanticValidatorStore(_PostgresSemanticRoleStore):
+    capability_role = "factory_semantic_validator"
+    capability_label = "semantic validator"
+
+    @staticmethod
+    def _identity_document(finding: SemanticFindingV1) -> dict[str, object]:
+        return {
+            "contract": "adaptive-factory.semantic-finding-identity/v1",
+            "requirement": finding.requirement.to_dict(),
+            "severity": finding.severity,
+            "category": finding.category,
+            "rule_id": finding.rule_id,
+        }
+
+    def append_evidence(
+        self,
+        subject_digest: str,
+        assignment_digest: str,
+        findings: tuple[SemanticFindingV1, ...],
+        coverage: SemanticCoverageV1,
+        *,
+        idempotency_key: str,
+    ) -> dict[str, object]:
+        if (
+            not isinstance(findings, tuple)
+            or len(findings) > MAX_ITEMS
+            or not isinstance(coverage, SemanticCoverageV1)
+            or coverage.subject_digest != subject_digest
+            or any(
+                not isinstance(value, SemanticFindingV1)
+                or value.subject_digest != subject_digest
+                or value.validator != coverage.validator
+                for value in findings
+            )
+        ):
+            raise StoreError("semantic evidence input is invalid")
+        finding_values = tuple(sorted(findings, key=lambda value: value.digest))
+        if len({value.digest for value in finding_values}) != len(finding_values):
+            raise StoreError("semantic finding digest is duplicated")
+        evidence_document = {
+            "contract": "adaptive-factory.semantic-evidence-submission/v1",
+            "subject_digest": subject_digest,
+            "assignment_digest": assignment_digest,
+            "findings": [
+                {
+                    "finding_digest": value.digest,
+                    "identity_digest": value.identity_digest,
+                    "canonical": canonical_json(value.to_dict()).decode("utf-8"),
+                    "identity_canonical": canonical_json(
+                        self._identity_document(value)
+                    ).decode("utf-8"),
+                }
+                for value in finding_values
+            ],
+            "coverage": {
+                "coverage_digest": coverage.digest,
+                "canonical": canonical_json(coverage.to_dict()).decode("utf-8"),
+            },
+        }
+        evidence_set_digest = canonical_digest(evidence_document)
+        request_document = {
+            "contract": "adaptive-factory.semantic-evidence-command/v1",
+            "idempotency_key": idempotency_key,
+            "assignment_digest": assignment_digest,
+            "evidence_set_digest": evidence_set_digest,
+        }
+        request_canonical = canonical_json(request_document).decode("utf-8")
+        evidence_canonical = canonical_json(evidence_document).decode("utf-8")
+        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            cursor.execute(
+                "SELECT factory.semantic_append_evidence(%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    idempotency_key,
+                    canonical_digest(request_document),
+                    request_canonical,
+                    subject_digest,
+                    assignment_digest,
+                    evidence_set_digest,
+                    evidence_canonical,
+                ),
+            )
+            response = cursor.fetchone()[0]
+        if isinstance(response, str):
+            response = json.loads(response)
+        expected = {
+            "evidence_set_digest": evidence_set_digest,
+            "subject_digest": subject_digest,
+            "assignment_digest": assignment_digest,
+            "finding_digests": [value.digest for value in finding_values],
+            "coverage_digest": coverage.digest,
+        }
+        if response != expected:
+            raise StoreError("semantic evidence publication rejected")
+        return expected
+
+
+class PostgresSemanticAdjudicatorStore(_PostgresSemanticRoleStore):
+    capability_role = "factory_semantic_adjudicator"
+    capability_label = "semantic adjudicator"
+
+    @staticmethod
+    def _material(value) -> dict[str, object] | None:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = json.loads(value)
+        if not isinstance(value, dict) or set(value) != {
+            "subject_digest",
+            "subject",
+            "assignments",
+            "findings",
+            "coverages",
+        }:
+            raise StoreError("stored semantic adjudication material is corrupt")
+        try:
+            root = SemanticSubjectV1.from_dict(value["subject"])
+            if value["subject_digest"] != root.digest:
+                raise StoreError("stored semantic subject digest mismatch")
+            assignment_records = value["assignments"]
+            finding_records = value["findings"]
+            coverage_records = value["coverages"]
+            if (
+                not isinstance(assignment_records, list)
+                or not 1 <= len(assignment_records) <= MAX_ITEMS
+                or not isinstance(finding_records, list)
+                or len(finding_records) > MAX_ITEMS
+                or not isinstance(coverage_records, list)
+                or len(coverage_records) > MAX_ITEMS
+            ):
+                raise StoreError("stored semantic evidence set is invalid")
+
+            assignment_bodies: dict[str, dict[str, object]] = {}
+            assignment_validators: dict[str, ValidatorIdentityV1] = {}
+            assignment_order: list[str] = []
+            for record in assignment_records:
+                if not isinstance(record, dict) or set(record) != {
+                    "assignment_digest",
+                    "body",
+                }:
+                    raise StoreError("stored semantic assignment is corrupt")
+                digest = record["assignment_digest"]
+                body = record["body"]
+                if (
+                    not isinstance(digest, str)
+                    or not HEX64.fullmatch(digest)
+                    or not isinstance(body, dict)
+                    or set(body) != {"schema_version", "subject_digest", "validator"}
+                    or body["schema_version"] != 1
+                    or body["subject_digest"] != root.digest
+                    or canonical_digest(body) != digest
+                    or digest in assignment_bodies
+                ):
+                    raise StoreError("stored semantic assignment digest mismatch")
+                proof = ValidatorIdentityV1.from_dict(body["validator"])
+                proof.validate_for(root)
+                assignment_order.append(digest)
+                assignment_bodies[digest] = body
+                assignment_validators[digest] = proof
+            if assignment_order != sorted(assignment_order):
+                raise StoreError("stored semantic assignments are not canonical")
+
+            findings_by_assignment = {digest: [] for digest in assignment_order}
+            finding_values: list[SemanticFindingV1] = []
+            finding_order: list[str] = []
+            for record in finding_records:
+                if not isinstance(record, dict) or set(record) != {
+                    "finding_digest",
+                    "assignment_digest",
+                    "body",
+                }:
+                    raise StoreError("stored semantic finding is corrupt")
+                digest = record["finding_digest"]
+                assignment_digest = record["assignment_digest"]
+                finding = SemanticFindingV1.from_dict(record["body"])
+                finding.validate_for(root)
+                if (
+                    digest != finding.digest
+                    or assignment_digest not in assignment_bodies
+                    or finding.validator != assignment_validators[assignment_digest]
+                    or digest in finding_order
+                ):
+                    raise StoreError("stored semantic finding digest mismatch")
+                finding_order.append(digest)
+                finding_values.append(finding)
+                findings_by_assignment[assignment_digest].append(digest)
+            if finding_order != sorted(finding_order):
+                raise StoreError("stored semantic findings are not canonical")
+
+            coverage_by_assignment: dict[str, str] = {}
+            coverage_values: list[SemanticCoverageV1] = []
+            coverage_order: list[str] = []
+            for record in coverage_records:
+                if not isinstance(record, dict) or set(record) != {
+                    "coverage_digest",
+                    "assignment_digest",
+                    "body",
+                }:
+                    raise StoreError("stored semantic coverage is corrupt")
+                digest = record["coverage_digest"]
+                assignment_digest = record["assignment_digest"]
+                coverage = SemanticCoverageV1.from_dict(record["body"])
+                coverage.validate_for(root)
+                if (
+                    digest != coverage.digest
+                    or assignment_digest not in assignment_bodies
+                    or coverage.validator != assignment_validators[assignment_digest]
+                    or assignment_digest in coverage_by_assignment
+                ):
+                    raise StoreError("stored semantic coverage digest mismatch")
+                coverage_order.append(digest)
+                coverage_values.append(coverage)
+                coverage_by_assignment[assignment_digest] = digest
+            if coverage_order != sorted(coverage_order) or set(coverage_by_assignment) != set(
+                assignment_bodies
+            ):
+                raise StoreError("stored semantic coverage set is incomplete")
+
+            evidence_set = {
+                "contract": "adaptive-factory.semantic-adjudication-evidence-set/v1",
+                "subject_digest": root.digest,
+                "assignments": [
+                    {
+                        "assignment_digest": digest,
+                        "finding_digests": findings_by_assignment[digest],
+                        "coverage_digest": coverage_by_assignment[digest],
+                    }
+                    for digest in assignment_order
+                ],
+            }
+            return {
+                "subject": root,
+                "findings": tuple(finding_values),
+                "coverages": tuple(coverage_values),
+                "evidence_set": evidence_set,
+                "evidence_set_digest": canonical_digest(evidence_set),
+                "assignment_bodies": assignment_bodies,
+            }
+        except (KeyError, TypeError, ValueError) as exc:
+            if isinstance(exc, StoreError):
+                raise
+            raise StoreError("stored semantic adjudication material is corrupt") from exc
+
+    def adjudication_material(
+        self, task_id: str, subject_digest: str
+    ) -> dict[str, object]:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SET statement_timeout='5s'")
+            cursor.execute(
+                "SELECT factory.semantic_adjudication_material(%s,%s)",
+                (task_id, subject_digest),
+            )
+            material = self._material(cursor.fetchone()[0])
+        if material is None:
+            raise KeyError(subject_digest)
+        root = material["subject"]
+        if not isinstance(root, SemanticSubjectV1) or root.digest != subject_digest:
+            raise StoreError("requested semantic adjudication material mismatch")
+        return material
+
+    def append_verdict(
+        self,
+        material: dict[str, object],
+        verdict: SemanticVerdictV1,
+        *,
+        idempotency_key: str,
+    ) -> dict[str, object]:
+        root = material.get("subject")
+        findings = material.get("findings")
+        coverages = material.get("coverages")
+        evidence_set = material.get("evidence_set")
+        evidence_set_digest = material.get("evidence_set_digest")
+        if (
+            not isinstance(root, SemanticSubjectV1)
+            or not isinstance(findings, tuple)
+            or not isinstance(coverages, tuple)
+            or not isinstance(evidence_set, dict)
+            or evidence_set_digest != canonical_digest(evidence_set)
+            or not isinstance(verdict, SemanticVerdictV1)
+            or verdict != adjudicate(root, findings, coverages)
+        ):
+            raise StoreError("semantic verdict input is invalid")
+        request_document = {
+            "contract": "adaptive-factory.semantic-adjudication-command/v1",
+            "idempotency_key": idempotency_key,
+            "subject_digest": root.digest,
+            "evidence_set_digest": evidence_set_digest,
+            "verdict_digest": verdict.digest,
+        }
+        request_canonical = canonical_json(request_document).decode("utf-8")
+        evidence_canonical = canonical_json(evidence_set).decode("utf-8")
+        verdict_canonical = canonical_json(verdict.to_dict()).decode("utf-8")
+        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            cursor.execute(
+                "SELECT factory.semantic_append_verdict(%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    idempotency_key,
+                    canonical_digest(request_document),
+                    request_canonical,
+                    evidence_set_digest,
+                    evidence_canonical,
+                    verdict.digest,
+                    verdict_canonical,
+                ),
+            )
+            response = PostgresSemanticCoordinatorStore._verdict_record(
+                cursor.fetchone()[0]
+            )
+        expected = {
+            "verdict_digest": verdict.digest,
+            "evidence_set_digest": evidence_set_digest,
+            "subject_digest": root.digest,
+            "verdict": verdict.to_dict(),
+        }
+        if response != expected:
+            raise StoreError("semantic verdict publication rejected")
+        return expected
 
 
 class PostgresFactoryStore:

@@ -330,6 +330,10 @@ class StructureTests(unittest.TestCase):
             ("POST", "/v1/reconcile", "reconcileFactory"),
             ("POST", "/v1/semantic/subjects", "publishSemanticSubject"),
             ("GET", "/v1/semantic/subjects/{subject_digest}", "getSemanticSubject"),
+            ("POST", "/v1/semantic/subjects/{subject_digest}/assignments", "createSemanticAssignment"),
+            ("POST", "/v1/semantic/assignments/{assignment_digest}/evidence", "submitSemanticEvidence"),
+            ("POST", "/v1/semantic/subjects/{subject_digest}/adjudications", "adjudicateSemanticSubject"),
+            ("GET", "/v1/semantic/subjects/{subject_digest}/verdict", "getSemanticVerdict"),
         }
         operations = {
             (method.upper(), path, operation.get("operationId"))

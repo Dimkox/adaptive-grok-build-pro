@@ -157,11 +157,49 @@ class MigrationTests(unittest.TestCase):
             "semantic_execution_material",
             "semantic_publish_subject",
             "semantic_subject_by_digest",
+            "semantic_create_assignment",
+            "semantic_append_evidence",
+            "semantic_adjudication_material",
+            "semantic_append_verdict",
+            "semantic_verdict_by_subject",
             "security definer set search_path=pg_catalog,factory",
             "revoke insert, update, delete",
             "revoke all",
         ):
             self.assertIn(marker, lowered)
+
+    def test_semantic_evidence_functions_are_reserved_to_distinct_capabilities(self):
+        migration = discover_migrations()[-1].sql.lower()
+        self.assertIn(
+            "grant execute on function factory.semantic_create_assignment",
+            migration,
+        )
+        self.assertIn(
+            ") to factory_semantic_coordinator;",
+            migration,
+        )
+        self.assertIn(
+            "grant execute on function factory.semantic_append_evidence",
+            migration,
+        )
+        self.assertIn(
+            ") to factory_semantic_validator;",
+            migration,
+        )
+        self.assertIn(
+            "grant execute on function factory.semantic_append_verdict",
+            migration,
+        )
+        self.assertIn(
+            ") to factory_semantic_adjudicator;",
+            migration,
+        )
+        for forbidden in (
+            "semantic_append_evidence(\n  char,char,text,char,char,char,text\n) to factory_semantic_coordinator",
+            "semantic_append_verdict(\n  char,char,text,char,char,text,char,text\n) to factory_semantic_validator",
+            "semantic_append_verdict(\n  char,char,text,char,char,text,char,text\n) to factory_runtime",
+        ):
+            self.assertNotIn(forbidden, migration)
 
 
 if __name__ == "__main__":

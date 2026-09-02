@@ -720,4 +720,125 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
             headers={"X-Correlation-ID": correlation},
         )
 
+    @app.post(
+        "/v1/semantic/subjects/{subject_digest}/assignments", tags=["semantic"]
+    )
+    def create_semantic_assignment(
+        subject_digest: str,
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "semantic:assign")
+        key = _command_key(idempotency_key)
+        correlation = _request_id(x_correlation_id, "X-Correlation-ID")
+        subject_digest = _digest(subject_digest, "subject_digest")
+        payload = _closed(payload, {"task_id", "validator"})
+        task_id = _uuid(payload["task_id"], "task_id")
+        if not isinstance(payload["validator"], Mapping):
+            raise HTTPException(422, "invalid validator")
+        try:
+            result = service.create_semantic_assignment(
+                task_id,
+                subject_digest,
+                payload["validator"],
+                actor=actor,
+                idempotency_key=key,
+                correlation_id=correlation,
+            )
+        except KeyError:
+            raise HTTPException(404, "semantic subject not found")
+        return JSONResponse(_json(result), headers={"X-Correlation-ID": correlation})
+
+    @app.post(
+        "/v1/semantic/assignments/{assignment_digest}/evidence", tags=["semantic"]
+    )
+    def submit_semantic_evidence(
+        assignment_digest: str,
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "semantic:validate")
+        key = _command_key(idempotency_key)
+        correlation = _request_id(x_correlation_id, "X-Correlation-ID")
+        assignment_digest = _digest(assignment_digest, "assignment_digest")
+        payload = _closed(
+            payload, {"task_id", "subject_digest", "findings", "coverage"}
+        )
+        task_id = _uuid(payload["task_id"], "task_id")
+        subject_digest = _digest(payload["subject_digest"], "subject_digest")
+        if (
+            not isinstance(payload["findings"], list)
+            or len(payload["findings"]) > 256
+            or any(not isinstance(value, Mapping) for value in payload["findings"])
+            or not isinstance(payload["coverage"], Mapping)
+        ):
+            raise HTTPException(422, "invalid semantic evidence")
+        result = service.submit_semantic_evidence(
+            task_id,
+            subject_digest,
+            assignment_digest,
+            payload["findings"],
+            payload["coverage"],
+            actor=actor,
+            idempotency_key=key,
+            correlation_id=correlation,
+        )
+        return JSONResponse(_json(result), headers={"X-Correlation-ID": correlation})
+
+    @app.post(
+        "/v1/semantic/subjects/{subject_digest}/adjudications", tags=["semantic"]
+    )
+    def adjudicate_semantic_subject(
+        subject_digest: str,
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "semantic:adjudicate")
+        key = _command_key(idempotency_key)
+        correlation = _request_id(x_correlation_id, "X-Correlation-ID")
+        subject_digest = _digest(subject_digest, "subject_digest")
+        payload = _closed(payload, {"task_id"})
+        task_id = _uuid(payload["task_id"], "task_id")
+        try:
+            result = service.adjudicate_semantic_subject(
+                task_id,
+                subject_digest,
+                actor=actor,
+                idempotency_key=key,
+                correlation_id=correlation,
+            )
+        except KeyError:
+            raise HTTPException(404, "semantic subject not found")
+        return JSONResponse(_json(result), headers={"X-Correlation-ID": correlation})
+
+    @app.get(
+        "/v1/semantic/subjects/{subject_digest}/verdict", tags=["semantic"]
+    )
+    def read_semantic_verdict(
+        subject_digest: str,
+        task_id: str,
+        authorization: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "semantic:read")
+        correlation = _request_id(
+            x_correlation_id or "generated-semantic-verdict-read",
+            "X-Correlation-ID",
+        )
+        task_id = _uuid(task_id, "task_id")
+        subject_digest = _digest(subject_digest, "subject_digest")
+        try:
+            result = service.get_semantic_verdict(
+                task_id, subject_digest, actor=actor
+            )
+        except KeyError:
+            raise HTTPException(404, "semantic verdict not found")
+        return JSONResponse(_json(result), headers={"X-Correlation-ID": correlation})
+
     return app

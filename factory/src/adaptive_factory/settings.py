@@ -75,6 +75,8 @@ class FactorySettings:
     actors_file: Path
     artifact_attestor_database_url: str | None = None
     semantic_coordinator_database_url: str | None = None
+    semantic_validator_database_url: str | None = None
+    semantic_adjudicator_database_url: str | None = None
 
     @classmethod
     def from_environment(cls) -> "FactorySettings":
@@ -82,6 +84,12 @@ class FactorySettings:
         artifact_attestor_database_url = os.environ.get("FACTORY_ARTIFACT_ATTESTOR_DATABASE_URL") or None
         semantic_coordinator_database_url = os.environ.get(
             "FACTORY_SEMANTIC_COORDINATOR_DATABASE_URL"
+        ) or None
+        semantic_validator_database_url = os.environ.get(
+            "FACTORY_SEMANTIC_VALIDATOR_DATABASE_URL"
+        ) or None
+        semantic_adjudicator_database_url = os.environ.get(
+            "FACTORY_SEMANTIC_ADJUDICATOR_DATABASE_URL"
         ) or None
         actors_file = os.environ.get("FACTORY_ACTORS_FILE", "")
         socket_path = Path(os.environ.get("FACTORY_SOCKET_PATH", "/run/adaptive-factory/control.sock"))
@@ -93,4 +101,6 @@ class FactorySettings:
             Path(actors_file),
             artifact_attestor_database_url,
             semantic_coordinator_database_url,
+            semantic_validator_database_url,
+            semantic_adjudicator_database_url,
         )

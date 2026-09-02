@@ -15,7 +15,15 @@ from .execution_contracts import (
 )
 from .models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole
 from .protocol import CanonicalEvent
+from .semantic_adjudication import adjudicate
 from .semantic_bridge import SemanticValidationInputsV1, build_semantic_subject
+from .semantic_contracts import (
+    MAX_ITEMS,
+    SemanticCoverageV1,
+    SemanticFindingV1,
+    SemanticSubjectV1,
+    ValidatorIdentityV1,
+)
 from .workspace import (
     ArtifactAttestationRequest,
     ArtifactAttestationV1,
@@ -48,6 +56,8 @@ class FactoryService:
         artifact_attestation_store=None,
         execution_registry=None,
         semantic_store=None,
+        semantic_validator_store=None,
+        semantic_adjudicator_store=None,
     ) -> None:
         self.store = store
         self.snapshot_broker = snapshot_broker
@@ -55,6 +65,8 @@ class FactoryService:
         self.artifact_attestation_store = artifact_attestation_store
         self.execution_registry = execution_registry
         self.semantic_store = semantic_store
+        self.semantic_validator_store = semantic_validator_store
+        self.semantic_adjudicator_store = semantic_adjudicator_store
 
     def readiness(self):
         return self.store.readiness()
@@ -133,6 +145,131 @@ class FactoryService:
         if self.semantic_store is None:
             raise AuthorizationError("semantic coordinator capability unavailable")
         return self.semantic_store.subject_by_digest(task_id, subject_digest)
+
+    def create_semantic_assignment(
+        self,
+        task_id: str,
+        subject_digest: str,
+        validator,
+        *,
+        actor: Actor,
+        idempotency_key: str,
+        correlation_id: str | None = None,
+    ):
+        self._require(actor, "semantic:assign")
+        if actor.kind != "operator":
+            raise AuthorizationError("semantic assignment requires coordinator actor")
+        task = self.store.get_task(task_id)
+        self._require(actor, "semantic:assign", task.repository_id)
+        if self.semantic_store is None:
+            raise AuthorizationError("semantic coordinator capability unavailable")
+        record = self.semantic_store.subject_by_digest(task_id, subject_digest)
+        root = getattr(record, "subject", None)
+        if not isinstance(root, SemanticSubjectV1) or root.digest != subject_digest:
+            raise ExecutionContractError("semantic_subject_digest_mismatch")
+        proof = (
+            validator
+            if isinstance(validator, ValidatorIdentityV1)
+            else ValidatorIdentityV1.from_dict(validator)
+        )
+        proof.validate_for(root)
+        return self.semantic_store.create_assignment(
+            root, proof, idempotency_key=idempotency_key
+        )
+
+    def submit_semantic_evidence(
+        self,
+        task_id: str,
+        subject_digest: str,
+        assignment_digest: str,
+        findings,
+        coverage,
+        *,
+        actor: Actor,
+        idempotency_key: str,
+        correlation_id: str | None = None,
+    ):
+        self._require(actor, "semantic:validate")
+        if actor.kind != "validator":
+            raise AuthorizationError("semantic evidence requires validator actor")
+        task = self.store.get_task(task_id)
+        self._require(actor, "semantic:validate", task.repository_id)
+        if self.semantic_validator_store is None:
+            raise AuthorizationError("semantic validator capability unavailable")
+        if not isinstance(findings, (list, tuple)) or len(findings) > MAX_ITEMS:
+            raise ExecutionContractError("semantic_findings_invalid")
+        finding_values = tuple(
+            value
+            if isinstance(value, SemanticFindingV1)
+            else SemanticFindingV1.from_dict(value)
+            for value in findings
+        )
+        coverage_value = (
+            coverage
+            if isinstance(coverage, SemanticCoverageV1)
+            else SemanticCoverageV1.from_dict(coverage)
+        )
+        if (
+            coverage_value.subject_digest != subject_digest
+            or coverage_value.validator.validator_id != actor.actor_id
+            or any(
+                value.subject_digest != subject_digest
+                or value.validator != coverage_value.validator
+                for value in finding_values
+            )
+        ):
+            raise AuthorizationError("semantic evidence identity mismatch")
+        return self.semantic_validator_store.append_evidence(
+            subject_digest,
+            assignment_digest,
+            finding_values,
+            coverage_value,
+            idempotency_key=idempotency_key,
+        )
+
+    def adjudicate_semantic_subject(
+        self,
+        task_id: str,
+        subject_digest: str,
+        *,
+        actor: Actor,
+        idempotency_key: str,
+        correlation_id: str | None = None,
+    ):
+        self._require(actor, "semantic:adjudicate")
+        if actor.kind != "adjudicator":
+            raise AuthorizationError("semantic adjudication requires adjudicator actor")
+        task = self.store.get_task(task_id)
+        self._require(actor, "semantic:adjudicate", task.repository_id)
+        if self.semantic_adjudicator_store is None:
+            raise AuthorizationError("semantic adjudicator capability unavailable")
+        material = self.semantic_adjudicator_store.adjudication_material(
+            task_id, subject_digest
+        )
+        root = material.get("subject")
+        findings = material.get("findings")
+        coverages = material.get("coverages")
+        if (
+            not isinstance(root, SemanticSubjectV1)
+            or root.digest != subject_digest
+            or not isinstance(findings, tuple)
+            or not isinstance(coverages, tuple)
+        ):
+            raise ExecutionContractError("semantic_adjudication_material_mismatch")
+        verdict = adjudicate(root, findings, coverages)
+        return self.semantic_adjudicator_store.append_verdict(
+            material, verdict, idempotency_key=idempotency_key
+        )
+
+    def get_semantic_verdict(
+        self, task_id: str, subject_digest: str, *, actor: Actor
+    ):
+        self._require(actor, "semantic:read")
+        task = self.store.get_task(task_id)
+        self._require(actor, "semantic:read", task.repository_id)
+        if self.semantic_store is None:
+            raise AuthorizationError("semantic coordinator capability unavailable")
+        return self.semantic_store.verdict_by_subject(task_id, subject_digest)
 
     def list_tasks(self, *, repository_id: str, limit: int, cursor: str | None, actor: Actor):
         self._require(actor, "task:list", repository_id)

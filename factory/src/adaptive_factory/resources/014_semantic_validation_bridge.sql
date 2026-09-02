@@ -28,7 +28,9 @@ DO $$ BEGIN
 END $$;
 
 CREATE TABLE factory.semantic_command_results (
-  operation text NOT NULL CHECK (operation='publish_subject'),
+  operation text NOT NULL CHECK (operation IN (
+    'publish_subject','create_assignment','append_evidence','append_verdict'
+  )),
   idempotency_key char(64) NOT NULL CHECK (idempotency_key ~ '^[0-9a-f]{64}$'),
   request_digest char(64) NOT NULL CHECK (request_digest ~ '^[0-9a-f]{64}$'),
   resource_digest char(64) NOT NULL CHECK (resource_digest ~ '^[0-9a-f]{64}$'),
@@ -86,6 +88,8 @@ CREATE TABLE factory.semantic_assignments (
 
 CREATE TABLE factory.semantic_findings (
   finding_digest char(64) PRIMARY KEY CHECK (finding_digest ~ '^[0-9a-f]{64}$'),
+  finding_identity_digest char(64) NOT NULL
+    CHECK (finding_identity_digest ~ '^[0-9a-f]{64}$'),
   subject_digest char(64) NOT NULL REFERENCES factory.semantic_subjects(subject_digest) ON DELETE RESTRICT,
   assignment_digest char(64) NOT NULL REFERENCES factory.semantic_assignments(assignment_digest) ON DELETE RESTRICT,
   request_digest char(64) NOT NULL CHECK (request_digest ~ '^[0-9a-f]{64}$'),
@@ -502,6 +506,690 @@ EXCEPTION WHEN unique_violation OR check_violation OR foreign_key_violation
 END;
 $$;
 
+CREATE FUNCTION factory.semantic_create_assignment(
+  p_idempotency_key char(64),p_request_digest char(64),p_request_canonical text,
+  p_assignment_digest char(64),p_assignment_canonical text
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+DECLARE
+  v_request jsonb;
+  v_assignment jsonb;
+  v_validator jsonb;
+  v_subject factory.semantic_subjects%ROWTYPE;
+  v_existing factory.semantic_assignments%ROWTYPE;
+  v_prior factory.semantic_command_results%ROWTYPE;
+  v_response jsonb;
+BEGIN
+  IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed'
+    OR p_idempotency_key IS NULL OR p_idempotency_key !~ '^[0-9a-f]{64}$'
+    OR p_request_digest IS NULL OR p_assignment_digest IS NULL
+    OR p_request_canonical IS NULL OR octet_length(p_request_canonical)>262144
+    OR p_assignment_canonical IS NULL OR octet_length(p_assignment_canonical)>262144
+  THEN RETURN NULL; END IF;
+
+  v_request=p_request_canonical::jsonb;
+  v_assignment=p_assignment_canonical::jsonb;
+  IF trim(factory.execution_contract_hash(NULL,p_request_canonical))
+      IS DISTINCT FROM trim(p_request_digest)
+    OR trim(factory.execution_contract_hash(NULL,p_assignment_canonical))
+      IS DISTINCT FROM trim(p_assignment_digest)
+    OR jsonb_typeof(v_request) IS DISTINCT FROM 'object'
+    OR (SELECT count(*) FROM jsonb_object_keys(v_request))<>4
+    OR v_request->>'contract' IS DISTINCT FROM
+      'adaptive-factory.semantic-assignment-command/v1'
+    OR v_request->>'idempotency_key' IS DISTINCT FROM trim(p_idempotency_key)
+    OR v_request->>'assignment_digest' IS DISTINCT FROM trim(p_assignment_digest)
+    OR v_request->>'subject_digest' IS NULL
+    OR jsonb_typeof(v_assignment) IS DISTINCT FROM 'object'
+    OR (SELECT count(*) FROM jsonb_object_keys(v_assignment))<>3
+    OR v_assignment->>'schema_version' IS DISTINCT FROM '1'
+    OR v_assignment->>'subject_digest' IS DISTINCT FROM v_request->>'subject_digest'
+    OR jsonb_typeof(v_assignment->'validator') IS DISTINCT FROM 'object'
+  THEN RETURN NULL; END IF;
+
+  v_validator=v_assignment->'validator';
+  IF (SELECT count(*) FROM jsonb_object_keys(v_validator))<>6
+    OR v_validator->>'role' IS DISTINCT FROM 'semantic_validator'
+    OR octet_length(COALESCE(v_validator->>'validator_id','')) NOT BETWEEN 1 AND 128
+    OR COALESCE(v_validator->>'definition_digest','') !~ '^[0-9a-f]{64}$'
+    OR COALESCE(v_validator->>'model_digest','') !~ '^[0-9a-f]{64}$'
+    OR COALESCE(v_validator->>'context_digest','') !~ '^[0-9a-f]{64}$'
+    OR jsonb_typeof(v_validator->'capabilities') IS DISTINCT FROM 'array'
+    OR jsonb_array_length(v_validator->'capabilities') NOT BETWEEN 2 AND 256
+    OR NOT (v_validator->'capabilities' ?& ARRAY['repository_read','semantic_validate'])
+    OR v_validator->'capabilities' ?| ARRAY[
+      'application_write','adjudicate','external_write','network','credential_read'
+    ]
+    OR EXISTS (
+      SELECT 1 FROM (
+        SELECT value,ordinality,
+          lag(value) OVER (ORDER BY ordinality) AS previous
+        FROM jsonb_array_elements_text(v_validator->'capabilities')
+          WITH ORDINALITY AS capability(value,ordinality)
+      ) ordered WHERE previous IS NOT NULL AND value<=previous
+    )
+  THEN RETURN NULL; END IF;
+
+  SELECT * INTO v_prior FROM factory.semantic_command_results
+    WHERE operation='create_assignment' AND idempotency_key=p_idempotency_key;
+  IF FOUND THEN
+    RETURN CASE WHEN v_prior.request_digest=p_request_digest
+      THEN v_prior.response_body ELSE NULL END;
+  END IF;
+
+  SELECT * INTO v_subject FROM factory.semantic_subjects
+    WHERE subject_digest=(v_assignment->>'subject_digest')::char(64) FOR UPDATE;
+  IF NOT FOUND
+    OR v_validator->>'validator_id' IS NOT DISTINCT FROM v_subject.owner_id
+    OR v_validator->>'context_digest' IS NOT DISTINCT FROM
+      v_subject.subject_body->>'original_writer_context_digest'
+  THEN RETURN NULL; END IF;
+
+  SELECT * INTO v_prior FROM factory.semantic_command_results
+    WHERE operation='create_assignment' AND idempotency_key=p_idempotency_key;
+  IF FOUND THEN
+    RETURN CASE WHEN v_prior.request_digest=p_request_digest
+      THEN v_prior.response_body ELSE NULL END;
+  END IF;
+
+  SELECT * INTO v_existing FROM factory.semantic_assignments
+    WHERE assignment_digest=p_assignment_digest
+      OR (
+        subject_digest=(v_assignment->>'subject_digest')::char(64)
+        AND validator_id=v_validator->>'validator_id'
+        AND validator_context_digest=(v_validator->>'context_digest')::char(64)
+      );
+  IF FOUND THEN
+    IF v_existing.assignment_digest IS DISTINCT FROM p_assignment_digest
+      OR v_existing.subject_digest IS DISTINCT FROM
+        (v_assignment->>'subject_digest')::char(64)
+      OR v_existing.body IS DISTINCT FROM v_assignment
+    THEN RETURN NULL; END IF;
+  ELSE
+    INSERT INTO factory.semantic_assignments(
+      assignment_digest,subject_digest,validator_id,validator_context_digest,
+      request_digest,body
+    ) VALUES (
+      p_assignment_digest,(v_assignment->>'subject_digest')::char(64),
+      v_validator->>'validator_id',(v_validator->>'context_digest')::char(64),
+      p_request_digest,v_assignment
+    );
+  END IF;
+
+  v_response=jsonb_build_object(
+    'assignment_digest',trim(p_assignment_digest),
+    'subject_digest',v_assignment->>'subject_digest',
+    'validator_id',v_validator->>'validator_id'
+  );
+  INSERT INTO factory.semantic_command_results(
+    operation,idempotency_key,request_digest,resource_digest,response_body
+  ) VALUES (
+    'create_assignment',p_idempotency_key,p_request_digest,p_assignment_digest,v_response
+  );
+  RETURN v_response;
+EXCEPTION WHEN unique_violation OR check_violation OR foreign_key_violation
+  OR invalid_text_representation OR numeric_value_out_of_range OR data_exception THEN
+  RETURN NULL;
+END;
+$$;
+
+CREATE FUNCTION factory.semantic_append_evidence(
+  p_idempotency_key char(64),p_request_digest char(64),p_request_canonical text,
+  p_subject_digest char(64),p_assignment_digest char(64),
+  p_evidence_set_digest char(64),p_evidence_canonical text
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+DECLARE
+  v_request jsonb;
+  v_evidence jsonb;
+  v_assignment factory.semantic_assignments%ROWTYPE;
+  v_subject factory.semantic_subjects%ROWTYPE;
+  v_prior factory.semantic_command_results%ROWTYPE;
+  v_item jsonb;
+  v_finding jsonb;
+  v_identity jsonb;
+  v_coverage_record jsonb;
+  v_coverage jsonb;
+  v_existing_finding factory.semantic_findings%ROWTYPE;
+  v_existing_coverage factory.semantic_coverage%ROWTYPE;
+  v_finding_digests jsonb;
+  v_response jsonb;
+BEGIN
+  IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed'
+    OR p_idempotency_key IS NULL OR p_idempotency_key !~ '^[0-9a-f]{64}$'
+    OR p_request_digest IS NULL OR p_subject_digest IS NULL
+    OR p_assignment_digest IS NULL OR p_evidence_set_digest IS NULL
+    OR p_request_canonical IS NULL OR octet_length(p_request_canonical)>262144
+    OR p_evidence_canonical IS NULL OR octet_length(p_evidence_canonical)>1048576
+  THEN RETURN NULL; END IF;
+
+  v_request=p_request_canonical::jsonb;
+  v_evidence=p_evidence_canonical::jsonb;
+  IF trim(factory.execution_contract_hash(NULL,p_request_canonical))
+      IS DISTINCT FROM trim(p_request_digest)
+    OR trim(factory.execution_contract_hash(NULL,p_evidence_canonical))
+      IS DISTINCT FROM trim(p_evidence_set_digest)
+    OR jsonb_typeof(v_request) IS DISTINCT FROM 'object'
+    OR (SELECT count(*) FROM jsonb_object_keys(v_request))<>4
+    OR v_request->>'contract' IS DISTINCT FROM
+      'adaptive-factory.semantic-evidence-command/v1'
+    OR v_request->>'idempotency_key' IS DISTINCT FROM trim(p_idempotency_key)
+    OR v_request->>'assignment_digest' IS DISTINCT FROM trim(p_assignment_digest)
+    OR v_request->>'evidence_set_digest' IS DISTINCT FROM trim(p_evidence_set_digest)
+    OR jsonb_typeof(v_evidence) IS DISTINCT FROM 'object'
+    OR (SELECT count(*) FROM jsonb_object_keys(v_evidence))<>5
+    OR v_evidence->>'contract' IS DISTINCT FROM
+      'adaptive-factory.semantic-evidence-submission/v1'
+    OR v_evidence->>'subject_digest' IS DISTINCT FROM trim(p_subject_digest)
+    OR v_evidence->>'assignment_digest' IS DISTINCT FROM trim(p_assignment_digest)
+    OR jsonb_typeof(v_evidence->'findings') IS DISTINCT FROM 'array'
+    OR jsonb_array_length(v_evidence->'findings')>256
+    OR jsonb_typeof(v_evidence->'coverage') IS DISTINCT FROM 'object'
+  THEN RETURN NULL; END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM (
+      SELECT item->>'finding_digest' AS digest,ordinality,
+        lag(item->>'finding_digest') OVER (ORDER BY ordinality) AS previous
+      FROM jsonb_array_elements(v_evidence->'findings')
+        WITH ORDINALITY AS finding(item,ordinality)
+    ) ordered
+    WHERE digest IS NULL OR digest !~ '^[0-9a-f]{64}$'
+      OR (previous IS NOT NULL AND digest<=previous)
+  ) THEN RETURN NULL; END IF;
+
+  SELECT * INTO v_prior FROM factory.semantic_command_results
+    WHERE operation='append_evidence' AND idempotency_key=p_idempotency_key;
+  IF FOUND THEN
+    RETURN CASE WHEN v_prior.request_digest=p_request_digest
+      THEN v_prior.response_body ELSE NULL END;
+  END IF;
+
+  SELECT * INTO v_assignment FROM factory.semantic_assignments
+    WHERE assignment_digest=p_assignment_digest AND subject_digest=p_subject_digest
+    FOR UPDATE;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  SELECT * INTO v_subject FROM factory.semantic_subjects
+    WHERE subject_digest=p_subject_digest;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+
+  SELECT * INTO v_prior FROM factory.semantic_command_results
+    WHERE operation='append_evidence' AND idempotency_key=p_idempotency_key;
+  IF FOUND THEN
+    RETURN CASE WHEN v_prior.request_digest=p_request_digest
+      THEN v_prior.response_body ELSE NULL END;
+  END IF;
+
+  FOR v_item IN SELECT value FROM jsonb_array_elements(v_evidence->'findings') LOOP
+    IF jsonb_typeof(v_item) IS DISTINCT FROM 'object'
+      OR (SELECT count(*) FROM jsonb_object_keys(v_item))<>4
+      OR COALESCE(v_item->>'finding_digest','') !~ '^[0-9a-f]{64}$'
+      OR COALESCE(v_item->>'identity_digest','') !~ '^[0-9a-f]{64}$'
+      OR v_item->>'canonical' IS NULL
+      OR octet_length(v_item->>'canonical')>1048576
+      OR v_item->>'identity_canonical' IS NULL
+      OR octet_length(v_item->>'identity_canonical')>262144
+      OR trim(factory.execution_contract_hash(NULL,v_item->>'canonical'))
+        IS DISTINCT FROM v_item->>'finding_digest'
+      OR trim(factory.execution_contract_hash(NULL,v_item->>'identity_canonical'))
+        IS DISTINCT FROM v_item->>'identity_digest'
+    THEN RETURN NULL; END IF;
+    v_finding=(v_item->>'canonical')::jsonb;
+    v_identity=(v_item->>'identity_canonical')::jsonb;
+    IF jsonb_typeof(v_finding) IS DISTINCT FROM 'object'
+      OR (SELECT count(*) FROM jsonb_object_keys(v_finding))<>13
+      OR v_finding->>'schema_version' IS DISTINCT FROM '1'
+      OR v_finding->>'subject_digest' IS DISTINCT FROM trim(p_subject_digest)
+      OR octet_length(COALESCE(v_finding->>'finding_id','')) NOT BETWEEN 1 AND 128
+      OR v_finding->>'severity' NOT IN ('minor','major','critical','blocker')
+      OR v_finding->>'category' NOT IN (
+        'requirement_unsatisfied','evidence_gap','test_gap','architecture_violation',
+        'security_boundary','authority_violation','contradiction'
+      )
+      OR octet_length(COALESCE(v_finding->>'rule_id','')) NOT BETWEEN 1 AND 128
+      OR octet_length(COALESCE(v_finding->>'message','')) NOT BETWEEN 1 AND 4096
+      OR octet_length(COALESCE(v_finding->>'reproduction','')) NOT BETWEEN 1 AND 4096
+      OR jsonb_typeof(v_finding->'repairable') IS DISTINCT FROM 'boolean'
+      OR jsonb_typeof(v_finding->'requirement') IS DISTINCT FROM 'object'
+      OR NOT (v_subject.subject_body->'requirements' @> jsonb_build_array(v_finding->'requirement'))
+      OR jsonb_typeof(v_finding->'evidence_refs') IS DISTINCT FROM 'array'
+      OR jsonb_array_length(v_finding->'evidence_refs')>256
+      OR v_finding->'validator' IS DISTINCT FROM v_assignment.body->'validator'
+      OR jsonb_typeof(v_finding->'created_at') IS DISTINCT FROM 'string'
+      OR jsonb_typeof(v_identity) IS DISTINCT FROM 'object'
+      OR (SELECT count(*) FROM jsonb_object_keys(v_identity))<>5
+      OR v_identity->>'contract' IS DISTINCT FROM
+        'adaptive-factory.semantic-finding-identity/v1'
+      OR v_identity->'requirement' IS DISTINCT FROM v_finding->'requirement'
+      OR v_identity->>'severity' IS DISTINCT FROM v_finding->>'severity'
+      OR v_identity->>'category' IS DISTINCT FROM v_finding->>'category'
+      OR v_identity->>'rule_id' IS DISTINCT FROM v_finding->>'rule_id'
+      OR EXISTS (
+        SELECT 1 FROM (
+          SELECT value,ordinality,lag(value) OVER (ORDER BY ordinality) AS previous
+          FROM jsonb_array_elements_text(v_finding->'evidence_refs')
+            WITH ORDINALITY AS ref(value,ordinality)
+        ) ordered WHERE octet_length(value) NOT BETWEEN 1 AND 256
+          OR (previous IS NOT NULL AND value<=previous)
+      )
+    THEN RETURN NULL; END IF;
+  END LOOP;
+
+  v_coverage_record=v_evidence->'coverage';
+  IF (SELECT count(*) FROM jsonb_object_keys(v_coverage_record))<>2
+    OR COALESCE(v_coverage_record->>'coverage_digest','') !~ '^[0-9a-f]{64}$'
+    OR v_coverage_record->>'canonical' IS NULL
+    OR octet_length(v_coverage_record->>'canonical')>1048576
+    OR trim(factory.execution_contract_hash(NULL,v_coverage_record->>'canonical'))
+      IS DISTINCT FROM v_coverage_record->>'coverage_digest'
+  THEN RETURN NULL; END IF;
+  v_coverage=(v_coverage_record->>'canonical')::jsonb;
+  IF jsonb_typeof(v_coverage) IS DISTINCT FROM 'object'
+    OR (SELECT count(*) FROM jsonb_object_keys(v_coverage))<>5
+    OR v_coverage->>'schema_version' IS DISTINCT FROM '1'
+    OR v_coverage->>'subject_digest' IS DISTINCT FROM trim(p_subject_digest)
+    OR v_coverage->'validator' IS DISTINCT FROM v_assignment.body->'validator'
+    OR v_coverage->>'coverage_millionths' IS DISTINCT FROM '1000000'
+    OR jsonb_typeof(v_coverage->'entries') IS DISTINCT FROM 'array'
+    OR jsonb_array_length(v_coverage->'entries') NOT BETWEEN 1 AND 256
+    OR (SELECT jsonb_agg(entry->'requirement' ORDER BY ordinality)
+        FROM jsonb_array_elements(v_coverage->'entries')
+          WITH ORDINALITY AS coverage_entry(entry,ordinality))
+      IS DISTINCT FROM v_subject.subject_body->'requirements'
+    OR EXISTS (
+      SELECT 1 FROM jsonb_array_elements(v_coverage->'entries') entry
+      WHERE jsonb_typeof(entry) IS DISTINCT FROM 'object'
+        OR (SELECT count(*) FROM jsonb_object_keys(entry))<>3
+        OR entry->>'status' NOT IN ('proven','unproven','contradicted','out_of_scope')
+        OR jsonb_typeof(entry->'evidence_refs') IS DISTINCT FROM 'array'
+        OR jsonb_array_length(entry->'evidence_refs')>256
+        OR EXISTS (
+          SELECT 1 FROM (
+            SELECT value,ordinality,lag(value) OVER (ORDER BY ordinality) AS previous
+            FROM jsonb_array_elements_text(entry->'evidence_refs')
+              WITH ORDINALITY AS ref(value,ordinality)
+          ) ordered WHERE octet_length(value) NOT BETWEEN 1 AND 256
+            OR (previous IS NOT NULL AND value<=previous)
+        )
+    )
+  THEN RETURN NULL; END IF;
+
+  FOR v_item IN SELECT value FROM jsonb_array_elements(v_evidence->'findings') LOOP
+    v_finding=(v_item->>'canonical')::jsonb;
+    SELECT * INTO v_existing_finding FROM factory.semantic_findings
+      WHERE finding_digest=(v_item->>'finding_digest')::char(64);
+    IF FOUND THEN
+      IF v_existing_finding.subject_digest IS DISTINCT FROM p_subject_digest
+        OR v_existing_finding.assignment_digest IS DISTINCT FROM p_assignment_digest
+        OR v_existing_finding.finding_identity_digest IS DISTINCT FROM
+          (v_item->>'identity_digest')::char(64)
+        OR v_existing_finding.body IS DISTINCT FROM v_finding
+      THEN RETURN NULL; END IF;
+    ELSE
+      INSERT INTO factory.semantic_findings(
+        finding_digest,finding_identity_digest,subject_digest,assignment_digest,
+        request_digest,body
+      ) VALUES (
+        (v_item->>'finding_digest')::char(64),(v_item->>'identity_digest')::char(64),
+        p_subject_digest,p_assignment_digest,p_request_digest,v_finding
+      );
+    END IF;
+  END LOOP;
+
+  SELECT * INTO v_existing_coverage FROM factory.semantic_coverage
+    WHERE coverage_digest=(v_coverage_record->>'coverage_digest')::char(64)
+      OR (subject_digest=p_subject_digest AND assignment_digest=p_assignment_digest);
+  IF FOUND THEN
+    IF v_existing_coverage.coverage_digest IS DISTINCT FROM
+        (v_coverage_record->>'coverage_digest')::char(64)
+      OR v_existing_coverage.subject_digest IS DISTINCT FROM p_subject_digest
+      OR v_existing_coverage.assignment_digest IS DISTINCT FROM p_assignment_digest
+      OR v_existing_coverage.body IS DISTINCT FROM v_coverage
+    THEN RETURN NULL; END IF;
+  ELSE
+    INSERT INTO factory.semantic_coverage(
+      coverage_digest,subject_digest,assignment_digest,request_digest,body
+    ) VALUES (
+      (v_coverage_record->>'coverage_digest')::char(64),p_subject_digest,
+      p_assignment_digest,p_request_digest,v_coverage
+    );
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(item->>'finding_digest' ORDER BY item->>'finding_digest'),'[]'::jsonb)
+    INTO v_finding_digests FROM jsonb_array_elements(v_evidence->'findings') item;
+  v_response=jsonb_build_object(
+    'evidence_set_digest',trim(p_evidence_set_digest),
+    'subject_digest',trim(p_subject_digest),
+    'assignment_digest',trim(p_assignment_digest),
+    'finding_digests',v_finding_digests,
+    'coverage_digest',v_coverage_record->>'coverage_digest'
+  );
+  INSERT INTO factory.semantic_command_results(
+    operation,idempotency_key,request_digest,resource_digest,response_body
+  ) VALUES (
+    'append_evidence',p_idempotency_key,p_request_digest,p_evidence_set_digest,v_response
+  );
+  RETURN v_response;
+EXCEPTION WHEN unique_violation OR check_violation OR foreign_key_violation
+  OR invalid_text_representation OR numeric_value_out_of_range OR data_exception THEN
+  RETURN NULL;
+END;
+$$;
+
+CREATE FUNCTION factory.semantic_adjudication_material(
+  p_task_id uuid,p_subject_digest char(64)
+) RETURNS jsonb
+LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+  SELECT jsonb_build_object(
+    'subject_digest',trim(subject.subject_digest),
+    'subject',subject.subject_body,
+    'assignments',COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'assignment_digest',trim(assignment.assignment_digest),
+        'body',assignment.body
+      ) ORDER BY assignment.assignment_digest)
+      FROM factory.semantic_assignments assignment
+      WHERE assignment.subject_digest=subject.subject_digest
+    ),'[]'::jsonb),
+    'findings',COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'finding_digest',trim(finding.finding_digest),
+        'assignment_digest',trim(finding.assignment_digest),
+        'body',finding.body
+      ) ORDER BY finding.finding_digest)
+      FROM factory.semantic_findings finding
+      WHERE finding.subject_digest=subject.subject_digest
+    ),'[]'::jsonb),
+    'coverages',COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'coverage_digest',trim(coverage.coverage_digest),
+        'assignment_digest',trim(coverage.assignment_digest),
+        'body',coverage.body
+      ) ORDER BY coverage.coverage_digest)
+      FROM factory.semantic_coverage coverage
+      WHERE coverage.subject_digest=subject.subject_digest
+    ),'[]'::jsonb)
+  )
+  FROM factory.semantic_subjects subject
+  WHERE subject.task_id=p_task_id AND subject.subject_digest=p_subject_digest
+$$;
+
+CREATE FUNCTION factory.semantic_expected_verdict(
+  p_subject_digest char(64)
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+DECLARE
+  v_subject jsonb;
+  v_identities jsonb;
+  v_duplicates jsonb;
+  v_correlations jsonb;
+  v_contradictions jsonb;
+  v_unsupported jsonb;
+  v_human boolean;
+  v_repair boolean;
+  v_decision text;
+  v_residual text;
+BEGIN
+  SELECT subject_body INTO v_subject FROM factory.semantic_subjects
+    WHERE subject_digest=p_subject_digest;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+
+  SELECT COALESCE(jsonb_agg(identity ORDER BY identity),'[]'::jsonb)
+    INTO v_identities
+  FROM (
+    SELECT trim(finding_identity_digest) AS identity
+    FROM factory.semantic_findings WHERE subject_digest=p_subject_digest
+    GROUP BY finding_identity_digest
+  ) identities;
+  SELECT COALESCE(jsonb_agg(identity ORDER BY identity),'[]'::jsonb)
+    INTO v_duplicates
+  FROM (
+    SELECT trim(finding_identity_digest) AS identity
+    FROM factory.semantic_findings WHERE subject_digest=p_subject_digest
+    GROUP BY finding_identity_digest HAVING count(*)>1
+  ) duplicates;
+  SELECT COALESCE(jsonb_agg(requirement_key ORDER BY requirement_key),'[]'::jsonb)
+    INTO v_correlations
+  FROM (
+    SELECT (body#>>'{requirement,kind}') || ':' ||
+        (body#>>'{requirement,requirement_id}') AS requirement_key
+    FROM factory.semantic_findings WHERE subject_digest=p_subject_digest
+    GROUP BY body#>>'{requirement,kind}',body#>>'{requirement,requirement_id}'
+    HAVING count(DISTINCT finding_identity_digest)>1
+  ) correlations;
+  SELECT COALESCE(jsonb_agg(requirement_key ORDER BY requirement_key),'[]'::jsonb)
+    INTO v_contradictions
+  FROM (
+    SELECT (entry#>>'{requirement,kind}') || ':' ||
+        (entry#>>'{requirement,requirement_id}') AS requirement_key
+    FROM factory.semantic_coverage coverage,
+      jsonb_array_elements(coverage.body->'entries') entry
+    WHERE coverage.subject_digest=p_subject_digest
+    GROUP BY entry#>>'{requirement,kind}',entry#>>'{requirement,requirement_id}'
+    HAVING count(DISTINCT entry->>'status')>1
+      OR bool_or(entry->>'status'='contradicted')
+  ) contradictions;
+  SELECT COALESCE(jsonb_agg(requirement_key ORDER BY requirement_key),'[]'::jsonb)
+    INTO v_unsupported
+  FROM (
+    SELECT DISTINCT (entry#>>'{requirement,kind}') || ':' ||
+        (entry#>>'{requirement,requirement_id}') AS requirement_key
+    FROM factory.semantic_coverage coverage,
+      jsonb_array_elements(coverage.body->'entries') entry
+    WHERE coverage.subject_digest=p_subject_digest AND (
+      entry->>'status'='out_of_scope'
+      OR (
+        entry->>'status'='proven' AND (
+          jsonb_array_length(entry->'evidence_refs')=0
+          OR EXISTS (
+            SELECT 1 FROM factory.semantic_findings finding
+            WHERE finding.subject_digest=p_subject_digest
+              AND finding.body->'requirement'=entry->'requirement'
+          )
+        )
+      )
+    )
+  ) unsupported;
+  SELECT EXISTS (
+    SELECT 1 FROM factory.semantic_findings
+    WHERE subject_digest=p_subject_digest AND (
+      body->>'repairable'='false'
+      OR body->>'category' IN ('security_boundary','authority_violation','contradiction')
+    )
+  ) INTO v_human;
+  SELECT EXISTS (
+    SELECT 1 FROM factory.semantic_findings WHERE subject_digest=p_subject_digest
+  ) OR EXISTS (
+    SELECT 1 FROM factory.semantic_coverage coverage,
+      jsonb_array_elements(coverage.body->'entries') entry
+    WHERE coverage.subject_digest=p_subject_digest AND entry->>'status'<>'proven'
+  ) INTO v_repair;
+
+  IF jsonb_array_length(v_contradictions)>0
+    OR jsonb_array_length(v_unsupported)>0 OR v_human
+  THEN
+    v_decision='needs_human';
+    v_residual=CASE WHEN v_subject->>'risk_level'='critical' THEN 'critical' ELSE 'high' END;
+  ELSIF v_repair THEN
+    v_decision='repair';
+    v_residual=v_subject->>'risk_level';
+  ELSE
+    v_decision='pass';
+    v_residual='none';
+  END IF;
+  RETURN jsonb_build_object(
+    'schema_version',1,
+    'subject_digest',trim(p_subject_digest),
+    'decision',v_decision,
+    'decision_source','deterministic_adjudicator',
+    'finding_identity_digests',v_identities,
+    'duplicate_identity_digests',v_duplicates,
+    'correlated_requirement_keys',v_correlations,
+    'contradicted_requirement_keys',v_contradictions,
+    'unsupported_pass_requirement_keys',v_unsupported,
+    'residual_risk',v_residual
+  );
+END;
+$$;
+
+CREATE FUNCTION factory.semantic_append_verdict(
+  p_idempotency_key char(64),p_request_digest char(64),p_request_canonical text,
+  p_evidence_set_digest char(64),p_evidence_canonical text,
+  p_verdict_digest char(64),p_verdict_canonical text
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+DECLARE
+  v_request jsonb;
+  v_evidence jsonb;
+  v_actual_evidence jsonb;
+  v_verdict jsonb;
+  v_expected jsonb;
+  v_subject factory.semantic_subjects%ROWTYPE;
+  v_existing factory.semantic_verdicts%ROWTYPE;
+  v_prior factory.semantic_command_results%ROWTYPE;
+  v_response jsonb;
+  v_assignment_count integer;
+BEGIN
+  IF current_setting('transaction_isolation') IS DISTINCT FROM 'read committed'
+    OR p_idempotency_key IS NULL OR p_idempotency_key !~ '^[0-9a-f]{64}$'
+    OR p_request_digest IS NULL OR p_evidence_set_digest IS NULL
+    OR p_verdict_digest IS NULL
+    OR p_request_canonical IS NULL OR octet_length(p_request_canonical)>262144
+    OR p_evidence_canonical IS NULL OR octet_length(p_evidence_canonical)>1048576
+    OR p_verdict_canonical IS NULL OR octet_length(p_verdict_canonical)>1048576
+  THEN RETURN NULL; END IF;
+
+  v_request=p_request_canonical::jsonb;
+  v_evidence=p_evidence_canonical::jsonb;
+  v_verdict=p_verdict_canonical::jsonb;
+  IF trim(factory.execution_contract_hash(NULL,p_request_canonical))
+      IS DISTINCT FROM trim(p_request_digest)
+    OR trim(factory.execution_contract_hash(NULL,p_evidence_canonical))
+      IS DISTINCT FROM trim(p_evidence_set_digest)
+    OR trim(factory.execution_contract_hash(NULL,p_verdict_canonical))
+      IS DISTINCT FROM trim(p_verdict_digest)
+    OR jsonb_typeof(v_request) IS DISTINCT FROM 'object'
+    OR (SELECT count(*) FROM jsonb_object_keys(v_request))<>5
+    OR v_request->>'contract' IS DISTINCT FROM
+      'adaptive-factory.semantic-adjudication-command/v1'
+    OR v_request->>'idempotency_key' IS DISTINCT FROM trim(p_idempotency_key)
+    OR v_request->>'subject_digest' IS NULL
+    OR v_request->>'evidence_set_digest' IS DISTINCT FROM trim(p_evidence_set_digest)
+    OR v_request->>'verdict_digest' IS DISTINCT FROM trim(p_verdict_digest)
+    OR jsonb_typeof(v_evidence) IS DISTINCT FROM 'object'
+    OR (SELECT count(*) FROM jsonb_object_keys(v_evidence))<>3
+    OR v_evidence->>'contract' IS DISTINCT FROM
+      'adaptive-factory.semantic-adjudication-evidence-set/v1'
+    OR v_evidence->>'subject_digest' IS DISTINCT FROM v_request->>'subject_digest'
+    OR jsonb_typeof(v_evidence->'assignments') IS DISTINCT FROM 'array'
+    OR jsonb_array_length(v_evidence->'assignments') NOT BETWEEN 1 AND 256
+    OR jsonb_typeof(v_verdict) IS DISTINCT FROM 'object'
+    OR (SELECT count(*) FROM jsonb_object_keys(v_verdict))<>10
+    OR v_verdict->>'schema_version' IS DISTINCT FROM '1'
+    OR v_verdict->>'subject_digest' IS DISTINCT FROM v_request->>'subject_digest'
+  THEN RETURN NULL; END IF;
+
+  SELECT * INTO v_prior FROM factory.semantic_command_results
+    WHERE operation='append_verdict' AND idempotency_key=p_idempotency_key;
+  IF FOUND THEN
+    RETURN CASE WHEN v_prior.request_digest=p_request_digest
+      THEN v_prior.response_body ELSE NULL END;
+  END IF;
+
+  SELECT * INTO v_subject FROM factory.semantic_subjects
+    WHERE subject_digest=(v_request->>'subject_digest')::char(64) FOR UPDATE;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  SELECT count(*) INTO v_assignment_count FROM factory.semantic_assignments
+    WHERE subject_digest=v_subject.subject_digest;
+  IF v_assignment_count NOT BETWEEN 1 AND 256 THEN RETURN NULL; END IF;
+
+  SELECT jsonb_build_object(
+    'contract','adaptive-factory.semantic-adjudication-evidence-set/v1',
+    'subject_digest',trim(v_subject.subject_digest),
+    'assignments',COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'assignment_digest',trim(assignment.assignment_digest),
+        'finding_digests',COALESCE((
+          SELECT jsonb_agg(trim(finding.finding_digest) ORDER BY finding.finding_digest)
+          FROM factory.semantic_findings finding
+          WHERE finding.assignment_digest=assignment.assignment_digest
+        ),'[]'::jsonb),
+        'coverage_digest',trim(coverage.coverage_digest)
+      ) ORDER BY assignment.assignment_digest)
+      FROM factory.semantic_assignments assignment
+      JOIN factory.semantic_coverage coverage
+        ON coverage.assignment_digest=assignment.assignment_digest
+          AND coverage.subject_digest=assignment.subject_digest
+      WHERE assignment.subject_digest=v_subject.subject_digest
+    ),'[]'::jsonb)
+  ) INTO v_actual_evidence;
+  IF jsonb_array_length(v_actual_evidence->'assignments')<>v_assignment_count
+    OR v_actual_evidence IS DISTINCT FROM v_evidence
+  THEN RETURN NULL; END IF;
+
+  v_expected=factory.semantic_expected_verdict(v_subject.subject_digest);
+  IF v_expected IS NULL OR v_expected IS DISTINCT FROM v_verdict
+  THEN RETURN NULL; END IF;
+
+  SELECT * INTO v_prior FROM factory.semantic_command_results
+    WHERE operation='append_verdict' AND idempotency_key=p_idempotency_key;
+  IF FOUND THEN
+    RETURN CASE WHEN v_prior.request_digest=p_request_digest
+      THEN v_prior.response_body ELSE NULL END;
+  END IF;
+
+  SELECT * INTO v_existing FROM factory.semantic_verdicts
+    WHERE subject_digest=v_subject.subject_digest OR verdict_digest=p_verdict_digest;
+  IF FOUND THEN
+    IF v_existing.subject_digest IS DISTINCT FROM v_subject.subject_digest
+      OR v_existing.verdict_digest IS DISTINCT FROM p_verdict_digest
+      OR v_existing.evidence_set_digest IS DISTINCT FROM p_evidence_set_digest
+      OR v_existing.body IS DISTINCT FROM v_verdict
+    THEN RETURN NULL; END IF;
+  ELSE
+    INSERT INTO factory.semantic_verdicts(
+      verdict_digest,subject_digest,evidence_set_digest,request_digest,body
+    ) VALUES (
+      p_verdict_digest,v_subject.subject_digest,p_evidence_set_digest,p_request_digest,v_verdict
+    );
+    INSERT INTO factory.semantic_metric_events(metric_name,label)
+      VALUES ('semantic_validation_outcome',v_verdict->>'decision');
+  END IF;
+
+  v_response=jsonb_build_object(
+    'verdict_digest',trim(p_verdict_digest),
+    'evidence_set_digest',trim(p_evidence_set_digest),
+    'subject_digest',trim(v_subject.subject_digest),
+    'verdict',v_verdict
+  );
+  INSERT INTO factory.semantic_command_results(
+    operation,idempotency_key,request_digest,resource_digest,response_body
+  ) VALUES (
+    'append_verdict',p_idempotency_key,p_request_digest,p_verdict_digest,v_response
+  );
+  RETURN v_response;
+EXCEPTION WHEN unique_violation OR check_violation OR foreign_key_violation
+  OR invalid_text_representation OR numeric_value_out_of_range OR data_exception THEN
+  RETURN NULL;
+END;
+$$;
+
+CREATE FUNCTION factory.semantic_verdict_by_subject(
+  p_task_id uuid,p_subject_digest char(64)
+) RETURNS jsonb
+LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+  SELECT jsonb_build_object(
+    'verdict_digest',trim(verdict.verdict_digest),
+    'evidence_set_digest',trim(verdict.evidence_set_digest),
+    'subject_digest',trim(verdict.subject_digest),
+    'verdict',verdict.body
+  )
+  FROM factory.semantic_verdicts verdict
+  JOIN factory.semantic_subjects subject
+    ON subject.subject_digest=verdict.subject_digest
+  WHERE subject.task_id=p_task_id AND subject.subject_digest=p_subject_digest
+$$;
+
 CREATE FUNCTION factory.semantic_subject_by_digest(
   p_task_id uuid,p_subject_digest char(64)
 ) RETURNS jsonb
@@ -541,6 +1229,18 @@ REVOKE ALL ON FUNCTION factory.semantic_execution_material(uuid,char) FROM PUBLI
 REVOKE ALL ON FUNCTION factory.semantic_publish_subject(
   char,char,text,char,text,char,text,char,text,char,text,char,text
 ) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.semantic_create_assignment(
+  char,char,text,char,text
+) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.semantic_append_evidence(
+  char,char,text,char,char,char,text
+) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.semantic_adjudication_material(uuid,char) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.semantic_expected_verdict(char) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.semantic_append_verdict(
+  char,char,text,char,text,char,text
+) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.semantic_verdict_by_subject(uuid,char) FROM PUBLIC;
 REVOKE ALL ON FUNCTION factory.semantic_subject_by_digest(uuid,char) FROM PUBLIC;
 
 GRANT USAGE ON SCHEMA factory TO factory_semantic_coordinator,
@@ -550,5 +1250,18 @@ GRANT EXECUTE ON FUNCTION factory.semantic_execution_material(uuid,char)
 GRANT EXECUTE ON FUNCTION factory.semantic_publish_subject(
   char,char,text,char,text,char,text,char,text,char,text,char,text
 ) TO factory_semantic_coordinator;
+GRANT EXECUTE ON FUNCTION factory.semantic_create_assignment(
+  char,char,text,char,text
+) TO factory_semantic_coordinator;
+GRANT EXECUTE ON FUNCTION factory.semantic_append_evidence(
+  char,char,text,char,char,char,text
+) TO factory_semantic_validator;
+GRANT EXECUTE ON FUNCTION factory.semantic_adjudication_material(uuid,char)
+  TO factory_semantic_adjudicator;
+GRANT EXECUTE ON FUNCTION factory.semantic_append_verdict(
+  char,char,text,char,text,char,text
+) TO factory_semantic_adjudicator;
+GRANT EXECUTE ON FUNCTION factory.semantic_verdict_by_subject(uuid,char)
+  TO factory_semantic_coordinator;
 GRANT EXECUTE ON FUNCTION factory.semantic_subject_by_digest(uuid,char)
   TO factory_semantic_coordinator;

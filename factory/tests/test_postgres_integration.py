@@ -24,13 +24,21 @@ from adaptive_factory.models import Actor, ExecutionStage, FailureClass, RunRole
 from adaptive_factory.protocol import CanonicalEvent
 from adaptive_factory.recovery import ExecutionRecovery
 from adaptive_factory.semantic_bridge import SemanticBridgeResult
+from adaptive_factory.semantic_adjudication import adjudicate
+from adaptive_factory.semantic_contracts import (
+    SemanticCoverageV1,
+    SemanticFindingV1,
+    ValidatorIdentityV1,
+)
 from adaptive_factory.service import AuthorizationError, ExecutionContractError, FactoryService
 from adaptive_factory.store import (
     BudgetError,
     FenceError,
     PostgresArtifactAttestationStore,
     PostgresFactoryStore,
+    PostgresSemanticAdjudicatorStore,
     PostgresSemanticCoordinatorStore,
+    PostgresSemanticValidatorStore,
     StoreError,
 )
 from adaptive_factory.workspace import (
@@ -109,15 +117,21 @@ class PostgresFactoryTests(unittest.TestCase):
             provision_artifact_attestor_login,
             provision_runtime_login,
             provision_semantic_coordinator_login,
+            provision_semantic_adjudicator_login,
+            provision_semantic_validator_login,
         )
         from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
         cls.artifact_attestor_login = f"factory_artifact_test_{os.getpid()}"
         cls.runtime_login = f"factory_runtime_test_{os.getpid()}"
         cls.semantic_coordinator_login = f"factory_semantic_test_{os.getpid()}"
+        cls.semantic_validator_login = f"factory_validator_test_{os.getpid()}"
+        cls.semantic_adjudicator_login = f"factory_adjudicator_test_{os.getpid()}"
         cls.artifact_attestor_password = "local-artifact-attestor-test"
         cls.runtime_password = "local-runtime-store-test"
         cls.semantic_coordinator_password = "local-semantic-coordinator-test"
+        cls.semantic_validator_password = "local-semantic-validator-test"
+        cls.semantic_adjudicator_password = "local-semantic-adjudicator-test"
         provision_runtime_login(DATABASE_URL, cls.runtime_login, cls.runtime_password)
         provision_artifact_attestor_login(
             DATABASE_URL, cls.artifact_attestor_login, cls.artifact_attestor_password,
@@ -127,6 +141,16 @@ class PostgresFactoryTests(unittest.TestCase):
             DATABASE_URL,
             cls.semantic_coordinator_login,
             cls.semantic_coordinator_password,
+        )
+        provision_semantic_validator_login(
+            DATABASE_URL,
+            cls.semantic_validator_login,
+            cls.semantic_validator_password,
+        )
+        provision_semantic_adjudicator_login(
+            DATABASE_URL,
+            cls.semantic_adjudicator_login,
+            cls.semantic_adjudicator_password,
         )
         cls.artifact_attestor_url = make_conninfo(**{
             **conninfo_to_dict(DATABASE_URL),
@@ -143,6 +167,16 @@ class PostgresFactoryTests(unittest.TestCase):
             "user": cls.semantic_coordinator_login,
             "password": cls.semantic_coordinator_password,
         })
+        cls.semantic_validator_url = make_conninfo(**{
+            **conninfo_to_dict(DATABASE_URL),
+            "user": cls.semantic_validator_login,
+            "password": cls.semantic_validator_password,
+        })
+        cls.semantic_adjudicator_url = make_conninfo(**{
+            **conninfo_to_dict(DATABASE_URL),
+            "user": cls.semantic_adjudicator_login,
+            "password": cls.semantic_adjudicator_password,
+        })
 
     @classmethod
     def tearDownClass(cls):
@@ -156,6 +190,12 @@ class PostgresFactoryTests(unittest.TestCase):
             ))
             cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(
                 sql.Identifier(cls.artifact_attestor_login)
+            ))
+            cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(
+                sql.Identifier(cls.semantic_adjudicator_login)
+            ))
+            cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(
+                sql.Identifier(cls.semantic_validator_login)
             ))
             cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(
                 sql.Identifier(cls.semantic_coordinator_login)
@@ -1333,6 +1373,162 @@ class PostgresFactoryTests(unittest.TestCase):
                 cursor.execute(
                     "INSERT INTO factory.semantic_metric_events(metric_name,label) VALUES ('semantic_subject_lifecycle','published')"
                 )
+
+        validator_proof = ValidatorIdentityV1.from_dict({
+            "validator_id": "validator-pg-1",
+            "role": "semantic_validator",
+            "capabilities": ["repository_read", "semantic_validate"],
+            "definition_digest": "e" * 64,
+            "model_digest": "f" * 64,
+            "context_digest": "1" * 64,
+        })
+        assignment = semantic_store.create_assignment(
+            published.subject, validator_proof, idempotency_key="a" * 64
+        )
+        with self.assertRaisesRegex(StoreError, "assignment rejected"):
+            semantic_store.create_assignment(
+                published.subject,
+                replace(
+                    validator_proof,
+                    validator_id="validator-pg-2",
+                    context_digest="2" * 64,
+                ),
+                idempotency_key="a" * 64,
+            )
+        finding_value = SemanticFindingV1.from_dict({
+            "schema_version": 1,
+            "subject_digest": published.subject.digest,
+            "finding_id": "finding-pg-1",
+            "requirement": published.subject.requirements[0].to_dict(),
+            "severity": "major",
+            "category": "requirement_unsatisfied",
+            "rule_id": "rule-output-correctness",
+            "message": "Deterministic acceptance evidence is incomplete.",
+            "evidence_refs": ["artifact:result-digest"],
+            "reproduction": "Run the bounded deterministic PostgreSQL fixture.",
+            "repairable": True,
+            "validator": validator_proof.to_dict(),
+            "created_at": "2026-09-02T00:00:00Z",
+        })
+        coverage_value = SemanticCoverageV1.from_dict({
+            "schema_version": 1,
+            "subject_digest": published.subject.digest,
+            "validator": validator_proof.to_dict(),
+            "entries": [
+                {
+                    "requirement": requirement.to_dict(),
+                    "status": "proven",
+                    "evidence_refs": [f"check:{requirement.requirement_id.lower()}"],
+                }
+                for requirement in published.subject.requirements
+            ],
+            "coverage_millionths": 1_000_000,
+        })
+        validator_store = PostgresSemanticValidatorStore(self.semantic_validator_url)
+        evidence = validator_store.append_evidence(
+            published.subject.digest,
+            assignment["assignment_digest"],
+            (finding_value,),
+            coverage_value,
+            idempotency_key="b" * 64,
+        )
+        self.assertEqual(
+            validator_store.append_evidence(
+                published.subject.digest,
+                assignment["assignment_digest"],
+                (finding_value,),
+                coverage_value,
+                idempotency_key="b" * 64,
+            ),
+            evidence,
+        )
+        with self.assertRaisesRegex(StoreError, "evidence publication rejected"):
+            validator_store.append_evidence(
+                published.subject.digest,
+                assignment["assignment_digest"],
+                (replace(finding_value, message="Divergent wording under the same command key."),),
+                coverage_value,
+                idempotency_key="b" * 64,
+            )
+        adjudicator_store = PostgresSemanticAdjudicatorStore(
+            self.semantic_adjudicator_url
+        )
+        adjudication_material = adjudicator_store.adjudication_material(
+            task.task_id, published.subject.digest
+        )
+        verdict = adjudicate(
+            adjudication_material["subject"],
+            adjudication_material["findings"],
+            adjudication_material["coverages"],
+        )
+        self.assertEqual(verdict.decision, "needs_human")
+        self.assertEqual(
+            verdict.unsupported_pass_requirement_keys,
+            (published.subject.requirements[0].key,),
+        )
+        verdict_record = adjudicator_store.append_verdict(
+            adjudication_material, verdict, idempotency_key="c" * 64
+        )
+        self.assertEqual(
+            adjudicator_store.append_verdict(
+                adjudication_material, verdict, idempotency_key="c" * 64
+            ),
+            verdict_record,
+        )
+        self.assertEqual(
+            semantic_store.verdict_by_subject(task.task_id, published.subject.digest),
+            verdict_record,
+        )
+        forged_verdict = {
+            **verdict.to_dict(),
+            "decision": "pass",
+            "residual_risk": "none",
+        }
+        forged_digest = canonical_digest(forged_verdict)
+        forged_request = {
+            "contract": "adaptive-factory.semantic-adjudication-command/v1",
+            "idempotency_key": "d" * 64,
+            "subject_digest": published.subject.digest,
+            "evidence_set_digest": adjudication_material["evidence_set_digest"],
+            "verdict_digest": forged_digest,
+        }
+        with adjudicator_store._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT factory.semantic_append_verdict(%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    "d" * 64,
+                    canonical_digest(forged_request),
+                    canonical_json(forged_request).decode("utf-8"),
+                    adjudication_material["evidence_set_digest"],
+                    canonical_json(adjudication_material["evidence_set"]).decode("utf-8"),
+                    forged_digest,
+                    canonical_json(forged_verdict).decode("utf-8"),
+                ),
+            )
+            self.assertIsNone(cursor.fetchone()[0])
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT p.proname,
+                has_function_privilege('factory_semantic_coordinator',p.oid,'EXECUTE'),
+                has_function_privilege('factory_semantic_validator',p.oid,'EXECUTE'),
+                has_function_privilege('factory_semantic_adjudicator',p.oid,'EXECUTE'),
+                has_function_privilege('factory_runtime',p.oid,'EXECUTE')
+                FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+                WHERE n.nspname='factory' AND p.proname IN (
+                  'semantic_create_assignment','semantic_append_evidence',
+                  'semantic_adjudication_material','semantic_append_verdict',
+                  'semantic_verdict_by_subject'
+                ) ORDER BY p.proname"""
+            )
+            privileges = {row[0]: row[1:] for row in cursor.fetchall()}
+        self.assertEqual(privileges, {
+            "semantic_adjudication_material": (False, False, True, False),
+            "semantic_append_evidence": (False, True, False, False),
+            "semantic_append_verdict": (False, False, True, False),
+            "semantic_create_assignment": (True, False, False, False),
+            "semantic_verdict_by_subject": (True, False, False, False),
+        })
 
     def test_execution_lifecycle_persists_new_digest_stages_and_redacted_proposal(self):
         task = self.submit(source="m5-execution-lifecycle").task

@@ -4,11 +4,11 @@
 - [x] Reconcile architecture inventory and README K22 graph.
 - [x] Replace stale pure-only design/plan/package with factual M5-aligned bounded vertical tasks.
 - [x] RED/GREEN exact M5 -> semantic bridge and mutation matrix.
-- [ ] RED/GREEN forward migration 014, append-only persistence, idempotency, and capability roles.
-- [ ] RED/GREEN service/API/OpenAPI semantic publish/evidence/adjudication/read paths.
+- [x] RED/GREEN forward migration 014, append-only persistence, idempotency, and capability roles.
+- [x] RED/GREEN service/API/OpenAPI semantic publish/evidence/adjudication/read paths.
 - [ ] RED/GREEN same-writer fresh-context repair child proposals and escalation matrix.
 - [ ] RED/GREEN restart/recovery, fixed metrics, installer, architecture and current docs.
-- [ ] Run all focused source verification and record exact results.
+- [x] Run focused Task 2/Task 3 source verification and record exact results; final all-source verification remains a later parent gate.
 - [ ] Parent runs final full verifier/review/receipts and later dependency restack.
 - [ ] BLOCKED until accepted predecessors/external gates: acceptance, M7 activation, push/PR/merge/release/Trust CI.
 
