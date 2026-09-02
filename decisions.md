@@ -332,3 +332,7 @@ Treat an unreleased canonical allocation as part of the worker fence and deny ru
 ## 2026-09-01 — Lock trusted authority inside intake without granting row mutation
 
 Use fixed-search-path security-definer predicates that take a row lock on the exact repository/policy/action subject, and invoke them after intake identity serialization in the insertion transaction. This prevents revocation TOCTOU while retaining an EXECUTE-only runtime boundary.
+
+## 2026-09-02 — Select the least-authority valid recovery
+
+Walk the plan's closed canonical recovery order so an authorized halt wins before exposure decrease, and exact prior-artifact restoration is considered only when earlier narrowing actions are unavailable. Recheck promotion and artifact authority at recovery decision time so a stale failed decision cannot extend authority.
