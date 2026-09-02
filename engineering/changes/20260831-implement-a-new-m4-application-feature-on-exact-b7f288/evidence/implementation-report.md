@@ -41,6 +41,7 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 - `034168b` — bounded fixed-key release metrics inventory and rejection signals.
 - `7eaccd6` — frozen observability-boundary review evidence.
 - `94fc5ad` — transactional fixed-row metrics snapshot, closed runtime capabilities and bounded rejection accounting.
+- `4f75558` — explicit best-effort rejection handling, final-PID1 PostgreSQL readiness and M4-M9 program connectivity.
 
 ## Independent-review remediation
 
@@ -62,6 +63,10 @@ The sixth residual wave closes the observability authority and consistency bound
 
 Every final application 401/403 now increments exactly once at the HTTP response boundary, including actor-kind, repository and trusted-authority denial, without labels or credentials. Snapshot reads have fixed 5-second statement and 500-millisecond lock bounds; stale-fence instrumentation has shorter connection/lock/statement bounds and is best effort after the authoritative decision, so counter failure cannot replace or materially delay exact `409 stale_fence`. The first full PostgreSQL run reproduced a counter-trigger/capacity lock inversion; restricting reconciliation counter work to completed-state deltas restored the established capacity-first order and the regression passed on a recreated disposable database.
 
+The first exact verifier after wave six passed 12/14 gates but rejected two exit-harness details. Bandit B110 identified the silent best-effort exception handler, and the fresh disposable database accepted a temporary readiness probe before closing the first host connection during the official image's final-postmaster handoff. Product commit `4f75558` makes handling explicit while preserving the identical authoritative fence error, and proves the final PostgreSQL postmaster is PID 1 plus ready rather than trusting a fixed delay.
+
+Current documentation connects M4 control/evidence through the provisional M5 packet/execution result and M6 semantic verdict, then roadmap-only M7 ready-for-PR shadow bundle, M8 exact-profile cohort/demotion and M9 exact signed-artifact delivery/recovery. Each edge names digest/SHA binding, gate, invalidation, rollback and forbidden authority; the hard deadline is **2026-09-08 00:00 UTC+3**, M5 remains rootless-host blocked, current authority caps M8 at L2, and production promotion remains human-owned. None of these connections claims M4-M9 completion, push, external check, merge or deployment.
+
 ## Verification evidence
 
 - Final remediation factory suite: 63/63 passed in 32.699s against fresh disposable PostgreSQL 17, including API integration, both authority interleavings/forms, schema-008 upgrade safety, exhausted-event cleanup, effective-role denials, accounting recovery, deadlock regression, repository kill, bounded reconciliation, query plans, bootstrap and UDS authentication.
@@ -76,6 +81,7 @@ Every final application 401/403 now increments exactly once at the HTTP response
 - Post-repair evidence is zero secret-scan findings for both changed tests, the focused authentication/redaction case 1/1, and a second fresh PostgreSQL exit 65/65 in 41.762s with the restart probe. The final exact-tree verifier runs after this evidence is committed.
 - Observability-boundary focused evidence passed the real PostgreSQL migration/role/snapshot/fence-lock/upgrade/deadlock set 6/6 in 6.570s, exclusive snapshot-lock timeout 1/1, API/service regressions 2/2 and Ruff. The final named PostgreSQL suite passed 69/69 in 39.794s; the separately fresh disposable exit passed 69/69 in 39.993s plus actual restart, one repair, replay no-op, higher fence and late-holder rejection.
 - The root suite passed 488/488 in 305.256s on clean product commit `94fc5ad`; the exact changed-tree secret scan reports zero potential secrets. The final exact-tree verifier runs once after this evidence-only commit.
+- Exact verifier on `a3b8e87` passed 12/14 gates and failed only Bandit B110 plus the fresh image handoff described above; its root coverage gate passed 488/488 in 501.064s and source stability passed. After repair, focused tests passed 14/14, Bandit/Ruff and architecture validate/drift/diagram checks passed, and fresh disposable PostgreSQL exit passed 70/70 in 39.705s plus the full restart/reconciliation probe on product commit `4f75558`.
 
 ## Disposable migration evidence and cleanup
 

@@ -317,6 +317,7 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The disposable exit intermittently lost its first host connection immediately after `pg_isready` succeeded during the image's bootstrap/postmaster handoff.
 **Root cause:** The harness proved one readiness sample but did not account for the official image's one-time server replacement before opening external clients.
+**Correction:** A fixed delay was still only a timing proxy; the harness now proves `postmaster.pid` belongs to PID 1 and that final server is ready.
 
 ## 2026-09-01 — Fixed a security fixture expiry to the delivery date
 
