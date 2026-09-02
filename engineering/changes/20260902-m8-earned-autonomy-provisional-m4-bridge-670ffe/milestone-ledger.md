@@ -4,9 +4,9 @@
 | --- | --- | --- | --- |
 | M4 | exact control-plane identity | source base `9fe779ab9f90719201acfd01160d3452658ff075`; local unpushed verification candidate `da7ec8d7d40f52663aba1ff59bf03ccf209395b0` | opaque identity only; acceptance blocked |
 | M5 | accepted execution-profile digest | committed provisional source-map head `141e51e75b2bb337fa3bb1544639c6c46c287309`; concurrent verification/package updates dirty | opaque identity only; acceptance blocked |
-| M6 | accepted validator-profile digest | provisional M5-aligned head `cf587883ae5ca8024524ef31053fb04e757b8d93`; concurrent semantic-bridge source/schema work is uncommitted | opaque identity only; acceptance blocked |
+| M6 | accepted validator-profile digest | clean provisional semantic-bridge head `3def83eb915ca68e66379269526ffa64822a1104` | opaque identity only; acceptance blocked |
 | M7 | accepted exact head, shadow bundle, real human decisions | clean provisional source/docs head `c8b450f494b3d44b580556c6a612b21a3a780368`; two architecture-drift paths remain and no factual cohort exists | source-only shape reference; factual qualification blocked |
-| M8 | exact tuple/profile/recommendation/demotion | current pre-source checkpoint `46a6c8eba6b5bd8e4654f3041e52061cdd1a15d6`; pure source explicitly allowed | recommendation-only, L2 ceiling; activation blocked |
+| M8 | exact tuple/profile/recommendation/demotion | current pre-source checkpoint `a1934f7ae8817cec844eb76300e9f86c76a64689`; pure source explicitly allowed | recommendation-only, L2 ceiling; activation blocked |
 | M9 | exact signed delivery/recovery outcomes | roadmap only | no delivery authority; future feedback only |
 
 No row is an attestation or acceptance record. Historical evidence packages are untouched.
