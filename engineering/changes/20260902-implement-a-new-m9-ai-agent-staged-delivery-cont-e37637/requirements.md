@@ -9,6 +9,7 @@
 - [x] `AC-003`: Tasks 3–4 enforce recovery as a strict subset of the pre-authorized promotion and keep production human-owned.
 - [x] `AC-004`: M4→M9 connectivity, blocker owners, deadline, release and rollback are explicit.
 - [x] `AC-005`: Tasks 1–4 are authorized as separate strict-TDD commits using only synthetic opaque exact identities and pure local behavior.
+- [x] Successor correction removes the two caller-supplied M8 digest claims and binds a typed provisional M8 tuple/cohort/profile/recommendation handoff pinned to `2cee9b93c161b6c76f4fee877e6d19eacee5a271`.
 
 Completed checkboxes prove only the named local source/documentation requirement. They never establish route receipts, accepted M8 evidence, signed inputs, an environment, recovery proof, activation, release or deployment.
 
@@ -27,6 +28,9 @@ Completed checkboxes prove only the named local source/documentation requirement
 - Non-empty prior evidence is rejected until Task 5 supplies a trusted checkpoint or complete independently witnessed observation/decision/recovery inputs.
 - No effect or evidence is recorded once promotion/current-artifact authority expires; restore also rechecks prior-artifact authority at `recorded_at`.
 - Reaching production returns `needs_human`; no adapter method exists for production mutation.
+- Reject a changed repository/policy/holdout/runner or any broken provider-mapping/validator/provider, tuple, cohort, profile or recommendation equality chain.
+- Recompute accepted/audit/quality/failure/cost/p95/demotion profile aggregates from linked cohort tasks and M7 outcomes; a caller-rehashed aggregate is not producer evidence.
+- Reject expired/not-yet-current evidence, halted/demoted profiles and blocked recommendations. Current non-halted L0/L1/L2 profiles remain within the M8 ceiling when their exact recommendation is eligible.
 
 ## API/event compatibility
 
@@ -51,4 +55,4 @@ No model, prompt, retrieval, embedding, vector store or untrusted text participa
 
 ## Source-only execution and blocked exit facts
 
-Tasks 1–4 may use synthetic opaque exact identities in local tests. Acceptance, Task 5 integration, activation or release cannot claim an exit until all applicable facts are present: accepted M4→M8 exact predecessor chain, accepted M8 profile and cohort, external signed artifact/SBOM/provenance and authority envelopes, named nonproduction environment authorization, a trusted clock, a trusted restart/checkpoint witness, and exercised restore of the exact prior signed artifact. All factual rows remain `BLOCKED` in [`ledger.md`](ledger.md).
+Tasks 1–4 may use synthetic typed identities in local tests. The temporary M8 boundary always reports `durable_currentness_available=False`; acceptance, Task 5 integration, activation or release cannot claim an exit until all applicable facts are present: accepted M4→M8 exact predecessor chain, server-derived current M8 profile/cohort, external signed artifact/SBOM/provenance and authority envelopes, named nonproduction environment authorization, a trusted clock, a trusted restart/checkpoint witness, and exercised restore of the exact prior signed artifact. All factual rows remain `BLOCKED` in [`ledger.md`](ledger.md).

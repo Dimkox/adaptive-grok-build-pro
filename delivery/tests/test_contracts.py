@@ -3,6 +3,8 @@ import json
 import unittest
 from dataclasses import FrozenInstanceError, asdict, fields
 
+from delivery.tests.synthetic_fixtures import synthetic_m8_evidence
+
 from adaptive_delivery.contracts import (
     ContractError,
     DeliveryDecisionV1,
@@ -45,6 +47,9 @@ HEX = {
 
 
 def _json_value(value):
+    to_dict = getattr(value, "to_dict", None)
+    if callable(to_dict):
+        return _json_value(to_dict())
     if hasattr(value, "__dataclass_fields__"):
         return {key: _json_value(item) for key, item in asdict(value).items()}
     if isinstance(value, dict):
@@ -156,8 +161,12 @@ def promotion_fields(**updates):
         "repository_id": "owner/repository",
         "artifact": artifact,
         "previous_signed_artifact": SignedArtifactRefV1(**previous_values),
-        "m8_profile_digest": HEX["profile"],
-        "m8_cohort_digest": HEX["cohort"],
+        "m8_evidence": synthetic_m8_evidence(
+            repository_id="owner/repository",
+            policy_digest=HEX["policy"],
+            holdout_digest=HEX["holdout"],
+            runner_digest=HEX["runner"],
+        ),
         "policy_digest": HEX["policy"],
         "holdout_digest": HEX["holdout"],
         "runner_image_digest": HEX["runner"],
@@ -180,8 +189,7 @@ def promotion_fields(**updates):
             "repository_id",
             "artifact",
             "previous_signed_artifact",
-            "m8_profile_digest",
-            "m8_cohort_digest",
+            "m8_evidence",
             "policy_digest",
             "holdout_digest",
             "runner_image_digest",
@@ -293,6 +301,19 @@ class ContractTests(unittest.TestCase):
         expected = "43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777"
         self.assertEqual(canonical_digest({"b": 2, "a": 1}), expected)
         self.assertEqual(canonical_digest({"a": 1, "b": 2}), expected)
+
+    def test_canonical_digest_never_calls_an_unknown_to_dict_method(self):
+        class MaliciousValue:
+            called = False
+
+            def to_dict(self):
+                self.called = True
+                return {"forged": "canonical body"}
+
+        value = MaliciousValue()
+        with self.assertRaisesRegex(ContractError, "not canonical JSON"):
+            canonical_digest(value)
+        self.assertFalse(value.called)
 
     def test_all_seven_v1_records_have_exact_closed_frozen_shapes(self):
         records = (

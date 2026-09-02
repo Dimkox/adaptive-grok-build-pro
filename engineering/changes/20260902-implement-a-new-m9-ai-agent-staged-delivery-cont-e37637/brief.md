@@ -12,7 +12,7 @@ Domains: ai, security, api
 
 ## Problem
 
-The roadmap defines accepted M9 delivery after accepted M8 evidence. The 2026-09-02 user ruling permits pure local Tasks 1–4 with synthetic opaque exact identities, but invented M8, signature, cohort, artifact, environment or recovery facts must never become promotion authority.
+The roadmap defines accepted M9 delivery after accepted M8 evidence. The 2026-09-02 user ruling permits pure local Tasks 1–4 with synthetic typed identities, but invented M8, signature, cohort, artifact, environment or recovery facts must never become promotion authority. The temporary `2cee9b9` boundary is explicitly blocked on durable M8 lookup and must be deleted on factual restack.
 
 ## Outcome
 
@@ -31,7 +31,7 @@ Implement the first four local-only TDD tasks: closed records, deterministic eva
 
 ### Out of scope
 
-- Task 5 schema/architecture integration, runtime state or activation.
+- Task 5 machine-readable schema registration, repository-wide status documentation, runtime state, factual M8 integration or activation. The reversible local architecture ownership record for current provisional source/tests is in scope and grants no authority.
 - Real or simulated cryptographic signing, private/public key handling, signature verification, approval minting, or signed-envelope construction.
 - Fabricated M8 trust profiles, cohorts, observations, artifacts, environments, canary results or recovery results.
 - Infrastructure/provider/network/connector/system-command paths, credentials, process execution or production mutation.

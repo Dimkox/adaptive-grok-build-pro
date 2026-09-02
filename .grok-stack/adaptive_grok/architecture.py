@@ -695,6 +695,7 @@ _SOURCE_LIKE_SUFFIXES = _SUPPORTED_SOURCE_SUFFIXES | {
     ".swift",
 }
 _DRIFT_CACHE_DIRECTORIES = {
+    ".venv",
     ".mypy_cache",
     ".pytest_cache",
     ".ruff_cache",

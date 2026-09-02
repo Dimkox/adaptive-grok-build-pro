@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-Approved architectural design and source-only execution scope under route `e376373492fe`. The 2026-09-02 user ruling permits Tasks 1–4 as pure local source/tests using synthetic opaque exact identities. The branch remains based provisionally on M4 source `9fe779ab9f90719201acfd01160d3452658ff075`; neither fixtures nor observed provisional M4–M8 commits are accepted dependency evidence or deployment authority. The hard deadline is **2026-09-08 00:00 UTC+3**.
+Approved architectural design and source-only execution scope under route `e376373492fe`. The 2026-09-02 user ruling permits Tasks 1–4 as pure local source/tests using synthetic typed identities. The branch remains based provisionally on M4 source `9fe779ab9f90719201acfd01160d3452658ff075`; its temporary typed boundary pins provisional M8 `2cee9b93c161b6c76f4fee877e6d19eacee5a271` but supplies no durable currentness or acceptance. Neither fixtures nor observed provisional M4–M8 commits are deployment authority. The hard deadline is **2026-09-08 00:00 UTC+3**.
 
 ## Goal
 
@@ -66,7 +66,7 @@ Build a pure local deterministic M9 evaluator and dry-run controller that binds 
 | --- | --- |
 | `schema_version`, `promotion_id`, `repository_id` | version and stable resource identity |
 | `artifact` / `previous_signed_artifact` | new and exact restoration artifacts; repository must match and artifact digests must differ |
-| `m8_profile_digest`, `m8_cohort_digest` | accepted exact profile/cohort bindings |
+| `m8_evidence` | typed M8 tuple/cohort/profile/recommendation with recomputed domain digests, task/outcome links and profile aggregates; temporary until direct-import restack |
 | `policy_digest`, `holdout_digest`, `runner_image_digest` | external policy/holdout/image bindings |
 | `environment_set_digest` | exact authorized nonproduction resource set |
 | `exposure_plan` | complete bounded plan |
@@ -116,7 +116,7 @@ Digest-only prior evidence cannot prove the observations, delivery decision or r
 
 ## Release and recovery boundary
 
-Tasks 1–4 may be implemented and tested locally before factual M8 acceptance because their inputs are synthetic opaque identities and their outputs have no external effect. Source may be accepted or merged only after the factual accepted M8 restack, full route verification/reviews and external Trust CI on the exact PR SHA. Activation additionally needs externally verified signed inputs, a named authorized nonproduction environment and an exercised exact-prior-artifact recovery. Production remains a separate human operation outside this design.
+Tasks 1–4 may be implemented and tested locally before factual M8 acceptance because their inputs are synthetic typed identities, the boundary reports `blocked_pending_durable_m8_lookup`, and outputs have no external effect. Source may be accepted or merged only after factual M8 restack replaces the temporary adapter with direct imports, full route verification/reviews and external Trust CI on the exact PR SHA. Activation additionally needs server-derived M8 currentness, externally verified signed inputs, a named authorized nonproduction environment and an exercised exact-prior-artifact recovery. Production remains a separate human operation outside this design.
 
 ## Non-goals
 

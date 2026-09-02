@@ -1215,6 +1215,24 @@ class ArchitectureModelTests(unittest.TestCase):
             ],
         )
 
+    def test_repository_drift_ignores_exact_virtualenv_tooling_directories_only(self) -> None:
+        root = self._repo()
+        (root / "delivery/.venv/bin").mkdir(parents=True)
+        (root / "delivery/.venv/bin/activate_this.py").write_text(
+            "TOOLING = True\n", encoding="utf-8"
+        )
+        (root / "delivery/.venv-copy").mkdir()
+        (root / "delivery/.venv-copy/unowned.py").write_text(
+            "VALUE = 1\n", encoding="utf-8"
+        )
+
+        findings = ARCH.validate_repository_drift(root, ARCH.load_architecture(root))
+
+        self.assertEqual(
+            [(finding.code, finding.path) for finding in findings],
+            [("undeclared_source", "delivery/.venv-copy/unowned.py")],
+        )
+
     def test_repository_drift_traversal_is_bounded_by_entries_files_and_bytes(self) -> None:
         cases = (
             ("MAX_DRIFT_ENTRIES", 40, "entry limit"),

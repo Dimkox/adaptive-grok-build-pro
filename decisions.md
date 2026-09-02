@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-09-02 — Bind M9 to typed M8 bodies, not caller digest claims
+
+Carry the complete M8 tuple/cohort/profile/recommendation boundary, recompute domain digests and profile aggregates, and bind that handoff into the promotion resource. Keep the temporary adapter explicitly blocked on durable currentness and delete it for direct producer imports after factual M8 restack.
+
 <!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 > **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
 
@@ -344,3 +348,7 @@ Accept only the exact slotted fake-adapter type and reject every mixed recovery-
 ## 2026-09-02 — Disable unwitnessed M9 restart and serialize the in-process transition
 
 Reject every non-empty prior chain until Task 5 provides a trusted checkpoint or complete observation/decision/recovery witnesses. Keep effects and evidence in immutable tuples behind one private transition lock, and treat caller time as non-authoritative until a trusted clock exists.
+
+## 2026-09-02 — Treat architecture ownership as inventory, not authority
+
+Register provisional M9 source and tests as a no-network local-preflight node whose only edge is filesystem verification; this closes repository drift without representing M8 acceptance, currentness, activation, or external capability. Exclude only exact `.venv` tooling directories through the existing bounded cache-name mechanism, while similarly named directories remain subject to inventory.

@@ -9,6 +9,8 @@ from dataclasses import dataclass, fields, is_dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from .m8_boundary import M8BoundaryError, M8DeliveryHandoffV1
+
 _HEX40 = re.compile(r"^[0-9a-f]{40}$")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9._:/-]{1,128}$", re.ASCII)
@@ -40,6 +42,10 @@ REASON_CODES = frozenset(
         "exposure_mismatch",
         "health_below_minimum",
         "latency_above_maximum",
+        "m8_evidence_expired",
+        "m8_evidence_not_current",
+        "m8_profile_ineligible",
+        "m8_recommendation_ineligible",
         "observation_contradictory",
         "observation_duplicate",
         "observation_incomplete",
@@ -70,6 +76,8 @@ class ContractError(ValueError):
 
 
 def _canonical_value(value: Any) -> Any:
+    if type(value) is M8DeliveryHandoffV1:
+        return _canonical_value(value.to_dict())
     if is_dataclass(value) and not isinstance(value, type):
         return {
             field.name: _canonical_value(getattr(value, field.name))
@@ -305,8 +313,7 @@ class DeliveryPromotionV1:
     repository_id: str
     artifact: SignedArtifactRefV1
     previous_signed_artifact: SignedArtifactRefV1
-    m8_profile_digest: str
-    m8_cohort_digest: str
+    m8_evidence: M8DeliveryHandoffV1
     policy_digest: str
     holdout_digest: str
     runner_image_digest: str
@@ -342,8 +349,6 @@ class DeliveryPromotionV1:
                 "previous_signed_artifact", "must identify a different artifact"
             )
         for field in (
-            "m8_profile_digest",
-            "m8_cohort_digest",
             "policy_digest",
             "holdout_digest",
             "runner_image_digest",
@@ -353,6 +358,18 @@ class DeliveryPromotionV1:
             "promotion_digest",
         ):
             _digest(getattr(self, field), field)
+        if type(self.m8_evidence) is not M8DeliveryHandoffV1:
+            raise ContractError("m8_evidence", "must be M8DeliveryHandoffV1")
+        autonomy_tuple = self.m8_evidence.cohort.autonomy_tuple
+        bindings = {
+            "repository_id": self.repository_id,
+            "policy_digest": self.policy_digest,
+            "holdout_digest": self.holdout_digest,
+            "runner_digest": self.runner_image_digest,
+        }
+        for name, expected in bindings.items():
+            if getattr(autonomy_tuple, name) != expected:
+                raise ContractError("m8_evidence", f"{name} does not match promotion")
         if not isinstance(self.exposure_plan, ExposurePlanV1):
             raise ContractError("exposure_plan", "must be ExposurePlanV1")
         requested_at = _timestamp(self.requested_at, "requested_at")
@@ -384,8 +401,7 @@ class DeliveryPromotionV1:
                 "repository_id",
                 "artifact",
                 "previous_signed_artifact",
-                "m8_profile_digest",
-                "m8_cohort_digest",
+                "m8_evidence",
                 "policy_digest",
                 "holdout_digest",
                 "runner_image_digest",
@@ -395,7 +411,11 @@ class DeliveryPromotionV1:
                 "expires_at",
             )
         }
-        if self.authority_resource_digest != canonical_digest(resource):
+        try:
+            expected_resource_digest = canonical_digest(resource)
+        except M8BoundaryError as exc:
+            raise ContractError("m8_evidence", str(exc)) from exc
+        if self.authority_resource_digest != expected_resource_digest:
             raise ContractError(
                 "authority_resource_digest", "does not bind promotion resources"
             )

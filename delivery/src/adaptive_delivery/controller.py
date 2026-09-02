@@ -16,6 +16,7 @@ from .contracts import (
 )
 from .evaluator import evaluate_delivery
 from .fake_environment import FakeEnvironmentAdapter
+from .m8_boundary import m8_gate_reasons
 from .recovery import RecoverySelectionError, choose_recovery
 
 _MAX_OBSERVATIONS = 128
@@ -188,6 +189,10 @@ def _require_recording_authority(
     *,
     include_previous_artifact: bool,
 ) -> None:
+    if m8_gate_reasons(promotion.m8_evidence, recorded_at):
+        raise EvidenceChainError(
+            "m8_evidence", "profile is not current and eligible at recording"
+        )
     windows = (
         (
             "promotion",

@@ -25,6 +25,7 @@
         ".grok",
         ".grok-stack",
         "architecture",
+        "delivery",
         "engineering/contracts",
         "factory",
         "governance",
@@ -46,6 +47,7 @@
       "path_prefixes": [
         ".grok-stack/adaptive_grok",
         "architecture",
+        "delivery",
         "engineering/contracts",
         "factory",
         "governance",
@@ -198,6 +200,7 @@
         ".grok",
         ".grok-stack",
         "architecture",
+        "delivery",
         "engineering/contracts",
         "factory",
         "governance",

@@ -15,6 +15,7 @@ from .contracts import (
     SignedArtifactRefV1,
     canonical_digest,
 )
+from .m8_boundary import m8_gate_reasons
 
 _MAX_OBSERVATIONS = 128
 
@@ -58,8 +59,7 @@ def _promotion_resource(promotion: DeliveryPromotionV1) -> dict[str, object]:
         "repository_id",
         "artifact",
         "previous_signed_artifact",
-        "m8_profile_digest",
-        "m8_cohort_digest",
+        "m8_evidence",
         "policy_digest",
         "holdout_digest",
         "runner_image_digest",
@@ -88,6 +88,7 @@ def _authority_reasons(
         reasons.append("authority_expired")
     if evaluation_time >= _parse_time(promotion.expires_at, "expires_at"):
         reasons.append("promotion_expired")
+    reasons.extend(m8_gate_reasons(promotion.m8_evidence, evaluation_time))
 
     if (
         promotion.authority_scope != "nonproduction_staged_delivery"

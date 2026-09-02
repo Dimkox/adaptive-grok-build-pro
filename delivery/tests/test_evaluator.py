@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from delivery.tests.synthetic_fixtures import (
     SYNTHETIC_EVALUATION_TIME,
     synthetic_artifact,
+    synthetic_m8_evidence,
     synthetic_observation,
     synthetic_plan,
     synthetic_promotion,
@@ -22,6 +23,13 @@ class EvaluatorTests(unittest.TestCase):
             environment=environment,
             exposure_basis_points=exposure,
         )
+
+    def test_opaque_m8_digest_pair_cannot_authorize_a_delivery_advance(self):
+        with self.assertRaisesRegex(TypeError, "m8_profile_digest"):
+            synthetic_promotion(
+                m8_profile_digest="0" * 64,
+                m8_cohort_digest="1" * 64,
+            )
 
     def test_passing_stages_advance_only_one_pre_authorized_step(self):
         promotion = synthetic_promotion()
@@ -123,8 +131,21 @@ class EvaluatorTests(unittest.TestCase):
     def test_every_promotion_resource_mutation_rotates_the_exact_binding(self):
         promotion = synthetic_promotion()
         mutations = (
-            {"m8_profile_digest": "0" * 64},
-            {"m8_cohort_digest": "1" * 64},
+            {
+                "m8_evidence": synthetic_m8_evidence(
+                    profile_updates={"current_level": "L1"},
+                    recommendation_updates={
+                        "current_level": "L1",
+                        "recommended_level": "L2",
+                        "reason_code": "qualified",
+                    },
+                )
+            },
+            {
+                "m8_evidence": synthetic_m8_evidence(
+                    tuple_updates={"provider_digest": "0" * 64}
+                )
+            },
             {"holdout_digest": "2" * 64},
             {"runner_image_digest": "3" * 64},
             {"environment_set_digest": "4" * 64},
@@ -214,7 +235,12 @@ class EvaluatorTests(unittest.TestCase):
         )
         self.assertEqual(
             late.reason_codes,
-            ("authority_expired", "observation_stale", "promotion_expired"),
+            (
+                "authority_expired",
+                "m8_evidence_expired",
+                "observation_stale",
+                "promotion_expired",
+            ),
         )
 
     def test_all_threshold_boundaries_pass_and_one_unit_beyond_denies(self):

@@ -2,7 +2,7 @@
 
 The source-only checkpoint runs each scenario under strict TDD; a scenario is claimed only after its witnessed RED and fresh GREEN evidence.
 
-Task 1 contract evidence is implemented: the exact command first failed because `adaptive_delivery.contracts` was absent, then passed 11 tests after the minimal contract module was added. Task 2 evaluator evidence is implemented from missing-evaluator and old-window/fresh-capture REDs; three bounded-input cases now bring its focused suite to 16 tests. Task 3 recovery evidence is implemented from a missing-module RED followed by 9 tests for exact binding, least-authority action selection, same-stage decrease, exact prior artifact and decision-time expiry. Task 4 controller evidence now has 31 tests: its review-remediation RED reproduced ordinary adapter/evidence mutation, global class patching, a two-thread duplicate append, unwitnessed import, contradictory recovery reasons, record-time expiry and unbounded sequence materialization. All 67 source-only tests pass; Task 5 schema/architecture/repository integration remains pending and blocked.
+Task 1 contract evidence is implemented: the exact command first failed because `adaptive_delivery.contracts` was absent, then passed 11 tests after the minimal contract module was added. Task 2 evaluator evidence is implemented from missing-evaluator and old-window/fresh-capture REDs; three bounded-input cases now bring its focused suite to 16 tests. Task 3 recovery evidence is implemented from a missing-module RED followed by 9 tests for exact binding, least-authority action selection, same-stage decrease, exact prior artifact and decision-time expiry. Task 4 controller evidence now has 31 tests. The successor RED proved that arbitrary opaque M8 digests plus a wrong material tuple still produced `advance`; a second adversarial review found that a typed but caller-forged aggregate could be rehashed. The correction replaces both digests with typed tuple/cohort/profile/recommendation bodies, recomputes M8 domains, links and profile aggregates, and adds lifecycle/resource negatives. Exact producer fixture checks distinguish the two real call shapes: `evaluate_autonomy(cohort, None, now)` yields non-authorizing `m7_bundle_blocked`, while replaying the same cohort through an existing profile yields non-authorizing `cohort_replay`; M9 denies both. Task 5 operational integration remains blocked on durable M8 currentness and factual restack.
 
 | Priority | Scenario | Required evidence |
 | --- | --- | --- |
@@ -26,8 +26,9 @@ Task 1 contract evidence is implemented: the exact command first failed because 
 PYTHONPATH=delivery/src python3 -m unittest discover -s delivery/tests -p 'test_*.py' -v
 python3 -m unittest delivery.tests.test_evaluator delivery.tests.test_recovery -v
 python3 scripts/grok_architecture.py validate
+python3 scripts/grok_architecture.py drift
 python3 scripts/grok_architecture.py diagram --check
-python3 scripts/grok_verify.py --mode pr
+python3 scripts/grok_verify.py --mode pr --no-record
 ```
 
 No test may generate or verify a signature, contact a network, execute a command, create an environment or claim recovery proof. Opaque authority fixtures contain only bounded reference fields and externally verified status is not simulated by repository cryptography.

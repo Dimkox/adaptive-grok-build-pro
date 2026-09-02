@@ -342,3 +342,13 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Digest-only prior records could be imported, ordinary mutation or concurrent steps could fork evidence/effects, and caller-time expiry was not rechecked before recording.
 **Root cause:** Task 4 conflated structural integrity with provenance and omitted one serialized immutable transition boundary plus a trusted clock/checkpoint activation gate.
+
+## 2026-09-02 — Treated a typed M8 wrapper as producer semantics
+
+**Symptom:** A caller could lower or improve profile aggregates, recompute the temporary handoff digest and satisfy tuple/cohort equality without those metrics coming from linked tasks and M7 outcomes.
+**Root cause:** The first M8→M9 adapter design validated field types and digests but did not derive accepted/audit/quality/failure/cost/latency/demotion metrics from the producer bodies; typed caller data was mistaken for recomputed evidence.
+
+## 2026-09-02 — Verified M9 against a stale runtime route base
+
+**Symptom:** Full verification charged 348 historical files to M9 and failed separation and code budgets even though correction-local fitness passed.
+**Root cause:** The ignored approved active route still named unrelated base `78ad2f`, while the task, durable route package and actual M9 source lineage all named `9fe779a`; the active base must be reconciled before the first full verification run.

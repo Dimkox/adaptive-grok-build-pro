@@ -13,6 +13,7 @@ from .contracts import (
     SignedArtifactRefV1,
     canonical_digest,
 )
+from .m8_boundary import m8_gate_reasons
 
 
 class RecoverySelectionError(ContractError):
@@ -58,8 +59,7 @@ def _promotion_resource(promotion: DeliveryPromotionV1) -> dict[str, object]:
         "repository_id",
         "artifact",
         "previous_signed_artifact",
-        "m8_profile_digest",
-        "m8_cohort_digest",
+        "m8_evidence",
         "policy_digest",
         "holdout_digest",
         "runner_image_digest",
@@ -102,6 +102,8 @@ def _validate_current_authority(
         raise RecoverySelectionError(
             "validity", "promotion and current artifact must be valid at decision_time"
         )
+    if m8_gate_reasons(promotion.m8_evidence, decision_time):
+        raise RecoverySelectionError("m8_evidence", "is not current and eligible")
 
 
 def _planned_exposures(

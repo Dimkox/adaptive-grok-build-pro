@@ -6,7 +6,7 @@
         {"receipt": "security_review"}
       ],
       "id": "AC-001",
-      "statement": "Pure local source freezes seven closed V1 delivery records and exact merged SHA artifact SBOM provenance M8 profile cohort policy holdout image environment and prior signed artifact bindings without representing signature material or external capability"
+      "statement": "Pure local source freezes seven closed V1 delivery records and binds exact merged SHA artifact SBOM provenance plus a typed M8 tuple cohort profile recommendation policy holdout runner environment and prior signed artifact without representing signature material or external capability"
     },
     {
       "evidence": [
@@ -37,7 +37,7 @@
         {"receipt": "test_review"}
       ],
       "id": "AC-005",
-      "statement": "Tasks 1 through 4 execute in separate TDD commits using only synthetic opaque identities pure local deterministic source a dry-run controller and an in-memory fake environment adapter with bounded redacted evidence"
+      "statement": "Tasks 1 through 4 execute using only synthetic typed identities pure local deterministic source a dry-run controller and an in-memory fake environment adapter with bounded redacted evidence"
     }
   ],
   "approvals": {
@@ -80,7 +80,7 @@
     {
       "evidence": [{"receipt": "test_review"}, {"receipt": "security_review"}],
       "id": "INV-002",
-      "statement": "Every decision and evidence record binds the exact promotion artifact environment exposure policy holdout image M8 profile cohort and observation set digests"
+      "statement": "Every decision and evidence record binds the exact promotion artifact environment exposure policy holdout image typed M8 handoff and observation set digest; the handoff recomputes tuple cohort profile recommendation links and aggregates"
     },
     {
       "evidence": [{"receipt": "test_review"}],
