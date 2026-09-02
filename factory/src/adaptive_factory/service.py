@@ -15,7 +15,7 @@ from .execution_contracts import (
 )
 from .models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole
 from .protocol import CanonicalEvent
-from .workspace import WorkspaceSnapshotUnavailable, WorkspaceSnapshotV1
+from .workspace import WorkspaceSnapshotV1
 from .store import FenceError
 
 

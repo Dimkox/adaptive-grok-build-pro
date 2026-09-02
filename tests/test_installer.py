@@ -164,6 +164,7 @@ class InstallerTests(unittest.TestCase):
             "factory/README.md",
             "factory/compose.yaml",
             "factory/contracts/openapi/factory-control.v1.json",
+            "factory/contracts/openapi/factory-execution.v1.json",
             "factory/pyproject.toml",
             "factory/uv.lock",
             "factory/src/adaptive_factory/store.py",

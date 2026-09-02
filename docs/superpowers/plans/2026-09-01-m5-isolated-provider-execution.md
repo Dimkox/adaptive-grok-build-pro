@@ -120,11 +120,11 @@
 - Consumes: current authenticated worker, execution selection, M4 claim/fence/allocation and canonical proposal values.
 - Produces: `ExecutionGrant`, `ExecutionStage`, `claim_execution`, `advance_execution`, `commit_execution_proposal`, and six `/v1/execution/*` endpoints.
 
-- [ ] **Step 1: Write failing migration/legacy tests.** Assert versions are `1..14`, M4 migration 013 remains immutable, migration 014 only creates/adds/revokes/grants, and existing `/v1/claims` response and `packet_digest=intent_digest` fixture are unchanged.
-- [ ] **Step 2: Confirm RED.** Run `PYTHONPATH=factory/src python3 -m unittest factory.tests.test_migrations factory.tests.test_execution_service -v`; expect migration/version and missing execution failures.
-- [ ] **Step 3: Implement additive schema and pure fake-store vertical slice.** Persist immutable packet/manifest first, append stages/proposals, and validate every operation against live task/run/owner/fence/allocation/packet/deadline/budget/idempotency.
-- [ ] **Step 4: Write failing API contract tests.** Cover auth/scope/repository/body bounds, exact responses, idempotency conflict, stale fence and absence of provider-native or secret fields.
-- [ ] **Step 5: Implement thin endpoints/OpenAPI.** Reuse M4 authentication/error/correlation boundaries; never accept executable/provider path or environment fields.
+- [x] **Step 1: Write failing migration/legacy tests.** Assert versions are `1..14`, M4 migration 013 remains immutable, migration 014 only creates/adds/revokes/grants, and existing `/v1/claims` response and `packet_digest=intent_digest` fixture are unchanged.
+- [x] **Step 2: Confirm RED.** Run `PYTHONPATH=factory/src python3 -m unittest factory.tests.test_migrations factory.tests.test_execution_service -v`; expect migration/version and missing execution failures.
+- [x] **Step 3: Implement additive schema and pure fake-store vertical slice.** Persist immutable packet/manifest first, append stages/proposals, require an injected trusted registry, and validate every operation against live task/run/owner/fence/allocation/packet/deadline/budget/idempotency. Release a granted lease if packet/start construction fails.
+- [x] **Step 4: Write failing API contract tests.** Cover auth/scope/repository/body bounds, exact responses, idempotency conflict, stale fence, execution-only secret-shaped identities and absence of provider-native or secret fields.
+- [x] **Step 5: Implement thin endpoints/OpenAPI.** Reuse M4 authentication/error/correlation boundaries, keep legacy identities unchanged, and publish only the six execution operations in a separate same-server fragment; never accept executable/provider path or environment fields.
 - [ ] **Step 6: Confirm GREEN and commit.** Run the three focused modules plus existing service/API tests, then commit with `feat(factory): integrate fenced execution lifecycle`.
 
 ### Task 5: Recover orphans, expose bounded metrics and freeze systemd sources

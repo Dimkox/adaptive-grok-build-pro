@@ -86,7 +86,9 @@ Terminal proposals are recommendations, never state-selection authority. The con
 
 Successor slice 02 adds contiguous migration `014_execution_plane.sql` after M4 migration `013`; it creates immutable packet, manifest, stage, canonical event, note, artifact and terminal-proposal tables plus fixed execution metrics. Existing tables/columns/constraints/functions remain unchanged. Runtime gets explicit EXECUTE/INSERT-only capabilities through fixed-search-path functions; no generic DML or policy mutation.
 
-New endpoints are `/v1/execution/claims`, `/v1/execution/stages`, `/v1/execution/notes`, `/v1/execution/artifacts`, `/v1/execution/usage`, and `/v1/execution/terminal`. All use the current actor authentication, body cap, idempotency/correlation boundary, and M4 live-fence checks. `/v1/claims` and its OpenAPI response remain byte-for-byte semantically legacy.
+New endpoints are `/v1/execution/claims`, `/v1/execution/stages`, `/v1/execution/notes`, `/v1/execution/artifacts`, `/v1/execution/usage`, and `/v1/execution/terminal`. All use the current actor authentication, body cap, execution-only secret-shaped identity rejection, and M4 live-fence checks. They are described by the closed additive `factory-execution.v1.json` fragment on the same local server. The M4 `factory-control.v1.json` baseline remains byte-identical, retained/deprecated and intentionally is not unified discovery; both artifacts use the existing `/v1` wire namespace with no route or operation-ID collision.
+
+The proposal security-definer capability repeats the durable task/run/allocation/packet/role/deadline checks under row lock, accepts only a sequence-and-idempotency exact replay, requires each new sequence to be the indexed predecessor plus one, rejects new events after the indexed terminal marker, and checks the accepted task/packet `max_events` before those probes. Parser or broker validation is not treated as database authority.
 
 Execution stages are `prepared`, `running`, `collecting`, `completed`, `failed`, `needs_human`, `cancelled`, and `orphaned`. Only the control plane applies transitions. Exactly one terminal stage exists per manifest.
 

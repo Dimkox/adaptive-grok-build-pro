@@ -338,6 +338,10 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 **Symptom:** Final architecture fitness rejected migration `009` even though the dropped uniqueness constraint was replaced in the same file.
 **Root cause:** The migration optimized the final schema shape instead of preserving the additive, forward-safe history contract; the unaccepted disposable-only draft was corrected before final verification.
 
+## 2026-09-02 — Inserted a new test before an existing method's final assertion
+
+**Root cause:** The patch anchored on a loop-ending assertion without reading through the next method boundary, moving the original method's trailing negative case into the new test. Inspect the complete enclosing method before inserting a sibling test and rerun each test individually before the suite.
+
 ## 2026-09-01 — Treated first PostgreSQL readiness as stable image startup
 
 **Symptom:** The disposable exit intermittently lost its first host connection immediately after `pg_isready` succeeded during the image's bootstrap/postmaster handoff.
@@ -413,6 +417,11 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-02 — Deferred root architecture drift behind factory-only verification
 
 **Root cause:** Factory-only suites were treated as a sufficient slice gate, so eight new execution sources reached stable commits before the root verifier checked executable architecture ownership. Every product-source slice must run root architecture validate and drift before its stable commit, even when final full verification remains centrally owned.
+
+## 2026-09-02 — Left proposal monotonicity above the SQL capability boundary
+
+**Symptom:** A direct `factory_runtime` call could insert sequence 2 before sequence 1, replay with a different idempotency key, or append after terminal despite parser and broker checks.
+**Root cause:** The provisional migration treated Python validation as the authority even though runtime had direct EXECUTE capability; every durable security-definer write boundary must revalidate its own state, identity, ordering, role, and budget invariants with indexed queries.
 
 ## 2026-09-03 — Let shell quoting reinterpret a PR comment
 

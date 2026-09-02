@@ -7,8 +7,9 @@
 - [x] Give every slice-01 source executable architecture ownership/rules/generated parity; exact fitness against final M4, architecture checks, 52 architecture tests and 25 focused factory tests pass at checkpoint `9ba284e`.
 - [x] Materialize successor slice-02 migration `014`, persistence and explicit execution claims/stages/proposals on exact slice-01 predecessor `34dd618`; preserve immutable M4 migration `013` and legacy compatibility.
 - [x] Require an injected exact trusted adapter/profile registry, deny reader write capabilities, clean failed post-claim leases, and bind grant role to the durable run.
-- [ ] Add the separate execution OpenAPI fragment and rerun slice-02 focused, disposable PostgreSQL, restart and explicit-predecessor fitness checks.
-- [ ] Enforce monotonic bounded proposal streams, no post-terminal effects, structured redaction, and allowed-path/trusted artifact evidence.
+- [x] Add and directly validate the separate execution OpenAPI fragment, preserving byte-identical M4 control v1 plus disjoint routes/operation IDs and installer parity.
+- [ ] In slice 04, add conservative rich-contract baseline support and register all five M5 artifacts in architecture inventory; current `unsupported added-contract baseline semantics` must not be hidden by dropping contracts or weakening policy.
+- [x] Enforce monotonic bounded proposal streams, no post-terminal effects, structured redaction, and allowed-path/trusted artifact evidence; the runtime SQL capability independently binds durable role/live grant, exact replay and indexed sequence/terminal checks.
 - [ ] Bind start/finalize SQL to canonical cross-fields, derive M4 outcome from factual terminal result, and fail closed on result corruption.
 - [ ] Add M5-aware orphan/cancel recovery and close/inventory all execution schemas and OpenAPI request/response contracts.
 - [ ] TDD restart/orphan recovery, bounded metrics, and predefined systemd source topology.

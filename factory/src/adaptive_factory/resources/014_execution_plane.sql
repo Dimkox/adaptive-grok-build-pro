@@ -191,27 +191,73 @@ CREATE FUNCTION factory.execution_propose(
 ) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
 DECLARE
-  existing_kind text;
-  existing_body jsonb;
+  collision_count bigint;
+  exact_replay boolean;
+  previous_sequence bigint;
+  authoritative_max_events bigint;
+  packet_max_events text;
+  durable_role text;
+  packet_role text;
 BEGIN
-  IF octet_length(p_body::text)>65536 THEN RETURN false; END IF;
-  PERFORM 1 FROM factory.tasks t
+  IF p_body IS NULL OR octet_length(p_body::text)>65536
+    OR p_sequence IS NULL OR p_sequence<=0
+    OR p_idempotency_key IS NULL OR trim(p_idempotency_key)!~'^[0-9a-f]{64}$'
+    OR p_kind IS NULL OR p_kind NOT IN ('note','artifact','usage','terminal')
+  THEN RETURN false; END IF;
+  SELECT t.event_limit,p.body#>>'{limits,max_events}',r.role,p.body->>'role'
+    INTO authoritative_max_events,packet_max_events,durable_role,packet_role
+    FROM factory.tasks t
     JOIN factory.runs r ON r.run_id=t.current_run_id AND r.task_id=t.task_id
     JOIN factory.capacity_allocations a ON a.run_id=r.run_id AND a.task_id=t.task_id
-    JOIN factory.execution_manifests m ON m.run_id=r.run_id AND m.packet_digest=p_packet_digest
+      AND a.repository_id=t.repository_id AND a.role=r.role
+    JOIN factory.execution_packets p ON p.run_id=r.run_id AND p.task_id=t.task_id
+      AND p.packet_digest=p_packet_digest AND p.legacy_packet_digest=p_legacy_packet_digest
+    JOIN factory.execution_manifests m ON m.run_id=r.run_id AND m.task_id=t.task_id
+      AND m.packet_digest=p.packet_digest
     WHERE t.task_id=p_task_id AND r.run_id=p_run_id AND r.owner_id=p_owner
       AND r.fence=p_fence AND r.packet_digest=p_legacy_packet_digest
-      AND t.current_fence=p_fence AND r.released_at IS NULL AND a.released_at IS NULL
+      AND t.packet_digest=p_legacy_packet_digest AND t.current_fence=p_fence
+      AND t.state='leased' AND r.state='leased'
+      AND r.released_at IS NULL AND a.released_at IS NULL
       AND m.terminal_at IS NULL AND r.lease_expires_at>clock_timestamp()
+      AND t.deadline_at>clock_timestamp()
     FOR UPDATE OF t,r,m;
-  IF NOT FOUND THEN RETURN false; END IF;
-  SELECT proposal_kind,body INTO existing_kind,existing_body
-    FROM factory.execution_proposals
-    WHERE run_id=p_run_id AND (producer_sequence=p_sequence OR idempotency_key=p_idempotency_key)
-    FOR UPDATE;
-  IF FOUND THEN
-    RETURN existing_kind=p_kind AND existing_body=p_body;
+  IF NOT FOUND
+    OR packet_max_events IS DISTINCT FROM authoritative_max_events::text
+    OR packet_role IS DISTINCT FROM durable_role
+    OR (p_kind='artifact' AND durable_role<>'writer')
+    OR (p_kind='note' AND p_body->>'author_role' IS DISTINCT FROM durable_role)
+  THEN
+    RETURN false;
   END IF;
+
+  SELECT count(*),COALESCE(bool_and(
+      producer_sequence=p_sequence
+      AND trim(idempotency_key)=trim(p_idempotency_key)
+      AND proposal_kind=p_kind
+      AND body=p_body
+    ),false)
+    INTO collision_count,exact_replay
+    FROM factory.execution_proposals
+    WHERE run_id=p_run_id
+      AND (producer_sequence=p_sequence OR idempotency_key=p_idempotency_key);
+  IF collision_count>0 THEN
+    RETURN collision_count=1 AND exact_replay;
+  END IF;
+
+  IF p_sequence>authoritative_max_events THEN RETURN false; END IF;
+  IF EXISTS (
+    SELECT 1 FROM factory.execution_proposals
+    WHERE run_id=p_run_id AND proposal_kind='terminal'
+  ) THEN RETURN false; END IF;
+  SELECT producer_sequence INTO previous_sequence
+    FROM factory.execution_proposals
+    WHERE run_id=p_run_id
+    ORDER BY producer_sequence DESC
+    LIMIT 1;
+  previous_sequence=COALESCE(previous_sequence,0);
+  IF p_sequence<>previous_sequence+1 THEN RETURN false; END IF;
+
   INSERT INTO factory.execution_proposals(
     proposal_id,task_id,run_id,packet_digest,producer_sequence,idempotency_key,proposal_kind,body
   ) VALUES (

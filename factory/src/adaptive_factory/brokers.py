@@ -104,6 +104,16 @@ def _redact(value: str) -> str:
     return _SECRET.sub("[REDACTED]", value)
 
 
+def secret_free_identity(value: str, maximum: int = 128) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value.encode("utf-8")) > maximum
+        or _redact(value) != value
+    ):
+        raise BrokerError("secret_identity")
+    return value
+
+
 def _safe_path(value: Any, code: str) -> str:
     if not isinstance(value, str) or not value or "\x00" in value:
         raise BrokerError(code)
