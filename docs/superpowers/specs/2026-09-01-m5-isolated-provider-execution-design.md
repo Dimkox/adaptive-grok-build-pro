@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-This is the approved implementation design for route `37b05f579320`, branch `milestone/m5-isolated-execution-provisional-m4`, and change [`20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f`](../../../engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md). It specializes the canonical [model-agnostic factory design](2026-08-26-model-agnostic-autonomous-factory-design.md) for M5 source work on provisional exact M4 product base `94fc5ad878e6b15df6418303caada49a3b93bf4c`.
+This is the approved implementation design for route `37b05f579320`, branch `milestone/m5-isolated-execution-provisional-m4`, and change [`20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f`](../../../engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md). It specializes the canonical [model-agnostic factory design](2026-08-26-model-agnostic-autonomous-factory-design.md) for M5 source work on exact current M4 review base `460a8a01a6394cac710b4e3f9eea3d94d4beef89`; the former provisional anchor `94fc5ad878e6b15df6418303caada49a3b93bf4c` is lineage only after the conflict-free restack.
 
 The calendar target is `2026-09-08 00:00 UTC+3`. M5 and M6 may develop in parallel on isolated branches, but external integration is dependency ordered: accepted M4, then M5, then M6. This document grants no push, PR, merge, deployment, systemd activation, live provider call, credential access, or Trust CI/human-key operation.
 

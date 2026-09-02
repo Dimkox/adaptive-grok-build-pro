@@ -4,7 +4,7 @@
 
 Change ID: `20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f`
 Route: `37b05f579320`
-Implementation base: `94fc5ad878e6b15df6418303caada49a3b93bf4c`
+Implementation base: `460a8a01a6394cac710b4e3f9eea3d94d4beef89`
 
 Navigation: [README](../../../README.md) ↔ [roadmap](../../../DARK_FACTORY_ROADMAP.md) ↔ [design](../../../docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md) ↔ [plan](../../../docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md) ↔ [schedule](schedule.md) / [release](release.md) / [rollback](rollback.md) / [evidence](evidence/README.md).
 
@@ -23,6 +23,6 @@ Out of scope: live provider/network calls, credentials, Trust CI or human-key ac
 ## Approved rulings and gates
 
 - The user approved the canonical model-agnostic factory design and continuous parallel execution. That satisfies the route's scope/design gate; it does not grant external actions.
-- Exact M4 product base `94fc5ad878e6b15df6418303caada49a3b93bf4c` is authoritative for this stacked slice even though the inherited route records an earlier program base.
+- Exact current M4 review base `460a8a01a6394cac710b4e3f9eea3d94d4beef89` is authoritative for this stacked slice. The initial `94fc5ad878e6b15df6418303caada49a3b93bf4c` anchor is superseded for implementation and retained only as conflict-free restack lineage; the inherited route still records an earlier program base.
 - Codex candidate identity is `0.152.1` with distribution digest `b8201824…06f9`; Grok candidate identity is `1.0.17` with digest `82595e26…4568`. Grok remains ineligible until its complete required capability conformance is proven.
 - This host has no `podman`, `bwrap`, `newuidmap`, `slirp4netns`, or `pasta`, and unprivileged user-namespace creation is denied with `EPERM`. The OS-isolation exit is therefore `BLOCKED` pending a dedicated rootless execution host; M5 exit must not be claimed here.
