@@ -25,11 +25,42 @@
     "route_id": "b7f288f1e81e",
     "branch": "integration/m4-main-20260902",
     "change_package": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288",
-    "status": "local_m4_release_candidate_verification_pending",
+    "status": "local_m4_followup_candidate_exact_head_gated",
     "highest_implemented_milestone": "M4",
     "current_provisional_milestone": "M9",
     "next_roadmap_milestone": null,
-    "next_action": "Run final verification on the current 2.0.13 M4 release-state tree, then complete five fresh M4 reviews/reports/receipts on that exact fingerprint. PR-only delivery and a new external exact-head gate remain pending; after M4 acceptance, restack M5 first, then M6 with renumbered migrations and fresh checksum/upgrade/restart evidence."
+    "next_action": "Commit the bounded 2.0.13 M4 follow-up, then bind local verification and all route-selected reviews/reports/receipts to that exact fingerprint. After those fresh local receipts, prepare only an authorized successor PR and require a new external exact-head gate; after M4 acceptance, restack M5 first, then M6 with renumbered migrations and fresh checksum/upgrade/restart evidence.",
+    "m4_dimensions": {
+      "implementation_source": {
+        "status": "implemented_local_candidate",
+        "components": [
+          "typed_intake_and_task_state",
+          "postgresql_migrations_001_013",
+          "leases_fences_capacity_and_retry",
+          "budgets_kills_audit_and_reconciliation",
+          "authenticated_uds_api_cli_and_admin",
+          "disposable_postgresql_and_restart_tests",
+          "tracked_2_0_13_candidate_package"
+        ]
+      },
+      "local_exact_head_verification": {
+        "status": "receipt_required_for_followup_commit",
+        "last_passing_head": "56e12b2b394436ee227c66d78b1caba8f7317c78",
+        "last_passing_checks": "14/14",
+        "notes": "The passing baseline receipt is historical evidence and does not bind the changed follow-up tree."
+      },
+      "independent_review": {
+        "status": "rereview_required_for_followup_commit",
+        "notes": "Review findings drove this follow-up; no reviewer acceptance of the follow-up is claimed."
+      },
+      "pr_external_merge_delivery": {
+        "status": "not_delivered",
+        "pull_request": null,
+        "external_exact_head_check": "not_run",
+        "merge_commit": null,
+        "notes": "Local source and package existence do not supply PR, external Trust CI, merge or protected-main delivery authority."
+      }
+    }
   },
   "milestones": {
     "M0": {
@@ -173,13 +204,14 @@
     "M4": {
       "implementation": {
         "status": "complete",
+        "source_status": "implemented_local_candidate",
         "commit": "4f75558770f2f332b32b4a47fe6afa61fcc524ec",
         "source_evidence_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
         "integration_baseline": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "5a6cdfb7a129e02724c632f78c31de6406d6863a",
+        "latest_committed_repair_checkpoint": "56e12b2b394436ee227c66d78b1caba8f7317c78",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "evidence": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/implementation-report.md",
-        "notes": "The current 2.0.13 repository tree adds roadmap/state parity, claim-terminal race repair, bounded mutation errors, fail-closed role bootstrap, persisted accepted retry limits through additive migration 013, and scanner-safe synthetic bootstrap fixtures. Its committed repair parent is 5a6cdfb7; final verification and fresh independent reviews are pending, so this is not an accepted or delivered head."
+        "notes": "Release-state baseline 56e12b2 passed 14/14 local verifier gates. The current 2.0.13 follow-up additionally enforces exact shipped-ZIP/source parity, bounds every runtime database connection/read with typed availability handling, keeps cancel authorization/replay/projection in one transaction, and audits already-exhausted schema-12 retries after migration 013 without advancing a fence. Because that changes the fingerprint, exact-head verification and independent review receipts must be refreshed after commit; this is not an accepted or delivered head."
       },
       "review": {
         "status": "pending_refresh",
@@ -192,7 +224,7 @@
           "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/data-review.md",
           "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/release-review.md"
         ],
-        "notes": "The listed five reports pass only for the pre-integration tree and do not cover the current repair tree. Five fresh reviews, reports and receipts remain pending; no review acceptance is claimed."
+        "notes": "The listed five reports pass only for the pre-integration tree. Independent review of release-state baseline 56e12b2 found the package-parity, runtime database-bound and legacy retry-evidence gaps now repaired in this follow-up; route-selected rereview must bind the committed follow-up fingerprint, and no review acceptance is claimed."
       },
       "stack_integration": {
         "status": "local_integrated_candidate",
@@ -205,7 +237,7 @@
           "78ad2f679d38dc3244e716c586332417e610089c"
         ],
         "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "5a6cdfb7a129e02724c632f78c31de6406d6863a",
+        "latest_committed_repair_checkpoint": "56e12b2b394436ee227c66d78b1caba8f7317c78",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "intermediate_local_verification": {
           "status": "passed",
@@ -224,11 +256,20 @@
           "failed_check": "secret-scan",
           "created_at": "2026-09-02T10:08:32Z",
           "repair_head": "5a6cdfb7a129e02724c632f78c31de6406d6863a",
-          "notes": "The sole generic-secret finding was repaired in synthetic test fixtures; final exact-head verification and reviews remain pending."
+          "notes": "The sole generic-secret finding was repaired in synthetic test fixtures and superseded by the passing release-state verification at 56e12b2."
+        },
+        "release_state_local_verification": {
+          "status": "passed",
+          "head_sha": "56e12b2b394436ee227c66d78b1caba8f7317c78",
+          "tree_fingerprint": "e27caec9d2de459ef26bea49b99b93b5b7326a9c84c89b97f4ec482c237d4add",
+          "checks_passed": 14,
+          "checks_total": 14,
+          "created_at": "2026-09-02T10:51:29Z",
+          "notes": "Exact baseline receipt only; the current follow-up changes source and package bytes, so the receipt does not transfer."
         },
         "pull_request": null,
         "merge_commit": null,
-        "notes": "The final release-state identity is the commit containing this state file; a commit cannot embed its own SHA. The repair parent is 5a6cdfb7. Full verification, five fresh reviews, PR delivery and an external exact-head check remain pending."
+        "notes": "The final candidate identity is the commit containing this state file; a commit cannot embed its own SHA. Verified baseline 56e12b2 is the committed parent, but its receipt does not transfer to this follow-up. Exact-head local receipts, authorized PR delivery and an external exact-head check are still required."
       },
       "main_delivery": {
         "status": "not_delivered",
@@ -291,9 +332,9 @@
         "source_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
         "base_head": "78ad2f679d38dc3244e716c586332417e610089c",
         "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "5a6cdfb7a129e02724c632f78c31de6406d6863a",
+        "latest_committed_repair_checkpoint": "56e12b2b394436ee227c66d78b1caba8f7317c78",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
-        "purpose": "Run final verification on the current 2.0.13 release-state tree and complete five fresh reviews/reports/receipts before PR-only delivery."
+        "purpose": "Commit the package/runtime/retry-evidence follow-up, then bind verification and route-selected reviews/reports/receipts to its exact fingerprint before any authorized PR-only delivery."
       },
       {
         "route_id": "37b05f579320",

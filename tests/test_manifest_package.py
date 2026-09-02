@@ -613,10 +613,11 @@ class PackageTests(unittest.TestCase):
             self.assertNotIn('build/adaptive-trust-ci-pin.env', rels)
             self.assertFalse(any('20260817-' in rel for rel in rels))
 
-    def test_included_files_and_shipped_zip_have_no_github_actions(self) -> None:
+    def test_shipped_zip_exactly_matches_current_included_source(self) -> None:
         version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
         self.assertEqual(version, '2.0.13')
-        rels = [path.relative_to(ROOT).as_posix() for path in included_files(ROOT)]
+        source_files = included_files(ROOT)
+        rels = [path.relative_to(ROOT).as_posix() for path in source_files]
         self.assertFalse(any(rel.startswith('.github/workflows/') for rel in rels))
         self.assertNotIn('.github/dependabot.yml', rels)
         self.assertNotIn('.grok-stack/templates/ci/github-actions.yml', rels)
@@ -629,10 +630,23 @@ class PackageTests(unittest.TestCase):
             self.assertEqual(sidecar_path.read_text(encoding='utf-8'), f'{digest}  {zip_path.name}\n')
             with zipfile.ZipFile(zip_path) as archive:
                 names = archive.namelist()
-                member = 'adaptive-grok-build-pro/VERSION'
-                self.assertIn(member, names)
-                self.assertIn('adaptive-grok-build-pro/MANIFEST.sha256', names)
-                self.assertEqual(archive.read(member).decode('utf-8').strip(), '2.0.13')
+                prefix = 'adaptive-grok-build-pro/'
+                source_members = {
+                    f'{prefix}{path.relative_to(ROOT).as_posix()}': path
+                    for path in source_files
+                }
+                manifest_member = f'{prefix}MANIFEST.sha256'
+                self.assertEqual(names, sorted([*source_members, manifest_member]))
+                self.assertEqual(
+                    archive.read(manifest_member),
+                    MANIFEST.render_manifest(ROOT, files=source_files),
+                )
+                for member, source in source_members.items():
+                    self.assertTrue(
+                        archive.read(member) == source.read_bytes(),
+                        f'archive member differs from current source: {source.relative_to(ROOT)}',
+                    )
+                self.assertEqual(archive.read(f'{prefix}VERSION').decode('utf-8').strip(), '2.0.13')
                 self.assertFalse(any('.github/workflows/' in name for name in names))
                 self.assertFalse(any(name.endswith('dependabot.yml') for name in names))
                 self.assertFalse(any(name.endswith('github-actions.yml') for name in names))

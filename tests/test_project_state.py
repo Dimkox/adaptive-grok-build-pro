@@ -18,7 +18,9 @@ SEO_MERGE_SHA = "8ab4e57038dec2e07f01aaa0b207813a387358f4"
 M4_PRODUCT_SHA = "4f75558770f2f332b32b4a47fe6afa61fcc524ec"
 M4_SOURCE_SHA = "460a8a01a6394cac710b4e3f9eea3d94d4beef89"
 M4_INTEGRATION_SHA = "da7ec8d7d40f52663aba1ff59bf03ccf209395b0"
-M4_REPAIR_CHECKPOINT_SHA = "5a6cdfb7a129e02724c632f78c31de6406d6863a"
+M4_SCANNER_REPAIR_SHA = "5a6cdfb7a129e02724c632f78c31de6406d6863a"
+M4_RELEASE_STATE_BASE_SHA = "56e12b2b394436ee227c66d78b1caba8f7317c78"
+M4_RELEASE_STATE_BASE_FINGERPRINT = "e27caec9d2de459ef26bea49b99b93b5b7326a9c84c89b97f4ec482c237d4add"
 M4_FAILED_VERIFY_SHA = "547ee628812fbf098f337a854f68edf660091ead"
 M4_FAILED_VERIFY_FINGERPRINT = "f0efa89e689dbe47c701a4d301e97361ee671e299ef2f32b5295b908e182e768"
 M5_PROVISIONAL_SHA = "141e51e75b2bb337fa3bb1544639c6c46c287309"
@@ -160,7 +162,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(m4["implementation"]["integration_baseline"], M4_INTEGRATION_SHA)
         self.assertEqual(
             m4["implementation"]["latest_committed_repair_checkpoint"],
-            M4_REPAIR_CHECKPOINT_SHA,
+            M4_RELEASE_STATE_BASE_SHA,
         )
         self.assertEqual(
             m4["implementation"]["current_candidate_identity"],
@@ -173,7 +175,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(m4["stack_integration"]["intermediate_code_head"], M4_INTEGRATION_SHA)
         self.assertEqual(
             m4["stack_integration"]["latest_committed_repair_checkpoint"],
-            M4_REPAIR_CHECKPOINT_SHA,
+            M4_RELEASE_STATE_BASE_SHA,
         )
         self.assertEqual(
             m4["stack_integration"]["intermediate_local_verification"],
@@ -196,8 +198,20 @@ class ProjectStateTests(unittest.TestCase):
                 "checks_total": 14,
                 "failed_check": "secret-scan",
                 "created_at": "2026-09-02T10:08:32Z",
-                "repair_head": M4_REPAIR_CHECKPOINT_SHA,
-                "notes": "The sole generic-secret finding was repaired in synthetic test fixtures; final exact-head verification and reviews remain pending.",
+                "repair_head": M4_SCANNER_REPAIR_SHA,
+                "notes": "The sole generic-secret finding was repaired in synthetic test fixtures and superseded by the passing release-state verification at 56e12b2.",
+            },
+        )
+        self.assertEqual(
+            m4["stack_integration"]["release_state_local_verification"],
+            {
+                "status": "passed",
+                "head_sha": M4_RELEASE_STATE_BASE_SHA,
+                "tree_fingerprint": M4_RELEASE_STATE_BASE_FINGERPRINT,
+                "checks_passed": 14,
+                "checks_total": 14,
+                "created_at": "2026-09-02T10:51:29Z",
+                "notes": "Exact baseline receipt only; the current follow-up changes source and package bytes, so the receipt does not transfer.",
             },
         )
         self.assertIsNone(m4["stack_integration"]["merge_commit"])
@@ -238,6 +252,47 @@ class ProjectStateTests(unittest.TestCase):
         m9 = state["milestones"]["M9"]
         self.assertEqual(m9["implementation"]["prior_design_head"], M9_DESIGN_SHA)
         self.assertEqual(m9["implementation"]["commit"], M9_PROVISIONAL_SHA)
+
+    def test_m4_source_implementation_is_distinct_from_verification_review_and_delivery(self) -> None:
+        dimensions = self.state["active_delivery"]["m4_dimensions"]
+        self.assertEqual(
+            dimensions["implementation_source"],
+            {
+                "status": "implemented_local_candidate",
+                "components": [
+                    "typed_intake_and_task_state",
+                    "postgresql_migrations_001_013",
+                    "leases_fences_capacity_and_retry",
+                    "budgets_kills_audit_and_reconciliation",
+                    "authenticated_uds_api_cli_and_admin",
+                    "disposable_postgresql_and_restart_tests",
+                    "tracked_2_0_13_candidate_package",
+                ],
+            },
+        )
+        self.assertEqual(
+            {
+                name: dimensions[name]["status"]
+                for name in (
+                    "local_exact_head_verification",
+                    "independent_review",
+                    "pr_external_merge_delivery",
+                )
+            },
+            {
+                "local_exact_head_verification": "receipt_required_for_followup_commit",
+                "independent_review": "rereview_required_for_followup_commit",
+                "pr_external_merge_delivery": "not_delivered",
+            },
+        )
+        self.assertEqual(
+            self.state["milestones"]["M4"]["implementation"]["source_status"],
+            "implemented_local_candidate",
+        )
+        self.assertEqual(
+            self.state["milestones"]["M5"]["implementation"]["status"],
+            "provisional_source_complete",
+        )
 
     def test_local_git_objects_corrobate_durable_stack_proof_when_available(self) -> None:
         milestones = self.state["milestones"]
@@ -417,7 +472,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(inventory["active"][0]["intermediate_code_head"], M4_INTEGRATION_SHA)
         self.assertEqual(
             inventory["active"][0]["latest_committed_repair_checkpoint"],
-            M4_REPAIR_CHECKPOINT_SHA,
+            M4_RELEASE_STATE_BASE_SHA,
         )
         self.assertEqual(inventory["active"][1]["head"], M5_PROVISIONAL_SHA)
         self.assertEqual(inventory["active"][2]["task1_head"], M6_TASK1_SHA)

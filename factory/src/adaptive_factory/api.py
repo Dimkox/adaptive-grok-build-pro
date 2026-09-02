@@ -212,10 +212,7 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
 
     @app.get("/health/ready", tags=["health"])
     def ready():
-        try:
-            result = service.readiness()
-        except Exception as exc:
-            raise HTTPException(503, "database unavailable") from exc
+        result = service.readiness()
         if result.get("status") != "ready":
             raise HTTPException(503, "schema not ready")
         return result

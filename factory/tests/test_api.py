@@ -169,6 +169,9 @@ class ApiTests(unittest.TestCase):
         for path in mutation_paths:
             with self.subTest(path=path):
                 self.assertIn("503", contract["paths"][path]["post"]["responses"])
+        for path in ("/health/ready", "/v1/tasks", "/v1/tasks/{task_id}"):
+            with self.subTest(path=path):
+                self.assertIn("503", contract["paths"][path]["get"]["responses"])
 
     def test_metrics_counts_auth_rejections_without_exposing_credentials(self):
         operator_token = "metrics-" + "operator-" + "credential"

@@ -377,3 +377,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The first `package_stack.py` run rejected `dist/` before creating an artifact because a repository ancestor grants group rename authority.
 **Root cause:** Secure packaging validates the whole output ancestor chain; in a shared workspace, generate into a private trusted temporary directory and copy the verified zip and sidecar to the tracked package path.
+
+## 2026-09-02 — Ran root-relative checks from the package directory
+
+**Symptom:** Ruff and JSON validation could not find repository-relative targets, producing no product evidence.
+**Root cause:** A mixed verification batch used `packages/` as its working directory; commands with root-relative paths must run from the repository root, while only the sidecar check should change directories.

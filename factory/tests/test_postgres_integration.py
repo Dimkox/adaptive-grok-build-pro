@@ -10,7 +10,7 @@ import uuid
 from adaptive_factory.migrations import PostgresMigrator, discover_migrations
 from adaptive_factory.api import Authenticator, create_app
 from adaptive_factory.models import Actor, FailureClass, RunRole, TaskStatus
-from adaptive_factory.service import FactoryService
+from adaptive_factory.service import AuthorizationError, FactoryService
 from adaptive_factory.store import BudgetError, FenceError, PostgresFactoryStore, StoreError
 from factory.tests.test_contracts import valid_intake
 
@@ -1520,6 +1520,196 @@ class PostgresFactoryTests(unittest.TestCase):
             )
             self.assertEqual(cursor.fetchone(), ("needs_human", True, 25_000_000, 2_000_000, 14_400, 1))
 
+    def test_schema_012_retry_exhaustion_claim_is_audited_without_advancing_fence(self):
+        import psycopg
+        from psycopg import sql
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        connection_parameters = conninfo_to_dict(DATABASE_URL)
+        migrations = discover_migrations()
+        for infrastructure_retries in (0, 1):
+            with self.subTest(infrastructure_retries=infrastructure_retries):
+                database_name = f"factory_retry_upgrade_{uuid.uuid4().hex[:12]}"
+                upgrade_url = make_conninfo(**{**connection_parameters, "dbname": database_name})
+                with psycopg.connect(DATABASE_URL, autocommit=True) as admin:
+                    admin.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(database_name)))
+                try:
+                    task_id, intent_id = uuid.uuid4(), uuid.uuid4()
+                    repository_id = f"upgrade/retry-limit-{infrastructure_retries}"
+                    source_id = f"legacy-retry-limit-{infrastructure_retries}"
+                    attempt_count = infrastructure_retries + 1
+                    with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
+                        cursor.execute("CREATE SCHEMA factory")
+                        cursor.execute(
+                            """CREATE TABLE factory.schema_migrations (
+                            version integer PRIMARY KEY, name text UNIQUE NOT NULL,
+                            sha256 char(64) NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())"""
+                        )
+                        for migration in migrations[:12]:
+                            cursor.execute(migration.sql)
+                            cursor.execute(
+                                "INSERT INTO factory.schema_migrations(version,name,sha256) VALUES (%s,%s,%s)",
+                                (migration.version, migration.name, migration.sha256),
+                            )
+                        cursor.execute(
+                            """INSERT INTO factory.intake_identities(repository_id,source_type,source_id)
+                            VALUES (%s,'manual',%s)""",
+                            (repository_id, source_id),
+                        )
+                        cursor.execute(
+                            """INSERT INTO factory.accepted_intents
+                            (intent_id,intent_digest,idempotency_key,repository_id,source_type,source_id,
+                             source_digest,exact_base_sha,spec_digest,architecture_digest,governance_digest,
+                             policy_digest,body)
+                            VALUES (%s,%s,%s,%s,'manual',%s,%s,%s,%s,%s,%s,%s,%s::jsonb)""",
+                            (
+                                intent_id,
+                                uuid.uuid4().hex * 2,
+                                uuid.uuid4().hex * 2,
+                                repository_id,
+                                source_id,
+                                uuid.uuid4().hex * 2,
+                                uuid.uuid4().hex + uuid.uuid4().hex[:8],
+                                uuid.uuid4().hex * 2,
+                                uuid.uuid4().hex * 2,
+                                uuid.uuid4().hex * 2,
+                                uuid.uuid4().hex * 2,
+                                f'{{"limits":{{"infrastructure_retries":{infrastructure_retries}}}}}',
+                            ),
+                        )
+                        cursor.execute(
+                            """INSERT INTO factory.tasks
+                            (task_id,intent_id,repository_id,source_type,source_id,state,generation,
+                             packet_digest,deadline_at,cost_limit_micros,token_limit,output_limit_bytes,
+                             event_limit,accounting_blocked,repair_limit,repair_count,wall_limit_seconds)
+                            VALUES (%s,%s,%s,'manual',%s,'retry',1,%s,now()+interval '1 hour',
+                             25000000,2000000,10000000,100,false,3,0,14400)""",
+                            (task_id, intent_id, repository_id, source_id, uuid.uuid4().hex * 2),
+                        )
+                        for attempt_no in range(1, attempt_count + 1):
+                            run_id = uuid.uuid4()
+                            cursor.execute(
+                                """INSERT INTO factory.runs
+                                (run_id,task_id,owner_id,role,packet_digest,fence,state,lease_expires_at,
+                                 deadline_at,released_at)
+                                SELECT %s,task_id,'legacy-worker','reader',packet_digest,%s,'failed',
+                                  now()-interval '1 minute',deadline_at,now()
+                                FROM factory.tasks WHERE task_id=%s""",
+                                (run_id, attempt_no, task_id),
+                            )
+                            cursor.execute(
+                                """INSERT INTO factory.attempts
+                                (attempt_id,task_id,run_id,attempt_no,failure_class,failure_code,
+                                 failure_digest,finished_at)
+                                VALUES (%s,%s,%s,%s,'worker_lost','worker_lost',%s,now())""",
+                                (uuid.uuid4(), task_id, run_id, attempt_no, uuid.uuid4().hex * 2),
+                            )
+
+                    self.assertEqual([item.version for item in PostgresMigrator(upgrade_url).apply()], [13])
+                    upgraded_store = PostgresFactoryStore(upgrade_url)
+                    upgraded_service = FactoryService(upgraded_store)
+                    with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
+                        cursor.execute(
+                            """SELECT state,infrastructure_retries,terminal_at IS NOT NULL,
+                            (SELECT count(*) FROM factory.lease_sequences WHERE task_id=t.task_id),
+                            (SELECT count(*) FROM factory.task_events WHERE task_id=t.task_id),
+                            (SELECT count(*) FROM factory.audit_log WHERE task_id=t.task_id),
+                            (SELECT count(*) FROM factory.runs WHERE task_id=t.task_id),
+                            (SELECT count(*) FROM factory.attempts WHERE task_id=t.task_id),
+                            (SELECT dead FROM factory.metric_counters),
+                            (SELECT retry FROM factory.metric_counters)
+                            FROM factory.tasks t WHERE task_id=%s""",
+                            (task_id,),
+                        )
+                        self.assertEqual(
+                            cursor.fetchone(),
+                            ("retry", infrastructure_retries, False, 0, 0, 0, attempt_count, attempt_count, 0, 1),
+                        )
+
+                    command_key = str(infrastructure_retries + 7) * 64
+                    correlation_id = f"migration-013-retry-exhausted-{infrastructure_retries}"
+                    claim = partial(
+                        upgraded_service.claim,
+                        owner=f"post-upgrade-worker-{infrastructure_retries}",
+                        role=RunRole.READER,
+                        repositories=(repository_id,),
+                        lease_seconds=60,
+                        actor=WORKER,
+                        now=NOW,
+                        idempotency_key=command_key,
+                        correlation_id=correlation_id,
+                    )
+                    self.assertIsNone(claim())
+                    self.assertIsNone(claim())
+                    self.assertTrue(upgraded_store.verify_audit_chain(str(task_id)))
+
+                    with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
+                        cursor.execute(
+                            """SELECT state,infrastructure_retries,terminal_at IS NOT NULL,
+                            (SELECT count(*) FROM factory.lease_sequences WHERE task_id=t.task_id),
+                            (SELECT count(*) FROM factory.task_events WHERE task_id=t.task_id),
+                            (SELECT count(*) FROM factory.audit_log WHERE task_id=t.task_id),
+                            (SELECT count(*) FROM factory.runs WHERE task_id=t.task_id),
+                            (SELECT count(*) FROM factory.attempts WHERE task_id=t.task_id),
+                            (SELECT dead FROM factory.metric_counters),
+                            (SELECT retry FROM factory.metric_counters),
+                            (SELECT transition_events FROM factory.metric_counters),
+                            (SELECT count(*) FROM factory.command_results WHERE idempotency_key=%s)
+                            FROM factory.tasks t WHERE task_id=%s""",
+                            (command_key, task_id),
+                        )
+                        self.assertEqual(
+                            cursor.fetchone(),
+                            (
+                                "dead", infrastructure_retries, True, 0, 1, 1,
+                                attempt_count, attempt_count, 1, 0, 1, 1,
+                            ),
+                        )
+                        cursor.execute(
+                            """SELECT action,actor_id,mandatory_cleanup,metadata
+                            FROM factory.task_events WHERE task_id=%s""",
+                            (task_id,),
+                        )
+                        self.assertEqual(
+                            cursor.fetchone(),
+                            (
+                                "retry_exhausted",
+                                WORKER.actor_id,
+                                True,
+                                {
+                                    "attempts": attempt_count,
+                                    "infrastructure_retries": infrastructure_retries,
+                                },
+                            ),
+                        )
+                        cursor.execute(
+                            """SELECT action,resource,reason,correlation_id,run_id,metadata,digest_version
+                            FROM factory.audit_log WHERE task_id=%s""",
+                            (task_id,),
+                        )
+                        self.assertEqual(
+                            cursor.fetchone(),
+                            (
+                                "claim",
+                                f"task:{task_id}",
+                                "retry_exhausted",
+                                correlation_id,
+                                None,
+                                {
+                                    "attempts": attempt_count,
+                                    "infrastructure_retries": infrastructure_retries,
+                                },
+                                2,
+                            ),
+                        )
+                finally:
+                    with psycopg.connect(DATABASE_URL, autocommit=True) as admin:
+                        admin.execute(
+                            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=%s",
+                            (database_name,),
+                        )
+                        admin.execute(sql.SQL("DROP DATABASE {}").format(sql.Identifier(database_name)))
+
     def test_schema_008_upgrade_quarantines_legacy_reservation_before_claim(self):
         import psycopg
         from psycopg import sql
@@ -1929,6 +2119,235 @@ class PostgresFactoryTests(unittest.TestCase):
                     errors.append(exc)
         self.assertEqual(errors, [])
         self.assertEqual(self.store.get_task(task.task_id).status, TaskStatus.CANCELLED)
+
+    def test_runtime_api_connection_contention_is_bounded_and_typed(self):
+        import psycopg
+        from fastapi.testclient import TestClient
+        from unittest import mock
+
+        reader = Actor(
+            "connection-reader",
+            "client",
+            frozenset({"task:read"}),
+            frozenset({"*"}),
+        )
+        token = "-".join(("connection", "contention", "credential"))
+        client = TestClient(
+            create_app(FactoryService(PostgresFactoryStore(DATABASE_URL)), Authenticator({token: reader})),
+            raise_server_exceptions=False,
+        )
+        headers = {"Authorization": f"Bearer {token}", "X-Correlation-ID": "connection-contention"}
+
+        with mock.patch(
+            "psycopg.connect",
+            side_effect=psycopg.OperationalError("injected connection slot contention"),
+        ) as connect:
+            responses = (
+                client.get(f"/v1/tasks/{uuid.uuid4()}", headers=headers),
+                client.get("/health/ready"),
+            )
+
+        for response in responses:
+            self.assertEqual(response.status_code, 503)
+            self.assertEqual(
+                response.json(),
+                {"error": "unavailable", "code": "database"},
+            )
+            self.assertNotIn("connection slot contention", response.text)
+        self.assertEqual(connect.call_count, 2)
+        for call in connect.call_args_list:
+            self.assertEqual(call.kwargs["connect_timeout"], 5)
+            self.assertIn("lock_timeout=", call.kwargs["options"])
+            self.assertIn("statement_timeout=", call.kwargs["options"])
+
+    def test_runtime_api_reads_and_grant_checks_are_bounded_under_query_contention(self):
+        import psycopg
+        from fastapi.testclient import TestClient
+
+        class FastBoundStore(PostgresFactoryStore):
+            _MUTATION_LOCK_TIMEOUT = "100ms"
+            _MUTATION_STATEMENT_TIMEOUT = "500ms"
+
+        task = self.submit(source="runtime-query-contention").task
+        grant = self.service.claim(
+            owner="ignored",
+            role=RunRole.READER,
+            repositories=(task.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        bounded_service = FactoryService(FastBoundStore(DATABASE_URL))
+        reader = Actor(
+            "query-reader",
+            "client",
+            frozenset({"task:read", "task:list"}),
+            frozenset({"*"}),
+        )
+        reader_token = "-".join(("query", "reader", "credential"))
+        worker_token = "-".join(("query", "worker", "credential"))
+        operator_token = "-".join(("query", "operator", "credential"))
+        authenticator = Authenticator(
+            {reader_token: reader, worker_token: WORKER, operator_token: OPERATOR}
+        )
+        client = TestClient(create_app(bounded_service, authenticator), raise_server_exceptions=False)
+        grant_body = {
+            "task_id": grant.task_id,
+            "run_id": grant.run_id,
+            "owner": grant.owner,
+            "role": grant.role.value,
+            "fence": grant.fence,
+            "expires_at": grant.expires_at.isoformat().replace("+00:00", "Z"),
+            "packet_digest": grant.packet_digest,
+        }
+
+        requests = (
+            (
+                "readiness",
+                "LOCK TABLE factory.schema_migrations IN ACCESS EXCLUSIVE MODE",
+                lambda: client.get("/health/ready"),
+            ),
+            (
+                "get_task",
+                "LOCK TABLE factory.tasks IN ACCESS EXCLUSIVE MODE",
+                lambda: client.get(
+                    f"/v1/tasks/{task.task_id}",
+                    headers={
+                        "Authorization": f"Bearer {reader_token}",
+                        "X-Correlation-ID": "bounded-get-task",
+                    },
+                ),
+            ),
+            (
+                "list_tasks",
+                "LOCK TABLE factory.tasks IN ACCESS EXCLUSIVE MODE",
+                lambda: client.get(
+                    "/v1/tasks",
+                    params={"repository_id": task.repository_id},
+                    headers={
+                        "Authorization": f"Bearer {reader_token}",
+                        "X-Correlation-ID": "bounded-list-tasks",
+                    },
+                ),
+            ),
+            (
+                "grant_check",
+                "LOCK TABLE factory.tasks IN ACCESS EXCLUSIVE MODE",
+                lambda: client.post(
+                    "/v1/heartbeats",
+                    json=grant_body,
+                    headers={
+                        "Authorization": f"Bearer {worker_token}",
+                        "Idempotency-Key": "bounded-grant-check",
+                        "X-Correlation-ID": "bounded-grant-check",
+                    },
+                ),
+            ),
+            (
+                "cancel",
+                "LOCK TABLE factory.tasks IN ACCESS EXCLUSIVE MODE",
+                lambda: client.post(
+                    f"/v1/tasks/{task.task_id}/cancel",
+                    json={"reason": "bounded-cancel"},
+                    headers={
+                        "Authorization": f"Bearer {operator_token}",
+                        "Idempotency-Key": "bounded-cancel",
+                        "X-Correlation-ID": "bounded-cancel",
+                    },
+                ),
+            ),
+        )
+
+        for name, lock_statement, request in requests:
+            with self.subTest(name=name):
+                blocker = psycopg.connect(DATABASE_URL)
+                blocker.execute(lock_statement)
+                pool = ThreadPoolExecutor(max_workers=1)
+                future = pool.submit(request)
+                started = time.monotonic()
+                try:
+                    try:
+                        response = future.result(timeout=0.75)
+                    except FutureTimeout:
+                        blocker.rollback()
+                        blocker.close()
+                        future.result(timeout=2)
+                        self.fail(f"{name} exceeded the bounded database deadline")
+                    elapsed = time.monotonic() - started
+                finally:
+                    if not blocker.closed:
+                        blocker.rollback()
+                        blocker.close()
+                    pool.shutdown(wait=True)
+                self.assertEqual(
+                    (response.status_code, response.json()),
+                    (503, {"error": "unavailable", "code": "database"}),
+                )
+                self.assertLess(elapsed, 0.75)
+
+    def test_cancel_uses_one_transaction_for_authorization_replay_and_projection(self):
+        class CountingStore(PostgresFactoryStore):
+            def __init__(self, database_url):
+                super().__init__(database_url)
+                self.connection_count = 0
+
+            def _connect(self, **kwargs):
+                self.connection_count += 1
+                return super()._connect(**kwargs)
+
+        task = self.submit(source="single-transaction-cancel").task
+        counting_store = CountingStore(DATABASE_URL)
+        service = FactoryService(counting_store)
+        key = "1" * 64
+
+        first = service.cancel(
+            task.task_id,
+            reason="operator",
+            idempotency_key=key,
+            actor=OPERATOR,
+            now=NOW,
+        )
+        self.assertEqual((first.status, counting_store.connection_count), (TaskStatus.CANCELLED, 1))
+
+        counting_store.connection_count = 0
+        replay = service.cancel(
+            task.task_id,
+            reason="operator",
+            idempotency_key=key,
+            actor=OPERATOR,
+            now=NOW,
+        )
+        self.assertEqual((replay, counting_store.connection_count), (first, 1))
+
+        other = self.submit(source="single-transaction-cancel-denied").task
+        scoped = Actor(
+            "scoped-operator",
+            "operator",
+            frozenset({"task:cancel"}),
+            frozenset({"other/repository"}),
+        )
+        counting_store.connection_count = 0
+        with self.assertRaises(AuthorizationError):
+            service.cancel(
+                other.task_id,
+                reason="denied",
+                idempotency_key="2" * 64,
+                actor=scoped,
+                now=NOW,
+            )
+        self.assertEqual(counting_store.connection_count, 1)
+        self.assertEqual(self.store.get_task(other.task_id).status, TaskStatus.QUEUED)
+
+        counting_store.connection_count = 0
+        with self.assertRaises(KeyError):
+            service.cancel(
+                str(uuid.uuid4()),
+                reason="missing",
+                idempotency_key="3" * 64,
+                actor=OPERATOR,
+                now=NOW,
+            )
+        self.assertEqual(counting_store.connection_count, 1)
 
     def test_api_mutation_families_fail_bounded_under_database_lock_contention(self):
         import psycopg

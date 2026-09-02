@@ -5,7 +5,8 @@
 M4 control-plane repair candidate and exact current-state release artifact.
 
 - Product identity **2.0.13**; Trust CI service identity remains separately **2.1.0**
-- Repairs roadmap/state parity, claim-terminal lease races, bounded mutation failures, fail-closed role bootstrap, and persisted accepted retry limits through additive migration `013`
+- Repairs roadmap/state parity, claim-terminal lease races, all-runtime database bounds/typed availability, fail-closed role bootstrap, and persisted accepted retry limits through additive migration `013`
+- Audits legacy schema-12 retry exhaustion without advancing a fence or creating a lease, and makes the shipped candidate prove exact inventory, manifest and byte parity with current included source
 - Records the current PR/milestone inventory without claiming review, external Trust CI acceptance, merge, deployment, tag, or GitHub Release publication
 - Tracked local artifact: `packages/adaptive-grok-build-pro-v2.0.13.zip` with its SHA-256 sidecar
 

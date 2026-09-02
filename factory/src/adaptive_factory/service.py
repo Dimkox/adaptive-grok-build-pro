@@ -177,6 +177,16 @@ class FactoryService:
 
     def cancel(self, task_id: str, *, reason: str, idempotency_key: str, actor: Actor, now: datetime, correlation_id: str | None = None):
         self._require(actor, "task:cancel")
-        task = self.store.get_task(task_id)
-        self._require(actor, "task:cancel", task.repository_id)
-        return self.store.cancel(task_id, reason, idempotency_key, actor, now, correlation_id=correlation_id)
+        return self.store.cancel(
+            task_id,
+            reason,
+            idempotency_key,
+            actor,
+            now,
+            correlation_id=correlation_id,
+            authorize_repository=lambda repository_id: self._require(
+                actor,
+                "task:cancel",
+                repository_id,
+            ),
+        )
