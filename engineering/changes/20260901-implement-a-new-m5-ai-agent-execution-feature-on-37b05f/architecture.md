@@ -13,7 +13,7 @@ M4 accepted intent + legacy lease
   -> M4 ready_for_human / typed retry or needs_human
 ```
 
-`/v1/claims` remains an M4 control-plane lease. M5 adds `/v1/execution/claims`, `/v1/execution/stages`, and execution proposal endpoints; it does not infer provider or execution policy from the legacy claim. The execution claim first obtains the M4 fence/capacity lease, then builds and persists one immutable packet and manifest from the accepted intent plus a closed trusted selection. Failure before persistence releases the lease through the existing typed path.
+`/v1/claims` remains an M4 control-plane lease with its legacy request-identity semantics. M5 adds `/v1/execution/claims`, `/v1/execution/stages`, and execution proposal endpoints with execution-only secret-free identity helpers; it does not infer provider or execution policy from the legacy claim. The six new routes are described by `factory-execution.v1.json` on the same local server, while byte-identical `factory-control.v1.json` remains a retained/deprecated compatibility baseline rather than full unified discovery. The execution claim first obtains the M4 fence/capacity lease, then builds and persists one immutable packet and manifest from the accepted intent plus a closed trusted selection. Failure before persistence releases the lease through the existing typed path.
 
 ## Source components
 
@@ -37,7 +37,7 @@ On restart, a bounded reconciler scans at most 100 incomplete manifests in `(upd
 
 ## Executable contracts and downstream boundary
 
-The merged executable inventory is 22 nodes, 24 directed edges and ten contracts; the additional non-M5 node/edge comes from the preserved M4 release-state tree. Its M5 wire boundary is exactly four closed schemas: task packet and invocation are core-produced, canonical execution events are core-consumed, and the factual workspace result is core-produced; provider-specific adapters exchange only the modeled JSON/JSONL data flows and gain no database, Git, scheduler or external authority.
+The merged executable inventory is 22 nodes, 24 directed edges and eleven contracts; the additional non-M5 node/edge comes from the preserved M4 release-state tree. Its M5 wire boundary is exactly four closed schemas plus the additive six-operation execution OpenAPI fragment: task packet and invocation are core-produced, canonical execution events are core-consumed, and the factual workspace result is core-produced; provider-specific adapters exchange only the modeled JSON/JSONL data flows and gain no database, Git, scheduler or external authority.
 
 M4 exact state, lease, fence, allocation and budget facts from final local predecessor `571cad7877431ac5ab5779b53fe9f7effd6859ce` bind `TaskPacketV1`, the provider profile and `RunManifestV1`; proposal/snapshot/result digests then form the factual M5 output. M6 Task 3 at `f3b2c0d07116686b27feab4b60166e8a7402d672` is paused and unintegrated until accepted-M5 restack, when its provisional migration must move to `015`. Restack must verify the exact bundle before defining an M6 semantic subject; provider facts and fake authority cannot substitute, and M5 never self-approves.
 

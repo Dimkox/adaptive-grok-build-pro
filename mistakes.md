@@ -453,3 +453,7 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-02 — Deferred exact route fitness and static gates until after packaging
 
 **Root cause:** Focused validation covered architecture syntax, drift, diagrams and product tests but omitted the route's exact worktree-fitness, Ruff, Bandit and changed-range secret scans before the source/package boundary. Dependency restacks must run those exact route-selected gates before creating a clean source checkpoint or building its artifact, so boundary/range blockers and scanner-shaped fixture defects surface while the package is still absent.
+
+## 2026-09-02 — Patched repeated API helper calls without endpoint anchors
+
+**Root cause:** A repeated two-line helper hunk matched legacy `/v1/claims` before the intended execution-stage method, temporarily applying the execution-only identity policy to an M4 endpoint. API helper migrations must anchor every patch on the route decorator and enclosing method, then enumerate every call site immediately; the correction restored legacy helpers and the 12-case execution header matrix verifies both identity fields across all six new endpoints.

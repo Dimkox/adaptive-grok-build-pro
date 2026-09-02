@@ -50,6 +50,14 @@
       "version": "1"
     },
     {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-EXECUTION-OPENAPI-V1",
+      "kind": "openapi",
+      "path": "factory/contracts/openapi/factory-execution.v1.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
       "compatibility": "producer_accepted_by_old",
       "id": "CONTRACT-FACTORY-EXECUTION-TASK-PACKET-V1",
       "kind": "json_schema",
@@ -735,7 +743,8 @@
       "id": "NODE-FACTORY-LOCAL-API",
       "owner": "local factory operators",
       "public_contracts": [
-        "CONTRACT-FACTORY-CONTROL-OPENAPI"
+        "CONTRACT-FACTORY-CONTROL-OPENAPI",
+        "CONTRACT-FACTORY-EXECUTION-OPENAPI-V1"
       ],
       "repository_paths": [
         "factory/.env.example",

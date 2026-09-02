@@ -12,7 +12,7 @@
 - [x] Bind finalization SQL to canonical cross-fields, derive M4 outcome from factual terminal result, and fail closed on result corruption; start-path canonical binding remains tracked under the contract-closure slice.
 - [x] Add M5-aware orphan recovery and preserve artifact evidence without fabricating proposals or results.
 - [x] TDD restart/orphan recovery, six fixed metric families, and four inert predefined systemd source units.
-- [x] Close and inventory all four execution schemas and the 20-operation OpenAPI request/response/header surface.
+- [x] Close and inventory all four execution schemas plus the additive six-operation execution OpenAPI fragment while retaining the M4 control baseline byte-identically.
 - [x] Integrate executable architecture, installer, README, provider eligibility, operations documentation and the factual blocked M6 bridge.
 - [ ] Run every locally feasible focused suite and root preflight; record OS isolation exit `BLOCKED`.
 - [ ] Parent dispatches independent reviewers/receipts and owns any later PR/external action.
