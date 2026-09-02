@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import fields
 from datetime import UTC, datetime
+from threading import Lock
 
 from .contracts import (
     ContractError,
@@ -17,9 +18,47 @@ from .evaluator import evaluate_delivery
 from .fake_environment import FakeEnvironmentAdapter
 from .recovery import RecoverySelectionError, choose_recovery
 
+_MAX_OBSERVATIONS = 128
+_REVIEWED_ADAPTER_TYPE = FakeEnvironmentAdapter
+_REVIEWED_ADAPTER_INIT = FakeEnvironmentAdapter.__init__
+_REVIEWED_ADAPTER_APPLY = FakeEnvironmentAdapter.apply
+_REVIEWED_ADAPTER_EFFECTS = FakeEnvironmentAdapter.effects
+_REVIEWED_ADAPTER_GETATTRIBUTE = FakeEnvironmentAdapter.__getattribute__
+_REVIEWED_ADAPTER_SETATTR = FakeEnvironmentAdapter.__setattr__
+_REVIEWED_ADAPTER_SLOTS = FakeEnvironmentAdapter.__slots__
+_REVIEWED_ADAPTER_EFFECT_SLOT = (
+    FakeEnvironmentAdapter._FakeEnvironmentAdapter__effects
+)
+_REVIEWED_ADAPTER_SUPPORTED_EFFECTS = FakeEnvironmentAdapter.supported_effects
+_RECOVERY_REASONS = frozenset(
+    {"recovery_decrease", "recovery_halt", "recovery_restore_previous"}
+)
+
 
 class EvidenceChainError(ContractError):
     """The supplied or next evidence record is not one exact append-only chain."""
+
+
+def _require_reviewed_adapter_surface(adapter: object) -> FakeEnvironmentAdapter:
+    if type(adapter) is not _REVIEWED_ADAPTER_TYPE:
+        raise EvidenceChainError(
+            "adapter", "only the exact bounded in-memory fake adapter is accepted"
+        )
+    if (
+        _REVIEWED_ADAPTER_TYPE.__init__ is not _REVIEWED_ADAPTER_INIT
+        or _REVIEWED_ADAPTER_TYPE.apply is not _REVIEWED_ADAPTER_APPLY
+        or _REVIEWED_ADAPTER_TYPE.effects is not _REVIEWED_ADAPTER_EFFECTS
+        or _REVIEWED_ADAPTER_TYPE.__getattribute__
+        is not _REVIEWED_ADAPTER_GETATTRIBUTE
+        or _REVIEWED_ADAPTER_TYPE.__setattr__ is not _REVIEWED_ADAPTER_SETATTR
+        or _REVIEWED_ADAPTER_TYPE.__slots__ is not _REVIEWED_ADAPTER_SLOTS
+        or _REVIEWED_ADAPTER_TYPE._FakeEnvironmentAdapter__effects
+        is not _REVIEWED_ADAPTER_EFFECT_SLOT
+        or _REVIEWED_ADAPTER_TYPE.supported_effects
+        is not _REVIEWED_ADAPTER_SUPPORTED_EFFECTS
+    ):
+        raise EvidenceChainError("adapter", "reviewed adapter class surface changed")
+    return adapter
 
 
 def _record_payload(record: object, digest_field: str) -> dict[str, object]:
@@ -49,10 +88,35 @@ def _normalize_observations(
         observation_set, Sequence
     ):
         raise EvidenceChainError("observation_set", "must be an observation sequence")
-    observations = tuple(observation_set)
+    count = len(observation_set)
+    if count > _MAX_OBSERVATIONS:
+        raise EvidenceChainError(
+            "observation_set", f"cannot exceed {_MAX_OBSERVATIONS} observations"
+        )
+    observations = tuple(observation_set[index] for index in range(count))
+    if len(observations) > _MAX_OBSERVATIONS:
+        raise EvidenceChainError(
+            "observation_set", f"cannot exceed {_MAX_OBSERVATIONS} observations"
+        )
     if any(not isinstance(item, EnvironmentObservationV1) for item in observations):
         raise EvidenceChainError("observation_set", "contains a non-observation value")
     return observations
+
+
+def _normalize_prior_evidence(
+    prior_evidence: Sequence[DeliveryEvidenceV1],
+) -> tuple[DeliveryEvidenceV1, ...]:
+    if type(prior_evidence) is not tuple:
+        raise EvidenceChainError(
+            "prior_evidence",
+            "must be the exact empty tuple sequence until Task5 trusted import",
+        )
+    if prior_evidence:
+        raise EvidenceChainError(
+            "prior_evidence",
+            "non-empty import requires a trusted Task5 checkpoint witness",
+        )
+    return ()
 
 
 def _observation_set_digest(
@@ -98,6 +162,85 @@ def _initial_state(promotion: DeliveryPromotionV1) -> tuple[str, str, int]:
     )
 
 
+def _require_recovery_reason_shape(
+    evidence: DeliveryEvidenceV1,
+    expected_recovery_reason: str,
+) -> None:
+    reasons = set(evidence.reason_codes)
+    denial_reasons = reasons - _RECOVERY_REASONS - {
+        "production_requires_human",
+        "thresholds_passed",
+    }
+    if (
+        "thresholds_passed" in reasons
+        or reasons.intersection(_RECOVERY_REASONS) != {expected_recovery_reason}
+        or not denial_reasons
+    ):
+        raise EvidenceChainError(
+            "reason_codes",
+            "recovery requires one matching recovery code and a denial reason",
+        )
+
+
+def _require_recording_authority(
+    promotion: DeliveryPromotionV1,
+    recorded_at: datetime,
+    *,
+    include_previous_artifact: bool,
+) -> None:
+    windows = (
+        (
+            "promotion",
+            _parse_time(promotion.requested_at, "requested_at"),
+            min(
+                _parse_time(promotion.expires_at, "expires_at"),
+                _parse_time(
+                    promotion.authority_expires_at,
+                    "authority_expires_at",
+                ),
+            ),
+        ),
+        (
+            "current artifact authority",
+            _parse_time(
+                promotion.artifact.authority_verified_at,
+                "authority_verified_at",
+            ),
+            _parse_time(
+                promotion.artifact.authority_expires_at,
+                "authority_expires_at",
+            ),
+        ),
+    )
+    for name, valid_from, expires_at in windows:
+        if recorded_at < valid_from:
+            raise EvidenceChainError(
+                "recorded_at", f"{name} is not yet valid at recording"
+            )
+        if recorded_at >= expires_at:
+            raise EvidenceChainError(
+                "recorded_at", f"{name} expired before recording"
+            )
+    if include_previous_artifact:
+        previous = promotion.previous_signed_artifact
+        valid_from = _parse_time(
+            previous.authority_verified_at,
+            "authority_verified_at",
+        )
+        expires_at = _parse_time(
+            previous.authority_expires_at,
+            "authority_expires_at",
+        )
+        if recorded_at < valid_from:
+            raise EvidenceChainError(
+                "recorded_at", "previous artifact authority is not yet valid"
+            )
+        if recorded_at >= expires_at:
+            raise EvidenceChainError(
+                "recorded_at", "previous artifact authority expired before restore"
+            )
+
+
 def _is_terminal(evidence: DeliveryEvidenceV1) -> bool:
     return evidence.dry_run_effect in {"halted", "restored", "needs_human"} or (
         evidence.dry_run_effect == "none"
@@ -120,12 +263,6 @@ def _transition_state(
     )
     has_recovery = evidence.recovery_decision_digest is not None
     effect = evidence.dry_run_effect
-    recovery_reasons = {
-        "recovery_decrease",
-        "recovery_halt",
-        "recovery_restore_previous",
-    }
-
     if environment == "production" or evidence.environment == "production":
         raise EvidenceChainError("environment", "production is unreachable")
     if effect == "none":
@@ -134,7 +271,7 @@ def _transition_state(
             or result != current
             or not evidence.reason_codes
             or "thresholds_passed" in evidence.reason_codes
-            or recovery_reasons.intersection(evidence.reason_codes)
+            or _RECOVERY_REASONS.intersection(evidence.reason_codes)
         ):
             raise EvidenceChainError("dry_run_effect", "none cannot change state")
     elif effect in {"entered_stage", "changed_exposure"} and not has_recovery:
@@ -152,13 +289,7 @@ def _transition_state(
         if effect != expected_effect or result != expected:
             raise EvidenceChainError("dry_run_effect", "stage order is not contiguous")
     elif effect == "changed_exposure" and has_recovery:
-        if recovery_reasons.intersection(evidence.reason_codes) != {
-            "recovery_decrease"
-        }:
-            raise EvidenceChainError(
-                "reason_codes",
-                "decrease effect requires exactly its closed recovery reason",
-            )
+        _require_recovery_reason_shape(evidence, "recovery_decrease")
         exposures = _planned_exposures(promotion, environment)
         if exposure not in exposures:
             raise EvidenceChainError("exposure_basis_points", "is not an exact plan step")
@@ -173,14 +304,11 @@ def _transition_state(
                 "dry_run_effect", "recovery must select the immediately earlier step"
             )
     elif effect == "halted":
-        if (
-            not has_recovery
-            or recovery_reasons.intersection(evidence.reason_codes)
-            != {"recovery_halt"}
-        ):
+        if not has_recovery:
             raise EvidenceChainError(
-                "reason_codes", "halt requires exactly its closed recovery reason"
+                "reason_codes", "halt requires a bound recovery decision"
             )
+        _require_recovery_reason_shape(evidence, "recovery_halt")
         if result != current:
             raise EvidenceChainError("dry_run_effect", "halt must retain exact state")
     elif effect == "restored":
@@ -189,14 +317,11 @@ def _transition_state(
             environment,
             exposure,
         )
-        if (
-            not has_recovery
-            or recovery_reasons.intersection(evidence.reason_codes)
-            != {"recovery_restore_previous"}
-        ):
+        if not has_recovery:
             raise EvidenceChainError(
-                "reason_codes", "restore requires exactly its closed recovery reason"
+                "reason_codes", "restore requires a bound recovery decision"
             )
+        _require_recovery_reason_shape(evidence, "recovery_restore_previous")
         if result != expected:
             raise EvidenceChainError(
                 "dry_run_effect", "restore must name the exact previous artifact"
@@ -290,6 +415,8 @@ def _validate_chain(
 class DryRunController:
     """Evaluate and append evidence while applying only in-memory effects."""
 
+    __slots__ = ("__adapter", "__evidence", "__lock", "__promotion")
+
     def __init__(
         self,
         promotion: DeliveryPromotionV1,
@@ -299,24 +426,26 @@ class DryRunController:
     ) -> None:
         if not isinstance(promotion, DeliveryPromotionV1):
             raise EvidenceChainError("promotion", "must be DeliveryPromotionV1")
-        if type(adapter) is not FakeEnvironmentAdapter:
-            raise EvidenceChainError(
-                "adapter", "only the bounded in-memory fake adapter is accepted"
-            )
-        chain = tuple(prior_evidence)
+        reviewed_adapter = _require_reviewed_adapter_surface(adapter)
+        chain = _normalize_prior_evidence(prior_evidence)
         _validate_chain(promotion, chain)
-        self._promotion = promotion
-        self._adapter = adapter
-        self._evidence = list(chain)
+        object.__setattr__(self, "_DryRunController__promotion", promotion)
+        object.__setattr__(self, "_DryRunController__adapter", reviewed_adapter)
+        object.__setattr__(self, "_DryRunController__evidence", chain)
+        object.__setattr__(self, "_DryRunController__lock", Lock())
+
+    def __setattr__(self, name: str, value: object) -> None:
+        raise AttributeError("DryRunController instances are immutable")
 
     @property
     def evidence(self) -> tuple[DeliveryEvidenceV1, ...]:
-        return tuple(self._evidence)
+        with self.__lock:
+            return self.__evidence
 
-    def _current_state(self) -> tuple[str, str, int]:
-        if not self._evidence:
-            return _initial_state(self._promotion)
-        last = self._evidence[-1]
+    def __current_state(self) -> tuple[str, str, int]:
+        if not self.__evidence:
+            return _initial_state(self.__promotion)
+        last = self.__evidence[-1]
         if _is_terminal(last):
             raise EvidenceChainError("evidence", "terminal state cannot accept another step")
         return last.artifact_digest, last.environment, last.exposure_basis_points
@@ -329,17 +458,33 @@ class DryRunController:
         evaluation_time: str,
         recorded_at: str,
     ) -> DeliveryEvidenceV1:
-        if len(self._evidence) >= 128:
+        with self.__lock:
+            return self.__step_locked(
+                observation_set,
+                evaluation_time=evaluation_time,
+                recorded_at=recorded_at,
+            )
+
+    def __step_locked(
+        self,
+        observation_set: EnvironmentObservationV1
+        | Sequence[EnvironmentObservationV1],
+        *,
+        evaluation_time: str,
+        recorded_at: str,
+    ) -> DeliveryEvidenceV1:
+        adapter = _require_reviewed_adapter_surface(self.__adapter)
+        if len(self.__evidence) >= 128:
             raise EvidenceChainError("evidence", "cannot exceed 128 records")
         observations = _normalize_observations(observation_set)
         set_digest = _observation_set_digest(observations)
         if any(
-            item.observation_set_digest == set_digest for item in self._evidence
+            item.observation_set_digest == set_digest for item in self.__evidence
         ):
             raise EvidenceChainError("observation_set_digest", "replay is forbidden")
 
-        artifact_digest, environment, exposure = self._current_state()
-        if artifact_digest != self._promotion.artifact.artifact_digest:
+        artifact_digest, environment, exposure = self.__current_state()
+        if artifact_digest != self.__promotion.artifact.artifact_digest:
             raise EvidenceChainError(
                 "artifact_digest", "only the exact current artifact can continue"
             )
@@ -347,9 +492,14 @@ class DryRunController:
         recorded = _parse_time(recorded_at, "recorded_at")
         if recorded < evaluated_at:
             raise EvidenceChainError("recorded_at", "cannot precede evaluation_time")
-        if self._evidence:
+        _require_recording_authority(
+            self.__promotion,
+            recorded,
+            include_previous_artifact=False,
+        )
+        if self.__evidence:
             prior_recorded = _parse_time(
-                self._evidence[-1].recorded_at, "recorded_at"
+                self.__evidence[-1].recorded_at, "recorded_at"
             )
             if evaluated_at < prior_recorded:
                 raise EvidenceChainError(
@@ -359,7 +509,7 @@ class DryRunController:
                 raise EvidenceChainError("recorded_at", "must increase with sequence")
 
         decision = evaluate_delivery(
-            self._promotion,
+            self.__promotion,
             observations,
             evaluation_time,
             environment=environment,
@@ -386,7 +536,7 @@ class DryRunController:
         elif decision.outcome == "deny":
             try:
                 recovery = choose_recovery(
-                    self._promotion,
+                    self.__promotion,
                     decision,
                     recorded_at,
                 )
@@ -402,13 +552,22 @@ class DryRunController:
                     result_exposure = recovery.target_exposure_basis_points
                 elif recovery.action == "restore_previous":
                     effect = "restored"
-                    result_artifact = self._promotion.previous_signed_artifact.artifact_digest
+                    result_artifact = (
+                        self.__promotion.previous_signed_artifact.artifact_digest
+                    )
+                    _require_recording_authority(
+                        self.__promotion,
+                        recorded,
+                        include_previous_artifact=True,
+                    )
         reasons = recovery.reason_codes if recovery is not None else decision.reason_codes
-        sequence = len(self._evidence) + 1
-        previous_digest = self._evidence[-1].evidence_digest if self._evidence else None
+        sequence = len(self.__evidence) + 1
+        previous_digest = (
+            self.__evidence[-1].evidence_digest if self.__evidence else None
+        )
         identity = {
             "sequence": sequence,
-            "promotion_digest": self._promotion.promotion_digest,
+            "promotion_digest": self.__promotion.promotion_digest,
             "previous_evidence_digest": previous_digest,
             "delivery_decision_digest": decision.decision_digest,
             "recovery_decision_digest": (
@@ -423,7 +582,7 @@ class DryRunController:
             "schema_version": 1,
             "evidence_id": f"evidence/{canonical_digest(identity)[:32]}",
             "sequence": sequence,
-            "promotion_digest": self._promotion.promotion_digest,
+            "promotion_digest": self.__promotion.promotion_digest,
             "previous_evidence_digest": previous_digest,
             "artifact_digest": result_artifact,
             "environment": result_environment,
@@ -439,16 +598,21 @@ class DryRunController:
         }
         values["evidence_digest"] = canonical_digest(values)
         evidence = DeliveryEvidenceV1(**values)
-        candidate_chain = tuple(self._evidence) + (evidence,)
-        _validate_chain(self._promotion, candidate_chain)
+        candidate_chain = self.__evidence + (evidence,)
+        _validate_chain(self.__promotion, candidate_chain)
 
-        if effect in self._adapter.supported_effects:
-            self._adapter.apply(
+        if effect in _REVIEWED_ADAPTER_SUPPORTED_EFFECTS:
+            _REVIEWED_ADAPTER_APPLY(
+                adapter,
                 effect=effect,
-                promotion_digest=self._promotion.promotion_digest,
+                promotion_digest=self.__promotion.promotion_digest,
                 artifact_digest=result_artifact,
                 environment=result_environment,
                 exposure_basis_points=result_exposure,
             )
-        self._evidence.append(evidence)
+        object.__setattr__(
+            self,
+            "_DryRunController__evidence",
+            candidate_chain,
+        )
         return evidence

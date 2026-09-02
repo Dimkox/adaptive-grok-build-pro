@@ -110,7 +110,9 @@ Missing, stale, duplicate or contradictory observations always deny. Any health 
 
 ## Dry-run controller
 
-The controller consumes a promotion, the complete current observation and the prior evidence chain. It validates chain continuity and expected current state, evaluates, optionally chooses a narrowing recovery, applies the effect only to an in-memory fake adapter, and appends one evidence record. The adapter exposes preview/staging/canary dry-run methods and recovery methods only. It deliberately has no production, network, shell, provider, credential, signing or connector method.
+The controller consumes a promotion and one bounded complete current observation sequence. One private lock serializes the full evaluate/apply/append section; controller evidence and fake-adapter effects are private immutable tuples, and the controller calls only the reviewed original exact fake-adapter implementation. Ordinary instance replacement, subclass injection and changed adapter class surfaces fail closed. This remains an in-process source model, not an OS/process isolation boundary; arbitrary interpreter compromise such as `object.__setattr__` is outside the claimed boundary.
+
+Digest-only prior evidence cannot prove the observations, delivery decision or recovery decision behind a record. Tasks 1–4 therefore reject every non-empty `prior_evidence` value and support no restart/import path. Task 5 must supply a trusted checkpoint or the complete independently witnessed observations, decision and recovery chain before non-empty import can be designed. It must also supply a trusted clock: the source checks caller-supplied `recorded_at` against promotion/current-artifact expiry and previous-artifact expiry for restore, but that caller timestamp is not activation authority.
 
 ## Release and recovery boundary
 

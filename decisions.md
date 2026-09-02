@@ -340,3 +340,7 @@ Walk the plan's closed canonical recovery order so an authorized halt wins befor
 ## 2026-09-02 — Seal the M9 source-only adapter as a concrete value boundary
 
 Accept only the exact slotted fake-adapter type and reject every mixed recovery-reason set when importing evidence. This prevents subclass or instance monkeypatch capability injection while keeping the controller strictly in-memory and nonproduction.
+
+## 2026-09-02 — Disable unwitnessed M9 restart and serialize the in-process transition
+
+Reject every non-empty prior chain until Task 5 provides a trusted checkpoint or complete observation/decision/recovery witnesses. Keep effects and evidence in immutable tuples behind one private transition lock, and treat caller time as non-authoritative until a trusted clock exists.

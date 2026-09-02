@@ -1,4 +1,6 @@
+import threading
 import unittest
+from collections.abc import Sequence
 from dataclasses import fields
 from datetime import UTC, datetime, timedelta
 
@@ -9,9 +11,11 @@ from delivery.tests.synthetic_fixtures import (
     synthetic_promotion,
 )
 
+from adaptive_delivery import controller as controller_module
 from adaptive_delivery.contracts import DeliveryEvidenceV1
 from adaptive_delivery.controller import DryRunController, EvidenceChainError
 from adaptive_delivery.fake_environment import AdapterBoundaryError, FakeEnvironmentAdapter
+from adaptive_delivery.recovery import choose_recovery
 
 
 def _replace_evidence(evidence: DeliveryEvidenceV1, **updates) -> DeliveryEvidenceV1:
@@ -252,24 +256,7 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(first_step_adapter.effects, ())
         self.assertEqual(len(first_step_controller.evidence), 1)
 
-        expired_adapter = FakeEnvironmentAdapter()
-        expired_controller = DryRunController(self.promotion, expired_adapter)
-        expired_observation = synthetic_observation(
-            self.promotion,
-            captured_at="2026-09-02T10:59:00Z",
-            window_started_at="2026-09-02T10:57:00Z",
-            window_ended_at="2026-09-02T10:59:00Z",
-        )
-        expired_evidence = expired_controller.step(
-            (expired_observation,),
-            evaluation_time="2026-09-02T11:01:00Z",
-            recorded_at="2026-09-02T11:01:00Z",
-        )
-        self.assertEqual(expired_evidence.dry_run_effect, "none")
-        self.assertIn("promotion_expired", expired_evidence.reason_codes)
-        self.assertEqual(expired_adapter.effects, ())
-
-    def test_imported_chain_rejects_gap_bad_link_binding_and_stage_skip(self):
+    def test_internal_chain_rejects_gap_bad_link_binding_and_stage_skip(self):
         first, _ = self.step("preview", 10000, minute=20)
         bad_gap = _replace_evidence(
             first,
@@ -296,13 +283,9 @@ class ControllerTests(unittest.TestCase):
             with self.subTest(chain=tuple(item.evidence_id for item in chain)), self.assertRaises(
                 EvidenceChainError
             ):
-                DryRunController(
-                    self.promotion,
-                    FakeEnvironmentAdapter(),
-                    prior_evidence=chain,
-                )
+                controller_module._validate_chain(self.promotion, chain)
 
-    def test_imported_chain_rejects_reordered_time_and_duplicate_identity(self):
+    def test_internal_chain_rejects_reordered_time_and_duplicate_identity(self):
         chain = _synthetic_open_chain(self.promotion, 2)
         earlier = _replace_evidence(
             chain[1],
@@ -317,13 +300,9 @@ class ControllerTests(unittest.TestCase):
             with self.subTest(candidate=candidate[-1].evidence_id), self.assertRaises(
                 EvidenceChainError
             ):
-                DryRunController(
-                    self.promotion,
-                    FakeEnvironmentAdapter(),
-                    prior_evidence=candidate,
-                )
+                controller_module._validate_chain(self.promotion, candidate)
 
-    def test_imported_chain_revalidates_record_digest_and_effect_reason_shape(self):
+    def test_internal_chain_revalidates_record_digest_and_effect_reason_shape(self):
         first, _ = self.step("preview", 10000, minute=20)
         inconsistent_reason = _replace_evidence(
             first,
@@ -342,11 +321,7 @@ class ControllerTests(unittest.TestCase):
             with self.subTest(candidate=candidate.evidence_id), self.assertRaises(
                 EvidenceChainError
             ):
-                DryRunController(
-                    self.promotion,
-                    FakeEnvironmentAdapter(),
-                    prior_evidence=(candidate,),
-                )
+                controller_module._validate_chain(self.promotion, (candidate,))
 
     def test_controller_rejects_fake_adapter_subclasses_before_any_effect(self):
         class CapabilityInjectingAdapter(FakeEnvironmentAdapter):
@@ -376,6 +351,283 @@ class ControllerTests(unittest.TestCase):
         with self.assertRaises(AttributeError):
             effects_target.supported_effects = frozenset({"production"})
 
+    def test_controller_rejects_post_init_adapter_swap(self):
+        with self.assertRaises(AttributeError):
+            self.controller._adapter = FakeEnvironmentAdapter()
+
+    def test_controller_fails_closed_if_reviewed_adapter_method_is_globally_replaced(self):
+        original_apply = FakeEnvironmentAdapter.apply
+        calls = []
+
+        def replaced_apply(adapter, **kwargs):
+            calls.append((adapter, kwargs))
+            return original_apply(adapter, **kwargs)
+
+        FakeEnvironmentAdapter.apply = replaced_apply
+        try:
+            with self.assertRaisesRegex(EvidenceChainError, "adapter.*surface"):
+                self.step("preview", 10000, minute=20)
+        finally:
+            FakeEnvironmentAdapter.apply = original_apply
+
+        self.assertEqual(calls, [])
+        self.assertEqual(self.controller.evidence, ())
+        self.assertEqual(self.adapter.effects, ())
+
+    def test_controller_fails_closed_if_adapter_immutability_surface_changes(self):
+        original_setattr = FakeEnvironmentAdapter.__setattr__
+        FakeEnvironmentAdapter.__setattr__ = object.__setattr__
+        try:
+            with self.assertRaisesRegex(EvidenceChainError, "adapter.*surface"):
+                self.step("preview", 10000, minute=20)
+        finally:
+            FakeEnvironmentAdapter.__setattr__ = original_setattr
+
+        self.assertEqual(self.controller.evidence, ())
+        self.assertEqual(self.adapter.effects, ())
+
+    def test_fake_adapter_private_effect_state_cannot_be_replaced_or_cleared(self):
+        self.adapter.apply(
+            effect="halted",
+            promotion_digest=self.promotion.promotion_digest,
+            artifact_digest=self.promotion.artifact.artifact_digest,
+            environment="preview",
+            exposure_basis_points=10000,
+        )
+        with self.assertRaises(AttributeError):
+            self.adapter._effects = []
+        with self.assertRaises(AttributeError):
+            self.adapter._effects.clear()
+        with self.assertRaises(AttributeError):
+            self.adapter._FakeEnvironmentAdapter__effects = ()
+        self.assertEqual(len(self.adapter.effects), 1)
+
+    def test_controller_private_evidence_state_cannot_be_cleared(self):
+        self.step("preview", 10000, minute=20)
+        with self.assertRaises(AttributeError):
+            self.controller._evidence.clear()
+        with self.assertRaises(AttributeError):
+            self.controller._DryRunController__evidence = ()
+        self.assertEqual(len(self.controller.evidence), 1)
+
+    def test_concurrent_identical_step_serializes_apply_and_append(self):
+        observation = synthetic_observation(self.promotion)
+        original_validate = controller_module._validate_chain
+        candidate_barrier = threading.Barrier(2)
+
+        def synchronized_validate(promotion, evidence_chain):
+            result = original_validate(promotion, evidence_chain)
+            if evidence_chain:
+                try:
+                    candidate_barrier.wait(timeout=0.2)
+                except threading.BrokenBarrierError:
+                    pass
+            return result
+
+        controller_module._validate_chain = synchronized_validate
+        results = []
+        errors = []
+
+        def run_step():
+            try:
+                results.append(
+                    self.controller.step(
+                        (observation,),
+                        evaluation_time="2026-09-02T09:21:00Z",
+                        recorded_at="2026-09-02T09:21:00Z",
+                    )
+                )
+            except Exception as exc:  # noqa: BLE001 - thread result is asserted below
+                errors.append(exc)
+
+        try:
+            threads = (threading.Thread(target=run_step), threading.Thread(target=run_step))
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(timeout=2)
+            self.assertTrue(all(not thread.is_alive() for thread in threads))
+        finally:
+            controller_module._validate_chain = original_validate
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], EvidenceChainError)
+        self.assertIn("replay", str(errors[0]))
+        self.assertEqual(len(self.controller.evidence), 1)
+        self.assertEqual(len(self.adapter.effects), 1)
+
+    def test_nonempty_prior_evidence_requires_a_trusted_task5_witness(self):
+        first, _ = self.step("preview", 10000, minute=20)
+        with self.assertRaisesRegex(EvidenceChainError, "trusted.*witness"):
+            DryRunController(
+                self.promotion,
+                FakeEnvironmentAdapter(),
+                prior_evidence=(first,),
+            )
+
+    def test_prior_evidence_generator_is_rejected_without_materialization(self):
+        first, _ = self.step("preview", 10000, minute=20)
+        consumed = []
+
+        def records():
+            consumed.append(True)
+            yield first
+
+        with self.assertRaisesRegex(EvidenceChainError, "sequence"):
+            DryRunController(
+                self.promotion,
+                FakeEnvironmentAdapter(),
+                prior_evidence=records(),
+            )
+        self.assertEqual(consumed, [])
+
+    def test_recovery_evidence_requires_denial_and_forbids_thresholds_passed(self):
+        halted = self.controller.step(
+            (synthetic_observation(self.promotion, health_basis_points=9800),),
+            evaluation_time="2026-09-02T09:21:00Z",
+            recorded_at="2026-09-02T09:21:00Z",
+        )
+        cases = (
+            ("health_below_minimum", "recovery_halt", "thresholds_passed"),
+            ("recovery_halt",),
+        )
+        for reasons in cases:
+            forged = _replace_evidence(halted, reason_codes=reasons)
+            with self.subTest(reasons=reasons), self.assertRaisesRegex(
+                EvidenceChainError, "reason_codes"
+            ):
+                controller_module._validate_chain(self.promotion, (forged,))
+
+    def test_recording_after_promotion_expiry_creates_no_effect_or_evidence(self):
+        observation = synthetic_observation(
+            self.promotion,
+            captured_at="2026-09-02T10:58:00Z",
+            window_started_at="2026-09-02T10:56:00Z",
+            window_ended_at="2026-09-02T10:58:00Z",
+        )
+        with self.assertRaisesRegex(EvidenceChainError, "recorded_at.*expired"):
+            self.controller.step(
+                (observation,),
+                evaluation_time="2026-09-02T10:59:00Z",
+                recorded_at="2026-09-02T11:00:00Z",
+            )
+        self.assertEqual(self.controller.evidence, ())
+        self.assertEqual(self.adapter.effects, ())
+
+    def test_recording_after_current_artifact_authority_expiry_is_rejected(self):
+        artifact = self.promotion.artifact
+        expiring_artifact = type(artifact)(
+            **{
+                field.name: (
+                    "2026-09-02T09:22:00Z"
+                    if field.name == "authority_expires_at"
+                    else getattr(artifact, field.name)
+                )
+                for field in fields(artifact)
+            }
+        )
+        promotion = synthetic_promotion(artifact=expiring_artifact)
+        adapter = FakeEnvironmentAdapter()
+        controller = DryRunController(promotion, adapter)
+        with self.assertRaisesRegex(EvidenceChainError, "current artifact.*expired"):
+            controller.step(
+                (synthetic_observation(promotion),),
+                evaluation_time="2026-09-02T09:21:00Z",
+                recorded_at="2026-09-02T09:22:00Z",
+            )
+        self.assertEqual(controller.evidence, ())
+        self.assertEqual(adapter.effects, ())
+
+    def test_restore_rechecks_previous_artifact_authority_at_recorded_time(self):
+        previous = self.promotion.previous_signed_artifact
+        expiring_previous = type(previous)(
+            **{
+                field.name: (
+                    "2026-09-02T09:22:00Z"
+                    if field.name == "authority_expires_at"
+                    else getattr(previous, field.name)
+                )
+                for field in fields(previous)
+            }
+        )
+        promotion = synthetic_promotion(
+            previous_artifact=expiring_previous,
+            plan=synthetic_plan(allowed_recovery_actions=("restore_previous",)),
+        )
+        recovery = choose_recovery(
+            promotion,
+            controller_module.evaluate_delivery(
+                promotion,
+                (synthetic_observation(promotion, health_basis_points=9800),),
+                "2026-09-02T09:21:00Z",
+                environment="preview",
+                exposure_basis_points=10000,
+            ),
+            "2026-09-02T09:21:00Z",
+        )
+        original_choose = controller_module.choose_recovery
+        controller_module.choose_recovery = lambda *_args, **_kwargs: recovery
+        adapter = FakeEnvironmentAdapter()
+        controller = DryRunController(promotion, adapter)
+        try:
+            with self.assertRaisesRegex(EvidenceChainError, "previous artifact.*expired"):
+                controller.step(
+                    (synthetic_observation(promotion, health_basis_points=9800),),
+                    evaluation_time="2026-09-02T09:21:00Z",
+                    recorded_at="2026-09-02T09:22:00Z",
+                )
+        finally:
+            controller_module.choose_recovery = original_choose
+        self.assertEqual(controller.evidence, ())
+        self.assertEqual(adapter.effects, ())
+
+    def test_oversized_observation_sequence_is_rejected_before_materialization(self):
+        class OversizedObservations(Sequence):
+            def __init__(self):
+                self.read = False
+
+            def __len__(self):
+                return 129
+
+            def __getitem__(self, index):
+                self.read = True
+                raise AssertionError(f"materialized item {index}")
+
+        observations = OversizedObservations()
+        with self.assertRaisesRegex(EvidenceChainError, "128"):
+            self.controller.step(
+                observations,
+                evaluation_time="2026-09-02T09:21:00Z",
+                recorded_at="2026-09-02T09:21:00Z",
+            )
+        self.assertFalse(observations.read)
+
+    def test_observation_sequence_reads_only_its_declared_bounded_length(self):
+        observation = synthetic_observation(self.promotion)
+
+        class LyingObservationSequence(Sequence):
+            def __init__(self):
+                self.read_indexes = []
+
+            def __len__(self):
+                return 1
+
+            def __getitem__(self, index):
+                self.read_indexes.append(index)
+                if index >= 3:
+                    raise AssertionError("unbounded sequence materialization")
+                return observation
+
+        observations = LyingObservationSequence()
+        evidence = self.controller.step(
+            observations,
+            evaluation_time="2026-09-02T09:21:00Z",
+            recorded_at="2026-09-02T09:21:00Z",
+        )
+        self.assertEqual(evidence.sequence, 1)
+        self.assertEqual(observations.read_indexes, [0])
+
     def assert_mixed_recovery_reason_is_rejected(
         self,
         promotion,
@@ -386,14 +638,13 @@ class ControllerTests(unittest.TestCase):
             chain[-1],
             reason_codes=tuple(sorted((*chain[-1].reason_codes, extra_reason))),
         )
-        with self.assertRaisesRegex(EvidenceChainError, "recovery reason"):
-            DryRunController(
+        with self.assertRaisesRegex(EvidenceChainError, "reason_codes"):
+            controller_module._validate_chain(
                 promotion,
-                FakeEnvironmentAdapter(),
-                prior_evidence=(*chain[:-1], mutated),
+                (*chain[:-1], mutated),
             )
 
-    def test_imported_halt_rejects_mixed_recovery_reasons(self):
+    def test_internal_halt_rejects_mixed_recovery_reasons(self):
         halted_controller = DryRunController(
             self.promotion,
             FakeEnvironmentAdapter(),
@@ -409,7 +660,7 @@ class ControllerTests(unittest.TestCase):
             "recovery_restore_previous",
         )
 
-    def test_imported_restore_rejects_mixed_recovery_reasons(self):
+    def test_internal_restore_rejects_mixed_recovery_reasons(self):
         restore_plan = synthetic_plan(allowed_recovery_actions=("restore_previous",))
         restore_promotion = synthetic_promotion(plan=restore_plan)
         restore_controller = DryRunController(
@@ -432,7 +683,7 @@ class ControllerTests(unittest.TestCase):
             "recovery_decrease",
         )
 
-    def test_imported_decrease_rejects_mixed_recovery_reasons(self):
+    def test_internal_decrease_rejects_mixed_recovery_reasons(self):
         decrease_chain = _synthetic_open_chain(self.promotion, 4)
         self.assert_mixed_recovery_reason_is_rejected(
             self.promotion,
@@ -440,20 +691,11 @@ class ControllerTests(unittest.TestCase):
             "recovery_halt",
         )
 
-    def test_chain_and_fake_adapter_are_independently_capped_at_128(self):
+    def test_internal_chain_and_fake_adapter_are_independently_capped_at_128(self):
         chain = _synthetic_open_chain(self.promotion, 128)
-        controller = DryRunController(
-            self.promotion,
-            FakeEnvironmentAdapter(),
-            prior_evidence=chain,
-        )
-        observation = synthetic_observation(self.promotion)
+        controller_module._validate_chain(self.promotion, chain)
         with self.assertRaisesRegex(EvidenceChainError, "128"):
-            controller.step(
-                (observation,),
-                evaluation_time="2026-09-02T09:24:00Z",
-                recorded_at="2026-09-02T09:24:00Z",
-            )
+            controller_module._validate_chain(self.promotion, chain + (chain[-1],))
 
         adapter = FakeEnvironmentAdapter()
         for _ in range(128):

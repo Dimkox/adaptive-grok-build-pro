@@ -1,4 +1,5 @@
 import unittest
+from collections.abc import Sequence
 
 from delivery.tests.synthetic_fixtures import (
     SYNTHETIC_EVALUATION_TIME,
@@ -8,6 +9,7 @@ from delivery.tests.synthetic_fixtures import (
     synthetic_promotion,
 )
 
+from adaptive_delivery.contracts import ContractError
 from adaptive_delivery.evaluator import evaluate_delivery
 
 
@@ -280,6 +282,62 @@ class EvaluatorTests(unittest.TestCase):
             promotion, observation, SYNTHETIC_EVALUATION_TIME
         )
         self.assertEqual(decision.outcome, "advance")
+
+    def test_oversized_observation_sequence_is_rejected_before_materialization(self):
+        class OversizedObservations(Sequence):
+            def __init__(self):
+                self.read = False
+
+            def __len__(self):
+                return 129
+
+            def __getitem__(self, index):
+                self.read = True
+                raise AssertionError(f"materialized item {index}")
+
+        observations = OversizedObservations()
+        with self.assertRaisesRegex(ContractError, "128"):
+            self.evaluate(
+                synthetic_promotion(), observations, "preview", 10000
+            )
+        self.assertFalse(observations.read)
+
+    def test_observation_generator_is_rejected_without_consumption(self):
+        consumed = []
+
+        def observations():
+            consumed.append(True)
+            yield synthetic_observation(synthetic_promotion())
+
+        with self.assertRaisesRegex(ContractError, "observation sequence"):
+            self.evaluate(
+                synthetic_promotion(), observations(), "preview", 10000
+            )
+        self.assertEqual(consumed, [])
+
+    def test_observation_sequence_reads_only_its_declared_bounded_length(self):
+        promotion = synthetic_promotion()
+        observation = synthetic_observation(promotion)
+
+        class LyingObservationSequence(Sequence):
+            def __init__(self):
+                self.read_indexes = []
+
+            def __len__(self):
+                return 1
+
+            def __getitem__(self, index):
+                self.read_indexes.append(index)
+                if index >= 3:
+                    raise AssertionError("unbounded sequence materialization")
+                return observation
+
+        observations = LyingObservationSequence()
+        decision = self.evaluate(
+            promotion, observations, "preview", 10000
+        )
+        self.assertEqual(decision.outcome, "advance")
+        self.assertEqual(observations.read_indexes, [0])
 
 
 if __name__ == "__main__":

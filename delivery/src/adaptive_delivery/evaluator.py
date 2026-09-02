@@ -16,6 +16,8 @@ from .contracts import (
     canonical_digest,
 )
 
+_MAX_OBSERVATIONS = 128
+
 
 def _parse_time(value: str, field: str) -> datetime:
     try:
@@ -127,7 +129,16 @@ def _normalize_observations(
         raise ContractError(
             "observation_set", "must be one observation or an immutable observation sequence"
         )
-    observations = tuple(observation_set)
+    count = len(observation_set)
+    if count > _MAX_OBSERVATIONS:
+        raise ContractError(
+            "observation_set", f"cannot exceed {_MAX_OBSERVATIONS} observations"
+        )
+    observations = tuple(observation_set[index] for index in range(count))
+    if len(observations) > _MAX_OBSERVATIONS:
+        raise ContractError(
+            "observation_set", f"cannot exceed {_MAX_OBSERVATIONS} observations"
+        )
     if any(not isinstance(item, EnvironmentObservationV1) for item in observations):
         raise ContractError("observation_set", "contains a non-observation value")
     return observations

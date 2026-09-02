@@ -8,6 +8,9 @@ from dataclasses import dataclass
 from .contracts import ContractError
 
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
+_SUPPORTED_EFFECTS = frozenset(
+    {"entered_stage", "changed_exposure", "halted", "restored"}
+)
 
 
 class AdapterBoundaryError(ContractError):
@@ -26,18 +29,22 @@ class AppliedDryRunEffect:
 class FakeEnvironmentAdapter:
     """Record at most 128 nonproduction effects and do nothing else."""
 
-    __slots__ = ("_effects",)
+    __slots__ = ("__effects",)
 
-    supported_effects = frozenset(
-        {"entered_stage", "changed_exposure", "halted", "restored"}
-    )
+    supported_effects = _SUPPORTED_EFFECTS
 
     def __init__(self) -> None:
-        self._effects: list[AppliedDryRunEffect] = []
+        object.__setattr__(self, "_FakeEnvironmentAdapter__effects", ())
+
+    def __setattr__(self, name: str, value: object) -> None:
+        if type(self) is not FakeEnvironmentAdapter:
+            object.__setattr__(self, name, value)
+            return
+        raise AttributeError("FakeEnvironmentAdapter instances are immutable")
 
     @property
     def effects(self) -> tuple[AppliedDryRunEffect, ...]:
-        return tuple(self._effects)
+        return self.__effects
 
     def apply(
         self,
@@ -48,9 +55,10 @@ class FakeEnvironmentAdapter:
         environment: str,
         exposure_basis_points: int,
     ) -> AppliedDryRunEffect:
-        if len(self._effects) >= 128:
+        effects = self.__effects
+        if len(effects) >= 128:
             raise AdapterBoundaryError("effects", "cannot exceed 128 dry-run records")
-        if effect not in self.supported_effects:
+        if effect not in _SUPPORTED_EFFECTS:
             raise AdapterBoundaryError("effect", "is not a supported dry-run effect")
         if not isinstance(promotion_digest, str) or not _HEX64.fullmatch(
             promotion_digest
@@ -73,5 +81,9 @@ class FakeEnvironmentAdapter:
             environment=environment,
             exposure_basis_points=exposure_basis_points,
         )
-        self._effects.append(applied)
+        object.__setattr__(
+            self,
+            "_FakeEnvironmentAdapter__effects",
+            effects + (applied,),
+        )
         return applied

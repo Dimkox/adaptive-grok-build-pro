@@ -337,3 +337,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** A subclass or instance attribute could replace the M9 dry-run adapter behavior, and imported recovery evidence could mix incompatible recovery reasons.
 **Root cause:** The first controller review checked nominal membership and expected-reason presence instead of sealing the concrete object surface and requiring an exact singleton recovery-reason mapping.
+
+## 2026-09-02 — Treated evidence digests and mutable in-process state as sufficient restart proof
+
+**Symptom:** Digest-only prior records could be imported, ordinary mutation or concurrent steps could fork evidence/effects, and caller-time expiry was not rechecked before recording.
+**Root cause:** Task 4 conflated structural integrity with provenance and omitted one serialized immutable transition boundary plus a trusted clock/checkpoint activation gate.

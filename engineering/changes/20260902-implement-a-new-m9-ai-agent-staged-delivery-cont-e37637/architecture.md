@@ -15,8 +15,8 @@ Tasks 1–4 M9 source is a pure local deterministic library. It accepts closed i
 - `contracts.py`: closed frozen V1 records, canonical validation and digesting; no signature implementation.
 - `evaluator.py`: pure completeness/freshness/consistency/threshold evaluation for five fixed metric families.
 - `recovery.py`: pure selection of `halt`, `decrease_exposure` or `restore_previous`; authority can only narrow.
-- `controller.py`: append-only dry-run transitions and evidence-chain validation.
-- `fake_environment.py`: bounded in-memory adapter for tests; it records requested dry-run effects and has no network, provider, process or production method.
+- `controller.py`: lock-serialized dry-run evaluate/apply/append transitions, internal evidence-chain validation and fail-closed non-empty import.
+- `fake_environment.py`: exact bounded in-memory adapter for tests; its private immutable effect tuple is updated only by the reviewed original implementation and it has no network, provider, process or production method.
 - JSON Schemas: machine-readable exact record contracts created with source, then registered in the architecture model.
 
 There is no service, database, queue, HTTP API, webhook, outbox, runtime daemon, credential broker or external adapter.
@@ -35,17 +35,19 @@ externally verified opaque references + complete aggregate observations
 
 ## Trust boundary
 
-M9 never creates or verifies cryptographic authority. An opaque authority reference carries only envelope digest, external verifier ID, verification/expiry timestamps, scope and exact resource digest. Signature bytes, certificates, private/public keys, credentials and untrusted envelope bodies are absent. Presence is not enough: every reference must be unexpired at `evaluation_time`, match the expected closed scope, and bind the exact canonical resource digest.
+M9 never creates or verifies cryptographic authority. An opaque authority reference carries only envelope digest, external verifier ID, verification/expiry timestamps, scope and exact resource digest. Signature bytes, certificates, private/public keys, credentials and untrusted envelope bodies are absent. Presence is not enough: every reference must be unexpired at `evaluation_time`, match the expected closed scope, and bind the exact canonical resource digest. Before recording, the controller also rejects expired promotion/current-artifact authority and, for restore, expired prior-artifact authority; `recorded_at` remains caller-supplied and a trusted Task 5 clock is required for activation.
 
 ## State and failure semantics
 
 Normal dry-run states are `pending`, `preview`, `staging`, `bounded_canary`, `needs_human`, `halted` and `restored`. Stage order cannot skip or reverse except through a recovery terminal. Every observation binds promotion, artifact, environment, exposure and policy digests. Missing, stale, duplicate, contradictory, nonfinite or threshold-breaching data yields a stable deny reason; input order cannot change the decision.
 
-Automatic recovery is pre-authorized in `DeliveryPromotionV1`. It can halt, choose an earlier exposure step in the same stage, or restore the exact `previous_signed_artifact`. It cannot advance, increase exposure, introduce an artifact, modify resource/environment/policy bindings, or reach production.
+Automatic recovery is pre-authorized in `DeliveryPromotionV1`. It can halt, choose an earlier exposure step in the same stage, or restore the exact `previous_signed_artifact`. Every recovery evidence record requires at least one non-recovery denial reason, forbids `thresholds_passed`, and carries exactly one matching recovery code. It cannot advance, increase exposure, introduce an artifact, modify resource/environment/policy bindings, or reach production.
+
+The in-process controller has no restart contract in Tasks 1–4. Every non-empty prior chain fails closed because record digests alone do not witness the observations, decision or recovery bodies. Task 5 must introduce a trusted checkpoint or complete independently witnessed inputs before import/restart can be enabled. Private name-mangled slots, immutable tuples and class-surface checks close ordinary mutation paths, but are not claimed as an OS sandbox or protection against arbitrary interpreter compromise.
 
 ## Observability and retention
 
-At most 128 evidence records exist in one dry-run chain. Audit stores closed IDs, SHA-256 digests, RFC3339 UTC timestamps, exposure basis points, numeric aggregates and reason codes. Metrics use fixed labels: stage, decision and reason. No task body, prompt, reasoning, source, PII, secret, credential, authority body or environment response body is accepted or emitted.
+At most 128 observations are indexed from a declared bounded sequence before evaluation; generators and non-sequences are rejected without consumption. At most 128 evidence records and 128 fake effects exist in their respective in-process tuples. Audit stores closed IDs, SHA-256 digests, RFC3339 UTC timestamps, exposure basis points, numeric aggregates and reason codes. Metrics use fixed labels: stage, decision and reason. No task body, prompt, reasoning, source, PII, secret, credential, authority body or environment response body is accepted or emitted.
 
 ## Governance context
 

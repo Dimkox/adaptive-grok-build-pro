@@ -2,7 +2,7 @@
 
 The source-only checkpoint runs each scenario under strict TDD; a scenario is claimed only after its witnessed RED and fresh GREEN evidence.
 
-Task 1 contract evidence is implemented: the exact command first failed because `adaptive_delivery.contracts` was absent, then passed 11 tests after the minimal contract module was added. Task 2 evaluator evidence is also implemented: its focused command first failed because `adaptive_delivery.evaluator` was absent; a review-found old-window/fresh-capture case then failed against capture-only freshness; the repaired evaluator passes 13 focused tests plus the unchanged 11 contract tests. Task 3 recovery evidence is implemented from a missing-module RED followed by 9 tests for exact binding, least-authority action selection, same-stage decrease, exact prior artifact and decision-time expiry. Task 4 controller evidence is implemented from missing-module, backward-evaluation-time, no-recovery-terminal, adapter-injection and mixed-recovery-reason REDs followed by 17 tests for structural chain continuity, replay/order/binding/state-shape checks, bounded append-only evidence, terminal no-recovery denial evidence and a sealed capability-free fake adapter. All 50 source-only tests pass; Task 5 schema/architecture/repository integration remains pending and blocked.
+Task 1 contract evidence is implemented: the exact command first failed because `adaptive_delivery.contracts` was absent, then passed 11 tests after the minimal contract module was added. Task 2 evaluator evidence is implemented from missing-evaluator and old-window/fresh-capture REDs; three bounded-input cases now bring its focused suite to 16 tests. Task 3 recovery evidence is implemented from a missing-module RED followed by 9 tests for exact binding, least-authority action selection, same-stage decrease, exact prior artifact and decision-time expiry. Task 4 controller evidence now has 31 tests: its review-remediation RED reproduced ordinary adapter/evidence mutation, global class patching, a two-thread duplicate append, unwitnessed import, contradictory recovery reasons, record-time expiry and unbounded sequence materialization. All 67 source-only tests pass; Task 5 schema/architecture/repository integration remains pending and blocked.
 
 | Priority | Scenario | Required evidence |
 | --- | --- | --- |
@@ -12,8 +12,11 @@ Task 1 contract evidence is implemented: the exact command first failed because 
 | P0 | each health/error/latency/security/business threshold passes at boundary and denies one unit beyond | evaluator unit tests |
 | P0 | state order is preview→staging→bounded canary→needs_human; no skip, reverse or production method | controller/adapter tests |
 | P0 | recovery only halts, selects an earlier same-stage exposure, or restores the exact bound prior artifact | recovery mutation tests |
+| P0 | concurrent identical steps append/apply once; reviewed adapter and private tuple surfaces fail closed on ordinary mutation | controller concurrency and mutation tests |
+| P0 | record-time promotion/current/prior-artifact expiry prevents effect and evidence | controller authority-boundary tests |
+| P0 | non-empty prior chains fail closed until independently witnessed; digest-only evidence cannot authorize restart | controller import tests |
 | P0 | authority remains opaque and source contains no crypto/key/network/subprocess/provider/connector/production path | structure + security scans |
-| P1 | evidence chain is contiguous, digest-bound, replay-safe and capped at 128 | controller unit tests |
+| P1 | observation, evidence and fake-effect collections are independently capped at 128 without generator/unbounded iteration | evaluator/controller unit tests |
 | P1 | metrics/audit expose only closed labels, digests, times and aggregates, never bodies/PII/secrets | redaction/contract tests |
 | P1 | schemas, architecture inventory/diagrams, README and roadmap remain consistent | repository structure/architecture tests |
 
