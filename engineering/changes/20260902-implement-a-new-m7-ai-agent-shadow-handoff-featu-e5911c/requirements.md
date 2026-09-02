@@ -4,12 +4,12 @@
 
 ## Required behavior
 
-- Closed bridge/evidence contracts bind product SHAs and task/run/fence/packet/manifest/verdict/evidence/receipt identities.
-- A frozen roadmap-compatible `ReadyForPrBundleV1` serializes canonically but exposes only `ready_for_human`.
+- Closed bridge/evidence contracts preserve the M4 intent/lease packet identity separately from the M5 TaskPacket identity and bind actual M5 packet/manifest/snapshot/result plus M6 envelope/binding/validation-input/subject/evidence-set/verdict fields.
+- A frozen roadmap-compatible `ReadyForPrBundleV1` serializes canonically but exposes only `blocked_pending_durable_lookup`; `ready_for_human` is invalid until a future durable producer lookup exists.
 - Stale linkage, duplicate outcome, incomplete evidence, non-pass or contradictory semantic evidence fail deterministically.
 - Operator instructions are fixed local/manual step identifiers; no command, URL, target, token or credential field exists.
-- One exact cohort tuple aggregates 1–10,000 outcomes using integer counts and millionths; multiple failure codes are sorted.
-- M4 runtime remains unchanged until accepted M5/M6 producer facts exist.
+- One exact cohort tuple aggregates 1–10,000 outcomes using integer counts and millionths; evaluation accepts the cohort and recomputes its aggregate, never a caller-supplied aggregate.
+- M4 runtime remains unchanged. Exact dependency commit acceptance is an external ledger gate, never a producer-payload field.
 
 ## Bounds and gates
 

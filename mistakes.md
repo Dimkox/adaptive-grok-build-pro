@@ -337,3 +337,13 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 ## 2026-09-01 — Extrapolated a local milestone ETA to the whole program
 
 **Root cause:** The M4 local implementation forecast was presented as program deadline confidence without checking downstream dependencies and external gates, especially the M8 human cohort and Trust CI. Future status reports must state local milestone forecasts separately from end-to-end deadline confidence and name unresolved human/external gates.
+
+## 2026-09-02 — Modeled M7 authority from translated caller claims
+
+**Symptom:** The provisional M7 bridge equated M4 and M5 packet digests, collapsed input and result SHAs, accepted invented product/dependency/evidence fields, and let a directly constructed aggregate authorize a recommendation.
+**Root cause:** Cross-milestone linkage was designed from roadmap labels instead of tracing each factual M4/M5/M6 producer field and separating transport claims from independently recomputed authority.
+
+## 2026-09-02 — Tested M7 schemas only as isolated documents
+
+**Symptom:** Each schema parsed alone, but registry validation of an externally referenced definition failed because its nested local `$ref` resolved against the consumer document.
+**Root cause:** Schema parity stopped at field inventory and never traversed the complete cross-document reference graph; absolute producer-schema URIs plus a registry-resolution regression now cover that boundary.

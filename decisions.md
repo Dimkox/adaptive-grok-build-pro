@@ -336,3 +336,7 @@ Treat an unreleased canonical allocation as part of the worker fence and deny ru
 ## 2026-09-01 — Lock trusted authority inside intake without granting row mutation
 
 Use fixed-search-path security-definer predicates that take a row lock on the exact repository/policy/action subject, and invoke them after intake identity serialization in the insertion transaction. This prevents revocation TOCTOU while retaining an EXECUTE-only runtime boundary.
+
+## 2026-09-02 — Keep opaque milestone bridges non-authoritative
+
+Preserve exact producer field names and directional identity bindings, but expose only `blocked_pending_durable_lookup` while canonical producer bodies are unavailable for recomputation. Exact dependency-commit acceptance stays in the external ledger, so transport payloads cannot mint milestone authority.

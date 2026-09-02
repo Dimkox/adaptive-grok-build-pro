@@ -162,9 +162,10 @@ def aggregate_shadow_cohort(cohort: ShadowCohortV1) -> ShadowCohortAggregateV1:
     )
 
 
-def evaluate_shadow_cohort(aggregate: ShadowCohortAggregateV1) -> ShadowEvaluationV1:
-    if not isinstance(aggregate, ShadowCohortAggregateV1):
-        raise ContractError("invalid_contract", "shadow_cohort_aggregate")
+def evaluate_shadow_cohort(cohort: ShadowCohortV1) -> ShadowEvaluationV1:
+    if not isinstance(cohort, ShadowCohortV1):
+        raise ContractError("invalid_contract", "shadow_cohort")
+    aggregate = aggregate_shadow_cohort(cohort)
     failures: set[str] = set()
     if aggregate.human_merged_accepted_count < 30:
         failures.add("insufficient_sample")

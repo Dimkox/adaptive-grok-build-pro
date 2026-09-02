@@ -4,7 +4,7 @@
 
 **Goal:** Build a closed immutable provider-independent local M7 shadow handoff and bounded cohort evaluator with no external-write surface.
 
-**Architecture:** A pure contract module validates explicit M4/M5/M6 bridges and emits only a frozen `ready_for_human` bundle. A separate evaluator aggregates bounded non-PII outcomes for one exact trust tuple and returns stable failures or an L2 human-review recommendation. M4 runtime/store/service wiring stays absent.
+**Architecture:** A pure contract module validates explicit M4/M5/M6 transport bridges and emits only a frozen `blocked_pending_durable_lookup` bundle. A separate evaluator recomputes bounded non-PII outcome aggregates for one exact trust tuple and returns stable failures or an L2 human-review recommendation. M4 runtime/store/service wiring stays absent.
 
 **Tech Stack:** Python 3.11 frozen dataclasses, standard-library JSON/SHA-256, JSON Schema 2020-12, `unittest`, `uv --frozen`.
 
@@ -13,11 +13,11 @@
 ## Global Constraints
 
 - Exact local M4 base: `9fe779ab9f90719201acfd01160d3452658ff075`.
-- M5 `141e51e75b2bb337fa3bb1544639c6c46c287309` descends from local M4 but is not an accepted runtime dependency; M6 `5c5c37136f20404a927fd2ad7621ad0f7fcae8e6` remains provisional on older M5 bridge `61db79f07904ae5facb244c34b26c8383504dd88`.
-- Output is only `ready_for_human`; maximum recommendation is `eligible_for_human_l2_review`.
+- Current field-shape references are M5 `cbfca6550acaa50508eec5829df2724093e32076` and M6 `534b66753ca865974d520f60103b3a18292295ba`; both remain provisional and are never serialized as acceptance authority.
+- Output is only `blocked_pending_durable_lookup`; maximum cohort recommendation is `eligible_for_human_l2_review`.
 - No service/API/store/migration, provider, network, credential, push, PR, merge, release or deploy surface.
 - Hard deadline `2026-09-08 00:00 UTC+3` never waives a gate.
-- Pure contract/evaluator source may proceed against opaque exact bridge values. Activation, completion and durable/runtime integration are **BLOCKED** until accepted M5 and M6 form factual M4 → M5 → M6 ancestry.
+- Pure contract/evaluator source may proceed against opaque bridge values only as non-authoritative transport. Activation, completion and durable/runtime integration are **BLOCKED** until exact accepted M5/M6 ancestry and canonical producer bodies are independently loaded and recomputed.
 - Every M5/M6 SHA change pauses downstream writes until a three-way path-overlap and field-level contract-compatibility audit/restack is recorded.
 
 ---
@@ -34,11 +34,11 @@
 
 - [x] **Step 1: Audit current provisional dependencies**
 
-M5 `141e51e…` and M6 `5c5c371…` both have merge-base M4 `9fe779…`, but their mutual merge-base is older M5 `61db79f…`. Current M5 retains execution-contract blob `e4237bf…` and closes existing TaskPacket/ExecutionEvent/OpenAPI schema descriptions without changing the Python producer fields; M6 carries old execution blob `d9cb3c8…` and still exposes no task/run/fence/packet/result linkage. M5's documentation/architecture paths overlap future M7 documentation work, but the M7 source/schema paths remain disjoint, so opaque pure contracts stand and activation stays blocked.
+M5 `cbfca655…` defines the provisional TaskPacket, RunManifest, WorkspaceSnapshot and WorkspaceResult surfaces; M6 `534b667…` preserves the provisional envelope, execution binding, validation-inputs, subject, evidence-set and verdict surfaces byte-for-byte from `87897ff…`. The audit consumes only those observable field names and relationships: M4 intent/lease packet binds `legacy_intent_digest`, M5 TaskPacket stays separate, packet authority equals snapshot input, and snapshot result equals WorkspaceResult and M6 subject head. Exact dependency acceptance remains an external ledger fact and activation stays blocked.
 
 - [x] **Step 2: Write failing tests**
 
-Cover unknown versions/fields, accepted dependency states, task/run/fence/packet/head equality, pass-only complete semantic evidence, frozen values, digest mutation and forbidden push/URL/command/credential/auto-merge fields.
+Cover unknown versions/fields, rejection of invented dependency/product/evidence fields, directional task/run/fence/packet/head bindings, exact closed pass verdict, blocked lookup state, frozen values, digest mutation and forbidden push/URL/command/credential/auto-merge fields.
 
 - [x] **Step 3: Run RED**
 
@@ -75,7 +75,7 @@ Expected: missing evaluator import.
 
 - [x] **Step 3: Implement and run GREEN**
 
-Reject empty/>10,000 cohorts, duplicate outcome/bundle identity and tuple mismatch; compute integer counts, exact millionths, nearest-rank p95 and median; sort failures; never emit promotion/merge actions. Run both M7 test modules.
+Reject empty/>10,000 cohorts, duplicate outcome/bundle identity, tuple mismatch and direct aggregate input; recompute integer counts, exact millionths, nearest-rank p95 and median from the cohort; sort failures; never emit promotion/merge actions. Run both M7 test modules.
 
 - [x] **Step 4: Commit**
 

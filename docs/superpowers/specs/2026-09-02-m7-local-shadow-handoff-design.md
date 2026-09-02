@@ -6,7 +6,7 @@ Approved local-source design under route `e5911c3f8721`, now represented by prov
 
 ## Decision
 
-Implement M7 provisionally as two dependency-free local modules: frozen closed canonical contracts and a deterministic bounded cohort evaluator. Consume explicit M4/M5/M6 bridge values instead of importing provisional producer code. Expose only an immutable `ready_for_human` bundle and fixed manual operator instructions; keep activation and runtime/durable wiring absent until factual producer contracts exist and dependency-ordered restack passes.
+Implement M7 provisionally as two dependency-free local modules: frozen closed canonical contracts and a deterministic bounded cohort evaluator. Consume explicit M4/M5/M6 bridge values without importing provisional producer code, but classify those opaque values as transport claims. Expose only an immutable `blocked_pending_durable_lookup` inspection bundle and fixed manual operator instructions; readiness requires future durable canonical producer lookup plus dependency-ordered external acceptance.
 
 ## Alternatives
 
@@ -16,19 +16,21 @@ Implement M7 provisionally as two dependency-free local modules: frozen closed c
 
 ## Public model
 
-- `M4ControlPlaneBridgeV1`, `M5ExecutionBridgeV1`, `M6SemanticBridgeV1`: repeat task/run/fence/packet/head identities and bind producer product SHAs plus stage digests.
-- `ShadowTaskEvidenceV1`: exact cross-stage identity root plus local evidence, receipt-set and source-bundle digests.
+- `M4ControlPlaneBridgeV1`: preserves factual task/run/owner/fence plus M4 intent and lease-packet fields.
+- `M5ExecutionBridgeV1`: preserves the separate legacy-intent and TaskPacket identities, manifest/snapshot/result digests, packet authority input SHA and snapshot/result SHAs.
+- `M6SemanticBridgeV1`: preserves exact envelope/binding/validation-inputs/subject/evidence-set/verdict producer names, subject/result SHA linkage and a canonical closed pass verdict.
+- `ShadowTaskEvidenceV1`: exact cross-stage identity root; it contains no product SHA, dependency-state, synthetic receipt or caller-authored authority field.
 - `OperatorHandoffProposalV1`: subject digest, `external_capability=absent`, `recommended_action=human_review`, fixed sorted instruction enums.
-- `ReadyForPrBundleV1`: roadmap-compatible name; closed `status=ready_for_human`; digest covers every nested canonical field.
+- `ReadyForPrBundleV1`: roadmap-compatible historical name; closed `status=blocked_pending_durable_lookup`; digest covers every nested canonical field but grants no readiness.
 - `ShadowCohortKeyV1`: repository, change class, provider-neutral agent/validator/model/prompt/policy/runner/holdout/authority tuple.
 - `ShadowOutcomeV1`: bounded human decision and numeric quality/safety/cost/latency evidence without bodies or PII.
 - Aggregate/evaluation: literal integer counts/millionths and sorted failure classes; maximum recommendation `eligible_for_human_l2_review`.
 
 ## Invalidation, replay and gate
 
-Shared bridge fields match exactly. M6 must be pass with complete coverage, zero unsupported passes and zero contradictions. Any field mutation rotates the digest. Outcomes are unique by outcome ID and bundle digest.
+Shared bridge fields match exactly. Snapshot input equals TaskPacket authority; snapshot result equals WorkspaceResult and M6 subject head. M6 must carry the exact deterministic closed pass verdict, whose body/digest and envelope digest are recomputed. Other opaque digests do not become authority until durable integration loads their canonical producer bodies. Outcomes are unique by outcome ID and bundle digest.
 
-The evaluator encodes the roadmap gate: at least 30 human-merged accepted tasks; 14 observation days or a release cycle; 30 baseline tasks; acceptance ≥90%; rework ≤10%; false negatives ≤5%, false positives/disagreement ≤10%; p95 repairs ≤2 and max 3; all budget/deadline/SLO bounds; ≥30% median review reduction; zero critical/high misses, security misses, unauthorized effects, rollbacks, escaped defects, duplicates and unaccounted calls; 100% injection containment. A pass recommends only human L2 review and cannot promote policy.
+The evaluator accepts only `ShadowCohortV1` and recomputes the aggregate from its exact outcomes; a directly constructed aggregate is never an authorization input. It then encodes the roadmap gate: at least 30 human-merged accepted tasks; 14 observation days or a release cycle; 30 baseline tasks; acceptance ≥90%; rework ≤10%; false negatives ≤5%, false positives/disagreement ≤10%; p95 repairs ≤2 and max 3; all budget/deadline/SLO bounds; ≥30% median review reduction; zero critical/high misses, security misses, unauthorized effects, rollbacks, escaped defects, duplicates and unaccounted calls; 100% injection containment. A pass recommends only human L2 review and cannot promote policy.
 
 ## M4 → M9 connectivity
 

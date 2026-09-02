@@ -1,3 +1,4 @@
+from dataclasses import replace
 import unittest
 
 from adaptive_factory.contracts import ContractError
@@ -131,11 +132,24 @@ def cohort_payload(
 
 
 def evaluate_payload(payload: dict[str, object]):
-    aggregate = aggregate_shadow_cohort(ShadowCohortV1.from_dict(payload))
-    return aggregate, evaluate_shadow_cohort(aggregate)
+    cohort = ShadowCohortV1.from_dict(payload)
+    aggregate = aggregate_shadow_cohort(cohort)
+    return aggregate, evaluate_shadow_cohort(cohort)
 
 
 class ShadowEvaluationTests(unittest.TestCase):
+    def test_directly_forged_aggregate_cannot_authorize_a_recommendation(self):
+        cohort = ShadowCohortV1.from_dict(cohort_payload())
+        aggregate = aggregate_shadow_cohort(cohort)
+        forged = replace(
+            aggregate,
+            sample_count=1,
+            human_merged_accepted_count=30,
+            first_pass_accepted_count=30,
+        )
+        with self.assertRaisesRegex(ContractError, "invalid_contract"):
+            evaluate_shadow_cohort(forged)
+
     def test_thirty_synthetic_rows_have_hand_derived_integer_metrics(self):
         aggregate, evaluation = evaluate_payload(cohort_payload())
         self.assertEqual(aggregate.sample_count, 30)

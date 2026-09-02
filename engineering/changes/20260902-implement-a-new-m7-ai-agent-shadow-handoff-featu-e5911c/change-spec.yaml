@@ -9,17 +9,17 @@
   },
   "risk": {"tier": "red", "domains": ["ai", "api", "security"]},
   "acceptance_criteria": [
-    {"id": "AC-001", "statement": "Closed canonical M7 bridge and bundle contracts bind exact M4, M5 and M6 product SHAs plus task, run, fence, packet, manifest, semantic verdict, source evidence and local receipt digests.", "evidence": []},
-    {"id": "AC-002", "statement": "The only bundle state is ready_for_human and its frozen canonical bytes and digest change after any bound field mutation.", "evidence": []},
+    {"id": "AC-001", "statement": "Closed canonical M7 bridges preserve separate M4 legacy intent/lease packet and M5 TaskPacket identities and bind the actual M5 packet, manifest, snapshot and result plus M6 envelope, binding, validation-inputs, subject, evidence-set and closed-pass verdict fields.", "evidence": []},
+    {"id": "AC-002", "statement": "The pure bundle state is blocked_pending_durable_lookup; ready_for_human is rejected until future durable producer lookup can recompute every opaque producer digest.", "evidence": []},
     {"id": "AC-003", "statement": "Stale, replayed, incomplete, contradictory or non-pass predecessor evidence is rejected with stable typed failure classes.", "evidence": []},
     {"id": "AC-004", "statement": "A closed local operator proposal supplies immutable manual instructions and has no push, pull-request, credential, network, auto-merge or external-write capability surface.", "evidence": []},
-    {"id": "AC-005", "statement": "Shadow outcomes and exact-tuple cohort aggregation use bounded integer numerators and denominators, enforce replay uniqueness, and deterministically classify all roadmap shadow-gate failures.", "evidence": []},
+    {"id": "AC-005", "statement": "Shadow outcomes use bounded integer numerators and denominators, enforce replay uniqueness, and evaluation recomputes the exact aggregate from cohort outcomes rather than accepting a caller aggregate.", "evidence": []},
     {"id": "AC-006", "statement": "M7 remains a pure local library on M4; durable service, store and runtime integration is absent and explicitly blocked until accepted M5 and M6 are dependency-ordered and restacked.", "evidence": []}
   ],
   "invariants": [
     {"id": "INV-001", "statement": "No M7 value can create, push, open, update, merge, release, deploy or publish anything.", "evidence": []},
     {"id": "INV-002", "statement": "No secret, credential, PII, untrusted body, prompt, reasoning trace or free-form remote target is represented by an M7 contract.", "evidence": []},
-    {"id": "INV-003", "statement": "Cohorts never mix exact trust-profile tuples and missing baseline or observation evidence cannot become a positive recommendation.", "evidence": []}
+    {"id": "INV-003", "statement": "Cohorts never mix exact trust-profile tuples, forged aggregates cannot authorize a recommendation, and missing baseline or observation evidence cannot become a positive recommendation.", "evidence": []}
   ],
   "forbidden_outcomes": [
     {"id": "FORBID-001", "statement": "Provisional M5 or M6 source is described as accepted, integrated, externally verified or merge-eligible.", "evidence": []},

@@ -39,25 +39,25 @@
       ],
       "properties": {
         "schema_version": {"const": 1},
-        "repository_id": {"$ref": "#/$defs/identifier"},
+        "repository_id": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/identifier"},
         "change_class": {
           "enum": ["ai", "api", "bugfix", "data", "feature", "integration", "release", "security"]
         },
-        "agent_digest": {"$ref": "#/$defs/digest"},
-        "validator_digest": {"$ref": "#/$defs/digest"},
-        "model_digest": {"$ref": "#/$defs/digest"},
-        "prompt_digest": {"$ref": "#/$defs/digest"},
-        "policy_digest": {"$ref": "#/$defs/digest"},
-        "runner_digest": {"$ref": "#/$defs/digest"},
-        "holdout_digest": {"$ref": "#/$defs/digest"},
-        "authority_digest": {"$ref": "#/$defs/digest"}
+        "agent_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"},
+        "validator_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"},
+        "model_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"},
+        "prompt_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"},
+        "policy_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"},
+        "runner_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"},
+        "holdout_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"},
+        "authority_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"}
       }
     }
   },
   "properties": {
     "schema_version": {"const": 1},
-    "cohort_id": {"$ref": "#/$defs/identifier"},
-    "key": {"$ref": "#/$defs/cohort_key"},
+    "cohort_id": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/identifier"},
+    "key": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/cohort_key"},
     "observation_days": {"type": "integer", "minimum": 0, "maximum": 3650},
     "release_cycle_complete": {"type": "boolean"},
     "baseline_review_seconds": {

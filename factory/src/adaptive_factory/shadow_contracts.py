@@ -4,7 +4,16 @@ from dataclasses import dataclass, fields
 import hashlib
 from typing import Any, ClassVar, Mapping
 
-from .contracts import ContractError, HEX40, HEX64, _closed, _hex, _id, canonical_json
+from .contracts import (
+    ContractError,
+    HEX40,
+    HEX64,
+    _closed,
+    _hex,
+    _id,
+    canonical_digest,
+    canonical_json,
+)
 
 
 MAX_FENCE = 9_223_372_036_854_775_807
@@ -51,12 +60,6 @@ def _boolean(value: Any, name: str) -> bool:
     return value
 
 
-def _accepted(value: Any) -> str:
-    if value != "accepted":
-        raise ContractError("dependency_not_accepted")
-    return "accepted"
-
-
 def _domain_digest(domain: str, value: Any) -> str:
     return hashlib.sha256(domain.encode("ascii") + b"\x00" + canonical_json(value)).hexdigest()
 
@@ -83,29 +86,28 @@ class _ShadowValue:
 @dataclass(frozen=True)
 class M4ControlPlaneBridgeV1(_ShadowValue):
     schema_version: int
-    product_sha: str
-    dependency_state: str
     task_id: str
     run_id: str
+    owner: str
+    role: str
     fence: int
-    task_packet_digest: str
-    exact_head_sha: str
-    task_record_digest: str
-    control_plane_evidence_digest: str
+    intent_digest: str
+    lease_packet_digest: str
 
     DOMAIN: ClassVar[str] = "adaptive-factory.m7-m4-control-plane-bridge/v1"
 
     def __post_init__(self) -> None:
         _version(self.schema_version, "m4")
-        _hex(self.product_sha, "m4.product_sha", HEX40)
-        _accepted(self.dependency_state)
         _identifier(self.task_id, "m4.task_id")
         _identifier(self.run_id, "m4.run_id")
+        _identifier(self.owner, "m4.owner")
+        if self.role != "writer":
+            raise ContractError("writer_required", "m4.role")
         _integer(self.fence, "m4.fence", 1, MAX_FENCE)
-        _hex(self.task_packet_digest, "m4.task_packet_digest", HEX64)
-        _hex(self.exact_head_sha, "m4.exact_head_sha", HEX40)
-        _hex(self.task_record_digest, "m4.task_record_digest", HEX64)
-        _hex(self.control_plane_evidence_digest, "m4.control_plane_evidence_digest", HEX64)
+        _hex(self.intent_digest, "m4.intent_digest", HEX64)
+        _hex(self.lease_packet_digest, "m4.lease_packet_digest", HEX64)
+        if self.intent_digest != self.lease_packet_digest:
+            raise ContractError("stale_binding", "m4.lease_packet_digest")
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "M4ControlPlaneBridgeV1":
@@ -113,60 +115,74 @@ class M4ControlPlaneBridgeV1(_ShadowValue):
         _closed(data, _field_names(cls))
         return cls(
             _version(data["schema_version"], "m4"),
-            _hex(data["product_sha"], "m4.product_sha", HEX40),
-            _accepted(data["dependency_state"]),
             _identifier(data["task_id"], "m4.task_id"),
             _identifier(data["run_id"], "m4.run_id"),
+            _identifier(data["owner"], "m4.owner"),
+            data["role"],
             _integer(data["fence"], "m4.fence", 1, MAX_FENCE),
-            _hex(data["task_packet_digest"], "m4.task_packet_digest", HEX64),
-            _hex(data["exact_head_sha"], "m4.exact_head_sha", HEX40),
-            _hex(data["task_record_digest"], "m4.task_record_digest", HEX64),
-            _hex(data["control_plane_evidence_digest"], "m4.control_plane_evidence_digest", HEX64),
+            _hex(data["intent_digest"], "m4.intent_digest", HEX64),
+            _hex(data["lease_packet_digest"], "m4.lease_packet_digest", HEX64),
         )
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema_version": self.schema_version,
-            "product_sha": self.product_sha,
-            "dependency_state": self.dependency_state,
             "task_id": self.task_id,
             "run_id": self.run_id,
+            "owner": self.owner,
+            "role": self.role,
             "fence": self.fence,
-            "task_packet_digest": self.task_packet_digest,
-            "exact_head_sha": self.exact_head_sha,
-            "task_record_digest": self.task_record_digest,
-            "control_plane_evidence_digest": self.control_plane_evidence_digest,
+            "intent_digest": self.intent_digest,
+            "lease_packet_digest": self.lease_packet_digest,
         }
 
 
 @dataclass(frozen=True)
 class M5ExecutionBridgeV1(_ShadowValue):
     schema_version: int
-    product_sha: str
-    dependency_state: str
     task_id: str
     run_id: str
+    owner: str
+    role: str
     fence: int
+    repository_id: str
+    legacy_intent_digest: str
     task_packet_digest: str
-    exact_head_sha: str
     run_manifest_digest: str
+    workspace_snapshot_digest: str
     workspace_result_digest: str
-    execution_authority_digest: str
+    authority_exact_head_sha: str
+    snapshot_input_head_sha: str
+    snapshot_result_head_sha: str
+    result_exact_head_sha: str
 
     DOMAIN: ClassVar[str] = "adaptive-factory.m7-m5-execution-bridge/v1"
 
     def __post_init__(self) -> None:
         _version(self.schema_version, "m5")
-        _hex(self.product_sha, "m5.product_sha", HEX40)
-        _accepted(self.dependency_state)
         _identifier(self.task_id, "m5.task_id")
         _identifier(self.run_id, "m5.run_id")
+        _identifier(self.owner, "m5.owner")
+        if self.role != "writer":
+            raise ContractError("writer_required", "m5.role")
         _integer(self.fence, "m5.fence", 1, MAX_FENCE)
+        _identifier(self.repository_id, "m5.repository_id")
+        _hex(self.legacy_intent_digest, "m5.legacy_intent_digest", HEX64)
         _hex(self.task_packet_digest, "m5.task_packet_digest", HEX64)
-        _hex(self.exact_head_sha, "m5.exact_head_sha", HEX40)
         _hex(self.run_manifest_digest, "m5.run_manifest_digest", HEX64)
+        _hex(self.workspace_snapshot_digest, "m5.workspace_snapshot_digest", HEX64)
         _hex(self.workspace_result_digest, "m5.workspace_result_digest", HEX64)
-        _hex(self.execution_authority_digest, "m5.execution_authority_digest", HEX64)
+        for name in (
+            "authority_exact_head_sha",
+            "snapshot_input_head_sha",
+            "snapshot_result_head_sha",
+            "result_exact_head_sha",
+        ):
+            _hex(getattr(self, name), f"m5.{name}", HEX40)
+        if self.authority_exact_head_sha != self.snapshot_input_head_sha:
+            raise ContractError("stale_binding", "m5.snapshot_input_head_sha")
+        if self.snapshot_result_head_sha != self.result_exact_head_sha:
+            raise ContractError("stale_binding", "m5.snapshot_result_head_sha")
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "M5ExecutionBridgeV1":
@@ -174,87 +190,183 @@ class M5ExecutionBridgeV1(_ShadowValue):
         _closed(data, _field_names(cls))
         return cls(
             _version(data["schema_version"], "m5"),
-            _hex(data["product_sha"], "m5.product_sha", HEX40),
-            _accepted(data["dependency_state"]),
             _identifier(data["task_id"], "m5.task_id"),
             _identifier(data["run_id"], "m5.run_id"),
+            _identifier(data["owner"], "m5.owner"),
+            data["role"],
             _integer(data["fence"], "m5.fence", 1, MAX_FENCE),
+            _identifier(data["repository_id"], "m5.repository_id"),
+            _hex(data["legacy_intent_digest"], "m5.legacy_intent_digest", HEX64),
             _hex(data["task_packet_digest"], "m5.task_packet_digest", HEX64),
-            _hex(data["exact_head_sha"], "m5.exact_head_sha", HEX40),
             _hex(data["run_manifest_digest"], "m5.run_manifest_digest", HEX64),
+            _hex(data["workspace_snapshot_digest"], "m5.workspace_snapshot_digest", HEX64),
             _hex(data["workspace_result_digest"], "m5.workspace_result_digest", HEX64),
-            _hex(data["execution_authority_digest"], "m5.execution_authority_digest", HEX64),
+            _hex(data["authority_exact_head_sha"], "m5.authority_exact_head_sha", HEX40),
+            _hex(data["snapshot_input_head_sha"], "m5.snapshot_input_head_sha", HEX40),
+            _hex(data["snapshot_result_head_sha"], "m5.snapshot_result_head_sha", HEX40),
+            _hex(data["result_exact_head_sha"], "m5.result_exact_head_sha", HEX40),
         )
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema_version": self.schema_version,
-            "product_sha": self.product_sha,
-            "dependency_state": self.dependency_state,
             "task_id": self.task_id,
             "run_id": self.run_id,
+            "owner": self.owner,
+            "role": self.role,
             "fence": self.fence,
+            "repository_id": self.repository_id,
+            "legacy_intent_digest": self.legacy_intent_digest,
             "task_packet_digest": self.task_packet_digest,
-            "exact_head_sha": self.exact_head_sha,
             "run_manifest_digest": self.run_manifest_digest,
+            "workspace_snapshot_digest": self.workspace_snapshot_digest,
             "workspace_result_digest": self.workspace_result_digest,
-            "execution_authority_digest": self.execution_authority_digest,
+            "authority_exact_head_sha": self.authority_exact_head_sha,
+            "snapshot_input_head_sha": self.snapshot_input_head_sha,
+            "snapshot_result_head_sha": self.snapshot_result_head_sha,
+            "result_exact_head_sha": self.result_exact_head_sha,
         }
+
+
+@dataclass(frozen=True)
+class M6PassVerdictV1:
+    schema_version: int
+    subject_digest: str
+    decision: str
+    decision_source: str
+    finding_identity_digests: tuple[str, ...]
+    duplicate_identity_digests: tuple[str, ...]
+    correlated_requirement_keys: tuple[str, ...]
+    contradicted_requirement_keys: tuple[str, ...]
+    unsupported_pass_requirement_keys: tuple[str, ...]
+    residual_risk: str
+
+    def __post_init__(self) -> None:
+        _version(self.schema_version, "m6.verdict")
+        _hex(self.subject_digest, "m6.verdict.subject_digest", HEX64)
+        if self.decision != "pass" or self.decision_source != "deterministic_adjudicator":
+            raise ContractError("semantic_not_pass")
+        for name in (
+            "finding_identity_digests",
+            "duplicate_identity_digests",
+            "correlated_requirement_keys",
+            "contradicted_requirement_keys",
+            "unsupported_pass_requirement_keys",
+        ):
+            if getattr(self, name) != ():
+                raise ContractError("semantic_not_pass", name)
+        if self.residual_risk != "none":
+            raise ContractError("semantic_not_pass", "residual_risk")
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "M6PassVerdictV1":
+        data = _object(data, "m6.verdict")
+        _closed(data, _field_names(cls))
+        list_fields = (
+            "finding_identity_digests",
+            "duplicate_identity_digests",
+            "correlated_requirement_keys",
+            "contradicted_requirement_keys",
+            "unsupported_pass_requirement_keys",
+        )
+        if any(not isinstance(data[name], list) for name in list_fields):
+            raise ContractError("invalid_contract", "m6.verdict")
+        return cls(
+            _version(data["schema_version"], "m6.verdict"),
+            _hex(data["subject_digest"], "m6.verdict.subject_digest", HEX64),
+            data["decision"],
+            data["decision_source"],
+            *(tuple(data[name]) for name in list_fields),
+            data["residual_risk"],
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "subject_digest": self.subject_digest,
+            "decision": self.decision,
+            "decision_source": self.decision_source,
+            "finding_identity_digests": list(self.finding_identity_digests),
+            "duplicate_identity_digests": list(self.duplicate_identity_digests),
+            "correlated_requirement_keys": list(self.correlated_requirement_keys),
+            "contradicted_requirement_keys": list(self.contradicted_requirement_keys),
+            "unsupported_pass_requirement_keys": list(self.unsupported_pass_requirement_keys),
+            "residual_risk": self.residual_risk,
+        }
+
+    @property
+    def digest(self) -> str:
+        return canonical_digest(self.to_dict())
 
 
 @dataclass(frozen=True)
 class M6SemanticBridgeV1(_ShadowValue):
     schema_version: int
-    product_sha: str
-    dependency_state: str
     task_id: str
     run_id: str
+    owner: str
+    role: str
     fence: int
+    repository_id: str
+    legacy_intent_digest: str
     task_packet_digest: str
-    exact_head_sha: str
-    semantic_subject_digest: str
-    semantic_verdict_digest: str
-    semantic_evidence_digest: str
-    semantic_decision: str
-    coverage_millionths: int
-    contradicted_requirement_count: int
-    unsupported_pass_requirement_count: int
+    run_manifest_digest: str
+    workspace_snapshot_digest: str
+    workspace_result_digest: str
+    binding_input_head_sha: str
+    binding_exact_head_sha: str
+    subject_exact_head_sha: str
+    envelope_digest: str
+    binding_digest: str
+    validation_inputs_digest: str
+    subject_digest: str
+    evidence_set_digest: str
+    verdict_digest: str
+    verdict: M6PassVerdictV1
 
     DOMAIN: ClassVar[str] = "adaptive-factory.m7-m6-semantic-bridge/v1"
 
     def __post_init__(self) -> None:
         _version(self.schema_version, "m6")
-        _hex(self.product_sha, "m6.product_sha", HEX40)
-        _accepted(self.dependency_state)
         _identifier(self.task_id, "m6.task_id")
         _identifier(self.run_id, "m6.run_id")
+        _identifier(self.owner, "m6.owner")
+        if self.role != "writer":
+            raise ContractError("writer_required", "m6.role")
         _integer(self.fence, "m6.fence", 1, MAX_FENCE)
-        _hex(self.task_packet_digest, "m6.task_packet_digest", HEX64)
-        _hex(self.exact_head_sha, "m6.exact_head_sha", HEX40)
-        _hex(self.semantic_subject_digest, "m6.semantic_subject_digest", HEX64)
-        _hex(self.semantic_verdict_digest, "m6.semantic_verdict_digest", HEX64)
-        _hex(self.semantic_evidence_digest, "m6.semantic_evidence_digest", HEX64)
-        if self.semantic_decision != "pass":
-            raise ContractError("semantic_not_pass")
-        coverage = _integer(self.coverage_millionths, "m6.coverage_millionths", 0, 1_000_000)
-        contradictions = _integer(
-            self.contradicted_requirement_count,
-            "m6.contradicted_requirement_count",
-            0,
-            256,
+        _identifier(self.repository_id, "m6.repository_id")
+        for name in (
+            "legacy_intent_digest",
+            "task_packet_digest",
+            "run_manifest_digest",
+            "workspace_snapshot_digest",
+            "workspace_result_digest",
+            "envelope_digest",
+            "binding_digest",
+            "validation_inputs_digest",
+            "subject_digest",
+            "evidence_set_digest",
+            "verdict_digest",
+        ):
+            _hex(getattr(self, name), f"m6.{name}", HEX64)
+        for name in ("binding_input_head_sha", "binding_exact_head_sha", "subject_exact_head_sha"):
+            _hex(getattr(self, name), f"m6.{name}", HEX40)
+        if not isinstance(self.verdict, M6PassVerdictV1):
+            raise ContractError("invalid_contract", "m6.verdict")
+        if self.verdict.subject_digest != self.subject_digest:
+            raise ContractError("stale_binding", "m6.verdict.subject_digest")
+        if self.verdict.digest != self.verdict_digest:
+            raise ContractError("digest_mismatch", "m6.verdict_digest")
+        expected_envelope = canonical_digest(
+            {
+                "contract": "adaptive-factory.semantic-subject-envelope/v1",
+                "binding_digest": self.binding_digest,
+                "validation_inputs_digest": self.validation_inputs_digest,
+                "subject_digest": self.subject_digest,
+            }
         )
-        unsupported = _integer(
-            self.unsupported_pass_requirement_count,
-            "m6.unsupported_pass_requirement_count",
-            0,
-            256,
-        )
-        if coverage != 1_000_000:
-            raise ContractError("incomplete_evidence")
-        if contradictions:
-            raise ContractError("contradictory_evidence")
-        if unsupported:
-            raise ContractError("incomplete_evidence", "unsupported_pass")
+        if expected_envelope != self.envelope_digest:
+            raise ContractError("digest_mismatch", "m6.envelope_digest")
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "M6SemanticBridgeV1":
@@ -262,49 +374,53 @@ class M6SemanticBridgeV1(_ShadowValue):
         _closed(data, _field_names(cls))
         return cls(
             _version(data["schema_version"], "m6"),
-            _hex(data["product_sha"], "m6.product_sha", HEX40),
-            _accepted(data["dependency_state"]),
             _identifier(data["task_id"], "m6.task_id"),
             _identifier(data["run_id"], "m6.run_id"),
+            _identifier(data["owner"], "m6.owner"),
+            data["role"],
             _integer(data["fence"], "m6.fence", 1, MAX_FENCE),
+            _identifier(data["repository_id"], "m6.repository_id"),
+            _hex(data["legacy_intent_digest"], "m6.legacy_intent_digest", HEX64),
             _hex(data["task_packet_digest"], "m6.task_packet_digest", HEX64),
-            _hex(data["exact_head_sha"], "m6.exact_head_sha", HEX40),
-            _hex(data["semantic_subject_digest"], "m6.semantic_subject_digest", HEX64),
-            _hex(data["semantic_verdict_digest"], "m6.semantic_verdict_digest", HEX64),
-            _hex(data["semantic_evidence_digest"], "m6.semantic_evidence_digest", HEX64),
-            data["semantic_decision"],
-            _integer(data["coverage_millionths"], "m6.coverage_millionths", 0, 1_000_000),
-            _integer(
-                data["contradicted_requirement_count"],
-                "m6.contradicted_requirement_count",
-                0,
-                256,
-            ),
-            _integer(
-                data["unsupported_pass_requirement_count"],
-                "m6.unsupported_pass_requirement_count",
-                0,
-                256,
-            ),
+            _hex(data["run_manifest_digest"], "m6.run_manifest_digest", HEX64),
+            _hex(data["workspace_snapshot_digest"], "m6.workspace_snapshot_digest", HEX64),
+            _hex(data["workspace_result_digest"], "m6.workspace_result_digest", HEX64),
+            _hex(data["binding_input_head_sha"], "m6.binding_input_head_sha", HEX40),
+            _hex(data["binding_exact_head_sha"], "m6.binding_exact_head_sha", HEX40),
+            _hex(data["subject_exact_head_sha"], "m6.subject_exact_head_sha", HEX40),
+            _hex(data["envelope_digest"], "m6.envelope_digest", HEX64),
+            _hex(data["binding_digest"], "m6.binding_digest", HEX64),
+            _hex(data["validation_inputs_digest"], "m6.validation_inputs_digest", HEX64),
+            _hex(data["subject_digest"], "m6.subject_digest", HEX64),
+            _hex(data["evidence_set_digest"], "m6.evidence_set_digest", HEX64),
+            _hex(data["verdict_digest"], "m6.verdict_digest", HEX64),
+            M6PassVerdictV1.from_dict(data["verdict"]),
         )
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema_version": self.schema_version,
-            "product_sha": self.product_sha,
-            "dependency_state": self.dependency_state,
             "task_id": self.task_id,
             "run_id": self.run_id,
+            "owner": self.owner,
+            "role": self.role,
             "fence": self.fence,
+            "repository_id": self.repository_id,
+            "legacy_intent_digest": self.legacy_intent_digest,
             "task_packet_digest": self.task_packet_digest,
-            "exact_head_sha": self.exact_head_sha,
-            "semantic_subject_digest": self.semantic_subject_digest,
-            "semantic_verdict_digest": self.semantic_verdict_digest,
-            "semantic_evidence_digest": self.semantic_evidence_digest,
-            "semantic_decision": self.semantic_decision,
-            "coverage_millionths": self.coverage_millionths,
-            "contradicted_requirement_count": self.contradicted_requirement_count,
-            "unsupported_pass_requirement_count": self.unsupported_pass_requirement_count,
+            "run_manifest_digest": self.run_manifest_digest,
+            "workspace_snapshot_digest": self.workspace_snapshot_digest,
+            "workspace_result_digest": self.workspace_result_digest,
+            "binding_input_head_sha": self.binding_input_head_sha,
+            "binding_exact_head_sha": self.binding_exact_head_sha,
+            "subject_exact_head_sha": self.subject_exact_head_sha,
+            "envelope_digest": self.envelope_digest,
+            "binding_digest": self.binding_digest,
+            "validation_inputs_digest": self.validation_inputs_digest,
+            "subject_digest": self.subject_digest,
+            "evidence_set_digest": self.evidence_set_digest,
+            "verdict_digest": self.verdict_digest,
+            "verdict": self.verdict.to_dict(),
         }
 
 
@@ -314,9 +430,6 @@ class ShadowTaskEvidenceV1(_ShadowValue):
     m4: M4ControlPlaneBridgeV1
     m5: M5ExecutionBridgeV1
     m6: M6SemanticBridgeV1
-    local_evidence_digest: str
-    receipt_set_digest: str
-    source_bundle_digest: str
 
     DOMAIN: ClassVar[str] = "adaptive-factory.m7-shadow-task-evidence/v1"
 
@@ -328,19 +441,34 @@ class ShadowTaskEvidenceV1(_ShadowValue):
             raise ContractError("invalid_contract", "m5")
         if not isinstance(self.m6, M6SemanticBridgeV1):
             raise ContractError("invalid_contract", "m6")
-        bindings = (
-            "task_id",
-            "run_id",
-            "fence",
-            "task_packet_digest",
-            "exact_head_sha",
-        )
+        bindings = ("task_id", "run_id", "owner", "role", "fence")
         for field in bindings:
             if len({getattr(self.m4, field), getattr(self.m5, field), getattr(self.m6, field)}) != 1:
                 raise ContractError("stale_binding", field)
-        _hex(self.local_evidence_digest, "local_evidence_digest", HEX64)
-        _hex(self.receipt_set_digest, "receipt_set_digest", HEX64)
-        _hex(self.source_bundle_digest, "source_bundle_digest", HEX64)
+        if not (
+            self.m4.intent_digest
+            == self.m4.lease_packet_digest
+            == self.m5.legacy_intent_digest
+            == self.m6.legacy_intent_digest
+        ):
+            raise ContractError("stale_binding", "legacy_intent_digest")
+        for field in (
+            "repository_id",
+            "task_packet_digest",
+            "run_manifest_digest",
+            "workspace_snapshot_digest",
+            "workspace_result_digest",
+        ):
+            if getattr(self.m5, field) != getattr(self.m6, field):
+                raise ContractError("stale_binding", field)
+        if self.m6.binding_input_head_sha != self.m5.authority_exact_head_sha:
+            raise ContractError("stale_binding", "binding_input_head_sha")
+        if not (
+            self.m5.result_exact_head_sha
+            == self.m6.binding_exact_head_sha
+            == self.m6.subject_exact_head_sha
+        ):
+            raise ContractError("stale_binding", "subject_exact_head_sha")
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "ShadowTaskEvidenceV1":
@@ -351,9 +479,6 @@ class ShadowTaskEvidenceV1(_ShadowValue):
             M4ControlPlaneBridgeV1.from_dict(data["m4"]),
             M5ExecutionBridgeV1.from_dict(data["m5"]),
             M6SemanticBridgeV1.from_dict(data["m6"]),
-            _hex(data["local_evidence_digest"], "local_evidence_digest", HEX64),
-            _hex(data["receipt_set_digest"], "receipt_set_digest", HEX64),
-            _hex(data["source_bundle_digest"], "source_bundle_digest", HEX64),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -362,9 +487,6 @@ class ShadowTaskEvidenceV1(_ShadowValue):
             "m4": self.m4.to_dict(),
             "m5": self.m5.to_dict(),
             "m6": self.m6.to_dict(),
-            "local_evidence_digest": self.local_evidence_digest,
-            "receipt_set_digest": self.receipt_set_digest,
-            "source_bundle_digest": self.source_bundle_digest,
         }
 
 
@@ -425,7 +547,7 @@ class ReadyForPrBundleV1(_ShadowValue):
 
     def __post_init__(self) -> None:
         _version(self.schema_version, "ready_for_pr_bundle")
-        if self.status != "ready_for_human":
+        if self.status != "blocked_pending_durable_lookup":
             raise ContractError("invalid_bundle_status")
         if not isinstance(self.evidence, ShadowTaskEvidenceV1):
             raise ContractError("invalid_contract", "evidence")
@@ -463,11 +585,17 @@ class ReadyForPrBundleV1(_ShadowValue):
             raise ContractError("stale_binding", "operator_handoff.subject_digest")
         unsigned = {
             "schema_version": 1,
-            "status": "ready_for_human",
+            "status": "blocked_pending_durable_lookup",
             "evidence": evidence.to_dict(),
             "operator_handoff": operator_handoff.to_dict(),
         }
-        return cls(1, "ready_for_human", evidence, operator_handoff, _domain_digest(cls.DOMAIN, unsigned))
+        return cls(
+            1,
+            "blocked_pending_durable_lookup",
+            evidence,
+            operator_handoff,
+            _domain_digest(cls.DOMAIN, unsigned),
+        )
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "ReadyForPrBundleV1":
@@ -475,7 +603,7 @@ class ReadyForPrBundleV1(_ShadowValue):
         _closed(data, _field_names(cls))
         version = _version(data["schema_version"], "ready_for_pr_bundle")
         status = data["status"]
-        if status != "ready_for_human":
+        if status != "blocked_pending_durable_lookup":
             raise ContractError("invalid_bundle_status")
         evidence = ShadowTaskEvidenceV1.from_dict(data["evidence"])
         operator_handoff = OperatorHandoffProposalV1.from_dict(data["operator_handoff"])
