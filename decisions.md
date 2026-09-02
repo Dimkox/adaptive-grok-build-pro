@@ -368,3 +368,7 @@ Register all five M6 schemas and their owner while retaining fail-closed `unsupp
 ## 2026-09-02 — Separate exact M5 facts from authenticated semantic inputs
 
 Derive a semantic subject only from a verified writer `ready_for_human` packet/manifest/snapshot/result bundle, and bind terminal/artifact/attestation bodies through their recomputed canonical digests. Holdout, review, non-acceptance requirements, risk, diff policy and complete writer context remain a separate exact-result-bound input because current M5 does not durably contain them; this prevents invented provenance or reinterpretation of failed M5 results.
+
+## 2026-09-02 — Quarantine semantic repair handoffs until exact binding
+
+Mark every dedicated repair-broker intake and every proposal-digest source collision as unclaimable until an append-only binding proves the exact task, intent and proposal lineage. Carry the earliest deadline and remaining parent resource ceilings through that lineage, decrement semantic repair budget exactly once per child, and fail closed on stale authority or attempted limit reset.

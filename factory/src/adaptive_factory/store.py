@@ -33,6 +33,11 @@ from .semantic_contracts import (
     SemanticVerdictV1,
     ValidatorIdentityV1,
 )
+from .semantic_repair import (
+    RepairChildTaskBindingV1,
+    RepairLifecycleResult,
+    SemanticRepairRequestV1,
+)
 from .state import classify_retry
 from .workspace import (
     ArtifactAttestationUnavailable,
@@ -590,6 +595,95 @@ class PostgresSemanticCoordinatorStore:
         if record["subject_digest"] != subject_digest:
             raise StoreError("requested semantic verdict mismatch")
         return record
+
+    def request_repair(
+        self,
+        task_id: str,
+        repair_request: SemanticRepairRequestV1,
+        *,
+        idempotency_key: str,
+    ) -> RepairLifecycleResult:
+        if not isinstance(repair_request, SemanticRepairRequestV1):
+            raise StoreError("semantic repair request is invalid")
+        request_document = {
+            "contract": "adaptive-factory.semantic-repair-command/v1",
+            "idempotency_key": idempotency_key,
+            "task_id": task_id,
+            "repair_request": repair_request.to_dict(),
+        }
+        request_digest = canonical_digest(request_document)
+        request_canonical = canonical_json(request_document).decode("utf-8")
+        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            cursor.execute(
+                "SELECT factory.semantic_plan_repair(%s,%s,%s,%s)",
+                (idempotency_key, request_digest, request_canonical, task_id),
+            )
+            response = cursor.fetchone()[0]
+        if isinstance(response, str):
+            response = json.loads(response)
+        try:
+            result = RepairLifecycleResult.from_dict(response)
+        except (TypeError, ValueError) as exc:
+            raise StoreError("stored semantic repair result is corrupt") from exc
+        if (
+            result.subject_digest != repair_request.subject_digest
+            or result.verdict_digest != repair_request.verdict_digest
+            or result.cycle != repair_request.requested_cycle
+        ):
+            raise StoreError("stored semantic repair result binding mismatch")
+        if result.decision == "repair":
+            child = result.child_proposal
+            directive = result.directive
+            if (
+                child is None
+                or directive is None
+                or child.parent_task_id != task_id
+                or child.parent_workspace_result_digest
+                != repair_request.expected_workspace_result_digest
+                or child.parent_fence != repair_request.expected_fence
+                or child.parent_exact_head_sha != repair_request.expected_head_sha
+                or child.writer_id != repair_request.writer_id
+                or child.context_digest != repair_request.context_digest
+                or child.exact_base_sha != repair_request.expected_base_sha
+                or child.architecture_digest
+                != repair_request.expected_architecture_digest
+                or child.authority_digest != repair_request.expected_authority_digest
+                or child.diff_digest != repair_request.expected_diff_digest
+                or child.previous_child_proposal_digest
+                != repair_request.previous_child_proposal_digest
+                or directive.exact_head_sha != repair_request.expected_head_sha
+            ):
+                raise StoreError("stored semantic repair child binding mismatch")
+        elif (
+            result.escalation is None
+            or result.escalation.request_digest != request_digest
+        ):
+            raise StoreError("stored semantic repair escalation binding mismatch")
+        return result
+
+    def bind_repair_child(
+        self, binding: RepairChildTaskBindingV1
+    ) -> RepairChildTaskBindingV1:
+        if not isinstance(binding, RepairChildTaskBindingV1):
+            raise StoreError("semantic repair child binding is invalid")
+        canonical = canonical_json(binding.to_dict()).decode("utf-8")
+        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            cursor.execute(
+                "SELECT factory.semantic_bind_repair_child(%s,%s)",
+                (binding.digest, canonical),
+            )
+            response = cursor.fetchone()[0]
+        if isinstance(response, str):
+            response = json.loads(response)
+        try:
+            persisted = RepairChildTaskBindingV1.from_dict(response)
+        except (TypeError, ValueError) as exc:
+            raise StoreError("semantic repair child binding rejected") from exc
+        if persisted != binding or persisted.digest != binding.digest:
+            raise StoreError("semantic repair child binding mismatch")
+        return persisted
 
 
 class _PostgresSemanticRoleStore:
@@ -1365,8 +1459,14 @@ class PostgresFactoryStore:
                 ),
             )
             cursor.execute(
-                """INSERT INTO factory.tasks(task_id,intent_id,repository_id,source_type,source_id,state,generation,packet_digest,deadline_at,cost_limit_micros,token_limit,output_limit_bytes,event_limit,repair_limit,wall_limit_seconds)
-                VALUES (%s,%s,%s,%s,%s,'queued',%s,%s,now()+(%s * interval '1 second'),%s,%s,%s,%s,%s,%s) RETURNING deadline_at""",
+                """INSERT INTO factory.tasks(
+                task_id,intent_id,repository_id,source_type,source_id,state,generation,
+                packet_digest,deadline_at,cost_limit_micros,token_limit,
+                output_limit_bytes,event_limit,repair_limit,wall_limit_seconds,
+                intake_actor_kind,intake_actor_id)
+                VALUES (%s,%s,%s,%s,%s,'queued',%s,%s,
+                now()+(%s * interval '1 second'),%s,%s,%s,%s,%s,%s,%s,%s)
+                RETURNING deadline_at""",
                 (
                     task_id,
                     intent_id,
@@ -1382,6 +1482,8 @@ class PostgresFactoryStore:
                     intake.limits.max_events,
                     intake.limits.semantic_repairs,
                     intake.limits.wall_seconds,
+                    actor.kind,
+                    actor.actor_id,
                 ),
             )
             deadline = cursor.fetchone()[0]
@@ -1526,6 +1628,9 @@ class PostgresFactoryStore:
                 AND t.cost_reserved_micros=0 AND t.tokens_reserved=0 AND t.wall_reserved_seconds=0
                 AND NOT EXISTS (SELECT 1 FROM factory.budget_reservations b
                   WHERE b.task_id=t.task_id AND b.released_at IS NULL)
+                AND factory.semantic_task_claimable(
+                  t.task_id,t.intent_id,t.intake_actor_kind,t.intake_actor_id
+                )
                 ORDER BY t.created_at,t.task_id FOR UPDATE SKIP LOCKED LIMIT 1""",
                 (list(eligible_repositories),),
             )

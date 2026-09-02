@@ -6,7 +6,7 @@ from pathlib import PurePosixPath
 from typing import Iterable
 
 from .brokers import ProposalBroker
-from .contracts import TaskIntakeV1, canonical_digest
+from .contracts import HEX64, TaskIntakeV1, canonical_digest
 from .execution_contracts import (
     ExecutionContractError,
     ExecutionSelectionV1,
@@ -24,11 +24,15 @@ from .semantic_contracts import (
     SemanticSubjectV1,
     ValidatorIdentityV1,
 )
+from .semantic_repair import (
+    RepairChildTaskBindingV1,
+    RepairLifecycleResult,
+    SemanticRepairRequestV1,
+)
 from .workspace import (
     ArtifactAttestationRequest,
     ArtifactAttestationV1,
     WorkspaceError,
-    WorkspaceSnapshotUnavailable,
     WorkspaceSnapshotV1,
 )
 from .store import FenceError
@@ -36,6 +40,10 @@ from .store import FenceError
 
 class AuthorizationError(PermissionError):
     pass
+
+
+REPAIR_CHILD_BROKER_ACTOR_KIND = "repair_broker"
+REPAIR_CHILD_BROKER_ACTOR_ID = "semantic-repair-child-broker"
 
 
 @dataclass(frozen=True)
@@ -58,6 +66,7 @@ class FactoryService:
         semantic_store=None,
         semantic_validator_store=None,
         semantic_adjudicator_store=None,
+        repair_child_broker=None,
     ) -> None:
         self.store = store
         self.snapshot_broker = snapshot_broker
@@ -67,6 +76,7 @@ class FactoryService:
         self.semantic_store = semantic_store
         self.semantic_validator_store = semantic_validator_store
         self.semantic_adjudicator_store = semantic_adjudicator_store
+        self.repair_child_broker = repair_child_broker
 
     def readiness(self):
         return self.store.readiness()
@@ -87,6 +97,24 @@ class FactoryService:
     def intake(self, payload, *, actor: Actor, now: datetime):
         intake = TaskIntakeV1.from_dict(payload, now=now) if not isinstance(payload, TaskIntakeV1) else payload
         self._require(actor, "task:submit", intake.repository_id)
+        reserved_broker_identity = (
+            actor.kind == REPAIR_CHILD_BROKER_ACTOR_KIND
+            or actor.actor_id == REPAIR_CHILD_BROKER_ACTOR_ID
+        )
+        if reserved_broker_identity:
+            if (
+                actor.kind != REPAIR_CHILD_BROKER_ACTOR_KIND
+                or actor.actor_id != REPAIR_CHILD_BROKER_ACTOR_ID
+            ):
+                raise AuthorizationError("repair child broker identity is invalid")
+            if (
+                intake.source_type != "api"
+                or intake.source_id != intake.source_digest
+                or HEX64.fullmatch(intake.source_id) is None
+            ):
+                raise AuthorizationError(
+                    "repair child broker intake requires an exact proposal source"
+                )
         return self.store.intake(intake, actor, now)
 
     def get_task(self, task_id: str, *, actor: Actor):
@@ -270,6 +298,56 @@ class FactoryService:
         if self.semantic_store is None:
             raise AuthorizationError("semantic coordinator capability unavailable")
         return self.semantic_store.verdict_by_subject(task_id, subject_digest)
+
+    def request_semantic_repair(
+        self,
+        task_id: str,
+        repair_request,
+        *,
+        actor: Actor,
+        idempotency_key: str,
+        correlation_id: str | None = None,
+    ) -> RepairLifecycleResult:
+        self._require(actor, "semantic:repair")
+        if actor.kind != "operator":
+            raise AuthorizationError("semantic repair requires coordinator actor")
+        task = self.store.get_task(task_id)
+        self._require(actor, "semantic:repair", task.repository_id)
+        if self.semantic_store is None:
+            raise AuthorizationError("semantic coordinator capability unavailable")
+        request = (
+            repair_request
+            if isinstance(repair_request, SemanticRepairRequestV1)
+            else SemanticRepairRequestV1.from_dict(repair_request)
+        )
+        result = self.semantic_store.request_repair(
+            task_id, request, idempotency_key=idempotency_key
+        )
+        if not isinstance(result, RepairLifecycleResult):
+            raise ExecutionContractError("semantic_repair_result_invalid")
+        if result.decision == "repair":
+            if result.child_proposal is None:
+                raise ExecutionContractError("semantic_repair_child_missing")
+            if self.repair_child_broker is None:
+                raise ExecutionContractError("repair_child_broker_unavailable")
+            binding_wire = self.repair_child_broker.propose_repair_child(
+                result.child_proposal,
+                idempotency_key=result.child_proposal_digest,
+            )
+            try:
+                binding = (
+                    binding_wire
+                    if isinstance(binding_wire, RepairChildTaskBindingV1)
+                    else RepairChildTaskBindingV1.from_dict(binding_wire)
+                )
+            except (TypeError, ValueError) as exc:
+                raise ExecutionContractError("repair_child_binding_invalid") from exc
+            if binding.child_proposal_digest != result.child_proposal_digest:
+                raise ExecutionContractError("repair_child_binding_mismatch")
+            persisted = self.semantic_store.bind_repair_child(binding)
+            if persisted != binding:
+                raise ExecutionContractError("repair_child_binding_persistence_mismatch")
+        return result
 
     def list_tasks(self, *, repository_id: str, limit: int, cursor: str | None, actor: Actor):
         self._require(actor, "task:list", repository_id)
