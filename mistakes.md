@@ -331,3 +331,7 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 ## 2026-09-02 — Continued downstream writing across a changed upstream SHA
 
 Any upstream SHA change pauses downstream writing and triggers both a three-way path-overlap audit and contract-compatibility audit before restacking. Module isolation alone is insufficient because shared tests, documentation, migrations, and behavioral interfaces can change without direct source-file overlap.
+
+## 2026-09-02 — Deferred root architecture drift behind factory-only verification
+
+**Root cause:** Factory-only suites were treated as a sufficient slice gate, so eight new execution sources reached stable commits before the root verifier checked executable architecture ownership. Every product-source slice must run root architecture validate and drift before its stable commit, even when final full verification remains centrally owned.
