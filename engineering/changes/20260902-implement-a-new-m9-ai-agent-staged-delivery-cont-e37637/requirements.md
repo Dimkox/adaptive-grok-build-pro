@@ -4,13 +4,13 @@
 
 ## Acceptance criteria
 
-- [x] `AC-001`: seven closed V1 record shapes and all exact bindings are unambiguous in the design.
-- [x] `AC-002`: metric completeness, freshness, consistency and threshold semantics are deterministic and fail closed.
-- [x] `AC-003`: recovery authority is a strict subset of the pre-authorized promotion and production remains human-owned.
+- [ ] `AC-001`: Task 1 implements seven closed frozen V1 record shapes, canonical digests and exact bindings with no cryptographic or external capability.
+- [ ] `AC-002`: Task 2 implements deterministic fail-closed metric completeness, freshness, consistency and threshold semantics.
+- [ ] `AC-003`: Tasks 3–4 enforce recovery as a strict subset of the pre-authorized promotion and keep production human-owned.
 - [x] `AC-004`: M4→M9 connectivity, blocker owners, deadline, release and rollback are explicit.
-- [x] `AC-005`: the future implementation is split into small TDD tasks and commits; no implementation is part of this checkpoint.
+- [x] `AC-005`: Tasks 1–4 are authorized as separate strict-TDD commits using only synthetic opaque exact identities and pure local behavior.
 
-These checkboxes mean the documentation requirement is present, not that route receipts, M8 evidence, an environment, recovery proof, release or deployment exist.
+Completed checkboxes prove only the named local source/documentation requirement. They never establish route receipts, accepted M8 evidence, signed inputs, an environment, recovery proof, activation, release or deployment.
 
 ## Failure and edge cases
 
@@ -42,6 +42,6 @@ No model, prompt, retrieval, embedding, vector store or untrusted text participa
 - Performance: fixed maximum four environment stages, five metric families, sixteen exposure steps and 128 evidence records per dry-run.
 - Observability: closed counters for decisions/reasons and aggregate observation ages only; never raw bodies, repository source, prompt/reasoning, PII or secrets.
 
-## Blocked exit facts
+## Source-only execution and blocked exit facts
 
-Implementation/activation cannot claim an exit until all are factual: accepted M4→M8 exact predecessor chain, accepted M8 profile and cohort, external signed artifact/SBOM/provenance and authority envelopes, named nonproduction environment authorization, and exercised restore of the exact prior signed artifact. All are currently `BLOCKED` in [`ledger.md`](ledger.md).
+Tasks 1–4 may use synthetic opaque exact identities in local tests. Acceptance, Task 5 integration, activation or release cannot claim an exit until all applicable facts are present: accepted M4→M8 exact predecessor chain, accepted M8 profile and cohort, external signed artifact/SBOM/provenance and authority envelopes, named nonproduction environment authorization, and exercised restore of the exact prior signed artifact. All factual rows remain `BLOCKED` in [`ledger.md`](ledger.md).

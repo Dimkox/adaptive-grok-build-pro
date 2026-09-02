@@ -1,8 +1,8 @@
 # Release Plan — M9 Staged Delivery and Recovery
 
-This commit releases nothing. It is a documentation/design checkpoint only.
+The scope-alignment and Tasks 1–4 commits release nothing. They are pure local source/test checkpoints only.
 
-Future source go/no-go is dependency ordered: accepted M4→M8 exact chain; exact M8 profile/cohort; TDD source; final local verification and four route-selected independent reviews; separately authorized PR; App-owned policy-epoch Trust CI on exact head; required external signed scopes. Activation additionally requires exact merged SHA and externally verified artifact/SBOM/provenance/manifest/image, bound prior signed artifact, authorized nonproduction resources and exercised recovery.
+Source-only Tasks 1–4 may proceed with synthetic opaque identities. Acceptance/integration go/no-go remains dependency ordered: accepted M4→M8 exact chain; exact M8 profile/cohort; TDD source; Task 5 integration; final local verification and four route-selected independent reviews; separately authorized PR; App-owned policy-epoch Trust CI on exact head; required external signed scopes. Activation additionally requires exact merged SHA and externally verified artifact/SBOM/provenance/manifest/image, bound prior signed artifact, authorized nonproduction resources and exercised recovery.
 
 Rollout, if separately approved, remains dry-run first: preview, staging, each bounded-canary exposure, then `needs_human`. There is no production adapter. Metric completeness/freshness/consistency and all five gates must pass at every step. Any missing fact is no-go.
 

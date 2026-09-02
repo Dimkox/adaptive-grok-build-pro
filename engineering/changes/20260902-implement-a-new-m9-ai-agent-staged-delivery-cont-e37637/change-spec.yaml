@@ -6,7 +6,7 @@
         {"receipt": "security_review"}
       ],
       "id": "AC-001",
-      "statement": "The design freezes seven closed V1 delivery records and exact merged SHA artifact SBOM provenance M8 profile cohort policy holdout image environment and prior signed artifact bindings without representing signature material"
+      "statement": "Pure local source freezes seven closed V1 delivery records and exact merged SHA artifact SBOM provenance M8 profile cohort policy holdout image environment and prior signed artifact bindings without representing signature material or external capability"
     },
     {
       "evidence": [
@@ -14,7 +14,7 @@
         {"receipt": "security_review"}
       ],
       "id": "AC-002",
-      "statement": "The future evaluator fails closed and deterministically on missing stale contradictory or threshold-breaching health error latency security and business observations"
+      "statement": "The pure local evaluator fails closed and deterministically on missing stale contradictory or threshold-breaching health error latency security and business observations"
     },
     {
       "evidence": [
@@ -22,14 +22,14 @@
         {"receipt": "release_review"}
       ],
       "id": "AC-003",
-      "statement": "The design permits only pre-authorized halt bounded exposure decrease or restoration of the exact prior signed artifact and makes current-route production always needs_human and unreachable"
+      "statement": "Pure local recovery and dry-run control permit only pre-authorized halt bounded exposure decrease or restoration of the exact prior signed artifact and make current-route production always needs_human and unreachable"
     },
     {
       "evidence": [
         {"receipt": "release_review"}
       ],
       "id": "AC-004",
-      "statement": "The connectivity schedule release rollback and ledger preserve M4 through M9 ordering and mark accepted M8 external signed inputs nonproduction environment and exercised recovery proof BLOCKED until factual evidence exists"
+      "statement": "The connectivity schedule release rollback and ledger preserve M4 through M9 ordering and keep accepted M8 external signed inputs prior artifact nonproduction environment exercised recovery activation release and production BLOCKED until factual evidence and authority exist"
     },
     {
       "evidence": [
@@ -37,7 +37,7 @@
         {"receipt": "test_review"}
       ],
       "id": "AC-005",
-      "statement": "The implementation plan is executable in small TDD commits using only pure local deterministic source a dry-run controller and an in-memory fake environment adapter with bounded redacted evidence"
+      "statement": "Tasks 1 through 4 execute in separate TDD commits using only synthetic opaque identities pure local deterministic source a dry-run controller and an in-memory fake environment adapter with bounded redacted evidence"
     }
   ],
   "approvals": {
@@ -95,14 +95,14 @@
   ],
   "objective": {
     "id": "OBJ-001",
-    "statement": "Freeze a complete M9 staged-delivery and recovery design package on provisional M4 source base 9fe779ab9f90719201acfd01160d3452658ff075 without implementing or activating delivery",
-    "success_metric": "m9_design_package_validation",
-    "target": "Canonical spec structure and documentation checks pass and every nonlocal prerequisite remains explicitly BLOCKED"
+    "statement": "Implement Tasks 1 through 4 of a pure local deterministic M9 staged-delivery and recovery library on the provisional M4 source base without activating accepting releasing or operating delivery",
+    "success_metric": "m9_source_only_validation",
+    "target": "Focused contract evaluator recovery and dry-run controller tests pass while every factual dependency and nonlocal prerequisite remains explicitly BLOCKED"
   },
   "observability": [
     {
       "id": "SIG-001",
-      "metric": "m9_design_package_validation",
+      "metric": "m9_source_only_validation",
       "proves": ["OBJ-001"]
     }
   ],

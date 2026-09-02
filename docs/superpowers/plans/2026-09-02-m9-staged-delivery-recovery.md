@@ -12,7 +12,8 @@
 
 ## Global Constraints
 
-- Start only after factual accepted M8 restack/profile/cohort identities replace the `BLOCKED` ledger rows.
+- Tasks 1–4 are authorized as pure local source/tests using synthetic opaque exact identities under the 2026-09-02 user ruling; this does not unblock factual M8 restack/profile/cohort rows.
+- Task 5 integration, activation, acceptance, release, PR, merge and external Trust CI remain blocked until their separately named prerequisites and approvals exist.
 - Environment order is exactly preview, staging, bounded_canary, production; production always returns needs_human.
 - Authority is an externally verified opaque reference; never generate, read, request, verify or simulate signatures or keys.
 - No network, subprocess, provider, connector, credential, environment provisioning or production operation.

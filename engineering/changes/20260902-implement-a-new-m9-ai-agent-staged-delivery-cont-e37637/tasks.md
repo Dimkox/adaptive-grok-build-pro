@@ -5,8 +5,11 @@
 - [x] Record complete M4→M9 connectivity, deadline schedule, release, rollback and blocker ledger.
 - [x] Write the small-commit TDD implementation plan.
 - [x] Update root README and roadmap to describe the provisional M9 design checkpoint without claiming source or activation.
+- [x] Record the 2026-09-02 authority ruling: Tasks 1–4 may execute as pure local TDD with synthetic opaque exact identities; no factual or operational gate is unblocked.
 - [ ] Restack onto factual accepted M8 and replace blocker rows with exact accepted identities. `BLOCKED`.
-- [ ] Implement pure contracts/evaluator/recovery/controller/fake adapter from failing tests. Not part of this checkpoint.
+- [ ] Task 1: implement closed contracts and canonical digests from a witnessed missing-module RED.
+- [ ] Tasks 2–4: implement evaluator, recovery, controller and fake adapter in later separate TDD commits.
+- [ ] Task 5: register schemas/architecture and integrate repository documentation only after its gate opens. `BLOCKED`.
 - [ ] Run exact-head verification and all route-selected independent reviews/receipts after product source exists.
 - [ ] Prove externally verified signed inputs, authorized nonproduction environment and exercised exact-prior-artifact recovery. `BLOCKED`.
 - [ ] Deliver through a separately authorized PR and external exact-head Trust CI. `BLOCKED`; no external operation is authorized here.

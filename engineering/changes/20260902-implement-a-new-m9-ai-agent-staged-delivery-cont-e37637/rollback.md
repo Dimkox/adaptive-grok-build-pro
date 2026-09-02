@@ -1,10 +1,10 @@
 # Rollback Plan — M9 Staged Delivery and Recovery
 
-## This documentation checkpoint
+## Scope-alignment checkpoint
 
-Trigger on a contradiction, ambiguous contract, false evidence claim, incorrect dependency identity or scope expansion. Revert this single documentation commit; no product/runtime/data/environment state exists to recover.
+Trigger on a contradiction, ambiguous contract, false evidence claim, incorrect dependency identity or scope expansion. Revert the narrow scope-alignment commit. No runtime, data or environment state exists to recover.
 
-## Future dry-run source
+## Tasks 1–4 dry-run source
 
 Trigger on any binding, authority, order, evidence-chain, metric, privacy or recovery-subset invariant failure. Stop evaluation, preserve bounded evidence, return a closed deny reason and revert source only through a new PR. No migration or data deletion is needed because the planned core has no persistent store.
 

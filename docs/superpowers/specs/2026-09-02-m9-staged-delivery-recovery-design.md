@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-Approved architectural design for future implementation under route `e376373492fe`. It is based provisionally on M4 source `9fe779ab9f90719201acfd01160d3452658ff075`; it is not accepted M4 or M8 evidence and grants no deployment authority. The hard deadline is **2026-09-08 00:00 UTC+3**.
+Approved architectural design and source-only execution scope under route `e376373492fe`. The 2026-09-02 user ruling permits Tasks 1–4 as pure local source/tests using synthetic opaque exact identities. The branch remains based provisionally on M4 source `9fe779ab9f90719201acfd01160d3452658ff075`; neither fixtures nor observed provisional M4–M8 commits are accepted dependency evidence or deployment authority. The hard deadline is **2026-09-08 00:00 UTC+3**.
 
 ## Goal
 
@@ -114,7 +114,7 @@ The controller consumes a promotion, the complete current observation and the pr
 
 ## Release and recovery boundary
 
-Source may be merged only after the factual accepted M8 restack, full route verification/reviews and external Trust CI on the exact PR SHA. Activation additionally needs externally verified signed inputs, a named authorized nonproduction environment and an exercised exact-prior-artifact recovery. Production remains a separate human operation outside this design.
+Tasks 1–4 may be implemented and tested locally before factual M8 acceptance because their inputs are synthetic opaque identities and their outputs have no external effect. Source may be accepted or merged only after the factual accepted M8 restack, full route verification/reviews and external Trust CI on the exact PR SHA. Activation additionally needs externally verified signed inputs, a named authorized nonproduction environment and an exercised exact-prior-artifact recovery. Production remains a separate human operation outside this design.
 
 ## Non-goals
 
