@@ -39,6 +39,8 @@ Packet control fields never originate from repository text or native provider ev
 
 On restart, a bounded reconciler scans at most 100 incomplete manifests in deterministic key order. A manifest with no live matching M4 lease becomes `orphaned`, gains one safe terminal proposal, releases broker-owned workspace state, and cannot accept later events. Rollout is source-only and feature-dark: migration/API/unit files are not applied, started, or enabled by this task. Slice 01 contains no migration; successor slice 02 adds migration `014`, and any accepted-M5 forward-fix uses `015+` without rewriting M4 `013` or M5 `014`.
 
+The shipped server defaults `FACTORY_EXECUTION_ENABLED=false`: the legacy M4 API remains available and the six M5 routes are absent. Enabling execution requires distinct, least-privilege runtime and artifact-attestor sessions plus an explicitly composed trusted profile registry, deterministic read-only artifact verifier, and trusted Git snapshot broker before the Unix socket is bound. This repository does not supply a live trusted Git/provider composition or rootless-host acceptance evidence, so enabled host composition remains blocked rather than falling back to fake brokers or ambient credentials.
+
 ## Decision ledger
 
 1. New execution paths preserve M4 legacy semantics rather than overloading `/v1/claims`.
@@ -46,3 +48,4 @@ On restart, a bounded reconciler scans at most 100 incomplete manifests in deter
 3. Provider support means exact-version fixture conformance, not a binary name or optimistic capability declaration.
 4. OS isolation evidence is a separate host exit gate; fake-runtime success cannot satisfy it.
 5. First-time rich contract inventory registration waits for an explicit integration/tool-support slice because current fitness fails closed on unsupported baseline semantics; direct contract tests remain mandatory meanwhile.
+6. Preserve M4 startup by omitting M5 routes unless a strict feature flag and all trusted execution dependencies pass startup checks; never expose a partially wired execution surface.

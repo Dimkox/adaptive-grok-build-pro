@@ -257,7 +257,14 @@ class PostgresFactoryStore:
                 connect_timeout=connect_timeout,
                 options=f"-c lock_timeout={lock_timeout} -c statement_timeout={statement_timeout}",
             )
-            connection.execute("SET ROLE factory_runtime")
+            with connection.cursor() as cursor:
+                cursor.execute("SET search_path=pg_catalog")
+                _validate_capability_session(cursor, "factory_runtime", "runtime")
+                cursor.execute("SET ROLE factory_runtime")
+                cursor.execute("SET search_path=pg_catalog,factory")
+                cursor.execute("SELECT current_user,current_setting('search_path')")
+                if cursor.fetchone() != ("factory_runtime", "pg_catalog, factory"):
+                    raise StoreError("runtime capability unavailable")
         except (
             psycopg.InterfaceError,
             psycopg.OperationalError,
@@ -325,12 +332,16 @@ class PostgresFactoryStore:
 
     def readiness(self) -> dict[str, object]:
         with self._transaction() as cursor:
-            cursor.execute("SELECT current_user,COALESCE(max(version),0) FROM factory.schema_migrations")
-            role, version = cursor.fetchone()
+            cursor.execute(
+                "SELECT session_user,current_user,COALESCE(max(version),0) "
+                "FROM factory.schema_migrations GROUP BY session_user,current_user"
+            )
+            session_user, role, version = cursor.fetchone()
             capacity_consistent = self._capacity_consistent(cursor)
             accounting_consistent = self._accounting_consistent(cursor)
             return {
                 "status": "ready" if version == len(discover_migrations()) and capacity_consistent and accounting_consistent else "not_ready",
+                "session_user": session_user,
                 "database_role": role,
                 "schema_version": version,
                 "capacity_consistent": capacity_consistent,

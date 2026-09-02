@@ -176,7 +176,9 @@ def _grant(payload: Mapping[str, Any]) -> LeaseGrant:
         raise HTTPException(422, "invalid lease grant") from exc
 
 
-def create_app(service, authenticator: Authenticator) -> FastAPI:
+def create_app(
+    service, authenticator: Authenticator, *, execution_enabled: bool = True
+) -> FastAPI:
     app = FastAPI(title="Adaptive Factory Local Control API", version="1.0.0", docs_url=None, redoc_url=None)
 
     @app.exception_handler(ContractError)
@@ -670,4 +672,18 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         )
         return JSONResponse(_json(result), headers={"X-Correlation-ID": correlation})
 
+    if not execution_enabled:
+        execution_paths = {
+            "/v1/execution/claims",
+            "/v1/execution/stages",
+            "/v1/execution/notes",
+            "/v1/execution/artifacts",
+            "/v1/execution/usage",
+            "/v1/execution/terminal",
+        }
+        app.router.routes = [
+            route
+            for route in app.router.routes
+            if getattr(route, "path", None) not in execution_paths
+        ]
     return app
