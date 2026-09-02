@@ -327,3 +327,6 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 ## 2026-09-01 — Extrapolated a local milestone ETA to the whole program
 
 **Root cause:** The M4 local implementation forecast was presented as program deadline confidence without checking downstream dependencies and external gates, especially the M8 human cohort and Trust CI. Future status reports must state local milestone forecasts separately from end-to-end deadline confidence and name unresolved human/external gates.
+## 2026-09-02 — Gate commits on expected upstream identities
+
+The first M8 source-override checkpoint observed that M7 advanced but still committed because observation and commit were bundled without an equality guard. Require exact expected M4/M5/M6/M7 heads in a failing shell condition before every later M8 commit, then update the ledger and re-audit overlap whenever the guard trips.
