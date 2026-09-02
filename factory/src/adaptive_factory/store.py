@@ -335,11 +335,9 @@ class PostgresFactoryStore:
             )
             old_ids = [str(row[0]) for row in cursor.fetchall()]
             for old_id in old_ids:
-                self._close_active_lease(cursor, old_id)
-                cursor.execute(
-                    "UPDATE factory.tasks SET state='superseded',terminal_at=clock_timestamp(),updated_at=clock_timestamp(),current_run_id=NULL,current_fence=NULL WHERE task_id=%s",
-                    (old_id,),
-                )
+                changed = self._terminalize_task(cursor, old_id, TaskStatus.SUPERSEDED)
+                if not changed:
+                    continue
                 key = canonical_digest({"action": "superseded", "replacement": intake.intent_digest})
                 self._event(
                     cursor, old_id, actor, "superseded", key,
@@ -644,6 +642,32 @@ class PostgresFactoryStore:
         cursor.execute("SELECT factory.capacity_release(%s)", (run_id,))
         if not cursor.fetchone()[0]:
             raise StoreError("live lease capacity was not released")
+        cursor.execute(
+            "UPDATE factory.tasks SET current_run_id=NULL,current_fence=NULL WHERE task_id=%s AND current_run_id=%s",
+            (task_id, run_id),
+        )
+
+    def _terminalize_task(self, cursor, task_id: str, target: TaskStatus) -> bool:
+        if target not in {TaskStatus.CANCELLED, TaskStatus.SUPERSEDED}:
+            raise StoreError("unsupported terminal transition")
+        terminal = tuple(status.value for status in (TaskStatus.READY_FOR_HUMAN, TaskStatus.DEAD, TaskStatus.CANCELLED, TaskStatus.SUPERSEDED))
+        for _attempt in range(3):
+            self._close_active_lease(cursor, task_id)
+            cursor.execute(
+                """UPDATE factory.tasks SET state=%s,terminal_at=clock_timestamp(),updated_at=clock_timestamp(),
+                current_run_id=NULL,current_fence=NULL WHERE task_id=%s AND current_run_id IS NULL
+                AND state<>ALL(%s) RETURNING state""",
+                (target.value, task_id, list(terminal)),
+            )
+            if cursor.fetchone() is not None:
+                return True
+            cursor.execute("SELECT state,current_run_id FROM factory.tasks WHERE task_id=%s", (task_id,))
+            row = cursor.fetchone()
+            if row is None:
+                raise KeyError(task_id)
+            if row[0] in terminal:
+                return False
+        raise StoreError("terminal transition could not stabilize live lease")
 
     def _close_orphan_run(self, cursor, run_id: str, task_id: str, role: str, repository_id: str, actor: Actor) -> bool:
         if not self._lock_capacity_for_run(cursor, run_id):
@@ -1077,16 +1101,7 @@ class PostgresFactoryStore:
             replay, _prior, request_digest = self._command_replay(cursor, key, actor, "cancel", command)
             if replay:
                 return self.get_task(task_id)
-            self._close_active_lease(cursor, task_id)
-            cursor.execute("SELECT state FROM factory.tasks WHERE task_id=%s FOR UPDATE", (task_id,))
-            row = cursor.fetchone()
-            if not row:
-                raise KeyError(task_id)
-            if row[0] not in {"ready_for_human", "dead", "cancelled", "superseded"}:
-                cursor.execute(
-                    "UPDATE factory.tasks SET state='cancelled',current_run_id=NULL,current_fence=NULL,terminal_at=clock_timestamp(),updated_at=clock_timestamp() WHERE task_id=%s",
-                    (task_id,),
-                )
+            if self._terminalize_task(cursor, task_id, TaskStatus.CANCELLED):
                 self._event(
                     cursor, task_id, actor, "cancelled", key, {"reason": reason}, mandatory_cleanup=True
                 )

@@ -86,6 +86,94 @@ class PostgresFactoryTests(unittest.TestCase):
     def submit(self, repository="owner/repository", source=None):
         return self.service.intake(self.payload(repository, source), actor=OPERATOR, now=NOW)
 
+    def _assert_claim_terminal_race_releases_capacity(self, action: str) -> None:
+        import psycopg
+
+        class PausingCloseStore(PostgresFactoryStore):
+            def __init__(self, database_url):
+                super().__init__(database_url)
+                self.close_snapshot_complete = threading.Event()
+                self.resume_terminal = threading.Event()
+                self._pause_once = True
+
+            def _close_active_lease(self, cursor, task_id):
+                super()._close_active_lease(cursor, task_id)
+                if self._pause_once:
+                    self._pause_once = False
+                    self.close_snapshot_complete.set()
+                    if not self.resume_terminal.wait(timeout=5):
+                        raise RuntimeError("terminal transition barrier timed out")
+
+        for index, role in enumerate((RunRole.READER, RunRole.WRITER), start=1):
+            with self.subTest(action=action, role=role.value):
+                source = f"{action}-claim-race-{role.value}"
+                repository = f"race/{action}/{role.value}"
+                task = self.submit(repository=repository, source=source).task
+                pausing_store = PausingCloseStore(DATABASE_URL)
+                pausing_service = FactoryService(pausing_store)
+                command_key = f"{index if action == 'cancel' else index + 2}" * 64
+
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    if action == "cancel":
+                        terminal_future = pool.submit(
+                            pausing_service.cancel,
+                            task.task_id,
+                            reason="operator-race",
+                            idempotency_key=command_key,
+                            actor=OPERATOR,
+                            now=NOW,
+                        )
+                    else:
+                        replacement = self.payload(repository=repository, source=source)
+                        replacement["source_digest"] = f"{index + 7}" * 64
+                        terminal_future = pool.submit(
+                            pausing_service.intake, replacement, actor=OPERATOR, now=NOW
+                        )
+                    self.assertTrue(pausing_store.close_snapshot_complete.wait(timeout=5))
+                    claim_future = pool.submit(
+                        self.service.claim,
+                        owner="ignored-race-owner",
+                        role=role,
+                        repositories=(task.repository_id,),
+                        lease_seconds=60,
+                        actor=WORKER,
+                        now=NOW,
+                    )
+                    try:
+                        grant = claim_future.result(timeout=5)
+                    finally:
+                        pausing_store.resume_terminal.set()
+                    terminal_future.result(timeout=5)
+
+                self.assertIsNotNone(grant)
+                expected = TaskStatus.CANCELLED if action == "cancel" else TaskStatus.SUPERSEDED
+                self.assertEqual(self.store.get_task(task.task_id).status, expected)
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT current_run_id,current_fence FROM factory.tasks WHERE task_id=%s",
+                        (task.task_id,),
+                    )
+                    self.assertEqual(cursor.fetchone(), (None, None))
+                    cursor.execute(
+                        "SELECT count(*) FROM factory.runs WHERE task_id=%s AND released_at IS NULL",
+                        (task.task_id,),
+                    )
+                    self.assertEqual(cursor.fetchone()[0], 0)
+                    cursor.execute(
+                        "SELECT count(*) FROM factory.capacity_allocations WHERE task_id=%s AND released_at IS NULL",
+                        (task.task_id,),
+                    )
+                    self.assertEqual(cursor.fetchone()[0], 0)
+                    scopes = [f"global:{role.value}"]
+                    if role is RunRole.READER:
+                        scopes.append(f"repository:{task.repository_id}:reader")
+                    cursor.execute(
+                        "SELECT scope_key,active_count FROM factory.capacity_counters WHERE scope_key=ANY(%s)",
+                        (scopes,),
+                    )
+                    self.assertEqual(dict(cursor.fetchall()), {scope: 0 for scope in scopes})
+                self.assertTrue(self.store.readiness()["capacity_consistent"])
+
     def authority_payload(self, kind: str, source: str, suffix: int):
         import psycopg
 
@@ -357,6 +445,12 @@ class PostgresFactoryTests(unittest.TestCase):
                 self.assertEqual(cursor.fetchone()[0], 0)
             result = self.service.reconcile(actor=OPERATOR, now=NOW)
             self.assertEqual(result.repaired, 0)
+
+    def test_cancel_racing_claim_releases_reader_and_writer_capacity(self):
+        self._assert_claim_terminal_race_releases_capacity("cancel")
+
+    def test_supersede_racing_claim_releases_reader_and_writer_capacity(self):
+        self._assert_claim_terminal_race_releases_capacity("supersede")
 
     def test_reservations_are_bounded_replay_safe_and_settled_by_usage(self):
         import psycopg

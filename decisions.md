@@ -352,3 +352,7 @@ Derive the exact route ancestor and the local PR target merge base from Git meta
 ## 2026-09-02 — Exclude exact verifier environments from architecture inventory
 
 Skip untracked directory components named `.venv`, but enumerate force-added index entries beneath them and inspect those exact paths through root-relative no-follow descriptors. This prevents verifier tooling from poisoning later runs without letting the cache-shaped name hide tracked repository source or symlinks.
+
+## 2026-09-02 — Terminalize conditionally across claim races
+
+Cancel and supersede may terminalize directly only while `current_run_id IS NULL`; a failed conditional transition re-reads the committed run, acquires capacity locks before the task row, releases the run exactly once, and retries. This preserves the canonical capacity-to-task order while preventing a winning claim from being erased with live capacity.

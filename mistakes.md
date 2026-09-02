@@ -357,3 +357,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Tracked `.venv` artifacts escaped architecture drift, criss-cross history appeared to have one PR merge base, and delivery verification silently lost its local PR-target range.
 **Root cause:** Inventory ignored filesystem names without consulting the index, while range selection accepted Git's default single merge-base output and represented an absent delivery target as an ordinary optional result.
+
+## 2026-09-02 — Reused one claim repository across supersede race subtests
+
+**Symptom:** The first GREEN run left writer capacity active because the writer claim selected the reader subtest's queued replacement instead of the task being superseded.
+**Root cause:** The concurrency fixture isolated source identities but not scheduler eligibility; each interleaving must use its own repository so a real `SKIP LOCKED` claim cannot select leftover eligible work from another subtest.
