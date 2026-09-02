@@ -348,3 +348,7 @@ When a current-main merge introduces legacy evidence into a stricter accepted st
 ## 2026-09-02 — Bind PR preflight to route and target ranges
 
 Derive the exact route ancestor and the local PR target merge base from Git metadata, then use their changed-file union for hygiene, secret, contract, and SQL gates. This keeps a stale route base from hiding PR-only changes without fetching or treating repository prose as merge authority.
+
+## 2026-09-02 — Exclude exact verifier environments from architecture inventory
+
+Skip only directory components named `.venv`, matching the local verifier environment boundary while retaining no-follow rejection and source drift for every similarly named repository path. This prevents one verification run from poisoning the next without deleting local tooling state or hiding ordinary `venv` source trees.

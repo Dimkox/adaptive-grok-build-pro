@@ -1215,6 +1215,38 @@ class ArchitectureModelTests(unittest.TestCase):
             ],
         )
 
+    def test_repository_drift_ignores_exact_dot_venv_components_on_repeated_runs(self) -> None:
+        root = self._repo()
+        for owner in ("factory", "trust-ci"):
+            environment = root / owner / ".venv"
+            (environment / "lib").mkdir(parents=True)
+            (environment / "bin").mkdir()
+            (environment / "lib/dependency.py").write_text(
+                "VALUE = 'tooling-only'\n", encoding="utf-8"
+            )
+            (environment / "bin/python").symlink_to("../lib/dependency.py")
+
+        (root / "factory/.venv-project").mkdir()
+        (root / "factory/.venv-project/project.py").write_text(
+            "VALUE = 'repository-source'\n", encoding="utf-8"
+        )
+        (root / "factory/venv").mkdir()
+        (root / "factory/venv/project.py").write_text(
+            "VALUE = 'repository-source'\n", encoding="utf-8"
+        )
+        snapshot = ARCH.load_architecture(root)
+        expected = [
+            ("undeclared_source", "factory/.venv-project/project.py"),
+            ("undeclared_source", "factory/venv/project.py"),
+        ]
+
+        for run in range(2):
+            with self.subTest(run=run):
+                findings = ARCH.validate_repository_drift(root, snapshot)
+                self.assertEqual(
+                    [(finding.code, finding.path) for finding in findings], expected
+                )
+
     def test_repository_drift_traversal_is_bounded_by_entries_files_and_bytes(self) -> None:
         cases = (
             ("MAX_DRIFT_ENTRIES", 40, "entry limit"),

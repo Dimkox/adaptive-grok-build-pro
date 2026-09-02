@@ -698,6 +698,7 @@ _DRIFT_CACHE_DIRECTORIES = {
     ".mypy_cache",
     ".pytest_cache",
     ".ruff_cache",
+    ".venv",
     "__pycache__",
 }
 _NON_AUTHORITATIVE_REPOSITORY_DIRECTORIES = {
