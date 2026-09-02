@@ -1,0 +1,41 @@
+{
+  "schema_version": 2,
+  "change_id": "20260902-implement-a-new-m7-ai-agent-shadow-handoff-featu-e5911c",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Produce a deterministic provider-independent local M7 shadow handoff that a human can inspect without granting the factory any remote-write or merge authority.",
+    "success_metric": "m7_shadow_contract_test_ratio",
+    "target": "1.000 focused contract and evaluator tests pass; external capability count remains 0"
+  },
+  "risk": {"tier": "red", "domains": ["ai", "api", "security"]},
+  "acceptance_criteria": [
+    {"id": "AC-001", "statement": "Closed canonical M7 bridge and bundle contracts bind exact M4, M5 and M6 product SHAs plus task, run, fence, packet, manifest, semantic verdict, source evidence and local receipt digests.", "evidence": []},
+    {"id": "AC-002", "statement": "The only bundle state is ready_for_human and its frozen canonical bytes and digest change after any bound field mutation.", "evidence": []},
+    {"id": "AC-003", "statement": "Stale, replayed, incomplete, contradictory or non-pass predecessor evidence is rejected with stable typed failure classes.", "evidence": []},
+    {"id": "AC-004", "statement": "A closed local operator proposal supplies immutable manual instructions and has no push, pull-request, credential, network, auto-merge or external-write capability surface.", "evidence": []},
+    {"id": "AC-005", "statement": "Shadow outcomes and exact-tuple cohort aggregation use bounded integer numerators and denominators, enforce replay uniqueness, and deterministically classify all roadmap shadow-gate failures.", "evidence": []},
+    {"id": "AC-006", "statement": "M7 remains a pure local library on M4; durable service, store and runtime integration is absent and explicitly blocked until accepted M5 and M6 are dependency-ordered and restacked.", "evidence": []}
+  ],
+  "invariants": [
+    {"id": "INV-001", "statement": "No M7 value can create, push, open, update, merge, release, deploy or publish anything.", "evidence": []},
+    {"id": "INV-002", "statement": "No secret, credential, PII, untrusted body, prompt, reasoning trace or free-form remote target is represented by an M7 contract.", "evidence": []},
+    {"id": "INV-003", "statement": "Cohorts never mix exact trust-profile tuples and missing baseline or observation evidence cannot become a positive recommendation.", "evidence": []}
+  ],
+  "forbidden_outcomes": [
+    {"id": "FORBID-001", "statement": "Provisional M5 or M6 source is described as accepted, integrated, externally verified or merge-eligible.", "evidence": []},
+    {"id": "FORBID-002", "statement": "A shadow metric denominator is zero, inferred, silently omitted or computed from PII or untrusted body text.", "evidence": []},
+    {"id": "FORBID-003", "statement": "A local M7 recommendation promotes trust, enables auto-merge or substitutes for App-owned exact-SHA Trust CI and human merge authority.", "evidence": []}
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {"id": "SIG-001", "metric": "m7_shadow_contract_test_ratio", "proves": ["OBJ-001"]},
+    {"id": "SIG-002", "metric": "m7_forbidden_external_capability_total", "proves": ["OBJ-001"]},
+    {"id": "SIG-003", "metric": "m7_shadow_gate_failure_class_total", "proves": ["OBJ-001"]}
+  ],
+  "rollback": {"strategy": "restore", "maximum_steps": 2},
+  "approvals": {"required_scopes": ["scope_and_design_approval"]}
+}

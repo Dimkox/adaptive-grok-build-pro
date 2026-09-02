@@ -205,7 +205,7 @@ M1 + M2 + M3
 
 Milestones M1, M2, and M3 may be developed in parallel only after M0 has a live proof or an explicitly documented bootstrap exception approved by the user. M4 must consume their stable interfaces rather than inventing replacements.
 
-Current execution is parallel only for reversible source development: M4 repair follows product anchor `94fc5ad`; M5 branch `milestone/m5-isolated-execution-provisional-m4` / route `37b05f579320` and M6 branch `milestone/m6-semantic-validation-provisional-m4` / route `82aac86a3bf9` are provisional descendants. Acceptance, PR delivery, merge and Trust CI remain strictly dependency ordered M4 → M5 → M6, and each downstream branch must restack onto its accepted predecessor. M5 additionally remains blocked on a suitable rootless-isolation host. The hard deadline is **2026-09-08 00:00 UTC+3**; no M4/M5/M6 completion or external action is claimed merely from source presence or calendar pressure. See the [root current state](README.md), [M4 package](factory/README.md) and [active schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
+Current execution is parallel only for reversible source/docs work. Local M4 source is accepted at exact SHA `9fe779ab9f90719201acfd01160d3452658ff075`. M5 `a98bbaace6a65e45808a71ecc6963bbdafc78082` and M6 `befbd0bdbac5d47351ac80868f36e07487d2512b` are still provisional descendants of old anchor `94fc5ad878e6b15df6418303caada49a3b93bf4c`; each must restack onto its accepted predecessor. M5 also remains blocked on a suitable rootless-isolation host. M7 has an approved [local contract design](docs/superpowers/specs/2026-09-02-m7-local-shadow-handoff-design.md) and [durable package](engineering/changes/20260902-implement-a-new-m7-ai-agent-shadow-handoff-featu-e5911c/brief.md), but product/runtime implementation is blocked until factual M4 → M5 → M6 restack. Acceptance, PR delivery, Trust CI and merge remain dependency ordered through M9. The hard deadline is **2026-09-08 00:00 UTC+3**; source presence or calendar pressure never waives a gate.
 
 ## 7.1 Exact milestone handoff contracts
 
@@ -217,7 +217,7 @@ Current execution is parallel only for reversible source development: M4 repair 
 | M7 → M8 | M7 emits an immutable shadow ready-for-PR bundle digest binding task/run/verdict/check/PR-head/human-decision and outcome metrics; M8 cohorts only exact trust-profile tuples. | At least 30 human-accepted tasks for the exact class/profile tuple, complete disagreement/rollback/security metrics and human merge for every PR; any tuple component or evidence mutation starts a new cohort. | Demote/discard the affected cohort and keep human merge; under current authority M8 is capped at L2, cannot auto-merge, rewrite historical decisions or activate governance. |
 | M8 → M9 | M8 emits a durable trust-profile digest and L2-or-lower decision bound to repository/class/models/prompts/policy/runner/holdout digests; M9 binds preview/staging/canary inputs to the exact merged SHA and signed artifact digest. | Accepted predecessor profiles, exact signed supply-chain artifact, reproducible preview/staging, explicit canary thresholds and exercised recovery; incident, rollback, policy/artifact/SHA change invalidates promotion and triggers demotion. | Halt/rollback the canary, preserve deployment evidence and demote the profile; production promotion remains human-owned and no agent gains production, signing-key, branch-protection or Trust CI authority. |
 
-M7-M9 are roadmap contracts only: no implementation, completion, cohort, preview, canary or external-delivery claim is made in the current tree.
+M7 now has an approved provisional local design/package, not product implementation. M8-M9 remain roadmap contracts. No M7 completion/cohort, preview, canary or external-delivery claim is made.
 
 ---
 
@@ -806,7 +806,7 @@ needs_human
 
 # M7 — Automated Pull-Request Lifecycle and Shadow Mode
 
-Current status: roadmap only. Its future output is the immutable ready-for-PR/shadow bundle defined in §7.1; no PR lifecycle or shadow cohort is claimed.
+Current status: approved provisional design/package only, [bound to the M4 local source and blocked on factual M5/M6 restack](engineering/changes/20260902-implement-a-new-m7-ai-agent-shadow-handoff-featu-e5911c/brief.md). Its future output is an immutable roadmap-compatible bundle whose only reachable state is `ready_for_human`; no PR lifecycle, product implementation or shadow cohort is claimed. The future library has no push, PR API, credential, auto-merge or external-write surface.
 
 ## Objective
 
