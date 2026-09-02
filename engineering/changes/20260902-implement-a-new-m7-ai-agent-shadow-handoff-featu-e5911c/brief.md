@@ -17,4 +17,4 @@ In scope: pure frozen contracts, public JSON Schemas, exact SHA/digest bindings,
 
 ## Dependency ruling
 
-The exact local M4 base is `9fe779ab9f90719201acfd01160d3452658ff075`. Provisional M5 `a98bbaace6a65e45808a71ecc6963bbdafc78082` and provisional M6 `befbd0bdbac5d47351ac80868f36e07487d2512b` both descend from old anchor `94fc5ad878e6b15df6418303caada49a3b93bf4c`, not accepted local M4, and M6 is not a factually accepted descendant of M5. Bridge schemas are development interfaces only; product implementation and durable/runtime integration are **BLOCKED** until dependency-ordered restack and fresh evidence.
+The exact historical M7 base is `9fe779ab9f90719201acfd01160d3452658ff075`. Current provisional M5 is `141e51e75b2bb337fa3bb1544639c6c46c287309`; provisional M6 `5c5c37136f20404a927fd2ad7621ad0f7fcae8e6` still has mutual M5 merge-base `61db79f07904ae5facb244c34b26c8383504dd88` and exposes no factual M5 result linkage. Pure bridge/evaluator/schema source is present through `5615933`, but those bridges remain development interfaces; activation, completion and durable/runtime integration are **BLOCKED** until dependency-ordered restack and fresh evidence.

@@ -21,5 +21,12 @@
 | 2026-09-02 | External operations | push/PR/Trust CI/merge/release/deploy | forbidden in this run |
 | 2026-09-02 | Typed draft spec | digest `d20d57b80b83d876d5a79e29b117e2da79b68cd93578b3bef8011c7ed423e0c8` | valid; 0/6 evidence mappings are intentional while product is blocked |
 | 2026-09-02 | Full PR preflight | `python3 scripts/grok_verify.py --mode pr` | interrupted after more than four minutes at parent checkpoint, exit 130; no pass claim and no receipt |
+| 2026-09-02 | Task 1 RED → GREEN | missing `adaptive_factory.shadow_contracts`; then 9/9 focused contract tests | committed `9152daf` |
+| 2026-09-02 | Task 2 RED → GREEN | missing `adaptive_factory.shadow_evaluation`; then 22/22 combined M7 tests | committed `030a8d7`; 30 rows are synthetic algorithm fixtures, not M8 evidence |
+| 2026-09-02 | Task 3 RED → GREEN | missing six schema files; then 13/13 contract/schema tests | committed `5615933`; six Draft 2020-12 schemas parsed with six unique IDs |
+| 2026-09-02 | Focused source checkpoint | base contracts + M7, Ruff and py_compile | 33/33 tests passed; lint/compile passed before `5615933` |
+| 2026-09-02 | Structure/architecture checkpoint | structure + architecture model | 62/63 passed after moving generated uv env out of tree; remaining drift is exactly undeclared `shadow_contracts.py` and `shadow_evaluation.py` pending dependency-ordered architecture restack |
+| 2026-09-02 | Documentation checkpoint | typed draft spec; structure + change-spec; base contracts + M7 | spec valid with intentional 0/6 pre-receipt mappings; 45/45 repository tests and 33/33 factory tests passed; Ruff passed |
+| 2026-09-02 | Complete nested factory suite | `UV_PROJECT_ENVIRONMENT=<external-venv> uv run --project factory --frozen python -m unittest discover -s factory/tests -t .` | 96/96 passed; 30 disposable-PostgreSQL tests skipped because no database was provisioned; no live service or database used |
 
 This ledger is workflow evidence, never merge authority.

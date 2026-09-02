@@ -2,11 +2,11 @@
 
 ## Status and authority
 
-Approved local-source design under route `e5911c3f8721`, implementing the canonical M0–M9 program decision supplied by the user. It does not accept provisional M5/M6, authorize remote operations, or replace exact-SHA Trust CI and human merge.
+Approved local-source design under route `e5911c3f8721`, now represented by provisional pure source/schema commits through `5615933`. It does not accept provisional M5/M6, activate runtime integration, authorize remote operations, or replace exact-SHA Trust CI and human merge.
 
 ## Decision
 
-After accepted dependency-ordered restack, implement M7 as two dependency-free local modules: frozen closed canonical contracts and a deterministic bounded cohort evaluator. Consume explicit M4/M5/M6 bridge values instead of importing provisional producer code. Expose only an immutable `ready_for_human` bundle and fixed manual operator instructions; keep runtime/durable wiring absent until factual producer contracts exist.
+Implement M7 provisionally as two dependency-free local modules: frozen closed canonical contracts and a deterministic bounded cohort evaluator. Consume explicit M4/M5/M6 bridge values instead of importing provisional producer code. Expose only an immutable `ready_for_human` bundle and fixed manual operator instructions; keep activation and runtime/durable wiring absent until factual producer contracts exist and dependency-ordered restack passes.
 
 ## Alternatives
 
@@ -36,4 +36,4 @@ M4 provides durable task/run/fence/packet identity. Accepted restacked M5 later 
 
 ## Rollout and rollback
 
-Current rollout is docs/spec/plan only and is BLOCKED before product code. Future rollout restacks M4 → M5 → M6 → M7, reconciles fields and reruns all checks. Rollback is an exact commit revert; no migration, network or production state exists.
+Current rollout is inert provisional local library/schema source only. Activation is BLOCKED: future rollout restacks M4 → M5 → M6 → M7, reconciles producer fields, declares final architecture ownership and reruns every check/review. Rollback is an exact commit revert; no migration, network or production state exists.

@@ -14,6 +14,16 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-02 — Materialized the uv environment inside an architecture-scanned worktree
+
+**Symptom:** The focused architecture suite reported 474 undeclared artifacts under `factory/.venv` instead of the two real new M7 source paths.
+**Root cause:** The first `uv run --frozen` used its default in-project environment even though repository drift scans ignored/generated files; future isolated checks must set an external `UV_PROJECT_ENVIRONMENT` before the first uv invocation.
+
+## 2026-09-02 — Ran full nested factory discovery from the package directory
+
+**Symptom:** Full discovery produced four loader errors because older tests import helpers through `factory.tests` while the package directory was the process root.
+**Root cause:** The focused-test working directory was reused for a suite with package-qualified imports; full nested discovery must run from the repository root with `--project factory`, `-s factory/tests` and `-t .`.
+
 ## 2026-08-31 — Ran the restack verifier with its inherited divergent route base
 
 **Symptom:** The first full verifier passed tests and coverage but failed architecture and governance because it compared the merge against unrelated `1c06299894279a88b881defa3f19b004fa742223`.

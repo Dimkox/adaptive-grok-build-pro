@@ -4,7 +4,7 @@
 
 ## Decision
 
-After the dependency block clears, add two pure modules beside M4: `shadow_contracts.py` for frozen closed values/bindings and `shadow_evaluation.py` for bounded aggregation/gates. Public JSON Schemas mirror the same surfaces. Neither module is wired to service/store/runtime in the provisional slice.
+The provisional slice adds two pure modules beside M4: `shadow_contracts.py` for frozen closed values/bindings and `shadow_evaluation.py` for bounded aggregation/gates. Six public JSON Schemas mirror the same surfaces. Neither module is imported or wired to service/store/runtime; activation waits for the factual dependency restack.
 
 ```text
 accepted M4 task/run/fence/packet

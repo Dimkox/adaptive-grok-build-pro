@@ -10,4 +10,4 @@
 | P1 | 30 qualifying outcomes produce hand-derived numerators, denominators and millionths | `test_shadow_evaluation.py` |
 | P1 | Sample, observation, baseline, quality, budget/deadline and containment failures are deterministic | `test_shadow_evaluation.py` |
 
-TDD sequence after dependency clearance: RED missing contracts → GREEN frozen bridges/bundle → RED missing cohort evaluator → GREEN bounded aggregate → closed-schema parity → focused/full verification. No product test is claimed by this package-only commit.
+Observed provisional TDD sequence: RED missing contracts → GREEN frozen bridges/bundle (`9152daf`) → RED missing cohort evaluator → GREEN bounded aggregate (`030a8d7`) → RED missing schemas → GREEN closed-schema parity (`5615933`). The 30-item cohort is synthetic algorithm evidence only, not a factual human cohort. Final full verification and route reviews remain blocked on dependency restack and final architecture ownership.

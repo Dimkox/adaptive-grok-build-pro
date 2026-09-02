@@ -36,20 +36,20 @@
 
 M5 `141e51e…` and M6 `5c5c371…` both have merge-base M4 `9fe779…`, but their mutual merge-base is older M5 `61db79f…`. Current M5 retains execution-contract blob `e4237bf…` and closes existing TaskPacket/ExecutionEvent/OpenAPI schema descriptions without changing the Python producer fields; M6 carries old execution blob `d9cb3c8…` and still exposes no task/run/fence/packet/result linkage. M5's documentation/architecture paths overlap future M7 documentation work, but the M7 source/schema paths remain disjoint, so opaque pure contracts stand and activation stays blocked.
 
-- [ ] **Step 2: Write failing tests**
+- [x] **Step 2: Write failing tests**
 
 Cover unknown versions/fields, accepted dependency states, task/run/fence/packet/head equality, pass-only complete semantic evidence, frozen values, digest mutation and forbidden push/URL/command/credential/auto-merge fields.
 
-- [ ] **Step 3: Run RED**
+- [x] **Step 3: Run RED**
 
 Run: `cd factory && uv run --frozen python -m unittest tests.test_shadow_contracts -v`  
 Expected: import failure for missing `adaptive_factory.shadow_contracts`.
 
-- [ ] **Step 4: Implement minimal contracts and run GREEN**
+- [x] **Step 4: Implement minimal contracts and run GREEN**
 
 Use closed constructors, bounded parsers, tuples, frozen dataclasses and domain-separated digests. Rerun the same command; expect all tests to pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Commit: `feat(factory): add immutable M7 shadow bundle contracts`.
 
@@ -64,20 +64,20 @@ Commit: `feat(factory): add immutable M7 shadow bundle contracts`.
 - Consumes: bundle/cohort digests and closed outcomes.
 - Produces: `aggregate_shadow_cohort` and `evaluate_shadow_cohort`.
 
-- [ ] **Step 1: Write failing aggregate tests**
+- [x] **Step 1: Write failing aggregate tests**
 
 Use 30 literal accepted fixtures with hand-derived counts/millionths, then mutate replay, tuple, sample, observation, baseline, quality, safety, budget/deadline and containment cases.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run: `cd factory && uv run --frozen python -m unittest tests.test_shadow_evaluation -v`  
 Expected: missing evaluator import.
 
-- [ ] **Step 3: Implement and run GREEN**
+- [x] **Step 3: Implement and run GREEN**
 
 Reject empty/>10,000 cohorts, duplicate outcome/bundle identity and tuple mismatch; compute integer counts, exact millionths, nearest-rank p95 and median; sort failures; never emit promotion/merge actions. Run both M7 test modules.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 Commit: `feat(factory): evaluate bounded M7 shadow cohorts`.
 
@@ -94,15 +94,15 @@ Commit: `feat(factory): evaluate bounded M7 shadow cohorts`.
 
 **Interfaces:** Python v1 field/enum parity and closed Draft 2020-12 schemas.
 
-- [ ] **Step 1: Add failing schema inventory/parity tests**
+- [x] **Step 1: Add failing schema inventory/parity tests**
 
 Assert exact file set, dialect, `additionalProperties: false`, complete `required`, version const 1 and absent remote capability properties.
 
-- [ ] **Step 2: Run RED, add schemas, run GREEN**
+- [x] **Step 2: Run RED, add schemas, run GREEN**
 
 Run the contract suite before and after schemas; the first run must fail on missing files and the second pass.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 Commit: `feat(factory): publish closed M7 shadow schemas`.
 
@@ -112,14 +112,18 @@ Commit: `feat(factory): publish closed M7 shadow schemas`.
 
 **Interfaces:** Exact product SHAs and fresh command outputs become current-state docs, not authority.
 
-- [ ] **Step 1: Update current graph/status without changing historical evidence**
+- [x] **Step 1: Update current graph/status without changing historical evidence**
 
 Describe provisional M7 source, L2/human-merge ceiling and absent external surface; preserve all graph edges through M9.
 
-- [ ] **Step 2: Run verification**
+- [x] **Step 2: Run provisional source verification**
 
-Run `cd factory && uv run --frozen python -m unittest discover -s tests -v`, then `python3 scripts/grok_verify.py --mode pr`.
+Run the complete nested package suite from the repository root so package-qualified test imports remain valid: `UV_PROJECT_ENVIRONMENT=<external-venv> uv run --project factory --frozen python -m unittest discover -s factory/tests -t .`. Also run the focused repository structure/change-spec checks, schema/contract tests, Ruff and compilation.
 
-- [ ] **Step 3: Record exact results and commit**
+- [ ] **Step 3: Run final dependency-restacked verification**
+
+After factual M4 → M5 → M6 → M7 restack and final architecture ownership declaration, run `python3 scripts/grok_verify.py --mode pr` and every route-selected independent review. Do not issue a completion receipt before that tree exists.
+
+- [x] **Step 4: Record exact provisional results and commit**
 
 Use `git rev-parse HEAD`; append results to the ledger. Commit: `docs(m7): record provisional shadow handoff evidence`.
