@@ -100,6 +100,12 @@ def native_records(raw: bytes, *, max_bytes: int = 1_000_000, max_records: int =
         raise AdapterError("invalid_native_stream", str(exc)) from exc
 
 
+def native_text(value: Any) -> str:
+    if not isinstance(value, str):
+        raise AdapterError("invalid_native_text")
+    return value
+
+
 def canonicalize(
     events: list[dict[str, Any]],
     *,

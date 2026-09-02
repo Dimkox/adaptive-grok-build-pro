@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import os
 import threading
@@ -6,14 +7,22 @@ import time
 import unittest
 import uuid
 
+from fastapi.testclient import TestClient
+
 from adaptive_factory.migrations import PostgresMigrator, discover_migrations
 from adaptive_factory.api import Authenticator, create_app
+from adaptive_factory.brokers import NoteProposal, proposal_idempotency_key
 from adaptive_factory.contracts import canonical_digest, canonical_json
 from adaptive_factory.execution_contracts import WorkspaceResultV1, workspace_evidence_digest
 from adaptive_factory.models import Actor, ExecutionStage, FailureClass, RunRole, TaskStatus
+from adaptive_factory.protocol import CanonicalEvent
 from adaptive_factory.service import AuthorizationError, FactoryService
 from adaptive_factory.store import BudgetError, FenceError, PostgresFactoryStore, StoreError
-from adaptive_factory.workspace import WorkspaceSnapshotV1
+from adaptive_factory.workspace import (
+    ArtifactAttestationUnavailable,
+    ArtifactAttestationV1,
+    WorkspaceSnapshotV1,
+)
 from factory.tests.test_contracts import valid_intake
 from factory.tests.test_execution_contracts import valid_packet
 from factory.tests.test_execution_service import trusted_registry
@@ -43,6 +52,22 @@ class TrustedPostgresTestSnapshotBroker:
             "workspace_handle": request.workspace_handle,
             "input_head_sha": request.input_head_sha, "result_head_sha": "4" * 40,
             "diff_digest": "6" * 64, "diff_lines": 12, "source": "trusted_git_broker",
+        })
+
+
+class TrustedPostgresTestArtifactBroker:
+    def __init__(self):
+        self.calls = 0
+        self.available = True
+
+    def attest_artifact(self, request):
+        self.calls += 1
+        if not self.available:
+            return ArtifactAttestationUnavailable()
+        return ArtifactAttestationV1.from_facts({
+            "contract_version": 1,
+            **request.to_dict(),
+            "source": "trusted_workspace_broker",
         })
 
 
@@ -104,6 +129,287 @@ class PostgresFactoryTests(unittest.TestCase):
 
     def submit(self, repository="owner/repository", source=None):
         return self.service.intake(self.payload(repository, source), actor=OPERATOR, now=NOW)
+
+    def test_artifact_attestation_and_exact_replay_are_persisted_and_fenced(self):
+        import psycopg
+
+        repository = "owner/m5-artifact-attestation"
+        task = self.submit(repository=repository, source="m5-artifact-attestation").task
+        packet = valid_packet()
+        packet["provider"]["capabilities"] = ["artifacts", "notes", "structured_output"]
+        selection = {
+            "provider": packet["provider"],
+            "capability_policy": packet["capability_policy"],
+            "plan": packet["plan"],
+            "workspace_handle": packet["workspace_handle"],
+            "prompt_template_digest": "7" * 64,
+            "role_definition_digest": "8" * 64,
+            "tool_policy_digest": "9" * 64,
+            "output_schema_digest": "a" * 64,
+        }
+        execution = FactoryService(
+            self.store, execution_registry=trusted_registry(selection)
+        ).claim_execution(
+            owner=WORKER.actor_id, role=RunRole.WRITER,
+            repositories=(repository,), lease_seconds=60,
+            selection=selection, actor=WORKER, now=NOW,
+        )
+        broker = TrustedPostgresTestArtifactBroker()
+        service = FactoryService(self.store, artifact_broker=broker)
+        payload = {
+            "artifact_class": "report",
+            "path": "factory/src/change.patch",
+            "sha256": "b" * 64,
+            "size_bytes": 12,
+            "media_type": "text/plain",
+        }
+        api_idempotency = "artifact-replay-001"
+        command_key = canonical_digest({
+            "contract": "adaptive-factory.command/v1",
+            "idempotency_key": api_idempotency,
+        })
+        artifact = service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest,
+            sequence=1, event_type="artifact.proposed", payload=payload,
+            actor=WORKER, idempotency_key=command_key,
+        )
+        direct_facts = (
+            execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+            execution.lease.fence, execution.lease.packet_digest, execution.packet_digest,
+        )
+        forged_role = replace(artifact, sequence=2, author_role="reader", idempotency_key="0" * 64)
+        forged_role = replace(
+            forged_role, idempotency_key=proposal_idempotency_key(forged_role)
+        )
+        forged_attestation = replace(
+            artifact, sequence=2, artifact_attestation_digest="f" * 64,
+            idempotency_key="0" * 64,
+        )
+        forged_attestation = replace(
+            forged_attestation,
+            idempotency_key=proposal_idempotency_key(forged_attestation),
+        )
+        for forged in (dict(forged_role.__dict__), dict(forged_attestation.__dict__)):
+            with self.subTest(forged=forged["author_role"] + forged["path"]):
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute("SET ROLE factory_runtime")
+                    cursor.execute(
+                        "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,2,%s,'artifact',%s::jsonb)",
+                        (*direct_facts, forged["idempotency_key"], psycopg.types.json.Jsonb(forged)),
+                    )
+                    self.assertFalse(cursor.fetchone()[0])
+        for secret in (
+            "OPENAI_API_KEY=fixture",
+            "-----BEGIN PRIVATE KEY-----\nfixture\n-----END PRIVATE KEY-----",
+        ):
+            forged_note = NoteProposal(
+                execution.lease.task_id, execution.lease.run_id, execution.packet_digest,
+                execution.lease.fence, 2, "writer", "finding", secret, (), "0" * 64,
+            )
+            forged_note = replace(
+                forged_note, idempotency_key=proposal_idempotency_key(forged_note)
+            )
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute("SET ROLE factory_runtime")
+                cursor.execute(
+                    "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,2,%s,'note',%s::jsonb)",
+                    (
+                        *direct_facts, forged_note.idempotency_key,
+                        psycopg.types.json.Jsonb(dict(forged_note.__dict__)),
+                    ),
+                )
+                self.assertFalse(cursor.fetchone()[0])
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT
+                has_table_privilege('factory_runtime','factory.execution_proposals','SELECT'),
+                has_function_privilege(
+                  'factory_runtime',
+                  'factory.execution_proposal_by_key(uuid,uuid,character)',
+                  'EXECUTE'
+                )"""
+            )
+            self.assertEqual(cursor.fetchone(), (False, True))
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+        terminal = self.service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest,
+            sequence=2, event_type="run.failed",
+            payload={"failure_class": "validation", "diagnostic": "fixture terminal"},
+            actor=WORKER, idempotency_key="c" * 64,
+        )
+        FactoryService(
+            self.store, snapshot_broker=TrustedPostgresTestSnapshotBroker()
+        ).finalize_execution(
+            execution.lease, packet_digest=execution.packet_digest, actor=WORKER,
+        )
+        broker.available = False
+        replay = service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest,
+            sequence=1, event_type="artifact.proposed", payload=dict(payload),
+            actor=WORKER, idempotency_key=command_key,
+        )
+        self.assertEqual(replay, artifact)
+        self.assertEqual(broker.calls, 1)
+        event = CanonicalEvent.from_payload(
+            task_id=execution.lease.task_id, run_id=execution.lease.run_id,
+            packet_digest=execution.packet_digest, sequence=1,
+            event_type="artifact.proposed", payload=payload,
+        )
+        alternate = replace(
+            artifact, artifact_attestation_digest="f" * 64,
+            idempotency_key="0" * 64,
+        )
+        alternate = replace(
+            alternate, idempotency_key=proposal_idempotency_key(alternate)
+        )
+        direct_replay = self.store.commit_execution_proposal(
+            execution.lease, alternate, WORKER, event=event,
+            idempotency_key=command_key,
+        )
+        self.assertEqual(direct_replay, artifact)
+        wrong_event = CanonicalEvent.from_payload(
+            task_id=execution.lease.task_id, run_id=execution.lease.run_id,
+            packet_digest=execution.packet_digest, sequence=1,
+            event_type="note.proposed",
+            payload={"note_type": "finding", "body": "safe", "evidence": []},
+        )
+        with self.assertRaisesRegex(StoreError, "does not match command"):
+            self.store.commit_execution_proposal(
+                execution.lease, artifact, WORKER, event=wrong_event,
+            )
+        with self.assertRaisesRegex(StoreError, "different command"):
+            service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest,
+                sequence=1, event_type="artifact.proposed",
+                payload={**payload, "sha256": "d" * 64}, actor=WORKER,
+            idempotency_key=command_key,
+            )
+        with self.assertRaises(FenceError):
+            service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest,
+                sequence=3, event_type="artifact.proposed", payload=payload,
+                actor=WORKER, idempotency_key="e" * 64,
+            )
+        self.assertEqual(broker.calls, 1)
+
+        grant_payload = {
+            "task_id": execution.lease.task_id, "run_id": execution.lease.run_id,
+            "owner": execution.lease.owner, "role": execution.lease.role.value,
+            "fence": execution.lease.fence,
+            "expires_at": execution.lease.expires_at.isoformat().replace("+00:00", "Z"),
+            "packet_digest": execution.lease.packet_digest,
+        }
+        unauthorized = Actor(
+            "worker", "worker", frozenset({"task:execute"}), frozenset({"other/repository"})
+        )
+        api = TestClient(create_app(
+            service, Authenticator({"api-worker": WORKER, "api-unauthorized": unauthorized})
+        ))
+        api_payload = {
+            "grant": grant_payload, "packet_digest": execution.packet_digest, "sequence": 1,
+            **payload,
+        }
+        api_headers = {
+            "Authorization": "Bearer api-worker", "Idempotency-Key": api_idempotency,
+            "X-Correlation-ID": "artifact-replay-correlation",
+        }
+        first_api_replay = api.post(
+            "/v1/execution/artifacts", headers=api_headers, json=api_payload
+        )
+        second_api_replay = api.post(
+            "/v1/execution/artifacts", headers=api_headers, json=api_payload
+        )
+        self.assertEqual(first_api_replay.status_code, 200, first_api_replay.text)
+        self.assertEqual(second_api_replay.status_code, 200, second_api_replay.text)
+        self.assertEqual(second_api_replay.content, first_api_replay.content)
+        changed_response = api.post(
+            "/v1/execution/artifacts", headers=api_headers,
+            json={**api_payload, "sha256": "d" * 64},
+        )
+        self.assertEqual(changed_response.status_code, 409, changed_response.text)
+        unauthorized_response = api.post(
+            "/v1/execution/artifacts",
+            headers={**api_headers, "Authorization": "Bearer api-unauthorized"},
+            json=api_payload,
+        )
+        self.assertEqual(unauthorized_response.status_code, 403, unauthorized_response.text)
+        self.assertEqual(broker.calls, 1)
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT body->>'author_role',body->>'artifact_attestation_digest',
+                trim(idempotency_key),
+                (SELECT result FROM factory.command_results WHERE idempotency_key=%s),
+                (SELECT trim(request_digest) FROM factory.command_results WHERE idempotency_key=%s),
+                (SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s)
+                FROM factory.execution_proposals
+                WHERE run_id=%s AND proposal_kind='artifact'""",
+                (command_key, command_key, execution.lease.run_id, execution.lease.run_id),
+            )
+            author_role, attestation_digest, persisted_key, command_result, request_digest, count = cursor.fetchone()
+        self.assertEqual((author_role, len(attestation_digest), persisted_key, count), ("writer", 64, artifact.idempotency_key, 2))
+        self.assertEqual(command_result, {
+            "proposal_kind": "artifact", "sequence": 1,
+            "proposal_idempotency_key": artifact.idempotency_key,
+        })
+        self.assertEqual(
+            request_digest,
+            canonical_digest(self.store._execution_proposal_command(execution.lease, event)),
+        )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE factory.execution_proposals SET body=to_jsonb(body::text)
+                WHERE run_id=%s AND proposal_kind='artifact'""",
+                (execution.lease.run_id,),
+            )
+        with self.assertRaisesRegex(StoreError, "persisted execution proposal is corrupt"):
+            service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest,
+                sequence=1, event_type="artifact.proposed", payload=dict(payload),
+                actor=WORKER, idempotency_key=command_key,
+            )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE factory.execution_proposals SET body=(body#>>'{}')::jsonb
+                WHERE run_id=%s AND proposal_kind='artifact'""",
+                (execution.lease.run_id,),
+            )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.command_results SET result=jsonb_set(result,'{sequence}','true'::jsonb) WHERE idempotency_key=%s",
+                (command_key,),
+            )
+        with self.assertRaisesRegex(StoreError, "persisted execution proposal command is corrupt"):
+            service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest,
+                sequence=1, event_type="artifact.proposed", payload=dict(payload),
+                actor=WORKER, idempotency_key=command_key,
+            )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE factory.command_results SET result=%s::jsonb
+                WHERE idempotency_key=%s""",
+                (
+                    psycopg.types.json.Jsonb({
+                        "proposal_kind": "artifact", "sequence": 1,
+                        "proposal_idempotency_key": terminal.idempotency_key,
+                    }),
+                    command_key,
+                ),
+            )
+        with self.assertRaisesRegex(StoreError, "persisted execution proposal is corrupt"):
+            service.commit_execution_proposal(
+                execution.lease, packet_digest=execution.packet_digest,
+                sequence=1, event_type="artifact.proposed", payload=dict(payload),
+                actor=WORKER, idempotency_key=command_key,
+            )
 
     def test_execution_lifecycle_persists_new_digest_stages_and_redacted_proposal(self):
         task = self.submit(source="m5-execution-lifecycle").task

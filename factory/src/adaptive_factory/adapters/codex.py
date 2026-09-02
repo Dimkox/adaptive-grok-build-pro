@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .base import AdapterConformance, AdapterError, canonicalize, event, native_records
+from .base import AdapterConformance, AdapterError, canonicalize, event, native_records, native_text
 
 
 class CodexAdapter:
@@ -52,7 +52,7 @@ class CodexAdapter:
                         "note.proposed",
                         {
                             "note_type": "conclusion",
-                            "body": str(item.get("text", "")),
+                            "body": native_text(item.get("text", "")),
                             "evidence": item.get("evidence", []),
                         },
                     )
@@ -71,13 +71,14 @@ class CodexAdapter:
                     )
                 )
                 terminal = "run.completed" if final.get("status") == "completed" else "run.needs_human"
-                payload = {"summary": final.get("summary", "")} if terminal == "run.completed" else {
+                summary = native_text(final.get("summary", ""))
+                payload = {"summary": summary} if terminal == "run.completed" else {
                     "reason": "provider_terminal",
-                    "diagnostic": str(final.get("summary", "")),
+                    "diagnostic": summary,
                 }
                 output.append(event(identity, len(output) + 1, terminal, payload))
             else:
-                raise AdapterError("unknown_native_event", str(native_type))
+                raise AdapterError("unknown_native_event")
         return canonicalize(
             output,
             task_id=task_id,

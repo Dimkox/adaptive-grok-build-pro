@@ -347,3 +347,7 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-02 — Guessed a root test module name
 
 **Root cause:** The first focused root command named `tests.test_architecture` without enumerating the repository's actual test modules, producing an import error; listing `tests/` identified `test_architecture_fitness` and `test_architecture_model`, and the corrected 148-test suite passed.
+
+## 2026-09-02 — Carried an over-indented unchanged test line
+
+**Root cause:** A broad context patch accidentally moved an unchanged helper return under the wrong block, and the edit was inspected before an immediate compile check. Every context-heavy test patch now gets `py_compile` before its first test invocation.

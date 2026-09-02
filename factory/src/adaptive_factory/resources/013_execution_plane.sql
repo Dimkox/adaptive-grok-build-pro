@@ -207,26 +207,251 @@ DECLARE
   v_max_sequence bigint;
   v_has_terminal boolean;
   v_max_events bigint;
+  v_role text;
+  v_repository_id text;
+  v_workspace_handle text;
+  v_packet jsonb;
+  v_allowed_paths jsonb;
+  v_expected_attestation char(64);
+  v_expected_key char(64);
+  v_canonical text;
+  v_evidence text;
+  v_secret_pattern CONSTANT text := '(-----BEGIN|-----END|sk-|ghp_|github_pat_|(AKIA|ASIA)[A-Z0-9]{16}|bearer[ \t]+|authorization[ \t]*[=:]|["'']?([a-z0-9]+[_-])*(api[_-]?key|access[_-]?token|session[_-]?token|client[_-]?secret|refresh[_-]?token|password|credential|secret[_-]?key|private[_-]?key|token|secret)([_-][a-z0-9]+)*["'']?[ \t]*[:=])';
 BEGIN
-  IF octet_length(p_body::text)>65536 THEN RETURN false; END IF;
-  PERFORM 1 FROM factory.tasks t
+  IF p_task_id IS NULL OR p_run_id IS NULL OR p_owner IS NULL OR p_fence IS NULL
+    OR p_legacy_packet_digest IS NULL OR p_packet_digest IS NULL OR p_sequence IS NULL
+    OR p_idempotency_key IS NULL OR p_kind IS NULL OR p_body IS NULL
+    OR jsonb_typeof(p_body) IS DISTINCT FROM 'object'
+    OR octet_length(p_body::text)>65536
+    OR p_kind NOT IN ('note','artifact','usage','terminal')
+  THEN RETURN false; END IF;
+  SELECT r.role,t.repository_id,m.workspace_handle,p.body
+    INTO v_role,v_repository_id,v_workspace_handle,v_packet
+    FROM factory.tasks t
     JOIN factory.runs r ON r.run_id=t.current_run_id AND r.task_id=t.task_id
     JOIN factory.capacity_allocations a ON a.run_id=r.run_id AND a.task_id=t.task_id
+    JOIN factory.execution_packets p ON p.run_id=r.run_id AND p.task_id=t.task_id
     JOIN factory.execution_manifests m ON m.run_id=r.run_id AND m.packet_digest=p_packet_digest
     WHERE t.task_id=p_task_id AND r.run_id=p_run_id AND r.owner_id=p_owner
       AND r.fence=p_fence AND r.packet_digest=p_legacy_packet_digest
-      AND t.current_fence=p_fence AND r.released_at IS NULL AND a.released_at IS NULL
+      AND t.packet_digest=p_legacy_packet_digest AND t.current_fence=p_fence
+      AND p.packet_digest=p_packet_digest AND p.legacy_packet_digest=p_legacy_packet_digest
+      AND t.state='leased' AND r.state='leased'
+      AND r.released_at IS NULL AND a.released_at IS NULL
       AND m.terminal_at IS NULL AND r.lease_expires_at>clock_timestamp()
+      AND t.deadline_at>clock_timestamp()
     FOR UPDATE OF t,r,m;
   IF NOT FOUND THEN RETURN false; END IF;
-  SELECT (p.body#>>'{limits,max_events}')::bigint INTO v_max_events
-    FROM factory.execution_packets p
-    WHERE p.task_id=p_task_id AND p.run_id=p_run_id
-      AND p.packet_digest=p_packet_digest AND p.legacy_packet_digest=p_legacy_packet_digest
-    FOR UPDATE;
-  IF NOT FOUND OR v_max_events IS NULL OR v_max_events NOT BETWEEN 1 AND 100000 THEN
-    RETURN false;
+  v_max_events=(v_packet#>>'{limits,max_events}')::bigint;
+  v_allowed_paths=v_packet#>'{capability_policy,allowed_paths}';
+  IF v_max_events IS NULL OR v_max_events NOT BETWEEN 1 AND 100000
+    OR jsonb_typeof(v_allowed_paths) IS DISTINCT FROM 'array'
+    OR jsonb_typeof(v_packet#>'{provider,capabilities}') IS DISTINCT FROM 'array'
+    OR NOT (v_packet#>'{provider,capabilities}' ? CASE p_kind
+      WHEN 'note' THEN 'notes' WHEN 'artifact' THEN 'artifacts'
+      WHEN 'usage' THEN 'usage' ELSE 'structured_output' END)
+    OR p_body->>'task_id' IS DISTINCT FROM p_task_id::text
+    OR p_body->>'run_id' IS DISTINCT FROM p_run_id::text
+    OR p_body->>'packet_digest' IS DISTINCT FROM trim(p_packet_digest)
+    OR p_body->>'fence' IS DISTINCT FROM p_fence::text
+    OR p_body->>'sequence' IS DISTINCT FROM p_sequence::text
+    OR p_body->>'author_role' IS DISTINCT FROM v_role
+    OR p_body->>'idempotency_key' IS DISTINCT FROM trim(p_idempotency_key)
+    OR jsonb_typeof(p_body->'task_id') IS DISTINCT FROM 'string'
+    OR jsonb_typeof(p_body->'run_id') IS DISTINCT FROM 'string'
+    OR jsonb_typeof(p_body->'packet_digest') IS DISTINCT FROM 'string'
+    OR jsonb_typeof(p_body->'fence') IS DISTINCT FROM 'number'
+    OR jsonb_typeof(p_body->'sequence') IS DISTINCT FROM 'number'
+    OR jsonb_typeof(p_body->'author_role') IS DISTINCT FROM 'string'
+    OR jsonb_typeof(p_body->'idempotency_key') IS DISTINCT FROM 'string'
+    OR p_body->>'fence' !~ '^[1-9][0-9]{0,18}$'
+    OR p_body->>'sequence' !~ '^[1-9][0-9]{0,5}$'
+  THEN RETURN false;
   END IF;
+
+  IF p_kind='note' THEN
+    IF NOT (p_body ?& ARRAY[
+        'task_id','run_id','packet_digest','fence','sequence','author_role',
+        'note_type','body','evidence','idempotency_key'
+      ]) OR (SELECT count(*) FROM jsonb_object_keys(p_body))<>10
+      OR jsonb_typeof(p_body->'fence') IS DISTINCT FROM 'number'
+      OR jsonb_typeof(p_body->'sequence') IS DISTINCT FROM 'number'
+      OR jsonb_typeof(p_body->'note_type') IS DISTINCT FROM 'string'
+      OR jsonb_typeof(p_body->'body') IS DISTINCT FROM 'string'
+      OR jsonb_typeof(p_body->'evidence') IS DISTINCT FROM 'array'
+      OR COALESCE(octet_length(p_body->>'note_type'),0) NOT BETWEEN 1 AND 64
+      OR COALESCE(octet_length(p_body->>'body'),0)>
+         LEAST(65536,(v_packet#>>'{limits,max_output_bytes}')::bigint)
+      OR p_body->>'note_type' ~* v_secret_pattern
+      OR p_body->>'body' ~* v_secret_pattern
+      OR p_body->>'body' LIKE '#!%' OR p_body->>'body' LIKE E'%\ngit push%'
+      OR jsonb_array_length(p_body->'evidence')>64
+      OR EXISTS (
+        SELECT 1 FROM jsonb_array_elements(p_body->'evidence') item
+        WHERE jsonb_typeof(item) IS DISTINCT FROM 'string'
+      )
+      OR EXISTS (
+        SELECT 1 FROM jsonb_array_elements_text(p_body->'evidence') path
+        WHERE path='' OR path LIKE '/%' OR path LIKE '%//%' OR path LIKE '%/'
+          OR path ~ '(^|/)(\.|\.\.|\.git)(/|$)'
+          OR NOT EXISTS (
+            SELECT 1 FROM jsonb_array_elements_text(v_allowed_paths) root
+            WHERE path=root OR (
+              left(path,length(root))=root AND substr(path,length(root)+1,1)='/'
+            )
+          )
+          OR path ~* v_secret_pattern
+      )
+    THEN RETURN false; END IF;
+    SELECT '[' || COALESCE(string_agg(to_jsonb(value)::text,',' ORDER BY ordinal),'') || ']'
+      INTO v_evidence
+      FROM jsonb_array_elements_text(p_body->'evidence') WITH ORDINALITY AS e(value,ordinal);
+    v_canonical='{"body":' || (p_body->'body')::text ||
+      ',"evidence":' || v_evidence ||
+      ',"note_type":' || (p_body->'note_type')::text || '}';
+  ELSIF p_kind='artifact' THEN
+    IF NOT (p_body ?& ARRAY[
+        'task_id','run_id','packet_digest','fence','sequence','author_role','artifact_class',
+        'path','sha256','size_bytes','media_type','artifact_attestation_digest','idempotency_key'
+      ]) OR (SELECT count(*) FROM jsonb_object_keys(p_body))<>13
+      OR jsonb_typeof(p_body->'fence') IS DISTINCT FROM 'number'
+      OR jsonb_typeof(p_body->'sequence') IS DISTINCT FROM 'number'
+      OR jsonb_typeof(p_body->'artifact_class') IS DISTINCT FROM 'string'
+      OR jsonb_typeof(p_body->'path') IS DISTINCT FROM 'string'
+      OR jsonb_typeof(p_body->'sha256') IS DISTINCT FROM 'string'
+      OR jsonb_typeof(p_body->'size_bytes') IS DISTINCT FROM 'number'
+      OR jsonb_typeof(p_body->'media_type') IS DISTINCT FROM 'string'
+      OR jsonb_typeof(p_body->'artifact_attestation_digest') IS DISTINCT FROM 'string'
+      OR p_body->>'sha256' !~ '^[0-9a-f]{64}$'
+      OR p_body->>'artifact_attestation_digest' !~ '^[0-9a-f]{64}$'
+      OR p_body->>'size_bytes' !~ '^(0|[1-9][0-9]{0,9})$'
+      OR (p_body->>'size_bytes')::bigint>(v_packet#>>'{limits,max_output_bytes}')::bigint
+      OR p_body->>'media_type' !~ '^[a-z0-9.+-]+/[a-z0-9.+-]+$'
+      OR NOT (v_packet#>'{capability_policy,artifact_classes}' ? (p_body->>'artifact_class'))
+      OR p_body->>'path'='' OR p_body->>'path' LIKE '/%'
+      OR p_body->>'path' LIKE '%//%' OR p_body->>'path' LIKE '%/'
+      OR p_body->>'path' ~ '(^|/)(\.|\.\.|\.git)(/|$)'
+      OR NOT EXISTS (
+        SELECT 1 FROM jsonb_array_elements_text(v_allowed_paths) root
+        WHERE p_body->>'path'=root OR (
+          left(p_body->>'path',length(root))=root
+          AND substr(p_body->>'path',length(root)+1,1)='/'
+        )
+      )
+      OR p_body->>'path' ~* v_secret_pattern
+    THEN RETURN false; END IF;
+    v_canonical='{"contract":' || to_jsonb('adaptive-factory.artifact-attestation/v1'::text)::text ||
+      ',"contract_version":1' ||
+      ',"media_type":' || (p_body->'media_type')::text ||
+      ',"packet_digest":' || to_jsonb(trim(p_packet_digest))::text ||
+      ',"path":' || (p_body->'path')::text ||
+      ',"repository_id":' || to_jsonb(v_repository_id)::text ||
+      ',"run_id":' || to_jsonb(p_run_id::text)::text ||
+      ',"sha256":' || (p_body->'sha256')::text ||
+      ',"size_bytes":' || (p_body->>'size_bytes') ||
+      ',"source":' || to_jsonb('trusted_workspace_broker'::text)::text ||
+      ',"task_id":' || to_jsonb(p_task_id::text)::text ||
+      ',"workspace_handle":' || to_jsonb(v_workspace_handle)::text || '}';
+    v_expected_attestation=factory.execution_contract_hash(NULL,v_canonical);
+    IF p_body->>'artifact_attestation_digest' IS DISTINCT FROM trim(v_expected_attestation)
+    THEN RETURN false; END IF;
+    v_canonical='{"artifact_attestation_digest":' || (p_body->'artifact_attestation_digest')::text ||
+      ',"artifact_class":' || (p_body->'artifact_class')::text ||
+      ',"author_role":' || to_jsonb(v_role)::text ||
+      ',"media_type":' || (p_body->'media_type')::text ||
+      ',"path":' || (p_body->'path')::text ||
+      ',"sha256":' || (p_body->'sha256')::text ||
+      ',"size_bytes":' || (p_body->>'size_bytes') || '}';
+  ELSIF p_kind='usage' THEN
+    IF NOT (p_body ?& ARRAY[
+        'task_id','run_id','packet_digest','fence','sequence','author_role','provider_call_id',
+        'price_table_digest','input_tokens','output_tokens','reasoning_tokens','cost_usd_micros',
+        'output_bytes','idempotency_key'
+      ]) OR (SELECT count(*) FROM jsonb_object_keys(p_body))<>14
+      OR jsonb_typeof(p_body->'provider_call_id') IS DISTINCT FROM 'string'
+      OR jsonb_typeof(p_body->'price_table_digest') IS DISTINCT FROM 'string'
+      OR p_body->>'price_table_digest' !~ '^[0-9a-f]{64}$'
+      OR COALESCE(octet_length(p_body->>'provider_call_id'),0) NOT BETWEEN 1 AND 128
+      OR p_body->>'provider_call_id' ~* v_secret_pattern
+      OR EXISTS (
+        SELECT 1 FROM jsonb_array_elements(jsonb_build_array(
+          p_body->'input_tokens',p_body->'output_tokens',p_body->'reasoning_tokens',
+          p_body->'cost_usd_micros',p_body->'output_bytes'
+        )) value
+        WHERE jsonb_typeof(value) IS DISTINCT FROM 'number'
+          OR value#>>'{}' !~ '^(0|[1-9][0-9]{0,18})$'
+      )
+      OR (p_body->>'input_tokens')::numeric+(p_body->>'output_tokens')::numeric+
+         (p_body->>'reasoning_tokens')::numeric>(v_packet#>>'{limits,max_token_units}')::numeric
+      OR (p_body->>'cost_usd_micros')::numeric>(v_packet#>>'{limits,max_cost_usd_micros}')::numeric
+      OR (p_body->>'output_bytes')::numeric>(v_packet#>>'{limits,max_output_bytes}')::numeric
+    THEN RETURN false; END IF;
+    v_canonical='{"author_role":' || to_jsonb(v_role)::text ||
+      ',"cost_usd_micros":' || (p_body->>'cost_usd_micros') ||
+      ',"input_tokens":' || (p_body->>'input_tokens') ||
+      ',"output_bytes":' || (p_body->>'output_bytes') ||
+      ',"output_tokens":' || (p_body->>'output_tokens') ||
+      ',"price_table_digest":' || (p_body->'price_table_digest')::text ||
+      ',"provider_call_id":' || (p_body->'provider_call_id')::text ||
+      ',"reasoning_tokens":' || (p_body->>'reasoning_tokens') || '}';
+  ELSE
+    IF NOT (p_body ?& ARRAY[
+        'task_id','run_id','packet_digest','fence','sequence','author_role','terminal_type',
+        'summary','failure_class','reason','diagnostic','idempotency_key'
+      ]) OR (SELECT count(*) FROM jsonb_object_keys(p_body))<>12
+      OR jsonb_typeof(p_body->'terminal_type') IS DISTINCT FROM 'string'
+      OR jsonb_typeof(p_body->'summary') IS DISTINCT FROM 'string'
+      OR COALESCE(octet_length(p_body->>'summary'),0) NOT BETWEEN 1 AND
+         LEAST(65536,(v_packet#>>'{limits,max_output_bytes}')::bigint)
+      OR p_body->>'summary' ~* v_secret_pattern
+      OR NOT (
+        (p_body->>'terminal_type'='run.completed' AND p_body->'failure_class'='null'::jsonb
+          AND p_body->'reason'='null'::jsonb AND p_body->'diagnostic'='null'::jsonb)
+        OR (p_body->>'terminal_type'='run.failed'
+          AND jsonb_typeof(p_body->'failure_class')='string' AND p_body->'reason'='null'::jsonb
+          AND jsonb_typeof(p_body->'diagnostic')='string'
+          AND p_body->>'failure_class' IN (
+            'database_unavailable','worker_lost','provider_transport_unavailable',
+            'temporary_resource_exhaustion','validation','policy','authentication',
+            'unsupported_capability','budget','security','stale_input','protocol','provider_quality'
+          )
+          AND p_body->>'summary'=(p_body->>'failure_class') || ': ' || (p_body->>'diagnostic')
+          AND COALESCE(octet_length(p_body->>'diagnostic'),0) BETWEEN 1 AND
+              LEAST(65536,(v_packet#>>'{limits,max_output_bytes}')::bigint))
+        OR (p_body->>'terminal_type'='run.needs_human' AND p_body->'failure_class'='null'::jsonb
+          AND jsonb_typeof(p_body->'reason')='string' AND jsonb_typeof(p_body->'diagnostic')='string'
+          AND p_body->>'summary'=(p_body->>'reason') || ': ' || (p_body->>'diagnostic')
+          AND COALESCE(octet_length(p_body->>'reason'),0) BETWEEN 1 AND
+              LEAST(65536,(v_packet#>>'{limits,max_output_bytes}')::bigint)
+          AND COALESCE(octet_length(p_body->>'diagnostic'),0) BETWEEN 1 AND
+              LEAST(65536,(v_packet#>>'{limits,max_output_bytes}')::bigint))
+      )
+      OR COALESCE(p_body->>'reason','') ~* v_secret_pattern
+      OR COALESCE(p_body->>'diagnostic','') ~* v_secret_pattern
+    THEN RETURN false; END IF;
+    v_canonical='{"author_role":' || to_jsonb(v_role)::text ||
+      ',"diagnostic":' || (p_body->'diagnostic')::text ||
+      ',"failure_class":' || (p_body->'failure_class')::text ||
+      ',"reason":' || (p_body->'reason')::text ||
+      ',"summary":' || (p_body->'summary')::text ||
+      ',"terminal_type":' || (p_body->'terminal_type')::text || '}';
+  END IF;
+
+  v_canonical='{"author_role":' || to_jsonb(v_role)::text ||
+    ',"body":' || v_canonical ||
+    ',"contract":' || to_jsonb('adaptive-factory.execution-proposal/v1'::text)::text ||
+    ',"event_type":' || to_jsonb(CASE p_kind
+      WHEN 'note' THEN 'note.proposed' WHEN 'artifact' THEN 'artifact.proposed'
+      WHEN 'usage' THEN 'usage.reported' ELSE p_body->>'terminal_type' END)::text ||
+    ',"fence":' || p_fence::text ||
+    ',"packet_digest":' || to_jsonb(trim(p_packet_digest))::text ||
+    ',"run_id":' || to_jsonb(p_run_id::text)::text ||
+    ',"sequence":' || p_sequence::text ||
+    ',"task_id":' || to_jsonb(p_task_id::text)::text || '}';
+  v_expected_key=factory.execution_contract_hash(NULL,v_canonical);
+  IF trim(p_idempotency_key) IS DISTINCT FROM trim(v_expected_key)
+    OR p_body->>'idempotency_key' IS DISTINCT FROM trim(v_expected_key)
+  THEN RETURN false; END IF;
 
   SELECT count(*),COALESCE(bool_and(
       task_id=p_task_id AND run_id=p_run_id AND packet_digest=p_packet_digest
@@ -255,7 +480,7 @@ BEGIN
     gen_random_uuid(),p_task_id,p_run_id,p_packet_digest,p_sequence,p_idempotency_key,p_kind,p_body
   );
   RETURN true;
-EXCEPTION WHEN unique_violation OR check_violation OR foreign_key_violation THEN
+EXCEPTION WHEN unique_violation OR check_violation OR foreign_key_violation OR data_exception THEN
   RETURN false;
 END;
 $$;
@@ -279,7 +504,24 @@ LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
     AND t.packet_digest=p_legacy_packet_digest AND t.current_fence=p_fence
     AND p.packet_digest=p_packet_digest AND t.state='leased' AND r.state='leased'
     AND r.released_at IS NULL AND a.released_at IS NULL AND m.terminal_at IS NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM factory.execution_proposals terminal
+      WHERE terminal.run_id=p_run_id AND terminal.proposal_kind='terminal'
+    )
     AND r.lease_expires_at>clock_timestamp() AND t.deadline_at>clock_timestamp()
+$$;
+
+CREATE FUNCTION factory.execution_proposal_by_key(
+  p_task_id uuid,p_run_id uuid,p_idempotency_key char(64)
+) RETURNS jsonb
+LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+  SELECT jsonb_build_object(
+    'task_id',x.task_id,'run_id',x.run_id,'packet_digest',trim(x.packet_digest),
+    'producer_sequence',x.producer_sequence,'proposal_kind',x.proposal_kind,
+    'idempotency_key',trim(x.idempotency_key),'body',x.body
+  )
+  FROM factory.execution_proposals x
+  WHERE x.task_id=p_task_id AND x.run_id=p_run_id AND x.idempotency_key=p_idempotency_key
 $$;
 
 CREATE FUNCTION factory.execution_result_for_run(p_task_id uuid,p_run_id uuid) RETURNS jsonb
@@ -707,6 +949,7 @@ REVOKE ALL ON FUNCTION factory.execution_propose(uuid,uuid,text,bigint,char,char
   FROM PUBLIC;
 REVOKE ALL ON FUNCTION factory.execution_proposal_context(uuid,uuid,text,bigint,char,char)
   FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.execution_proposal_by_key(uuid,uuid,char) FROM PUBLIC;
 REVOKE ALL ON FUNCTION factory.execution_result_for_run(uuid,uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION factory.execution_has_packet(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION factory.execution_m4_status(uuid,uuid,text,text,bigint) FROM PUBLIC;
@@ -722,6 +965,7 @@ GRANT EXECUTE ON FUNCTION factory.execution_propose(uuid,uuid,text,bigint,char,c
   TO factory_runtime;
 GRANT EXECUTE ON FUNCTION factory.execution_proposal_context(uuid,uuid,text,bigint,char,char)
   TO factory_runtime;
+GRANT EXECUTE ON FUNCTION factory.execution_proposal_by_key(uuid,uuid,char) TO factory_runtime;
 GRANT EXECUTE ON FUNCTION factory.execution_result_for_run(uuid,uuid) TO factory_runtime;
 GRANT EXECUTE ON FUNCTION factory.execution_has_packet(uuid) TO factory_runtime;
 GRANT EXECUTE ON FUNCTION factory.execution_result_by_digest(uuid,char) TO factory_runtime;

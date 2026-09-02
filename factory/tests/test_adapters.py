@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import unittest
 
 from adaptive_factory.adapters import (
@@ -77,6 +78,60 @@ class AdapterTests(unittest.TestCase):
                 run_id="run-001",
                 packet_digest="a" * 64,
             )
+
+    def test_structured_native_text_is_rejected_instead_of_stringified(self):
+        cases = (
+            (
+                CodexAdapter(),
+                (
+                    {"type": "turn.started"},
+                    {
+                        "type": "item.completed",
+                        "item": {
+                            "type": "agent_message",
+                            "text": {"reasoning": "private chain"},
+                            "evidence": [],
+                        },
+                    },
+                    {
+                        "type": "turn.completed",
+                        "usage": {
+                            "price_table_digest": "b" * 64,
+                            "input_tokens": 1,
+                            "output_tokens": 1,
+                            "reasoning_tokens": 0,
+                            "cost_usd_micros": 0,
+                            "output_bytes": 1,
+                        },
+                        "final": {"status": "completed", "summary": "done"},
+                    },
+                ),
+            ),
+            (
+                GrokAdapter(),
+                (
+                    {"event": "session_started"},
+                    {
+                        "event": "finished",
+                        "reason": {"analysis": "private chain"},
+                    },
+                ),
+            ),
+        )
+        for adapter, records in cases:
+            raw = b"".join(
+                json.dumps(record, separators=(",", ":")).encode() + b"\n"
+                for record in records
+            )
+            with self.subTest(adapter=type(adapter).__name__), self.assertRaisesRegex(
+                AdapterError, "invalid_native_text"
+            ):
+                adapter.translate(
+                    raw,
+                    task_id="task-001",
+                    run_id="run-001",
+                    packet_digest="a" * 64,
+                )
 
     def test_current_adapter_cannot_be_promoted_by_caller_profile(self):
         selected = self.selection()

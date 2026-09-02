@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import PurePosixPath
 from typing import Iterable
 
 from .brokers import ProposalBroker
@@ -9,13 +10,17 @@ from .contracts import TaskIntakeV1, canonical_digest
 from .execution_contracts import (
     ExecutionContractError,
     ExecutionSelectionV1,
-    PROTOCOL_VERSION,
     RunManifestV1,
     TaskPacketV1,
 )
 from .models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole
 from .protocol import CanonicalEvent
-from .workspace import WorkspaceSnapshotUnavailable, WorkspaceSnapshotV1
+from .workspace import (
+    ArtifactAttestationRequest,
+    ArtifactAttestationV1,
+    WorkspaceSnapshotUnavailable,
+    WorkspaceSnapshotV1,
+)
 from .store import FenceError
 
 
@@ -32,9 +37,17 @@ class ClaimRequest:
 
 
 class FactoryService:
-    def __init__(self, store, *, snapshot_broker=None, execution_registry=None) -> None:
+    def __init__(
+        self,
+        store,
+        *,
+        snapshot_broker=None,
+        artifact_broker=None,
+        execution_registry=None,
+    ) -> None:
         self.store = store
         self.snapshot_broker = snapshot_broker
+        self.artifact_broker = artifact_broker
         self.execution_registry = execution_registry
 
     def readiness(self):
@@ -293,22 +306,65 @@ class FactoryService:
         self._require_grant_actor(grant, actor, "task:execute")
         if type(sequence) is not int or sequence < 1:
             raise ValueError("invalid proposal sequence")
-        context = self.store.proposal_context(grant, packet_digest)
-        event = CanonicalEvent(
-            PROTOCOL_VERSION,
-            grant.task_id,
-            grant.run_id,
-            packet_digest,
-            sequence,
-            event_type,
-            payload,
+        event = CanonicalEvent.from_payload(
+            task_id=grant.task_id,
+            run_id=grant.run_id,
+            packet_digest=packet_digest,
+            sequence=sequence,
+            event_type=event_type,
+            payload=payload,
         )
-        proposal = ProposalBroker().accept(event, context, owner=grant.owner, fence=grant.fence)
+        replay = self.store.execution_proposal_replay(
+            grant, event, actor, idempotency_key=idempotency_key
+        )
+        if replay is not None:
+            return replay
+        context = self.store.proposal_context(grant, packet_digest)
+        artifact_attestation_digest = None
+        if event_type == "artifact.proposed":
+            path = PurePosixPath(event.payload["path"])
+            roots = tuple(PurePosixPath(value) for value in context.allowed_paths)
+            if not any(path == root or root in path.parents for root in roots):
+                raise ExecutionContractError("path_forbidden")
+            request = ArtifactAttestationRequest.from_facts({
+                "task_id": context.task_id,
+                "run_id": context.run_id,
+                "repository_id": context.repository_id,
+                "packet_digest": context.packet_digest,
+                "workspace_handle": context.workspace_handle,
+                "path": event.payload["path"],
+                "sha256": event.payload["sha256"],
+                "size_bytes": event.payload["size_bytes"],
+                "media_type": event.payload["media_type"],
+            })
+            if self.artifact_broker is None:
+                raise ExecutionContractError("artifact_attestation_unavailable")
+            attestation = self.artifact_broker.attest_artifact(request)
+            if not isinstance(attestation, ArtifactAttestationV1):
+                raise ExecutionContractError("artifact_attestation_unavailable")
+            try:
+                attestation = ArtifactAttestationV1.from_dict(attestation.to_dict())
+            except ValueError as exc:
+                raise ExecutionContractError("artifact_attestation_invalid") from exc
+            if any(
+                getattr(attestation, name) != value
+                for name, value in request.to_dict().items()
+            ):
+                raise ExecutionContractError("artifact_attestation_mismatch")
+            artifact_attestation_digest = attestation.artifact_attestation_digest
+        proposal = ProposalBroker().accept(
+            event,
+            context,
+            owner=grant.owner,
+            fence=grant.fence,
+            artifact_attestation_digest=artifact_attestation_digest,
+        )
         return self._fenced(
             lambda: self.store.commit_execution_proposal(
                 grant,
                 proposal,
                 actor,
+                event=event,
                 idempotency_key=idempotency_key,
                 correlation_id=correlation_id,
             )

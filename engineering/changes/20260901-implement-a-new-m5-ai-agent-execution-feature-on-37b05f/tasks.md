@@ -8,7 +8,7 @@
 - [x] Repair executable architecture ownership for all M5 execution sources without adding provider, database, Git, scheduler, Trust CI, or external authority.
 - [x] Require an injected exact trusted adapter/profile registry, deny reader write capabilities, clean failed post-claim leases, and bind grant role to the durable run.
 - [x] Enforce consecutive packet-bounded proposal streams, exact replay, no post-terminal effects, and serialized finalization without evidence mutation.
-- [ ] Enforce structured redaction and allowed-path/trusted artifact evidence.
+- [x] Enforce closed structured redaction, secret-free durable identities, allowed-path evidence, broker-only artifact attestation, canonical SQL persistence, and exact post-terminal replay.
 - [x] Bind finalization SQL to canonical cross-fields, derive M4 outcome from factual terminal result, and fail closed on result corruption; start-path canonical binding remains tracked under the contract-closure slice.
 - [ ] Add M5-aware orphan/cancel recovery and close/inventory all execution schemas and OpenAPI request/response contracts.
 - [ ] TDD restart/orphan recovery, bounded metrics, and predefined systemd source topology.

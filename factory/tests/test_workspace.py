@@ -1,6 +1,9 @@
 import unittest
 
 from adaptive_factory.workspace import (
+    ArtifactAttestationRequest,
+    ArtifactAttestationUnavailable,
+    ArtifactAttestationV1,
     FakeGitBroker,
     FakeWorkspaceBroker,
     HostIsolationReport,
@@ -99,6 +102,43 @@ class WorkspaceTests(unittest.TestCase):
         self.assertIsInstance(result, WorkspaceSnapshotUnavailable)
         self.assertEqual((result.status, result.disposition), ("unavailable", "needs_human"))
         self.assertFalse(hasattr(result, "result_head_sha"))
+
+    def test_artifact_attestation_is_closed_exact_and_content_bound(self):
+        request = ArtifactAttestationRequest.from_facts({
+            "task_id": "task-001", "run_id": "run-001",
+            "repository_id": "owner/repository", "packet_digest": "b" * 64,
+            "workspace_handle": handle().value, "path": "factory/src/a.py",
+            "sha256": "c" * 64, "size_bytes": 12, "media_type": "text/x-python",
+        })
+        value = {
+            "contract_version": 1, **request.to_dict(), "source": "trusted_workspace_broker",
+        }
+        attestation = ArtifactAttestationV1.from_facts(value)
+        self.assertEqual(
+            ArtifactAttestationV1.from_dict(attestation.to_dict()), attestation
+        )
+        changed = dict(value, sha256="d" * 64)
+        self.assertNotEqual(
+            ArtifactAttestationV1.from_facts(changed).artifact_attestation_digest,
+            attestation.artifact_attestation_digest,
+        )
+        for invalid in (
+            dict(value, source="provider"), dict(value, symlink=False),
+            dict(value, contract_version=True),
+        ):
+            with self.subTest(invalid=invalid), self.assertRaises(WorkspaceError):
+                ArtifactAttestationV1.from_facts(invalid)
+
+    def test_fake_workspace_artifact_attestation_is_truthfully_unavailable(self):
+        request = ArtifactAttestationRequest.from_facts({
+            "task_id": "task-001", "run_id": "run-001",
+            "repository_id": "owner/repository", "packet_digest": "b" * 64,
+            "workspace_handle": handle().value, "path": "factory/src/a.py",
+            "sha256": "c" * 64, "size_bytes": 12, "media_type": "text/x-python",
+        })
+        result = FakeWorkspaceBroker().attest_artifact(request)
+        self.assertIsInstance(result, ArtifactAttestationUnavailable)
+        self.assertFalse(hasattr(result, "artifact_attestation_digest"))
 
 
 if __name__ == "__main__":

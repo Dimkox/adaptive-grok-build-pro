@@ -6,10 +6,18 @@ import json
 import uuid
 
 from .contracts import HEX64, TaskIntakeV1, canonical_digest
-from .brokers import ArtifactProposal, NoteProposal, ProposalContext, TerminalProposal, UsageProposal
+from .brokers import (
+    ArtifactProposal,
+    NoteProposal,
+    ProposalContext,
+    TerminalProposal,
+    UsageProposal,
+    proposal_idempotency_key,
+)
 from .execution_contracts import RunManifestV1, TaskPacketV1, WorkspaceResultV1, workspace_evidence_digest
 from .migrations import discover_migrations
 from .models import Actor, ExecutionGrant, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskProjection, TaskStatus
+from .protocol import CanonicalEvent, PROTOCOL_VERSION
 from .state import classify_retry
 from .workspace import WorkspaceSnapshotRequest, WorkspaceSnapshotV1
 
@@ -803,6 +811,9 @@ class PostgresFactoryStore:
                 grant.fence,
                 packet_digest,
                 locked_grant[1],
+                body["repository_id"],
+                body["workspace_handle"],
+                tuple(body["capability_policy"]["allowed_paths"]),
                 tuple(body["capability_policy"]["artifact_classes"]),
                 min(65_536, limits["max_output_bytes"]),
                 limits["max_output_bytes"],
@@ -812,12 +823,148 @@ class PostgresFactoryStore:
                 tuple(body["provider"]["capabilities"]),
             )
 
+    @staticmethod
+    def _execution_proposal_command(grant: LeaseGrant, event: CanonicalEvent) -> dict:
+        return {
+            "contract": "adaptive-factory.execution-propose-command/v1",
+            "grant": {
+                "task_id": grant.task_id,
+                "run_id": grant.run_id,
+                "owner": grant.owner,
+                "role": grant.role.value,
+                "fence": grant.fence,
+                "legacy_packet_digest": grant.packet_digest,
+            },
+            "event": event.to_dict(),
+        }
+
+    @staticmethod
+    def _proposal_kind(event_type: str) -> str:
+        if event_type == "note.proposed":
+            return "note"
+        if event_type == "artifact.proposed":
+            return "artifact"
+        if event_type == "usage.reported":
+            return "usage"
+        if event_type in {"run.completed", "run.failed", "run.needs_human"}:
+            return "terminal"
+        raise StoreError("unsupported execution proposal")
+
+    @classmethod
+    def _stored_execution_proposal(
+        cls,
+        cursor,
+        grant: LeaseGrant,
+        event: CanonicalEvent,
+        result: dict,
+    ):
+        if not isinstance(result, dict) or set(result) != {
+            "proposal_kind", "sequence", "proposal_idempotency_key"
+        }:
+            raise StoreError("persisted execution proposal command is corrupt")
+        expected_kind = cls._proposal_kind(event.event_type)
+        proposal_digest = result["proposal_idempotency_key"]
+        if (
+            result["proposal_kind"] != expected_kind
+            or type(result["sequence"]) is not int
+            or result["sequence"] != event.sequence
+            or not isinstance(proposal_digest, str)
+            or not HEX64.fullmatch(proposal_digest)
+        ):
+            raise StoreError("persisted execution proposal command is corrupt")
+        cursor.execute(
+            "SELECT factory.execution_proposal_by_key(%s,%s,%s)",
+            (grant.task_id, grant.run_id, proposal_digest),
+        )
+        envelope = cursor.fetchone()[0]
+        if envelope is None:
+            raise StoreError("persisted execution proposal is missing")
+        if isinstance(envelope, str):
+            envelope = json.loads(envelope)
+        if not isinstance(envelope, dict) or set(envelope) != {
+            "task_id", "run_id", "packet_digest", "producer_sequence", "proposal_kind",
+            "idempotency_key", "body",
+        }:
+            raise StoreError("persisted execution proposal is corrupt")
+        task_id = envelope["task_id"]
+        run_id = envelope["run_id"]
+        packet_digest = envelope["packet_digest"]
+        sequence = envelope["producer_sequence"]
+        kind = envelope["proposal_kind"]
+        stored_digest = envelope["idempotency_key"]
+        body = envelope["body"]
+        if (
+            str(task_id) != grant.task_id
+            or str(run_id) != grant.run_id
+            or packet_digest != event.packet_digest
+            or sequence != event.sequence
+            or kind != expected_kind
+            or stored_digest != proposal_digest
+        ):
+            raise StoreError("persisted execution proposal is corrupt")
+        classes = {
+            "note": NoteProposal,
+            "artifact": ArtifactProposal,
+            "usage": UsageProposal,
+            "terminal": TerminalProposal,
+        }
+        proposal_type = classes.get(kind)
+        if proposal_type is None or not isinstance(body, dict) or set(body) != set(proposal_type.__dataclass_fields__):
+            raise StoreError("persisted execution proposal is corrupt")
+        try:
+            if proposal_type is NoteProposal:
+                if not isinstance(body.get("evidence"), list):
+                    raise TypeError("invalid persisted evidence")
+                body["evidence"] = tuple(body["evidence"])
+            proposal = proposal_type(**body)
+        except (TypeError, ValueError) as exc:
+            raise StoreError("persisted execution proposal is corrupt") from exc
+        if (
+            proposal.task_id != grant.task_id
+            or proposal.run_id != grant.run_id
+            or proposal.packet_digest != event.packet_digest
+            or proposal.fence != grant.fence
+            or proposal.author_role != grant.role.value
+            or proposal.sequence != sequence
+            or proposal.idempotency_key != stored_digest
+            or proposal.idempotency_key != proposal_digest
+            or proposal_idempotency_key(proposal) != proposal_digest
+            or (
+                isinstance(proposal, TerminalProposal)
+                and proposal.terminal_type != event.event_type
+            )
+        ):
+            raise StoreError("persisted execution proposal is corrupt")
+        return proposal
+
+    def execution_proposal_replay(
+        self,
+        grant: LeaseGrant,
+        event: CanonicalEvent,
+        actor: Actor,
+        *,
+        idempotency_key: str | None,
+    ):
+        if idempotency_key is None:
+            return None
+        command = self._execution_proposal_command(grant, event)
+        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            replay, prior, _request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "execution_propose", command
+            )
+            if not replay:
+                return None
+            return self._stored_execution_proposal(
+                cursor, grant, event, prior
+            )
+
     def commit_execution_proposal(
         self,
         grant: LeaseGrant,
         proposal,
         actor: Actor,
         *,
+        event: CanonicalEvent,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
     ):
@@ -830,22 +977,37 @@ class PostgresFactoryStore:
         kind = kinds.get(type(proposal))
         if kind is None:
             raise StoreError("unsupported execution proposal")
+        expected_kind = self._proposal_kind(event.event_type)
+        if (
+            kind != expected_kind
+            or event.protocol_version != PROTOCOL_VERSION
+            or event.task_id != grant.task_id
+            or event.run_id != grant.run_id
+            or proposal.task_id != grant.task_id
+            or proposal.run_id != grant.run_id
+            or proposal.packet_digest != event.packet_digest
+            or proposal.fence != grant.fence
+            or proposal.sequence != event.sequence
+            or proposal.author_role != grant.role.value
+            or proposal.idempotency_key != proposal_idempotency_key(proposal)
+            or (
+                isinstance(proposal, TerminalProposal)
+                and proposal.terminal_type != event.event_type
+            )
+        ):
+            raise StoreError("execution proposal does not match command")
         body = asdict(proposal)
-        command = {
-            "run_id": grant.run_id,
-            "packet_digest": proposal.packet_digest,
-            "sequence": proposal.sequence,
-            "proposal_kind": kind,
-            "proposal_digest": canonical_digest(body),
-        }
+        command = self._execution_proposal_command(grant, event)
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
-            self._lock_grant(cursor, grant)
-            replay, _prior, request_digest = self._command_replay(
+            replay, prior, request_digest = self._command_replay(
                 cursor, idempotency_key, actor, "execution_propose", command
             )
             if replay:
-                return proposal
+                return self._stored_execution_proposal(
+                    cursor, grant, event, prior
+                )
+            self._lock_grant(cursor, grant)
             cursor.execute(
                 "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb)",
                 (
@@ -858,7 +1020,11 @@ class PostgresFactoryStore:
                 raise FenceError("stale execution proposal or fence")
             self._record_command(
                 cursor, idempotency_key, actor, "execution_propose", request_digest,
-                correlation_id, {"proposal_kind": kind, "sequence": proposal.sequence},
+                correlation_id, {
+                    "proposal_kind": kind,
+                    "sequence": proposal.sequence,
+                    "proposal_idempotency_key": proposal.idempotency_key,
+                },
             )
             return proposal
 
