@@ -1033,20 +1033,28 @@ def validate_repository_drift(
 _SUPPORTED_SCHEMA_KEYS = {
     "$schema",
     "$id",
+    "$ref",
+    "title",
     "description",
     "type",
     "properties",
     "required",
     "additionalProperties",
     "enum",
+    "const",
     "items",
     "minItems",
     "maxItems",
+    "uniqueItems",
     "minLength",
     "maxLength",
     "minimum",
     "maximum",
     "pattern",
+    "oneOf",
+    "allOf",
+    "if",
+    "then",
 }
 _HTTP_METHODS = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
 _SUPPORTED_CONTRACT_KINDS = {"event", "json_schema", "openapi", "signed_payload"}
@@ -1071,6 +1079,118 @@ _SUPPORTED_SCHEMA_TYPES = {
     "object",
     "string",
 }
+_SAFE_COMPONENT_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
+_SAFE_REFERENCE_SEGMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._~-]*$")
+_HTTP_FIELD_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]{0,127}$")
+
+
+class _SchemaResolver:
+    def __init__(
+        self,
+        current: ContractRecord,
+        inventory: Iterable[ContractRecord] | None,
+    ) -> None:
+        records: list[ContractRecord] = []
+        source = (current,) if inventory is None else inventory
+        for record in source:
+            if len(records) >= MAX_CONTRACTS:
+                raise ArchitectureError("contract inventory limit exceeded", code="limit")
+            if not isinstance(record, ContractRecord):
+                raise ArchitectureError("malformed contract inventory", code="contract")
+            records.append(record)
+        if not records:
+            raise ArchitectureError("contract inventory is empty", code="contract")
+        by_id: dict[str, ContractRecord] = {}
+        by_path: dict[str, ContractRecord] = {}
+        for record in records:
+            path = _safe_relative_path(record.path, label=f"contract {record.id}")
+            if record.id in by_id or path in by_path:
+                raise ArchitectureError("duplicate contract inventory identity", code="contract")
+            by_id[record.id] = record
+            by_path[path] = record
+        current_path = _safe_relative_path(current.path, label=f"contract {current.id}")
+        inventory_current = by_id.get(current.id)
+        if (
+            inventory_current is None
+            or inventory_current != current
+            or by_path.get(current_path) is not inventory_current
+        ):
+            raise ArchitectureError("current contract conflicts with inventory", code="contract")
+        self.current = current
+        self.records = by_path
+        self.walk_count = 0
+        self.resolved_paths: set[str] = {current.path}
+
+    @staticmethod
+    def _relative_path(current_path: str, reference: str) -> str:
+        if (
+            not reference
+            or "\\" in reference
+            or "?" in reference
+            or "%" in reference
+            or "#" in reference
+            or _unsafe_text(reference)
+            or unicodedata.normalize("NFC", reference) != reference
+            or reference.startswith("/")
+            or re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", reference)
+        ):
+            raise ArchitectureError("unsafe schema reference", code="contract")
+        parts = list(PurePosixPath(current_path).parent.parts)
+        for part in reference.split("/"):
+            if part in {"", "."}:
+                raise ArchitectureError("unsafe schema reference", code="contract")
+            if part == "..":
+                if not parts:
+                    raise ArchitectureError("schema reference escapes inventory", code="contract")
+                parts.pop()
+            elif not _SAFE_REFERENCE_SEGMENT.fullmatch(part):
+                raise ArchitectureError("unsafe schema reference", code="contract")
+            else:
+                parts.append(part)
+        if not parts:
+            raise ArchitectureError("unsafe schema reference", code="contract")
+        return "/".join(parts)
+
+    def resolve(
+        self,
+        reference: Any,
+        current: ContractRecord,
+    ) -> tuple[dict[str, Any], ContractRecord, tuple[str, str]]:
+        if not isinstance(reference, str):
+            raise ArchitectureError("malformed schema reference", code="contract")
+        if reference.startswith("#"):
+            prefix = "#/components/schemas/"
+            name = reference[len(prefix) :] if reference.startswith(prefix) else ""
+            if (
+                current.kind != "openapi"
+                or not name
+                or not _SAFE_COMPONENT_NAME.fullmatch(name)
+            ):
+                raise ArchitectureError("unsupported local schema reference", code="contract")
+            components = current.document.get("components")
+            schemas = components.get("schemas") if isinstance(components, dict) else None
+            target = schemas.get(name) if isinstance(schemas, dict) else None
+            if not isinstance(target, dict):
+                raise ArchitectureError("dangling local schema reference", code="contract")
+            return target, current, (current.path, reference)
+        target_path = self._relative_path(current.path, reference)
+        target_record = self.records.get(target_path)
+        if target_record is None or target_record.kind not in {
+            "event",
+            "json_schema",
+            "signed_payload",
+        }:
+            raise ArchitectureError("undeclared schema reference", code="contract")
+        if not isinstance(target_record.document, dict):
+            raise ArchitectureError("malformed referenced schema", code="contract")
+        self.resolved_paths.add(target_path)
+        return target_record.document, target_record, (target_path, "")
+
+    def graph_identity(self) -> tuple[tuple[str, bytes], ...]:
+        return tuple(
+            (path, _canonical_bytes(self.records[path].document))
+            for path in sorted(self.resolved_paths)
+        )
 
 
 def _valid_schema_scalar(value: Any) -> bool:
@@ -1079,11 +1199,48 @@ def _valid_schema_scalar(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
 
 
-def _unsupported_schema(schema: Any) -> bool:
+def _unsupported_schema(
+    schema: Any,
+    resolver: _SchemaResolver | None = None,
+    current: ContractRecord | None = None,
+    *,
+    depth: int = 0,
+    stack: tuple[tuple[str, str], ...] = (),
+    counter: list[int] | None = None,
+) -> bool:
+    if depth > MAX_DEPTH:
+        return True
+    if resolver is not None:
+        resolver.walk_count += 1
+        if resolver.walk_count > MAX_PARSED_NODES:
+            return True
+    else:
+        if counter is None:
+            counter = [0]
+        counter[0] += 1
+        if counter[0] > MAX_PARSED_NODES:
+            return True
     if not isinstance(schema, dict):
         return True
     if set(schema) - _SUPPORTED_SCHEMA_KEYS:
         return True
+    if "$ref" in schema:
+        if set(schema) != {"$ref"} or resolver is None or current is None:
+            return True
+        try:
+            target, target_record, identity = resolver.resolve(schema["$ref"], current)
+        except ArchitectureError:
+            return True
+        if identity in stack:
+            return True
+        return _unsupported_schema(
+            target,
+            resolver,
+            target_record,
+            depth=depth + 1,
+            stack=(*stack, identity),
+            counter=counter,
+        )
     if "type" in schema:
         schema_type = schema["type"]
         if isinstance(schema_type, str):
@@ -1102,7 +1259,7 @@ def _unsupported_schema(schema: Any) -> bool:
             or len(type_names) != len(set(type_names))
         ):
             return True
-    for key in ("$id", "$schema", "description"):
+    for key in ("$id", "$schema", "description", "title"):
         if key in schema and not isinstance(schema[key], str):
             return True
     properties = schema.get("properties", {})
@@ -1116,6 +1273,10 @@ def _unsupported_schema(schema: Any) -> bool:
         or not all(isinstance(item, str) for item in required)
         or len(required) != len(set(required))
     ):
+        return True
+    if "const" in schema and not _valid_schema_scalar(schema["const"]):
+        return True
+    if "uniqueItems" in schema and not isinstance(schema["uniqueItems"], bool):
         return True
     additional = schema.get("additionalProperties", True)
     if not isinstance(additional, bool):
@@ -1158,9 +1319,44 @@ def _unsupported_schema(schema: Any) -> bool:
             return True
     if "items" in schema and not isinstance(schema["items"], dict):
         return True
-    if any(_unsupported_schema(child) for child in properties.values()):
+    compositions: dict[str, list[dict[str, Any]]] = {}
+    for key in ("oneOf", "allOf"):
+        value = schema.get(key, [])
+        if key in schema and (
+            not isinstance(value, list)
+            or not 1 <= len(value) <= 16
+            or not all(isinstance(child, dict) for child in value)
+        ):
+            return True
+        compositions[key] = value
+    if ("if" in schema) != ("then" in schema):
         return True
-    if "items" in schema and _unsupported_schema(schema["items"]):
+    if any(
+        key in schema and not isinstance(schema[key], dict)
+        for key in ("if", "then")
+    ):
+        return True
+    child_arguments = {
+        "resolver": resolver,
+        "current": current,
+        "depth": depth + 1,
+        "stack": stack,
+        "counter": counter,
+    }
+    if any(_unsupported_schema(child, **child_arguments) for child in properties.values()):
+        return True
+    if "items" in schema and _unsupported_schema(schema["items"], **child_arguments):
+        return True
+    if any(
+        _unsupported_schema(child, **child_arguments)
+        for values in compositions.values()
+        for child in values
+    ):
+        return True
+    if any(
+        key in schema and _unsupported_schema(schema[key], **child_arguments)
+        for key in ("if", "then")
+    ):
         return True
     return False
 
@@ -1177,12 +1373,70 @@ def _constraint_breaks(base: dict[str, Any], head: dict[str, Any], direction: st
     )
 
 
+def _resolve_comparison_schema(
+    schema: dict[str, Any],
+    resolver: _SchemaResolver,
+    current: ContractRecord,
+) -> tuple[dict[str, Any], ContractRecord]:
+    seen: set[tuple[str, str]] = set()
+    for _depth in range(MAX_DEPTH + 1):
+        if "$ref" not in schema:
+            return schema, current
+        target, target_record, identity = resolver.resolve(schema["$ref"], current)
+        if identity in seen:
+            raise ArchitectureError("cyclic schema reference", code="contract")
+        seen.add(identity)
+        schema = target
+        current = target_record
+    raise ArchitectureError("schema reference depth exceeded", code="limit")
+
+
 def _compare_schema_direction(
     base: dict[str, Any],
     head: dict[str, Any],
     direction: str,
     reasons: set[str],
+    *,
+    base_resolver: _SchemaResolver | None = None,
+    head_resolver: _SchemaResolver | None = None,
+    base_current: ContractRecord | None = None,
+    head_current: ContractRecord | None = None,
 ) -> None:
+    base_reference = base.get("$ref")
+    head_reference = head.get("$ref")
+    if base_reference != head_reference and (
+        base_reference is not None or head_reference is not None
+    ):
+        reasons.add("changed_constraint")
+    if base_reference is not None and base_resolver is not None and base_current is not None:
+        base, base_current = _resolve_comparison_schema(
+            base, base_resolver, base_current
+        )
+    if head_reference is not None and head_resolver is not None and head_current is not None:
+        head, head_current = _resolve_comparison_schema(
+            head, head_resolver, head_current
+        )
+    for key in ("$id", "$schema"):
+        if _canonical_bytes(base.get(key)) != _canonical_bytes(head.get(key)):
+            reasons.add("changed_constraint")
+    base_has_const = "const" in base
+    head_has_const = "const" in head
+    if base_has_const and head_has_const:
+        if _canonical_bytes(base["const"]) != _canonical_bytes(head["const"]):
+            reasons.add("changed_constraint")
+    elif direction == "consumer" and head_has_const:
+        reasons.add("narrowed_constraint")
+    elif direction == "producer" and base_has_const:
+        reasons.add("widened_producer_output")
+    base_unique = base.get("uniqueItems", False)
+    head_unique = head.get("uniqueItems", False)
+    if direction == "consumer" and not base_unique and head_unique:
+        reasons.add("narrowed_constraint")
+    elif direction == "producer" and base_unique and not head_unique:
+        reasons.add("widened_producer_output")
+    for key in ("oneOf", "allOf", "if", "then"):
+        if _canonical_bytes(base.get(key)) != _canonical_bytes(head.get(key)):
+            reasons.add("changed_constraint")
     if ("type" in base) != ("type" in head):
         reasons.add("changed_type")
         return
@@ -1232,11 +1486,56 @@ def _compare_schema_direction(
         if not base.get("additionalProperties", True) and head.get("additionalProperties", True):
             reasons.add("widened_producer_output")
     for name in sorted(set(base_properties) & set(head_properties)):
-        _compare_schema_direction(base_properties[name], head_properties[name], direction, reasons)
+        _compare_schema_direction(
+            base_properties[name],
+            head_properties[name],
+            direction,
+            reasons,
+            base_resolver=base_resolver,
+            head_resolver=head_resolver,
+            base_current=base_current,
+            head_current=head_current,
+        )
     if "items" in base and "items" in head:
-        _compare_schema_direction(base["items"], head["items"], direction, reasons)
+        _compare_schema_direction(
+            base["items"],
+            head["items"],
+            direction,
+            reasons,
+            base_resolver=base_resolver,
+            head_resolver=head_resolver,
+            base_current=base_current,
+            head_current=head_current,
+        )
     elif "items" in base or "items" in head:
         reasons.add("changed_type")
+    for key in ("oneOf", "allOf"):
+        base_children = base.get(key, [])
+        head_children = head.get(key, [])
+        if len(base_children) == len(head_children):
+            for base_child, head_child in zip(base_children, head_children):
+                _compare_schema_direction(
+                    base_child,
+                    head_child,
+                    direction,
+                    reasons,
+                    base_resolver=base_resolver,
+                    head_resolver=head_resolver,
+                    base_current=base_current,
+                    head_current=head_current,
+                )
+    for key in ("if", "then"):
+        if key in base and key in head:
+            _compare_schema_direction(
+                base[key],
+                head[key],
+                direction,
+                reasons,
+                base_resolver=base_resolver,
+                head_resolver=head_resolver,
+                base_current=base_current,
+                head_current=head_current,
+            )
 
 
 def _content_schema(container: dict[str, Any]) -> dict[str, Any] | None:
@@ -1271,7 +1570,12 @@ def _media_schema(operation: dict[str, Any], key: str) -> dict[str, Any] | None:
     return _content_schema(container)
 
 
-def _supported_content(content: Any, schemas: list[dict[str, Any]]) -> bool:
+def _supported_content(
+    content: Any,
+    schemas: list[dict[str, Any]],
+    resolver: _SchemaResolver,
+    current: ContractRecord,
+) -> bool:
     supported_media = {"application/json", "application/octet-stream", "text/plain"}
     if (
         not isinstance(content, dict)
@@ -1285,13 +1589,18 @@ def _supported_content(content: Any, schemas: list[dict[str, Any]]) -> bool:
         if not isinstance(media, dict) or set(media) != {"schema"}:
             return False
         schema = media["schema"]
-        if _unsupported_schema(schema):
+        if _unsupported_schema(schema, resolver, current):
             return False
         schemas.append(schema)
     return True
 
 
-def _supported_parameter(parameter: Any, schemas: list[dict[str, Any]]) -> bool:
+def _supported_parameter(
+    parameter: Any,
+    schemas: list[dict[str, Any]],
+    resolver: _SchemaResolver,
+    current: ContractRecord,
+) -> bool:
     if not isinstance(parameter, dict) or not set(parameter) <= {
         "description",
         "in",
@@ -1311,18 +1620,23 @@ def _supported_parameter(parameter: Any, schemas: list[dict[str, Any]]) -> bool:
     if "description" in parameter and not isinstance(parameter["description"], str):
         return False
     schema = parameter.get("schema")
-    if _unsupported_schema(schema):
+    if _unsupported_schema(schema, resolver, current):
         return False
     schemas.append(schema)
     return True
 
 
-def _supported_parameters(parameters: Any, schemas: list[dict[str, Any]]) -> bool:
+def _supported_parameters(
+    parameters: Any,
+    schemas: list[dict[str, Any]],
+    resolver: _SchemaResolver,
+    current: ContractRecord,
+) -> bool:
     if not isinstance(parameters, list):
         return False
     keys: set[tuple[str, str]] = set()
     for parameter in parameters:
-        if not _supported_parameter(parameter, schemas):
+        if not _supported_parameter(parameter, schemas, resolver, current):
             return False
         key = _parameter_key(parameter)
         if key in keys:
@@ -1333,7 +1647,10 @@ def _supported_parameters(parameters: Any, schemas: list[dict[str, Any]]) -> boo
 
 def _security_schemes(document: dict[str, Any]) -> dict[str, dict[str, Any]] | None:
     components = document.get("components", {})
-    if not isinstance(components, dict) or not set(components) <= {"securitySchemes"}:
+    if not isinstance(components, dict) or not set(components) <= {
+        "schemas",
+        "securitySchemes",
+    }:
         return None
     schemes = components.get("securitySchemes", {})
     if not isinstance(schemes, dict):
@@ -1364,6 +1681,40 @@ def _security_schemes(document: dict[str, Any]) -> dict[str, dict[str, Any]] | N
     return schemes
 
 
+def _supported_response_headers(
+    headers: Any,
+    schemas: list[dict[str, Any]],
+    resolver: _SchemaResolver,
+    current: ContractRecord,
+) -> bool:
+    if not isinstance(headers, dict) or len(headers) > 128:
+        return False
+    identities: set[str] = set()
+    for name, header in headers.items():
+        identity = name.lower() if isinstance(name, str) else ""
+        if (
+            not identity
+            or not _HTTP_FIELD_NAME.fullmatch(name)
+            or identity in identities
+            or not isinstance(header, dict)
+            or not set(header) <= {"description", "required", "schema"}
+            or "schema" not in header
+            or (
+                "description" in header
+                and not isinstance(header["description"], str)
+            )
+            or (
+                "required" in header
+                and not isinstance(header["required"], bool)
+            )
+            or _unsupported_schema(header["schema"], resolver, current)
+        ):
+            return False
+        identities.add(identity)
+        schemas.append(header["schema"])
+    return True
+
+
 def _supported_security(value: Any, schemes: dict[str, dict[str, Any]]) -> bool:
     if not isinstance(value, list):
         return False
@@ -1376,7 +1727,11 @@ def _supported_security(value: Any, schemes: dict[str, dict[str, Any]]) -> bool:
     return True
 
 
-def _openapi_schemas(document: Any) -> tuple[dict[str, Any], ...] | None:
+def _openapi_schemas(
+    document: Any,
+    resolver: _SchemaResolver,
+    current: ContractRecord,
+) -> tuple[dict[str, Any], ...] | None:
     if not isinstance(document, dict) or not set(document) <= {
         "components",
         "info",
@@ -1407,6 +1762,19 @@ def _openapi_schemas(document: Any) -> tuple[dict[str, Any], ...] | None:
     if "security" in document and not _supported_security(document["security"], schemes):
         return None
     schemas: list[dict[str, Any]] = []
+    components = document.get("components", {})
+    component_schemas = components.get("schemas", {})
+    if (
+        not isinstance(component_schemas, dict)
+        or any(
+            not isinstance(name, str)
+            or not _SAFE_COMPONENT_NAME.fullmatch(name)
+            or _unsupported_schema(schema, resolver, current)
+            for name, schema in component_schemas.items()
+        )
+    ):
+        return None
+    schemas.extend(component_schemas.values())
     for path, path_item in paths.items():
         if not isinstance(path, str) or not path.startswith("/") or not isinstance(path_item, dict):
             return None
@@ -1418,7 +1786,7 @@ def _openapi_schemas(document: Any) -> tuple[dict[str, Any], ...] | None:
         ):
             return None
         if "parameters" in path_item and not _supported_parameters(
-            path_item["parameters"], schemas
+            path_item["parameters"], schemas, resolver, current
         ):
             return None
         for method in _HTTP_METHODS & set(path_item):
@@ -1445,7 +1813,7 @@ def _openapi_schemas(document: Any) -> tuple[dict[str, Any], ...] | None:
             ):
                 return None
             if "parameters" in operation and not _supported_parameters(
-                operation["parameters"], schemas
+                operation["parameters"], schemas, resolver, current
             ):
                 return None
             if "security" in operation and not _supported_security(
@@ -1464,7 +1832,9 @@ def _openapi_schemas(document: Any) -> tuple[dict[str, Any], ...] | None:
                     return None
                 if "required" in body and not isinstance(body["required"], bool):
                     return None
-                if not _supported_content(body.get("content"), schemas):
+                if not _supported_content(
+                    body.get("content"), schemas, resolver, current
+                ):
                     return None
             responses = operation.get("responses")
             if not isinstance(responses, dict) or not responses:
@@ -1475,12 +1845,17 @@ def _openapi_schemas(document: Any) -> tuple[dict[str, Any], ...] | None:
                 if not isinstance(response, dict) or not set(response) <= {
                     "content",
                     "description",
+                    "headers",
                 }:
                     return None
                 if not isinstance(response.get("description"), str):
                     return None
                 if "content" in response and not _supported_content(
-                    response["content"], schemas
+                    response["content"], schemas, resolver, current
+                ):
+                    return None
+                if "headers" in response and not _supported_response_headers(
+                    response["headers"], schemas, resolver, current
                 ):
                     return None
     return tuple(schemas)
@@ -1527,7 +1902,38 @@ def _referenced_security(value: Any) -> set[str]:
     return {name for requirement in (value or []) for name in requirement}
 
 
-def _compare_openapi(base: dict[str, Any], head: dict[str, Any], reasons: set[str]) -> None:
+def _response_headers(response: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {
+        name.lower(): header for name, header in response.get("headers", {}).items()
+    }
+
+
+def _compare_openapi(
+    base: dict[str, Any],
+    head: dict[str, Any],
+    reasons: set[str],
+    *,
+    base_resolver: _SchemaResolver,
+    head_resolver: _SchemaResolver,
+    base_current: ContractRecord,
+    head_current: ContractRecord,
+) -> None:
+    base_components = base.get("components", {}).get("schemas", {})
+    head_components = head.get("components", {}).get("schemas", {})
+    if set(base_components) != set(head_components):
+        reasons.add("changed_constraint")
+    for name in sorted(set(base_components) & set(head_components)):
+        for direction in ("consumer", "producer"):
+            _compare_schema_direction(
+                base_components[name],
+                head_components[name],
+                direction,
+                reasons,
+                base_resolver=base_resolver,
+                head_resolver=head_resolver,
+                base_current=base_current,
+                head_current=head_current,
+            )
     base_operations = _operations(base)
     head_operations = _operations(head)
     if set(base_operations) - set(head_operations):
@@ -1561,7 +1967,14 @@ def _compare_openapi(base: dict[str, Any], head: dict[str, Any], reasons: set[st
             if not base_parameter.get("required", False) and head_parameter.get("required", False):
                 reasons.add("new_required_input")
             _compare_schema_direction(
-                base_parameter["schema"], head_parameter["schema"], "consumer", reasons
+                base_parameter["schema"],
+                head_parameter["schema"],
+                "consumer",
+                reasons,
+                base_resolver=base_resolver,
+                head_resolver=head_resolver,
+                base_current=base_current,
+                head_current=head_current,
             )
         base_request = _content_schemas(base_operation.get("requestBody"))
         head_request = _content_schemas(head_operation.get("requestBody"))
@@ -1579,7 +1992,14 @@ def _compare_openapi(base: dict[str, Any], head: dict[str, Any], reasons: set[st
                 reasons.add("removed_request_media_type")
             for media_type in set(base_request) & set(head_request):
                 _compare_schema_direction(
-                    base_request[media_type], head_request[media_type], "consumer", reasons
+                    base_request[media_type],
+                    head_request[media_type],
+                    "consumer",
+                    reasons,
+                    base_resolver=base_resolver,
+                    head_resolver=head_resolver,
+                    base_current=base_current,
+                    head_current=head_current,
                 )
         elif base_request:
             reasons.add("removed_request_schema")
@@ -1598,6 +2018,29 @@ def _compare_openapi(base: dict[str, Any], head: dict[str, Any], reasons: set[st
             head_response = head_responses[status]
             if not isinstance(base_response, dict) or not isinstance(head_response, dict):
                 continue
+            base_headers = _response_headers(base_response)
+            head_headers = _response_headers(head_response)
+            if set(base_headers) - set(head_headers):
+                reasons.add("removed_response_header")
+            if set(head_headers) - set(base_headers):
+                reasons.add("widened_producer_output")
+            for name in set(base_headers) & set(head_headers):
+                base_header = base_headers[name]
+                head_header = head_headers[name]
+                if base_header.get("required", False) and not head_header.get(
+                    "required", False
+                ):
+                    reasons.add("widened_producer_output")
+                _compare_schema_direction(
+                    base_header["schema"],
+                    head_header["schema"],
+                    "producer",
+                    reasons,
+                    base_resolver=base_resolver,
+                    head_resolver=head_resolver,
+                    base_current=base_current,
+                    head_current=head_current,
+                )
             base_schemas = _content_schemas(base_response)
             head_schemas = _content_schemas(head_response)
             if base_schemas and head_schemas:
@@ -1611,6 +2054,10 @@ def _compare_openapi(base: dict[str, Any], head: dict[str, Any], reasons: set[st
                         head_schemas[media_type],
                         "producer",
                         reasons,
+                        base_resolver=base_resolver,
+                        head_resolver=head_resolver,
+                        base_current=base_current,
+                        head_current=head_current,
                     )
             elif base_schemas:
                 reasons.add("removed_response_schema")
@@ -1637,6 +2084,9 @@ def compare_contracts(
     base: ContractRecord,
     head: ContractRecord,
     policy: str | Mapping[str, Any],
+    *,
+    base_inventory: Iterable[ContractRecord] | None = None,
+    head_inventory: Iterable[ContractRecord] | None = None,
 ) -> CompatibilityResult:
     raw_mode = policy.get("compatibility") if isinstance(policy, Mapping) else policy
     if not isinstance(raw_mode, str) or raw_mode not in _SUPPORTED_COMPATIBILITY_MODES:
@@ -1657,6 +2107,11 @@ def compare_contracts(
         return CompatibilityResult("unsupported", ("malformed_contract_identity",))
     if base.id != head.id or base.kind != head.kind:
         return CompatibilityResult("incompatible", ("contract_identity_changed",))
+    try:
+        base_resolver = _SchemaResolver(base, base_inventory)
+        head_resolver = _SchemaResolver(head, head_inventory)
+    except (ArchitectureError, TypeError, ValueError):
+        return CompatibilityResult("unsupported", ("unsupported_contract_inventory",))
     documents = (base.document, head.document)
     canonical_documents_match = _canonical_bytes(base.document) == _canonical_bytes(
         head.document
@@ -1672,18 +2127,20 @@ def compare_contracts(
     if base.kind == "openapi":
         if mode not in {"bidirectional", "exact", "versioned_break"}:
             return CompatibilityResult("unsupported", ("unsupported_compatibility_policy",))
-        base_schemas = _openapi_schemas(base.document)
-        head_schemas = _openapi_schemas(head.document)
+        base_schemas = _openapi_schemas(base.document, base_resolver, base)
+        head_schemas = _openapi_schemas(head.document, head_resolver, head)
         if base_schemas is None or head_schemas is None:
             return CompatibilityResult("unsupported", ("unsupported_openapi_construct",))
-        schemas = base_schemas + head_schemas
-    else:
-        schemas = documents
-    if any(_unsupported_schema(schema) for schema in schemas) and not (
-        reviewed_governance_handoff_pair
+    elif not reviewed_governance_handoff_pair and (
+        _unsupported_schema(base.document, base_resolver, base)
+        or _unsupported_schema(head.document, head_resolver, head)
     ):
         return CompatibilityResult("unsupported", ("unsupported_schema_keyword",))
-    if canonical_documents_match:
+    canonical_graphs_match = (
+        canonical_documents_match
+        and base_resolver.graph_identity() == head_resolver.graph_identity()
+    )
+    if canonical_graphs_match:
         return CompatibilityResult("compatible", ())
     if mode == "exact":
         return CompatibilityResult("incompatible", ("same_version_semantic_change",))
@@ -1697,7 +2154,15 @@ def compare_contracts(
         return CompatibilityResult(status, (reason,))
     reasons: set[str] = set()
     if base.kind == "openapi":
-        _compare_openapi(base.document, head.document, reasons)
+        _compare_openapi(
+            base.document,
+            head.document,
+            reasons,
+            base_resolver=base_resolver,
+            head_resolver=head_resolver,
+            base_current=base,
+            head_current=head,
+        )
     else:
         directions = {
             "consumer_accepts_old": ("consumer",),
@@ -1713,7 +2178,16 @@ def compare_contracts(
         ):
             reasons.add("event_meaning_changed")
         for direction in directions:
-            _compare_schema_direction(base.document, head.document, direction, reasons)
+            _compare_schema_direction(
+                base.document,
+                head.document,
+                direction,
+                reasons,
+                base_resolver=base_resolver,
+                head_resolver=head_resolver,
+                base_current=base,
+                head_current=head,
+            )
     return CompatibilityResult("incompatible" if reasons else "compatible", tuple(sorted(reasons)))
 
 

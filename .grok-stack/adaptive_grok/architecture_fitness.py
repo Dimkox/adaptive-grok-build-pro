@@ -804,7 +804,13 @@ def _contract_compatibility(snapshot: ArchitectureSnapshot, diff: ArchitectureDi
             unsupported.append(f"{identity}: no compatibility policy for {kind}")
         elif old is None:
             for rule in matching:
-                result = compare_contracts(new, new, rule["compatibility"])
+                result = compare_contracts(
+                    new,
+                    new,
+                    rule["compatibility"],
+                    base_inventory=tuple(after.values()),
+                    head_inventory=tuple(after.values()),
+                )
                 if result.status == "unsupported":
                     unsupported.append(
                         f"{identity}: unsupported added-contract baseline semantics"
@@ -813,7 +819,13 @@ def _contract_compatibility(snapshot: ArchitectureSnapshot, diff: ArchitectureDi
             findings.append(f"{identity}: declared contract removed")
         else:
             for rule in matching:
-                result = compare_contracts(old, new, rule["compatibility"])
+                result = compare_contracts(
+                    old,
+                    new,
+                    rule["compatibility"],
+                    base_inventory=tuple(before.values()),
+                    head_inventory=tuple(after.values()),
+                )
                 if result.status == "unsupported":
                     unsupported.append(f"{identity}: unsupported compatibility semantics")
                 elif result.status != "compatible":
