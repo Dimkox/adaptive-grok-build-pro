@@ -335,3 +335,7 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-02 — Deferred root architecture drift behind factory-only verification
 
 **Root cause:** Factory-only suites were treated as a sufficient slice gate, so eight new execution sources reached stable commits before the root verifier checked executable architecture ownership. Every product-source slice must run root architecture validate and drift before its stable commit, even when final full verification remains centrally owned.
+
+## 2026-09-02 — Set an execution limit in the non-authoritative test input
+
+**Root cause:** The proposal-limit test changed the selection fixture even though `TaskPacketV1.limits` is derived from the accepted M4 intake. Authority-bound tests must mutate the authoritative intake fact and assert the derived packet, not a selection field that execution intentionally ignores.

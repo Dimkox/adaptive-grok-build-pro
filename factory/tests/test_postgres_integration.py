@@ -8,6 +8,7 @@ import uuid
 
 from adaptive_factory.migrations import PostgresMigrator, discover_migrations
 from adaptive_factory.api import Authenticator, create_app
+from adaptive_factory.execution_contracts import workspace_evidence_digest
 from adaptive_factory.models import Actor, ExecutionStage, FailureClass, RunRole, TaskStatus
 from adaptive_factory.service import AuthorizationError, FactoryService
 from adaptive_factory.store import BudgetError, FenceError, PostgresFactoryStore, StoreError
@@ -229,6 +230,220 @@ class PostgresFactoryTests(unittest.TestCase):
         )
         with self.assertRaises(FenceError):
             self.service.heartbeat(forged, actor=WORKER, now=NOW)
+
+    def test_execution_proposals_are_consecutive_bounded_and_terminal(self):
+        def claim_execution(source, max_events):
+            intake = self.payload(source=source)
+            intake["limits"]["max_events"] = max_events
+            task = self.service.intake(intake, actor=OPERATOR, now=NOW).task
+            packet = valid_packet()
+            packet["provider"]["capabilities"] = ["notes", "structured_output", "usage"]
+            selection = {
+                "provider": packet["provider"],
+                "capability_policy": packet["capability_policy"],
+                "plan": packet["plan"],
+                "workspace_handle": packet["workspace_handle"],
+                "prompt_template_digest": "7" * 64,
+                "role_definition_digest": "8" * 64,
+                "tool_policy_digest": "9" * 64,
+                "output_schema_digest": "a" * 64,
+            }
+            execution = FactoryService(
+                self.store, execution_registry=trusted_registry(selection)
+            ).claim_execution(
+                owner=WORKER.actor_id,
+                role=RunRole.WRITER,
+                repositories=(task.repository_id,),
+                lease_seconds=60,
+                selection=selection,
+                actor=WORKER,
+                now=NOW,
+            )
+            return execution
+
+        bounded = claim_execution("m5-proposal-limit", 2)
+        for sequence in (1, 2):
+            self.service.commit_execution_proposal(
+                bounded.lease,
+                packet_digest=bounded.packet_digest,
+                sequence=sequence,
+                event_type="note.proposed",
+                payload={"note_type": "finding", "body": f"note-{sequence}", "evidence": []},
+                actor=WORKER,
+            )
+        with self.assertRaises(FenceError):
+            self.service.commit_execution_proposal(
+                bounded.lease,
+                packet_digest=bounded.packet_digest,
+                sequence=3,
+                event_type="note.proposed",
+                payload={"note_type": "finding", "body": "over-limit", "evidence": []},
+                actor=WORKER,
+            )
+        self.service.cancel(
+            bounded.lease.task_id,
+            reason="proposal limit test cleanup",
+            idempotency_key="f" * 64,
+            actor=OPERATOR,
+            now=NOW,
+        )
+
+        execution = claim_execution("m5-proposal-order", 3)
+        note = self.service.commit_execution_proposal(
+            execution.lease,
+            packet_digest=execution.packet_digest,
+            sequence=1,
+            event_type="note.proposed",
+            payload={"note_type": "finding", "body": "first", "evidence": []},
+            actor=WORKER,
+        )
+        with self.assertRaises(FenceError):
+            self.service.commit_execution_proposal(
+                execution.lease,
+                packet_digest=execution.packet_digest,
+                sequence=3,
+                event_type="usage.reported",
+                payload={
+                    "provider_call_id": "gap-call",
+                    "price_table_digest": "d" * 64,
+                    "input_tokens": 1,
+                    "output_tokens": 1,
+                    "reasoning_tokens": 0,
+                    "cost_usd_micros": 1,
+                    "output_bytes": 1,
+                },
+                actor=WORKER,
+            )
+        self.service.commit_execution_proposal(
+            execution.lease,
+            packet_digest=execution.packet_digest,
+            sequence=2,
+            event_type="usage.reported",
+            payload={
+                "provider_call_id": "ordered-call",
+                "price_table_digest": "d" * 64,
+                "input_tokens": 1,
+                "output_tokens": 1,
+                "reasoning_tokens": 0,
+                "cost_usd_micros": 1,
+                "output_bytes": 1,
+            },
+            actor=WORKER,
+        )
+        terminal_key = "e" * 64
+        terminal = self.service.commit_execution_proposal(
+            execution.lease,
+            packet_digest=execution.packet_digest,
+            sequence=3,
+            event_type="run.completed",
+            payload={"summary": "complete"},
+            actor=WORKER,
+            idempotency_key=terminal_key,
+        )
+        replay = self.service.commit_execution_proposal(
+            execution.lease,
+            packet_digest=execution.packet_digest,
+            sequence=3,
+            event_type="run.completed",
+            payload={"summary": "complete"},
+            actor=WORKER,
+            idempotency_key=terminal_key,
+        )
+        self.assertEqual(replay.idempotency_key, terminal.idempotency_key)
+        import psycopg
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT idempotency_key,body FROM factory.execution_proposals WHERE run_id=%s AND producer_sequence=3",
+                (execution.lease.run_id,),
+            )
+            persisted_key, persisted_body = cursor.fetchone()
+            direct_facts = (
+                execution.lease.task_id,
+                execution.lease.run_id,
+                execution.lease.owner,
+                execution.lease.fence,
+                execution.lease.packet_digest,
+                execution.packet_digest,
+            )
+            cursor.execute(
+                "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,3,%s,'terminal',%s::jsonb)",
+                (*direct_facts, persisted_key, psycopg.types.json.Jsonb(persisted_body)),
+            )
+            self.assertTrue(cursor.fetchone()[0])
+            cursor.execute(
+                "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,3,%s,'terminal',%s::jsonb)",
+                (*direct_facts, "0" * 64, psycopg.types.json.Jsonb(persisted_body)),
+            )
+            self.assertFalse(cursor.fetchone()[0])
+            cursor.execute(
+                "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,2,%s,'terminal',%s::jsonb)",
+                (*direct_facts, persisted_key, psycopg.types.json.Jsonb(persisted_body)),
+            )
+            self.assertFalse(cursor.fetchone()[0])
+        with self.assertRaises(FenceError):
+            self.service.commit_execution_proposal(
+                execution.lease,
+                packet_digest=execution.packet_digest,
+                sequence=4,
+                event_type="note.proposed",
+                payload={"note_type": "finding", "body": "late", "evidence": []},
+                actor=WORKER,
+            )
+
+        self.service.observe_usage(
+            execution.lease,
+            provider_call_id="ordered-call",
+            price_table_digest="d" * 64,
+            cost_usd_micros=1,
+            token_units=2,
+            output_bytes=1,
+            actor=WORKER,
+        )
+        for stage in (ExecutionStage.RUNNING, ExecutionStage.COLLECTING):
+            self.service.advance_execution(
+                execution.lease,
+                packet_digest=execution.packet_digest,
+                stage=stage,
+                actor=WORKER,
+            )
+        finalizer = FactoryService(
+            self.store, snapshot_broker=TrustedPostgresTestSnapshotBroker()
+        )
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            finalize_future = pool.submit(
+                finalizer.finalize_execution,
+                execution.lease,
+                packet_digest=execution.packet_digest,
+                actor=WORKER,
+            )
+            late_future = pool.submit(
+                self.service.commit_execution_proposal,
+                execution.lease,
+                packet_digest=execution.packet_digest,
+                sequence=4,
+                event_type="note.proposed",
+                payload={"note_type": "finding", "body": "concurrent-late", "evidence": []},
+                actor=WORKER,
+            )
+            result = finalize_future.result(timeout=10)
+            with self.assertRaises(FenceError):
+                late_future.result(timeout=10)
+        self.assertEqual(
+            result.note_manifest_digest,
+            workspace_evidence_digest("notes", [note.idempotency_key]),
+        )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT producer_sequence,proposal_kind FROM factory.execution_proposals WHERE run_id=%s ORDER BY producer_sequence",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchall(), [(1, "note"), (2, "usage"), (3, "terminal")])
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s",
+                (bounded.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 2)
 
     def authority_payload(self, kind: str, source: str, suffix: int):
         import psycopg

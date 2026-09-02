@@ -190,8 +190,12 @@ CREATE FUNCTION factory.execution_propose(
 ) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
 DECLARE
-  existing_kind text;
-  existing_body jsonb;
+  v_existing_count bigint;
+  v_existing_exact boolean;
+  v_event_count bigint;
+  v_max_sequence bigint;
+  v_has_terminal boolean;
+  v_max_events bigint;
 BEGIN
   IF octet_length(p_body::text)>65536 THEN RETURN false; END IF;
   PERFORM 1 FROM factory.tasks t
@@ -204,13 +208,36 @@ BEGIN
       AND m.terminal_at IS NULL AND r.lease_expires_at>clock_timestamp()
     FOR UPDATE OF t,r,m;
   IF NOT FOUND THEN RETURN false; END IF;
-  SELECT proposal_kind,body INTO existing_kind,existing_body
-    FROM factory.execution_proposals
-    WHERE run_id=p_run_id AND (producer_sequence=p_sequence OR idempotency_key=p_idempotency_key)
+  SELECT (p.body#>>'{limits,max_events}')::bigint INTO v_max_events
+    FROM factory.execution_packets p
+    WHERE p.task_id=p_task_id AND p.run_id=p_run_id
+      AND p.packet_digest=p_packet_digest AND p.legacy_packet_digest=p_legacy_packet_digest
     FOR UPDATE;
-  IF FOUND THEN
-    RETURN existing_kind=p_kind AND existing_body=p_body;
+  IF NOT FOUND OR v_max_events IS NULL OR v_max_events NOT BETWEEN 1 AND 100000 THEN
+    RETURN false;
   END IF;
+
+  SELECT count(*),COALESCE(bool_and(
+      task_id=p_task_id AND run_id=p_run_id AND packet_digest=p_packet_digest
+      AND producer_sequence=p_sequence AND idempotency_key=p_idempotency_key
+      AND proposal_kind=p_kind AND body=p_body
+    ),false)
+    INTO v_existing_count,v_existing_exact
+    FROM factory.execution_proposals
+    WHERE run_id=p_run_id AND (producer_sequence=p_sequence OR idempotency_key=p_idempotency_key);
+  IF v_existing_count>0 THEN
+    RETURN v_existing_count=1 AND v_existing_exact;
+  END IF;
+
+  SELECT count(*),COALESCE(max(producer_sequence),0),
+         COALESCE(bool_or(proposal_kind='terminal'),false)
+    INTO v_event_count,v_max_sequence,v_has_terminal
+    FROM factory.execution_proposals
+    WHERE run_id=p_run_id;
+  IF v_has_terminal OR v_event_count>=v_max_events OR p_sequence<>v_max_sequence+1 THEN
+    RETURN false;
+  END IF;
+
   INSERT INTO factory.execution_proposals(
     proposal_id,task_id,run_id,packet_digest,producer_sequence,idempotency_key,proposal_kind,body
   ) VALUES (
