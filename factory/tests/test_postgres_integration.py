@@ -52,6 +52,53 @@ class PostgresFactoryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         PostgresMigrator(DATABASE_URL).apply()
+        from adaptive_factory.admin import provision_runtime_login
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        cls.runtime_login = f"factory_base_runtime_{os.getpid()}"
+        cls.runtime_password = "local-base-runtime-store-password"
+        provision_runtime_login(DATABASE_URL, cls.runtime_login, cls.runtime_password)
+        cls.runtime_url = make_conninfo(
+            **{
+                **conninfo_to_dict(DATABASE_URL),
+                "user": cls.runtime_login,
+                "password": cls.runtime_password,
+            }
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        import psycopg
+        from psycopg import sql
+
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                sql.SQL("DROP ROLE IF EXISTS {}").format(
+                    sql.Identifier(cls.runtime_login)
+                )
+            )
+
+    @classmethod
+    def runtime_store(cls, database_url: str | None = None):
+        if database_url is None:
+            return PostgresFactoryStore(cls.runtime_url)
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        return PostgresFactoryStore(
+            make_conninfo(
+                **{
+                    **conninfo_to_dict(database_url),
+                    "user": cls.runtime_login,
+                    "password": cls.runtime_password,
+                }
+            )
+        )
+
+    @classmethod
+    def migrate(cls, database_url: str):
+        return PostgresMigrator(database_url).apply(
+            expected_runtime_login=cls.runtime_login
+        )
 
     def setUp(self):
         import psycopg
@@ -78,7 +125,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     "06ecf1c875bc" + "9" * 52,
                 ),
             )
-        self.store = PostgresFactoryStore(DATABASE_URL)
+        self.store = self.runtime_store()
         self.service = FactoryService(self.store)
 
     def payload(self, repository="owner/repository", source=None):
@@ -129,7 +176,7 @@ class PostgresFactoryTests(unittest.TestCase):
                 source = f"{action}-claim-race-{role.value}"
                 repository = f"race/{action}/{role.value}"
                 task = self.submit(repository=repository, source=source).task
-                pausing_store = PausingCloseStore(DATABASE_URL)
+                pausing_store = PausingCloseStore(self.runtime_url)
                 pausing_service = FactoryService(pausing_store)
                 command_key = f"{index if action == 'cancel' else index + 2}" * 64
 
@@ -755,7 +802,7 @@ class PostgresFactoryTests(unittest.TestCase):
                 payload, table, key_column, identity = self.authority_payload(
                     kind, f"revoked-after-{kind}", offset
                 )
-                store = PausingStore(DATABASE_URL)
+                store = PausingStore(self.runtime_url)
                 service = FactoryService(store)
 
                 def intake_then_commit():
@@ -1667,7 +1714,7 @@ class PostgresFactoryTests(unittest.TestCase):
             with ThreadPoolExecutor(max_workers=1) as pool:
                 future = pool.submit(self.store.metrics)
                 self.assertTrue(observed.wait(2), statements)
-                other = FactoryService(PostgresFactoryStore(DATABASE_URL))
+                other = FactoryService(self.runtime_store())
                 other.release(grant, outcome=FailureClass.WORKER_LOST, actor=WORKER, now=NOW)
                 proceed.set()
                 metrics = future.result(timeout=2)
@@ -1990,10 +2037,10 @@ class PostgresFactoryTests(unittest.TestCase):
                             )
 
                     self.assertEqual(
-                        [item.version for item in PostgresMigrator(upgrade_url).apply()],
+                        [item.version for item in self.migrate(upgrade_url)],
                         [13, 14, 15, 16],
                     )
-                    upgraded_store = PostgresFactoryStore(upgrade_url)
+                    upgraded_store = self.runtime_store(upgrade_url)
                     upgraded_service = FactoryService(upgraded_store)
                     with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
                         cursor.execute(
@@ -2262,8 +2309,8 @@ class PostgresFactoryTests(unittest.TestCase):
                     ('forged-untrusted-key','unknown',777)"""
                 )
 
-            applied = PostgresMigrator(upgrade_url).apply()
-            upgraded_store = PostgresFactoryStore(upgrade_url)
+            applied = self.migrate(upgrade_url)
+            upgraded_store = self.runtime_store(upgrade_url)
             upgraded_service = FactoryService(upgraded_store)
             readiness = upgraded_store.readiness()
             self.assertEqual(
@@ -2395,7 +2442,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     (ready_task_id,),
                 )
             self.assertEqual(upgraded_store.readiness()["status"], "ready")
-            self.assertEqual(PostgresMigrator(upgrade_url).apply(), ())
+            self.assertEqual(self.migrate(upgrade_url), ())
         finally:
             with psycopg.connect(DATABASE_URL, autocommit=True) as admin:
                 admin.execute(
@@ -2520,7 +2567,7 @@ class PostgresFactoryTests(unittest.TestCase):
         )
         token = "-".join(("connection", "contention", "credential"))
         client = TestClient(
-            create_app(FactoryService(PostgresFactoryStore(DATABASE_URL)), Authenticator({token: reader})),
+            create_app(FactoryService(self.runtime_store()), Authenticator({token: reader})),
             raise_server_exceptions=False,
         )
         headers = {"Authorization": f"Bearer {token}", "X-Correlation-ID": "connection-contention"}
@@ -2564,7 +2611,7 @@ class PostgresFactoryTests(unittest.TestCase):
             actor=WORKER,
             now=NOW,
         )
-        bounded_service = FactoryService(FastBoundStore(DATABASE_URL))
+        bounded_service = FactoryService(FastBoundStore(self.runtime_url))
         reader = Actor(
             "query-reader",
             "client",
@@ -2683,7 +2730,7 @@ class PostgresFactoryTests(unittest.TestCase):
                 return super()._connect(**kwargs)
 
         task = self.submit(source="single-transaction-cancel").task
-        counting_store = CountingStore(DATABASE_URL)
+        counting_store = CountingStore(self.runtime_url)
         service = FactoryService(counting_store)
         key = "1" * 64
 
@@ -2743,7 +2790,7 @@ class PostgresFactoryTests(unittest.TestCase):
             _MUTATION_LOCK_TIMEOUT = "100ms"
             _MUTATION_STATEMENT_TIMEOUT = "500ms"
 
-        bounded = FastBoundStore(DATABASE_URL)
+        bounded = FastBoundStore(self.runtime_url)
         operations = []
         for index, name in enumerate(("heartbeat", "release", "reserve", "observe"), start=1):
             repository = f"bounds/{name}"
@@ -2951,51 +2998,51 @@ class PostgresFactoryTests(unittest.TestCase):
         import psycopg
         from adaptive_factory.admin import bootstrap_local
 
-        login = "factory_service_test"
-        password = "-".join(("local", "runtime", "bootstrap", "test"))
-        from psycopg.conninfo import conninfo_to_dict, make_conninfo
-
-        runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
-        result = bootstrap_local(DATABASE_URL, login, password, runtime_url)
+        result = bootstrap_local(
+            DATABASE_URL,
+            self.runtime_login,
+            self.runtime_password,
+            self.runtime_url,
+        )
         self.assertEqual(result["database_role"], "factory_runtime")
         self.assertEqual(result["schema_version"], 16)
-        self.assertEqual(PostgresMigrator(DATABASE_URL).apply(expected_runtime_login=login), ())
-        with psycopg.connect(runtime_url) as connection, connection.cursor() as cursor:
+        self.assertEqual(
+            PostgresMigrator(DATABASE_URL).apply(
+                expected_runtime_login=self.runtime_login
+            ),
+            (),
+        )
+        with psycopg.connect(self.runtime_url) as connection, connection.cursor() as cursor:
             cursor.execute("SET ROLE factory_runtime")
             cursor.execute("SELECT session_user,current_user")
-            self.assertEqual(cursor.fetchone(), (login, "factory_runtime"))
-        with psycopg.connect(DATABASE_URL) as connection:
-            connection.execute("DROP ROLE IF EXISTS " + login)
+            self.assertEqual(
+                cursor.fetchone(), (self.runtime_login, "factory_runtime")
+            )
 
     def test_bootstrap_rejects_unsafe_factory_role_attributes_and_memberships(self):
         import psycopg
         from adaptive_factory.admin import BootstrapError, bootstrap_local
         from psycopg import sql
-        from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
-        def assert_rejected_before_login(login: str, password: str) -> None:
-            runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
+        def assert_rejected() -> None:
             with self.assertRaises(BootstrapError):
-                bootstrap_local(DATABASE_URL, login, password, runtime_url)
-            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
-                cursor.execute("SELECT 1 FROM pg_roles WHERE rolname=%s", (login,))
-                self.assertIsNone(cursor.fetchone())
+                bootstrap_local(
+                    DATABASE_URL,
+                    self.runtime_login,
+                    self.runtime_password,
+                    self.runtime_url,
+                )
 
         with self.subTest(boundary="unsafe capability attribute"):
-            login = "factory_unsafe_attribute_test"
-            password = "-".join(("unsafe", "attribute", "test", "password"))
             try:
                 with psycopg.connect(DATABASE_URL) as connection:
                     connection.execute("ALTER ROLE factory_runtime CREATEDB")
-                assert_rejected_before_login(login, password)
+                assert_rejected()
             finally:
                 with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
                     cursor.execute("ALTER ROLE factory_runtime NOCREATEDB")
-                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login)))
 
         with self.subTest(boundary="factory role is member of another role"):
-            login = "factory_unsafe_parent_test"
-            password = "-".join(("unsafe", "parent", "membership", "password"))
             parent = "factory_unexpected_parent_test"
             try:
                 with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
@@ -3003,18 +3050,15 @@ class PostgresFactoryTests(unittest.TestCase):
                     cursor.execute(
                         sql.SQL("GRANT {} TO factory_runtime").format(sql.Identifier(parent))
                     )
-                assert_rejected_before_login(login, password)
+                assert_rejected()
             finally:
                 with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
                     cursor.execute(
                         sql.SQL("REVOKE {} FROM factory_runtime").format(sql.Identifier(parent))
                     )
-                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login)))
                     cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(parent)))
 
         with self.subTest(boundary="factory role has an unexpected member"):
-            login = "factory_unsafe_member_target"
-            password = "-".join(("unsafe", "member", "target", "password"))
             member = "factory_unexpected_member_test"
             try:
                 with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
@@ -3022,35 +3066,27 @@ class PostgresFactoryTests(unittest.TestCase):
                     cursor.execute(
                         sql.SQL("GRANT factory_runtime TO {}").format(sql.Identifier(member))
                     )
-                assert_rejected_before_login(login, password)
+                assert_rejected()
             finally:
                 with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
                     cursor.execute(
                         sql.SQL("REVOKE factory_runtime FROM {}").format(sql.Identifier(member))
                     )
-                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login)))
                     cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(member)))
 
     def test_bootstrap_rejects_service_login_with_unexpected_membership(self):
         import psycopg
         from adaptive_factory.admin import BootstrapError, bootstrap_local
         from psycopg import sql
-        from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
-        login = "factory_unsafe_service_test"
-        password = "-".join(("unsafe", "service", "login", "password"))
+        login = self.runtime_login
+        password = self.runtime_password
         unexpected_role = "factory_unexpected_service_role"
-        runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
+        runtime_url = self.runtime_url
         try:
             with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
                 cursor.execute(
                     sql.SQL("CREATE ROLE {} NOLOGIN NOINHERIT").format(sql.Identifier(unexpected_role))
-                )
-                cursor.execute(
-                    sql.SQL(
-                        "CREATE ROLE {} LOGIN NOINHERIT NOSUPERUSER NOCREATEROLE "
-                        "NOCREATEDB NOREPLICATION NOBYPASSRLS PASSWORD {}"
-                    ).format(sql.Identifier(login), sql.Literal(password))
                 )
                 cursor.execute(
                     sql.SQL("GRANT {} TO {}").format(
@@ -3068,18 +3104,16 @@ class PostgresFactoryTests(unittest.TestCase):
                     WHERE member.rolname=%s ORDER BY parent.rolname""",
                     (login,),
                 )
-                self.assertEqual(cursor.fetchall(), [(unexpected_role,)])
+                self.assertEqual(
+                    cursor.fetchall(), [("factory_runtime",), (unexpected_role,)]
+                )
         finally:
             with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
-                cursor.execute(
-                    sql.SQL("REVOKE factory_runtime FROM {}").format(sql.Identifier(login))
-                )
                 cursor.execute(
                     sql.SQL("REVOKE {} FROM {}").format(
                         sql.Identifier(unexpected_role), sql.Identifier(login)
                     )
                 )
-                cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login)))
                 cursor.execute(
                     sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(unexpected_role))
                 )

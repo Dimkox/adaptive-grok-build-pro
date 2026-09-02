@@ -44,24 +44,6 @@ class TrustedArtifactBroker:
         )
 
 
-class DirectArtifactAttestationStore:
-    def record_artifact_attestation(self, attestation):
-        import psycopg
-
-        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
-            cursor.execute("SET LOCAL ROLE factory_artifact_attestor")
-            cursor.execute(
-                "SELECT factory.execution_record_artifact_attestation(%s::jsonb)",
-                (
-                    json.dumps(
-                        attestation.to_dict(), sort_keys=True, separators=(",", ":")
-                    ),
-                ),
-            )
-            value = cursor.fetchone()[0]
-        return ArtifactAttestationV1.from_dict(value)
-
-
 class TrustedSnapshotBroker:
     def snapshot(self, request):
         return WorkspaceSnapshotV1.from_facts(
@@ -85,6 +67,71 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         PostgresMigrator(DATABASE_URL).apply()
+        from adaptive_factory.admin import (
+            provision_artifact_attestor_login,
+            provision_runtime_login,
+        )
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        cls.runtime_login = f"factory_exec_runtime_{os.getpid()}"
+        cls.attestor_login = f"factory_exec_attestor_{os.getpid()}"
+        cls.runtime_password = "local-execution-runtime-password"
+        cls.attestor_password = "local-execution-attestor-password"
+        provision_runtime_login(DATABASE_URL, cls.runtime_login, cls.runtime_password)
+        provision_artifact_attestor_login(
+            DATABASE_URL,
+            cls.attestor_login,
+            cls.attestor_password,
+            runtime_login=cls.runtime_login,
+        )
+        values = conninfo_to_dict(DATABASE_URL)
+        cls.runtime_url = make_conninfo(
+            **{**values, "user": cls.runtime_login, "password": cls.runtime_password}
+        )
+        cls.attestor_url = make_conninfo(
+            **{
+                **values,
+                "user": cls.attestor_login,
+                "password": cls.attestor_password,
+            }
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        import psycopg
+        from psycopg import sql
+
+        with psycopg.connect(DATABASE_URL) as connection:
+            for login in (cls.attestor_login, cls.runtime_login):
+                connection.execute(
+                    sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login))
+                )
+
+    @classmethod
+    def runtime_store(cls, database_url: str | None = None):
+        if database_url is None:
+            return PostgresFactoryStore(cls.runtime_url)
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        return PostgresFactoryStore(
+            make_conninfo(
+                **{
+                    **conninfo_to_dict(database_url),
+                    "user": cls.runtime_login,
+                    "password": cls.runtime_password,
+                }
+            )
+        )
+
+    def attestor_store(self):
+        return PostgresArtifactAttestationStore(self.attestor_url)
+
+    @classmethod
+    def migrate(cls, database_url: str):
+        return PostgresMigrator(database_url).apply(
+            expected_runtime_login=cls.runtime_login,
+            expected_artifact_attestor_login=cls.attestor_login,
+        )
 
     def setUp(self):
         import psycopg
@@ -124,7 +171,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     "06ecf1c875bc" + "9" * 52,
                 ),
             )
-        self.store = PostgresFactoryStore(DATABASE_URL)
+        self.store = self.runtime_store()
         self.service = FactoryService(self.store)
 
     def create_schema14_database(self, suffix: str) -> tuple[str, str]:
@@ -201,7 +248,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     "06ecf1c875bc" + "9" * 52,
                 ),
             )
-        store = PostgresFactoryStore(database_url)
+        store = self.runtime_store(database_url)
         service = FactoryService(store)
         payload = valid_intake()
         payload["source_id"] = f"schema14-{uuid.uuid4()}"
@@ -623,7 +670,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             for sequence, kind, event_type, inner in proposals:
                 if kind == "artifact":
                     self.assertEqual(
-                        DirectArtifactAttestationStore().record_artifact_attestation(
+                        self.attestor_store().record_artifact_attestation(
                             attestation
                         ),
                         attestation,
@@ -1064,7 +1111,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             connection.execute("ALTER ROLE factory_artifact_attestor LOGIN")
         try:
             with self.assertRaises(RoleSafetyError):
-                PostgresMigrator(DATABASE_URL).apply()
+                self.migrate(DATABASE_URL)
         finally:
             with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
                 connection.execute("ALTER ROLE factory_artifact_attestor NOLOGIN")
@@ -1078,7 +1125,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             )
         try:
             with self.assertRaises(RoleSafetyError):
-                PostgresMigrator(DATABASE_URL).apply()
+                self.migrate(DATABASE_URL)
         finally:
             with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
                 connection.execute(
@@ -1089,81 +1136,45 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 connection.execute(sql.SQL("DROP ROLE {}").format(sql.Identifier(parent)))
 
     def test_separate_runtime_and_attestor_logins_survive_upgrade_and_attest(self):
-        import psycopg
         from adaptive_factory.admin import bootstrap_local
-        from psycopg import sql
-        from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
-        runtime_login = "factory_slice03_runtime"
-        attestor_login = "factory_slice03_attestor"
-        runtime_password = "local-slice03-runtime-password"
-        attestor_password = "local-slice03-attestor-password"
-        try:
-            runtime_url = make_conninfo(
-                **{
-                    **conninfo_to_dict(DATABASE_URL),
-                    "user": runtime_login,
-                    "password": runtime_password,
-                }
-            )
-            attestor_url = make_conninfo(
-                **{
-                    **conninfo_to_dict(DATABASE_URL),
-                    "user": attestor_login,
-                    "password": attestor_password,
-                }
-            )
-            readiness = bootstrap_local(
-                DATABASE_URL,
-                runtime_login,
-                runtime_password,
-                runtime_url,
-                artifact_attestor_login=attestor_login,
-                artifact_attestor_password=attestor_password,
-                artifact_attestor_url=attestor_url,
-            )
-            self.assertEqual(readiness["database_role"], "factory_runtime")
-            self.assertEqual(readiness["schema_version"], 16)
-            self.assertEqual(
-                readiness["artifact_attestor_database_role"],
-                "factory_artifact_attestor",
-            )
-            attestor_store = PostgresArtifactAttestationStore(attestor_url)
-            self.assertEqual(
-                attestor_store.readiness(),
-                {
-                    "session_user": attestor_login,
-                    "database_role": "factory_artifact_attestor",
-                },
-            )
-            _task, execution = self.claim_execution(
-                "dedicated-attestor-login", capabilities=["artifacts"]
-            )
-            values = {
-                "artifact_class": "patch",
-                "path": "factory/src/result.patch",
-                "sha256": "e" * 64,
-                "size_bytes": 12,
-                "media_type": "text/x-diff",
-            }
-            attestation = self.artifact_attestation(execution, 1, values)
-            self.assertEqual(
-                attestor_store.record_artifact_attestation(attestation), attestation
-            )
-        finally:
-            with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
-                for login, capability in (
-                    (runtime_login, "factory_runtime"),
-                    (attestor_login, "factory_artifact_attestor"),
-                ):
-                    connection.execute(
-                        sql.SQL("REVOKE {} FROM {}").format(
-                            sql.Identifier(capability), sql.Identifier(login)
-                        )
-                    )
-                    connection.execute(
-                        sql.SQL("DROP ROLE {}").format(sql.Identifier(login))
-                    )
+        readiness = bootstrap_local(
+            DATABASE_URL,
+            self.runtime_login,
+            self.runtime_password,
+            self.runtime_url,
+            artifact_attestor_login=self.attestor_login,
+            artifact_attestor_password=self.attestor_password,
+            artifact_attestor_url=self.attestor_url,
+        )
+        self.assertEqual(readiness["database_role"], "factory_runtime")
+        self.assertEqual(readiness["schema_version"], 16)
+        self.assertEqual(
+            readiness["artifact_attestor_database_role"],
+            "factory_artifact_attestor",
+        )
+        attestor_store = self.attestor_store()
+        self.assertEqual(
+            attestor_store.readiness(),
+            {
+                "session_user": self.attestor_login,
+                "database_role": "factory_artifact_attestor",
+            },
+        )
+        _task, execution = self.claim_execution(
+            "dedicated-attestor-login", capabilities=["artifacts"]
+        )
+        values = {
+            "artifact_class": "patch",
+            "path": "factory/src/result.patch",
+            "sha256": "e" * 64,
+            "size_bytes": 12,
+            "media_type": "text/x-diff",
+        }
+        attestation = self.artifact_attestation(execution, 1, values)
+        self.assertEqual(
+            attestor_store.record_artifact_attestation(attestation), attestation
+        )
 
     def test_bootstrap_rejects_partial_attestor_configuration_before_provisioning(self):
         import psycopg
@@ -1328,7 +1339,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
                 before_functions = self.replaced_execution_function_metadata(cursor)
-            applied = PostgresMigrator(database_url).apply()
+            applied = self.migrate(database_url)
             self.assertEqual(
                 [(item.version, item.name) for item in applied],
                 [
@@ -1395,7 +1406,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     [row[0] for row in cursor.fetchall()],
                     ["execution_proposals_canonical_body_check"],
                 )
-            self.assertEqual(PostgresMigrator(database_url).apply(), ())
+            self.assertEqual(self.migrate(database_url), ())
             service = FactoryService(store)
             terminal = service.commit_execution_proposal(
                 execution.lease,
@@ -1466,7 +1477,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 psycopg.Error, "refuses legacy finalized workspace rows"
             ):
-                PostgresMigrator(database_url).apply()
+                self.migrate(database_url)
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
                 cursor.execute(
                     """SELECT max(version),
@@ -1501,7 +1512,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             task, execution, terminal, store = self.populate_schema14_execution(
                 database_url, proposal_kind="terminal"
             )
-            applied = PostgresMigrator(database_url).apply()
+            applied = self.migrate(database_url)
             self.assertEqual(
                 [(item.version, item.name) for item in applied],
                 [
@@ -1547,7 +1558,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     TO execution_proposals_body_check_fixture"""
                 )
             with self.assertRaises(psycopg.Error):
-                PostgresMigrator(database_url).apply()
+                self.migrate(database_url)
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
                 cursor.execute(
                     """SELECT max(version),
@@ -1576,7 +1587,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 psycopg.Error, "refuses unattested legacy artifact proposals"
             ):
-                PostgresMigrator(database_url).apply()
+                self.migrate(database_url)
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
                 cursor.execute(
                     """SELECT max(version),
@@ -1637,7 +1648,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 psycopg.Error, "refuses legacy finalized workspace rows"
             ):
-                PostgresMigrator(database_url).apply()
+                self.migrate(database_url)
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
                 cursor.execute(
                     "SELECT max(version),(SELECT body FROM factory.workspace_results) "
@@ -1963,7 +1974,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         service = FactoryService(
             self.store,
             artifact_broker=TrustedArtifactBroker(),
-            artifact_attestation_store=DirectArtifactAttestationStore(),
+            artifact_attestation_store=self.attestor_store(),
         )
         artifact = service.commit_execution_proposal(
             execution.lease,
@@ -2412,7 +2423,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         service = FactoryService(
             self.store,
             artifact_broker=TrustedArtifactBroker(),
-            artifact_attestation_store=DirectArtifactAttestationStore(),
+            artifact_attestation_store=self.attestor_store(),
         )
         payloads = (
             (1, "note.proposed", {"note_type": "finding", "body": "bounded", "evidence": []}),
@@ -2524,7 +2535,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 attestation = self.artifact_attestation(
                     execution, sequence, artifact_values
                 )
-                DirectArtifactAttestationStore().record_artifact_attestation(attestation)
+                self.attestor_store().record_artifact_attestation(attestation)
                 attestation_digest = attestation.artifact_attestation_digest
             honest = ProposalBroker().accept(
                 event,
@@ -2637,7 +2648,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         }
         replay_checked = threading.Event()
         resume = threading.Event()
-        racing_store = PostgresFactoryStore(DATABASE_URL)
+        racing_store = self.runtime_store()
         original_replay = racing_store.execution_proposal_replay
         replay_calls = []
 
@@ -2674,11 +2685,11 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             artifact_broker=loser_broker,
             artifact_attestation_store=loser_attestor,
         )
-        winner_store = PostgresFactoryStore(DATABASE_URL)
+        winner_store = self.runtime_store()
         winner = FactoryService(
             winner_store,
             artifact_broker=TrustedArtifactBroker(),
-            artifact_attestation_store=DirectArtifactAttestationStore(),
+            artifact_attestation_store=self.attestor_store(),
         )
 
         def losing_request():
@@ -2767,15 +2778,15 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
 
         broker = PausingDeterministicArtifactBroker()
         loser = FactoryService(
-            PostgresFactoryStore(DATABASE_URL),
+            self.runtime_store(),
             artifact_broker=broker,
-            artifact_attestation_store=DirectArtifactAttestationStore(),
+            artifact_attestation_store=self.attestor_store(),
         )
-        winner_store = PostgresFactoryStore(DATABASE_URL)
+        winner_store = self.runtime_store()
         winner = FactoryService(
             winner_store,
             artifact_broker=broker,
-            artifact_attestation_store=DirectArtifactAttestationStore(),
+            artifact_attestation_store=self.attestor_store(),
         )
 
         def losing_request():
