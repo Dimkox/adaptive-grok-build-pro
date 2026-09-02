@@ -2,7 +2,7 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-02T08:24:50Z",
+  "observed_at": "2026-09-02T09:46:11Z",
   "observed_main_sha": "78ad2f679d38dc3244e716c586332417e610089c",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
@@ -23,11 +23,11 @@
     "route_id": "b7f288f1e81e",
     "branch": "integration/m4-main-20260902",
     "change_package": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288",
-    "status": "local_m4_integrated_candidate_review",
+    "status": "local_m4_repair_candidate_verification_pending",
     "highest_implemented_milestone": "M4",
     "current_provisional_milestone": "M8",
     "next_roadmap_milestone": "M9",
-    "next_action": "Re-run final verification after this documentation commit and complete five fresh M4 reviews/reports/receipts on one exact tree, then use PR-only delivery and the current external exact-head gate; accept and restack M5-M9 only in dependency order."
+    "next_action": "Run final verification on the current M4 repair tree, then complete five fresh M4 reviews/reports/receipts on that exact fingerprint. PR-only delivery and a new external exact-head gate remain pending; after M4 acceptance, restack M5/M6 with renumbered migrations and fresh checksum/upgrade/restart evidence before continuing dependency order."
   },
   "milestones": {
     "M0": {
@@ -173,9 +173,11 @@
         "status": "complete",
         "commit": "4f75558770f2f332b32b4a47fe6afa61fcc524ec",
         "source_evidence_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
-        "integration_code_candidate": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
+        "integration_baseline": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
+        "latest_committed_repair_checkpoint": "14cbd542803a57370b7e914f8c06bc56380e89a6",
+        "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "evidence": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/implementation-report.md",
-        "notes": "Production is locally complete; da7ec8d7 is the current-main integration code candidate after three verifier-bypass repairs, not an accepted or delivered head."
+        "notes": "The current repository tree adds roadmap/state parity, claim-terminal race repair, bounded mutation errors, fail-closed role bootstrap and persisted accepted retry limits through additive migration 013. Final verification and fresh independent reviews are pending; this is not an accepted or delivered head."
       },
       "review": {
         "status": "pending_refresh",
@@ -188,7 +190,7 @@
           "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/data-review.md",
           "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/release-review.md"
         ],
-        "notes": "The listed five reports pass only for the pre-integration tree. Five fresh reviews, reports and receipts remain pending for the final current-main integration tree."
+        "notes": "The listed five reports pass only for the pre-integration tree and do not cover the current repair tree. Five fresh reviews, reports and receipts remain pending; no review acceptance is claimed."
       },
       "stack_integration": {
         "status": "local_integrated_candidate",
@@ -200,18 +202,20 @@
           "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
           "78ad2f679d38dc3244e716c586332417e610089c"
         ],
-        "code_candidate_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
+        "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
+        "latest_committed_repair_checkpoint": "14cbd542803a57370b7e914f8c06bc56380e89a6",
+        "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "intermediate_local_verification": {
           "status": "passed",
           "head_sha": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
           "checks_passed": 14,
           "checks_total": 14,
           "changed_files": 469,
-          "notes": "Exact-code-head preflight only; this documentation commit requires a final rerun before completion."
+          "notes": "Historical exact-code-head preflight only; subsequent repair commits and this migration/docs tree require a final rerun before completion."
         },
         "pull_request": null,
         "merge_commit": null,
-        "notes": "The final candidate identity is the repository tree containing this state file; a commit cannot embed its own SHA."
+        "notes": "The current candidate identity is the repository tree containing this state file; a commit cannot embed its own SHA. Full verification, five fresh reviews, PR delivery and an external exact-head check remain pending."
       },
       "main_delivery": {
         "status": "not_delivered",
@@ -231,14 +235,14 @@
       }
     },
     "M5": {
-      "implementation": {"status": "provisional_source_complete", "commit": "141e51e75b2bb337fa3bb1544639c6c46c287309", "evidence": "milestone/m5-isolated-execution-provisional-m4", "notes": "Tasks 1-6 source are complete only on the clean provisional branch and do not constitute acceptance or delivery."},
+      "implementation": {"status": "provisional_source_complete", "commit": "141e51e75b2bb337fa3bb1544639c6c46c287309", "evidence": "milestone/m5-isolated-execution-provisional-m4", "notes": "Tasks 1-6 source are complete only on the clean provisional branch and do not constitute acceptance or delivery. Its provisional 013_execution_plane migration now conflicts with M4 migration 013 and must be renumbered after restack."},
       "review": {"status": "pending_final", "commit": "141e51e75b2bb337fa3bb1544639c6c46c287309", "evidence": [], "notes": "A final review wave remains pending after accepted-M4 restack and rootless live-host isolation proof."},
-      "stack_integration": {"status": "blocked_on_m4_acceptance", "base_branch": "milestone/m4-durable-control-plane-accepted-m3", "base_commit": "94fc5ad878e6b15df6418303caada49a3b93bf4c", "pull_request": null, "merge_commit": null, "notes": "Must restack on the accepted M4 integration head."},
+      "stack_integration": {"status": "blocked_on_m4_acceptance", "base_branch": "milestone/m4-durable-control-plane-accepted-m3", "base_commit": "94fc5ad878e6b15df6418303caada49a3b93bf4c", "pull_request": null, "merge_commit": null, "notes": "Must restack on the accepted M4 integration head, renumber 013_execution_plane to the next free version, and regenerate migration checksums plus upgrade/restart evidence."},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
       "external_gate": {"status": "blocked", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null, "notes": "Rootless live-host isolation proof, final reviews and an accepted M4 predecessor are still required."}
     },
     "M6": {
-      "implementation": {"status": "provisional_task1_bridge", "commit": "3def83eb915ca68e66379269526ffa64822a1104", "evidence": "milestone/m6-semantic-validation-provisional-m4", "notes": "Only the clean provisional Task-1 bridge exists; migration 014, service/API behavior, recovery and metrics remain pending."},
+      "implementation": {"status": "provisional_task1_bridge", "commit": "3def83eb915ca68e66379269526ffa64822a1104", "evidence": "milestone/m6-semantic-validation-provisional-m4", "notes": "Only the clean provisional Task-1 bridge exists. Its provisional 014_semantic migration must move after the renumbered M5 migration (at least 015), with fresh checksums and upgrade/restart evidence; service/API behavior, recovery and metrics remain pending."},
       "review": {"status": "not_started", "commit": null, "evidence": [], "notes": "Final restack and reviews wait for accepted M5."},
       "stack_integration": {"status": "blocked_on_m5_acceptance", "base_branch": "milestone/m5-isolated-execution-provisional-m4", "pull_request": null, "merge_commit": null},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
@@ -273,20 +277,22 @@
         "branch": "integration/m4-main-20260902",
         "source_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
         "base_head": "78ad2f679d38dc3244e716c586332417e610089c",
-        "code_candidate_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "purpose": "Re-run final verification after the docs refresh and complete five fresh reviews/reports/receipts before PR-only delivery."
+        "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
+        "latest_committed_repair_checkpoint": "14cbd542803a57370b7e914f8c06bc56380e89a6",
+        "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
+        "purpose": "Run final verification on the current repair tree and complete five fresh reviews/reports/receipts before PR-only delivery."
       },
       {
         "route_id": "37b05f579320",
         "branch": "milestone/m5-isolated-execution-provisional-m4",
         "head": "141e51e75b2bb337fa3bb1544639c6c46c287309",
-        "purpose": "Tasks 1-6 source complete provisionally; prove rootless live-host isolation, then restack/review on accepted M4."
+        "purpose": "Tasks 1-6 source complete provisionally; prove rootless live-host isolation, then restack on accepted M4, renumber 013_execution_plane and regenerate checksum/upgrade/restart evidence."
       },
       {
         "route_id": "82aac86a3bf9",
         "branch": "milestone/m6-semantic-validation-provisional-m4",
         "head": "3def83eb915ca68e66379269526ffa64822a1104",
-        "purpose": "Task-1 bridge only; finish migration 014, service/API, recovery and metrics, then restack/review after accepted M5."
+        "purpose": "Task-1 bridge only; after accepted M5, renumber provisional 014_semantic after M5, regenerate checksum/upgrade/restart evidence, and finish service/API, recovery and metrics."
       },
       {
         "route_id": "e5911c3f8721",

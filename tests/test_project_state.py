@@ -18,6 +18,7 @@ SEO_MERGE_SHA = "8ab4e57038dec2e07f01aaa0b207813a387358f4"
 M4_PRODUCT_SHA = "4f75558770f2f332b32b4a47fe6afa61fcc524ec"
 M4_SOURCE_SHA = "460a8a01a6394cac710b4e3f9eea3d94d4beef89"
 M4_INTEGRATION_SHA = "da7ec8d7d40f52663aba1ff59bf03ccf209395b0"
+M4_REPAIR_CHECKPOINT_SHA = "14cbd542803a57370b7e914f8c06bc56380e89a6"
 M5_PROVISIONAL_SHA = "141e51e75b2bb337fa3bb1544639c6c46c287309"
 M6_PROVISIONAL_SHA = "3def83eb915ca68e66379269526ffa64822a1104"
 M7_PROVISIONAL_SHA = "c8b450f494b3d44b580556c6a612b21a3a780368"
@@ -149,12 +150,24 @@ class ProjectStateTests(unittest.TestCase):
 
         m4 = state["milestones"]["M4"]
         self.assertEqual(m4["implementation"]["source_evidence_head"], M4_SOURCE_SHA)
-        self.assertEqual(m4["implementation"]["integration_code_candidate"], M4_INTEGRATION_SHA)
+        self.assertEqual(m4["implementation"]["integration_baseline"], M4_INTEGRATION_SHA)
+        self.assertEqual(
+            m4["implementation"]["latest_committed_repair_checkpoint"],
+            M4_REPAIR_CHECKPOINT_SHA,
+        )
+        self.assertEqual(
+            m4["implementation"]["current_candidate_identity"],
+            "repository tree containing this PROJECT_STATE.json",
+        )
         self.assertEqual(m4["review"]["evidence_head"], M4_SOURCE_SHA)
         self.assertEqual(m4["stack_integration"]["base_commit"], CURRENT_MAIN_SHA)
         self.assertEqual(m4["stack_integration"]["source_head"], M4_SOURCE_SHA)
         self.assertEqual(m4["stack_integration"]["merge_parents"], [M4_SOURCE_SHA, CURRENT_MAIN_SHA])
-        self.assertEqual(m4["stack_integration"]["code_candidate_head"], M4_INTEGRATION_SHA)
+        self.assertEqual(m4["stack_integration"]["intermediate_code_head"], M4_INTEGRATION_SHA)
+        self.assertEqual(
+            m4["stack_integration"]["latest_committed_repair_checkpoint"],
+            M4_REPAIR_CHECKPOINT_SHA,
+        )
         self.assertEqual(
             m4["stack_integration"]["intermediate_local_verification"],
             {
@@ -163,7 +176,7 @@ class ProjectStateTests(unittest.TestCase):
                 "checks_passed": 14,
                 "checks_total": 14,
                 "changed_files": 469,
-                "notes": "Exact-code-head preflight only; this documentation commit requires a final rerun before completion.",
+                "notes": "Historical exact-code-head preflight only; subsequent repair commits and this migration/docs tree require a final rerun before completion.",
             },
         )
         self.assertIsNone(m4["stack_integration"]["merge_commit"])
@@ -363,7 +376,11 @@ class ProjectStateTests(unittest.TestCase):
         )
         self.assertEqual(inventory["active"][0]["source_head"], M4_SOURCE_SHA)
         self.assertEqual(inventory["active"][0]["base_head"], CURRENT_MAIN_SHA)
-        self.assertEqual(inventory["active"][0]["code_candidate_head"], M4_INTEGRATION_SHA)
+        self.assertEqual(inventory["active"][0]["intermediate_code_head"], M4_INTEGRATION_SHA)
+        self.assertEqual(
+            inventory["active"][0]["latest_committed_repair_checkpoint"],
+            M4_REPAIR_CHECKPOINT_SHA,
+        )
         self.assertEqual(inventory["active"][1]["head"], M5_PROVISIONAL_SHA)
         self.assertEqual(inventory["active"][2]["head"], M6_PROVISIONAL_SHA)
         self.assertEqual(inventory["active"][3]["head"], M7_PROVISIONAL_SHA)

@@ -17,7 +17,7 @@ SOURCE = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SOURCE))
 
 from adaptive_factory.migrations import PostgresMigrator
-from adaptive_factory.models import Actor, RunRole
+from adaptive_factory.models import Actor, RunRole, TaskStatus
 from adaptive_factory.service import FactoryService
 from adaptive_factory.store import FenceError, PostgresFactoryStore
 
@@ -63,10 +63,27 @@ def main() -> int:
     operator = Actor("operator", "operator", frozenset({"task:submit", "factory:reconcile"}), frozenset({"*"}))
     lost_worker = Actor("lost-worker", "worker", frozenset({"task:claim", "task:heartbeat"}), frozenset({"probe/repository"}))
     service = FactoryService(PostgresFactoryStore(database_url))
-    service.intake(payload, actor=operator, now=now)
-    old = service.claim(owner=lost_worker.actor_id, role=RunRole.READER, repositories=("probe/repository",), lease_seconds=30, actor=lost_worker, now=now)
+    zero_payload = {
+        **payload,
+        "request_id": "restart-probe-zero-retries",
+        "source_id": str(uuid.uuid4()),
+        "limits": {**payload["limits"], "infrastructure_retries": 0},
+    }
+    two_payload = {
+        **payload,
+        "request_id": "restart-probe-two-retries",
+        "source_id": str(uuid.uuid4()),
+        "limits": {**payload["limits"], "infrastructure_retries": 2},
+    }
+    zero_task = service.intake(zero_payload, actor=operator, now=now).task
+    old_zero = service.claim(owner=lost_worker.actor_id, role=RunRole.READER, repositories=("probe/repository",), lease_seconds=30, actor=lost_worker, now=now)
+    two_task = service.intake(two_payload, actor=operator, now=now).task
+    old_two = service.claim(owner=lost_worker.actor_id, role=RunRole.READER, repositories=("probe/repository",), lease_seconds=30, actor=lost_worker, now=now)
     with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
-        cursor.execute("UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=%s", (old.run_id,))
+        cursor.execute(
+            "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=ANY(%s)",
+            ([old_zero.run_id, old_two.run_id],),
+        )
 
     subprocess.run(["docker", "restart", container_name], check=True, timeout=30, stdout=subprocess.DEVNULL)
     published = subprocess.run(
@@ -88,14 +105,24 @@ def main() -> int:
     fresh = FactoryService(PostgresFactoryStore(database_url))
     first = fresh.reconcile(actor=operator, now=datetime.now(timezone.utc))
     second = fresh.reconcile(actor=operator, now=datetime.now(timezone.utc))
+    zero_status = fresh.store.get_task(zero_task.task_id).status
+    two_status = fresh.store.get_task(two_task.task_id).status
     new_worker = Actor("new-worker", "worker", frozenset({"task:claim"}), frozenset({"probe/repository"}))
     new = fresh.claim(owner=new_worker.actor_id, role=RunRole.READER, repositories=("probe/repository",), lease_seconds=30, actor=new_worker, now=datetime.now(timezone.utc))
-    if first.repaired != 1 or second.repaired != 0 or new is None or new.fence <= old.fence:
-        raise SystemExit("restart reconciliation was not exactly-once or did not issue a higher fence")
+    if (
+        first.repaired != 2
+        or second.repaired != 0
+        or zero_status is not TaskStatus.DEAD
+        or two_status is not TaskStatus.RETRY
+        or new is None
+        or new.task_id != two_task.task_id
+        or new.fence <= old_two.fence
+    ):
+        raise SystemExit("restart reconciliation did not preserve exact accepted retry limits")
     try:
-        fresh.heartbeat(old, actor=lost_worker, now=datetime.now(timezone.utc))
+        fresh.heartbeat(old_two, actor=lost_worker, now=datetime.now(timezone.utc))
     except FenceError:
-        print("PASS: PostgreSQL restarted; one repair; replay no-op; higher fence; late holder rejected")
+        print("PASS: PostgreSQL restarted; retry limits persisted; two repairs; replay no-op; higher fence; late holder rejected")
         return 0
     raise SystemExit("late heartbeat unexpectedly succeeded")
 

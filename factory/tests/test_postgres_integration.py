@@ -949,6 +949,131 @@ class PostgresFactoryTests(unittest.TestCase):
             )
         )
 
+    def test_accepted_infrastructure_retry_limits_are_exact_on_release(self):
+        for infrastructure_retries in range(3):
+            with self.subTest(infrastructure_retries=infrastructure_retries):
+                repository = f"retry/release-{infrastructure_retries}"
+                payload = self.payload(
+                    repository=repository,
+                    source=f"release-limit-{infrastructure_retries}",
+                )
+                payload["limits"]["infrastructure_retries"] = infrastructure_retries
+                self.service.intake(payload, actor=OPERATOR, now=NOW)
+                for attempt_no in range(1, infrastructure_retries + 2):
+                    grant = self.service.claim(
+                        owner=f"release-limit-{infrastructure_retries}-{attempt_no}",
+                        role=RunRole.READER,
+                        repositories=(repository,),
+                        lease_seconds=30,
+                        actor=WORKER,
+                        now=NOW,
+                    )
+                    self.assertIsNotNone(grant)
+                    status = self.service.release(
+                        grant, outcome=FailureClass.WORKER_LOST, actor=WORKER, now=NOW
+                    )
+                    expected = (
+                        TaskStatus.RETRY
+                        if attempt_no <= infrastructure_retries
+                        else TaskStatus.DEAD
+                    )
+                    self.assertEqual(status, expected)
+                self.assertIsNone(
+                    self.service.claim(
+                        owner=f"release-limit-{infrastructure_retries}-exhausted",
+                        role=RunRole.READER,
+                        repositories=(repository,),
+                        lease_seconds=30,
+                        actor=WORKER,
+                        now=NOW,
+                    )
+                )
+
+    def test_infrastructure_retry_limit_is_persisted_with_frozen_intent(self):
+        import psycopg
+
+        source = "persisted-retry-limit"
+        first_payload = self.payload(source=source)
+        first_payload["limits"]["infrastructure_retries"] = 1
+        first = self.service.intake(first_payload, actor=OPERATOR, now=NOW).task
+        replacement_payload = self.payload(source=source)
+        replacement_payload["limits"]["infrastructure_retries"] = 0
+        replacement = self.service.intake(replacement_payload, actor=OPERATOR, now=NOW).task
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT t.task_id,t.infrastructure_retries,
+                (i.body #>> '{limits,infrastructure_retries}')::integer,
+                t.packet_digest,i.intent_digest,t.state
+                FROM factory.tasks t JOIN factory.accepted_intents i ON i.intent_id=t.intent_id
+                WHERE t.task_id=ANY(%s) ORDER BY t.generation""",
+                ([first.task_id, replacement.task_id],),
+            )
+            rows = cursor.fetchall()
+        self.assertEqual(
+            [
+                (str(row[0]), row[1], row[2], row[3].strip(), row[4].strip(), row[5])
+                for row in rows
+            ],
+            [
+                (
+                    first.task_id,
+                    1,
+                    1,
+                    first.packet_digest,
+                    first.intent_digest,
+                    TaskStatus.SUPERSEDED.value,
+                ),
+                (
+                    replacement.task_id,
+                    0,
+                    0,
+                    replacement.packet_digest,
+                    replacement.intent_digest,
+                    TaskStatus.QUEUED.value,
+                ),
+            ],
+        )
+
+    def test_accepted_infrastructure_retry_limits_are_exact_on_reconciliation(self):
+        import psycopg
+
+        for infrastructure_retries in range(3):
+            with self.subTest(infrastructure_retries=infrastructure_retries):
+                repository = f"retry/reconcile-{infrastructure_retries}"
+                payload = self.payload(
+                    repository=repository,
+                    source=f"reconcile-limit-{infrastructure_retries}",
+                )
+                payload["limits"]["infrastructure_retries"] = infrastructure_retries
+                task = self.service.intake(payload, actor=OPERATOR, now=NOW).task
+                for attempt_no in range(1, infrastructure_retries + 2):
+                    grant = self.service.claim(
+                        owner=f"reconcile-limit-{infrastructure_retries}-{attempt_no}",
+                        role=RunRole.READER,
+                        repositories=(repository,),
+                        lease_seconds=30,
+                        actor=WORKER,
+                        now=NOW,
+                    )
+                    self.assertIsNotNone(grant)
+                    with psycopg.connect(DATABASE_URL) as connection:
+                        connection.execute(
+                            "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=%s",
+                            (grant.run_id,),
+                        )
+                    result = self.service.reconcile(actor=OPERATOR, now=NOW)
+                    self.assertEqual((result.candidates, result.repaired), (1, 1))
+                    expected = (
+                        TaskStatus.RETRY
+                        if attempt_no <= infrastructure_retries
+                        else TaskStatus.DEAD
+                    )
+                    self.assertEqual(self.store.get_task(task.task_id).status, expected)
+                self.assertEqual(
+                    self.service.reconcile(actor=OPERATOR, now=NOW).repaired,
+                    0,
+                )
+
     def test_release_metrics_inventory_tracks_durable_operations_and_rejections(self):
         import psycopg
         from fastapi.testclient import TestClient
@@ -1468,21 +1593,25 @@ class PostgresFactoryTests(unittest.TestCase):
                     VALUES ('owner/repository','manual','legacy-blocked-zero'),
                            ('owner/repository','manual','legacy-ready-reservation')"""
                 )
-                for legacy_intent_id, source in (
-                    (blocked_intent_id, "legacy-blocked-zero"),
-                    (ready_intent_id, "legacy-ready-reservation"),
-                    (ready_new_intent_id, "legacy-ready-reservation"),
+                for legacy_intent_id, source, body in (
+                    (blocked_intent_id, "legacy-blocked-zero", "{}"),
+                    (ready_intent_id, "legacy-ready-reservation", "{}"),
+                    (
+                        ready_new_intent_id,
+                        "legacy-ready-reservation",
+                        '{"limits":{"infrastructure_retries":0}}',
+                    ),
                 ):
                     cursor.execute(
                         """INSERT INTO factory.accepted_intents
                         (intent_id,intent_digest,idempotency_key,repository_id,source_type,source_id,source_digest,
                          exact_base_sha,spec_digest,architecture_digest,governance_digest,policy_digest,body)
-                        VALUES (%s,%s,%s,'owner/repository','manual',%s,%s,%s,%s,%s,%s,%s,'{}')""",
+                        VALUES (%s,%s,%s,'owner/repository','manual',%s,%s,%s,%s,%s,%s,%s,%s::jsonb)""",
                         (
                             legacy_intent_id, uuid.uuid4().hex * 2, uuid.uuid4().hex * 2, source,
                             uuid.uuid4().hex * 2, uuid.uuid4().hex + uuid.uuid4().hex[:8],
                             uuid.uuid4().hex * 2, uuid.uuid4().hex * 2,
-                            uuid.uuid4().hex * 2, uuid.uuid4().hex * 2,
+                            uuid.uuid4().hex * 2, uuid.uuid4().hex * 2, body,
                         ),
                     )
                 cursor.execute(
@@ -1570,7 +1699,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12], "ready", 12, True,
+                    [9, 10, 11, 12, 13], "ready", 13, True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
@@ -1589,6 +1718,18 @@ class PostgresFactoryTests(unittest.TestCase):
                 (4, 1, 1, 0, 25_000_500, 1, 3),
             )
             with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT task_id,infrastructure_retries FROM factory.tasks ORDER BY task_id"
+                )
+                self.assertEqual(
+                    dict(cursor.fetchall()),
+                    {
+                        task_id: 2,
+                        blocked_task_id: 2,
+                        ready_task_id: 2,
+                        ready_new_task_id: 0,
+                    },
+                )
                 cursor.execute(
                     "SELECT metric_name,outcome,value FROM factory.metric_counters_pre_012_untrusted ORDER BY metric_name"
                 )
@@ -1958,7 +2099,7 @@ class PostgresFactoryTests(unittest.TestCase):
         runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
         result = bootstrap_local(DATABASE_URL, login, password, runtime_url)
         self.assertEqual(result["database_role"], "factory_runtime")
-        self.assertEqual(result["schema_version"], 12)
+        self.assertEqual(result["schema_version"], 13)
         self.assertEqual(PostgresMigrator(DATABASE_URL).apply(expected_runtime_login=login), ())
         with psycopg.connect(runtime_url) as connection, connection.cursor() as cursor:
             cursor.execute("SET ROLE factory_runtime")

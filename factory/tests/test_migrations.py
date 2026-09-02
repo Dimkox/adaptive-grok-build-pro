@@ -20,8 +20,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
-        self.assertEqual(len({item.sha256 for item in migrations}), 12)
+        self.assertEqual([item.version for item in migrations], list(range(1, 14)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 13)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -74,6 +74,7 @@ class MigrationTests(unittest.TestCase):
             "increment_fence_rejected",
             "read_metrics_snapshot",
             "revoke select, insert, update, delete on factory.metric_counters",
+            "infrastructure_retries",
         ):
             self.assertIn(marker, sql)
         self.assertNotIn("on delete cascade", sql)

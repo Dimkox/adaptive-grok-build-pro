@@ -362,3 +362,13 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The first GREEN run left writer capacity active because the writer claim selected the reader subtest's queued replacement instead of the task being superseded.
 **Root cause:** The concurrency fixture isolated source identities but not scheduler eligibility; each interleaving must use its own repository so a real `SKIP LOCKED` claim cannot select leftover eligible work from another subtest.
+
+## 2026-09-02 — Anchored new tests inside a composite test
+
+**Symptom:** Three retry-limit regression methods were initially inserted before the existing retry/budget test had ended, making its remaining assertions belong to the last new method.
+**Root cause:** The patch matched a repeated inner assertion instead of a method boundary; inspect test discovery and surrounding indentation after structural patches, then anchor additions at the next top-level test definition.
+
+## 2026-09-02 — Bypassed the factory project environment for API tests
+
+**Symptom:** A controller invoked API tests with system Python and hit a missing FastAPI import, producing no product evidence.
+**Root cause:** The command bypassed the factory-managed environment; focused factory checks must use `uv run --project factory ...`.

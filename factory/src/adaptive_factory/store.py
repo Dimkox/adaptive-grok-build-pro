@@ -409,8 +409,8 @@ class PostgresFactoryStore:
                 ),
             )
             cursor.execute(
-                """INSERT INTO factory.tasks(task_id,intent_id,repository_id,source_type,source_id,state,generation,packet_digest,deadline_at,cost_limit_micros,token_limit,output_limit_bytes,event_limit,repair_limit,wall_limit_seconds)
-                VALUES (%s,%s,%s,%s,%s,'queued',%s,%s,now()+(%s * interval '1 second'),%s,%s,%s,%s,%s,%s) RETURNING deadline_at""",
+                """INSERT INTO factory.tasks(task_id,intent_id,repository_id,source_type,source_id,state,generation,packet_digest,deadline_at,cost_limit_micros,token_limit,output_limit_bytes,event_limit,repair_limit,wall_limit_seconds,infrastructure_retries)
+                VALUES (%s,%s,%s,%s,%s,'queued',%s,%s,now()+(%s * interval '1 second'),%s,%s,%s,%s,%s,%s,%s) RETURNING deadline_at""",
                 (
                     task_id,
                     intent_id,
@@ -426,6 +426,7 @@ class PostgresFactoryStore:
                     intake.limits.max_events,
                     intake.limits.semantic_repairs,
                     intake.limits.wall_seconds,
+                    intake.limits.infrastructure_retries,
                 ),
             )
             deadline = cursor.fetchone()[0]
@@ -563,7 +564,7 @@ class PostgresFactoryStore:
             if not eligible_repositories:
                 return no_grant()
             cursor.execute(
-                """SELECT t.task_id,t.repository_id,t.packet_digest,t.deadline_at
+                """SELECT t.task_id,t.repository_id,t.packet_digest,t.deadline_at,t.infrastructure_retries
                 FROM factory.tasks t WHERE t.state IN ('queued','retry') AND t.repository_id=ANY(%s)
                 AND t.deadline_at>clock_timestamp() AND NOT t.accounting_blocked
                 AND t.cost_reserved_micros=0 AND t.tokens_reserved=0 AND t.wall_reserved_seconds=0
@@ -575,7 +576,7 @@ class PostgresFactoryStore:
             row = cursor.fetchone()
             if not row:
                 return no_grant()
-            task_id, repository_id, packet_digest, deadline = row
+            task_id, repository_id, packet_digest, deadline, infrastructure_retries = row
             cursor.execute(
                 "INSERT INTO factory.lease_sequences(task_id,last_fence) VALUES (%s,1) ON CONFLICT(task_id) DO UPDATE SET last_fence=factory.lease_sequences.last_fence+1 RETURNING last_fence",
                 (task_id,),
@@ -583,7 +584,7 @@ class PostgresFactoryStore:
             fence = cursor.fetchone()[0]
             cursor.execute("SELECT COALESCE(max(attempt_no),0)+1 FROM factory.attempts WHERE task_id=%s", (task_id,))
             attempt_no = cursor.fetchone()[0]
-            if attempt_no > 3:
+            if attempt_no > infrastructure_retries + 1:
                 cursor.execute(
                     "UPDATE factory.tasks SET state='dead',terminal_at=clock_timestamp(),updated_at=clock_timestamp() WHERE task_id=%s",
                     (task_id,),
@@ -726,7 +727,7 @@ class PostgresFactoryStore:
 
     def _lock_grant(self, cursor, grant: LeaseGrant, *, allow_expired: bool = False):
         cursor.execute(
-            """SELECT r.task_id,r.role,a.repository_id,at.attempt_no
+            """SELECT r.task_id,r.role,a.repository_id,at.attempt_no,t.infrastructure_retries
             FROM factory.runs r JOIN factory.tasks t ON t.task_id=r.task_id
             JOIN factory.capacity_allocations a ON a.run_id=r.run_id
             JOIN factory.attempts at ON at.run_id=r.run_id
@@ -771,9 +772,15 @@ class PostgresFactoryStore:
             raise FenceError("stale or expired fence")
         if not self._lock_capacity_for_run(cursor, grant.run_id):
             raise FenceError("stale or expired fence")
-        task_id, _role, _repository_id, attempt_no = self._lock_grant(cursor, grant, allow_expired=allow_expired)
+        task_id, _role, _repository_id, attempt_no, infrastructure_retries = self._lock_grant(
+            cursor, grant, allow_expired=allow_expired
+        )
         if isinstance(outcome, FailureClass):
-            decision = classify_retry(outcome, attempt_no=attempt_no)
+            decision = classify_retry(
+                outcome,
+                attempt_no=attempt_no,
+                infrastructure_retries=infrastructure_retries,
+            )
             target = TaskStatus.RETRY if decision.retry else (decision.terminal or TaskStatus.NEEDS_HUMAN)
             cursor.execute(
                 "SELECT EXISTS(SELECT 1 FROM factory.budget_reservations WHERE task_id=%s AND run_id=%s AND released_at IS NULL)",
