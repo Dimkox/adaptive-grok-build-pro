@@ -141,8 +141,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 ## 2026-09-01 — Checked only the uncommitted diff for PR hygiene
 
-**Symptom:** Verification reported a clean diff while the committed PR range still contained trailing whitespace.
-**Root cause:** The default `git diff --check` inspected only working-tree changes, so committed-range hygiene escaped; PR evidence must also check `git diff --check origin/main...HEAD`.
+**Symptom:** Verification reported a clean diff while the committed PR range contained trailing whitespace and 294 PR-only paths bypassed changed-file gates.
+**Root cause:** Hygiene inspected only the working tree and inventory used only the stale route base; PR verification must union that exact ancestor with the locally resolved target merge-base range.
 
 ## 2026-09-01 — Replaced a review report through delete then add
 

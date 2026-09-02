@@ -1,7 +1,7 @@
 # Test review — bounded workspace process cleanup
 
-**Route:** `fa3ae6080deb`  
-**Reviewed verification fingerprint:** `7b768fbef0db4c1cfe7a9603349a6e71cdc60907c96d2f0f7b2ba3f6584e93b6`  
+**Route:** `fa3ae6080deb`
+**Reviewed verification fingerprint:** `7b768fbef0db4c1cfe7a9603349a6e71cdc60907c96d2f0f7b2ba3f6584e93b6`
 **Verdict:** **FAIL**
 
 ## Blocking finding

@@ -1,9 +1,9 @@
 # Architecture analysis — safe M3 restack on accepted M2
 
-**Route:** `41eadaeae674`  
-**Target M2 commit:** `022411b05924618cfde0cb97b8c8aff4955e6013`  
-**Current M3 head:** `d4cc01f`  
-**Merge base:** `635c9ddf2d63c1ea823074106976a8f3de6299a9`  
+**Route:** `41eadaeae674`
+**Target M2 commit:** `022411b05924618cfde0cb97b8c8aff4955e6013`
+**Current M3 head:** `d4cc01f`
+**Merge base:** `635c9ddf2d63c1ea823074106976a8f3de6299a9`
 **Scope:** analysis only; this report is workflow evidence and not merge authority.
 
 ## Ruling

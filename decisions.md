@@ -344,3 +344,7 @@ Embedding the Codex skill under `.agents/skills/` and its showcase under `side-p
 ## 2026-09-02 — Integrate legacy evidence at the stricter contract boundary
 
 When a current-main merge introduces legacy evidence into a stricter accepted stack, migrate only the affected artifacts to the current canonical contract and model real local test capabilities explicitly. Pure URL parsing is not network access, while loopback browser execution is a declared `local_only` edge; this preserved validator strength without granting general egress.
+
+## 2026-09-02 — Bind PR preflight to route and target ranges
+
+Derive the exact route ancestor and the local PR target merge base from Git metadata, then use their changed-file union for hygiene, secret, contract, and SQL gates. This keeps a stale route base from hiding PR-only changes without fetching or treating repository prose as merge authority.

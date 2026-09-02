@@ -38,6 +38,20 @@ class CheckResult:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class GitRangeBase:
+    kind: str
+    source: str
+    target_sha: str
+    comparison_base_sha: str
+
+
+@dataclass
+class GitRangeSelection:
+    bases: list[GitRangeBase] = field(default_factory=list)
+    findings: list[dict[str, str]] = field(default_factory=list)
+
+
 def _canonical_digest(value: object) -> str:
     raw = json.dumps(value, ensure_ascii=True, sort_keys=True, separators=(",", ":")) + "\n"
     return hashlib.sha256(raw.encode("ascii")).hexdigest()
@@ -260,10 +274,285 @@ def _command_check(root: Path, name: str, command: list[str], timeout: int = 300
     )
 
 
-def _git_diff_check(root: Path) -> CheckResult:
+_EXACT_SHA = re.compile(r'^[0-9a-fA-F]{40}$')
+
+
+def _resolve_commit(root: Path, ref: str) -> str | None:
+    proc = run(
+        ['git', 'rev-parse', '--verify', '--quiet', '--end-of-options', f'{ref}^{{commit}}'],
+        cwd=root,
+        timeout=30,
+    )
+    resolved = proc.stdout.strip()
+    if proc.returncode != 0 or not _EXACT_SHA.fullmatch(resolved):
+        return None
+    return resolved.lower()
+
+
+def _existing_ref_candidates(root: Path, refs: list[str]) -> list[tuple[str, str]]:
+    candidates: list[tuple[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for ref in refs:
+        resolved = _resolve_commit(root, ref)
+        if resolved is None or (ref, resolved) in seen:
+            continue
+        seen.add((ref, resolved))
+        candidates.append((ref, resolved))
+    return candidates
+
+
+def _select_local_pr_target(root: Path) -> tuple[str, str] | dict[str, str] | None:
+    symbolic = run(
+        ['git', 'symbolic-ref', '--quiet', 'refs/remotes/origin/HEAD'],
+        cwd=root,
+        timeout=30,
+    )
+    if symbolic.returncode == 0 and symbolic.stdout.strip():
+        source = symbolic.stdout.strip()
+        if not source.startswith('refs/remotes/origin/'):
+            return {
+                'severity': 'error',
+                'code': 'pr-base-untrusted-symbolic-target',
+                'path': 'refs/remotes/origin/HEAD',
+                'message': f'origin/HEAD points outside refs/remotes/origin: {source}',
+            }
+        resolved = _resolve_commit(root, source)
+        if resolved is None:
+            return {
+                'severity': 'error',
+                'code': 'pr-base-unresolvable',
+                'path': source,
+                'message': 'configured origin/HEAD does not resolve to a local commit',
+            }
+        return source, resolved
+
+    configured = run(
+        ['git', 'config', '--get', 'init.defaultBranch'],
+        cwd=root,
+        timeout=30,
+    )
+    configured_name = configured.stdout.strip() if configured.returncode == 0 else ''
+    if configured_name:
+        valid_name = run(
+            ['git', 'check-ref-format', '--branch', configured_name],
+            cwd=root,
+            timeout=30,
+        )
+        if valid_name.returncode != 0:
+            return {
+                'severity': 'error',
+                'code': 'pr-base-invalid-default-branch',
+                'path': 'git-config:init.defaultBranch',
+                'message': 'configured default branch is not a valid Git branch name',
+            }
+        configured_candidates = _existing_ref_candidates(
+            root,
+            [f'refs/remotes/origin/{configured_name}', f'refs/heads/{configured_name}'],
+        )
+        if configured_candidates:
+            return configured_candidates[0]
+
+    for refs in (
+        ['refs/remotes/origin/main', 'refs/remotes/origin/master'],
+        ['refs/heads/main', 'refs/heads/master'],
+    ):
+        candidates = _existing_ref_candidates(root, refs)
+        distinct = {resolved for _, resolved in candidates}
+        if len(distinct) > 1:
+            rendered = ', '.join(f'{ref}={sha}' for ref, sha in candidates)
+            return {
+                'severity': 'error',
+                'code': 'pr-base-ambiguous',
+                'path': 'git-refs',
+                'message': f'multiple local PR target candidates disagree: {rendered}',
+            }
+        if candidates:
+            return candidates[0]
+    return None
+
+
+def _git_range_selection(
+    root: Path,
+    route: dict[str, object] | None,
+    mode: str,
+) -> GitRangeSelection:
+    selection = GitRangeSelection()
+    if mode not in {'pr', 'release'} or not command_exists('git'):
+        return selection
+
+    if route:
+        raw_route_base = route.get('base_commit')
+        if not isinstance(raw_route_base, str) or not _EXACT_SHA.fullmatch(raw_route_base):
+            selection.findings.append({
+                'severity': 'error',
+                'code': 'route-base-malformed',
+                'path': '.grok-stack/runtime/active-route.json',
+                'message': 'PR verification requires route.base_commit as an exact 40-hex SHA',
+            })
+        else:
+            route_base = _resolve_commit(root, raw_route_base)
+            if route_base is None:
+                selection.findings.append({
+                    'severity': 'error',
+                    'code': 'route-base-unresolvable',
+                    'path': '.grok-stack/runtime/active-route.json',
+                    'message': f'route base is not a locally available commit: {raw_route_base}',
+                })
+            else:
+                ancestor = run(
+                    ['git', 'merge-base', '--is-ancestor', route_base, 'HEAD'],
+                    cwd=root,
+                    timeout=30,
+                )
+                if ancestor.returncode != 0:
+                    selection.findings.append({
+                        'severity': 'error',
+                        'code': 'route-base-non-ancestor',
+                        'path': '.grok-stack/runtime/active-route.json',
+                        'message': f'route base is not an ancestor of HEAD: {route_base}',
+                    })
+                else:
+                    selection.bases.append(GitRangeBase(
+                        kind='route',
+                        source='route.base_commit',
+                        target_sha=route_base,
+                        comparison_base_sha=route_base,
+                    ))
+
+    pr_target = _select_local_pr_target(root)
+    if isinstance(pr_target, dict):
+        selection.findings.append(pr_target)
+    elif pr_target is not None:
+        source, target_sha = pr_target
+        merge_base = run(
+            ['git', 'merge-base', target_sha, 'HEAD'],
+            cwd=root,
+            timeout=30,
+        )
+        bases = [line.strip().lower() for line in merge_base.stdout.splitlines() if line.strip()]
+        if (
+            merge_base.returncode != 0
+            or len(bases) != 1
+            or not _EXACT_SHA.fullmatch(bases[0])
+        ):
+            selection.findings.append({
+                'severity': 'error',
+                'code': 'pr-base-no-merge-base',
+                'path': source,
+                'message': f'local PR target has no unique merge base with HEAD: {target_sha}',
+            })
+        else:
+            selection.bases.append(GitRangeBase(
+                kind='pr-target',
+                source=source,
+                target_sha=target_sha,
+                comparison_base_sha=bases[0],
+            ))
+    return selection
+
+
+def _changed_file_inventory(
+    root: Path,
+    route: dict[str, object] | None,
+    mode: str,
+    selection: GitRangeSelection,
+) -> tuple[list[str], dict[str, object]]:
+    if mode not in {'pr', 'release'}:
+        route_base = route.get('base_commit') if route else None
+        files = changed_files(root, route_base if isinstance(route_base, str) else None)
+        return files, {
+            'mode': 'route-base',
+            'bases': ([{
+                'kind': 'route',
+                'source': 'route.base_commit',
+                'base': route_base,
+                'target': route_base,
+                'count': len(files),
+            }] if isinstance(route_base, str) else []),
+            'worktree_count': len(changed_files(root)),
+            'union_count': len(files),
+        }
+
+    worktree_files = set(changed_files(root))
+    union = set(worktree_files)
+    bases: list[dict[str, object]] = []
+    for selected in selection.bases:
+        files = set(changed_files(root, selected.comparison_base_sha))
+        union.update(files)
+        bases.append({
+            'kind': selected.kind,
+            'source': selected.source,
+            'base': selected.comparison_base_sha,
+            'target': selected.target_sha,
+            'count': len(files),
+        })
+    return sorted(union), {
+        'mode': 'range-union',
+        'bases': bases,
+        'worktree_count': len(worktree_files),
+        'union_count': len(union),
+        'selection_findings': list(selection.findings),
+    }
+
+
+def _git_diff_check(
+    root: Path,
+    mode: str,
+    selection: GitRangeSelection,
+) -> CheckResult:
     if not command_exists('git'):
         return CheckResult('git-diff-check', 'skip', 'git not available')
-    return _command_check(root, 'git-diff-check', ['git', 'diff', '--check'], 60)
+    checks: list[tuple[str, list[str]]] = [
+        ('worktree', ['git', 'diff', '--check']),
+        ('index', ['git', 'diff', '--cached', '--check']),
+    ]
+    details = list(selection.findings)
+    if mode in {'pr', 'release'}:
+        for selected in selection.bases:
+            checks.append((
+                selected.kind,
+                ['git', 'diff', '--check', f'{selected.comparison_base_sha}..HEAD'],
+            ))
+            details.append({
+                'severity': 'info',
+                'code': 'checked-range',
+                'path': selected.source,
+                'message': f'checked {selected.comparison_base_sha}..HEAD',
+                'kind': selected.kind,
+                'base': selected.comparison_base_sha,
+                'target': selected.target_sha,
+            })
+
+    failures = bool(selection.findings)
+    failed_commands = 0
+    output: list[str] = []
+    errors: list[str] = []
+    for label, command in checks:
+        proc = run(command, cwd=root, timeout=60)
+        if proc.stdout:
+            output.append(f'[{label}]\n{proc.stdout.rstrip()}')
+        if proc.stderr:
+            errors.append(f'[{label}]\n{proc.stderr.rstrip()}')
+        if proc.returncode != 0:
+            failures = True
+            failed_commands += 1
+            details.append({
+                'severity': 'error',
+                'code': 'diff-check-failed',
+                'path': label,
+                'message': f'exit={proc.returncode}: {" ".join(command)}',
+            })
+    rendered_bases = ','.join(
+        f'{item.kind}:{item.comparison_base_sha}' for item in selection.bases
+    ) or 'none'
+    return CheckResult(
+        name='git-diff-check',
+        status='fail' if failures else 'pass',
+        summary=f'{len(checks) - failed_commands}/{len(checks)} checks passed; bases={rendered_bases}',
+        stdout='\n'.join(output)[-12000:],
+        stderr='\n'.join(errors)[-12000:],
+        details=details,
+    )
 
 
 def _secret_scan(root: Path, files: list[str]) -> CheckResult:
@@ -613,8 +902,13 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
     checked_fingerprint = tree_fingerprint(root)
     route = get_active_route(root)
     active_profiles = profiles or (route.get('quality_profiles', ['base']) if route else ['base'])
-    base = route.get('base_commit') if route else None
-    files = changed_files(root, base)
+    git_ranges = _git_range_selection(root, route, mode)
+    files, changed_file_inventory = _changed_file_inventory(
+        root,
+        route,
+        mode,
+        git_ranges,
+    )
 
     spec_check, spec_metadata = _change_specs(root, files, route, mode)
     architecture_check, architecture_metadata = _architecture_check(root, route)
@@ -623,7 +917,7 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
     )
 
     results: list[CheckResult] = [
-        _git_diff_check(root),
+        _git_diff_check(root, mode, git_ranges),
         spec_check,
         architecture_check,
         governance_check,
@@ -669,6 +963,7 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
         'route_id': route.get('route_id') if route else None,
         'tree_fingerprint': final_fingerprint,
         'changed_files': files,
+        'changed_file_inventory': changed_file_inventory,
         'spec': spec_metadata,
         'architecture': architecture_metadata,
         'governance': governance_metadata,

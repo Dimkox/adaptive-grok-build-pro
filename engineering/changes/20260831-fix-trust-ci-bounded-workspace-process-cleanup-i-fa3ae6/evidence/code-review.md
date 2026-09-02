@@ -2,9 +2,9 @@
 
 Verdict: **PASS**
 
-Route: `fa3ae6080deb`  
-Stacked base: `9493741dd34fdfa1e37efdc09b35e30d5535be7c`  
-Reviewed tree: dirty worktree at base HEAD, before this report was added  
+Route: `fa3ae6080deb`
+Stacked base: `9493741dd34fdfa1e37efdc09b35e30d5535be7c`
+Reviewed tree: dirty worktree at base HEAD, before this report was added
 Pre-review verification tree fingerprint: `7b768fbef0db4c1cfe7a9603349a6e71cdc60907c96d2f0f7b2ba3f6584e93b6`
 
 This is independent, read-only review evidence. It is not merge authority and does not replace the App-owned exact-SHA Trust CI check.

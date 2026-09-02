@@ -1,8 +1,8 @@
 # Repository analysis — M2 Trust-CI workspace process cleanup
 
-Route: `fa3ae6080deb`  
-Change: `20260831-fix-trust-ci-bounded-workspace-process-cleanup-i-fa3ae6`  
-Stacked base: `9493741dd34fdfa1e37efdc09b35e30d5535be7c`  
+Route: `fa3ae6080deb`
+Change: `20260831-fix-trust-ci-bounded-workspace-process-cleanup-i-fa3ae6`
+Stacked base: `9493741dd34fdfa1e37efdc09b35e30d5535be7c`
 Scope: read-only diagnosis; only this workflow-evidence report was added.
 
 ## Exact reproduction and root cause
