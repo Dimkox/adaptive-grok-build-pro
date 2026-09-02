@@ -13,11 +13,12 @@
 ## Global Constraints
 
 - Exact local M4 base: `9fe779ab9f90719201acfd01160d3452658ff075`.
-- M5 `a98bbaace6a65e45808a71ecc6963bbdafc78082` and M6 `befbd0bdbac5d47351ac80868f36e07487d2512b` are provisional, not accepted dependencies.
+- M5 `161199bb163e0ba84ac1b32010be87f113df5e86` descends from local M4 but is not an accepted runtime dependency; M6 `5c5c37136f20404a927fd2ad7621ad0f7fcae8e6` remains provisional on older M5 bridge `61db79f07904ae5facb244c34b26c8383504dd88`.
 - Output is only `ready_for_human`; maximum recommendation is `eligible_for_human_l2_review`.
 - No service/API/store/migration, provider, network, credential, push, PR, merge, release or deploy surface.
 - Hard deadline `2026-09-08 00:00 UTC+3` never waives a gate.
-- **Execution is BLOCKED until accepted M5 is restacked on M4 and accepted M6 is restacked on M5.**
+- Pure contract/evaluator source may proceed against opaque exact bridge values. Activation, completion and durable/runtime integration are **BLOCKED** until accepted M5 and M6 form factual M4 → M5 → M6 ancestry.
+- Every M5/M6 SHA change pauses downstream writes until a three-way path-overlap and field-level contract-compatibility audit/restack is recorded.
 
 ---
 
@@ -31,9 +32,9 @@
 - Consumes: canonical primitives and `ContractError` from `adaptive_factory.contracts`.
 - Produces: three predecessor bridges, task evidence, operator proposal, bundle and typed failures.
 
-- [ ] **Step 1: Confirm dependency block has cleared**
+- [x] **Step 1: Audit current provisional dependencies**
 
-Record accepted exact M5/M6 SHAs and compare their actual producer contracts field-by-field; stop if they do not form M4 → M5 → M6 ancestry.
+M5 `161199b…` and M6 `5c5c371…` both have merge-base M4 `9fe779…`, but their mutual merge-base is older M5 `61db79f…`. Latest M5 changed `execution_contracts.py` from the M6-carried blob `d9cb3c8…` to `e4237bf…` by closing the `WorkspaceResultV1` M4 disposition; M6 still exposes no task/run/fence/packet/result linkage. The planned M7 product files have no exact changed-path overlap with either branch, so use opaque exact bridges and keep activation blocked.
 
 - [ ] **Step 2: Write failing tests**
 

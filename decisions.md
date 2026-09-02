@@ -22,6 +22,10 @@ Represent rule transitions as immutable canonical-byte `RuleRecord` values and a
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-09-02 — Permit provisional downstream source only behind opaque exact bridges
+
+When an upstream milestone changes SHA, pause downstream writes until a three-way path-overlap and contract-compatibility audit completes. Pure downstream parsers/evaluators may then continue against explicit opaque SHA/digest bridges, while activation, runtime integration and completion remain blocked until dependency-ordered restack proves factual producer compatibility.
+
 ## 2026-08-26 — Provider-neutral factory core with explicit adapter boundary
 
 Keep deterministic policy, state, leases, budgets, and capabilities in a PostgreSQL-backed provider-neutral core; make Codex, Grok, and future providers explicit versioned JSON/JSONL translators with no silent fallback. This preserves one-writer and trust boundaries across provider changes while allowing model-native streams to evolve behind conformance-tested adapters.
