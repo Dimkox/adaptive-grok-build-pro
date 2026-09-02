@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.invalid/factory/execution-event.v1.json",
+  "title": "Adaptive Factory Execution Event V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "task_id", "run_id", "packet_digest", "sequence", "event_type", "payload"],
+  "properties": {
+    "protocol_version": {"const": "adaptive-factory.execution/v1"},
+    "task_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "packet_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "sequence": {"type": "integer", "minimum": 1, "maximum": 100000},
+    "event_type": {"enum": ["adapter.ready", "run.started", "stage.reported", "note.proposed", "artifact.proposed", "usage.reported", "run.completed", "run.failed", "run.needs_human"]},
+    "payload": {"type": "object"}
+  }
+}
