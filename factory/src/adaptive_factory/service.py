@@ -101,11 +101,6 @@ class FactoryService:
             actor.kind == REPAIR_CHILD_BROKER_ACTOR_KIND
             or actor.actor_id == REPAIR_CHILD_BROKER_ACTOR_ID
         )
-        reserved_repair_source = (
-            intake.source_type == "api"
-            and intake.source_id == intake.source_digest
-            and HEX64.fullmatch(intake.source_id) is not None
-        )
         if reserved_broker_identity:
             if (
                 actor.kind != REPAIR_CHILD_BROKER_ACTOR_KIND
@@ -120,10 +115,6 @@ class FactoryService:
                 raise AuthorizationError(
                     "repair child broker intake requires an exact proposal source"
                 )
-        elif reserved_repair_source:
-            raise AuthorizationError(
-                "repair proposal source requires the exact repair child broker"
-            )
         return self.store.intake(intake, actor, now)
 
     def get_task(self, task_id: str, *, actor: Actor):

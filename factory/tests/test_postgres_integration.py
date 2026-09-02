@@ -38,6 +38,7 @@ from adaptive_factory.service import (
     REPAIR_CHILD_BROKER_ACTOR_ID,
     REPAIR_CHILD_BROKER_ACTOR_KIND,
     AuthorizationError,
+    ClaimRequest,
     ExecutionContractError,
     FactoryService,
 )
@@ -284,6 +285,7 @@ class PostgresFactoryTests(unittest.TestCase):
         namespace,
         source_id,
         result_head_sha,
+        repository_id="owner/repository",
         risk_level="high",
         finding_rule="rule-output-correctness",
         original_writer_context_digest="d" * 64,
@@ -294,6 +296,7 @@ class PostgresFactoryTests(unittest.TestCase):
         intake_only=False,
         intake_actor=None,
         align_parent_head=True,
+        child_source_digest_override=None,
         direct_store_intake=False,
         before_execution=None,
     ):
@@ -309,14 +312,16 @@ class PostgresFactoryTests(unittest.TestCase):
                 else OPERATOR
             )
         intake_now = datetime.now(timezone.utc)
-        intake_payload = self.payload(source=source_id)
+        intake_payload = self.payload(repository=repository_id, source=source_id)
         intake_payload["request_id"] = f"semantic-repair-{namespace}"
         intake_payload["m0_authority"]["observed_at"] = intake_now.isoformat()
         if child_source_digest is not None:
             self.assertIsNotNone(parent_repair)
             intake_payload["source_type"] = "api"
             intake_payload["source_id"] = child_source_digest
-            intake_payload["source_digest"] = child_source_digest
+            intake_payload["source_digest"] = (
+                child_source_digest_override or child_source_digest
+            )
             if align_parent_head:
                 parent_head = parent_repair.child_proposal.parent_exact_head_sha
                 intake_payload["architecture"]["exact_head_sha"] = parent_head
@@ -2615,6 +2620,282 @@ class PostgresFactoryTests(unittest.TestCase):
                 ),
             )
             self.assertEqual(cursor.fetchone()[0], "bound")
+
+    def test_repair_source_identity_and_claim_owner_are_atomic(self):
+        import psycopg
+
+        semantic_store = PostgresSemanticCoordinatorStore(
+            self.semantic_coordinator_url
+        )
+
+        def first_repair(namespace, repository_id, result_head_sha):
+            fixture = self.semantic_repair_fixture(
+                namespace=f"{namespace}-root",
+                repository_id=repository_id,
+                source_id=f"{namespace}-root",
+                result_head_sha=result_head_sha,
+            )
+            published = fixture["published"]
+            request = SemanticRepairRequestV1.from_dict(
+                {
+                    "schema_version": 1,
+                    "subject_digest": published.subject.digest,
+                    "verdict_digest": fixture["verdict"].digest,
+                    "requested_cycle": 1,
+                    "previous_child_proposal_digest": None,
+                    "writer_id": published.subject.original_writer_id,
+                    "context_digest": canonical_digest(
+                        {"case": namespace, "context": 1}
+                    ),
+                    "expected_workspace_result_digest": (
+                        fixture["result"].workspace_result_digest
+                    ),
+                    "expected_fence": published.binding.fence,
+                    "expected_head_sha": published.subject.exact_head_sha,
+                    "expected_base_sha": published.subject.exact_base_sha,
+                    "expected_architecture_digest": (
+                        published.subject.architecture_digest
+                    ),
+                    "expected_authority_digest": published.subject.authority_digest,
+                    "expected_diff_digest": published.subject.diff_digest,
+                    "expected_risk_level": published.subject.risk_level,
+                }
+            )
+            repair = semantic_store.request_repair(
+                fixture["task"].task_id,
+                request,
+                idempotency_key=canonical_digest(
+                    {"case": namespace, "operation": "repair"}
+                ),
+            )
+            self.assertEqual(repair.decision, "repair")
+            return repair
+
+        def child_intake(namespace, repository_id, repair, **overrides):
+            return self.semantic_repair_fixture(
+                namespace=namespace,
+                repository_id=repository_id,
+                source_id=repair.child_proposal_digest,
+                child_source_digest=repair.child_proposal_digest,
+                parent_repair=repair,
+                result_head_sha="f" * 40,
+                intake_only=True,
+                **overrides,
+            )
+
+        def bind_child(repair, fixture):
+            binding = RepairChildTaskBindingV1.from_dict(
+                {
+                    "schema_version": 1,
+                    "child_proposal_digest": repair.child_proposal_digest,
+                    "child_task_id": fixture["task"].task_id,
+                    "child_intent_digest": fixture["intent_digest"],
+                }
+            )
+            self.assertEqual(semantic_store.bind_repair_child(binding), binding)
+            return binding
+
+        ordinary_repository = "owner/m6-ordinary-hex-source"
+        ordinary_payload = self.payload(
+            repository=ordinary_repository,
+            source="0" * 64,
+        )
+        ordinary_payload["source_type"] = "api"
+        ordinary_payload["source_digest"] = "1" * 64
+        ordinary = self.service.intake(
+            ordinary_payload,
+            actor=OPERATOR,
+            now=datetime.now(timezone.utc),
+        )
+        with self.subTest(stage="unknown-hex-api-source-remains-ordinary"):
+            self.assertTrue(ordinary.created)
+            self.assertEqual(ordinary.task.status, TaskStatus.QUEUED)
+
+        pre_repository = "owner/m6-source-pre-bound"
+        pre_repair = first_repair("source-pre-bound", pre_repository, "7" * 40)
+        for index, direct_store in enumerate((False, True), start=1):
+            with self.subTest(stage="pre-bound", direct_store=direct_store):
+                with self.assertRaisesRegex(
+                    StoreError, "repair proposal source digest mismatch"
+                ):
+                    child_intake(
+                        f"source-pre-bound-poison-{index}",
+                        pre_repository,
+                        pre_repair,
+                        child_source_digest_override=str(index) * 64,
+                        intake_actor=OPERATOR,
+                        direct_store_intake=direct_store,
+                    )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT
+                (SELECT count(*) FROM factory.tasks
+                  WHERE repository_id=%s AND source_type='api' AND source_id=%s),
+                (SELECT count(*) FROM factory.accepted_intents
+                  WHERE repository_id=%s AND source_type='api' AND source_id=%s),
+                (SELECT count(*) FROM factory.intake_identities
+                  WHERE repository_id=%s AND source_type='api' AND source_id=%s)""",
+                (
+                    pre_repository,
+                    pre_repair.child_proposal_digest,
+                    pre_repository,
+                    pre_repair.child_proposal_digest,
+                    pre_repository,
+                    pre_repair.child_proposal_digest,
+                ),
+            )
+            with self.subTest(stage="pre-bound-no-poison-state"):
+                self.assertEqual(cursor.fetchone(), (0, 0, 0))
+
+        post_repository = "owner/m6-source-post-bound"
+        post_repair = first_repair("source-post-bound", post_repository, "8" * 40)
+        post_child = child_intake(
+            "source-post-bound-child", post_repository, post_repair
+        )
+        post_binding = bind_child(post_repair, post_child)
+        for index, direct_store in enumerate((False, True), start=3):
+            with self.subTest(stage="post-bound", direct_store=direct_store):
+                with self.assertRaisesRegex(
+                    StoreError, "repair proposal source digest mismatch"
+                ):
+                    child_intake(
+                        f"source-post-bound-poison-{index}",
+                        post_repository,
+                        post_repair,
+                        child_source_digest_override=str(index) * 64,
+                        intake_actor=OPERATOR,
+                        direct_store_intake=direct_store,
+                    )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT
+                (SELECT count(*) FROM factory.tasks
+                  WHERE repository_id=%s AND source_type='api' AND source_id=%s),
+                (SELECT state FROM factory.tasks WHERE task_id=%s),
+                (SELECT child_task_id FROM factory.semantic_child_task_bindings
+                  WHERE child_proposal_digest=%s)""",
+                (
+                    post_repository,
+                    post_repair.child_proposal_digest,
+                    post_child["task"].task_id,
+                    post_repair.child_proposal_digest,
+                ),
+            )
+            with self.subTest(stage="post-bound-binding-remains-current"):
+                count, state, child_task_id = cursor.fetchone()
+                self.assertEqual(
+                    (count, state, str(child_task_id)),
+                    (1, "queued", post_child["task"].task_id),
+                )
+        replay = self.service.intake(
+            post_child["intake"],
+            actor=REPAIR_CHILD_BROKER,
+            now=datetime.now(timezone.utc),
+        )
+        with self.subTest(stage="broker-replay-remains-current"):
+            self.assertEqual(
+                (replay.created, replay.task.task_id, replay.task.status),
+                (False, post_child["task"].task_id, TaskStatus.QUEUED),
+            )
+            self.assertEqual(post_binding.child_task_id, replay.task.task_id)
+
+        mismatch_repository = "owner/m6-claim-owner-mismatch"
+        mismatch_repair = first_repair(
+            "claim-owner-mismatch", mismatch_repository, "9" * 40
+        )
+        mismatch_child = child_intake(
+            "claim-owner-mismatch-child", mismatch_repository, mismatch_repair
+        )
+        bind_child(mismatch_repair, mismatch_child)
+        mismatch_key = canonical_digest({"case": "direct-store-owner-mismatch"})
+
+        def claim_state(task_id, command_key):
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT t.state,
+                    (SELECT count(*) FROM factory.runs WHERE task_id=t.task_id),
+                    (SELECT count(*) FROM factory.command_results
+                      WHERE idempotency_key=%s)
+                    FROM factory.tasks t WHERE t.task_id=%s""",
+                    (command_key, task_id),
+                )
+                return cursor.fetchone()
+
+        before_mismatch = claim_state(mismatch_child["task"].task_id, mismatch_key)
+        forged_grant = None
+        with self.subTest(stage="direct-store-owner-mismatch"):
+            with self.assertRaisesRegex(
+                StoreError, "claim owner must match worker actor"
+            ):
+                forged_grant = self.store.claim(
+                    ClaimRequest(
+                        WORKER.actor_id,
+                        RunRole.WRITER,
+                        (mismatch_repository,),
+                        60,
+                    ),
+                    SECOND_WORKER,
+                    datetime.now(timezone.utc),
+                    idempotency_key=mismatch_key,
+                )
+        after_mismatch = claim_state(mismatch_child["task"].task_id, mismatch_key)
+        with self.subTest(stage="owner-mismatch-has-no-durable-effects"):
+            self.assertIsNone(forged_grant)
+            self.assertEqual(before_mismatch, ("queued", 0, 0))
+            self.assertEqual(after_mismatch, before_mismatch)
+
+        role_repository = "owner/m6-claim-role"
+        role_repair = first_repair("claim-role", role_repository, "a" * 40)
+        role_child = child_intake("claim-role-child", role_repository, role_repair)
+        bind_child(role_repair, role_child)
+        reader_grant = self.store.claim(
+            ClaimRequest(
+                WORKER.actor_id,
+                RunRole.READER,
+                (role_repository,),
+                60,
+            ),
+            WORKER,
+            datetime.now(timezone.utc),
+            idempotency_key=canonical_digest({"case": "direct-store-reader"}),
+        )
+        self.assertIsNone(reader_grant)
+        self.assertEqual(
+            claim_state(
+                role_child["task"].task_id,
+                canonical_digest({"case": "unused-reader-state-key"}),
+            )[:2],
+            ("queued", 0),
+        )
+        writer_grant = self.store.claim(
+            ClaimRequest(
+                WORKER.actor_id,
+                RunRole.WRITER,
+                (role_repository,),
+                60,
+            ),
+            WORKER,
+            datetime.now(timezone.utc),
+            idempotency_key=canonical_digest({"case": "direct-store-writer"}),
+        )
+        self.assertIsNotNone(writer_grant)
+        self.assertEqual(
+            (
+                writer_grant.task_id,
+                writer_grant.owner,
+                writer_grant.role,
+                claim_state(
+                    role_child["task"].task_id,
+                    canonical_digest({"case": "unused-writer-state-key"}),
+                )[:2],
+            ),
+            (
+                role_child["task"].task_id,
+                WORKER.actor_id,
+                RunRole.WRITER,
+                ("leased", 1),
+            ),
+        )
 
     def test_execution_lifecycle_persists_new_digest_stages_and_redacted_proposal(self):
         task = self.submit(source="m5-execution-lifecycle").task

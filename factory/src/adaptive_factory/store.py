@@ -1393,27 +1393,12 @@ class PostgresFactoryStore:
                 "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
                 (f"{intake.repository_id}\x1f{intake.source_type}\x1f{intake.source_id}",),
             )
-            reserved_repair_source = (
+            repair_source_candidate = (
                 intake.source_type == "api"
-                and intake.source_id == intake.source_digest
                 and HEX64.fullmatch(intake.source_id) is not None
             )
-            if reserved_repair_source and (
-                actor.kind != "repair_broker"
-                or actor.actor_id != "semantic-repair-child-broker"
-            ):
-                raise StoreError(
-                    "repair proposal source requires the exact repair child broker"
-                )
             repair_intake_status = "ordinary"
-            if reserved_repair_source:
-                if (
-                    intake.m0_authority.exact_head_sha
-                    != intake.governance.exact_head_sha
-                ):
-                    raise StoreError(
-                        "repair child intake head does not match proposal parent head"
-                    )
+            if repair_source_candidate:
                 cursor.execute(
                     """SELECT factory.semantic_repair_intake_status(
                     %s,%s,%s,%s,%s,%s,%s)""",
@@ -1428,6 +1413,12 @@ class PostgresFactoryStore:
                     ),
                 )
                 repair_intake_status = cursor.fetchone()[0]
+                if repair_intake_status == "digest_mismatch":
+                    raise StoreError("repair proposal source digest mismatch")
+                if repair_intake_status == "actor_mismatch":
+                    raise StoreError(
+                        "repair proposal source requires the exact repair child broker"
+                    )
                 if repair_intake_status == "not_pending":
                     raise StoreError(
                         "repair child broker source is not a pending proposal"
@@ -1437,7 +1428,15 @@ class PostgresFactoryStore:
                         "repair child intake head does not match proposal parent head"
                     )
                 if repair_intake_status not in {"allowed", "bound"}:
-                    raise StoreError("repair child intake is not authorized")
+                    if repair_intake_status != "ordinary":
+                        raise StoreError("repair child intake is not authorized")
+                if repair_intake_status in {"allowed", "bound"} and (
+                    intake.m0_authority.exact_head_sha
+                    != intake.governance.exact_head_sha
+                ):
+                    raise StoreError(
+                        "repair child intake head does not match proposal parent head"
+                    )
             if not self._verify_m0_authority(cursor, intake):
                 raise AuthorityError("M0 authority is not trusted for repository/policy/action")
             cursor.execute(
@@ -1637,6 +1636,8 @@ class PostgresFactoryStore:
         return bool(cursor.fetchone()[0])
 
     def claim(self, request, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> LeaseGrant | None:
+        if actor.kind != "worker" or request.owner != actor.actor_id:
+            raise StoreError("claim owner must match worker actor")
         with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
             command = {

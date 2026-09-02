@@ -371,3 +371,7 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-02 — Bound repair authority to the parent's old input head
 
 **Root cause:** The repair handoff compared the child authority to the parent's intake authority as a whole, so it accepted an unchanged stale input head and rejected the correct parent-result head. Cross-cycle authority continuity must exclude only the intentional exact-head advance while preserving and checking every other authority field.
+
+## 2026-09-02 — Narrowed a reservation below its supersession identity
+
+**Root cause:** Repair-source reservation required `source_id == source_digest`, but ordinary task replacement is keyed only by `source_id`, so a different digest bypassed the guard and superseded a bound child. Security mediation must cover the full durable collision key before replay, identity insertion, or supersession.

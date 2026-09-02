@@ -174,28 +174,40 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
   SELECT CASE
     WHEN NOT (
       p_source_type='api'
-      AND p_source_id=trim(p_source_digest)
       AND p_source_id ~ '^[0-9a-f]{64}$'
     ) THEN 'ordinary'
-    WHEN p_actor_kind<>'repair_broker'
-      OR p_actor_id<>'semantic-repair-child-broker' THEN 'actor_mismatch'
+    WHEN EXISTS (
+      SELECT 1 FROM factory.semantic_child_proposals proposal
+      WHERE trim(proposal.child_proposal_digest)=p_source_id
+    ) AND p_source_id<>trim(p_source_digest) THEN 'digest_mismatch'
+    WHEN EXISTS (
+      SELECT 1 FROM factory.semantic_child_proposals proposal
+      WHERE trim(proposal.child_proposal_digest)=p_source_id
+    ) AND (
+      p_actor_kind<>'repair_broker'
+      OR p_actor_id<>'semantic-repair-child-broker'
+    ) THEN 'actor_mismatch'
     WHEN NOT EXISTS (
       SELECT 1
       FROM factory.semantic_child_proposals proposal
       JOIN factory.tasks parent_task ON parent_task.task_id=proposal.parent_task_id
-      WHERE proposal.child_proposal_digest=p_source_digest
+      WHERE trim(proposal.child_proposal_digest)=p_source_id
         AND proposal.proposal_state='pending_handoff'
         AND proposal.body->>'proposal_state'='pending_handoff'
         AND parent_task.repository_id=p_repository_id
-    ) THEN 'not_pending'
+    ) THEN CASE
+      WHEN p_actor_kind='repair_broker'
+        AND p_actor_id='semantic-repair-child-broker' THEN 'not_pending'
+      ELSE 'ordinary'
+    END
     WHEN NOT EXISTS (
       SELECT 1 FROM factory.semantic_child_proposals proposal
-      WHERE proposal.child_proposal_digest=p_source_digest
+      WHERE trim(proposal.child_proposal_digest)=p_source_id
         AND proposal.body->>'parent_exact_head_sha'=trim(p_exact_head_sha)
     ) THEN 'head_mismatch'
     WHEN EXISTS (
       SELECT 1 FROM factory.semantic_child_task_bindings binding
-      WHERE binding.child_proposal_digest=p_source_digest
+      WHERE trim(binding.child_proposal_digest)=p_source_id
     ) THEN 'bound'
     ELSE 'allowed'
   END

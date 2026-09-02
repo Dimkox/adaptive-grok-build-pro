@@ -376,3 +376,7 @@ Mark every dedicated repair-broker intake and every proposal-digest source colli
 ## 2026-09-02 — Advance repair input only from the verified parent result
 
 Reserve exact proposal-digest intake sources to the repair broker through a fixed-search-path capability, require the child input/governance/M0 head to equal the proposal's parent result head, and preserve every other authority field. Bind only the latest queued generation, and admit claims only for the proposal's original writer in the writer role.
+
+## 2026-09-02 — Mediate reserved semantic sources on the mutation identity
+
+Evaluate every API intake whose source ID has proposal-digest shape against the capability-owned proposal registry before any identity or supersession write, while leaving unknown product source IDs ordinary. Existing proposal IDs require the same digest and exact repair broker, so alternate payload digests cannot escape a reservation keyed by source ID.
