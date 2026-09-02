@@ -6,7 +6,7 @@ import re
 from typing import Protocol
 from uuid import UUID
 
-from .workspace import WorkspaceHandle
+from .models import WorkspaceHandle
 
 
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -118,7 +118,8 @@ class ExecutionRecovery:
                 try:
                     self.store.record_execution_cleanup_failure(candidate)
                 except Exception:
-                    pass
+                    # Preserve the fail-closed cursor state if audit persistence is unavailable.
+                    blocked = True
                 continue
             if cleanup == "fake_released":
                 try:

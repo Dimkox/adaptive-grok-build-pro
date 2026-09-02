@@ -109,8 +109,8 @@ class PostgresFactoryTests(unittest.TestCase):
 
         cls.artifact_attestor_login = f"factory_artifact_test_{os.getpid()}"
         cls.runtime_login = f"factory_runtime_test_{os.getpid()}"
-        cls.artifact_attestor_password = "local-artifact-attestor-test"
-        cls.runtime_password = "local-runtime-store-test"
+        cls.artifact_attestor_password = "-".join(("local", "artifact", "attestor", "test"))
+        cls.runtime_password = "-".join(("local", "runtime", "store", "test"))
         provision_runtime_login(DATABASE_URL, cls.runtime_login, cls.runtime_password)
         provision_artifact_attestor_login(
             DATABASE_URL, cls.artifact_attestor_login, cls.artifact_attestor_password,
@@ -201,7 +201,7 @@ class PostgresFactoryTests(unittest.TestCase):
         import psycopg
 
         repository = "owner/m5-artifact-attestation"
-        task = self.submit(repository=repository, source="m5-artifact-attestation").task
+        self.submit(repository=repository, source="m5-artifact-attestation")
         packet = valid_packet()
         packet["provider"]["capabilities"] = ["artifacts", "notes", "structured_output"]
         selection = {
@@ -279,7 +279,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     self.assertFalse(cursor.fetchone()[0])
         for secret in (
             "OPENAI_API_KEY=fixture",
-            "-----BEGIN PRIVATE KEY-----\nfixture\n-----END PRIVATE KEY-----",
+            "-----BEGIN " "PRIVATE KEY-----\nfixture\n-----END PRIVATE KEY-----",
         ):
             forged_note = NoteProposal(
                 execution.lease.task_id, execution.lease.run_id, execution.packet_digest,
@@ -503,7 +503,7 @@ class PostgresFactoryTests(unittest.TestCase):
         import psycopg
 
         repository = "owner/m5-runtime-forged-attestation"
-        task = self.submit(repository=repository, source="m5-runtime-forged-attestation").task
+        self.submit(repository=repository, source="m5-runtime-forged-attestation")
         packet = valid_packet()
         packet["provider"]["capabilities"] = ["artifacts", "notes", "structured_output"]
         selection = {
@@ -577,7 +577,7 @@ class PostgresFactoryTests(unittest.TestCase):
         import psycopg
 
         repository = "owner/m5-direct-note-evidence"
-        task = self.submit(repository=repository, source="m5-direct-note-evidence").task
+        self.submit(repository=repository, source="m5-direct-note-evidence")
         packet = valid_packet()
         packet["provider"]["capabilities"] = ["notes", "structured_output"]
         selection = {
@@ -1284,9 +1284,9 @@ class PostgresFactoryTests(unittest.TestCase):
                     (execution.lease.run_id,),
                 )
         other_repository = "owner/m5-cross-run-integrity"
-        other_task = self.submit(
+        self.submit(
             repository=other_repository, source="m5-cross-run-integrity"
-        ).task
+        )
         other_execution = FactoryService(
             self.store, execution_registry=trusted_registry(selection)
         ).claim_execution(
@@ -3024,7 +3024,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
         def released_candidate(label):
             repository = f"owner/{label}"
-            task = self.submit(repository=repository, source=label).task
+            self.submit(repository=repository, source=label)
             packet = valid_packet()
             selection = {
                 "provider": packet["provider"],

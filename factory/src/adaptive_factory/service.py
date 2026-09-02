@@ -19,7 +19,6 @@ from .workspace import (
     ArtifactAttestationRequest,
     ArtifactAttestationV1,
     WorkspaceError,
-    WorkspaceSnapshotUnavailable,
     WorkspaceSnapshotV1,
 )
 from .store import FenceError

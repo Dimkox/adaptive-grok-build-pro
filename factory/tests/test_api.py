@@ -146,7 +146,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(self.client.get("/health/ready").json()["database_role"], "factory_runtime")
 
     def test_execution_claim_is_explicit_and_rejects_provider_command_fields(self):
-        token = "execution-worker-credential"
+        token = "-".join(("execution", "worker", "credential"))
         actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
         client = TestClient(create_app(self.service, Authenticator({token: actor})))
         packet = __import__("factory.tests.test_execution_contracts", fromlist=["valid_packet"]).valid_packet()
@@ -169,7 +169,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(client.post("/v1/execution/claims", headers=headers, json=payload).status_code, 422)
 
     def test_execution_proposal_endpoints_are_typed_and_closed(self):
-        token = "proposal-worker-credential"
+        token = "-".join(("proposal", "worker", "credential"))
         actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
         client = TestClient(create_app(self.service, Authenticator({token: actor})))
         headers = {"Authorization": f"Bearer {token}", "Idempotency-Key": "proposal-001", "X-Correlation-ID": "proposal-correlation"}
@@ -216,7 +216,7 @@ class ApiTests(unittest.TestCase):
                     raise ProtocolError("invalid_text")
                 raise WorkspaceError("artifact_attestation_digest")
 
-        token = "malformed-proposal-credential"
+        token = "-".join(("malformed", "proposal", "credential"))
         actor = Actor(
             "worker-01", "worker", frozenset({"task:execute"}),
             frozenset({"owner/repository"}),

@@ -449,3 +449,7 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-02 — Trusted a conflict-free test auto-merge across a transaction boundary
 
 **Root cause:** M5 kept a metrics probe shaped for the older direct-connection path while the merged store moved that read into the common bounded transaction; Git saw no textual conflict, but the probe lacked `transaction()` delegation and asserted the obsolete SQL shape. Dependency restacks must rerun the live integration test and align test doubles with the complete real connection interface, including parameterized transaction bounds.
+
+## 2026-09-02 — Deferred exact route fitness and static gates until after packaging
+
+**Root cause:** Focused validation covered architecture syntax, drift, diagrams and product tests but omitted the route's exact worktree-fitness, Ruff, Bandit and changed-range secret scans before the source/package boundary. Dependency restacks must run those exact route-selected gates before creating a clean source checkpoint or building its artifact, so boundary/range blockers and scanner-shaped fixture defects surface while the package is still absent.

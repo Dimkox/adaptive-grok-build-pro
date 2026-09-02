@@ -380,3 +380,7 @@ Skip untracked directory components named `.venv`, but enumerate force-added ind
 ## 2026-09-02 — Terminalize conditionally across claim races
 
 Cancel and supersede may terminalize directly only while `current_run_id IS NULL`; a failed conditional transition re-reads the committed run, acquires capacity locks before the task row, releases the run exactly once, and retries. This preserves the canonical capacity-to-task order while preventing a winning claim from being erased with live capacity.
+
+## 2026-09-02 — Keep shared execution value types below workspace adapters
+
+Place `WorkspaceHandle` in the dependency-neutral model layer and re-export it through the workspace module for compatibility. Recovery can then consume the value type without crossing the declared execution-core-to-workspace boundary or weakening the architecture rule.
