@@ -1,6 +1,6 @@
 # Release packages
 
-Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). The `2.0.13` files are a local candidate and do not claim a tag or GitHub Release; the most recently published release remains `v2.0.12`.
+Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). The `2.0.13` files are the final local M4 candidate from exact head `571cad7877431ac5ab5779b53fe9f7effd6859ce`; their archive digest is `5b29b7e8e439d1409c3f72757199d20de8f6f4c62bd1df972a37d13f615d9d0e`. They do not claim a tag or GitHub Release, and the most recently published release remains `v2.0.12`. M5 successor slice 01 is source-only and intentionally creates no `2.0.14` package or sidecar.
 
 | File | Version |
 | --- | --- |
@@ -26,6 +26,6 @@ python3 scripts/package_stack.py
 cp dist/adaptive-grok-build-pro-v$(tr -d '[:space:]' < VERSION).zip* packages/
 ```
 
-Production rebuilds package only the filtered regular-file inventory and exact bytes of a clean Git `HEAD`; ignored and untracked files are excluded even when present locally. The prior `aa12e7c` 14/14 local verifier receipt is historical and stale for this follow-up because release rereview found ambient ignored/untracked files in that candidate; fresh exact-head verification and review are still required.
+Production rebuilds package only the filtered regular-file inventory and exact bytes of a clean immutable Git commit; ignored and untracked files are excluded, ambient replace/graft interpretation is disabled, and tracked-source output overlap is rejected. The final local M4 verifier passed 14/14 at `571cad7`, but that evidence creates no external acceptance and does not transfer to any M5 slice.
 
 `.env` and private keys are never packaged.
