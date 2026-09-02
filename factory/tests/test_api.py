@@ -172,6 +172,17 @@ class ApiTests(unittest.TestCase):
         for path in ("/health/ready", "/v1/tasks", "/v1/tasks/{task_id}"):
             with self.subTest(path=path):
                 self.assertIn("503", contract["paths"][path]["get"]["responses"])
+        readiness_unavailable = contract["paths"]["/health/ready"]["get"]["responses"]["503"][
+            "description"
+        ]
+        for required_semantic in (
+            "database unavailable or timed out",
+            "schema",
+            "capacity",
+            "accounting",
+            "not ready",
+        ):
+            self.assertIn(required_semantic, readiness_unavailable)
 
     def test_metrics_counts_auth_rejections_without_exposing_credentials(self):
         operator_token = "metrics-" + "operator-" + "credential"

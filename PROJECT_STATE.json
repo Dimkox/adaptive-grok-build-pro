@@ -29,7 +29,7 @@
     "highest_implemented_milestone": "M4",
     "current_provisional_milestone": "M9",
     "next_roadmap_milestone": null,
-    "next_action": "Commit the bounded 2.0.13 M4 follow-up, then bind local verification and all route-selected reviews/reports/receipts to that exact fingerprint. After those fresh local receipts, prepare only an authorized successor PR and require a new external exact-head gate; after M4 acceptance, restack M5 first, then M6 with renumbered migrations and fresh checksum/upgrade/restart evidence.",
+    "next_action": "Run local exact-head verification and all route-selected reviews/reports/receipts on the current committed 2.0.13 M4 candidate head. After those fresh local receipts, prepare only an authorized successor PR and require a new external exact-head gate; after M4 acceptance, restack M5 first, then M6 with renumbered migrations and fresh checksum/upgrade/restart evidence.",
     "m4_dimensions": {
       "implementation_source": {
         "status": "implemented_local_candidate",
@@ -44,14 +44,14 @@
         ]
       },
       "local_exact_head_verification": {
-        "status": "receipt_required_for_followup_commit",
+        "status": "receipt_required_for_current_exact_head",
         "last_passing_head": "56e12b2b394436ee227c66d78b1caba8f7317c78",
         "last_passing_checks": "14/14",
-        "notes": "The passing baseline receipt is historical evidence and does not bind the changed follow-up tree."
+        "notes": "The passing baseline receipt is historical evidence and does not bind the current committed candidate exact head."
       },
       "independent_review": {
-        "status": "rereview_required_for_followup_commit",
-        "notes": "Review findings drove this follow-up; no reviewer acceptance of the follow-up is claimed."
+        "status": "rereview_required_for_current_exact_head",
+        "notes": "Review findings drove the current committed candidate; no reviewer acceptance of its exact head is claimed."
       },
       "pr_external_merge_delivery": {
         "status": "not_delivered",
@@ -211,7 +211,7 @@
         "latest_committed_repair_checkpoint": "56e12b2b394436ee227c66d78b1caba8f7317c78",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "evidence": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/implementation-report.md",
-        "notes": "Release-state baseline 56e12b2 passed 14/14 local verifier gates. The current 2.0.13 follow-up additionally enforces exact shipped-ZIP/source parity, bounds every runtime database connection/read with typed availability handling, keeps cancel authorization/replay/projection in one transaction, and audits already-exhausted schema-12 retries after migration 013 without advancing a fence. Because that changes the fingerprint, exact-head verification and independent review receipts must be refreshed after commit; this is not an accepted or delivered head."
+        "notes": "Release-state baseline 56e12b2 passed 14/14 local verifier gates. The current 2.0.13 candidate additionally enforces exact shipped-ZIP/source parity, bounds every runtime database connection/read with typed availability handling, keeps cancel authorization/replay/projection in one transaction, and audits already-exhausted schema-12 retries after migration 013 without advancing a fence. Exact-head verification and independent review receipts must bind the current committed candidate; this is not an accepted or delivered head."
       },
       "review": {
         "status": "pending_refresh",
@@ -334,7 +334,7 @@
         "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
         "latest_committed_repair_checkpoint": "56e12b2b394436ee227c66d78b1caba8f7317c78",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
-        "purpose": "Commit the package/runtime/retry-evidence follow-up, then bind verification and route-selected reviews/reports/receipts to its exact fingerprint before any authorized PR-only delivery."
+        "purpose": "Bind verification and route-selected reviews/reports/receipts to the current committed package/runtime/retry-evidence candidate exact head before any authorized PR-only delivery."
       },
       {
         "route_id": "37b05f579320",

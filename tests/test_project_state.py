@@ -255,6 +255,11 @@ class ProjectStateTests(unittest.TestCase):
 
     def test_m4_source_implementation_is_distinct_from_verification_review_and_delivery(self) -> None:
         dimensions = self.state["active_delivery"]["m4_dimensions"]
+        self.assertTrue(
+            self.state["active_delivery"]["next_action"].startswith(
+                "Run local exact-head verification and all route-selected reviews"
+            )
+        )
         self.assertEqual(
             dimensions["implementation_source"],
             {
@@ -280,8 +285,8 @@ class ProjectStateTests(unittest.TestCase):
                 )
             },
             {
-                "local_exact_head_verification": "receipt_required_for_followup_commit",
-                "independent_review": "rereview_required_for_followup_commit",
+                "local_exact_head_verification": "receipt_required_for_current_exact_head",
+                "independent_review": "rereview_required_for_current_exact_head",
                 "pr_external_merge_delivery": "not_delivered",
             },
         )

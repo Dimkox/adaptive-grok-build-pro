@@ -3,7 +3,7 @@
   "info": {"title": "Adaptive Factory Local Control API", "version": "1.0.0"},
   "paths": {
     "/health/live": {"get": {"tags": ["health"], "responses": {"200": {"description": "live"}}}},
-    "/health/ready": {"get": {"tags": ["health"], "responses": {"200": {"description": "ready"}, "503": {"description": "bounded database readiness unavailable or timed out"}}}},
+    "/health/ready": {"get": {"tags": ["health"], "responses": {"200": {"description": "ready"}, "503": {"description": "database unavailable or timed out, or schema, capacity, or accounting checks are not ready"}}}},
     "/v1/tasks": {"get": {"description": "Requires task:list scope.", "tags": ["tasks"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "bounded list"}, "503": {"description": "bounded database read unavailable or timed out"}}}, "post": {"description": "Requires task:submit scope.", "tags": ["tasks"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "duplicate"}, "201": {"description": "created"}, "503": {"description": "bounded database mutation unavailable or timed out"}}}},
     "/v1/tasks/{task_id}": {"get": {"description": "Requires task:read scope.", "tags": ["tasks"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "task"}, "404": {"description": "not found"}, "503": {"description": "bounded database read unavailable or timed out"}}}},
     "/v1/tasks/{task_id}/cancel": {"post": {"description": "Requires task:cancel scope.", "tags": ["tasks"], "security": [{"bearerAuth": []}], "responses": {"200": {"description": "cancelled"}, "503": {"description": "bounded database mutation unavailable or timed out"}}}},
