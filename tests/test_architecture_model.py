@@ -169,6 +169,92 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertTrue(factory_edges)
         self.assertTrue(all(edge["network_policy"] in {"no_network", "local_only"} for edge in factory_edges))
 
+    def test_factory_execution_components_have_local_default_deny_ownership(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        nodes = {node["id"]: node for node in snapshot.system["nodes"]}
+        expected_paths = {
+            "NODE-FACTORY-EXECUTION-CORE": {
+                "factory/src/adaptive_factory/execution_contracts.py",
+                "factory/src/adaptive_factory/protocol.py",
+            },
+            "NODE-FACTORY-PROVIDER-ADAPTERS": {
+                "factory/src/adaptive_factory/adapters/__init__.py",
+                "factory/src/adaptive_factory/adapters/base.py",
+                "factory/src/adaptive_factory/adapters/codex.py",
+                "factory/src/adaptive_factory/adapters/grok.py",
+            },
+            "NODE-FACTORY-PROPOSAL-BROKER": {"factory/src/adaptive_factory/brokers.py"},
+            "NODE-FACTORY-WORKSPACE-BROKER": {"factory/src/adaptive_factory/workspace.py"},
+        }
+        for node_id, paths in expected_paths.items():
+            node = nodes[node_id]
+            self.assertEqual(set(node["repository_paths"]), paths)
+            self.assertEqual(node["trust_domain"], "TD-FACTORY-CONTROL")
+            self.assertEqual(node["runtime"]["network"], "none")
+            self.assertEqual(node["secrets"], [])
+
+        edges = {edge["id"]: edge for edge in snapshot.system["edges"]}
+        workspace_edges = {
+            "EDGE-FACTORY-CONTROL-WORKSPACE",
+            "EDGE-FACTORY-WORKSPACE-CONTROL",
+        }
+        for edge_id in workspace_edges:
+            edge = edges[edge_id]
+            self.assertEqual(edge["network_policy"], "no_network")
+            self.assertEqual(edge["failure_behavior"]["mode"], "fail_closed")
+            self.assertEqual(edge["failure_behavior"]["terminal_action"], "reject")
+
+        adapter_edges = [
+            edge
+            for edge in snapshot.system["edges"]
+            if edge["from"] == "NODE-FACTORY-PROVIDER-ADAPTERS"
+            or edge["to"] == "NODE-FACTORY-PROVIDER-ADAPTERS"
+        ]
+        self.assertEqual(
+            {(edge["from"], edge["to"]) for edge in adapter_edges},
+            {("NODE-FACTORY-PROVIDER-ADAPTERS", "NODE-FACTORY-EXECUTION-CORE")},
+        )
+        self.assertTrue(all(edge["network_policy"] == "no_network" for edge in adapter_edges))
+
+        policies = {rule["id"]: rule for rule in snapshot.rules["path_boundaries"]}
+        self.assertIn("FIT-FACTORY-ADAPTER-BOUNDARY", policies)
+        self.assertIn("FIT-FACTORY-EXECUTION-CORE-BOUNDARY", policies)
+        self.assertIn("FIT-FACTORY-PROPOSAL-BROKER-BOUNDARY", policies)
+        self.assertIn("FIT-FACTORY-WORKSPACE-BROKER-BOUNDARY", policies)
+        adapter_forbidden = set(policies["FIT-FACTORY-ADAPTER-BOUNDARY"]["forbidden_dependency_prefixes"])
+        self.assertTrue(
+            {
+                "adaptive_factory.store",
+                "adaptive_factory.workspace",
+                "psycopg",
+                "celery",
+                "rq",
+                "git",
+                "requests",
+                "httpx",
+                "socket",
+                "subprocess",
+            }
+            <= adapter_forbidden
+        )
+        execution_nodes = set(expected_paths)
+        external_or_privileged = {
+            "NODE-FACTORY-POSTGRES",
+            "NODE-TRUST-CI-API",
+            "NODE-TRUST-CI-POSTGRES",
+            "NODE-TRUST-CI-WORKER",
+            "NODE-GITHUB",
+            "NODE-DOCKER-ENGINE",
+            "NODE-ISOLATED-RUNNER",
+        }
+        self.assertFalse(
+            any(
+                (edge["from"] in execution_nodes and edge["to"] in external_or_privileged)
+                or (edge["to"] in execution_nodes and edge["from"] in external_or_privileged)
+                for edge in snapshot.system["edges"]
+            )
+        )
+
     def _repo(self, system: dict | None = None, rules: dict | None = None):
         temp = tempfile.TemporaryDirectory()
         root = Path(temp.name)
