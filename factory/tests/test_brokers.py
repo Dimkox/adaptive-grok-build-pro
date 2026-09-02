@@ -31,6 +31,7 @@ def context(**overrides):
         "max_output_bytes": 1_000_000,
         "max_cost_usd_micros": 1_000_000,
         "max_token_units": 100_000,
+        "declared_capabilities": ("artifacts", "notes", "structured_output", "usage"),
     }
     values.update(overrides)
     return ProposalContext(**values)
@@ -80,6 +81,13 @@ class BrokerTests(unittest.TestCase):
         for value, code, owner, fence in cases:
             with self.subTest(code=code), self.assertRaisesRegex(BrokerError, code):
                 ProposalBroker().accept(value, context(), owner=owner, fence=fence)
+
+    def test_undeclared_proposal_capability_fails_closed(self):
+        with self.assertRaisesRegex(BrokerError, "undeclared_capability"):
+            ProposalBroker().accept(
+                event(1, "note.proposed", {"note_type": "finding", "body": "safe", "evidence": []}),
+                context(declared_capabilities=("usage",)), owner="writer-01", fence=7,
+            )
 
     def test_executable_note_artifact_escape_and_missing_usage_fail(self):
         cases = [

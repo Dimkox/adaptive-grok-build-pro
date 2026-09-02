@@ -54,6 +54,18 @@ class FakeService:
         self.calls.append(("claim", kwargs))
         return None
 
+    def claim_execution(self, **kwargs):
+        self.calls.append(("claim_execution", kwargs))
+        return None
+
+    def advance_execution(self, *args, **kwargs):
+        self.calls.append(("advance_execution", args, kwargs))
+        return kwargs["stage"]
+
+    def commit_execution_proposal(self, *args, **kwargs):
+        self.calls.append(("commit_execution_proposal", args, kwargs))
+        return {"proposal_kind": kwargs["event_type"], "sequence": kwargs["sequence"]}
+
     def reconcile(self, **kwargs):
         self.calls.append(("reconcile", kwargs))
         return {"candidates": 0, "repaired": 0, "cursor": None}
@@ -105,7 +117,59 @@ class ApiTests(unittest.TestCase):
         self.assertFalse(paths & forbidden)
         self.assertIn("/v1/budget-reservations", paths)
         self.assertIn("/v1/usage-observations", paths)
+        self.assertIn("/v1/execution/claims", paths)
+        self.assertIn("/v1/execution/stages", paths)
+        for kind in ("notes", "artifacts", "usage", "terminal"):
+            self.assertIn(f"/v1/execution/{kind}", paths)
         self.assertEqual(self.client.get("/health/ready").json()["database_role"], "factory_runtime")
+
+    def test_execution_claim_is_explicit_and_rejects_provider_command_fields(self):
+        token = "execution-worker-credential"
+        actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
+        client = TestClient(create_app(self.service, Authenticator({token: actor})))
+        packet = __import__("factory.tests.test_execution_contracts", fromlist=["valid_packet"]).valid_packet()
+        payload = {
+            "role": "writer",
+            "repositories": ["owner/repository"],
+            "lease_seconds": 60,
+            "provider": packet["provider"],
+            "capability_policy": packet["capability_policy"],
+            "plan": packet["plan"],
+            "workspace_handle": packet["workspace_handle"],
+            "prompt_template_digest": "7" * 64,
+            "role_definition_digest": "8" * 64,
+            "tool_policy_digest": "9" * 64,
+            "output_schema_digest": "a" * 64,
+        }
+        headers = {"Authorization": f"Bearer {token}", "Idempotency-Key": "execution-001", "X-Correlation-ID": "execution-correlation"}
+        self.assertEqual(client.post("/v1/execution/claims", headers=headers, json=payload).status_code, 200)
+        payload["provider_command"] = "codex exec"
+        self.assertEqual(client.post("/v1/execution/claims", headers=headers, json=payload).status_code, 422)
+
+    def test_execution_proposal_endpoints_are_typed_and_closed(self):
+        token = "proposal-worker-credential"
+        actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
+        client = TestClient(create_app(self.service, Authenticator({token: actor})))
+        headers = {"Authorization": f"Bearer {token}", "Idempotency-Key": "proposal-001", "X-Correlation-ID": "proposal-correlation"}
+        grant = {
+            "task_id": "00000000-0000-0000-0000-000000000001",
+            "run_id": "00000000-0000-0000-0000-000000000002",
+            "owner": "worker-01", "role": "writer", "fence": 7,
+            "expires_at": "2026-09-02T01:00:00Z", "packet_digest": "0" * 64,
+        }
+        common = {"grant": grant, "packet_digest": "d" * 64, "sequence": 3}
+        cases = {
+            "notes": {"note_type": "finding", "body": "safe", "evidence": []},
+            "artifacts": {"artifact_class": "patch", "path": "factory/change.patch", "sha256": "e" * 64, "size_bytes": 12, "media_type": "text/plain"},
+            "usage": {"provider_call_id": "fixture-call", "price_table_digest": "f" * 64, "input_tokens": 1, "output_tokens": 2, "reasoning_tokens": 0, "cost_usd_micros": 3, "output_bytes": 4},
+            "terminal": {"terminal_type": "run.completed", "summary": "fixture complete"},
+        }
+        for endpoint, body in cases.items():
+            with self.subTest(endpoint=endpoint):
+                response = client.post(f"/v1/execution/{endpoint}", headers=headers, json={**common, **body})
+                self.assertEqual(response.status_code, 200, response.text)
+        unsafe = {**common, **cases["notes"], "provider_command": "codex exec"}
+        self.assertEqual(client.post("/v1/execution/notes", headers=headers, json=unsafe).status_code, 422)
 
     def test_body_over_one_mebibyte_is_rejected_without_parsing(self):
         response = self.client.post(
