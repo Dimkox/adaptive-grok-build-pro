@@ -364,3 +364,7 @@ Use fixed-search-path security-definer predicates that take a row lock on the ex
 ## 2026-09-02 — Inventory semantic schemas without pretending comparator support
 
 Register all five M6 schemas and their owner while retaining fail-closed `unsupported_schema_keyword` results for `$defs` and `format`. This preserves architecture drift and ownership evidence without weakening compatibility checks or claiming reference/format semantics the comparator does not implement.
+
+## 2026-09-02 — Separate exact M5 facts from authenticated semantic inputs
+
+Derive a semantic subject only from a verified writer `ready_for_human` packet/manifest/snapshot/result bundle, and bind terminal/artifact/attestation bodies through their recomputed canonical digests. Holdout, review, non-acceptance requirements, risk, diff policy and complete writer context remain a separate exact-result-bound input because current M5 does not durably contain them; this prevents invented provenance or reinterpretation of failed M5 results.

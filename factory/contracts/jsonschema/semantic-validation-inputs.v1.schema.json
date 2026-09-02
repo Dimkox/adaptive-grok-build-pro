@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:semantic-validation-inputs:v1",
+  "title": "SemanticValidationInputsV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "workspace_result_digest",
+    "requirements",
+    "holdout_evidence_digest",
+    "review_evidence_digest",
+    "original_writer_context_digest",
+    "risk_level",
+    "diff_limit"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "workspace_result_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "requirements": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "requirement_id"],
+        "properties": {
+          "kind": {
+            "enum": [
+              "acceptance_criterion",
+              "invariant",
+              "forbidden_outcome",
+              "architecture_rule",
+              "non_functional_requirement"
+            ]
+          },
+          "requirement_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+          }
+        }
+      }
+    },
+    "holdout_evidence_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "review_evidence_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "original_writer_context_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "risk_level": {"enum": ["low", "medium", "high", "critical"]},
+    "diff_limit": {"type": "integer", "minimum": 1, "maximum": 1000000}
+  }
+}

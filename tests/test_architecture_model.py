@@ -210,6 +210,7 @@ class ArchitectureModelTests(unittest.TestCase):
                 "factory/src/adaptive_factory/execution_contracts.py",
                 "factory/src/adaptive_factory/protocol.py",
                 "factory/src/adaptive_factory/recovery.py",
+                "factory/src/adaptive_factory/semantic_bridge.py",
             },
             "NODE-FACTORY-PROVIDER-ADAPTERS": {
                 "factory/src/adaptive_factory/adapters/__init__.py",
@@ -256,6 +257,7 @@ class ArchitectureModelTests(unittest.TestCase):
         policies = {rule["id"]: rule for rule in snapshot.rules["path_boundaries"]}
         self.assertIn("FIT-FACTORY-ADAPTER-BOUNDARY", policies)
         self.assertIn("FIT-FACTORY-EXECUTION-CORE-BOUNDARY", policies)
+        self.assertIn("FIT-FACTORY-SEMANTIC-BRIDGE-BOUNDARY", policies)
         self.assertIn("FIT-FACTORY-PROPOSAL-BROKER-BOUNDARY", policies)
         self.assertIn("FIT-FACTORY-WORKSPACE-BROKER-BOUNDARY", policies)
         self.assertEqual(len(snapshot.system["nodes"]), 22)
@@ -1264,7 +1266,7 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 15)
+        self.assertEqual(len(records), 17)
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
@@ -1291,6 +1293,18 @@ class ArchitectureModelTests(unittest.TestCase):
                     "producer",
                     "producer_accepted_by_old",
                     "factory/contracts/schemas/execution-invocation.v1.json",
+                ),
+                "CONTRACT-FACTORY-EXECUTION-SEMANTIC-BINDING-V1": (
+                    "json_schema",
+                    "producer",
+                    "producer_accepted_by_old",
+                    "factory/contracts/jsonschema/semantic-execution-binding.v1.schema.json",
+                ),
+                "CONTRACT-FACTORY-EXECUTION-SEMANTIC-INPUTS-V1": (
+                    "json_schema",
+                    "consumer",
+                    "consumer_accepts_old",
+                    "factory/contracts/jsonschema/semantic-validation-inputs.v1.schema.json",
                 ),
                 "CONTRACT-FACTORY-EXECUTION-TASK-PACKET-V1": (
                     "json_schema",

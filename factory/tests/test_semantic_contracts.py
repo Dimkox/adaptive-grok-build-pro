@@ -103,10 +103,12 @@ def coverage(subject_digest, **changes):
 class SemanticContractTests(unittest.TestCase):
     def test_public_schemas_are_closed_bounded_and_have_exact_versions(self):
         names = {
+            "semantic-execution-binding.v1.schema.json",
             "semantic-subject.v1.schema.json",
             "semantic-finding.v1.schema.json",
             "semantic-coverage.v1.schema.json",
             "semantic-verdict.v1.schema.json",
+            "semantic-validation-inputs.v1.schema.json",
             "repair-directive.v1.schema.json",
         }
         self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, names)

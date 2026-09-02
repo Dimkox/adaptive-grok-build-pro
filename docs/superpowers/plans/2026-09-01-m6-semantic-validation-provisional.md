@@ -34,12 +34,12 @@
 
 **Files:** add `factory/src/adaptive_factory/semantic_bridge.py`, bridge JSON schema(s), and `factory/tests/test_semantic_bridge.py`; update contract inventory.
 
-- [ ] RED: require closed `SemanticExecutionBindingV1`/`SemanticValidationInputsV1`, complete task/run/fence/packet/manifest/snapshot/result/evidence binding, and rejection of every substituted field.
-- [ ] Include exact terminal proposal and artifact-attestation identities from verified material; never reconstruct them from the aggregate digest alone.
-- [ ] Require writer + `ready_for_human`; preserve failed-result facts and reject semantic reinterpretation.
-- [ ] Require separately authenticated holdout/review/typed-requirement/risk/diff-limit/writer-context facts; exact AC set equals packet acceptance IDs.
-- [ ] Derive the existing `SemanticSubjectV1` deterministically and prove mutation/digest stability.
-- [ ] GREEN: bridge + existing contract/adjudication/repair tests; update ledger and commit.
+- [x] RED: require closed `SemanticExecutionBindingV1`/`SemanticValidationInputsV1`, complete task/run/fence/packet/manifest/snapshot/result/evidence binding, and rejection of every substituted field.
+- [x] Include exact terminal proposal and artifact-attestation identities from verified material; never reconstruct them from the aggregate digest alone.
+- [x] Require writer + `ready_for_human`; preserve failed-result facts and reject semantic reinterpretation.
+- [x] Require separately authenticated holdout/review/typed-requirement/risk/diff-limit/writer-context facts; exact AC set equals packet acceptance IDs.
+- [x] Derive the existing `SemanticSubjectV1` deterministically and prove mutation/digest stability.
+- [x] GREEN: bridge + existing contract/adjudication/repair tests; update ledger and commit.
 
 ### Task 2: Migration 014 and capability-shaped persistence
 

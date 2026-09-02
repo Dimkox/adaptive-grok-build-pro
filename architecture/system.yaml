@@ -82,6 +82,22 @@
       "version": "1"
     },
     {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-EXECUTION-SEMANTIC-BINDING-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/semantic-execution-binding.v1.schema.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-EXECUTION-SEMANTIC-INPUTS-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/semantic-validation-inputs.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
       "compatibility": "consumer_accepts_old",
       "id": "CONTRACT-FACTORY-SEMANTIC-COVERAGE-V1",
       "kind": "json_schema",
@@ -858,13 +874,16 @@
       "public_contracts": [
         "CONTRACT-FACTORY-EXECUTION-EVENT-V1",
         "CONTRACT-FACTORY-EXECUTION-INVOCATION-V1",
+        "CONTRACT-FACTORY-EXECUTION-SEMANTIC-BINDING-V1",
+        "CONTRACT-FACTORY-EXECUTION-SEMANTIC-INPUTS-V1",
         "CONTRACT-FACTORY-EXECUTION-TASK-PACKET-V1",
         "CONTRACT-FACTORY-EXECUTION-WORKSPACE-RESULT-V1"
       ],
       "repository_paths": [
         "factory/src/adaptive_factory/execution_contracts.py",
         "factory/src/adaptive_factory/protocol.py",
-        "factory/src/adaptive_factory/recovery.py"
+        "factory/src/adaptive_factory/recovery.py",
+        "factory/src/adaptive_factory/semantic_bridge.py"
       ],
       "runtime": {
         "evidence": "source_described",

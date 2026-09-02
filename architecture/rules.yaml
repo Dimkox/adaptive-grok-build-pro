@@ -277,6 +277,34 @@
       "forbidden_dependency_prefixes": [
         "adaptive_factory.adapters",
         "adaptive_factory.api",
+        "adaptive_factory.migrations",
+        "adaptive_factory.service",
+        "adaptive_factory.store",
+        "adapters",
+        "api",
+        "migrations",
+        "service",
+        "store",
+        "psycopg",
+        "celery",
+        "rq",
+        "git",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-SEMANTIC-BRIDGE-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/semantic_bridge.py"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.api",
         "adaptive_factory.brokers",
         "adaptive_factory.execution_contracts",
         "adaptive_factory.migrations",

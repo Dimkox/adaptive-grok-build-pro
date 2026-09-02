@@ -15,8 +15,8 @@
 | Pure bounded repair | VERIFIED | RED at `e1c2ea7`: missing repair module; GREEN: 7/7 policy tests covering cycles, recurrence and escalation matrix |
 | Current docs/connectivity tests | VERIFIED | pre-restack commit `c7f5002`; rebased commit `46c3a0d`; targeted graph/link/authority tests 3/3 |
 | Phase A focused verification | VERIFIED | M5 contracts/protocol/API/recovery 35/35; existing M6 pure 25/25; root structure/architecture/installer 87/87; architecture validate/drift/diagram-check and diff checks pass |
-| M5-aligned design/plan/package | VERIFIED | exact bundle mapping audited; M5-absent holdout/review/typed requirement/risk/diff-limit/writer-context facts remain separate authenticated inputs, never inferred; typed spec valid with 9/16 currently mapped and 7 future criteria honestly unmapped; root structure/architecture 70/70 |
-| Exact M5 -> semantic bridge | PLANNED | TDD Task 1; binds task/run/fence/packet/manifest/snapshot/result/proposal/attestations/status/failure and rejects cross-substitution |
+| M5-aligned design/plan/package | VERIFIED | exact bundle mapping audited; M5-absent holdout/review/typed requirement/risk/diff-limit/writer-context facts remain separate authenticated inputs, never inferred; after Task 1 the typed spec is valid with 13/16 mapped and persistence/recovery/metrics criteria honestly unmapped; root structure/architecture 70/70 |
+| Exact M5 -> semantic bridge | VERIFIED | observed RED: missing `adaptive_factory.semantic_bridge`; GREEN bridge 10/10 and combined pure+bridge 35/35; closed binding/input schemas, exact task/run/fence/packet/manifest/snapshot/result/terminal/artifact/attestation mutation matrix and authenticated M5-absent facts |
 | Persistence/migration 014/fences/idempotency | PLANNED | additive append-only subject/evidence/verdict/directive/proposal/recovery source; migration 013 remains frozen |
 | Service/API/adjudication | PLANNED | additive closed semantic scopes and bounded reads; legacy/M5 behavior preserved |
 | Repair child lifecycle | PLANNED | exact parent binding, cycles 1..3, original writer/fresh context; fourth/recurrent/stale/policy violations escalate |
@@ -37,3 +37,5 @@ Product commits append exact SHA and observed RED/GREEN results here. Connectivi
 - Adjudication GREEN: the same command passed 9/9 on 2026-09-02 UTC; combined contract/adjudication regression is rerun before commit.
 - Repair RED: `cd factory && uv run python -m unittest tests.test_semantic_repair -v` failed with expected `ModuleNotFoundError` before product code.
 - Repair GREEN: the same command passed 7/7 on 2026-09-02 UTC; cycles `1..3`, cycle four, paraphrased recurrence and all named escalation inputs are covered.
+- Bridge RED: `cd factory && /tmp/adaptive-grok-m6-validation-venv/bin/python -m unittest tests.test_semantic_bridge -v` failed with expected `ModuleNotFoundError: adaptive_factory.semantic_bridge` before product code.
+- Bridge GREEN: the same command passed 10/10; combined contracts/adjudication/repair/bridge passed 35/35. Root structure/architecture passed 70/70 and executable architecture validate/drift/diagram check passed with 22 nodes, 24 edges, 17 public contracts and 27 path/authority rules.

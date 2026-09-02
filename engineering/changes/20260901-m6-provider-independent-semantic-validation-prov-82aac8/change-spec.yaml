@@ -1,9 +1,9 @@
 {
   "acceptance_criteria": [
     {"id":"AC-001","statement":"M6-001 existing closed semantic contracts adjudication and repair remain backward compatible and deterministic","evidence":[{"test":"factory/tests/test_semantic_contracts.py"},{"test":"factory/tests/test_semantic_adjudication.py"},{"test":"factory/tests/test_semantic_repair.py"}]},
-    {"id":"AC-002","statement":"M6-002 a closed bridge binds every exact M5 task run fence packet manifest snapshot result proposal attestation SHA status and failure fact without inference","evidence":[]},
-    {"id":"AC-003","statement":"M6-003 only verified writer results with exact ready_for_human disposition become semantic subjects and failed M5 facts are preserved","evidence":[]},
-    {"id":"AC-004","statement":"M6-004 M5-missing holdout review typed requirements risk diff limit and writer context enter only through a separately authenticated closed result-bound request","evidence":[]},
+    {"id":"AC-002","statement":"M6-002 a closed bridge binds every exact M5 task run fence packet manifest snapshot result proposal attestation SHA status and failure fact without inference","evidence":[{"test":"factory/tests/test_semantic_bridge.py"}]},
+    {"id":"AC-003","statement":"M6-003 only verified writer results with exact ready_for_human disposition become semantic subjects and failed M5 facts are preserved","evidence":[{"test":"factory/tests/test_semantic_bridge.py"}]},
+    {"id":"AC-004","statement":"M6-004 M5-missing holdout review typed requirements risk diff limit and writer context enter only through a separately authenticated closed result-bound request","evidence":[{"test":"factory/tests/test_semantic_bridge.py"}]},
     {"id":"AC-005","statement":"M6-005 forward migration 014 stores append-only exact-bound semantic subjects assignments evidence verdicts directives child proposals escalations and recovery facts","evidence":[{"test":"factory/tests/test_migrations.py"}]},
     {"id":"AC-006","statement":"M6-006 exact idempotent replay returns the prior semantic object and divergent same-key or same-result replay fails closed","evidence":[]},
     {"id":"AC-007","statement":"M6-007 coordinator validator and adjudicator capabilities are disjoint and runtime public writer and validator cannot mutate unauthorized semantic or execution state","evidence":[{"test":"factory/tests/test_migrations.py"}]},
@@ -11,7 +11,7 @@
     {"id":"AC-009","statement":"M6-009 verdicts are recomputed from persisted exact evidence and expose duplicates correlations contradictions unsupported passes and missing coverage","evidence":[{"test":"factory/tests/test_semantic_adjudication.py"}]},
     {"id":"AC-010","statement":"M6-010 repair cycles one through three bind exact parent M5 result original writer fresh context unchanged authority and positive budget and deadline","evidence":[{"test":"factory/tests/test_semantic_repair.py"}]},
     {"id":"AC-011","statement":"M6-011 cycle four recurrence wrong writer context stale fence head or policy limit append needs_human and create no child","evidence":[{"test":"factory/tests/test_semantic_repair.py"}]},
-    {"id":"AC-012","statement":"M6-012 any source SHA digest or evidence mutation requires a new exact M5 result and fresh deterministic holdout semantic and review evidence","evidence":[]},
+    {"id":"AC-012","statement":"M6-012 any source SHA digest or evidence mutation requires a new exact M5 result and fresh deterministic holdout semantic and review evidence","evidence":[{"test":"factory/tests/test_semantic_bridge.py"}]},
     {"id":"AC-013","statement":"M6-013 bounded restart recovery is replay safe observable and cannot duplicate a verdict or repair child proposal","evidence":[]},
     {"id":"AC-014","statement":"M6-014 semantic metrics use only fixed low-cardinality outcome reason state and recovery labels","evidence":[]},
     {"id":"AC-015","statement":"M6-015 migration installer rollout and rollback are additive least privilege source-only and testable without shared database or external action","evidence":[{"test":"factory/tests/test_migrations.py"},{"test":"tests/test_installer.py"}]},
@@ -26,21 +26,23 @@
       "factory/contracts/jsonschema/semantic-finding.v1.schema.json",
       "factory/contracts/jsonschema/semantic-coverage.v1.schema.json",
       "factory/contracts/jsonschema/semantic-verdict.v1.schema.json",
-      "factory/contracts/jsonschema/repair-directive.v1.schema.json"
+      "factory/contracts/jsonschema/repair-directive.v1.schema.json",
+      "factory/contracts/jsonschema/semantic-execution-binding.v1.schema.json",
+      "factory/contracts/jsonschema/semantic-validation-inputs.v1.schema.json"
     ],
     "openapi":["factory/contracts/openapi/factory-control.v1.json"]
   },
   "forbidden_outcomes":[
     {"id":"FORBID-001","statement":"Provider implementer or untrusted prose selects a verdict transition capability validator evidence or writer identity","evidence":[{"test":"factory/tests/test_semantic_adjudication.py"}]},
-    {"id":"FORBID-002","statement":"M6 infers facts absent from M5 rewrites migration 013 or reinterprets M5 status failure attempts or repair_count","evidence":[{"test":"factory/tests/test_migrations.py"}]},
+    {"id":"FORBID-002","statement":"M6 infers facts absent from M5 rewrites migration 013 or reinterprets M5 status failure attempts or repair_count","evidence":[{"test":"factory/tests/test_semantic_bridge.py"},{"test":"factory/tests/test_migrations.py"}]},
     {"id":"FORBID-003","statement":"Validator adjudicator or runtime receives direct semantic table DML application write provider Git Trust CI approval credential network or external authority","evidence":[]},
     {"id":"FORBID-004","statement":"Local source evidence is described as accepted M6 M7 activation release external Trust CI or human authority","evidence":[{"test":"tests/test_structure.py"}]}
   ],
   "invariants":[
-    {"id":"INV-001","statement":"Every semantic object is closed versioned bounded append-only and transitively bound to one exact verified M5 workspace result","evidence":[]},
+    {"id":"INV-001","statement":"Every semantic object is closed versioned bounded append-only and transitively bound to one exact verified M5 workspace result","evidence":[{"test":"factory/tests/test_semantic_bridge.py"}]},
     {"id":"INV-002","statement":"Semantic validator adjudicator coordinator and application writer capabilities remain disjoint and no component approves its own implementation","evidence":[{"test":"factory/tests/test_semantic_adjudication.py"}]},
     {"id":"INV-003","statement":"Semantic cycles remain distinct from M4 infrastructure attempts and repair_count and only cycles one through three may create one child proposal each","evidence":[{"test":"factory/tests/test_semantic_repair.py"}]},
-    {"id":"INV-004","statement":"Any exact state or evidence mutation invalidates prior downstream semantic evidence and requires forward regeneration","evidence":[]}
+    {"id":"INV-004","statement":"Any exact state or evidence mutation invalidates prior downstream semantic evidence and requires forward regeneration","evidence":[{"test":"factory/tests/test_semantic_bridge.py"}]}
   ],
   "objective":{"id":"OBJ-001","statement":"Implement bounded M5-aligned independent semantic validation and repair source against exact provisional M5 candidate without inventing missing facts or authority","success_metric":"m6_m5_aligned_source_verified","target":"AC-001 through AC-016 have focused local evidence and predecessor external gates remain explicit"},
   "observability":[

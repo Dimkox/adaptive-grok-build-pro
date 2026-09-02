@@ -3,7 +3,7 @@
 - [x] Merge exact current M5 candidate normally and verify Phase A.
 - [x] Reconcile architecture inventory and README K22 graph.
 - [x] Replace stale pure-only design/plan/package with factual M5-aligned bounded vertical tasks.
-- [ ] RED/GREEN exact M5 -> semantic bridge and mutation matrix.
+- [x] RED/GREEN exact M5 -> semantic bridge and mutation matrix.
 - [ ] RED/GREEN forward migration 014, append-only persistence, idempotency, and capability roles.
 - [ ] RED/GREEN service/API/OpenAPI semantic publish/evidence/adjudication/read paths.
 - [ ] RED/GREEN same-writer fresh-context repair child proposals and escalation matrix.
