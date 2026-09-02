@@ -14,6 +14,7 @@ from adaptive_factory.store import BudgetError, FenceError, PostgresFactoryStore
 from adaptive_factory.workspace import WorkspaceSnapshotV1
 from factory.tests.test_contracts import valid_intake
 from factory.tests.test_execution_contracts import valid_packet
+from factory.tests.test_execution_service import trusted_registry
 
 
 DATABASE_URL = os.environ.get("FACTORY_TEST_DATABASE_URL")
@@ -116,7 +117,7 @@ class PostgresFactoryTests(unittest.TestCase):
             "tool_policy_digest": "9" * 64,
             "output_schema_digest": "a" * 64,
         }
-        execution = self.service.claim_execution(
+        execution = FactoryService(self.store, execution_registry=trusted_registry(selection)).claim_execution(
             owner=WORKER.actor_id, role=RunRole.WRITER, repositories=(task.repository_id,),
             lease_seconds=60, selection=selection, actor=WORKER, now=NOW,
             idempotency_key="b" * 64, correlation_id="m5-execution-claim",
@@ -206,6 +207,28 @@ class PostgresFactoryTests(unittest.TestCase):
         wrong_repo = Actor("other-reader", "operator", frozenset({"task:read"}), frozenset({"other/repository"}))
         with self.assertRaises(AuthorizationError):
             self.service.get_workspace_result(task.task_id, result.workspace_result_digest, actor=wrong_repo)
+
+    def test_forged_grant_role_is_rejected_by_authoritative_run_lock(self):
+        task = self.submit(source="m5-forged-grant-role").task
+        grant = self.service.claim(
+            owner=WORKER.actor_id,
+            role=RunRole.WRITER,
+            repositories=(task.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        forged = type(grant)(
+            grant.task_id,
+            grant.run_id,
+            grant.owner,
+            RunRole.READER,
+            grant.fence,
+            grant.expires_at,
+            grant.packet_digest,
+        )
+        with self.assertRaises(FenceError):
+            self.service.heartbeat(forged, actor=WORKER, now=NOW)
 
     def authority_payload(self, kind: str, source: str, suffix: int):
         import psycopg

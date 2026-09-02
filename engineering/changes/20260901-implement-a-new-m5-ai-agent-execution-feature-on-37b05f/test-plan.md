@@ -7,6 +7,12 @@
 | P0 | Codex/Grok exact-version native normalization and no fallback/live call | fixture conformance tests |
 | P0 | traversal/symlink/shared-Git/credential/egress/cross-task/external-write denial | fake workspace/runtime adversarial tests |
 | P0 | execution claim differs from legacy claim; fence/stage/proposal/orphan checks | service/API/store tests and additive migration checks |
+| P0 | caller selection cannot assert eligibility/profile/policy/plan; exact trusted registry and role capabilities gate before claim | adapter/service tests |
+| P0 | packet/start failure releases the M4 lease and capacity; forged grant role differs from durable run and fails closed | service tests + disposable PostgreSQL role regression |
+| P0 | proposal sequence/max-events/terminal monotonicity, structured redaction, allowed paths, trusted artifact attestation | protocol/broker/service + disposable PostgreSQL tests |
+| P0 | canonical SQL cross-binding, terminal-derived M4 transition, result-row/digest corruption rejection | migration/store + disposable PostgreSQL adversarial tests |
+| P0 | execution orphan/cancel cleanup cannot leave M5 rows, capacity, or factual result in an ambiguous state | reconciliation/restart PostgreSQL tests |
+| P0 | every execution request/response/event/nested object is closed and inventoried | JSON Schema/OpenAPI/architecture contract tests |
 | P0 | unit topology has fixed commands/users/hardening/limits and no activation path | systemd source parser tests |
 | P1 | note/artifact/usage/terminal bounds, redaction, idempotency | broker tests |
 | P1 | restart reconciliation is bounded, ordered and idempotent | fake store/recovery tests |

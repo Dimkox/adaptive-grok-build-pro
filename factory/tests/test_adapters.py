@@ -1,13 +1,36 @@
 from pathlib import Path
 import unittest
 
-from adaptive_factory.adapters import AdapterError, CodexAdapter, GrokAdapter, select_adapter
+from adaptive_factory.adapters import (
+    AdapterError,
+    AdapterRegistry,
+    CodexAdapter,
+    GrokAdapter,
+    TrustedExecutionProfile,
+    select_adapter,
+)
+from adaptive_factory.execution_contracts import ExecutionContractError, ExecutionSelectionV1
+from factory.tests.test_execution_contracts import valid_packet
 
 
 FIXTURES = Path(__file__).with_name("fixtures")
 
 
 class AdapterTests(unittest.TestCase):
+    @staticmethod
+    def selection():
+        packet = valid_packet()
+        return ExecutionSelectionV1.from_dict({
+            "provider": packet["provider"],
+            "capability_policy": packet["capability_policy"],
+            "plan": packet["plan"],
+            "workspace_handle": packet["workspace_handle"],
+            "prompt_template_digest": "7" * 64,
+            "role_definition_digest": "8" * 64,
+            "tool_policy_digest": "9" * 64,
+            "output_schema_digest": "a" * 64,
+        })
+
     def test_codex_01521_fixture_projects_safe_canonical_lifecycle(self):
         adapter = CodexAdapter()
         events = adapter.translate(
@@ -54,6 +77,12 @@ class AdapterTests(unittest.TestCase):
                 run_id="run-001",
                 packet_digest="a" * 64,
             )
+
+    def test_current_adapter_cannot_be_promoted_by_caller_profile(self):
+        selected = self.selection()
+        registry = AdapterRegistry((TrustedExecutionProfile(selected, CodexAdapter.conformance, ("writer",)),))
+        with self.assertRaisesRegex(ExecutionContractError, "provider_ineligible"):
+            registry.resolve(selected, role="writer")
 
 
 if __name__ == "__main__":
