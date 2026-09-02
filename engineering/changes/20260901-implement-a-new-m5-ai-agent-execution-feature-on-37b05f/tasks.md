@@ -4,7 +4,7 @@
 - [x] Freeze M5 design and implementation plan; self-review and commit.
 - [x] TDD immutable schemas, packet/manifest contracts, protocol parser, and adapter fixtures.
 - [x] TDD proposal brokers, workspace/Git abstractions, host capability probe, and fake-runtime adversarial cases.
-- [ ] TDD additive migration `013`, explicit execution claims/stages/proposals, and legacy compatibility.
+- [x] TDD additive migration `013`, explicit execution claims/stages/proposals, and legacy compatibility (106-test disposable PostgreSQL suite plus restart probe green on 2026-09-02).
 - [ ] TDD restart/orphan recovery, bounded metrics, and predefined systemd source topology.
 - [ ] Integrate architecture, installer, README, provider eligibility, and operations documentation.
 - [ ] Run every locally feasible focused suite and root preflight; record OS isolation exit `BLOCKED`.

@@ -233,6 +233,39 @@ class ExecutionPlanV1:
 
 
 @dataclass(frozen=True)
+class ExecutionSelectionV1:
+    provider: ProviderProfileV1
+    capability_policy: CapabilityPolicyV1
+    plan: ExecutionPlanV1
+    workspace_handle: str
+    prompt_template_digest: str
+    role_definition_digest: str
+    tool_policy_digest: str
+    output_schema_digest: str
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "ExecutionSelectionV1":
+        fields = set(cls.__dataclass_fields__)
+        _closed(data, fields)
+        workspace = data["workspace_handle"]
+        if not isinstance(workspace, str) or not _WORKSPACE.fullmatch(workspace):
+            raise ExecutionContractError("invalid_workspace")
+        return cls(
+            ProviderProfileV1.from_dict(data["provider"]),
+            CapabilityPolicyV1.from_dict(data["capability_policy"]),
+            ExecutionPlanV1.from_dict(data["plan"]),
+            workspace,
+            _hex(data["prompt_template_digest"], "prompt_template_digest", HEX64),
+            _hex(data["role_definition_digest"], "role_definition_digest", HEX64),
+            _hex(data["tool_policy_digest"], "tool_policy_digest", HEX64),
+            _hex(data["output_schema_digest"], "output_schema_digest", HEX64),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return _canonical(asdict(self))
+
+
+@dataclass(frozen=True)
 class TaskPacketV1:
     contract_version: int
     protocol_version: str

@@ -4,8 +4,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Iterable
 
-from .contracts import TaskIntakeV1
-from .models import Actor, FailureClass, LeaseGrant, RunRole
+from .brokers import ProposalBroker
+from .contracts import TaskIntakeV1, canonical_digest
+from .execution_contracts import ExecutionSelectionV1, PROTOCOL_VERSION, RunManifestV1, TaskPacketV1
+from .models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole
+from .protocol import CanonicalEvent
 from .store import FenceError
 
 
@@ -73,6 +76,159 @@ class FactoryService:
         return self.store.claim(
             ClaimRequest(actor.actor_id, role, repositories, lease_seconds), actor, now,
             idempotency_key=idempotency_key, correlation_id=correlation_id,
+        )
+
+    def claim_execution(
+        self,
+        *,
+        owner: str,
+        role: RunRole,
+        repositories: Iterable[str],
+        lease_seconds: int,
+        selection,
+        actor: Actor,
+        now: datetime,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ):
+        self._require(actor, "task:execute")
+        if actor.kind != "worker" or owner != actor.actor_id:
+            raise AuthorizationError("execution claim requires the bound worker")
+        repositories = tuple(sorted(set(repositories)))
+        if not repositories or any(
+            "*" not in actor.repositories and repository not in actor.repositories for repository in repositories
+        ):
+            raise AuthorizationError("execution claim repository is outside worker authorization")
+        selected = selection if isinstance(selection, ExecutionSelectionV1) else ExecutionSelectionV1.from_dict(selection)
+        lease_key = (
+            canonical_digest({"command": idempotency_key, "phase": "execution_lease"})
+            if idempotency_key is not None
+            else None
+        )
+        grant = self.claim(
+            owner=owner,
+            role=role,
+            repositories=repositories,
+            lease_seconds=lease_seconds,
+            actor=actor,
+            now=now,
+            idempotency_key=lease_key,
+            correlation_id=correlation_id,
+        )
+        if grant is None:
+            return None
+        material = self.store.execution_material(grant)
+        selected_data = selected.to_dict()
+        packet = TaskPacketV1.from_dict(
+            {
+                "contract_version": 1,
+                "protocol_version": "adaptive-factory.execution/v1",
+                "task_id": grant.task_id,
+                "run_id": grant.run_id,
+                "owner": grant.owner,
+                "fence": grant.fence,
+                "role": grant.role.value,
+                "repository_id": material["repository_id"],
+                "legacy_intent_digest": material["legacy_intent_digest"],
+                "authority": {
+                    "exact_base_sha": material["exact_base_sha"],
+                    "exact_head_sha": material["exact_head_sha"],
+                    "route_id": material["route_id"],
+                    "change_id": material["change_id"],
+                    "spec_digest": material["spec_digest"],
+                    "architecture_digest": material["architecture_digest"],
+                    "governance_digest": material["governance_digest"],
+                    "policy_digest": material["policy_digest"],
+                    "prompt_template_digest": selected.prompt_template_digest,
+                    "role_definition_digest": selected.role_definition_digest,
+                    "tool_policy_digest": selected.tool_policy_digest,
+                    "output_schema_digest": selected.output_schema_digest,
+                },
+                "provider": selected_data["provider"],
+                "capability_policy": selected_data["capability_policy"],
+                "plan": selected_data["plan"],
+                "workspace_handle": selected.workspace_handle,
+                "acceptance_ids": material["acceptance_ids"],
+                "limits": material["limits"],
+            }
+        )
+        manifest = RunManifestV1.from_packet(packet, deadline=material["deadline"])
+        start_key = (
+            canonical_digest(
+                {"command": idempotency_key, "phase": "execution_start", "packet_digest": packet.packet_digest}
+            )
+            if idempotency_key is not None
+            else None
+        )
+        return self._fenced(
+            lambda: self.store.start_execution(
+                grant,
+                packet,
+                manifest,
+                actor,
+                idempotency_key=start_key,
+                correlation_id=correlation_id,
+            )
+        )
+
+    def advance_execution(
+        self,
+        grant: LeaseGrant,
+        *,
+        packet_digest: str,
+        stage: ExecutionStage,
+        actor: Actor,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ):
+        self._require_grant_actor(grant, actor, "task:execute")
+        if stage is ExecutionStage.ORPHANED:
+            raise AuthorizationError("orphaned is reconciliation-only")
+        return self._fenced(
+            lambda: self.store.advance_execution(
+                grant,
+                packet_digest,
+                stage,
+                actor,
+                idempotency_key=idempotency_key,
+                correlation_id=correlation_id,
+            )
+        )
+
+    def commit_execution_proposal(
+        self,
+        grant: LeaseGrant,
+        *,
+        packet_digest: str,
+        sequence: int,
+        event_type: str,
+        payload,
+        actor: Actor,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ):
+        self._require_grant_actor(grant, actor, "task:execute")
+        if type(sequence) is not int or sequence < 1:
+            raise ValueError("invalid proposal sequence")
+        context = self.store.proposal_context(grant, packet_digest)
+        event = CanonicalEvent(
+            PROTOCOL_VERSION,
+            grant.task_id,
+            grant.run_id,
+            packet_digest,
+            sequence,
+            event_type,
+            payload,
+        )
+        proposal = ProposalBroker().accept(event, context, owner=grant.owner, fence=grant.fence)
+        return self._fenced(
+            lambda: self.store.commit_execution_proposal(
+                grant,
+                proposal,
+                actor,
+                idempotency_key=idempotency_key,
+                correlation_id=correlation_id,
+            )
         )
 
     def _require_grant_actor(self, grant: LeaseGrant, actor: Actor, scope: str) -> None:

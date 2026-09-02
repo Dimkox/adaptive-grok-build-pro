@@ -20,8 +20,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 14)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 13)
+        self.assertEqual([item.version for item in migrations], list(range(1, 15)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 14)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -78,6 +78,26 @@ class MigrationTests(unittest.TestCase):
         ):
             self.assertIn(marker, sql)
         self.assertNotIn("on delete cascade", sql)
+
+    def test_execution_migration_is_additive_and_capability_shaped(self):
+        migration = discover_migrations()[-1]
+        self.assertEqual(migration.name, "014_execution_plane.sql")
+        lowered = migration.sql.lower()
+        self.assertNotIn("drop ", lowered)
+        self.assertNotIn("alter table factory.tasks", lowered)
+        for marker in (
+            "execution_packets",
+            "execution_manifests",
+            "execution_stage_events",
+            "execution_proposals",
+            "execution_start",
+            "execution_advance",
+            "execution_propose",
+            "execution_proposal_context",
+            "security definer set search_path=pg_catalog,factory",
+            "revoke all",
+        ):
+            self.assertIn(marker, lowered)
 
 
 if __name__ == "__main__":

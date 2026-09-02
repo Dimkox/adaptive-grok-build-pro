@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime
 import json
 import uuid
 
 from .contracts import HEX64, TaskIntakeV1, canonical_digest
+from .brokers import ArtifactProposal, NoteProposal, ProposalContext, TerminalProposal, UsageProposal
 from .migrations import discover_migrations
-from .models import Actor, FailureClass, LeaseGrant, RunRole, TaskProjection, TaskStatus
+from .models import Actor, ExecutionGrant, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskProjection, TaskStatus
 from .state import classify_retry
 
 
@@ -723,6 +724,252 @@ class PostgresFactoryStore:
                 }},
             )
             return grant
+
+    def execution_material(self, grant: LeaseGrant) -> dict[str, object]:
+        with self._transaction() as cursor:
+            self._lock_grant(cursor, grant)
+            cursor.execute(
+                """SELECT t.repository_id,t.packet_digest,t.deadline_at,i.body
+                FROM factory.tasks t JOIN factory.accepted_intents i ON i.intent_id=t.intent_id
+                WHERE t.task_id=%s AND t.current_run_id=%s""",
+                (grant.task_id, grant.run_id),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise FenceError("stale or expired fence")
+            repository_id, legacy_digest, deadline, body = row
+            if isinstance(body, str):
+                body = json.loads(body)
+            try:
+                return {
+                    "repository_id": repository_id,
+                    "legacy_intent_digest": legacy_digest.strip(),
+                    "route_id": body["route_id"],
+                    "change_id": body["change_id"],
+                    "exact_base_sha": body["exact_base_sha"],
+                    "exact_head_sha": body["governance"]["exact_head_sha"],
+                    "spec_digest": body["spec_digest"],
+                    "architecture_digest": body["architecture"]["architecture_digest"],
+                    "governance_digest": body["governance"]["governance_digest"],
+                    "policy_digest": body["policy_digest"],
+                    "acceptance_ids": body["acceptance_ids"],
+                    "limits": body["limits"],
+                    "deadline": deadline.isoformat().replace("+00:00", "Z"),
+                }
+            except (KeyError, TypeError) as exc:
+                raise StoreError("accepted intent cannot build an execution packet") from exc
+
+    def start_execution(
+        self,
+        grant: LeaseGrant,
+        packet,
+        manifest,
+        actor: Actor,
+        *,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ) -> ExecutionGrant:
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            self._lock_grant(cursor, grant)
+            command = {
+                "run_id": grant.run_id,
+                "legacy_packet_digest": grant.packet_digest,
+                "execution_packet_digest": packet.packet_digest,
+                "manifest_digest": manifest.manifest_digest,
+            }
+            replay, prior, request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "execution_start", command
+            )
+            if replay:
+                return ExecutionGrant(
+                    grant,
+                    prior["packet_digest"],
+                    prior["manifest_digest"],
+                    prior["workspace_handle"],
+                    prior["provider_id"],
+                    ExecutionStage(prior["stage"]),
+                )
+            cursor.execute(
+                "SELECT factory.execution_start(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb)",
+                (
+                    grant.task_id,
+                    grant.run_id,
+                    grant.owner,
+                    grant.fence,
+                    grant.packet_digest,
+                    packet.packet_digest,
+                    manifest.manifest_digest,
+                    manifest.workspace_handle,
+                    manifest.provider_id,
+                    json.dumps(packet.to_dict(), sort_keys=True, separators=(",", ":")),
+                    json.dumps(manifest.to_dict(), sort_keys=True, separators=(",", ":")),
+                ),
+            )
+            if not cursor.fetchone()[0]:
+                raise FenceError("stale or expired fence")
+            result = ExecutionGrant(
+                grant,
+                packet.packet_digest,
+                manifest.manifest_digest,
+                manifest.workspace_handle,
+                manifest.provider_id,
+                ExecutionStage.PREPARED,
+            )
+            recorded = {
+                "packet_digest": result.packet_digest,
+                "manifest_digest": result.manifest_digest,
+                "workspace_handle": result.workspace_handle,
+                "provider_id": result.provider_id,
+                "stage": result.stage.value,
+            }
+            self._record_command(
+                cursor,
+                idempotency_key,
+                actor,
+                "execution_start",
+                request_digest,
+                correlation_id,
+                recorded,
+            )
+            self._audit(
+                cursor,
+                grant.task_id,
+                actor,
+                "execution_start",
+                f"run:{grant.run_id}",
+                "packet_manifest_persisted",
+                correlation_id or idempotency_key or packet.packet_digest,
+                {"packet_digest": packet.packet_digest, "manifest_digest": manifest.manifest_digest},
+                grant.run_id,
+            )
+            return result
+
+    def advance_execution(
+        self,
+        grant: LeaseGrant,
+        packet_digest: str,
+        stage: ExecutionStage,
+        actor: Actor,
+        *,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ) -> ExecutionStage:
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            self._lock_grant(cursor, grant)
+            command = {"run_id": grant.run_id, "packet_digest": packet_digest, "stage": stage.value}
+            replay, prior, request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "execution_advance", command
+            )
+            if replay:
+                return ExecutionStage(prior["stage"])
+            cursor.execute(
+                "SELECT factory.execution_advance(%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    grant.task_id,
+                    grant.run_id,
+                    grant.owner,
+                    grant.fence,
+                    grant.packet_digest,
+                    packet_digest,
+                    stage.value,
+                ),
+            )
+            if not cursor.fetchone()[0]:
+                raise FenceError("stale execution stage or fence")
+            self._record_command(
+                cursor,
+                idempotency_key,
+                actor,
+                "execution_advance",
+                request_digest,
+                correlation_id,
+                {"stage": stage.value},
+            )
+            return stage
+
+    def proposal_context(self, grant: LeaseGrant, packet_digest: str) -> ProposalContext:
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            self._lock_grant(cursor, grant)
+            cursor.execute(
+                "SELECT factory.execution_proposal_context(%s,%s,%s,%s,%s,%s)",
+                (
+                    grant.task_id, grant.run_id, grant.owner, grant.fence,
+                    grant.packet_digest, packet_digest,
+                ),
+            )
+            row = cursor.fetchone()
+            if row is None or row[0] is None:
+                raise FenceError("stale execution packet or terminal manifest")
+            body = json.loads(row[0]) if isinstance(row[0], str) else row[0]
+            limits = body["limits"]
+            return ProposalContext(
+                grant.task_id,
+                grant.run_id,
+                grant.owner,
+                grant.fence,
+                packet_digest,
+                grant.role.value,
+                tuple(body["capability_policy"]["artifact_classes"]),
+                min(65_536, limits["max_output_bytes"]),
+                limits["max_output_bytes"],
+                limits["max_output_bytes"],
+                limits["max_cost_usd_micros"],
+                limits["max_token_units"],
+                tuple(body["provider"]["capabilities"]),
+            )
+
+    def commit_execution_proposal(
+        self,
+        grant: LeaseGrant,
+        proposal,
+        actor: Actor,
+        *,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ):
+        kinds = {
+            NoteProposal: "note",
+            ArtifactProposal: "artifact",
+            UsageProposal: "usage",
+            TerminalProposal: "terminal",
+        }
+        kind = kinds.get(type(proposal))
+        if kind is None:
+            raise StoreError("unsupported execution proposal")
+        body = asdict(proposal)
+        command = {
+            "run_id": grant.run_id,
+            "packet_digest": proposal.packet_digest,
+            "sequence": proposal.sequence,
+            "proposal_kind": kind,
+            "proposal_digest": canonical_digest(body),
+        }
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            self._lock_grant(cursor, grant)
+            replay, _prior, request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "execution_propose", command
+            )
+            if replay:
+                return proposal
+            cursor.execute(
+                "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb)",
+                (
+                    grant.task_id, grant.run_id, grant.owner, grant.fence, grant.packet_digest,
+                    proposal.packet_digest, proposal.sequence, proposal.idempotency_key, kind,
+                    json.dumps(body, sort_keys=True, separators=(",", ":")),
+                ),
+            )
+            if not cursor.fetchone()[0]:
+                raise FenceError("stale execution proposal or fence")
+            self._record_command(
+                cursor, idempotency_key, actor, "execution_propose", request_digest,
+                correlation_id, {"proposal_kind": kind, "sequence": proposal.sequence},
+            )
+            return proposal
 
     @staticmethod
     def _lock_capacity_for_run(cursor, run_id: str) -> bool:
