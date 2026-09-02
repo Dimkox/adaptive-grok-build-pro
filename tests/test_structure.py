@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import itertools
 import json
+import jsonschema
 import re
 import subprocess
 import tempfile
@@ -13,6 +14,29 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class StructureTests(unittest.TestCase):
+    @staticmethod
+    def _resolve_openapi_schema(openapi: dict, schema: dict) -> dict:
+        reference = schema.get("$ref")
+        if reference is None:
+            return schema
+        prefix = "#/components/schemas/"
+        if not reference.startswith(prefix) or "/" in reference[len(prefix):]:
+            raise AssertionError(f"unsafe OpenAPI schema reference: {reference!r}")
+        return openapi["components"]["schemas"][reference[len(prefix):]]
+
+    def test_factory_control_v1_retains_exact_m4_baseline(self) -> None:
+        baseline = ROOT / "factory/contracts/openapi/factory-control.v1.json"
+        raw = baseline.read_bytes()
+        self.assertEqual(
+            hashlib.sha256(raw).hexdigest(),
+            "83f180e664d199fe37ded7b02d60b9e40f44ce777e0244c680a435bd3a975db4",
+        )
+        git_blob = b"blob " + str(len(raw)).encode("ascii") + b"\0" + raw
+        self.assertEqual(
+            hashlib.sha1(git_blob, usedforsecurity=False).hexdigest(),
+            "33256c53f83e35491254be3842789355f71b61b9",
+        )
+
     def test_m3_route_binds_exact_reviewed_m2_fingerprint(self) -> None:
         route_path = (
             ROOT
@@ -215,6 +239,172 @@ class StructureTests(unittest.TestCase):
         self.assertIsNotNone(mermaid)
         edge_lines = [line for line in mermaid.group(1).splitlines() if re.search(r"\S+ --- \S+", line)]
         self.assertEqual(len(edge_lines), len(list(itertools.combinations(nodes, 2))))
+
+    def test_m5_execution_openapi_is_closed_additive_and_collision_free(self) -> None:
+        control = json.loads(
+            (ROOT / "factory/contracts/openapi/factory-control.v1.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        execution = json.loads(
+            (ROOT / "factory/contracts/openapi/factory-execution.v1.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(execution["info"]["version"], "1.0.0")
+        expected = {
+            ("POST", "/v1/execution/claims", "claimExecution"),
+            ("POST", "/v1/execution/stages", "advanceExecution"),
+            ("POST", "/v1/execution/notes", "proposeExecutionNote"),
+            ("POST", "/v1/execution/artifacts", "proposeExecutionArtifact"),
+            ("POST", "/v1/execution/usage", "reportExecutionUsage"),
+            ("POST", "/v1/execution/terminal", "proposeExecutionTerminal"),
+        }
+
+        def operations(document: dict) -> set[tuple[str, str, str]]:
+            return {
+                (method.upper(), path, operation.get("operationId"))
+                for path, path_item in document["paths"].items()
+                for method, operation in path_item.items()
+                if method in {"get", "post", "put", "patch", "delete"}
+            }
+
+        execution_operations = operations(execution)
+        control_operations = operations(control)
+        self.assertEqual(execution_operations, expected)
+        self.assertFalse(
+            {path for _, path, _ in execution_operations}
+            & {path for _, path, _ in control_operations}
+        )
+        self.assertFalse(
+            {operation_id for _, _, operation_id in execution_operations}
+            & {operation_id for _, _, operation_id in control_operations}
+        )
+        self.assertEqual(
+            sum(
+                len(operation["responses"])
+                for path_item in execution["paths"].values()
+                for method, operation in path_item.items()
+                if method in {"get", "post", "put", "patch", "delete"}
+            ),
+            48,
+        )
+
+        for method, path, operation_id in sorted(execution_operations):
+            operation = execution["paths"][path][method.lower()]
+            parameters = {
+                (parameter["in"], parameter["name"]): parameter
+                for parameter in operation.get("parameters", [])
+            }
+            self.assertEqual(operation.get("security"), [{"bearerAuth": []}])
+            self.assertNotIn(("header", "Authorization"), parameters)
+            for name in ("Idempotency-Key", "X-Correlation-ID"):
+                self.assertTrue(
+                    parameters[("header", name)]["required"], operation_id
+                )
+            body = operation.get("requestBody", {})
+            self.assertTrue(body.get("required"), operation_id)
+            request_schema = self._resolve_openapi_schema(
+                execution, body["content"]["application/json"]["schema"]
+            )
+            request_variants = request_schema.get("oneOf", [request_schema])
+            self.assertTrue(request_variants, operation_id)
+            for request_variant in request_variants:
+                self.assertEqual(request_variant.get("type"), "object", operation_id)
+                self.assertIs(
+                    request_variant.get("additionalProperties"), False, operation_id
+                )
+            for status, response in operation["responses"].items():
+                self.assertRegex(status, r"^[1-5][0-9]{2}$")
+                self.assertIn("content", response, f"{operation_id}:{status}")
+                for media in response["content"].values():
+                    self.assertIn("schema", media, f"{operation_id}:{status}")
+            success = next(
+                response
+                for status, response in operation["responses"].items()
+                if status.startswith("2")
+            )
+            self.assertIn(
+                "X-Correlation-ID", success.get("headers", {}), operation_id
+            )
+
+        def assert_closed_objects(value, label: str) -> None:
+            if isinstance(value, dict):
+                if value.get("type") == "object":
+                    self.assertIs(value.get("additionalProperties"), False, label)
+                    self.assertTrue(
+                        set(value.get("required", []))
+                        <= set(value.get("properties", {})),
+                        label,
+                    )
+                for key, child in value.items():
+                    assert_closed_objects(child, f"{label}/{key}")
+            elif isinstance(value, list):
+                for index, child in enumerate(value):
+                    assert_closed_objects(child, f"{label}/{index}")
+
+        self.assertEqual(len(execution["components"]["schemas"]), 16)
+        assert_closed_objects(
+            execution["components"]["schemas"], "execution/components/schemas"
+        )
+
+        terminal_validator = jsonschema.Draft202012Validator(
+            {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "$ref": "#/components/schemas/TerminalRequest",
+                "components": execution["components"],
+            }
+        )
+        grant = {
+            "task_id": "00000000-0000-0000-0000-000000000001",
+            "run_id": "00000000-0000-0000-0000-000000000002",
+            "owner": "worker-01",
+            "role": "writer",
+            "fence": 7,
+            "expires_at": "2026-09-02T01:00:00Z",
+            "packet_digest": "0" * 64,
+        }
+        common = {"grant": grant, "packet_digest": "d" * 64, "sequence": 3}
+        valid_terminal_payloads = (
+            {**common, "terminal_type": "run.completed", "summary": "complete"},
+            {
+                **common,
+                "terminal_type": "run.failed",
+                "failure_class": "validation",
+                "diagnostic": "bounded",
+            },
+            {
+                **common,
+                "terminal_type": "run.needs_human",
+                "reason": "review",
+                "diagnostic": "bounded",
+            },
+        )
+        for payload in valid_terminal_payloads:
+            with self.subTest(valid=payload["terminal_type"]):
+                terminal_validator.validate(payload)
+        invalid_terminal_payloads = (
+            {
+                **common,
+                "terminal_type": "run.completed",
+                "summary": "complete",
+                "diagnostic": "cross-shape",
+            },
+            {
+                **common,
+                "terminal_type": "run.failed",
+                "summary": "wrong variant",
+            },
+            {
+                **common,
+                "terminal_type": "run.needs_human",
+                "failure_class": "validation",
+                "diagnostic": "wrong variant",
+            },
+        )
+        for payload in invalid_terminal_payloads:
+            with self.subTest(invalid=payload["terminal_type"]):
+                self.assertFalse(terminal_validator.is_valid(payload))
 
     def test_architecture_authority_and_manual_adoption_are_documented(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

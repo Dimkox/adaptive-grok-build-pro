@@ -356,3 +356,15 @@ Skip untracked directory components named `.venv`, but enumerate force-added ind
 ## 2026-09-02 — Terminalize conditionally across claim races
 
 Cancel and supersede may terminalize directly only while `current_run_id IS NULL`; a failed conditional transition re-reads the committed run, acquires capacity locks before the task row, releases the run exactly once, and retries. This preserves the canonical capacity-to-task order while preventing a winning claim from being erased with live capacity.
+
+## 2026-09-02 — Version additive execution routes as a separate contract fragment
+
+Retain the M4 `factory-control.v1.json` blob byte-identically and describe only the six new same-server `/v1/execution/*` routes in `factory-execution.v1.json`. This preserves the frozen bidirectional baseline, prevents route/operation-ID collisions, and records the real additive M5 surface without inventing a `/v2` runtime namespace or weakening compatibility fitness.
+
+## 2026-09-02 — Defer rich contract inventory registration without hiding artifacts
+
+When exact-predecessor fitness fails closed with `unsupported added-contract baseline semantics`, keep the new contracts present, directly validated and installer-owned but defer their architecture inventory records to an explicit integration/tool-support slice. This preserves a passing bounded slice without weakening the comparator or permanently dropping the five contracts; registration remains mandatory before M5 acceptance.
+
+## 2026-09-02 — Make proposal monotonicity a database capability invariant
+
+Enforce live task/run/allocation/packet/role bindings, exact replay identity, contiguous sequence, authoritative `max_events`, and terminal lockout inside the `factory_runtime` security-definer function, not only in the parser and Python broker. Check the limit before indexed terminal and last-sequence probes so the durable boundary stays logarithmic rather than rescanning the whole stream for every event.

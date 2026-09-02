@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from datetime import datetime, timedelta, timezone
 from functools import partial
+import json
 import os
 import threading
 import time
@@ -296,6 +297,196 @@ class PostgresFactoryTests(unittest.TestCase):
         wrong_repo = Actor("other-reader", "operator", frozenset({"task:read"}), frozenset({"other/repository"}))
         with self.assertRaises(AuthorizationError):
             self.service.get_workspace_result(task.task_id, result.workspace_result_digest, actor=wrong_repo)
+
+    def test_execution_propose_runtime_boundary_is_monotonic_fenced_and_bounded(self):
+        import psycopg
+
+        def start(source: str, *, max_events: int = 1_000):
+            payload = self.payload(source=source)
+            payload["limits"]["max_events"] = max_events
+            task = self.service.intake(payload, actor=OPERATOR, now=NOW).task
+            packet = valid_packet()
+            packet["provider"]["capabilities"] = [
+                "artifacts",
+                "cancellation",
+                "notes",
+                "structured_output",
+                "usage",
+            ]
+            selection = {
+                "provider": packet["provider"],
+                "capability_policy": packet["capability_policy"],
+                "plan": packet["plan"],
+                "workspace_handle": packet["workspace_handle"],
+                "prompt_template_digest": "7" * 64,
+                "role_definition_digest": "8" * 64,
+                "tool_policy_digest": "9" * 64,
+                "output_schema_digest": "a" * 64,
+            }
+            execution = FactoryService(
+                self.store, execution_registry=trusted_registry(selection)
+            ).claim_execution(
+                owner=WORKER.actor_id,
+                role=RunRole.WRITER,
+                repositories=(task.repository_id,),
+                lease_seconds=60,
+                selection=selection,
+                actor=WORKER,
+                now=NOW,
+                idempotency_key=uuid.uuid4().hex * 2,
+                correlation_id=source,
+            )
+            self.assertIsNotNone(execution)
+            return task, execution
+
+        def propose(
+            execution,
+            sequence: int,
+            idempotency_key: str,
+            kind: str,
+            body: dict,
+            *,
+            owner: str | None = None,
+        ) -> bool:
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute("SET LOCAL ROLE factory_runtime")
+                cursor.execute(
+                    "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb)",
+                    (
+                        execution.lease.task_id,
+                        execution.lease.run_id,
+                        owner or execution.lease.owner,
+                        execution.lease.fence,
+                        execution.lease.packet_digest,
+                        execution.packet_digest,
+                        sequence,
+                        idempotency_key,
+                        kind,
+                        json.dumps(body, sort_keys=True, separators=(",", ":")),
+                    ),
+                )
+                return bool(cursor.fetchone()[0])
+
+        task, execution = start("execution-propose-monotonic")
+        first_key = "1" * 64
+        terminal_key = "2" * 64
+        note = {
+            "author_role": "writer",
+            "note_type": "finding",
+            "body": "bounded",
+            "evidence": [],
+        }
+        terminal = {"terminal_type": "run.failed", "failure_class": "validation", "diagnostic": "bounded"}
+
+        self.assertFalse(
+            propose(execution, 1, "6" * 64, "note", note, owner="forged-worker")
+        )
+        self.assertFalse(
+            propose(
+                execution,
+                1,
+                "c" * 64,
+                "note",
+                {**note, "author_role": "reader"},
+            )
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT deadline_at FROM factory.tasks WHERE task_id=%s",
+                (task.task_id,),
+            )
+            deadline = cursor.fetchone()[0]
+            cursor.execute(
+                "UPDATE factory.tasks SET deadline_at=clock_timestamp()-interval '1 second' WHERE task_id=%s",
+                (task.task_id,),
+            )
+        self.assertFalse(propose(execution, 1, "7" * 64, "note", note))
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.tasks SET deadline_at=%s WHERE task_id=%s",
+                (deadline, task.task_id),
+            )
+            cursor.execute(
+                "UPDATE factory.tasks SET state='queued' WHERE task_id=%s",
+                (task.task_id,),
+            )
+        self.assertFalse(propose(execution, 1, "8" * 64, "note", note))
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.tasks SET state='leased' WHERE task_id=%s",
+                (task.task_id,),
+            )
+            cursor.execute(
+                "UPDATE factory.runs SET state='failed' WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+        self.assertFalse(propose(execution, 1, "9" * 64, "note", note))
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.runs SET state='leased' WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            cursor.execute(
+                "UPDATE factory.runs SET role='reader' WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+        self.assertFalse(propose(execution, 1, "d" * 64, "note", note))
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.runs SET role='writer' WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            cursor.execute(
+                "UPDATE factory.tasks SET packet_digest=%s WHERE task_id=%s",
+                ("e" * 64, task.task_id),
+            )
+        self.assertFalse(propose(execution, 1, "a" * 64, "note", note))
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.tasks SET packet_digest=%s WHERE task_id=%s",
+                (execution.lease.packet_digest, task.task_id),
+            )
+
+        self.assertFalse(propose(execution, 2, first_key, "note", note))
+        self.assertTrue(propose(execution, 1, first_key, "note", note))
+        self.assertFalse(propose(execution, 3, "3" * 64, "note", note))
+        self.assertTrue(propose(execution, 1, first_key, "note", note))
+        self.assertFalse(propose(execution, 1, "4" * 64, "note", note))
+        self.assertFalse(propose(execution, 2, first_key, "note", note))
+        self.assertTrue(propose(execution, 2, terminal_key, "terminal", terminal))
+        self.assertTrue(propose(execution, 2, terminal_key, "terminal", terminal))
+        self.assertFalse(propose(execution, 3, "5" * 64, "note", note))
+        self.service.cancel(
+            task.task_id,
+            reason="bounded-test-cleanup",
+            idempotency_key="b" * 64,
+            actor=OPERATOR,
+            now=NOW,
+        )
+
+        max_events = 8
+        _bounded_task, bounded = start(
+            "execution-propose-max-events", max_events=max_events
+        )
+        for sequence in range(1, max_events + 1):
+            self.assertTrue(
+                propose(
+                    bounded,
+                    sequence,
+                    f"{sequence:064x}",
+                    "note",
+                    {**note, "body": f"event-{sequence}"},
+                )
+            )
+        self.assertFalse(
+            propose(
+                bounded,
+                max_events + 1,
+                f"{max_events + 1:064x}",
+                "note",
+                {**note, "body": "over-limit"},
+            )
+        )
 
     def test_forged_grant_role_is_rejected_by_authoritative_run_lock(self):
         task = self.submit(source="m5-forged-grant-role").task
@@ -1749,7 +1940,10 @@ class PostgresFactoryTests(unittest.TestCase):
                                 (uuid.uuid4(), task_id, run_id, attempt_no, uuid.uuid4().hex * 2),
                             )
 
-                    self.assertEqual([item.version for item in PostgresMigrator(upgrade_url).apply()], [13])
+                    self.assertEqual(
+                        [item.version for item in PostgresMigrator(upgrade_url).apply()],
+                        [13, 14],
+                    )
                     upgraded_store = PostgresFactoryStore(upgrade_url)
                     upgraded_service = FactoryService(upgraded_store)
                     with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
@@ -2033,7 +2227,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12, 13], "ready", 13, True,
+                    [9, 10, 11, 12, 13, 14], "ready", 14, True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
@@ -2623,7 +2817,56 @@ class PostgresFactoryTests(unittest.TestCase):
                 VALUES (gen_random_uuid(),%s,%s,%s,0,0,0,%s)""",
                 [(task.task_id, grant.run_id, f"{1000 + index:064x}", "3" * 64) for index in range(500)],
             )
-            cursor.execute("ANALYZE factory.tasks; ANALYZE factory.runs; ANALYZE factory.audit_log; ANALYZE factory.usage_observations; ANALYZE factory.budget_reservations")
+            execution_packet_digest = "e" * 64
+            cursor.execute(
+                """INSERT INTO factory.execution_packets
+                (packet_digest,task_id,run_id,legacy_packet_digest,provider_id,body)
+                VALUES (%s,%s,%s,%s,'plan-provider','{}'::jsonb)""",
+                (
+                    execution_packet_digest,
+                    task.task_id,
+                    grant.run_id,
+                    grant.packet_digest,
+                ),
+            )
+            cursor.execute(
+                """INSERT INTO factory.execution_manifests
+                (manifest_digest,task_id,run_id,packet_digest,workspace_handle,stage,body)
+                VALUES (%s,%s,%s,%s,%s,'prepared','{}'::jsonb)""",
+                (
+                    "f" * 64,
+                    task.task_id,
+                    grant.run_id,
+                    execution_packet_digest,
+                    "workspace:" + "a" * 64,
+                ),
+            )
+            cursor.executemany(
+                """INSERT INTO factory.execution_proposals
+                (proposal_id,task_id,run_id,packet_digest,producer_sequence,idempotency_key,proposal_kind,body)
+                VALUES (gen_random_uuid(),%s,%s,%s,%s,%s,'note','{}'::jsonb)""",
+                [
+                    (
+                        task.task_id,
+                        grant.run_id,
+                        execution_packet_digest,
+                        index,
+                        f"{30_000 + index:064x}",
+                    )
+                    for index in range(1, 501)
+                ],
+            )
+            cursor.execute(
+                """INSERT INTO factory.execution_proposals
+                (proposal_id,task_id,run_id,packet_digest,producer_sequence,idempotency_key,proposal_kind,body)
+                VALUES (gen_random_uuid(),%s,%s,%s,501,%s,'terminal','{}'::jsonb)""",
+                (task.task_id, grant.run_id, execution_packet_digest, "d" * 64),
+            )
+            cursor.execute(
+                """ANALYZE factory.tasks; ANALYZE factory.runs; ANALYZE factory.audit_log;
+                ANALYZE factory.usage_observations; ANALYZE factory.budget_reservations;
+                ANALYZE factory.execution_proposals"""
+            )
             cursor.execute("SET LOCAL enable_seqscan=off")
             statements = {
                 "claim": ("SELECT task_id FROM factory.tasks WHERE state IN ('queued','retry') ORDER BY created_at,task_id LIMIT 1", ()),
@@ -2631,6 +2874,8 @@ class PostgresFactoryTests(unittest.TestCase):
                 "usage": ("SELECT sum(output_bytes) FROM factory.usage_observations WHERE task_id=%s", (task.task_id,)),
                 "reservation": ("SELECT sum(cost_usd_micros) FROM factory.budget_reservations WHERE task_id=%s AND run_id=%s AND released_at IS NULL", (task.task_id, grant.run_id)),
                 "reconcile": ("SELECT task_id FROM factory.runs WHERE released_at IS NULL AND lease_expires_at<=clock_timestamp() ORDER BY task_id LIMIT 100", ()),
+                "proposal_last": ("SELECT producer_sequence FROM factory.execution_proposals WHERE run_id=%s ORDER BY producer_sequence DESC LIMIT 1", (grant.run_id,)),
+                "proposal_terminal": ("SELECT 1 FROM factory.execution_proposals WHERE run_id=%s AND proposal_kind='terminal'", (grant.run_id,)),
             }
             expected = {
                 "claim": {"tasks_claim_queue"},
@@ -2638,6 +2883,8 @@ class PostgresFactoryTests(unittest.TestCase):
                 "usage": {"usage_observations_task_run"},
                 "reservation": {"budget_reservations_task_run_active"},
                 "reconcile": {"runs_reconcile_keyset", "runs_expired_reconcile"},
+                "proposal_last": {"execution_proposals_run_id_producer_sequence_key"},
+                "proposal_terminal": {"execution_proposals_one_terminal"},
             }
             for name, (statement, params) in statements.items():
                 cursor.execute("EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) " + statement, params)
