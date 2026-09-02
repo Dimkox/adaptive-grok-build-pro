@@ -14,6 +14,10 @@ MANUAL_HANDOFF_INSTRUCTIONS = (
     "obtain_human_review",
     "verify_exact_sha_trust_ci",
 )
+CHANGE_CLASSES = frozenset({"ai", "api", "bugfix", "data", "feature", "integration", "release", "security"})
+MAX_COHORT_ITEMS = 10_000
+MAX_EVIDENCE_COUNT = 1_000_000
+MAX_REVIEW_SECONDS = 604_800
 
 
 def _object(data: Any, name: str) -> Mapping[str, Any]:
@@ -37,6 +41,12 @@ def _identifier(value: Any, name: str) -> str:
 
 def _integer(value: Any, name: str, minimum: int, maximum: int) -> int:
     if type(value) is not int or not minimum <= value <= maximum:
+        raise ContractError("invalid_contract", name)
+    return value
+
+
+def _boolean(value: Any, name: str) -> bool:
+    if type(value) is not bool:
         raise ContractError("invalid_contract", name)
     return value
 
@@ -490,3 +500,277 @@ class ReadyForPrBundleV1(_ShadowValue):
     @property
     def canonical_bytes(self) -> bytes:
         return canonical_json(self.to_dict())
+
+
+@dataclass(frozen=True)
+class ShadowCohortKeyV1(_ShadowValue):
+    schema_version: int
+    repository_id: str
+    change_class: str
+    agent_digest: str
+    validator_digest: str
+    model_digest: str
+    prompt_digest: str
+    policy_digest: str
+    runner_digest: str
+    holdout_digest: str
+    authority_digest: str
+
+    DOMAIN: ClassVar[str] = "adaptive-factory.m7-shadow-cohort-key/v1"
+
+    def __post_init__(self) -> None:
+        _version(self.schema_version, "shadow_cohort_key")
+        _identifier(self.repository_id, "repository_id")
+        if self.change_class not in CHANGE_CLASSES:
+            raise ContractError("invalid_contract", "change_class")
+        for name in (
+            "agent_digest",
+            "validator_digest",
+            "model_digest",
+            "prompt_digest",
+            "policy_digest",
+            "runner_digest",
+            "holdout_digest",
+            "authority_digest",
+        ):
+            _hex(getattr(self, name), name, HEX64)
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "ShadowCohortKeyV1":
+        data = _object(data, "shadow_cohort_key")
+        _closed(data, _field_names(cls))
+        return cls(
+            _version(data["schema_version"], "shadow_cohort_key"),
+            _identifier(data["repository_id"], "repository_id"),
+            data["change_class"],
+            *(
+                _hex(data[name], name, HEX64)
+                for name in (
+                    "agent_digest",
+                    "validator_digest",
+                    "model_digest",
+                    "prompt_digest",
+                    "policy_digest",
+                    "runner_digest",
+                    "holdout_digest",
+                    "authority_digest",
+                )
+            ),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "repository_id": self.repository_id,
+            "change_class": self.change_class,
+            "agent_digest": self.agent_digest,
+            "validator_digest": self.validator_digest,
+            "model_digest": self.model_digest,
+            "prompt_digest": self.prompt_digest,
+            "policy_digest": self.policy_digest,
+            "runner_digest": self.runner_digest,
+            "holdout_digest": self.holdout_digest,
+            "authority_digest": self.authority_digest,
+        }
+
+
+@dataclass(frozen=True)
+class ShadowOutcomeV1(_ShadowValue):
+    schema_version: int
+    outcome_id: str
+    bundle_digest: str
+    cohort_key_digest: str
+    human_evidence_digest: str
+    human_decision: str
+    first_pass_accepted: bool
+    rework_required: bool
+    validator_false_negative: bool
+    validator_false_positive_or_disagreement: bool
+    repair_cycles: int
+    cost_within_budget: bool
+    latency_within_slo: bool
+    deadline_met: bool
+    token_budget_met: bool
+    human_review_seconds: int
+    critical_high_miss_count: int
+    security_miss_count: int
+    unauthorized_effect_count: int
+    rollback_count: int
+    escaped_defect_count: int
+    duplicate_dispatch_count: int
+    unaccounted_call_count: int
+    injection_attempt_count: int
+    injection_contained_count: int
+
+    DOMAIN: ClassVar[str] = "adaptive-factory.m7-shadow-outcome/v1"
+    COUNT_FIELDS: ClassVar[tuple[str, ...]] = (
+        "critical_high_miss_count",
+        "security_miss_count",
+        "unauthorized_effect_count",
+        "rollback_count",
+        "escaped_defect_count",
+        "duplicate_dispatch_count",
+        "unaccounted_call_count",
+        "injection_attempt_count",
+        "injection_contained_count",
+    )
+    BOOL_FIELDS: ClassVar[tuple[str, ...]] = (
+        "first_pass_accepted",
+        "rework_required",
+        "validator_false_negative",
+        "validator_false_positive_or_disagreement",
+        "cost_within_budget",
+        "latency_within_slo",
+        "deadline_met",
+        "token_budget_met",
+    )
+
+    def __post_init__(self) -> None:
+        _version(self.schema_version, "shadow_outcome")
+        _identifier(self.outcome_id, "outcome_id")
+        _hex(self.bundle_digest, "bundle_digest", HEX64)
+        _hex(self.cohort_key_digest, "cohort_key_digest", HEX64)
+        _hex(self.human_evidence_digest, "human_evidence_digest", HEX64)
+        if self.human_decision not in {"merged_accepted", "not_merged"}:
+            raise ContractError("invalid_contract", "human_decision")
+        for name in self.BOOL_FIELDS:
+            _boolean(getattr(self, name), name)
+        _integer(self.repair_cycles, "repair_cycles", 0, 3)
+        _integer(self.human_review_seconds, "human_review_seconds", 1, MAX_REVIEW_SECONDS)
+        for name in self.COUNT_FIELDS:
+            _integer(getattr(self, name), name, 0, MAX_EVIDENCE_COUNT)
+        if self.first_pass_accepted and self.rework_required:
+            raise ContractError("invalid_contract", "first_pass_rework")
+        if self.first_pass_accepted and self.human_decision != "merged_accepted":
+            raise ContractError("invalid_contract", "first_pass_human_decision")
+        if self.injection_contained_count > self.injection_attempt_count:
+            raise ContractError("invalid_contract", "injection_contained_count")
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "ShadowOutcomeV1":
+        data = _object(data, "shadow_outcome")
+        _closed(data, _field_names(cls))
+        return cls(
+            _version(data["schema_version"], "shadow_outcome"),
+            _identifier(data["outcome_id"], "outcome_id"),
+            _hex(data["bundle_digest"], "bundle_digest", HEX64),
+            _hex(data["cohort_key_digest"], "cohort_key_digest", HEX64),
+            _hex(data["human_evidence_digest"], "human_evidence_digest", HEX64),
+            data["human_decision"],
+            *(_boolean(data[name], name) for name in cls.BOOL_FIELDS[:4]),
+            _integer(data["repair_cycles"], "repair_cycles", 0, 3),
+            *(_boolean(data[name], name) for name in cls.BOOL_FIELDS[4:]),
+            _integer(data["human_review_seconds"], "human_review_seconds", 1, MAX_REVIEW_SECONDS),
+            *(
+                _integer(data[name], name, 0, MAX_EVIDENCE_COUNT)
+                for name in cls.COUNT_FIELDS
+            ),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "outcome_id": self.outcome_id,
+            "bundle_digest": self.bundle_digest,
+            "cohort_key_digest": self.cohort_key_digest,
+            "human_evidence_digest": self.human_evidence_digest,
+            "human_decision": self.human_decision,
+            "first_pass_accepted": self.first_pass_accepted,
+            "rework_required": self.rework_required,
+            "validator_false_negative": self.validator_false_negative,
+            "validator_false_positive_or_disagreement": self.validator_false_positive_or_disagreement,
+            "repair_cycles": self.repair_cycles,
+            "cost_within_budget": self.cost_within_budget,
+            "latency_within_slo": self.latency_within_slo,
+            "deadline_met": self.deadline_met,
+            "token_budget_met": self.token_budget_met,
+            "human_review_seconds": self.human_review_seconds,
+            "critical_high_miss_count": self.critical_high_miss_count,
+            "security_miss_count": self.security_miss_count,
+            "unauthorized_effect_count": self.unauthorized_effect_count,
+            "rollback_count": self.rollback_count,
+            "escaped_defect_count": self.escaped_defect_count,
+            "duplicate_dispatch_count": self.duplicate_dispatch_count,
+            "unaccounted_call_count": self.unaccounted_call_count,
+            "injection_attempt_count": self.injection_attempt_count,
+            "injection_contained_count": self.injection_contained_count,
+        }
+
+
+@dataclass(frozen=True)
+class ShadowCohortV1(_ShadowValue):
+    schema_version: int
+    cohort_id: str
+    key: ShadowCohortKeyV1
+    observation_days: int
+    release_cycle_complete: bool
+    baseline_review_seconds: tuple[int, ...]
+    outcomes: tuple[ShadowOutcomeV1, ...]
+
+    DOMAIN: ClassVar[str] = "adaptive-factory.m7-shadow-cohort/v1"
+
+    def __post_init__(self) -> None:
+        _version(self.schema_version, "shadow_cohort")
+        _identifier(self.cohort_id, "cohort_id")
+        if not isinstance(self.key, ShadowCohortKeyV1):
+            raise ContractError("invalid_contract", "key")
+        _integer(self.observation_days, "observation_days", 0, 3_650)
+        _boolean(self.release_cycle_complete, "release_cycle_complete")
+        if not isinstance(self.baseline_review_seconds, tuple) or len(self.baseline_review_seconds) > MAX_COHORT_ITEMS:
+            raise ContractError("invalid_contract", "baseline_review_seconds")
+        for value in self.baseline_review_seconds:
+            _integer(value, "baseline_review_seconds", 1, MAX_REVIEW_SECONDS)
+        if self.baseline_review_seconds != tuple(sorted(self.baseline_review_seconds)):
+            raise ContractError("invalid_contract", "baseline_order")
+        if not isinstance(self.outcomes, tuple) or not self.outcomes:
+            raise ContractError("insufficient_sample")
+        if len(self.outcomes) > MAX_COHORT_ITEMS:
+            raise ContractError("invalid_contract", "cohort_size")
+        if any(not isinstance(outcome, ShadowOutcomeV1) for outcome in self.outcomes):
+            raise ContractError("invalid_contract", "outcomes")
+        outcome_ids = tuple(outcome.outcome_id for outcome in self.outcomes)
+        bundle_digests = tuple(outcome.bundle_digest for outcome in self.outcomes)
+        if outcome_ids != tuple(sorted(outcome_ids)):
+            raise ContractError("invalid_contract", "outcome_order")
+        if len(set(outcome_ids)) != len(outcome_ids) or len(set(bundle_digests)) != len(bundle_digests):
+            raise ContractError("replay")
+        if any(outcome.cohort_key_digest != self.key.digest for outcome in self.outcomes):
+            raise ContractError("cohort_mismatch")
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "ShadowCohortV1":
+        data = _object(data, "shadow_cohort")
+        _closed(data, _field_names(cls))
+        baseline = data["baseline_review_seconds"]
+        outcomes = data["outcomes"]
+        if not isinstance(baseline, list) or len(baseline) > MAX_COHORT_ITEMS:
+            raise ContractError("invalid_contract", "baseline_review_seconds")
+        if not isinstance(outcomes, list):
+            raise ContractError("invalid_contract", "outcomes")
+        if not outcomes:
+            raise ContractError("insufficient_sample")
+        if len(outcomes) > MAX_COHORT_ITEMS:
+            raise ContractError("invalid_contract", "cohort_size")
+        return cls(
+            _version(data["schema_version"], "shadow_cohort"),
+            _identifier(data["cohort_id"], "cohort_id"),
+            ShadowCohortKeyV1.from_dict(data["key"]),
+            _integer(data["observation_days"], "observation_days", 0, 3_650),
+            _boolean(data["release_cycle_complete"], "release_cycle_complete"),
+            tuple(
+                _integer(value, "baseline_review_seconds", 1, MAX_REVIEW_SECONDS)
+                for value in baseline
+            ),
+            tuple(ShadowOutcomeV1.from_dict(outcome) for outcome in outcomes),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "cohort_id": self.cohort_id,
+            "key": self.key.to_dict(),
+            "observation_days": self.observation_days,
+            "release_cycle_complete": self.release_cycle_complete,
+            "baseline_review_seconds": list(self.baseline_review_seconds),
+            "outcomes": [outcome.to_dict() for outcome in self.outcomes],
+        }
