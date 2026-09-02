@@ -9,8 +9,9 @@ import uuid
 from adaptive_factory.migrations import PostgresMigrator, discover_migrations
 from adaptive_factory.api import Authenticator, create_app
 from adaptive_factory.models import Actor, ExecutionStage, FailureClass, RunRole, TaskStatus
-from adaptive_factory.service import FactoryService
+from adaptive_factory.service import AuthorizationError, FactoryService
 from adaptive_factory.store import BudgetError, FenceError, PostgresFactoryStore, StoreError
+from adaptive_factory.workspace import WorkspaceSnapshotV1
 from factory.tests.test_contracts import valid_intake
 from factory.tests.test_execution_contracts import valid_packet
 
@@ -28,6 +29,20 @@ WORKER = Actor(
 )
 
 
+class TrustedPostgresTestSnapshotBroker:
+    def __init__(self):
+        self.calls = 0
+
+    def snapshot(self, request):
+        self.calls += 1
+        return WorkspaceSnapshotV1.from_facts({
+            "contract_version": 1, "repository_id": request.repository_id,
+            "workspace_handle": request.workspace_handle,
+            "input_head_sha": request.input_head_sha, "result_head_sha": "4" * 40,
+            "diff_digest": "6" * 64, "diff_lines": 12, "source": "trusted_git_broker",
+        })
+
+
 @unittest.skipUnless(DATABASE_URL, "FACTORY_TEST_DATABASE_URL must name a disposable database")
 class PostgresFactoryTests(unittest.TestCase):
     @classmethod
@@ -39,7 +54,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
+                "TRUNCATE factory.workspace_results, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
             )
             cursor.execute("SELECT to_regclass('factory.metric_counters_pre_012_untrusted')")
             if cursor.fetchone()[0] is not None:
@@ -121,11 +136,44 @@ class PostgresFactoryTests(unittest.TestCase):
             actor=WORKER, idempotency_key="c" * 64, correlation_id="m5-execution-note",
         )
         self.assertEqual((note.body, replay.body), ("token [REDACTED]", "token [REDACTED]"))
-        for index, stage in enumerate((ExecutionStage.RUNNING, ExecutionStage.COLLECTING, ExecutionStage.COMPLETED), start=4):
+        self.service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest, sequence=2,
+            event_type="usage.reported",
+            payload={
+                "provider_call_id": "fixture-call", "price_table_digest": "d" * 64,
+                "input_tokens": 10, "output_tokens": 5, "reasoning_tokens": 0,
+                "cost_usd_micros": 25, "output_bytes": 20,
+            },
+            actor=WORKER, idempotency_key="d" * 64, correlation_id="m5-execution-usage",
+        )
+        self.service.observe_usage(
+            execution.lease, provider_call_id="fixture-call", price_table_digest="d" * 64,
+            cost_usd_micros=25, token_units=15, output_bytes=20, actor=WORKER,
+            idempotency_key="e" * 64, correlation_id="m5-authoritative-usage",
+        )
+        self.service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest, sequence=3,
+            event_type="run.completed", payload={"summary": "fixture complete"},
+            actor=WORKER, idempotency_key="f" * 64, correlation_id="m5-terminal",
+        )
+        for index, stage in enumerate((ExecutionStage.RUNNING, ExecutionStage.COLLECTING), start=4):
             self.service.advance_execution(
                 execution.lease, packet_digest=execution.packet_digest, stage=stage,
                 actor=WORKER, idempotency_key=str(index) * 64, correlation_id="m5-stage",
             )
+        snapshot_broker = TrustedPostgresTestSnapshotBroker()
+        finalizer = FactoryService(self.store, snapshot_broker=snapshot_broker)
+        result = finalizer.finalize_execution(
+            execution.lease, packet_digest=execution.packet_digest,
+            actor=WORKER, idempotency_key="7" * 64, correlation_id="m5-finalize",
+        )
+        result_replay = finalizer.finalize_execution(
+            execution.lease, packet_digest=execution.packet_digest,
+            actor=WORKER, idempotency_key="7" * 64, correlation_id="m5-finalize",
+        )
+        self.assertEqual(result.workspace_result_digest, result_replay.workspace_result_digest)
+        self.assertEqual(snapshot_broker.calls, 1)
+        self.assertEqual((result.exact_head_sha, result.terminal_stage), ("4" * 40, "completed"))
         with self.assertRaises(FenceError):
             self.service.commit_execution_proposal(
                 execution.lease, packet_digest=execution.packet_digest, sequence=2,
@@ -139,10 +187,25 @@ class PostgresFactoryTests(unittest.TestCase):
                 (SELECT count(*) FROM factory.execution_packets WHERE run_id=%s),
                 (SELECT count(*) FROM factory.execution_stage_events e JOIN factory.execution_manifests m USING(manifest_digest) WHERE m.run_id=%s),
                 (SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s),
-                (SELECT body->>'body' FROM factory.execution_proposals WHERE run_id=%s)""",
-                (execution.lease.run_id,) * 4,
+                (SELECT count(*) FROM factory.workspace_results WHERE run_id=%s),
+                (SELECT body->>'body' FROM factory.execution_proposals WHERE run_id=%s AND proposal_kind='note')""",
+                (execution.lease.run_id,) * 5,
             )
-            self.assertEqual(cursor.fetchone(), (1, 4, 1, "token [REDACTED]"))
+            self.assertEqual(cursor.fetchone(), (1, 4, 3, 1, "token [REDACTED]"))
+        self.assertEqual(
+            self.service.release(execution.lease, outcome="completed", actor=WORKER, now=NOW),
+            TaskStatus.READY_FOR_HUMAN,
+        )
+        reader = Actor("m6-reader", "operator", frozenset({"task:read"}), frozenset({task.repository_id}))
+        bundle = self.service.get_workspace_result(
+            task.task_id, result.workspace_result_digest, actor=reader,
+        )
+        self.assertEqual(bundle["result"].workspace_result_digest, result.workspace_result_digest)
+        self.assertEqual((bundle["snapshot"].diff_digest, bundle["snapshot"].diff_lines), ("6" * 64, 12))
+        self.assertEqual(bundle["packet"].provider.profile_digest, bundle["packet"].provider.profile_digest)
+        wrong_repo = Actor("other-reader", "operator", frozenset({"task:read"}), frozenset({"other/repository"}))
+        with self.assertRaises(AuthorizationError):
+            self.service.get_workspace_result(task.task_id, result.workspace_result_digest, actor=wrong_repo)
 
     def authority_payload(self, kind: str, source: str, suffix: int):
         import psycopg
@@ -1877,6 +1940,8 @@ class PostgresFactoryTests(unittest.TestCase):
             ("UPDATE factory.capacity_allocations SET released_at=clock_timestamp()",),
             ("UPDATE factory.capacity_allocations SET released_at=NULL",),
             ("UPDATE factory.intake_identities SET source_id='tampered'",),
+            ("UPDATE factory.workspace_results SET body='{}'::jsonb",),
+            ("DELETE FROM factory.workspace_results",),
         )
         for (statement,) in forbidden:
             with self.subTest(statement=statement), psycopg.connect(DATABASE_URL) as connection:

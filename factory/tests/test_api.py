@@ -113,6 +113,7 @@ class ApiTests(unittest.TestCase):
     def test_api_has_no_execution_external_write_or_systemd_endpoint(self):
         paths = set(self.client.get("/openapi.json").json()["paths"])
         forbidden = {"/v1/providers/run", "/v1/git/push", "/v1/pull-requests", "/v1/deploy", "/v1/systemd", "/v1/shell"}
+        forbidden.add("/v1/execution/workspace-results")
         self.assertFalse(paths & forbidden)
         self.assertIn("/v1/budget-reservations", paths)
         self.assertIn("/v1/usage-observations", paths)

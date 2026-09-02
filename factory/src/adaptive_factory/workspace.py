@@ -5,8 +5,14 @@ from pathlib import PurePosixPath
 import re
 from typing import Callable, Mapping
 
+from .contracts import canonical_digest
+
 
 _CREDENTIAL_NAME = re.compile(r"(?i)(?:key|token|secret|password|credential|trust_ci|openai|github|grok)")
+_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
+_HEX40 = re.compile(r"^[0-9a-f]{40}$")
+_HEX64 = re.compile(r"^[0-9a-f]{64}$")
+_WORKSPACE = re.compile(r"^workspace:[0-9a-f]{64}$")
 
 
 class WorkspaceError(ValueError):
@@ -34,6 +40,98 @@ class WorkspacePolicy:
 class WorkspaceDecision:
     allowed: bool
     code: str
+
+
+@dataclass(frozen=True)
+class WorkspaceSnapshotV1:
+    contract_version: int
+    repository_id: str
+    workspace_handle: str
+    input_head_sha: str
+    result_head_sha: str
+    diff_digest: str
+    diff_lines: int
+    source: str
+    workspace_snapshot_digest: str
+
+    @classmethod
+    def from_facts(cls, data: Mapping[str, object]) -> "WorkspaceSnapshotV1":
+        fields = set(cls.__dataclass_fields__) - {"workspace_snapshot_digest"}
+        if not isinstance(data, Mapping) or set(data) != fields:
+            raise WorkspaceError("snapshot_fields")
+        if data["contract_version"] != 1 or data["source"] != "trusted_git_broker":
+            raise WorkspaceError("snapshot_source")
+        repository = data["repository_id"]
+        workspace = data["workspace_handle"]
+        input_head = data["input_head_sha"]
+        result_head = data["result_head_sha"]
+        diff_digest = data["diff_digest"]
+        diff_lines = data["diff_lines"]
+        if not isinstance(repository, str) or not _IDENTIFIER.fullmatch(repository):
+            raise WorkspaceError("snapshot_repository")
+        if not isinstance(workspace, str) or not _WORKSPACE.fullmatch(workspace):
+            raise WorkspaceError("snapshot_workspace")
+        if not isinstance(input_head, str) or not _HEX40.fullmatch(input_head):
+            raise WorkspaceError("snapshot_input_head")
+        if not isinstance(result_head, str) or not _HEX40.fullmatch(result_head):
+            raise WorkspaceError("snapshot_result_head")
+        if not isinstance(diff_digest, str) or not _HEX64.fullmatch(diff_digest):
+            raise WorkspaceError("snapshot_diff")
+        if type(diff_lines) is not int or not 0 <= diff_lines <= 1_000_000:
+            raise WorkspaceError("snapshot_diff_lines")
+        values = {
+            "contract_version": 1,
+            "repository_id": repository,
+            "workspace_handle": workspace,
+            "input_head_sha": input_head,
+            "result_head_sha": result_head,
+            "diff_digest": diff_digest,
+            "diff_lines": diff_lines,
+            "source": "trusted_git_broker",
+        }
+        digest = canonical_digest({"contract": "adaptive-factory.workspace-snapshot/v1", **values})
+        return cls(**values, workspace_snapshot_digest=digest)
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, object]) -> "WorkspaceSnapshotV1":
+        fields = set(cls.__dataclass_fields__)
+        if not isinstance(data, Mapping) or set(data) != fields:
+            raise WorkspaceError("snapshot_fields")
+        facts = {name: data[name] for name in fields - {"workspace_snapshot_digest"}}
+        result = cls.from_facts(facts)
+        supplied = data["workspace_snapshot_digest"]
+        if supplied != result.workspace_snapshot_digest:
+            raise WorkspaceError("snapshot_digest_mismatch")
+        return result
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "contract_version": self.contract_version,
+            "repository_id": self.repository_id,
+            "workspace_handle": self.workspace_handle,
+            "input_head_sha": self.input_head_sha,
+            "result_head_sha": self.result_head_sha,
+            "diff_digest": self.diff_digest,
+            "diff_lines": self.diff_lines,
+            "source": self.source,
+            "workspace_snapshot_digest": self.workspace_snapshot_digest,
+        }
+
+
+@dataclass(frozen=True)
+class WorkspaceSnapshotUnavailable:
+    status: str = "unavailable"
+    disposition: str = "needs_human"
+    reason: str = "fake_runtime_no_git_evidence"
+
+
+@dataclass(frozen=True)
+class WorkspaceSnapshotRequest:
+    task_id: str
+    run_id: str
+    repository_id: str
+    workspace_handle: str
+    input_head_sha: str
 
 
 class FakeWorkspaceBroker:
@@ -106,6 +204,11 @@ class FakeGitBroker:
         if operation not in self._READ_ONLY:
             raise WorkspaceError("git_operation_forbidden")
         return WorkspaceDecision(True, "allowed")
+
+    def snapshot(self, request: WorkspaceSnapshotRequest | WorkspaceHandle) -> WorkspaceSnapshotUnavailable:
+        if isinstance(request, WorkspaceHandle):
+            self.workspace._policy(request)
+        return WorkspaceSnapshotUnavailable()
 
 
 @dataclass(frozen=True)

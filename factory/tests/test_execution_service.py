@@ -1,11 +1,12 @@
 from datetime import datetime, timezone
 import unittest
 
-from adaptive_factory.execution_contracts import ExecutionContractError
+from adaptive_factory.execution_contracts import ExecutionContractError, WorkspaceResultV1
 from adaptive_factory.models import Actor, ExecutionStage, LeaseGrant, RunRole
 from adaptive_factory.service import AuthorizationError, FactoryService
 from adaptive_factory.brokers import ProposalContext
-from factory.tests.test_execution_contracts import valid_packet
+from adaptive_factory.workspace import WorkspaceSnapshotRequest, WorkspaceSnapshotUnavailable, WorkspaceSnapshotV1
+from factory.tests.test_execution_contracts import valid_packet, valid_workspace_result
 
 
 NOW = datetime(2026, 9, 2, 0, 0, tzinfo=timezone.utc)
@@ -43,6 +44,7 @@ def selection():
 class FakeExecutionStore:
     def __init__(self):
         self.calls = []
+        self.finalized = {}
 
     def claim(self, request, actor, now, **kwargs):
         self.calls.append(("claim", request, actor, kwargs))
@@ -90,6 +92,54 @@ class FakeExecutionStore:
     def commit_execution_proposal(self, grant, proposal, actor, **kwargs):
         self.calls.append(("proposal", grant, proposal, actor, kwargs))
         return proposal
+
+    def finalize_execution(self, grant, packet_digest, snapshot, actor, **kwargs):
+        self.calls.append(("finalize", grant, packet_digest, snapshot, actor, kwargs))
+        value = valid_workspace_result()
+        value.update({
+            "task_id": grant.task_id,
+            "run_id": grant.run_id,
+            "task_packet_digest": packet_digest,
+            "exact_head_sha": snapshot.result_head_sha,
+            "workspace_snapshot_digest": snapshot.workspace_snapshot_digest,
+        })
+        result = WorkspaceResultV1.from_facts(value)
+        if kwargs.get("idempotency_key") is not None:
+            self.finalized[kwargs["idempotency_key"]] = result
+        return result
+
+    def workspace_snapshot_request(self, grant, packet_digest):
+        self.calls.append(("snapshot_request", grant, packet_digest))
+        return WorkspaceSnapshotRequest(
+            grant.task_id, grant.run_id, "owner/repository", "workspace:" + "d" * 64, "2" * 40
+        )
+
+    def workspace_result(self, task_id, workspace_result_digest):
+        self.calls.append(("workspace_result", task_id, workspace_result_digest))
+        return {"result": workspace_result_digest}
+
+    def execution_finalization_replay(self, grant, packet_digest, actor, *, idempotency_key):
+        self.calls.append(("finalization_replay", grant, packet_digest, actor, idempotency_key))
+        return self.finalized.get(idempotency_key)
+
+
+class UnavailableSnapshotBroker:
+    def snapshot(self, _request):
+        return WorkspaceSnapshotUnavailable()
+
+
+class TrustedTestSnapshotBroker:
+    def __init__(self):
+        self.calls = 0
+
+    def snapshot(self, request):
+        self.calls += 1
+        return WorkspaceSnapshotV1.from_facts({
+            "contract_version": 1, "repository_id": request.repository_id,
+            "workspace_handle": request.workspace_handle,
+            "input_head_sha": request.input_head_sha, "result_head_sha": "f" * 40,
+            "diff_digest": "e" * 64, "diff_lines": 12, "source": "trusted_git_broker",
+        })
 
 
 class ExecutionServiceTests(unittest.TestCase):
@@ -146,6 +196,60 @@ class ExecutionServiceTests(unittest.TestCase):
         )
         self.assertEqual(result, ExecutionStage.RUNNING)
         self.assertEqual(store.calls[-1][2], "d" * 64)
+
+    def test_generic_stage_advance_cannot_terminalize_without_workspace_result(self):
+        service = FactoryService(FakeExecutionStore())
+        for stage in (
+            ExecutionStage.COMPLETED, ExecutionStage.FAILED, ExecutionStage.NEEDS_HUMAN,
+            ExecutionStage.CANCELLED, ExecutionStage.ORPHANED,
+        ):
+            with self.subTest(stage=stage), self.assertRaisesRegex(ExecutionContractError, "terminal_requires_finalize"):
+                service.advance_execution(GRANT, packet_digest="d" * 64, stage=stage, actor=WORKER)
+
+    def test_finalize_requires_trusted_snapshot_and_returns_factual_result(self):
+        store = FakeExecutionStore()
+        service = FactoryService(store, snapshot_broker=UnavailableSnapshotBroker())
+        with self.assertRaisesRegex(ExecutionContractError, "workspace_snapshot_unavailable"):
+            service.finalize_execution(
+                GRANT, packet_digest="d" * 64, actor=WORKER,
+            )
+        self.assertEqual(tuple(item[0] for item in store.calls), ("finalization_replay", "snapshot_request"))
+        broker = TrustedTestSnapshotBroker()
+        service = FactoryService(store, snapshot_broker=broker)
+        result = service.finalize_execution(
+            GRANT, packet_digest="d" * 64, actor=WORKER,
+            idempotency_key="f" * 64, correlation_id="finalize-001",
+        )
+        replay = service.finalize_execution(
+            GRANT, packet_digest="d" * 64, actor=WORKER,
+            idempotency_key="f" * 64, correlation_id="finalize-001",
+        )
+        self.assertEqual(result.exact_head_sha, "f" * 40)
+        self.assertEqual(replay.workspace_result_digest, result.workspace_result_digest)
+        self.assertEqual(tuple(item[0] for item in store.calls), (
+            "finalization_replay", "snapshot_request", "finalization_replay", "snapshot_request", "finalize",
+            "finalization_replay",
+        ))
+        self.assertEqual(broker.calls, 1)
+        with self.assertRaises(TypeError):
+            service.finalize_execution(
+                GRANT, packet_digest="d" * 64, snapshot=WorkspaceSnapshotUnavailable(), actor=WORKER,
+            )
+
+    def test_workspace_result_query_requires_read_scope_and_repository(self):
+        service = FactoryService(FakeExecutionStore())
+        denied = (
+            Actor("worker-01", "worker", frozenset(), frozenset({"owner/repository"})),
+            Actor("reader", "operator", frozenset({"task:read"}), frozenset({"other/repository"})),
+        )
+        for actor in denied:
+            with self.subTest(actor=actor), self.assertRaises(AuthorizationError):
+                service.get_workspace_result(GRANT.task_id, "f" * 64, actor=actor)
+        reader = Actor("reader", "operator", frozenset({"task:read"}), frozenset({"owner/repository"}))
+        self.assertEqual(
+            service.get_workspace_result(GRANT.task_id, "f" * 64, actor=reader),
+            {"result": "f" * 64},
+        )
 
     def test_proposal_is_validated_redacted_and_committed_under_live_grant(self):
         store = FakeExecutionStore()

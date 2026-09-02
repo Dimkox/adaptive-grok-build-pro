@@ -103,6 +103,17 @@ def _domain_digest(domain: str, value: Any) -> str:
     return hashlib.sha256(domain.encode("ascii") + b"\x00" + _canonical_bytes(value)).hexdigest()
 
 
+def workspace_evidence_digest(kind: str, digests: Any) -> str:
+    if kind not in {"artifacts", "notes", "usage", "diagnostics"}:
+        raise ExecutionContractError("invalid_evidence_kind")
+    if not isinstance(digests, (list, tuple)) or len(digests) > 1_000:
+        raise ExecutionContractError("invalid_list", kind)
+    parsed = tuple(_hex(value, kind, HEX64) for value in digests)
+    if parsed != tuple(sorted(set(parsed))):
+        raise ExecutionContractError("invalid_list", kind)
+    return _domain_digest(f"adaptive-factory.workspace-{kind}/v1", parsed)
+
+
 @dataclass(frozen=True)
 class AuthorityBindingV1:
     exact_base_sha: str
@@ -173,6 +184,10 @@ class ProviderProfileV1:
             _sorted_unique(data["capabilities"], "capabilities"),
             True,
         )
+
+    @property
+    def profile_digest(self) -> str:
+        return _domain_digest("adaptive-factory.provider-profile/v1", self)
 
 
 @dataclass(frozen=True)
@@ -379,3 +394,73 @@ class RunManifestV1:
 
     def to_dict(self) -> dict[str, Any]:
         return _canonical(asdict(self))
+
+
+@dataclass(frozen=True)
+class WorkspaceResultV1:
+    contract_version: int
+    task_id: str
+    run_id: str
+    task_packet_digest: str
+    run_manifest_digest: str
+    exact_head_sha: str
+    workspace_snapshot_digest: str
+    terminal_stage: str
+    terminal_proposal_digest: str | None
+    artifact_manifest_digest: str
+    note_manifest_digest: str
+    usage_evidence_digest: str
+    diagnostics_digest: str
+    workspace_result_digest: str
+
+    @classmethod
+    def from_facts(cls, data: Mapping[str, Any]) -> "WorkspaceResultV1":
+        fields = set(cls.__dataclass_fields__) - {"workspace_result_digest"}
+        _closed(data, fields)
+        if data["contract_version"] != 1:
+            raise ExecutionContractError("unsupported_version")
+        terminal = data["terminal_stage"]
+        if terminal not in {"completed", "failed", "needs_human"}:
+            raise ExecutionContractError("invalid_terminal")
+        terminal_digest = data["terminal_proposal_digest"]
+        terminal_digest = _hex(terminal_digest, "terminal_proposal_digest", HEX64)
+        values = {
+            "contract_version": 1,
+            "task_id": _identifier(data["task_id"], "task_id"),
+            "run_id": _identifier(data["run_id"], "run_id"),
+            "task_packet_digest": _hex(data["task_packet_digest"], "task_packet_digest", HEX64),
+            "run_manifest_digest": _hex(data["run_manifest_digest"], "run_manifest_digest", HEX64),
+            "exact_head_sha": _hex(data["exact_head_sha"], "exact_head_sha", HEX40),
+            "workspace_snapshot_digest": _hex(
+                data["workspace_snapshot_digest"], "workspace_snapshot_digest", HEX64
+            ),
+            "terminal_stage": terminal,
+            "terminal_proposal_digest": terminal_digest,
+            "artifact_manifest_digest": _hex(
+                data["artifact_manifest_digest"], "artifact_manifest_digest", HEX64
+            ),
+            "note_manifest_digest": _hex(data["note_manifest_digest"], "note_manifest_digest", HEX64),
+            "usage_evidence_digest": _hex(data["usage_evidence_digest"], "usage_evidence_digest", HEX64),
+            "diagnostics_digest": _hex(data["diagnostics_digest"], "diagnostics_digest", HEX64),
+        }
+        return cls(
+            **values,
+            workspace_result_digest=_domain_digest("adaptive-factory.workspace-result/v1", values),
+        )
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "WorkspaceResultV1":
+        fields = set(cls.__dataclass_fields__)
+        _closed(data, fields)
+        facts = {name: data[name] for name in fields - {"workspace_result_digest"}}
+        result = cls.from_facts(facts)
+        supplied = _hex(data["workspace_result_digest"], "workspace_result_digest", HEX64)
+        if supplied != result.workspace_result_digest:
+            raise ExecutionContractError("digest_mismatch", "workspace_result_digest")
+        return result
+
+    def to_dict(self, *, include_digest: bool = True) -> dict[str, Any]:
+        value = _canonical(asdict(self))
+        if not include_digest:
+            value.pop("workspace_result_digest")
+        return value

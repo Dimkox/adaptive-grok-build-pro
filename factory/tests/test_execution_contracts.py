@@ -1,12 +1,14 @@
 from dataclasses import FrozenInstanceError
 import json
 from pathlib import Path
+import subprocess
 import unittest
 
 from adaptive_factory.execution_contracts import (
     ExecutionContractError,
     RunManifestV1,
     TaskPacketV1,
+    WorkspaceResultV1,
 )
 
 
@@ -78,6 +80,24 @@ def valid_packet():
     }
 
 
+def valid_workspace_result():
+    return {
+        "contract_version": 1,
+        "task_id": "task-001",
+        "run_id": "run-001",
+        "task_packet_digest": "1" * 64,
+        "run_manifest_digest": "2" * 64,
+        "exact_head_sha": "3" * 40,
+        "workspace_snapshot_digest": "4" * 64,
+        "terminal_stage": "completed",
+        "terminal_proposal_digest": "5" * 64,
+        "artifact_manifest_digest": "6" * 64,
+        "note_manifest_digest": "7" * 64,
+        "usage_evidence_digest": "8" * 64,
+        "diagnostics_digest": "9" * 64,
+    }
+
+
 class ExecutionContractTests(unittest.TestCase):
     def test_packet_is_deeply_immutable_and_has_new_digest_domain(self):
         source = valid_packet()
@@ -139,6 +159,51 @@ class ExecutionContractTests(unittest.TestCase):
             self.assertEqual(schema["$schema"], "https://json-schema.org/draft/2020-12/schema")
             self.assertFalse(schema["additionalProperties"])
             self.assertTrue(required.issubset(schema["required"]))
+
+    def test_workspace_result_is_canonical_immutable_and_domain_separated(self):
+        value = valid_workspace_result()
+        result = WorkspaceResultV1.from_facts(value)
+        replay = WorkspaceResultV1.from_dict(result.to_dict())
+        self.assertEqual(result.workspace_result_digest, replay.workspace_result_digest)
+        self.assertNotEqual(result.workspace_result_digest, result.task_packet_digest)
+        self.assertEqual(result.terminal_stage, "completed")
+        with self.assertRaises(FrozenInstanceError):
+            result.exact_head_sha = "f" * 40
+
+    def test_workspace_result_mutation_staleness_and_nonterminal_values_fail_closed(self):
+        original = WorkspaceResultV1.from_facts(valid_workspace_result())
+        changed = valid_workspace_result()
+        changed["exact_head_sha"] = "e" * 40
+        self.assertNotEqual(original.workspace_result_digest, WorkspaceResultV1.from_facts(changed).workspace_result_digest)
+        cases = []
+        unknown = valid_workspace_result()
+        unknown["semantic_verdict"] = "pass"
+        cases.append((unknown, "unknown_fields"))
+        nonterminal = valid_workspace_result()
+        nonterminal["terminal_stage"] = "running"
+        cases.append((nonterminal, "invalid_terminal"))
+        orphan = valid_workspace_result()
+        orphan["terminal_stage"] = "orphaned"
+        cases.append((orphan, "invalid_terminal"))
+        for value, code in cases:
+            with self.subTest(code=code), self.assertRaisesRegex(ExecutionContractError, code):
+                WorkspaceResultV1.from_facts(value)
+
+        mismatched = original.to_dict()
+        mismatched["workspace_result_digest"] = "f" * 64
+        with self.assertRaisesRegex(ExecutionContractError, "digest_mismatch"):
+            WorkspaceResultV1.from_dict(mismatched)
+
+    def test_workspace_result_schema_is_closed_and_names_m6_bridge_digests(self):
+        schema = json.loads((ROOT / "contracts" / "schemas" / "workspace-result.v1.json").read_text())
+        self.assertFalse(schema["additionalProperties"])
+        self.assertTrue({"task_packet_digest", "run_manifest_digest", "workspace_result_digest"}.issubset(schema["required"]))
+        self.assertNotIn("semantic_verdict", schema["properties"])
+        valid = WorkspaceResultV1.from_facts(valid_workspace_result()).to_dict()
+        command = ["jsonschema", str(ROOT / "contracts" / "schemas" / "workspace-result.v1.json")]
+        self.assertEqual(subprocess.run(command, input=json.dumps(valid), text=True, capture_output=True).returncode, 0)
+        invalid = dict(valid, terminal_stage="cancelled", terminal_proposal_digest=None)
+        self.assertNotEqual(subprocess.run(command, input=json.dumps(invalid), text=True, capture_output=True).returncode, 0)
 
 
 if __name__ == "__main__":

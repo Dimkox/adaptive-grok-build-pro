@@ -7,9 +7,11 @@ import uuid
 
 from .contracts import HEX64, TaskIntakeV1, canonical_digest
 from .brokers import ArtifactProposal, NoteProposal, ProposalContext, TerminalProposal, UsageProposal
+from .execution_contracts import RunManifestV1, TaskPacketV1, WorkspaceResultV1, workspace_evidence_digest
 from .migrations import discover_migrations
 from .models import Actor, ExecutionGrant, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskProjection, TaskStatus
 from .state import classify_retry
+from .workspace import WorkspaceSnapshotRequest, WorkspaceSnapshotV1
 
 
 class StoreError(RuntimeError):
@@ -859,6 +861,201 @@ class PostgresFactoryStore:
                 correlation_id, {"proposal_kind": kind, "sequence": proposal.sequence},
             )
             return proposal
+
+    @staticmethod
+    def _workspace_bundle(value) -> tuple[WorkspaceResultV1, WorkspaceSnapshotV1, TaskPacketV1, RunManifestV1] | None:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = json.loads(value)
+        try:
+            packet_wire = dict(value["packet"])
+            packet_digest = packet_wire.pop("packet_digest")
+            packet = TaskPacketV1.from_dict(packet_wire)
+            if packet.packet_digest != packet_digest:
+                raise StoreError("stored workspace packet digest mismatch")
+            manifest_wire = dict(value["manifest"])
+            manifest_digest = manifest_wire.pop("manifest_digest")
+            manifest = RunManifestV1.from_packet(packet, deadline=manifest_wire["deadline"])
+            if manifest.to_dict() != {**manifest_wire, "manifest_digest": manifest_digest}:
+                raise StoreError("stored workspace manifest mismatch")
+            result = WorkspaceResultV1.from_dict(value["result"])
+            snapshot = WorkspaceSnapshotV1.from_dict(value["snapshot"])
+            if (
+                result.task_id != packet.task_id
+                or result.run_id != packet.run_id
+                or result.task_packet_digest != packet.packet_digest
+                or result.run_manifest_digest != manifest.manifest_digest
+                or snapshot.repository_id != packet.repository_id
+                or snapshot.workspace_handle != packet.workspace_handle
+                or snapshot.input_head_sha != packet.authority.exact_head_sha
+                or snapshot.result_head_sha != result.exact_head_sha
+                or snapshot.workspace_snapshot_digest != result.workspace_snapshot_digest
+            ):
+                raise StoreError("stored workspace bundle binding mismatch")
+            return result, snapshot, packet, manifest
+        except (KeyError, TypeError, ValueError) as exc:
+            if isinstance(exc, StoreError):
+                raise
+            raise StoreError("stored workspace bundle is corrupt") from exc
+
+    def finalize_execution(
+        self,
+        grant: LeaseGrant,
+        packet_digest: str,
+        snapshot: WorkspaceSnapshotV1,
+        actor: Actor,
+        *,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ) -> WorkspaceResultV1:
+        command = {
+            "task_id": grant.task_id,
+            "run_id": grant.run_id,
+            "packet_digest": packet_digest,
+        }
+        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            replay, prior, request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "execution_finalize", command
+            )
+            if replay:
+                return WorkspaceResultV1.from_dict(prior["result"])
+            cursor.execute("SELECT factory.execution_result_for_run(%s,%s)", (grant.task_id, grant.run_id))
+            existing = self._workspace_bundle(cursor.fetchone()[0])
+            if existing is not None:
+                result, stored_snapshot, _packet, _manifest = existing
+                if (
+                    result.task_packet_digest != packet_digest
+                    or stored_snapshot.workspace_snapshot_digest != snapshot.workspace_snapshot_digest
+                ):
+                    raise StoreError("workspace result already exists with different facts")
+                self._record_command(
+                    cursor, idempotency_key, actor, "execution_finalize", request_digest,
+                    correlation_id, {"result": result.to_dict()},
+                )
+                return result
+            self._lock_grant(cursor, grant)
+            cursor.execute(
+                "SELECT factory.execution_finalize_context(%s,%s,%s,%s,%s,%s)",
+                (
+                    grant.task_id, grant.run_id, grant.owner, grant.fence,
+                    grant.packet_digest, packet_digest,
+                ),
+            )
+            context = cursor.fetchone()[0]
+            if context is None:
+                raise FenceError("execution cannot be finalized")
+            if isinstance(context, str):
+                context = json.loads(context)
+            if (
+                snapshot.repository_id != context["repository_id"]
+                or snapshot.workspace_handle != context["workspace_handle"]
+                or snapshot.input_head_sha != context["input_head_sha"]
+            ):
+                raise FenceError("workspace snapshot does not bind execution")
+            result = WorkspaceResultV1.from_facts(
+                {
+                    "contract_version": 1,
+                    "task_id": grant.task_id,
+                    "run_id": grant.run_id,
+                    "task_packet_digest": packet_digest,
+                    "run_manifest_digest": context["run_manifest_digest"],
+                    "exact_head_sha": snapshot.result_head_sha,
+                    "workspace_snapshot_digest": snapshot.workspace_snapshot_digest,
+                    "terminal_stage": context["terminal_stage"],
+                    "terminal_proposal_digest": context["terminal_proposal_digest"],
+                    "artifact_manifest_digest": workspace_evidence_digest(
+                        "artifacts", context["artifact_digests"]
+                    ),
+                    "note_manifest_digest": workspace_evidence_digest("notes", context["note_digests"]),
+                    "usage_evidence_digest": workspace_evidence_digest("usage", context["usage_digests"]),
+                    "diagnostics_digest": workspace_evidence_digest(
+                        "diagnostics", context["diagnostic_digests"]
+                    ),
+                }
+            )
+            cursor.execute(
+                "SELECT factory.execution_finalize_commit(%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb)",
+                (
+                    grant.task_id, grant.run_id, grant.owner, grant.fence, grant.packet_digest,
+                    packet_digest, result.workspace_result_digest,
+                    json.dumps(snapshot.to_dict(), sort_keys=True, separators=(",", ":")),
+                    json.dumps(result.to_dict(), sort_keys=True, separators=(",", ":")),
+                ),
+            )
+            if not cursor.fetchone()[0]:
+                raise FenceError("execution finalization rejected")
+            self._record_command(
+                cursor, idempotency_key, actor, "execution_finalize", request_digest,
+                correlation_id, {"result": result.to_dict()},
+            )
+            return result
+
+    def execution_finalization_replay(
+        self,
+        grant: LeaseGrant,
+        packet_digest: str,
+        actor: Actor,
+        *,
+        idempotency_key: str | None,
+    ) -> WorkspaceResultV1 | None:
+        if idempotency_key is None:
+            return None
+        command = {"task_id": grant.task_id, "run_id": grant.run_id, "packet_digest": packet_digest}
+        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            replay, prior, _request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "execution_finalize", command
+            )
+            return WorkspaceResultV1.from_dict(prior["result"]) if replay else None
+
+    def workspace_snapshot_request(self, grant: LeaseGrant, packet_digest: str) -> WorkspaceSnapshotRequest:
+        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            self._lock_grant(cursor, grant)
+            cursor.execute(
+                "SELECT factory.execution_finalize_context(%s,%s,%s,%s,%s,%s)",
+                (
+                    grant.task_id, grant.run_id, grant.owner, grant.fence,
+                    grant.packet_digest, packet_digest,
+                ),
+            )
+            context = cursor.fetchone()[0]
+            if context is None:
+                cursor.execute("SELECT factory.execution_result_for_run(%s,%s)", (grant.task_id, grant.run_id))
+                existing = self._workspace_bundle(cursor.fetchone()[0])
+                if existing is None:
+                    raise FenceError("execution snapshot context unavailable")
+                result, snapshot, _packet, _manifest = existing
+                return WorkspaceSnapshotRequest(
+                    result.task_id,
+                    result.run_id,
+                    snapshot.repository_id,
+                    snapshot.workspace_handle,
+                    snapshot.input_head_sha,
+                )
+            if isinstance(context, str):
+                context = json.loads(context)
+            return WorkspaceSnapshotRequest(
+                grant.task_id,
+                grant.run_id,
+                context["repository_id"],
+                context["workspace_handle"],
+                context["input_head_sha"],
+            )
+
+    def workspace_result(self, task_id: str, workspace_result_digest: str):
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SET statement_timeout='5s'")
+            cursor.execute(
+                "SELECT factory.execution_result_by_digest(%s,%s)",
+                (task_id, workspace_result_digest),
+            )
+            bundle = self._workspace_bundle(cursor.fetchone()[0])
+            if bundle is None:
+                raise KeyError(workspace_result_digest)
+            result, snapshot, packet, manifest = bundle
+            return {"result": result, "snapshot": snapshot, "packet": packet, "manifest": manifest}
 
     @staticmethod
     def _lock_capacity_for_run(cursor, run_id: str) -> bool:
