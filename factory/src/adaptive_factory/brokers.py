@@ -35,6 +35,7 @@ class ProposalContext:
     max_output_bytes: int
     max_cost_usd_micros: int
     max_token_units: int
+    declared_capabilities: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -144,6 +145,16 @@ class ProposalBroker:
             raise BrokerError("owner_mismatch")
         if fence != context.fence:
             raise BrokerError("stale_fence")
+        capability = {
+            "note.proposed": "notes",
+            "artifact.proposed": "artifacts",
+            "usage.reported": "usage",
+            "run.completed": "structured_output",
+            "run.failed": "structured_output",
+            "run.needs_human": "structured_output",
+        }.get(event.event_type)
+        if capability is not None and capability not in context.declared_capabilities:
+            raise BrokerError("undeclared_capability", capability)
         if event.event_type == "note.proposed":
             return self._note(event, context)
         if event.event_type == "artifact.proposed":
