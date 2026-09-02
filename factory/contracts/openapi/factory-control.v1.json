@@ -44,7 +44,7 @@
             }
           },
           "503": {
-            "description": "database or schema unavailable",
+            "description": "database unavailable or timed out, or schema, capacity, or accounting checks are not ready",
             "content": {
               "application/json": {
                 "schema": {
