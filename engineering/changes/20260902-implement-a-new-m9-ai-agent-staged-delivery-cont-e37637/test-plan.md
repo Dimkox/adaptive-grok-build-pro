@@ -2,7 +2,7 @@
 
 The source-only checkpoint runs each scenario under strict TDD; a scenario is claimed only after its witnessed RED and fresh GREEN evidence.
 
-Task 1 contract evidence is now implemented: the exact command first failed because `adaptive_delivery.contracts` was absent, then passed 11 tests after the minimal contract module was added. Evaluator, recovery, controller and integration scenarios remain pending.
+Task 1 contract evidence is implemented: the exact command first failed because `adaptive_delivery.contracts` was absent, then passed 11 tests after the minimal contract module was added. Task 2 evaluator evidence is also implemented: its focused command first failed because `adaptive_delivery.evaluator` was absent; a review-found old-window/fresh-capture case then failed against capture-only freshness; the repaired evaluator passes 13 focused tests plus the unchanged 11 contract tests. Recovery, controller and Task 5 integration scenarios remain pending.
 
 | Priority | Scenario | Required evidence |
 | --- | --- | --- |

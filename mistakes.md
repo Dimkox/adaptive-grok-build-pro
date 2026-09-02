@@ -327,3 +327,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 ## 2026-09-01 — Extrapolated a local milestone ETA to the whole program
 
 **Root cause:** The M4 local implementation forecast was presented as program deadline confidence without checking downstream dependencies and external gates, especially the M8 human cohort and Trust CI. Future status reports must state local milestone forecasts separately from end-to-end deadline confidence and name unresolved human/external gates.
+
+## 2026-09-02 — Anchored observation freshness only to capture time
+
+**Symptom:** A freshly captured record could carry an old evaluation window and still pass the M9 maximum-age gate.
+**Root cause:** The evaluator treated record capture as data freshness instead of also bounding the age of the aggregate window end.

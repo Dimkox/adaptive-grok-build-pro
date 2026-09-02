@@ -8,7 +8,9 @@
 - [x] Record the 2026-09-02 authority ruling: Tasks 1–4 may execute as pure local TDD with synthetic opaque exact identities; no factual or operational gate is unblocked.
 - [ ] Restack onto factual accepted M8 and replace blocker rows with exact accepted identities. `BLOCKED`.
 - [x] Task 1: implement closed contracts and canonical digests from a witnessed missing-module RED and focused 11-test GREEN.
-- [ ] Tasks 2–4: implement evaluator, recovery, controller and fake adapter in later separate TDD commits.
+- [x] Task 2: implement the pure deterministic exact-binding evaluator from a witnessed missing-module RED, a separate old-window/fresh-capture RED and focused 13-test GREEN.
+- [ ] Task 3: implement the narrowing recovery selector in a separate TDD commit.
+- [ ] Task 4: implement the append-only dry-run controller and bounded fake adapter in a separate TDD commit.
 - [ ] Task 5: register schemas/architecture and integrate repository documentation only after its gate opens. `BLOCKED`.
 - [ ] Run exact-head verification and all route-selected independent reviews/receipts after product source exists.
 - [ ] Prove externally verified signed inputs, authorized nonproduction environment and exercised exact-prior-artifact recovery. `BLOCKED`.
