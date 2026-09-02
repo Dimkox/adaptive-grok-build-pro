@@ -26,12 +26,51 @@ assert SPEC and SPEC.loader
 SPEC.loader.exec_module(PACKAGE)
 
 
-def _head_release_sources(root: Path) -> dict[str, tuple[bytes, int]]:
-    tree = subprocess.run(
-        ['git', 'ls-tree', '-r', '-z', 'HEAD'],
-        cwd=root,
+def _shipped_git_environment() -> dict[str, str]:
+    environment = {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith('GIT_')
+    }
+    environment.update(
+        {
+            'GIT_CONFIG_COUNT': '0',
+            'GIT_CONFIG_GLOBAL': os.devnull,
+            'GIT_CONFIG_NOSYSTEM': '1',
+            'GIT_CONFIG_SYSTEM': os.devnull,
+            'GIT_GRAFT_FILE': os.devnull,
+            'GIT_NO_REPLACE_OBJECTS': '1',
+            'GIT_OPTIONAL_LOCKS': '0',
+        }
+    )
+    return environment
+
+
+def _shipped_git_command(
+    root: Path,
+    arguments: list[str],
+    *,
+    input_bytes: bytes | None = None,
+) -> subprocess.CompletedProcess[bytes]:
+    canonical_root = root.resolve(strict=True)
+    return subprocess.run(
+        ['git', '--no-replace-objects', '-C', str(canonical_root), *arguments],
+        input=input_bytes,
         check=True,
         capture_output=True,
+        env=_shipped_git_environment(),
+    )
+
+
+def _head_release_sources(root: Path) -> dict[str, tuple[bytes, int]]:
+    head = _shipped_git_command(root, ['rev-parse', '--verify', 'HEAD^{commit}']).stdout.strip()
+    tree_oid = _shipped_git_command(
+        root,
+        ['rev-parse', '--verify', f'{head.decode("ascii")}^{{tree}}'],
+    ).stdout.strip()
+    tree = _shipped_git_command(
+        root,
+        ['ls-tree', '-r', '-z', tree_oid.decode('ascii')],
     ).stdout
     objects: list[tuple[str, str, int]] = []
     excluded_parts = {
@@ -62,12 +101,13 @@ def _head_release_sources(root: Path) -> dict[str, tuple[bytes, int]]:
             continue
         objects.append((relative, object_id, int(mode, 8)))
 
-    batch = subprocess.run(
-        ['git', 'cat-file', '--batch'],
-        cwd=root,
-        input=''.join(f'{object_id}\n' for _relative, object_id, _mode in objects).encode('ascii'),
-        check=True,
-        capture_output=True,
+    batch = _shipped_git_command(
+        root,
+        ['cat-file', '--batch'],
+        input_bytes=''.join(
+            f'{object_id}\n'
+            for _relative, object_id, _mode in objects
+        ).encode('ascii'),
     ).stdout
     cursor = 0
     sources: dict[str, tuple[bytes, int]] = {}
@@ -245,6 +285,342 @@ class PackageTests(unittest.TestCase):
             check=True,
         )
 
+    @staticmethod
+    def _same_tree_release_commits(root: Path) -> tuple[str, str]:
+        PackageTests._init_release_repository(root)
+        first = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
+        subprocess.run(
+            [
+                'git', '-c', 'user.name=Package Test', '-c', 'user.email=package@example.invalid',
+                'commit', '-q', '--allow-empty', '-m', 'second fixture',
+            ],
+            cwd=root,
+            check=True,
+        )
+        second = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
+        subprocess.run(['git', 'update-ref', 'HEAD', first, second], cwd=root, check=True)
+        return first, second
+
+    @staticmethod
+    def _run_release_cli(
+        root: Path,
+        output: Path,
+        *,
+        environment: dict[str, str] | None = None,
+    ) -> subprocess.CompletedProcess[bytes]:
+        program = """
+import importlib.util
+import sys
+from pathlib import Path
+
+package_path, root, output = map(Path, sys.argv[1:])
+spec = importlib.util.spec_from_file_location('isolated_package_stack', package_path)
+module = importlib.util.module_from_spec(spec)
+assert spec and spec.loader
+spec.loader.exec_module(module)
+module.ROOT = root
+sys.argv = [str(package_path), '--output', str(output)]
+module.main()
+"""
+        return subprocess.run(
+            [sys.executable, '-c', program, str(ROOT / 'scripts/package_stack.py'), str(root), str(output)],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            env=environment,
+        )
+
+    @staticmethod
+    def _replacement_release_repository(root: Path) -> tuple[str, str]:
+        PackageTests._init_release_repository(root)
+        (root / 'README.md').write_text('raw-one\n', encoding='utf-8')
+        subprocess.run(['git', 'add', 'README.md'], cwd=root, check=True)
+        subprocess.run(
+            [
+                'git', '-c', 'user.name=Package Test', '-c', 'user.email=package@example.invalid',
+                'commit', '-q', '-m', 'raw source',
+            ],
+            cwd=root,
+            check=True,
+        )
+        raw = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
+        (root / 'README.md').write_text('replacement-two\n', encoding='utf-8')
+        subprocess.run(['git', 'add', 'README.md'], cwd=root, check=True)
+        subprocess.run(
+            [
+                'git', '-c', 'user.name=Package Test', '-c', 'user.email=package@example.invalid',
+                'commit', '-q', '-m', 'replacement source',
+            ],
+            cwd=root,
+            check=True,
+        )
+        replacement = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'],
+            cwd=root,
+            text=True,
+        ).strip()
+        subprocess.run(['git', 'reset', '-q', '--hard', raw], cwd=root, check=True)
+        subprocess.run(['git', 'replace', raw, replacement], cwd=root, check=True)
+        subprocess.run(['git', 'reset', '-q', '--hard', 'HEAD'], cwd=root, check=True)
+        return raw, replacement
+
+    def test_head_release_source_helper_ignores_replace_refs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            self._replacement_release_repository(root)
+
+            self.assertEqual((root / 'README.md').read_bytes(), b'replacement-two\n')
+            self.assertEqual(
+                subprocess.check_output(['git', 'status', '--porcelain=v1'], cwd=root),
+                b'',
+            )
+            self.assertEqual(_head_release_sources(root)['README.md'][0], b'raw-one\n')
+
+    def test_release_cli_never_packages_replace_ref_content(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            raw, _replacement = self._replacement_release_repository(root)
+            graft_file = Path(tmp) / 'injected-grafts'
+            graft_file.write_text(f'{raw}\n', encoding='ascii')
+            output = Path(tmp) / 'publish' / 'project.zip'
+            environment = os.environ.copy()
+            environment['GIT_GRAFT_FILE'] = str(graft_file)
+
+            result = self._run_release_cli(root, output, environment=environment)
+
+            if result.returncode:
+                self.assertIn(b'tracked HEAD', result.stderr)
+                self.assertFalse(output.exists())
+                self.assertFalse(output.with_suffix('.zip.sha256').exists())
+            else:
+                with zipfile.ZipFile(output) as archive:
+                    packaged = archive.read('adaptive-grok-build-pro/README.md')
+                self.assertEqual(packaged, b'raw-one\n')
+                self.assertNotEqual(packaged, b'replacement-two\n')
+
+    def test_release_cli_ignores_ambient_git_repository_overrides(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            decoy = Path(tmp) / 'decoy'
+            self._init_release_repository(root)
+            self._init_release_repository(decoy)
+            (decoy / 'README.md').write_text('redirected\n', encoding='utf-8')
+            subprocess.run(['git', 'add', 'README.md'], cwd=decoy, check=True)
+            subprocess.run(
+                [
+                    'git', '-c', 'user.name=Package Test', '-c',
+                    'user.email=package@example.invalid', 'commit', '-q', '-m', 'redirect',
+                ],
+                cwd=decoy,
+                check=True,
+            )
+            output = Path(tmp) / 'publish' / 'project.zip'
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    'GIT_COMMON_DIR': str(decoy / '.git'),
+                    'GIT_CONFIG_COUNT': '1',
+                    'GIT_CONFIG_KEY_0': 'core.abbrev',
+                    'GIT_CONFIG_VALUE_0': '4',
+                    'GIT_DIR': str(decoy / '.git'),
+                    'GIT_INDEX_FILE': str(decoy / '.git' / 'index'),
+                    'GIT_NAMESPACE': 'redirected',
+                    'GIT_OBJECT_DIRECTORY': str(decoy / '.git' / 'objects'),
+                    'GIT_WORK_TREE': str(decoy),
+                }
+            )
+
+            result = self._run_release_cli(root, output, environment=environment)
+
+            self.assertEqual(result.returncode, 0, result.stderr.decode('utf-8', errors='replace'))
+            with zipfile.ZipFile(output) as archive:
+                self.assertEqual(
+                    archive.read('adaptive-grok-build-pro/README.md'),
+                    b'tracked\n',
+                )
+
+    def test_release_cli_keeps_linked_worktree_discovery(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            repository = Path(tmp) / 'repository'
+            linked = Path(tmp) / 'linked'
+            self._init_release_repository(repository)
+            subprocess.run(
+                ['git', 'worktree', 'add', '-q', '-b', 'linked-fixture', str(linked)],
+                cwd=repository,
+                check=True,
+            )
+            output = Path(tmp) / 'publish' / 'project.zip'
+
+            result = self._run_release_cli(linked, output)
+
+            self.assertEqual(result.returncode, 0, result.stderr.decode('utf-8', errors='replace'))
+            with zipfile.ZipFile(output) as archive:
+                self.assertEqual(
+                    archive.read('adaptive-grok-build-pro/README.md'),
+                    b'tracked\n',
+                )
+
+    def test_release_cli_rejects_tracked_source_as_output_without_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            self._init_release_repository(root)
+            root.chmod(0o700)
+            output = root / 'README.md'
+            original = output.read_bytes()
+
+            result = self._run_release_cli(root, output)
+
+            self.assertEqual(output.read_bytes(), original, result.stderr.decode('utf-8', errors='replace'))
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(b'overlaps included tracked source', result.stderr)
+            self.assertEqual(
+                subprocess.check_output(
+                    ['git', 'status', '--porcelain=v1', '--untracked-files=all'],
+                    cwd=root,
+                ),
+                b'',
+            )
+
+    def test_release_cli_rejects_symlink_alias_to_tracked_source_without_mutation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            self._init_release_repository(root)
+            root.chmod(0o700)
+            source = root / 'README.md'
+            original = source.read_bytes()
+            output = Path(tmp) / 'readme-alias.zip'
+            output.symlink_to(source)
+
+            result = self._run_release_cli(root, output)
+
+            self.assertEqual(source.read_bytes(), original, result.stderr.decode('utf-8', errors='replace'))
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(b'overlaps included tracked source', result.stderr)
+            self.assertTrue(output.is_symlink())
+            self.assertEqual(
+                subprocess.check_output(
+                    ['git', 'status', '--porcelain=v1', '--untracked-files=all'],
+                    cwd=root,
+                ),
+                b'',
+            )
+
+    def test_release_cli_rejects_head_move_immediately_before_publication(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            first, second = self._same_tree_release_commits(root)
+            output = Path(tmp) / 'publish' / 'project.zip'
+            real_validate = PACKAGE._validate_temporary_name
+            validation_count = 0
+
+            def advance_head_after_archive_validation(directory, temporary):
+                nonlocal validation_count
+                real_validate(directory, temporary)
+                validation_count += 1
+                if validation_count == 2:
+                    subprocess.run(
+                        ['git', 'update-ref', 'HEAD', second, first],
+                        cwd=root,
+                        check=True,
+                    )
+
+            failure: PACKAGE.PackageError | None = None
+            with (
+                patch.object(PACKAGE, 'ROOT', root),
+                patch.object(sys, 'argv', ['package_stack.py', '--output', str(output)]),
+                patch.object(
+                    PACKAGE,
+                    '_validate_temporary_name',
+                    side_effect=advance_head_after_archive_validation,
+                ),
+            ):
+                try:
+                    PACKAGE.main()
+                except PACKAGE.PackageError as exc:
+                    failure = exc
+
+            self.assertIsNotNone(failure)
+            self.assertIn('tracked HEAD changed', str(failure))
+            self.assertFalse(output.exists())
+            self.assertFalse(output.with_suffix('.zip.sha256').exists())
+            self.assertEqual(subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(), second)
+            self.assertEqual(subprocess.check_output(['git', 'status', '--porcelain=v1'], cwd=root), b'')
+
+    def test_release_cli_rejects_source_change_after_stream_before_publication(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            self._init_release_repository(root)
+            output = Path(tmp) / 'publish' / 'project.zip'
+            source = root / 'README.md'
+            real_stream = PACKAGE.stream_entry
+
+            def mutate_after_source_stream(stream_root, entry, destination):
+                real_stream(stream_root, entry, destination)
+                if entry.relative_path == 'README.md':
+                    source.write_text('changed during packaging\n', encoding='utf-8')
+
+            failure: PACKAGE.PackageError | None = None
+            with (
+                patch.object(PACKAGE, 'ROOT', root),
+                patch.object(sys, 'argv', ['package_stack.py', '--output', str(output)]),
+                patch.object(PACKAGE, 'stream_entry', side_effect=mutate_after_source_stream),
+            ):
+                try:
+                    PACKAGE.main()
+                except PACKAGE.PackageError as exc:
+                    failure = exc
+
+            self.assertIsNotNone(failure)
+            self.assertIn('tracked HEAD source changed', str(failure))
+            self.assertFalse(output.exists())
+            self.assertFalse(output.with_suffix('.zip.sha256').exists())
+
+    def test_release_cli_restores_preexisting_outputs_when_head_moves_after_publication(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            first, second = self._same_tree_release_commits(root)
+            publish = Path(tmp) / 'publish'
+            publish.mkdir(mode=0o700)
+            output = publish / 'project.zip'
+            sidecar = publish / 'project.zip.sha256'
+            old_archive = b'previous archive bytes\n'
+            old_sidecar = b'previous checksum bytes\n'
+            output.write_bytes(old_archive)
+            sidecar.write_bytes(old_sidecar)
+            real_replace = PACKAGE.os.replace
+            replacement_count = 0
+
+            def advance_head_after_publication(*args, **kwargs):
+                nonlocal replacement_count
+                result = real_replace(*args, **kwargs)
+                replacement_count += 1
+                if replacement_count == 2:
+                    subprocess.run(
+                        ['git', 'update-ref', 'HEAD', second, first],
+                        cwd=root,
+                        check=True,
+                    )
+                return result
+
+            failure: PACKAGE.PackageError | None = None
+            with (
+                patch.object(PACKAGE, 'ROOT', root),
+                patch.object(sys, 'argv', ['package_stack.py', '--output', str(output)]),
+                patch.object(PACKAGE.os, 'replace', side_effect=advance_head_after_publication),
+            ):
+                try:
+                    PACKAGE.main()
+                except PACKAGE.PackageError as exc:
+                    failure = exc
+
+            self.assertIsNotNone(failure)
+            self.assertIn('tracked HEAD changed', str(failure))
+            self.assertEqual(output.read_bytes(), old_archive)
+            self.assertEqual(sidecar.read_bytes(), old_sidecar)
+            self.assertEqual(set(publish.iterdir()), {output, sidecar})
+            self.assertEqual(subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(), second)
+            self.assertEqual(subprocess.check_output(['git', 'status', '--porcelain=v1'], cwd=root), b'')
+
     def test_release_cli_packages_only_clean_tracked_head_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'project'
@@ -269,6 +645,45 @@ class PackageTests(unittest.TestCase):
                         'adaptive-grok-build-pro/VERSION',
                     ],
                 )
+
+    def test_release_cli_allows_explicit_tracked_excluded_package_output(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            self._init_release_repository(root)
+            root.chmod(0o700)
+            packages = root / 'packages'
+            packages.mkdir(mode=0o700)
+            output = packages / 'project.zip'
+            sidecar = packages / 'project.zip.sha256'
+            output.write_bytes(b'old archive\n')
+            sidecar.write_bytes(b'old checksum\n')
+            subprocess.run(['git', 'add', 'packages'], cwd=root, check=True)
+            subprocess.run(
+                [
+                    'git', '-c', 'user.name=Package Test', '-c', 'user.email=package@example.invalid',
+                    'commit', '-q', '-m', 'tracked package fixture',
+                ],
+                cwd=root,
+                check=True,
+            )
+
+            result = self._run_release_cli(root, output)
+
+            self.assertEqual(result.returncode, 0, result.stderr.decode('utf-8', errors='replace'))
+            with zipfile.ZipFile(output) as archive:
+                self.assertIsNone(archive.testzip())
+            digest = hashlib.sha256(output.read_bytes()).hexdigest()
+            self.assertEqual(sidecar.read_text(encoding='utf-8'), f'{digest}  project.zip\n')
+            self.assertEqual(
+                set(
+                    subprocess.check_output(
+                        ['git', 'status', '--porcelain=v1'],
+                        cwd=root,
+                        text=True,
+                    ).splitlines()
+                ),
+                {' M packages/project.zip', ' M packages/project.zip.sha256'},
+            )
 
     def test_release_cli_rejects_modified_tracked_head_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

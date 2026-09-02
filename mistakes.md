@@ -393,3 +393,15 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The first rebuilt artifact matched HEAD inventory and bytes but the regression rejected a clean non-executable file whose worktree mode was `0664` while Git normalized it to `0644`.
 **Root cause:** The test compared full POSIX permission bits even though Git records only the executable distinction and the release invariant requires exact inventory, bytes and hashes.
+
+## 2026-09-02 — Treated symbolic HEAD and output paths as stable release inputs
+
+**Symptom:** A release command could report success after `HEAD` moved and could replace an included tracked source chosen as its output.
+**Root cause:** Inventory and cleanliness checks re-read symbolic `HEAD`, while publication had neither an immutable ref guard nor a canonical source/output disjointness boundary.
+**Correction:** Capture one commit/tree snapshot, guard it before and after reversible pair publication, and reject canonical overlap before creating archive output.
+
+## 2026-09-02 — Treated ambient Git interpretation as raw object authority
+
+**Symptom:** A replacement ref or inherited repository override could make release packaging succeed with bytes outside the raw repository `HEAD`.
+**Root cause:** Release and parity-test Git subprocesses inherited replace, graft, repository, index, object and config interpretation controls from their environment.
+**Correction:** Bind release Git commands to canonical `ROOT`, strip ambient Git controls, disable replacements and grafts, and keep the parity reader independently sanitized.

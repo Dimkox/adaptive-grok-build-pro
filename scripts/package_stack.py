@@ -22,8 +22,6 @@ from adaptive_grok.manifest import (
     snapshot_files,
     stream_entry,
 )
-from adaptive_grok.util import find_root
-
 FIXED_ZIP_TIME = (2026, 8, 14, 0, 0, 0)
 TEMP_CREATE_ATTEMPTS = 32
 
@@ -73,6 +71,25 @@ class _TrackedHeadFile(NamedTuple):
     relative_path: str
     object_id: str
     mode: int
+
+
+class _ReleaseHead(NamedTuple):
+    commit_oid: str
+    tree_oid: str
+
+
+class ReleaseSnapshot(NamedTuple):
+    head_oid: str
+    tree_oid: str
+    entries: tuple[ManifestEntry, ...]
+    included_paths: tuple[Path, ...]
+
+
+class _PublicationBackup(NamedTuple):
+    target_name: str
+    backup_name: str | None
+    device: int | None
+    inode: int | None
 
 
 def _path_chain(path: Path) -> list[Path]:
@@ -408,7 +425,11 @@ def _validate_published_output(
     raise PackageError('published archive identity does not match the verified descriptor')
 
 
-def _write_sidecar(directory: _OutputDirectory, output_name: str, digest: str) -> None:
+def _stage_sidecar(
+    directory: _OutputDirectory,
+    output_name: str,
+    digest: str,
+) -> _TemporaryArchive:
     sidecar_name = f'{output_name}.sha256'
     payload = f'{digest}  {output_name}\n'.encode('utf-8')
     existing_mode = _existing_sidecar_mode(directory, sidecar_name)
@@ -424,6 +445,17 @@ def _write_sidecar(directory: _OutputDirectory, output_name: str, digest: str) -
         ):
             raise PackageError('temporary checksum descriptor identity changed')
         _validate_temporary_name(directory, temporary)
+        return temporary
+    except BaseException as exc:
+        for cleanup_error in _cleanup_temporary(directory, temporary):
+            exc.add_note(f'temporary checksum cleanup failed: {cleanup_error}')
+        raise
+
+
+def _write_sidecar(directory: _OutputDirectory, output_name: str, digest: str) -> None:
+    sidecar_name = f'{output_name}.sha256'
+    temporary = _stage_sidecar(directory, output_name, digest)
+    try:
         os.replace(
             temporary.name,
             sidecar_name,
@@ -479,19 +511,71 @@ def _validate_published_entry(
     raise PackageError(f'published archive {label} does not match the verified descriptor')
 
 
+def _git_invocation(root: Path, arguments: list[str]) -> tuple[list[str], dict[str, str]]:
+    try:
+        canonical_root = root.resolve(strict=True)
+    except OSError as exc:
+        raise PackageError('cannot resolve tracked HEAD for release packaging') from exc
+    environment = {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith('GIT_')
+    }
+    environment.update(
+        {
+            'GIT_CONFIG_COUNT': '0',
+            'GIT_CONFIG_GLOBAL': os.devnull,
+            'GIT_CONFIG_NOSYSTEM': '1',
+            'GIT_CONFIG_SYSTEM': os.devnull,
+            'GIT_GRAFT_FILE': os.devnull,
+            'GIT_NO_REPLACE_OBJECTS': '1',
+            'GIT_OPTIONAL_LOCKS': '0',
+        }
+    )
+    command = [
+        'git',
+        '--no-replace-objects',
+        '-c',
+        'core.useReplaceRefs=false',
+        '-c',
+        f'core.worktree={canonical_root}',
+        '-c',
+        'core.bare=false',
+        '-c',
+        'core.fsmonitor=false',
+        '-C',
+        str(canonical_root),
+        *arguments,
+    ]
+    return command, environment
+
+
 def _git_command(root: Path, arguments: list[str]) -> subprocess.CompletedProcess[bytes]:
+    command, environment = _git_invocation(root, arguments)
     try:
         return subprocess.run(
-            ['git', *arguments],
-            cwd=root,
+            command,
             check=False,
             capture_output=True,
+            env=environment,
         )
     except OSError as exc:
         raise PackageError('cannot inspect tracked HEAD for release packaging') from exc
 
 
-def _require_clean_tracked_head(root: Path) -> Path:
+def _git_oid(root: Path, revision: str) -> str:
+    result = _git_command(root, ['rev-parse', '--verify', revision])
+    encoded = result.stdout.strip()
+    if (
+        result.returncode != 0
+        or len(encoded) not in {40, 64}
+        or any(character not in b'0123456789abcdef' for character in encoded)
+    ):
+        raise PackageError('cannot resolve immutable tracked HEAD for release packaging')
+    return encoded.decode('ascii')
+
+
+def _release_repository_root(root: Path) -> Path:
     canonical_root = root.resolve(strict=True)
     top_level = _git_command(canonical_root, ['rev-parse', '--show-toplevel'])
     if top_level.returncode != 0:
@@ -502,20 +586,70 @@ def _require_clean_tracked_head(root: Path) -> Path:
         raise PackageError('cannot resolve the tracked HEAD repository root') from exc
     if repository_root != canonical_root:
         raise PackageError('release packaging root must be the tracked HEAD repository root')
-    for arguments in (
-        ['diff', '--quiet', '--no-ext-diff', '--ignore-submodules=none', 'HEAD', '--'],
-        ['diff', '--cached', '--quiet', '--no-ext-diff', '--ignore-submodules=none', 'HEAD', '--'],
-    ):
-        result = _git_command(canonical_root, arguments)
-        if result.returncode == 1:
-            raise PackageError('release packaging requires a clean tracked HEAD')
-        if result.returncode != 0:
-            raise PackageError('cannot verify the clean tracked HEAD for release packaging')
     return canonical_root
 
 
-def _tracked_head_files(root: Path) -> list[_TrackedHeadFile]:
-    result = _git_command(root, ['ls-tree', '-r', '-z', 'HEAD'])
+def _capture_release_head(root: Path) -> _ReleaseHead:
+    commit_oid = _git_oid(root, 'HEAD^{commit}')
+    tree_oid = _git_oid(root, f'{commit_oid}^{{tree}}')
+    return _ReleaseHead(commit_oid, tree_oid)
+
+
+def _git_diff_records(
+    root: Path,
+    head: _ReleaseHead,
+    *,
+    cached: bool,
+) -> list[tuple[bytes, bytes]]:
+    arguments = ['diff']
+    if cached:
+        arguments.append('--cached')
+    arguments.extend(
+        [
+            '--name-status',
+            '-z',
+            '--no-renames',
+            '--no-ext-diff',
+            '--ignore-submodules=none',
+            head.commit_oid,
+            '--',
+        ]
+    )
+    result = _git_command(root, arguments)
+    if result.returncode != 0:
+        raise PackageError('cannot verify the clean tracked HEAD for release packaging')
+    fields = result.stdout.split(b'\0')
+    if fields[-1:] == [b'']:
+        fields.pop()
+    if len(fields) % 2:
+        raise PackageError('tracked HEAD change inventory is malformed')
+    return list(zip(fields[::2], fields[1::2]))
+
+
+def _require_release_head(
+    root: Path,
+    head: _ReleaseHead,
+    *,
+    allowed_worktree_paths: frozenset[bytes] = frozenset(),
+) -> None:
+    current_oid = _git_oid(root, 'HEAD^{commit}')
+    if current_oid != head.commit_oid:
+        raise PackageError('tracked HEAD changed during release packaging')
+    current_tree_oid = _git_oid(root, f'{current_oid}^{{tree}}')
+    if current_tree_oid != head.tree_oid:
+        raise PackageError('tracked HEAD tree changed during release packaging')
+    if _git_diff_records(root, head, cached=True):
+        raise PackageError('tracked HEAD source changed during release packaging')
+    worktree_changes = _git_diff_records(root, head, cached=False)
+    if any(
+        status != b'M' or path not in allowed_worktree_paths
+        for status, path in worktree_changes
+    ):
+        raise PackageError('tracked HEAD source changed during release packaging')
+
+
+def _tracked_head_files(root: Path, tree_oid: str) -> list[_TrackedHeadFile]:
+    result = _git_command(root, ['ls-tree', '-r', '-z', tree_oid])
     if result.returncode != 0:
         raise PackageError('cannot read tracked HEAD inventory for release packaging')
     files: list[_TrackedHeadFile] = []
@@ -539,13 +673,14 @@ def _head_blob_digests(
     root: Path,
     files: list[_TrackedHeadFile],
 ) -> dict[str, tuple[int, str]]:
+    command, environment = _git_invocation(root, ['cat-file', '--batch'])
     try:
         process = subprocess.Popen(
-            ['git', 'cat-file', '--batch'],
-            cwd=root,
+            command,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
+            env=environment,
         )
     except OSError as exc:
         raise PackageError('cannot read tracked HEAD content for release packaging') from exc
@@ -591,9 +726,11 @@ def _head_blob_digests(
     return digests
 
 
-def _release_entries_from_tracked_head(root: Path) -> list[ManifestEntry]:
-    canonical_root = _require_clean_tracked_head(root)
-    files = _tracked_head_files(canonical_root)
+def _release_snapshot_from_tracked_head(root: Path) -> ReleaseSnapshot:
+    canonical_root = _release_repository_root(root)
+    head = _capture_release_head(canonical_root)
+    _require_release_head(canonical_root, head)
+    files = _tracked_head_files(canonical_root, head.tree_oid)
     entries = snapshot_files(canonical_root, files=[file.path for file in files])
     head_digests = _head_blob_digests(canonical_root, files)
     tracked_by_path = {file.relative_path: file for file in files}
@@ -604,8 +741,217 @@ def _release_entries_from_tracked_head(root: Path) -> list[ManifestEntry]:
             raise PackageError(f'release source differs from tracked HEAD: {entry.relative_path}')
         if bool(entry.identity.mode & 0o111) != bool(tracked.mode & 0o111):
             raise PackageError(f'release source mode differs from tracked HEAD: {entry.relative_path}')
-    _require_clean_tracked_head(canonical_root)
-    return entries
+    snapshot = ReleaseSnapshot(
+        head.commit_oid,
+        head.tree_oid,
+        tuple(entries),
+        tuple(file.path.resolve(strict=True) for file in files),
+    )
+    _require_release_head(canonical_root, head)
+    return snapshot
+
+
+def _paths_overlap(left: Path, right: Path) -> bool:
+    return left == right or left in right.parents or right in left.parents
+
+
+def _validate_release_output(output: Path, snapshot: ReleaseSnapshot) -> None:
+    try:
+        canonical_output = output.resolve(strict=False)
+        canonical_sidecar = output.with_name(f'{output.name}.sha256').resolve(strict=False)
+    except OSError as exc:
+        raise PackageError('cannot resolve release output path safely') from exc
+    for label, target in (('archive', canonical_output), ('checksum', canonical_sidecar)):
+        for source in snapshot.included_paths:
+            if _paths_overlap(target, source):
+                raise PackageError(
+                    f'release {label} output overlaps included tracked source: '
+                    f'{source}'
+                )
+
+
+def _release_output_git_paths(root: Path, output: Path) -> frozenset[bytes]:
+    canonical_root = root.resolve(strict=True)
+    paths: set[bytes] = set()
+    for target in (output, output.with_name(f'{output.name}.sha256')):
+        try:
+            relative = target.resolve(strict=False).relative_to(canonical_root)
+        except ValueError:
+            continue
+        paths.add(os.fsencode(relative.as_posix()))
+    return frozenset(paths)
+
+
+def _stage_archive(
+    root: Path,
+    directory: _OutputDirectory,
+    output_name: str,
+    entries: list[ManifestEntry] | tuple[ManifestEntry, ...],
+) -> tuple[_TemporaryArchive, str]:
+    manifest = render_manifest(root, entries=list(entries))
+    members = [
+        (entry.relative_path, entry.identity.mode, entry)
+        for entry in entries
+    ]
+    members.append(('MANIFEST.sha256', 0o100644, manifest))
+    temporary = _create_temporary_archive(directory, output_name)
+    try:
+        _validate_output_directory_binding(directory)
+        with zipfile.ZipFile(
+            temporary.file,
+            'w',
+            compression=zipfile.ZIP_DEFLATED,
+            compresslevel=9,
+        ) as archive:
+            for rel, mode, source in sorted(members, key=lambda member: member[0]):
+                info = zipfile.ZipInfo(f'adaptive-grok-build-pro/{rel}', FIXED_ZIP_TIME)
+                info.external_attr = (mode & 0xFFFF) << 16
+                info.compress_type = zipfile.ZIP_DEFLATED
+                if isinstance(source, bytes):
+                    archive.writestr(info, source)
+                else:
+                    with archive.open(info, 'w') as archive_file:
+                        stream_entry(root, source, archive_file)
+        temporary.file.flush()
+        held_metadata = os.fstat(temporary.file.fileno())
+        if (
+            not stat.S_ISREG(held_metadata.st_mode)
+            or held_metadata.st_dev != temporary.device
+            or held_metadata.st_ino != temporary.inode
+        ):
+            raise PackageError('temporary archive descriptor identity changed')
+        _validate_temporary_name(directory, temporary)
+        digest = _digest_temporary_archive(temporary)
+        _validate_temporary_name(directory, temporary)
+        return temporary, digest
+    except BaseException as exc:
+        for cleanup_error in _cleanup_temporary(directory, temporary):
+            exc.add_note(f'temporary archive cleanup failed: {cleanup_error}')
+        raise
+
+
+def _prepare_publication_backup(
+    directory: _OutputDirectory,
+    target_name: str,
+) -> _PublicationBackup:
+    try:
+        original = os.stat(target_name, dir_fd=directory.descriptor, follow_symlinks=False)
+    except FileNotFoundError:
+        return _PublicationBackup(target_name, None, None, None)
+    except OSError as exc:
+        raise PackageError(f'cannot inspect preexisting release output: {target_name}') from exc
+    for _attempt in range(TEMP_CREATE_ATTEMPTS):
+        backup_name = f'.{target_name}.{secrets.token_hex(16)}.rollback'
+        try:
+            os.link(
+                target_name,
+                backup_name,
+                src_dir_fd=directory.descriptor,
+                dst_dir_fd=directory.descriptor,
+                follow_symlinks=False,
+            )
+        except FileExistsError:
+            continue
+        except OSError as exc:
+            raise PackageError(f'cannot preserve preexisting release output: {target_name}') from exc
+        try:
+            backup = os.stat(backup_name, dir_fd=directory.descriptor, follow_symlinks=False)
+            current = os.stat(target_name, dir_fd=directory.descriptor, follow_symlinks=False)
+        except OSError as exc:
+            _unlink_directory_entry(directory, backup_name)
+            raise PackageError(f'preexisting release output changed: {target_name}') from exc
+        if (
+            backup.st_dev != original.st_dev
+            or backup.st_ino != original.st_ino
+            or current.st_dev != original.st_dev
+            or current.st_ino != original.st_ino
+        ):
+            _unlink_directory_entry(directory, backup_name)
+            raise PackageError(f'preexisting release output changed: {target_name}')
+        return _PublicationBackup(target_name, backup_name, original.st_dev, original.st_ino)
+    raise PackageError(f'cannot allocate release rollback name: {target_name}')
+
+
+def _validate_named_identity(
+    directory: _OutputDirectory,
+    name: str,
+    device: int,
+    inode: int,
+    label: str,
+) -> None:
+    try:
+        metadata = os.stat(name, dir_fd=directory.descriptor, follow_symlinks=False)
+    except OSError as exc:
+        raise PackageError(f'{label} is unavailable') from exc
+    if metadata.st_dev != device or metadata.st_ino != inode:
+        raise PackageError(f'{label} identity changed')
+
+
+def _discard_publication_backup(
+    directory: _OutputDirectory,
+    backup: _PublicationBackup,
+) -> None:
+    if backup.backup_name is None:
+        return
+    if backup.device is None or backup.inode is None:
+        raise PackageError('release rollback identity is incomplete')
+    _validate_named_identity(
+        directory,
+        backup.backup_name,
+        backup.device,
+        backup.inode,
+        'release rollback entry',
+    )
+    _unlink_directory_entry(directory, backup.backup_name)
+
+
+def _rollback_release_publication(
+    directory: _OutputDirectory,
+    backups: list[_PublicationBackup],
+    published: dict[str, _TemporaryArchive],
+) -> list[BaseException]:
+    errors: list[BaseException] = []
+    for backup in reversed(backups):
+        temporary = published.get(backup.target_name)
+        try:
+            if temporary is None:
+                _discard_publication_backup(directory, backup)
+                continue
+            _validate_named_identity(
+                directory,
+                backup.target_name,
+                temporary.device,
+                temporary.inode,
+                'published release output',
+            )
+            if backup.backup_name is None:
+                _unlink_directory_entry(directory, backup.target_name)
+                continue
+            if backup.device is None or backup.inode is None:
+                raise PackageError('release rollback identity is incomplete')
+            _validate_named_identity(
+                directory,
+                backup.backup_name,
+                backup.device,
+                backup.inode,
+                'release rollback entry',
+            )
+            os.replace(
+                backup.backup_name,
+                backup.target_name,
+                src_dir_fd=directory.descriptor,
+                dst_dir_fd=directory.descriptor,
+            )
+            _validate_named_identity(
+                directory,
+                backup.target_name,
+                backup.device,
+                backup.inode,
+                'restored release output',
+            )
+        except BaseException as exc:
+            errors.append(exc)
+    return errors
 
 
 def write_archive(
@@ -616,46 +962,13 @@ def write_archive(
 ) -> str:
     if entries is None:
         entries = snapshot_files(root)
-    manifest = render_manifest(root, entries=entries)
-    members = [
-        (entry.relative_path, entry.identity.mode, entry)
-        for entry in entries
-    ]
-    members.append(('MANIFEST.sha256', 0o100644, manifest))
     created_parents = _ensure_output_parent(output)
     try:
         directory = _open_output_directory(output)
         try:
             _existing_sidecar_mode(directory, f'{output.name}.sha256')
-            temporary = _create_temporary_archive(directory, output.name)
+            temporary, digest = _stage_archive(root, directory, output.name, entries)
             try:
-                _validate_output_directory_binding(directory)
-                with zipfile.ZipFile(
-                    temporary.file,
-                    'w',
-                    compression=zipfile.ZIP_DEFLATED,
-                    compresslevel=9,
-                ) as archive:
-                    for rel, mode, source in sorted(members, key=lambda member: member[0]):
-                        info = zipfile.ZipInfo(f'adaptive-grok-build-pro/{rel}', FIXED_ZIP_TIME)
-                        info.external_attr = (mode & 0xFFFF) << 16
-                        info.compress_type = zipfile.ZIP_DEFLATED
-                        if isinstance(source, bytes):
-                            archive.writestr(info, source)
-                        else:
-                            with archive.open(info, 'w') as archive_file:
-                                stream_entry(root, source, archive_file)
-                temporary.file.flush()
-                held_metadata = os.fstat(temporary.file.fileno())
-                if (
-                    not stat.S_ISREG(held_metadata.st_mode)
-                    or held_metadata.st_dev != temporary.device
-                    or held_metadata.st_ino != temporary.inode
-                ):
-                    raise PackageError('temporary archive descriptor identity changed')
-                _validate_temporary_name(directory, temporary)
-                digest = _digest_temporary_archive(temporary)
-                _validate_temporary_name(directory, temporary)
                 _validate_output_directory_binding(directory)
                 os.replace(
                     temporary.name,
@@ -678,6 +991,83 @@ def write_archive(
         raise
 
 
+def write_release_archive(
+    root: Path,
+    output: Path,
+    snapshot: ReleaseSnapshot,
+) -> str:
+    _validate_release_output(output, snapshot)
+    published_git_paths = _release_output_git_paths(root, output)
+    created_parents = _ensure_output_parent(output)
+    try:
+        directory = _open_output_directory(output)
+        backups: list[_PublicationBackup] = []
+        temporaries: list[_TemporaryArchive] = []
+        published: dict[str, _TemporaryArchive] = {}
+        try:
+            _existing_output_mode(directory, output.name)
+            _existing_sidecar_mode(directory, f'{output.name}.sha256')
+            temporary, digest = _stage_archive(root, directory, output.name, snapshot.entries)
+            temporaries.append(temporary)
+            sidecar = _stage_sidecar(directory, output.name, digest)
+            temporaries.append(sidecar)
+            backups.append(_prepare_publication_backup(directory, output.name))
+            backups.append(_prepare_publication_backup(directory, f'{output.name}.sha256'))
+            _validate_output_directory_binding(directory)
+            _require_release_head(root, _ReleaseHead(snapshot.head_oid, snapshot.tree_oid))
+            os.replace(
+                temporary.name,
+                output.name,
+                src_dir_fd=directory.descriptor,
+                dst_dir_fd=directory.descriptor,
+            )
+            published[output.name] = temporary
+            _validate_named_identity(
+                directory,
+                output.name,
+                temporary.device,
+                temporary.inode,
+                'published release archive',
+            )
+            sidecar_name = f'{output.name}.sha256'
+            os.replace(
+                sidecar.name,
+                sidecar_name,
+                src_dir_fd=directory.descriptor,
+                dst_dir_fd=directory.descriptor,
+            )
+            published[sidecar_name] = sidecar
+            _validate_named_identity(
+                directory,
+                sidecar_name,
+                sidecar.device,
+                sidecar.inode,
+                'published release checksum',
+            )
+            _require_release_head(
+                root,
+                _ReleaseHead(snapshot.head_oid, snapshot.tree_oid),
+                allowed_worktree_paths=published_git_paths,
+            )
+            temporary.file.close()
+            sidecar.file.close()
+            for backup in backups:
+                _discard_publication_backup(directory, backup)
+            return digest
+        except BaseException as exc:
+            for rollback_error in _rollback_release_publication(directory, backups, published):
+                exc.add_note(f'release publication rollback failed: {rollback_error}')
+            for temporary in temporaries:
+                for cleanup_error in _cleanup_temporary(directory, temporary):
+                    exc.add_note(f'release temporary cleanup failed: {cleanup_error}')
+            raise
+        finally:
+            os.close(directory.descriptor)
+    except BaseException as exc:
+        _cleanup_created_output_parents(created_parents, exc)
+        raise
+
+
 def _default_output(root: Path) -> str:
     version = (root / 'VERSION').read_text(encoding='utf-8').strip() or '0.0.0'
     return f'dist/adaptive-grok-build-pro-v{version}.zip'
@@ -687,11 +1077,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--output', default=None)
     args = parser.parse_args()
-    root = find_root(ROOT)
+    root = Path(ROOT).resolve(strict=True)
     output = Path(args.output) if args.output else root / _default_output(root)
     output = output.resolve()
-    entries = _release_entries_from_tracked_head(root)
-    digest = write_archive(root, output, entries=entries)
+    snapshot = _release_snapshot_from_tracked_head(root)
+    digest = write_release_archive(root, output, snapshot)
     print(output)
     print(digest)
 
