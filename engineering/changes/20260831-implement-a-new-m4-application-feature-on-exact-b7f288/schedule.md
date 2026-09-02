@@ -2,7 +2,7 @@
 
 All times are UTC+3. The superseding hard deadline is **2026-09-08 00:00 UTC+3**; normal work freezes at 2026-09-07 20:00 and the final four hours are reserved for exact-SHA gates, receipts, documentation parity and recovery evidence. The older 2026-09-15 deadline is retained only as superseded history.
 
-Current execution ruling: M4 repair, provisional M5 branch `milestone/m5-isolated-execution-provisional-m4` / route `37b05f579320`, and provisional M6 branch `milestone/m6-semantic-validation-provisional-m4` / route `82aac86a3bf9` may develop source in parallel from M4 anchor `94fc5ad`. M5 is blocked on a suitable rootless-isolation host. Acceptance, restack, PR delivery and Trust CI remain dependency ordered M4 → M5 → M6; no milestone is complete merely because its provisional branch exists.
+Current execution checkpoint: M4 production `4f75558770f2f332b32b4a47fe6afa61fcc524ec` and source/evidence head `460a8a01a6394cac710b4e3f9eea3d94d4beef89` completed their pre-integration verification/review wave. Exact source `460a8a01` is now merged locally with exact `origin/main` `78ad2f679d38dc3244e716c586332417e610089c` on `integration/m4-main-20260902`; this new tree needs fresh verification and five reviews and is not pushed, externally checked, merged or delivered. M5 is provisional/finalizing at `64d55d4b11533c1da8aadb0c993b5b35926ac927`, with bounded review follow-up and a suitable rootless-isolation host still open. M6 is provisional and paused at `5c5c37136f20404a927fd2ad7621ad0f7fcae8e6` until accepted M5; M7-M9 remain roadmap-only. Acceptance, restack, PR delivery and Trust CI remain dependency ordered M4 → M5 → M6 → M7 → M8 → M9.
 
 | Milestone | Start | Completion | Exit gate |
 | --- | ---: | ---: | --- |
@@ -23,8 +23,8 @@ Current execution ruling: M4 repair, provisional M5 branch `milestone/m5-isolate
 - 20:00-02:00: intake, transitions, leases, fences, capacity and restart semantics.
 - 02:00-08:00: budgets, retry/dead, kills, audit, API/CLI and reconciliation.
 - 08:00-12:00: real disposable PostgreSQL concurrency/restart exit tests.
-- 12:00-15:00: scope freeze, verifier and five reviews on one fingerprint.
-- 15:00-18:00: receipts, README, PR preparation and external exact-head gate.
+- 12:00-15:00: current-main integration, state/README/roadmap coherence, exact-tree verifier and five reviews on one fingerprint.
+- 15:00-18:00: review fixes if any, receipts, PR preparation and external exact-head gate; branch push or PR mutation still requires exact delegated authority.
 
 ## Control protocol
 

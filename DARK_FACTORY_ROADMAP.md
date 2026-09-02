@@ -28,17 +28,19 @@ reviewed intent
 
 ## 2. Canonical baseline
 
-Roadmap baseline:
+Original planning baseline and current integration observation:
 
 ```text
 repository: Dimkox/adaptive-grok-build-pro
 branch: main
-baseline SHA: 73e4ae7c68a95d3a7440378964b8cc1879df9b89
+original baseline SHA: 73e4ae7c68a95d3a7440378964b8cc1879df9b89
+current origin/main SHA: 78ad2f679d38dc3244e716c586332417e610089c
 product version: 2.0.12
 Trust CI service version: 2.1.0
+required check: adaptive-trust-ci/verified@06ecf1c875bc
 ```
 
-Before implementing any milestone, compare the current `main` SHA with this baseline and update the milestone plan for intervening changes. Do not reset or discard newer work merely to match this document.
+Before implementing any milestone, compare the current `main` SHA with the recorded observation and update the milestone plan for intervening changes. Do not reset or discard newer work merely to match either historical identity.
 
 ## 3. What already exists
 
@@ -81,20 +83,9 @@ Implemented in-tree:
 
 ### 3.3 Current operational qualification
 
-The GitHub App `adaptive-trust-ci` is registered. Registration is not the same as operational proof.
+M0 Live Trust Authority is delivered. Protected `main` requires the App-owned policy-epoch check `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`; repository source, prompts, local receipts and local grants cannot mint or replace it. The original roadmap observation predated that activation and is historical only.
 
-The following must be verified against the live environment rather than inferred from repository source:
-
-- App installation on `Dimkox/adaptive-grok-build-pro`;
-- live App ID and installation ID available to the worker;
-- worker-only RSA private key provisioning;
-- API-only webhook secret provisioning;
-- deployed API, worker, PostgreSQL, runner, holdout, and HTTPS endpoint;
-- a real App-owned policy-epoch Check Run on an exact pull-request SHA;
-- offline verification of the associated signed attestation;
-- `main` branch protection requiring that exact check from the App ID.
-
-At the roadmap baseline, the public branch response showed `main` without required protection. Treat operational activation as the first milestone even if parts have since been completed.
+Current M4 source PR #21 at exact head `460a8a01a6394cac710b4e3f9eea3d94d4beef89` has a successful App-owned check and a separate GitGuardian FAILURE result. Only check metadata was inspected: no finding value is read, copied or dismissed. The current local M4 merge with `origin/main` produces a different tree, so PR #21's exact-head result cannot transfer to it; new verification, reviews and external exact-head authority are required.
 
 ## 4. Consolidated gap analysis
 
@@ -104,19 +95,19 @@ At the roadmap baseline, the public branch response showed `main` without requir
 | One write owner | Implemented locally | Enforce across distributed factory workers |
 | Low-by-default reasoning | Implemented | Record effective effort in every run manifest |
 | Local verification | Implemented | Keep as preflight, never merge authority |
-| Exact-SHA external Trust CI | Source implemented | Activate and prove live authority |
-| GitHub App registration | Implemented externally | Verify installation, credentials, check ownership, and branch protection |
+| Exact-SHA external Trust CI | M0 delivered and live | Preserve exact-head/App ownership; every new M4+ SHA must earn a fresh check |
+| GitHub App registration | Delivered external authority | Keep credentials and deployed policy outside the PR trust domain |
 | Durable CI jobs | Implemented | Keep separate from implementation task state |
-| Typed business specification | Missing | Build schema, validator, traceability, and evidence mapping |
-| Executable architecture model | M2-A source candidate | Complete final reviews/receipts, then implement the independent M2-B enforcement floor |
-| Agent-loop backpressure | Missing | Add structured findings and bounded repair cycles |
-| Semantic validator/adjudicator | Provisional M6 source work | Route `82aac86a3bf9` on `milestone/m6-semantic-validation-provisional-m4`; restack after accepted M5 and retain independent verdict authority |
-| Controlled learning | Missing | Replace automatic Markdown promotion with reviewed rule lifecycle |
-| Debt/slop ledger | Missing | Track deliberate debt, owner, cost, trigger, and deadline |
-| Durable factory task queue | M4 local source candidate | Product anchor `94fc5ad`; close current verifier repair, reviews and dependency-ordered external gates before any completion claim |
-| Background implementation environment | Provisional M5 source work, host-blocked | Route `37b05f579320` on `milestone/m5-isolated-execution-provisional-m4`; suitable rootless-isolation host remains a blocker and the branch must restack after accepted M4 |
-| Immutable implementation run manifest | Missing | Record model, prompt, tools, policy, costs, and provenance |
-| WIP, cost, and PR flood controls | Missing | Add hard per-repository and global limits |
+| Typed business specification | M1 implemented/reviewed in accepted stack | Deliver the full accepted source to main without confusing stack merge with delivery |
+| Executable architecture model | M2 implemented/reviewed in accepted stack | Deliver through the dependency-ordered current-main path; retain independent enforcement |
+| Agent-loop backpressure | Provisional M6 source, paused | Resume bounded findings/repair only after accepted M5 |
+| Semantic validator/adjudicator | Provisional M6 at `5c5c3713`, paused | Restack after accepted M5 and retain independent verdict authority |
+| Controlled learning | M3 implemented/reviewed; registries intentionally empty | Deliver accepted source; activation still requires independent evidence and human governance |
+| Debt/slop ledger | M3 source implemented | Keep empty/unapproved records non-authoritative and preserve owner/trigger/evidence requirements |
+| Durable factory task queue | M4 local integrated candidate | Verify/review the exact merge of source `460a8a01` with `origin/main` `78ad2f67`, then use PR-only external gates |
+| Background implementation environment | M5 provisional/finalizing at `64d55d4`, host-blocked | Close review follow-up, prove a suitable rootless-isolation host and restack after accepted M4 |
+| Immutable implementation run manifest | Provisional M5 source | Accept only after isolation/capability/orphan and rootless-host evidence pass on the restacked tree |
+| WIP, cost, and PR flood controls | M4 enforces durable WIP/cost; PR flood remains M7 work | Preserve M4 ceilings and add PR lifecycle bounds only at M7 |
 | Automated PR lifecycle | Missing | Create branch, commit, PR, evidence summary, and supersession logic |
 | Shadow-mode metrics | Missing | Measure quality and human disagreement before autonomy |
 | Earned auto-merge | Missing and deliberately deferred | Enable only for proven low-risk classes |
@@ -205,7 +196,7 @@ M1 + M2 + M3
 
 Milestones M1, M2, and M3 may be developed in parallel only after M0 has a live proof or an explicitly documented bootstrap exception approved by the user. M4 must consume their stable interfaces rather than inventing replacements.
 
-Current execution is parallel only for reversible source development: M4 repair follows product anchor `94fc5ad`; M5 branch `milestone/m5-isolated-execution-provisional-m4` / route `37b05f579320` and M6 branch `milestone/m6-semantic-validation-provisional-m4` / route `82aac86a3bf9` are provisional descendants. Acceptance, PR delivery, merge and Trust CI remain strictly dependency ordered M4 → M5 → M6, and each downstream branch must restack onto its accepted predecessor. M5 additionally remains blocked on a suitable rootless-isolation host. The hard deadline is **2026-09-08 00:00 UTC+3**; no M4/M5/M6 completion or external action is claimed merely from source presence or calendar pressure. See the [root current state](README.md), [M4 package](factory/README.md) and [active schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
+Current execution is parallel only for reversible source work. M4 production `4f75558770f2f332b32b4a47fe6afa61fcc524ec` and source/evidence head `460a8a01a6394cac710b4e3f9eea3d94d4beef89` passed their pre-integration local wave; source `460a8a01` is now combined locally with exact `origin/main` `78ad2f679d38dc3244e716c586332417e610089c` and the new tree requires fresh verification/reviews. M5 branch `milestone/m5-isolated-execution-provisional-m4` / route `37b05f579320` is provisional/finalizing at `64d55d4b11533c1da8aadb0c993b5b35926ac927`, with review follow-up and a suitable rootless-isolation host still open. M6 branch `milestone/m6-semantic-validation-provisional-m4` / route `82aac86a3bf9` is provisional and paused at `5c5c37136f20404a927fd2ad7621ad0f7fcae8e6` until accepted M5. Acceptance, PR delivery, merge and Trust CI remain strictly dependency ordered M4 → M5 → M6 → M7 → M8 → M9. The hard deadline is **2026-09-08 00:00 UTC+3**; source presence or calendar pressure creates no completion or external authority. See the [root current state](README.md), [M4 package](factory/README.md) and [active schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
 
 ## 7.1 Exact milestone handoff contracts
 
@@ -541,7 +532,7 @@ status
 - [x] Introduce a debt ledger that distinguishes intentional debt from accidental slop.
 - [x] Prevent a factory task from activating its own governance rule.
 
-Checked M3 items denote behavior accepted at exact merge `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`; they do not denote deployment, active governance, or authority for any later tree. The seven small example source files exist, but the canonical-example registry remains empty until an independent exact-record authority and real human governance approval are available; therefore the two canonical-example work items remain open. M4 is now the active local source candidate on that exact base and must obtain its own final verification, independent reviews, PR delivery and external exact-SHA authority.
+Checked M3 items denote behavior accepted at exact merge `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`; they do not denote deployment, active governance, or authority for any later tree. The seven small example source files exist, but the canonical-example registry remains empty until an independent exact-record authority and real human governance approval are available; therefore the two canonical-example work items remain open. M4 consumed that exact base and is now a local current-main integration candidate; the merged tree must obtain fresh verification, independent reviews, PR delivery and external exact-SHA authority.
 
 ## Exit criteria
 
@@ -575,7 +566,7 @@ factory/
 
 Do not add a root packaging marker.
 
-Current status: the M4 local source candidate lives under [`factory/`](factory/) on accepted M3 base `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`. Product anchor `94fc5ad` passed direct PostgreSQL/root evidence, while its later exact verifier exposed Bandit handling and final-postmaster readiness defects now under repair; the successor SHA must pass all local gates before review. Unchecked work and exit items remain unchecked until final exact-tree verification, independent reviews and external PR authority are recorded; source presence alone is not completion or deployment. Current dates and dependency gates are in the [M4 schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
+Current status: the M4 control plane under [`factory/`](factory/) has production commit `4f75558770f2f332b32b4a47fe6afa61fcc524ec`; its Bandit/final-postmaster repairs, disposable PostgreSQL exit and five pre-integration PASS reports are frozen at source/evidence head `460a8a01a6394cac710b4e3f9eea3d94d4beef89`. PR #21 at that source head has App-owned Trust CI success and separate GitGuardian FAILURE metadata; no finding value is inspected or dismissed. Exact source `460a8a01` is combined locally with exact `origin/main` `78ad2f679d38dc3244e716c586332417e610089c` on `integration/m4-main-20260902`; that different merge tree is not pushed, externally checked, merged or delivered and requires fresh verification plus five reviews. Current dates and dependency gates are in the [M4 schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
 
 ## Factory task state machine
 
@@ -658,7 +649,7 @@ updated_at
 
 # M5 — Isolated Background Execution Plane
 
-Current status: provisional source branch `milestone/m5-isolated-execution-provisional-m4`, route `37b05f579320`, starts from M4 anchor `94fc5ad` and must restack after M4 acceptance. A suitable rootless-isolation host is a real exit-gate blocker; no M5 completion, push, external check or merge is claimed.
+Current status: provisional source branch `milestone/m5-isolated-execution-provisional-m4`, route `37b05f579320`, is finalizing at `64d55d4b11533c1da8aadb0c993b5b35926ac927`. Independent code review passed that head, while security/test review requested bounded follow-up; it still starts from M4 anchor `94fc5ad878e6b15df6418303caada49a3b93bf4c` and must restack after M4 acceptance. A suitable rootless-isolation host remains a real exit-gate blocker; no M5 completion, push, external check or merge is claimed.
 
 ## Objective
 
@@ -733,7 +724,7 @@ output contract
 
 # M6 — Independent Semantic Validation, Meta-Review, and Bounded Repair
 
-Current status: provisional source branch `milestone/m6-semantic-validation-provisional-m4`, route `82aac86a3bf9`, starts from M4 anchor `94fc5ad` for parallel development only. It must restack first onto accepted M4/M5 in dependency order and has no completion, push, external check or merge claim.
+Current status: provisional source branch `milestone/m6-semantic-validation-provisional-m4`, route `82aac86a3bf9`, is paused at `5c5c37136f20404a927fd2ad7621ad0f7fcae8e6` until M5 is final and accepted. It must restack onto accepted M4/M5 in dependency order and has no completion, push, external check or merge claim.
 
 ## Objective
 

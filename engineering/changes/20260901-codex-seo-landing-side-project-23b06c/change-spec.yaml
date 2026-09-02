@@ -1,0 +1,23 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"Codex validates the local skill and all three mode contracts are explicit","evidence":[{"test":"tests/test_seo_landing_side_project.py::SeoLandingSkillTests.test_mode_sections_enforce_write_and_approval_boundaries"},{"receipt":"verification"}]},
+    {"id":"AC-002","statement":"Upstream MIT provenance and exact source commit are retained","evidence":[{"test":"tests/test_seo_landing_side_project.py::SeoLandingSkillTests.test_exact_upstream_notice_license_and_local_docs"}]},
+    {"id":"AC-003","statement":"The Russian showcase is accessible dependency-free and non-indexable without a production origin","evidence":[{"test":"tests/test_seo_landing_side_project.py::SeoLandingShowcaseContractTests.test_static_noindex_and_no_external_runtime_resources"}]},
+    {"id":"AC-004","statement":"Selected repository verification and independent reviews pass for the final tree","evidence":[{"receipt":"verification"},{"receipt":"code_review"},{"receipt":"test_review"}]}
+  ],
+  "approvals":{"required_scopes":["protected-path"]},
+  "change_id":"20260901-codex-seo-landing-side-project-23b06c",
+  "contracts":{"events":[],"json_schema":[],"openapi":[]},
+  "forbidden_outcomes":[
+    {"id":"FORBID-001","statement":"An invented production origin fabricated metric secret read unauthorized external write or Trust CI mutation","evidence":[{"receipt":"security_review"}]}
+  ],
+  "invariants":[
+    {"id":"INV-001","statement":"Trust CI behavior GitHub Actions and existing runtime behavior remain unchanged","evidence":[{"receipt":"code_review"},{"receipt":"security_review"}]},
+    {"id":"INV-002","statement":"Audit-only mode performs no writes and generated claims are never invented","evidence":[{"test":"tests/test_seo_landing_side_project.py::SeoLandingSkillTests.test_mode_sections_enforce_write_and_approval_boundaries"}]}
+  ],
+  "objective":{"id":"OBJ-001","statement":"Provide a repository-local Codex skill and isolated Russian showcase for safe on-demand SEO landing work","success_metric":"focused_contract_and_repository_verification_pass","target":"all_selected_checks_exit_zero"},
+  "observability":[{"id":"SIG-001","metric":"focused_contract_and_repository_verification_pass","proves":["OBJ-001"]}],
+  "risk":{"domains":["frontend"],"tier":"green"},
+  "rollback":{"maximum_steps":1,"strategy":"restore"},
+  "schema_version":2
+}

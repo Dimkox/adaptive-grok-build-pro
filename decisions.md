@@ -38,6 +38,10 @@ Freeze schema v1 and its YAML-subset reader for explicit unchanged-history compa
 
 The user explicitly approved rebuilding from the roadmap and its M1 design; preserve merged M0 and later repairs because the roadmap forbids discarding newer work. Treat the existing M1 prototype as characterization input, use dual-read/single-write migration, and deliver trusted-runtime deployment as a separate externally approved operation.
 
+## 2026-09-01 — Converge branch work through one delivery ledger
+
+Many isolated branches and worktrees may preserve implementation evidence, but they converge through one consolidated delivery route before completion. That route updates the five-axis `PROJECT_STATE.json` implementation/review/stack-merge/main-delivery/gate ledger so branch presence is never mistaken for delivery.
+
 ## 2026-08-24 — M0.3 bind main; revoke bootstrap exceptions
 
 Live App-owned check `adaptive-trust-ci/verified@6737355947c2` is bound to GitHub App ID `4694114` on protected `main`. Revoke the 2026-08-23 M1-start / PR #2 / PR #4 bootstrap exceptions because that live App-owned check exists (never by forging one). PR #5 stays unmerged while Check Run `97529209576` is `action_required`.
@@ -332,3 +336,11 @@ Treat an unreleased canonical allocation as part of the worker fence and deny ru
 ## 2026-09-01 — Lock trusted authority inside intake without granting row mutation
 
 Use fixed-search-path security-definer predicates that take a row lock on the exact repository/policy/action subject, and invoke them after intake identity serialization in the insertion transaction. This prevents revocation TOCTOU while retaining an EXECUTE-only runtime boundary.
+
+## 2026-09-01 — Keep SEO landing generation isolated and repository-scoped
+
+Embedding the Codex skill under `.agents/skills/` and its showcase under `side-projects/` makes the capability available on demand without changing Trust CI runtime behavior. The showcase remains `noindex, nofollow` until a real production origin is supplied and verified.
+
+## 2026-09-02 — Integrate legacy evidence at the stricter contract boundary
+
+When a current-main merge introduces legacy evidence into a stricter accepted stack, migrate only the affected artifacts to the current canonical contract and model real local test capabilities explicitly. Pure URL parsing is not network access, while loopback browser execution is a declared `local_only` edge; this preserved validator strength without granting general egress.

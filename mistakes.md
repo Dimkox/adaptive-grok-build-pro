@@ -134,6 +134,31 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 **Symptom:** Escaped unpaired surrogates passed parsing, then crashed local and trusted semantic digest encoding with raw `UnicodeEncodeError`.
 **Root cause:** Structural walkers enforced length, depth, and node counts but assumed every decoded Python string was UTF-8 encodable.
 
+## 2026-09-01 — Treated developer Git objects as exact-checkout inputs
+
+**Symptom:** Trust CI passed both holdouts but failed root unittest because stacked M2/M3 commit objects were absent from its isolated exact-SHA checkout.
+**Root cause:** A mandatory state test treated objects reachable only through developer remote refs as part of the repository contract instead of recording the accepted merge-parent proof in durable state.
+
+## 2026-09-01 — Checked only the uncommitted diff for PR hygiene
+
+**Symptom:** Verification reported a clean diff while the committed PR range still contained trailing whitespace.
+**Root cause:** The default `git diff --check` inspected only working-tree changes, so committed-range hygiene escaped; PR evidence must also check `git diff --check origin/main...HEAD`.
+
+## 2026-09-01 — Replaced a review report through delete then add
+
+**Symptom:** An interrupted reviewer rewrite temporarily deleted an evidence report before its replacement was written.
+**Root cause:** Replacement was split into destructive delete/add operations instead of one atomic update; preserved reports must be updated in place with a single patch.
+
+## 2026-09-01 — Browser runner lifecycle was not executed
+
+**Symptom:** The browser contract could report `passed: true` and then exit nonzero with `ENOTEMPTY` during cleanup.
+**Root cause:** The source-only contract failed to execute the real Chrome child lifecycle, allowing immediate profile deletion while the child was still writing; its replacement execution test then omitted the optional-dependency availability boundary and mistook local host capabilities for the immutable Trust runner contract.
+
+## 2026-09-01 — Used branches as the milestone delivery ledger
+
+**Symptom:** Completed M1-M4 work accumulated across stacked branches while the repository handoff still said M1 had not started, causing M4 to be overlooked.
+**Root cause:** Isolated branches were allowed, but completed work was not consolidated back into one active route and repository-level state that separated stack integration from protected-main delivery.
+
 ## 2026-08-24 — Misread «приложуха» as a public website
 
 **Symptom:** Agents treated «приложуха» as a public website instead of GitHub App `https://github.com/apps/adaptive-trust-ci`.

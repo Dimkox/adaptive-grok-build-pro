@@ -655,6 +655,8 @@ def _imports(tree: ast.AST) -> tuple[str, ...]:
 
 
 def _network_protocol(imported: str) -> str | None:
+    if imported == "urllib.parse" or imported.startswith("urllib.parse."):
+        return None
     matches = [
         (len(family), protocol)
         for family, protocol in _NETWORK_IMPORTS.items()

@@ -242,6 +242,29 @@
         "terminal_action": "reject",
         "timeout_ms": 30000
       },
+      "from": "NODE-LOCAL-VERIFIER",
+      "id": "EDGE-LOCAL-VERIFIER-SEO-LAB",
+      "network_policy": "local_only",
+      "protocol": "tcp",
+      "sync_or_async": "synchronous",
+      "to": "NODE-SEO-SHOWCASE-LAB",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 30000
+      },
       "from": "NODE-GOVERNANCE-REGISTRIES",
       "id": "EDGE-GOVERNANCE-REGISTRIES-VALIDATOR",
       "network_policy": "no_network",
@@ -650,7 +673,26 @@
         "evidence": "source_described",
         "kind": "python_process",
         "lifecycle": "on_demand",
-        "network": "none"
+        "network": "local_only"
+      },
+      "secrets": [],
+      "trust_domain": "TD-LOCAL-PREFLIGHT",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-REPOSITORY-SOURCE",
+      "id": "NODE-SEO-SHOWCASE-LAB",
+      "owner": "repository engineering",
+      "public_contracts": [],
+      "repository_paths": [
+        ".agents/skills/seo-landing",
+        "side-projects/seo-landing-showcase"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "local_only"
       },
       "secrets": [],
       "trust_domain": "TD-LOCAL-PREFLIGHT",

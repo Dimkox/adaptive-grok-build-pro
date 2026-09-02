@@ -4,41 +4,51 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## Current state
 
+- Fresh-agent bootstrap: start with [`START_HERE.md`](START_HERE.md), then [`PROJECT_STATE.json`](PROJECT_STATE.json). A clean clone must be sufficient to understand the current milestone without chat history.
 - Identity: **2.0.12** (`VERSION`, README H1). Published GitHub Release is `v2.0.12`.
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
-- M1 typed intent is locally source-ready: canonical schema-v2 specs, route-driven generation, strict bounded validation, criterion-bound receipts, and `scripts/grok_spec.py` summary/coverage commands passed full local verification and all four route-selected wave-7 reviews on exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a`. A later authorized local database run passed PostgreSQL integration 10/10 and the full Trust CI suite 200/200 with no skips, validating six Trust CI tables, three migrations through version 3, and four bounded `NOLOGIN` roles; this is [local test evidence](engineering/changes/20260826-m1-typed-intent-evidence-rebuild-a4f882/evidence/postgres-integration-local.md), not deployed proof. PR update, the App-owned exact-SHA check, signed approvals, merge, and deployment of the new holdout, worker reader, policy, and attestation emitter remain incomplete operator-controlled steps. Historical schema-v1 YAML is explicit unchanged-history compatibility only.
-- M2-A executable architecture source is accepted at exact commit `022411b05924618cfde0cb97b8c8aff4955e6013`: strict target-owned model/rules/adoption state, bounded deterministic parsing, exact Git-object diff, repository/contract drift, mandatory fitness evidence including a package-aware bounded abstract interpreter for queue provenance, monotonic risk, five read-only Mermaid text projections, architecture-bound local verification/receipts, a read-only/new-target installer boundary, descriptor-bound packaging, and bounded fail-closed zombie-only workspace cleanup are implemented. M2-B independent enforcement and deployment remain separate operator-controlled work; local architecture output is not merge authority.
-- M3 controlled knowledge and debt is accepted at exact merge `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` on accepted M2 `022411b05924618cfde0cb97b8c8aff4955e6013`: strict target-owned governance registries, bounded no-follow loading, reviewed rule lifecycle, conflict detection, canonical-example/debt semantics, non-authoritative Markdown projections, exact `GovernanceHandoffV1`, executable architecture fitness, governance-bound local receipts, and safe installer distribution are implemented. The shipped registries remain empty; repository-authored approval-looking fields are not external authority and no active rule/example or closed debt is fabricated.
-- M4 durable factory control plane is the current local source candidate on that exact M3 base: the separate [`factory/`](factory/) package provides trusted-M0-bound frozen intake, twelve isolated checksum PostgreSQL migrations, explicit local owner/runtime bootstrap, effective least-privilege runtime roles, durable command replay, fenced leases, database-authoritative capacity/accounting, kills, audit-v2 hash chains, bounded reconciliation, a fixed-row transactional metrics snapshot and an authenticated UDS-only server/CLI. Product anchor `94fc5ad` passed its direct PostgreSQL/root evidence, but the subsequent exact verifier exposed Bandit handling and official-image final-postmaster readiness defects; the current repair tree therefore has no final M4 completion claim until its successor SHA passes all gates. See the [M4 package status](factory/README.md), [program roadmap](DARK_FACTORY_ROADMAP.md) and [deadline schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
-- Development is parallel only at the source-work level: M5 branch `milestone/m5-isolated-execution-provisional-m4` / route `37b05f579320` and M6 branch `milestone/m6-semantic-validation-provisional-m4` / route `82aac86a3bf9` are provisional descendants of `94fc5ad`. M5 is blocked on a suitable rootless-isolation host; both branches must restack and pass dependency-ordered merge/Trust CI gates (M4 → M5 → M6). No M4/M5/M6 completion, push, external-check or merge claim exists, and the hard program deadline remains **2026-09-08 00:00 UTC+3** without waiving any gate.
-- Independent CI candidate: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
-- Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. The PR #2 bootstrap exception is revoked. PR #5 is not mergeable while that Check Run is `action_required`.
+- Independent Trust CI: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
+- M0 Live Trust Authority is delivered on `main`. PR #7 repaired the Trust CI workspace/runtime path, PR #6 fixed target-aware shell policy/denial loops, and PR #5 delivered the milestone.
+- Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The current integration base is protected `origin/main` `78ad2f679d38dc3244e716c586332417e610089c`; the required App-owned check remains `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`, with deployed policy digest `06ecf1c875bc12fa696956998983e04b102f28571a586bc3bb7a2fff5083fdb2`.
+- M1 is implemented and reviewed in the accepted stack, but only its early typed-spec slice and design/plan reached `main` through PRs #4 and #8. The full M1/M2 head passed the current-epoch gate and PR #10 merged it only into `milestone/m1-typed-intent-evidence`, so M1 delivery remains partial and M2 is not delivered to `main`.
+- M3 is implemented and reviewed; PR #11 merged it into `milestone/m2-executable-architecture`, not `main`. The accepted M2+M3 aggregate is `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` and still needs one current-main delivery path.
+- M4 production is complete at `4f75558770f2f332b32b4a47fe6afa61fcc524ec`; its five independent PASS reports and frozen evidence are present at source head `460a8a01a6394cac710b4e3f9eea3d94d4beef89`. PR #21 exposes that source head against `main`: the current App-owned check succeeded, while GitGuardian reports FAILURE metadata; this integration does not inspect, dismiss or treat that finding as resolved. PR #17 is the older stacked M4 path and is not the current-main delivery authority. Exact source `460a8a01` is being combined with exact `origin/main` `78ad2f679d38dc3244e716c586332417e610089c` on local `integration/m4-main-20260902`; the resulting new tree remains a local candidate until fresh verification/reviews, PR delivery, the external exact-head check and merge.
+- M5 source is provisional/finalizing at `64d55d4b11533c1da8aadb0c993b5b35926ac927` on route `37b05f579320`: independent review requested a bounded follow-up, its suitable rootless-isolation host exit gate remains blocked, and it must restack on accepted M4. M6 source is provisional and paused at `5c5c37136f20404a927fd2ad7621ad0f7fcae8e6` / route `82aac86a3bf9` until accepted M5; M7-M9 remain roadmap-only. None is delivered or externally accepted.
+- The hard program deadline is **2026-09-08 00:00 UTC+3**. Calendar pressure does not waive dependency order M4 → M5 → M6 → M7 → M8 → M9, the M8 cohort, signed scopes, or exact-SHA Trust CI.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
+- Optional SEO side project: PR #19 delivered it to `main` as `8ab4e57038dec2e07f01aaa0b207813a387358f4`; [`.agents/skills/seo-landing/`](.agents/skills/seo-landing/) provides repository-scoped `$seo-landing` generation/audit/fix modes, while [`side-projects/seo-landing-showcase/`](side-projects/seo-landing-showcase/) is its Russian static showcase and stays non-indexable until a production origin is supplied. This is delivered non-milestone work, not M0-M9 progress.
 
 ## Read first
 
-1. [AGENTS.md](AGENTS.md)
-2. [decisions.md](decisions.md)
-3. [mistakes.md](mistakes.md)
-4. [CHANGELOG.md](CHANGELOG.md)
-5. [QUICKSTART.md](QUICKSTART.md)
-6. [`trust-ci/README.md`](trust-ci/README.md)
-7. [`factory/README.md`](factory/README.md)
-8. [`DARK_FACTORY_ROADMAP.md`](DARK_FACTORY_ROADMAP.md)
-9. [active M4 schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md)
-10. `.grok-stack/runtime/active-route.json` (live route; not product identity or merge authority)
-11. This README’s stack graph and map
+1. [START_HERE.md](START_HERE.md)
+2. [PROJECT_STATE.json](PROJECT_STATE.json)
+3. [AGENTS.md](AGENTS.md)
+4. [decisions.md](decisions.md)
+5. [mistakes.md](mistakes.md)
+6. [DARK_FACTORY_ROADMAP.md](DARK_FACTORY_ROADMAP.md)
+7. [CHANGELOG.md](CHANGELOG.md)
+8. [QUICKSTART.md](QUICKSTART.md)
+9. [`trust-ci/README.md`](trust-ci/README.md)
+10. [`factory/README.md`](factory/README.md)
+11. [active M4 schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md)
+12. `.grok-stack/runtime/active-route.json` if present (machine-local route; it may be absent in a clean clone and is not merge authority)
+13. This README’s stack graph and map
 
 ## How work runs
 
 Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, executable M2 architecture second, and target-owned M3 governance third; local receipts bind all configured layers to one worktree fingerprint but remain preflight evidence. Canonical governance JSON and exact handoffs outrank generated `decisions.md` / `mistakes.md` projections, while external Trust CI policy, holdout, signed approvals, and exact-SHA attestation remain the higher merge authority described in AGENTS.md. Large work is split into small subtasks that share `decisions.md` / `mistakes.md`. Local loop: route → change package → one write owner → if the product changed, `grok_verify --mode pr` and independent local reviews → `ready` → branch and pull request. The deployed Trust CI service verifies the exact PR SHA under server-side policy, executes an external holdout bundle before repository checks, rejects source mutation, checks signed human approval scopes, signs the attestation, and publishes `adaptive-trust-ci/verified@<policy-sha12>` through its GitHub App. A human owns merge, tag and production promotion.
 
+For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.json` first. Runtime route files are not expected to be committed; when no route exists, continue the explicitly named active PR/branch or route a new task before implementation.
+
 ## Map
 
+- [START_HERE.md](START_HERE.md) — zero-context agent/human entrypoint
+- [PROJECT_STATE.json](PROJECT_STATE.json) — machine-readable milestone handoff
 - [AGENTS.md](AGENTS.md)
 - [decisions.md](decisions.md)
 - [mistakes.md](mistakes.md)
+- [DARK_FACTORY_ROADMAP.md](DARK_FACTORY_ROADMAP.md)
 - [CHANGELOG.md](CHANGELOG.md)
 - [QUICKSTART.md](QUICKSTART.md)
 - [VERSION](VERSION)
@@ -76,10 +86,13 @@ Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, execu
 - [`engineering/runbooks/`](engineering/runbooks/)
 - [`packages/`](packages/)
 - [`examples/bitrix-module/`](examples/bitrix-module/)
+- [`.agents/skills/seo-landing/`](.agents/skills/seo-landing/) — optional Codex SEO landing skill
+- [`side-projects/seo-landing-showcase/`](side-projects/seo-landing-showcase/) — non-indexable Russian showcase
 - [LICENSE](LICENSE)
 
 ## What this is
 
+- Zero-context project handoff through `START_HERE.md` and `PROJECT_STATE.json`
 - Task routing + domain skills (Bitrix, API/events, data, frontend, security, incidents, …)
 - Quality profiles and change packages under `engineering/changes/`
 - Strict typed change intent with stable criterion/evidence IDs and deterministic spec fingerprints
