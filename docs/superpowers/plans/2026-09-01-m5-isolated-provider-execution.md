@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Exact provisional M4 product base is `94fc5ad878e6b15df6418303caada49a3b93bf4c`; route is `37b05f579320`; branch is `milestone/m5-isolated-execution-provisional-m4`.
+- Exact current M4 review base is `460a8a01a6394cac710b4e3f9eea3d94d4beef89`; route is `37b05f579320`; branch is `milestone/m5-isolated-execution-provisional-m4`. The original provisional anchor `94fc5ad878e6b15df6418303caada49a3b93bf4c` is superseded for implementation and retained only as restack lineage.
 - Delivery target is `2026-09-08 00:00 UTC+3`; calendar pressure cannot waive tests, independent review, external Trust CI, or the dedicated rootless-host exit gate.
 - Keep `/v1/claims` legacy semantics: its `packet_digest` remains the M4 `intent_digest`; use new execution endpoints and a new canonical packet digest.
 - Preserve M4 ceilings and authority: 20 global readers, 10 readers per repository, one writer, four hours, USD 25, and initial attempt plus two infrastructure retries.
