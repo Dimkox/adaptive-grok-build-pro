@@ -2,11 +2,11 @@
 
 | Milestone | Input required by M8 | Current fact | M8 treatment |
 | --- | --- | --- | --- |
-| M4 | exact control-plane identity | source base `9fe779ab9f90719201acfd01160d3452658ff075`; local unpushed candidate `aee6558bb83418d7a1acb4582df6845bf7bdc3c6` | opaque identity only; acceptance blocked |
+| M4 | exact control-plane identity | source base `9fe779ab9f90719201acfd01160d3452658ff075`; local unpushed verification candidate `d31a4ade4a38a334df01fb405a5696e5660993df` | opaque identity only; acceptance blocked |
 | M5 | accepted execution-profile digest | committed provisional source-map head `141e51e75b2bb337fa3bb1544639c6c46c287309`; concurrent verification/package updates dirty | opaque identity only; acceptance blocked |
-| M6 | accepted validator-profile digest | committed provisional `5c5c37136f20404a927fd2ad7621ad0f7fcae8e6` | opaque identity only; acceptance blocked |
-| M7 | accepted exact head, shadow bundle, real human decisions | committed provisional schema head `561593342f94e8234cb32d4329b4f5fd9a6ebf91`; no factual cohort here | source-only shape reference; factual qualification blocked |
-| M8 | exact tuple/profile/recommendation/demotion | design checkpoint `7feedf4577953985b3137a1caeea28bdca70a61e`; pure source explicitly allowed | recommendation-only, L2 ceiling; activation blocked |
+| M6 | accepted validator-profile digest | clean provisional M5-aligned merge `c398ea06daa635ad679e22c8cd29dbf74d2ae12c` | opaque identity only; acceptance blocked |
+| M7 | accepted exact head, shadow bundle, real human decisions | clean provisional source/docs head `c8b450f494b3d44b580556c6a612b21a3a780368`; two architecture-drift paths remain and no factual cohort exists | source-only shape reference; factual qualification blocked |
+| M8 | exact tuple/profile/recommendation/demotion | source-only override checkpoint `0e7d7558ebb603c0e5c914beefe01397321151b4`; pure source explicitly allowed | recommendation-only, L2 ceiling; activation blocked |
 | M9 | exact signed delivery/recovery outcomes | roadmap only | no delivery authority; future feedback only |
 
 No row is an attestation or acceptance record. Historical evidence packages are untouched.
