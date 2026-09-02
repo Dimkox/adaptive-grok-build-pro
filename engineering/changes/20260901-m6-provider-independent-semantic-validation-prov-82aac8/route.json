@@ -1,0 +1,94 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "ai_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "integration_architect"
+  ],
+  "base_commit": "78ad2f679d38dc3244e716c586332417e610089c",
+  "base_fingerprint": "2e6e460527627ca4e2ec4d0a99ced383c1767f01cf3fed7632e44df6a507632a",
+  "complexity": "high-risk",
+  "created_at": "2026-09-01T23:43:02+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "ai",
+    "security",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "ai"
+  ],
+  "rationale": [
+    "high-risk signal: secret",
+    "intent=feature",
+    "domains=ai,security,api",
+    "repository=generic",
+    "write-owner=ai_implementer",
+    "analysis-wave=6/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "82aac86a3bf9",
+  "schema_version": 1,
+  "session_id": "m6-parallel-20260902-feature",
+  "status": "routed",
+  "task": "Implement a new M6 AI agent semantic validation feature on exact M4 product base 94fc5ad for later factual M5 alignment: typed criterion verdicts, independent adjudication without application write capability, contradiction handling, three bounded correction cycles, fourth-cycle needs_human, exact SHA evidence regeneration, local verification. Local source only; no live provider calls or secret values.",
+  "task_domains": [
+    "ai",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "ai-rag-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "ai_implementer"
+}

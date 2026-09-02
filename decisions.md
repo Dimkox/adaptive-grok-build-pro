@@ -1,5 +1,9 @@
 # Decisions
 
+## 2026-09-01 — Freeze M6 as a pure provisional layer until factual M5 exists
+
+On exact M4 base `94fc5ad`, implement only semantic contracts, deterministic adjudication, and pure bounded repair policy; do not invent persistence, API, lifecycle, fencing, restart, or provider behavior around absent M5 `TaskPacket`, `RunManifest`, and `WorkspaceResult`. This preserves stable provider-independent work without colliding with M4 attempt, `repair_count`, role, or terminal-state meanings.
+
 <!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 > **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
 

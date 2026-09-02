@@ -1,0 +1,29 @@
+{
+  "change_id": "20260901-m6-provider-independent-semantic-validation-prov-82aac8",
+  "created_at": "2026-09-01T23:53:17+00:00",
+  "history": [
+    {
+      "at": "2026-09-01T23:53:17+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-02T00:00:16+00:00",
+      "from": "draft",
+      "reason": "approved provisional scope and M4 factual boundary recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-02T00:00:16+00:00",
+      "from": "scoped",
+      "reason": "user previously approved canonical M6 provisional design",
+      "to": "approved"
+    }
+  ],
+  "route_id": "82aac86a3bf9",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "M6 provider-independent semantic validation provisional slice",
+  "updated_at": "2026-09-02T00:00:16+00:00"
+}

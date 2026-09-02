@@ -1,0 +1,39 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"M6-001 closed bounded v1 semantic contracts parse canonical JSON and derive stable digests","evidence":[{"test":"factory/tests/test_semantic_contracts.py"}]},
+    {"id":"AC-002","statement":"M6-002 requirement references use typed kinds and subject coverage is the exact requirement set at 1.000000","evidence":[{"test":"factory/tests/test_semantic_contracts.py"},{"test":"factory/tests/test_semantic_adjudication.py"}]},
+    {"id":"AC-003","statement":"M6-003 deterministic meta-review exposes duplicates correlations contradictions and unsupported passes independent of input order","evidence":[{"test":"factory/tests/test_semantic_adjudication.py"}]},
+    {"id":"AC-004","statement":"M6-004 provider proposals cannot select state and needs_human takes precedence over repair and pass","evidence":[{"test":"factory/tests/test_semantic_adjudication.py"}]},
+    {"id":"AC-005","statement":"M6-005 validator identity role capability and independent context are proven and application write capability is rejected","evidence":[{"test":"factory/tests/test_semantic_contracts.py"},{"test":"factory/tests/test_semantic_adjudication.py"}]},
+    {"id":"AC-006","statement":"M6-006 repair cycles one through three retain the exact original writer and require a fresh context","evidence":[{"test":"factory/tests/test_semantic_repair.py"}]},
+    {"id":"AC-007","statement":"M6-007 a requested fourth cycle and recurrence by typed finding identity despite changed wording escalate to needs_human","evidence":[{"test":"factory/tests/test_semantic_repair.py"}]},
+    {"id":"AC-008","statement":"M6-008 risk increase diff limit architecture authority base budget deadline or original writer violations escalate to needs_human","evidence":[{"test":"factory/tests/test_semantic_repair.py"}]},
+    {"id":"AC-009","statement":"M6-009 any relevant requirement subject or exact-state digest mutation invalidates semantic evidence","evidence":[{"test":"factory/tests/test_semantic_adjudication.py"},{"test":"factory/tests/test_semantic_repair.py"}]},
+    {"id":"AC-010","statement":"M6-010 the provisional slice is pure provider-independent local code with no provider network credential repository write or external action capability","evidence":[{"test":"factory/tests/test_semantic_contracts.py"}]},
+    {"id":"AC-011","statement":"M6-011 immutable fenced idempotent persistence API migration and restart behavior remain explicitly blocked until factual M5 contracts exist","evidence":[{"test":"tests/test_structure.py"},{"test":"tests/test_architecture_model.py"}]},
+    {"id":"AC-012","statement":"M6-012 local focused tests verify only the provisional pure slice without claiming the full M6 exit gate or later M7 evidence","evidence":[{"test":"factory/tests/test_semantic_contracts.py"},{"test":"factory/tests/test_semantic_adjudication.py"},{"test":"factory/tests/test_semantic_repair.py"}]}
+  ],
+  "approvals":{"required_scopes":["architecture","security","release"]},
+  "change_id":"20260901-m6-provider-independent-semantic-validation-prov-82aac8",
+  "contracts":{"events":[],"json_schema":["factory/contracts/jsonschema/semantic-subject.v1.schema.json","factory/contracts/jsonschema/semantic-finding.v1.schema.json","factory/contracts/jsonschema/semantic-coverage.v1.schema.json","factory/contracts/jsonschema/semantic-verdict.v1.schema.json","factory/contracts/jsonschema/repair-directive.v1.schema.json"],"openapi":[]},
+  "forbidden_outcomes":[
+    {"id":"FORBID-001","statement":"Provider output or untrusted prose selects a task transition adjudication outcome capability or writer identity","evidence":[{"test":"factory/tests/test_semantic_adjudication.py"},{"test":"factory/tests/test_semantic_repair.py"}]},
+    {"id":"FORBID-002","statement":"This M4-based provisional slice invents M5 TaskPacket RunManifest WorkspaceResult persistence API migration fencing idempotency or restart semantics","evidence":[{"test":"tests/test_architecture_model.py"}]},
+    {"id":"FORBID-003","statement":"Local provisional evidence is described as the full M6 exit gate Trust CI authority M7 evidence or release authority","evidence":[{"test":"tests/test_structure.py"}]}
+  ],
+  "invariants":[
+    {"id":"INV-001","statement":"All semantic evidence is closed versioned bounded and bound to one canonical SemanticSubjectV1 digest","evidence":[{"test":"factory/tests/test_semantic_contracts.py"}]},
+    {"id":"INV-002","statement":"Semantic validator and adjudicator have no application write capability and never approve their own writer result","evidence":[{"test":"factory/tests/test_semantic_adjudication.py"}]},
+    {"id":"INV-003","statement":"Semantic repair cycles are distinct from M4 infrastructure attempts and M4 repair_count worker-loss accounting","evidence":[{"test":"factory/tests/test_semantic_repair.py"}]},
+    {"id":"INV-004","statement":"Only cycles one two and three can produce a RepairDirectiveV1 and each retains the original writer with a never-used context digest","evidence":[{"test":"factory/tests/test_semantic_repair.py"}]}
+  ],
+  "objective":{"id":"OBJ-001","statement":"Implement the stable provider-independent M6 semantic contract adjudication and bounded repair policy layer on exact provisional M4 base 94fc5ad878e6b15df6418303caada49a3b93bf4c without fabricating missing M5 runtime facts","success_metric":"m6_provisional_pure_slice_verified","target":"AC-001 through AC-012 pass focused local tests while every factual M5 bridge item remains visibly blocked"},
+  "observability":[
+    {"id":"SIG-001","metric":"semantic_adjudication_outcomes_total_by_decision","proves":["OBJ-001"]},
+    {"id":"SIG-002","metric":"semantic_escalations_total_by_typed_reason","proves":["OBJ-001"]},
+    {"id":"SIG-003","metric":"semantic_coverage_millionths","proves":["OBJ-001"]}
+  ],
+  "risk":{"domains":["ai","api","security"],"tier":"red"},
+  "rollback":{"maximum_steps":3,"strategy":"forward_fix"},
+  "schema_version":2
+}
