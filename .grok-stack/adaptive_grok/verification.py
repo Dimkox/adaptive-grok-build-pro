@@ -425,15 +425,16 @@ def _git_range_selection(
     elif pr_target is not None:
         source, target_sha = pr_target
         merge_base = run(
-            ['git', 'merge-base', target_sha, 'HEAD'],
+            ['git', 'merge-base', '--all', target_sha, 'HEAD'],
             cwd=root,
             timeout=30,
         )
-        bases = [line.strip().lower() for line in merge_base.stdout.splitlines() if line.strip()]
+        raw_bases = [line.strip() for line in merge_base.stdout.splitlines() if line.strip()]
+        bases = sorted({line.lower() for line in raw_bases})
         if (
             merge_base.returncode != 0
             or len(bases) != 1
-            or not _EXACT_SHA.fullmatch(bases[0])
+            or any(not _EXACT_SHA.fullmatch(line) for line in raw_bases)
         ):
             selection.findings.append({
                 'severity': 'error',
@@ -448,6 +449,13 @@ def _git_range_selection(
                 target_sha=target_sha,
                 comparison_base_sha=bases[0],
             ))
+    elif route and route.get('delivery_expected') is True:
+        selection.findings.append({
+            'severity': 'error',
+            'code': 'pr-base-unavailable',
+            'path': 'git-refs',
+            'message': 'delivery verification requires a locally resolvable PR target',
+        })
     return selection
 
 

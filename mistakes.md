@@ -352,3 +352,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 ## 2026-09-01 — Extrapolated a local milestone ETA to the whole program
 
 **Root cause:** The M4 local implementation forecast was presented as program deadline confidence without checking downstream dependencies and external gates, especially the M8 human cohort and Trust CI. Future status reports must state local milestone forecasts separately from end-to-end deadline confidence and name unresolved human/external gates.
+
+## 2026-09-02 — Treated cache names and default Git answers as complete authority
+
+**Symptom:** Tracked `.venv` artifacts escaped architecture drift, criss-cross history appeared to have one PR merge base, and delivery verification silently lost its local PR-target range.
+**Root cause:** Inventory ignored filesystem names without consulting the index, while range selection accepted Git's default single merge-base output and represented an absent delivery target as an ordinary optional result.

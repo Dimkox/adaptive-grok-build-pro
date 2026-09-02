@@ -12,6 +12,7 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 from .spec import SpecError, _schema_preflight, validate_schema
+from .util import run
 
 if TYPE_CHECKING:
     from .architecture_diff import ArchitectureDiff
@@ -724,6 +725,58 @@ def _ignore_inventory_directory(relative: PurePosixPath) -> bool:
     )
 
 
+def _tracked_dot_venv_paths(root: Path) -> tuple[PurePosixPath, ...]:
+    git_marker = root / ".git"
+    try:
+        marker = git_marker.lstat()
+    except FileNotFoundError:
+        return ()
+    except OSError as exc:
+        raise ArchitectureError(
+            f"repository Git index marker is unreadable: {exc}", code="git"
+        ) from exc
+    if not (stat.S_ISDIR(marker.st_mode) or stat.S_ISREG(marker.st_mode)):
+        return ()
+
+    result = run(
+        ["git", "ls-files", "--cached", "--deduplicate", "-z", "--"],
+        cwd=root,
+        timeout=30,
+        env={
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_NO_REPLACE_OBJECTS": "1",
+            "GIT_OPTIONAL_LOCKS": "0",
+            "GIT_TERMINAL_PROMPT": "0",
+            "LC_ALL": "C",
+        },
+    )
+    if result.returncode != 0:
+        raise ArchitectureError(
+            "repository Git index could not be read for drift inventory", code="git"
+        )
+    if len(os.fsencode(result.stdout)) > MAX_DRIFT_BYTES:
+        raise ArchitectureError("repository Git index path limit exceeded", code="limit")
+
+    values = [value for value in result.stdout.split("\0") if value]
+    if len(values) > MAX_DRIFT_ENTRIES:
+        raise ArchitectureError("repository Git index entry limit exceeded", code="limit")
+    tracked: set[PurePosixPath] = set()
+    for value in values:
+        path = PurePosixPath(value)
+        if (
+            path.is_absolute()
+            or path.as_posix() != value
+            or any(part in {"", ".", ".."} for part in path.parts)
+        ):
+            raise ArchitectureError(
+                "repository Git index emitted an unsafe path", code="git"
+            )
+        if ".venv" in path.parts[:-1]:
+            tracked.add(path)
+    return tuple(sorted(tracked, key=PurePosixPath.as_posix))
+
+
 def _inventory_identity(info: os.stat_result) -> tuple[int, int, int]:
     return info.st_dev, info.st_ino, stat.S_IFMT(info.st_mode)
 
@@ -736,6 +789,51 @@ def _bounded_repository_inventory(root: Path) -> tuple[_RepositoryArtifact, ...]
     no_follow, directory_flag, nonblock = _secure_open_flags(
         label="repository drift"
     )
+    tracked_dot_venv_paths = _tracked_dot_venv_paths(root)
+
+    def record_file(
+        directory_fd: int,
+        name: str,
+        relative_text: str,
+        observed: os.stat_result,
+    ) -> None:
+        nonlocal byte_count, file_count
+        descriptor = -1
+        try:
+            descriptor = os.open(
+                name,
+                os.O_RDONLY | no_follow | nonblock,
+                dir_fd=directory_fd,
+            )
+            actual = os.fstat(descriptor)
+        except OSError as exc:
+            raise ArchitectureError(
+                f"repository file failed no-follow identity validation: {relative_text}: {exc}",
+                code="io",
+            ) from exc
+        finally:
+            if descriptor >= 0:
+                os.close(descriptor)
+        if (
+            _inventory_identity(actual) != _inventory_identity(observed)
+            or not stat.S_ISREG(actual.st_mode)
+        ):
+            raise ArchitectureError(
+                f"repository file changed during no-follow inventory: {relative_text}",
+                code="io",
+            )
+        size = actual.st_size
+        file_count += 1
+        byte_count += size
+        if file_count > MAX_DRIFT_FILES:
+            raise ArchitectureError(
+                "repository drift file limit exceeded", code="limit"
+            )
+        if byte_count > MAX_DRIFT_BYTES:
+            raise ArchitectureError(
+                "repository drift byte limit exceeded", code="limit"
+            )
+        artifacts.append(_RepositoryArtifact(relative_text, "file", size))
 
     def walk(directory_fd: int, relative_parent: PurePosixPath, depth: int) -> None:
         nonlocal byte_count, entry_count, file_count
@@ -761,42 +859,7 @@ def _bounded_repository_inventory(root: Path) -> tuple[_RepositoryArtifact, ...]
                         )
                 elif entry.is_file(follow_symlinks=False):
                     observed = entry.stat(follow_symlinks=False)
-                    descriptor = -1
-                    try:
-                        descriptor = os.open(
-                            entry.name,
-                            os.O_RDONLY | no_follow | nonblock,
-                            dir_fd=directory_fd,
-                        )
-                        actual = os.fstat(descriptor)
-                    except OSError as exc:
-                        raise ArchitectureError(
-                            f"repository file failed no-follow identity validation: {relative_text}: {exc}",
-                            code="io",
-                        ) from exc
-                    finally:
-                        if descriptor >= 0:
-                            os.close(descriptor)
-                    if (
-                        _inventory_identity(actual) != _inventory_identity(observed)
-                        or not stat.S_ISREG(actual.st_mode)
-                    ):
-                        raise ArchitectureError(
-                            f"repository file changed during no-follow inventory: {relative_text}",
-                            code="io",
-                        )
-                    size = actual.st_size
-                    file_count += 1
-                    byte_count += size
-                    if file_count > MAX_DRIFT_FILES:
-                        raise ArchitectureError(
-                            "repository drift file limit exceeded", code="limit"
-                        )
-                    if byte_count > MAX_DRIFT_BYTES:
-                        raise ArchitectureError(
-                            "repository drift byte limit exceeded", code="limit"
-                        )
-                    artifacts.append(_RepositoryArtifact(relative_text, "file", size))
+                    record_file(directory_fd, entry.name, relative_text, observed)
                 else:
                     artifacts.append(_RepositoryArtifact(relative_text, "special", 0))
         for name, relative, observed_identity in sorted(
@@ -830,6 +893,57 @@ def _bounded_repository_inventory(root: Path) -> tuple[_RepositoryArtifact, ...]
                 if descriptor >= 0:
                     os.close(descriptor)
 
+    def inventory_tracked_dot_venv_path(
+        root_fd: int, relative: PurePosixPath
+    ) -> None:
+        nonlocal entry_count
+        directory_fd = os.dup(root_fd)
+        try:
+            for component in relative.parts[:-1]:
+                child_fd = os.open(
+                    component,
+                    os.O_RDONLY | directory_flag | no_follow,
+                    dir_fd=directory_fd,
+                )
+                observed = os.fstat(child_fd)
+                if not stat.S_ISDIR(observed.st_mode):
+                    os.close(child_fd)
+                    raise ArchitectureError(
+                        f"tracked repository path has a non-directory ancestor: {relative}",
+                        code="io",
+                    )
+                os.close(directory_fd)
+                directory_fd = child_fd
+
+            name = relative.name
+            try:
+                observed = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                return
+            entry_count += 1
+            if entry_count > MAX_DRIFT_ENTRIES:
+                raise ArchitectureError(
+                    "repository drift entry limit exceeded", code="limit"
+                )
+            relative_text = relative.as_posix()
+            if stat.S_ISLNK(observed.st_mode):
+                artifacts.append(_RepositoryArtifact(relative_text, "symlink", 0))
+            elif stat.S_ISREG(observed.st_mode):
+                record_file(directory_fd, name, relative_text, observed)
+            else:
+                artifacts.append(_RepositoryArtifact(relative_text, "special", 0))
+        except ArchitectureError:
+            raise
+        except FileNotFoundError:
+            return
+        except OSError as exc:
+            raise ArchitectureError(
+                f"tracked repository path failed no-follow inventory: {relative}: {exc}",
+                code="io",
+            ) from exc
+        finally:
+            os.close(directory_fd)
+
     root_descriptor = -1
     try:
         root_descriptor = os.open(
@@ -837,6 +951,8 @@ def _bounded_repository_inventory(root: Path) -> tuple[_RepositoryArtifact, ...]
             os.O_RDONLY | directory_flag | no_follow,
         )
         walk(root_descriptor, PurePosixPath(), 0)
+        for relative in tracked_dot_venv_paths:
+            inventory_tracked_dot_venv_path(root_descriptor, relative)
     except ArchitectureError:
         raise
     except OSError as exc:

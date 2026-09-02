@@ -351,4 +351,4 @@ Derive the exact route ancestor and the local PR target merge base from Git meta
 
 ## 2026-09-02 — Exclude exact verifier environments from architecture inventory
 
-Skip only directory components named `.venv`, matching the local verifier environment boundary while retaining no-follow rejection and source drift for every similarly named repository path. This prevents one verification run from poisoning the next without deleting local tooling state or hiding ordinary `venv` source trees.
+Skip untracked directory components named `.venv`, but enumerate force-added index entries beneath them and inspect those exact paths through root-relative no-follow descriptors. This prevents verifier tooling from poisoning later runs without letting the cache-shaped name hide tracked repository source or symlinks.

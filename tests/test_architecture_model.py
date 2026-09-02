@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -1217,6 +1218,7 @@ class ArchitectureModelTests(unittest.TestCase):
 
     def test_repository_drift_ignores_exact_dot_venv_components_on_repeated_runs(self) -> None:
         root = self._repo()
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
         for owner in ("factory", "trust-ci"):
             environment = root / owner / ".venv"
             (environment / "lib").mkdir(parents=True)
@@ -1246,6 +1248,41 @@ class ArchitectureModelTests(unittest.TestCase):
                 self.assertEqual(
                     [(finding.code, finding.path) for finding in findings], expected
                 )
+
+    def test_repository_drift_detects_force_added_source_under_dot_venv(self) -> None:
+        root = self._repo()
+        source = root / "factory/.venv/project.py"
+        source.parent.mkdir(parents=True)
+        source.write_text("VALUE = 'repository-source'\n", encoding="utf-8")
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(
+            ["git", "add", "-f", "factory/.venv/project.py"], cwd=root, check=True
+        )
+
+        findings = ARCH.validate_repository_drift(root, ARCH.load_architecture(root))
+
+        self.assertEqual(
+            [(finding.code, finding.path) for finding in findings],
+            [("undeclared_source", "factory/.venv/project.py")],
+        )
+
+    def test_repository_drift_detects_force_added_symlink_under_dot_venv(self) -> None:
+        root = self._repo()
+        (root / "payload.txt").write_text("payload\n", encoding="utf-8")
+        link = root / "factory/.venv/bin/python"
+        link.parent.mkdir(parents=True)
+        link.symlink_to("../../../payload.txt")
+        subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+        subprocess.run(
+            ["git", "add", "-f", "factory/.venv/bin/python"], cwd=root, check=True
+        )
+
+        findings = ARCH.validate_repository_drift(root, ARCH.load_architecture(root))
+
+        self.assertEqual(
+            [(finding.code, finding.path) for finding in findings],
+            [("unsafe_repository_artifact", "factory/.venv/bin/python")],
+        )
 
     def test_repository_drift_traversal_is_bounded_by_entries_files_and_bytes(self) -> None:
         cases = (
