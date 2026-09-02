@@ -12,7 +12,11 @@ from .api import Authenticator, create_app
 from .models import Actor
 from .service import FactoryService
 from .settings import FactorySettings, SettingsError, read_private_file, read_token_file
-from .store import PostgresArtifactAttestationStore, PostgresFactoryStore
+from .store import (
+    PostgresArtifactAttestationStore,
+    PostgresFactoryStore,
+    PostgresSemanticCoordinatorStore,
+)
 
 
 class ServerError(RuntimeError):
@@ -94,8 +98,16 @@ def build_app(settings: FactorySettings):
         PostgresArtifactAttestationStore(settings.artifact_attestor_database_url)
         if settings.artifact_attestor_database_url else None
     )
+    semantic_store = (
+        PostgresSemanticCoordinatorStore(settings.semantic_coordinator_database_url)
+        if settings.semantic_coordinator_database_url else None
+    )
     return create_app(
-        FactoryService(store, artifact_attestation_store=artifact_attestation_store),
+        FactoryService(
+            store,
+            artifact_attestation_store=artifact_attestation_store,
+            semantic_store=semantic_store,
+        ),
         Authenticator(load_actors(settings.actors_file)),
     )
 

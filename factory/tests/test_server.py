@@ -37,6 +37,30 @@ class ServerTests(unittest.TestCase):
         self.assertIsNone(service.artifact_broker)
         self.assertIs(service.artifact_attestation_store, attestor_store.return_value)
 
+    def test_semantic_dsn_wires_only_the_coordinator_capability(self):
+        settings = FactorySettings(
+            "postgresql://runtime",
+            Path("/run/factory.sock"),
+            Path("/run/actors.json"),
+            "postgresql://attestor",
+            "postgresql://semantic-coordinator",
+        )
+        with (
+            patch("adaptive_factory.server.PostgresFactoryStore") as runtime_store,
+            patch("adaptive_factory.server.PostgresArtifactAttestationStore") as attestor_store,
+            patch("adaptive_factory.server.PostgresSemanticCoordinatorStore") as semantic_store,
+            patch("adaptive_factory.server.load_actors", return_value={}),
+            patch("adaptive_factory.server.Authenticator"),
+            patch("adaptive_factory.server.create_app", side_effect=lambda service, auth: service),
+        ):
+            service = build_app(settings)
+        runtime_store.assert_called_once_with(settings.database_url)
+        attestor_store.assert_called_once_with(settings.artifact_attestor_database_url)
+        semantic_store.assert_called_once_with(settings.semantic_coordinator_database_url)
+        self.assertIs(service.semantic_store, semantic_store.return_value)
+        self.assertIsNone(service.snapshot_broker)
+        self.assertIsNone(service.artifact_broker)
+
     def test_authenticated_request_reaches_real_unix_socket(self):
         class Service:
             @staticmethod

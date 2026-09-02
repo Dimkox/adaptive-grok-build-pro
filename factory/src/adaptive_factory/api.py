@@ -651,4 +651,73 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         )
         return JSONResponse(_json(result), headers={"X-Correlation-ID": correlation})
 
+    def semantic_response(record):
+        return {
+            "envelope_digest": record.envelope_digest,
+            "binding_digest": record.binding.digest,
+            "validation_inputs_digest": record.validation_inputs.digest,
+            "subject_digest": record.subject.digest,
+            "subject": record.subject.to_dict(),
+        }
+
+    @app.post("/v1/semantic/subjects", tags=["semantic"])
+    def publish_semantic_subject(
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "semantic:publish")
+        key = _command_key(idempotency_key)
+        correlation = _request_id(x_correlation_id, "X-Correlation-ID")
+        payload = _closed(
+            payload,
+            {"task_id", "workspace_result_digest", "validation_inputs"},
+        )
+        task_id = _uuid(payload["task_id"], "task_id")
+        result_digest = _digest(
+            payload["workspace_result_digest"], "workspace_result_digest"
+        )
+        if not isinstance(payload["validation_inputs"], Mapping):
+            raise HTTPException(422, "invalid validation_inputs")
+        try:
+            record = service.publish_semantic_subject(
+                task_id,
+                result_digest,
+                payload["validation_inputs"],
+                actor=actor,
+                idempotency_key=key,
+                correlation_id=correlation,
+            )
+        except KeyError:
+            raise HTTPException(404, "workspace result not found")
+        return JSONResponse(
+            _json(semantic_response(record)),
+            headers={"X-Correlation-ID": correlation},
+        )
+
+    @app.get("/v1/semantic/subjects/{subject_digest}", tags=["semantic"])
+    def read_semantic_subject(
+        subject_digest: str,
+        task_id: str,
+        authorization: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "semantic:read")
+        correlation = _request_id(
+            x_correlation_id or "generated-semantic-read", "X-Correlation-ID"
+        )
+        task_id = _uuid(task_id, "task_id")
+        subject_digest = _digest(subject_digest, "subject_digest")
+        try:
+            record = service.get_semantic_subject(
+                task_id, subject_digest, actor=actor
+            )
+        except KeyError:
+            raise HTTPException(404, "semantic subject not found")
+        return JSONResponse(
+            _json(semantic_response(record)),
+            headers={"X-Correlation-ID": correlation},
+        )
+
     return app

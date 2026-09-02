@@ -38,8 +38,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
-        self.assertEqual(len({item.sha256 for item in migrations}), 13)
+        self.assertEqual([item.version for item in migrations], list(range(1, 15)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 14)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -97,7 +97,7 @@ class MigrationTests(unittest.TestCase):
         self.assertNotIn("on delete cascade", sql)
 
     def test_execution_migration_is_additive_and_capability_shaped(self):
-        migration = discover_migrations()[-1]
+        migration = next(item for item in discover_migrations() if item.version == 13)
         self.assertEqual(migration.name, "013_execution_plane.sql")
         lowered = migration.sql.lower()
         self.assertNotIn("drop ", lowered)
@@ -124,6 +124,41 @@ class MigrationTests(unittest.TestCase):
             "execution_recovery_cleanup_succeeded",
             "execution_recovery_cleanup_failures",
             "security definer set search_path=pg_catalog,factory",
+            "revoke all",
+        ):
+            self.assertIn(marker, lowered)
+
+    def test_semantic_migration_is_additive_append_only_and_capability_shaped(self):
+        migration = discover_migrations()[-1]
+        self.assertEqual(migration.name, "014_semantic_validation_bridge.sql")
+        lowered = migration.sql.lower()
+        for forbidden in (
+            "drop ",
+            "cascade",
+            "alter table factory.workspace_results",
+            "grant all",
+        ):
+            self.assertNotIn(forbidden, lowered)
+        for marker in (
+            "factory_semantic_coordinator",
+            "factory_semantic_validator",
+            "factory_semantic_adjudicator",
+            "nologin noinherit",
+            "semantic_command_results",
+            "semantic_subjects",
+            "semantic_assignments",
+            "semantic_findings",
+            "semantic_coverage",
+            "semantic_verdicts",
+            "semantic_directives",
+            "semantic_child_proposals",
+            "semantic_recovery_records",
+            "semantic_metric_events",
+            "semantic_execution_material",
+            "semantic_publish_subject",
+            "semantic_subject_by_digest",
+            "security definer set search_path=pg_catalog,factory",
+            "revoke insert, update, delete",
             "revoke all",
         ):
             self.assertIn(marker, lowered)

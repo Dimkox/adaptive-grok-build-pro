@@ -363,3 +363,7 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-02 — Passed Markdown backticks through a shell command string
 
 **Root cause:** A repository search pattern containing unescaped backticks was interpolated by the shell and attempted to execute the enclosed word. Shell search patterns must avoid backticks entirely or use a safely quoted structured argument; the failed read was harmless and was not repeated.
+
+## 2026-09-02 — Used cwd-sensitive factory imports and non-fail-fast shell sequencing
+
+**Root cause:** Factory tests importing `tests.*` resolve only when the working directory is `factory`, while semicolon-separated verification commands can continue after an earlier nonzero exit and obscure which evidence is valid. Run those suites from their declared working directory and use separate or fail-fast commands so every reported result is attributable.

@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 import time
 import uuid
+from pathlib import Path
 
 
 POSTGRES_IMAGES = ("postgres:15-alpine", "postgres:17-alpine")
@@ -53,6 +54,10 @@ def main(argv: list[str] | None = None) -> int:
     password = f"local-{uuid.uuid4().hex}"
     environment = os.environ.copy()
     environment["FACTORY_TEST_POSTGRES_CONTAINER"] = name
+    import_roots = (str(Path.cwd() / "factory"), str(Path.cwd()))
+    environment["PYTHONPATH"] = os.pathsep.join(
+        (*import_roots, environment.get("PYTHONPATH", ""))
+    ).rstrip(os.pathsep)
     try:
         _run([
             "docker", "run", "--name", name,

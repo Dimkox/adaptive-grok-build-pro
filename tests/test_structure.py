@@ -328,6 +328,8 @@ class StructureTests(unittest.TestCase):
             ("POST", "/v1/usage-observations", "observeUsage"),
             ("POST", "/v1/kill-switches", "setKillSwitch"),
             ("POST", "/v1/reconcile", "reconcileFactory"),
+            ("POST", "/v1/semantic/subjects", "publishSemanticSubject"),
+            ("GET", "/v1/semantic/subjects/{subject_digest}", "getSemanticSubject"),
         }
         operations = {
             (method.upper(), path, operation.get("operationId"))

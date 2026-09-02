@@ -5,7 +5,7 @@ import unittest
 from adaptive_factory.contracts import ContractError
 from adaptive_factory.semantic_adjudication import adjudicate
 from adaptive_factory.semantic_contracts import SemanticCoverageV1, SemanticFindingV1, SemanticSubjectV1
-from tests.test_semantic_contracts import coverage, finding, subject, validator
+from .test_semantic_contracts import coverage, finding, subject, validator
 
 
 def parsed_subject(**changes):

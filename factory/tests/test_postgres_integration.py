@@ -23,12 +23,14 @@ from adaptive_factory.execution_contracts import WorkspaceResultV1, workspace_ev
 from adaptive_factory.models import Actor, ExecutionStage, FailureClass, RunRole, TaskStatus
 from adaptive_factory.protocol import CanonicalEvent
 from adaptive_factory.recovery import ExecutionRecovery
+from adaptive_factory.semantic_bridge import SemanticBridgeResult
 from adaptive_factory.service import AuthorizationError, ExecutionContractError, FactoryService
 from adaptive_factory.store import (
     BudgetError,
     FenceError,
     PostgresArtifactAttestationStore,
     PostgresFactoryStore,
+    PostgresSemanticCoordinatorStore,
     StoreError,
 )
 from adaptive_factory.workspace import (
@@ -103,17 +105,28 @@ class PostgresFactoryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         PostgresMigrator(DATABASE_URL).apply()
-        from adaptive_factory.admin import provision_artifact_attestor_login, provision_runtime_login
+        from adaptive_factory.admin import (
+            provision_artifact_attestor_login,
+            provision_runtime_login,
+            provision_semantic_coordinator_login,
+        )
         from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
         cls.artifact_attestor_login = f"factory_artifact_test_{os.getpid()}"
         cls.runtime_login = f"factory_runtime_test_{os.getpid()}"
+        cls.semantic_coordinator_login = f"factory_semantic_test_{os.getpid()}"
         cls.artifact_attestor_password = "local-artifact-attestor-test"
         cls.runtime_password = "local-runtime-store-test"
+        cls.semantic_coordinator_password = "local-semantic-coordinator-test"
         provision_runtime_login(DATABASE_URL, cls.runtime_login, cls.runtime_password)
         provision_artifact_attestor_login(
             DATABASE_URL, cls.artifact_attestor_login, cls.artifact_attestor_password,
             runtime_login="factory_service_test",
+        )
+        provision_semantic_coordinator_login(
+            DATABASE_URL,
+            cls.semantic_coordinator_login,
+            cls.semantic_coordinator_password,
         )
         cls.artifact_attestor_url = make_conninfo(**{
             **conninfo_to_dict(DATABASE_URL),
@@ -124,6 +137,11 @@ class PostgresFactoryTests(unittest.TestCase):
             **conninfo_to_dict(DATABASE_URL),
             "user": cls.runtime_login,
             "password": cls.runtime_password,
+        })
+        cls.semantic_coordinator_url = make_conninfo(**{
+            **conninfo_to_dict(DATABASE_URL),
+            "user": cls.semantic_coordinator_login,
+            "password": cls.semantic_coordinator_password,
         })
 
     @classmethod
@@ -140,6 +158,9 @@ class PostgresFactoryTests(unittest.TestCase):
                 sql.Identifier(cls.artifact_attestor_login)
             ))
             cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(
+                sql.Identifier(cls.semantic_coordinator_login)
+            ))
+            cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(
                 sql.Identifier(cls.runtime_login)
             ))
 
@@ -148,7 +169,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.execution_recovery_cleanup_successes, factory.execution_recovery_cleanup_failures, factory.workspace_results, factory.execution_proposals, factory.execution_artifact_attestations, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
+                "TRUNCATE factory.semantic_recovery_records, factory.semantic_child_proposals, factory.semantic_directives, factory.semantic_verdicts, factory.semantic_coverage, factory.semantic_findings, factory.semantic_assignments, factory.semantic_metric_events, factory.semantic_command_results, factory.semantic_subjects, factory.execution_recovery_cleanup_successes, factory.execution_recovery_cleanup_failures, factory.workspace_results, factory.execution_proposals, factory.execution_artifact_attestations, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
             )
             cursor.execute("SELECT to_regclass('factory.metric_counters_pre_012_untrusted')")
             if cursor.fetchone()[0] is not None:
@@ -1127,6 +1148,191 @@ class PostgresFactoryTests(unittest.TestCase):
             task.task_id, reason="bounded test cleanup", idempotency_key="3" * 64,
             actor=OPERATOR, now=NOW,
         )
+
+    def test_semantic_subject_publish_is_exact_replay_safe_and_role_isolated(self):
+        import psycopg
+
+        task = self.submit(source="m6-semantic-subject").task
+        packet = valid_packet()
+        packet["provider"]["capabilities"] = ["structured_output", "usage"]
+        selection = {
+            "provider": packet["provider"],
+            "capability_policy": packet["capability_policy"],
+            "plan": packet["plan"],
+            "workspace_handle": packet["workspace_handle"],
+            "prompt_template_digest": "7" * 64,
+            "role_definition_digest": "8" * 64,
+            "tool_policy_digest": "9" * 64,
+            "output_schema_digest": "a" * 64,
+        }
+        execution = FactoryService(
+            self.store, execution_registry=trusted_registry(selection)
+        ).claim_execution(
+            owner=WORKER.actor_id,
+            role=RunRole.WRITER,
+            repositories=(task.repository_id,),
+            lease_seconds=60,
+            selection=selection,
+            actor=WORKER,
+            now=datetime.now(timezone.utc),
+            idempotency_key="1" * 64,
+        )
+        self.service.commit_execution_proposal(
+            execution.lease,
+            packet_digest=execution.packet_digest,
+            sequence=1,
+            event_type="usage.reported",
+            payload={
+                "provider_call_id": "semantic-fixture-call",
+                "price_table_digest": "d" * 64,
+                "input_tokens": 10,
+                "output_tokens": 5,
+                "reasoning_tokens": 0,
+                "cost_usd_micros": 25,
+                "output_bytes": 20,
+            },
+            actor=WORKER,
+            idempotency_key="2" * 64,
+        )
+        self.service.observe_usage(
+            execution.lease,
+            provider_call_id="semantic-fixture-call",
+            price_table_digest="d" * 64,
+            cost_usd_micros=25,
+            token_units=15,
+            output_bytes=20,
+            actor=WORKER,
+            idempotency_key="3" * 64,
+        )
+        self.service.commit_execution_proposal(
+            execution.lease,
+            packet_digest=execution.packet_digest,
+            sequence=2,
+            event_type="run.completed",
+            payload={"summary": "semantic fixture complete"},
+            actor=WORKER,
+            idempotency_key="4" * 64,
+        )
+        for index, stage in enumerate(
+            (ExecutionStage.RUNNING, ExecutionStage.COLLECTING), start=5
+        ):
+            self.service.advance_execution(
+                execution.lease,
+                packet_digest=execution.packet_digest,
+                stage=stage,
+                actor=WORKER,
+                idempotency_key=str(index) * 64,
+            )
+        result = FactoryService(
+            self.store, snapshot_broker=TrustedPostgresTestSnapshotBroker()
+        ).finalize_execution(
+            execution.lease,
+            packet_digest=execution.packet_digest,
+            actor=WORKER,
+            idempotency_key="7" * 64,
+        )
+
+        semantic_store = PostgresSemanticCoordinatorStore(
+            self.semantic_coordinator_url
+        )
+        actor = Actor(
+            "semantic-coordinator",
+            "operator",
+            frozenset({"semantic:publish", "semantic:read"}),
+            frozenset({task.repository_id}),
+        )
+        semantic_service = FactoryService(
+            self.store, semantic_store=semantic_store
+        )
+        inputs = {
+            "schema_version": 1,
+            "workspace_result_digest": result.workspace_result_digest,
+            "requirements": [
+                {"kind": "acceptance_criterion", "requirement_id": "AC-001"},
+                {"kind": "acceptance_criterion", "requirement_id": "AC-002"},
+                {"kind": "invariant", "requirement_id": "INV-001"},
+            ],
+            "holdout_evidence_digest": "b" * 64,
+            "review_evidence_digest": "c" * 64,
+            "original_writer_context_digest": "d" * 64,
+            "risk_level": "high",
+            "diff_limit": 100,
+        }
+        key = "8" * 64
+        published = semantic_service.publish_semantic_subject(
+            task.task_id,
+            result.workspace_result_digest,
+            inputs,
+            actor=actor,
+            idempotency_key=key,
+        )
+        replay = semantic_service.publish_semantic_subject(
+            task.task_id,
+            result.workspace_result_digest,
+            dict(inputs),
+            actor=actor,
+            idempotency_key=key,
+        )
+        self.assertEqual(replay, published)
+        self.assertEqual(
+            semantic_service.get_semantic_subject(
+                task.task_id, published.subject.digest, actor=actor
+            ),
+            published,
+        )
+
+        changed_inputs = {**inputs, "holdout_evidence_digest": "e" * 64}
+        with self.assertRaisesRegex(StoreError, "publication rejected"):
+            semantic_service.publish_semantic_subject(
+                task.task_id,
+                result.workspace_result_digest,
+                changed_inputs,
+                actor=actor,
+                idempotency_key=key,
+            )
+        material = semantic_store.execution_material(
+            task.task_id, result.workspace_result_digest
+        )
+        substituted_binding = replace(
+            published.binding, exact_head_sha="5" * 40
+        )
+        substituted_subject = replace(
+            published.subject,
+            exact_head_sha="5" * 40,
+            deterministic_evidence_digest=substituted_binding.digest,
+        )
+        substituted = SemanticBridgeResult(
+            substituted_binding,
+            published.validation_inputs,
+            substituted_subject,
+        )
+        with self.assertRaisesRegex(StoreError, "publication rejected"):
+            semantic_store.publish_subject(
+                material, substituted, idempotency_key="9" * 64
+            )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT
+                (SELECT count(*) FROM factory.semantic_subjects),
+                (SELECT count(*) FROM factory.semantic_command_results),
+                has_table_privilege('factory_runtime','factory.semantic_subjects','INSERT'),
+                has_table_privilege('factory_semantic_coordinator','factory.semantic_subjects','INSERT'),
+                has_table_privilege('factory_semantic_validator','factory.semantic_subjects','INSERT'),
+                has_table_privilege('factory_semantic_adjudicator','factory.semantic_subjects','INSERT')"""
+            )
+            self.assertEqual(cursor.fetchone(), (1, 1, False, False, False, False))
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            with self.assertRaisesRegex(psycopg.Error, "append-only"):
+                cursor.execute(
+                    "UPDATE factory.semantic_subjects SET owner_id='forged' WHERE subject_digest=%s",
+                    (published.subject.digest,),
+                )
+        with semantic_store._connect() as connection, connection.cursor() as cursor:
+            with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                cursor.execute(
+                    "INSERT INTO factory.semantic_metric_events(metric_name,label) VALUES ('semantic_subject_lifecycle','published')"
+                )
 
     def test_execution_lifecycle_persists_new_digest_stages_and_redacted_proposal(self):
         task = self.submit(source="m5-execution-lifecycle").task
@@ -3650,7 +3856,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12, 13], "ready", 13, True,
+                    [9, 10, 11, 12, 13, 14], "ready", 14, True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
@@ -3973,7 +4179,7 @@ class PostgresFactoryTests(unittest.TestCase):
         )
         self.assertEqual(result["database_role"], "factory_runtime")
         self.assertEqual(result["artifact_attestor_database_role"], "factory_artifact_attestor")
-        self.assertEqual(result["schema_version"], 13)
+        self.assertEqual(result["schema_version"], 14)
         with psycopg.connect(runtime_url) as connection, connection.cursor() as cursor:
             cursor.execute("SET ROLE factory_runtime")
             cursor.execute("SELECT session_user,current_user")
@@ -4065,7 +4271,10 @@ class PostgresFactoryTests(unittest.TestCase):
                 PostgresArtifactAttestationStore(self.artifact_attestor_url).readiness()
             with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
                 with self.assertRaisesRegex(Exception, "unsafe capability role"):
-                    cursor.execute(discover_migrations()[-1].sql)
+                    execution_migration = next(
+                        item for item in discover_migrations() if item.version == 13
+                    )
+                    cursor.execute(execution_migration.sql)
         finally:
             with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
                 cursor.execute("REVOKE pg_read_all_data FROM factory_artifact_attestor")

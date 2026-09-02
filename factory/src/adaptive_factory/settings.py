@@ -74,13 +74,23 @@ class FactorySettings:
     socket_path: Path
     actors_file: Path
     artifact_attestor_database_url: str | None = None
+    semantic_coordinator_database_url: str | None = None
 
     @classmethod
     def from_environment(cls) -> "FactorySettings":
         database_url = os.environ.get("FACTORY_DATABASE_URL", "")
         artifact_attestor_database_url = os.environ.get("FACTORY_ARTIFACT_ATTESTOR_DATABASE_URL") or None
+        semantic_coordinator_database_url = os.environ.get(
+            "FACTORY_SEMANTIC_COORDINATOR_DATABASE_URL"
+        ) or None
         actors_file = os.environ.get("FACTORY_ACTORS_FILE", "")
         socket_path = Path(os.environ.get("FACTORY_SOCKET_PATH", "/run/adaptive-factory/control.sock"))
         if not database_url or not actors_file or not socket_path.is_absolute() or not Path(actors_file).is_absolute():
             raise SettingsError("explicit database URL, actor file and absolute socket path are required")
-        return cls(database_url, socket_path, Path(actors_file), artifact_attestor_database_url)
+        return cls(
+            database_url,
+            socket_path,
+            Path(actors_file),
+            artifact_attestor_database_url,
+            semantic_coordinator_database_url,
+        )

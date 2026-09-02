@@ -15,6 +15,7 @@ from .execution_contracts import (
 )
 from .models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole
 from .protocol import CanonicalEvent
+from .semantic_bridge import SemanticValidationInputsV1, build_semantic_subject
 from .workspace import (
     ArtifactAttestationRequest,
     ArtifactAttestationV1,
@@ -46,12 +47,14 @@ class FactoryService:
         artifact_broker=None,
         artifact_attestation_store=None,
         execution_registry=None,
+        semantic_store=None,
     ) -> None:
         self.store = store
         self.snapshot_broker = snapshot_broker
         self.artifact_broker = artifact_broker
         self.artifact_attestation_store = artifact_attestation_store
         self.execution_registry = execution_registry
+        self.semantic_store = semantic_store
 
     def readiness(self):
         return self.store.readiness()
@@ -85,6 +88,51 @@ class FactoryService:
         task = self.store.get_task(task_id)
         self._require(actor, "task:read", task.repository_id)
         return self.store.workspace_result(task_id, workspace_result_digest)
+
+    def publish_semantic_subject(
+        self,
+        task_id: str,
+        workspace_result_digest: str,
+        validation_inputs,
+        *,
+        actor: Actor,
+        idempotency_key: str,
+        correlation_id: str | None = None,
+    ):
+        self._require(actor, "semantic:publish")
+        if actor.kind != "operator":
+            raise AuthorizationError("semantic publication requires coordinator actor")
+        task = self.store.get_task(task_id)
+        self._require(actor, "semantic:publish", task.repository_id)
+        if self.semantic_store is None:
+            raise AuthorizationError("semantic coordinator capability unavailable")
+        inputs = (
+            validation_inputs
+            if isinstance(validation_inputs, SemanticValidationInputsV1)
+            else SemanticValidationInputsV1.from_dict(validation_inputs)
+        )
+        if inputs.workspace_result_digest != workspace_result_digest:
+            raise ExecutionContractError("semantic_result_digest_mismatch")
+        material = self.semantic_store.execution_material(
+            task_id, workspace_result_digest
+        )
+        packet = material.get("packet")
+        if not isinstance(packet, TaskPacketV1) or packet.repository_id != task.repository_id:
+            raise ExecutionContractError("semantic_repository_mismatch")
+        record = build_semantic_subject(**material, validation_inputs=inputs)
+        return self.semantic_store.publish_subject(
+            material, record, idempotency_key=idempotency_key
+        )
+
+    def get_semantic_subject(
+        self, task_id: str, subject_digest: str, *, actor: Actor
+    ):
+        self._require(actor, "semantic:read")
+        task = self.store.get_task(task_id)
+        self._require(actor, "semantic:read", task.repository_id)
+        if self.semantic_store is None:
+            raise AuthorizationError("semantic coordinator capability unavailable")
+        return self.semantic_store.subject_by_digest(task_id, subject_digest)
 
     def list_tasks(self, *, repository_id: str, limit: int, cursor: str | None, actor: Actor):
         self._require(actor, "task:list", repository_id)

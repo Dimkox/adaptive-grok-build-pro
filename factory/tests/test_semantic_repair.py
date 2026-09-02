@@ -3,7 +3,7 @@ import unittest
 from adaptive_factory.semantic_adjudication import adjudicate
 from adaptive_factory.semantic_contracts import SemanticCoverageV1, SemanticFindingV1, SemanticSubjectV1
 from adaptive_factory.semantic_repair import plan_repair
-from tests.test_semantic_contracts import coverage, finding, subject
+from .test_semantic_contracts import coverage, finding, subject
 
 
 RISK = {"low": 0, "medium": 1, "high": 2, "critical": 3}

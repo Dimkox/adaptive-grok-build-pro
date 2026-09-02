@@ -139,6 +139,58 @@ def provision_artifact_attestor_login(
         )
 
 
+def provision_semantic_coordinator_login(
+    owner_url: str, login: str, password: str
+) -> None:
+    if not owner_url or not LOGIN_NAME.fullmatch(login) or not 16 <= len(password) <= 1024:
+        raise BootstrapError(
+            "bounded owner URL, semantic coordinator login and password are required"
+        )
+    import psycopg
+    from psycopg import sql
+
+    with psycopg.connect(owner_url) as connection, connection.transaction(), connection.cursor() as cursor:
+        cursor.execute(
+            """SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
+            rolreplication,rolbypassrls,COALESCE(rolconfig,ARRAY[]::text[])
+            FROM pg_roles WHERE rolname=%s""",
+            (login,),
+        )
+        existing = cursor.fetchone()
+        if existing is None:
+            cursor.execute(
+                sql.SQL(
+                    "CREATE ROLE {} LOGIN NOINHERIT NOSUPERUSER NOCREATEROLE NOCREATEDB PASSWORD {}"
+                ).format(sql.Identifier(login), sql.Literal(password))
+            )
+        elif existing[:7] != (True, False, False, False, False, False, False) \
+                or tuple(existing[7]) != ():
+            raise BootstrapError("existing semantic coordinator login has unsafe attributes")
+        else:
+            cursor.execute(
+                sql.SQL("ALTER ROLE {} PASSWORD {}").format(
+                    sql.Identifier(login), sql.Literal(password)
+                )
+            )
+        _validate_capability_role(
+            cursor, "factory_semantic_coordinator", "semantic coordinator"
+        )
+        for forbidden_role in (
+            "factory_runtime",
+            "factory_artifact_attestor",
+            "factory_semantic_validator",
+            "factory_semantic_adjudicator",
+        ):
+            cursor.execute("SELECT pg_has_role(%s,%s,'MEMBER')", (login, forbidden_role))
+            if cursor.fetchone()[0]:
+                raise BootstrapError(
+                    "semantic coordinator login has unsafe role membership"
+                )
+        _grant_and_validate_membership(
+            cursor, login, "factory_semantic_coordinator", "semantic coordinator"
+        )
+
+
 def bootstrap_local(
     owner_url: str, login: str, password: str, runtime_url: str,
     artifact_attestor_login: str | None = None,

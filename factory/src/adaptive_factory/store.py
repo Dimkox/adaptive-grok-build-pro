@@ -5,7 +5,7 @@ from datetime import datetime
 import json
 import uuid
 
-from .contracts import HEX64, TaskIntakeV1, canonical_digest
+from .contracts import HEX64, TaskIntakeV1, canonical_digest, canonical_json
 from .brokers import (
     ArtifactProposal,
     NoteProposal,
@@ -19,6 +19,12 @@ from .migrations import discover_migrations
 from .models import Actor, ExecutionGrant, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskProjection, TaskStatus
 from .protocol import CanonicalEvent, PROTOCOL_VERSION
 from .recovery import ExecutionRecoveryCandidate, ExecutionRecoveryCursor
+from .semantic_bridge import (
+    SemanticBridgeResult,
+    SemanticExecutionBindingV1,
+    SemanticValidationInputsV1,
+)
+from .semantic_contracts import SemanticSubjectV1
 from .state import classify_retry
 from .workspace import (
     ArtifactAttestationUnavailable,
@@ -211,6 +217,273 @@ class PostgresArtifactAttestationStore:
             return ArtifactAttestationV1.from_dict(value)
         except (TypeError, ValueError) as exc:
             raise StoreError("corrupt artifact attestation envelope") from exc
+
+
+class PostgresSemanticCoordinatorStore:
+    """Subject-only M6 coordinator capability with no execution or evidence writes."""
+
+    def __init__(self, database_url: str) -> None:
+        if not database_url:
+            raise StoreError("semantic coordinator database URL is required")
+        self.database_url = database_url
+
+    def _connect(self):
+        import psycopg
+
+        connection = psycopg.connect(self.database_url, connect_timeout=5)
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SET search_path=pg_catalog")
+                cursor.execute("SET lock_timeout='5s'; SET statement_timeout='5s'")
+                _validate_capability_session(
+                    cursor, "factory_semantic_coordinator", "semantic coordinator"
+                )
+                cursor.execute("SET ROLE factory_semantic_coordinator")
+                cursor.execute("SET search_path=pg_catalog,factory")
+                cursor.execute("SELECT current_user,current_setting('search_path')")
+                if cursor.fetchone() != (
+                    "factory_semantic_coordinator",
+                    "pg_catalog, factory",
+                ):
+                    raise StoreError("semantic coordinator capability unavailable")
+            return connection
+        except Exception:
+            connection.close()
+            raise
+
+    def readiness(self) -> dict[str, str]:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT session_user,current_user")
+            session_user, current_user = cursor.fetchone()
+            return {"session_user": session_user, "database_role": current_user}
+
+    @staticmethod
+    def _material(value) -> dict[str, object] | None:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = json.loads(value)
+        if not isinstance(value, dict) or set(value) != {
+            "result",
+            "snapshot",
+            "packet",
+            "manifest",
+            "terminal_proposal",
+            "artifact_proposals",
+            "artifact_attestations",
+        }:
+            raise StoreError("stored semantic execution material is corrupt")
+        try:
+            packet_wire = dict(value["packet"])
+            packet_digest = packet_wire.pop("packet_digest")
+            packet = TaskPacketV1.from_dict(packet_wire)
+            if packet.packet_digest != packet_digest:
+                raise StoreError("stored semantic packet digest mismatch")
+            manifest_wire = dict(value["manifest"])
+            manifest_digest = manifest_wire.pop("manifest_digest")
+            manifest = RunManifestV1.from_packet(packet, deadline=manifest_wire["deadline"])
+            if manifest.to_dict() != {**manifest_wire, "manifest_digest": manifest_digest}:
+                raise StoreError("stored semantic manifest mismatch")
+            result = WorkspaceResultV1.from_dict(value["result"])
+            snapshot = WorkspaceSnapshotV1.from_dict(value["snapshot"])
+            terminal = TerminalProposal(**value["terminal_proposal"])
+            artifacts = tuple(ArtifactProposal(**item) for item in value["artifact_proposals"])
+            attestations = tuple(
+                ArtifactAttestationV1.from_dict(item)
+                for item in value["artifact_attestations"]
+            )
+            if (
+                result.task_id != packet.task_id
+                or result.run_id != packet.run_id
+                or result.task_packet_digest != packet.packet_digest
+                or result.run_manifest_digest != manifest.manifest_digest
+                or snapshot.repository_id != packet.repository_id
+                or snapshot.workspace_handle != packet.workspace_handle
+                or snapshot.input_head_sha != packet.authority.exact_head_sha
+                or snapshot.result_head_sha != result.exact_head_sha
+                or snapshot.workspace_snapshot_digest != result.workspace_snapshot_digest
+                or terminal.idempotency_key != proposal_idempotency_key(terminal)
+                or terminal.idempotency_key != result.terminal_proposal_digest
+            ):
+                raise StoreError("stored semantic execution material binding mismatch")
+            return {
+                "packet": packet,
+                "manifest": manifest,
+                "snapshot": snapshot,
+                "result": result,
+                "terminal_proposal": terminal,
+                "artifact_proposals": artifacts,
+                "artifact_attestations": attestations,
+            }
+        except (KeyError, TypeError, ValueError) as exc:
+            if isinstance(exc, StoreError):
+                raise
+            raise StoreError("stored semantic execution material is corrupt") from exc
+
+    def execution_material(
+        self, task_id: str, workspace_result_digest: str
+    ) -> dict[str, object]:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SET statement_timeout='5s'")
+            cursor.execute(
+                "SELECT factory.semantic_execution_material(%s,%s)",
+                (task_id, workspace_result_digest),
+            )
+            material = self._material(cursor.fetchone()[0])
+        if material is None:
+            raise KeyError(workspace_result_digest)
+        result = material["result"]
+        if not isinstance(result, WorkspaceResultV1) or (
+            result.task_id != task_id
+            or result.workspace_result_digest != workspace_result_digest
+        ):
+            raise StoreError("requested semantic execution material mismatch")
+        return material
+
+    @staticmethod
+    def _record(value) -> SemanticBridgeResult | None:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = json.loads(value)
+        expected = {
+            "envelope_digest",
+            "binding_digest",
+            "validation_inputs_digest",
+            "subject_digest",
+            "binding",
+            "validation_inputs",
+            "subject",
+        }
+        if not isinstance(value, dict) or set(value) != expected:
+            raise StoreError("stored semantic subject record is corrupt")
+        try:
+            binding = SemanticExecutionBindingV1.from_dict(value["binding"])
+            validation_inputs = SemanticValidationInputsV1.from_dict(
+                value["validation_inputs"]
+            )
+            subject = SemanticSubjectV1.from_dict(value["subject"])
+            record = SemanticBridgeResult(binding, validation_inputs, subject)
+        except (TypeError, ValueError) as exc:
+            raise StoreError("stored semantic subject record is corrupt") from exc
+        if (
+            value["binding_digest"] != binding.digest
+            or value["validation_inputs_digest"] != validation_inputs.digest
+            or value["subject_digest"] != subject.digest
+            or value["envelope_digest"] != record.envelope_digest
+            or validation_inputs.workspace_result_digest
+            != binding.workspace_result_digest
+            or subject.deterministic_evidence_digest != binding.digest
+            or subject.holdout_evidence_digest
+            != validation_inputs.holdout_evidence_digest
+            or subject.review_evidence_digest
+            != validation_inputs.review_evidence_digest
+            or subject.original_writer_id != binding.owner
+            or subject.original_writer_context_digest
+            != validation_inputs.original_writer_context_digest
+        ):
+            raise StoreError("stored semantic subject digest mismatch")
+        return record
+
+    def publish_subject(
+        self,
+        material: dict[str, object],
+        record: SemanticBridgeResult,
+        *,
+        idempotency_key: str,
+    ) -> SemanticBridgeResult:
+        packet = material.get("packet")
+        if not isinstance(packet, TaskPacketV1) or not isinstance(
+            record, SemanticBridgeResult
+        ):
+            raise StoreError("semantic publication material is invalid")
+        binding_document = {
+            "contract": "adaptive-factory.semantic-execution-binding/v1",
+            **record.binding.to_dict(),
+        }
+        inputs_document = {
+            "contract": "adaptive-factory.semantic-validation-inputs/v1",
+            **record.validation_inputs.to_dict(),
+        }
+        envelope_document = {
+            "contract": "adaptive-factory.semantic-subject-envelope/v1",
+            "binding_digest": record.binding.digest,
+            "validation_inputs_digest": record.validation_inputs.digest,
+            "subject_digest": record.subject.digest,
+        }
+        authority_document = {
+            "contract": "adaptive-factory.semantic-authority-binding/v1",
+            "authority": packet.to_dict(include_digest=False)["authority"],
+        }
+        authority_digest = canonical_digest(authority_document)
+        if (
+            record.subject.authority_digest != authority_digest
+            or record.binding.task_packet_digest != packet.packet_digest
+        ):
+            raise StoreError("semantic publication authority mismatch")
+        request_document = {
+            "contract": "adaptive-factory.semantic-subject-publication/v1",
+            "idempotency_key": idempotency_key,
+            "binding_digest": record.binding.digest,
+            "validation_inputs_digest": record.validation_inputs.digest,
+            "subject_digest": record.subject.digest,
+            "envelope_digest": record.envelope_digest,
+        }
+
+        def encoded(document: dict[str, object]) -> str:
+            return canonical_json(document).decode("utf-8")
+
+        request_canonical = encoded(request_document)
+        binding_canonical = encoded(binding_document)
+        inputs_canonical = encoded(inputs_document)
+        subject_canonical = encoded(record.subject.to_dict())
+        envelope_canonical = encoded(envelope_document)
+        authority_canonical = encoded(authority_document)
+        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            cursor.execute(
+                "SELECT factory.semantic_publish_subject(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    idempotency_key,
+                    canonical_digest(request_document),
+                    request_canonical,
+                    record.binding.digest,
+                    binding_canonical,
+                    record.validation_inputs.digest,
+                    inputs_canonical,
+                    record.subject.digest,
+                    subject_canonical,
+                    record.envelope_digest,
+                    envelope_canonical,
+                    authority_digest,
+                    authority_canonical,
+                ),
+            )
+            response = cursor.fetchone()[0]
+        if isinstance(response, str):
+            response = json.loads(response)
+        if response != envelope_document:
+            raise StoreError("semantic subject publication rejected")
+        return record
+
+    def subject_by_digest(
+        self, task_id: str, subject_digest: str
+    ) -> SemanticBridgeResult:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SET statement_timeout='5s'")
+            cursor.execute(
+                "SELECT factory.semantic_subject_by_digest(%s,%s)",
+                (task_id, subject_digest),
+            )
+            record = self._record(cursor.fetchone()[0])
+        if record is None:
+            raise KeyError(subject_digest)
+        if (
+            record.binding.task_id != task_id
+            or record.subject.digest != subject_digest
+        ):
+            raise StoreError("requested semantic subject mismatch")
+        return record
 
 
 class PostgresFactoryStore:
