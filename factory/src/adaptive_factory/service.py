@@ -86,11 +86,15 @@ class FactoryService:
         try:
             return operation()
         except FenceError:
-            try:
-                self.store.record_fence_rejection()
-            except Exception:
-                pass
+            self._record_fence_rejection_best_effort()
             raise
+
+    def _record_fence_rejection_best_effort(self) -> bool:
+        try:
+            self.store.record_fence_rejection()
+        except Exception:
+            return False
+        return True
 
     def heartbeat(self, grant: LeaseGrant, *, actor: Actor, now: datetime, idempotency_key: str | None = None, correlation_id: str | None = None):
         self._require_grant_actor(grant, actor, "task:heartbeat")

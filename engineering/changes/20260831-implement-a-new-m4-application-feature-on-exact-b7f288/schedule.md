@@ -2,6 +2,8 @@
 
 All times are UTC+3. The superseding hard deadline is **2026-09-08 00:00 UTC+3**; normal work freezes at 2026-09-07 20:00 and the final four hours are reserved for exact-SHA gates, receipts, documentation parity and recovery evidence. The older 2026-09-15 deadline is retained only as superseded history.
 
+Current execution ruling: M4 repair, provisional M5 branch `milestone/m5-isolated-execution-provisional-m4` / route `37b05f579320`, and provisional M6 branch `milestone/m6-semantic-validation-provisional-m4` / route `82aac86a3bf9` may develop source in parallel from M4 anchor `94fc5ad`. M5 is blocked on a suitable rootless-isolation host. Acceptance, restack, PR delivery and Trust CI remain dependency ordered M4 → M5 → M6; no milestone is complete merely because its provisional branch exists.
+
 | Milestone | Start | Completion | Exit gate |
 | --- | ---: | ---: | --- |
 | M0/M1/M2 prerequisites | 2026-08-31 21:00 | 2026-09-01 06:00 | fresh M0 proof and accepted M1/M2 |
@@ -26,4 +28,4 @@ All times are UTC+3. The superseding hard deadline is **2026-09-08 00:00 UTC+3**
 
 ## Control protocol
 
-Milestones remain dependency-gated, not clock-triggered. Calendar time never waives App-owned exact-SHA Trust CI, signed human scopes, real PostgreSQL/security/review gates, the M8 cohort or M9 recovery proof. External writes require exact delegated grants; production mutation is outside this plan. If a gate misses its window, compress only non-exit scope and report the exact blocker rather than claim completion.
+Milestones remain dependency-gated, not clock-triggered. Calendar time never waives App-owned exact-SHA Trust CI, signed human scopes, real PostgreSQL/security/review gates, the M8 cohort or M9 recovery proof. External writes require exact delegated grants; production mutation is outside this plan. If a gate misses its window, compress only non-exit scope and report the exact blocker rather than claim completion. Cross-links: [root current state](../../../README.md), [roadmap](../../../DARK_FACTORY_ROADMAP.md), [M4 package](../../../factory/README.md).

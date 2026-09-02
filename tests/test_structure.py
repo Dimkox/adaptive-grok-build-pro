@@ -192,6 +192,11 @@ class StructureTests(unittest.TestCase):
             "Holdout",
             "GitHubApp",
             "Factory",
+            "M5Execution",
+            "M6Semantic",
+            "M7Shadow",
+            "M8Autonomy",
+            "M9Delivery",
         ]
         missing = []
         for left, right in itertools.combinations(nodes, 2):

@@ -10,7 +10,8 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 - M1 typed intent is locally source-ready: canonical schema-v2 specs, route-driven generation, strict bounded validation, criterion-bound receipts, and `scripts/grok_spec.py` summary/coverage commands passed full local verification and all four route-selected wave-7 reviews on exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a`. A later authorized local database run passed PostgreSQL integration 10/10 and the full Trust CI suite 200/200 with no skips, validating six Trust CI tables, three migrations through version 3, and four bounded `NOLOGIN` roles; this is [local test evidence](engineering/changes/20260826-m1-typed-intent-evidence-rebuild-a4f882/evidence/postgres-integration-local.md), not deployed proof. PR update, the App-owned exact-SHA check, signed approvals, merge, and deployment of the new holdout, worker reader, policy, and attestation emitter remain incomplete operator-controlled steps. Historical schema-v1 YAML is explicit unchanged-history compatibility only.
 - M2-A executable architecture source is accepted at exact commit `022411b05924618cfde0cb97b8c8aff4955e6013`: strict target-owned model/rules/adoption state, bounded deterministic parsing, exact Git-object diff, repository/contract drift, mandatory fitness evidence including a package-aware bounded abstract interpreter for queue provenance, monotonic risk, five read-only Mermaid text projections, architecture-bound local verification/receipts, a read-only/new-target installer boundary, descriptor-bound packaging, and bounded fail-closed zombie-only workspace cleanup are implemented. M2-B independent enforcement and deployment remain separate operator-controlled work; local architecture output is not merge authority.
 - M3 controlled knowledge and debt is accepted at exact merge `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` on accepted M2 `022411b05924618cfde0cb97b8c8aff4955e6013`: strict target-owned governance registries, bounded no-follow loading, reviewed rule lifecycle, conflict detection, canonical-example/debt semantics, non-authoritative Markdown projections, exact `GovernanceHandoffV1`, executable architecture fitness, governance-bound local receipts, and safe installer distribution are implemented. The shipped registries remain empty; repository-authored approval-looking fields are not external authority and no active rule/example or closed debt is fabricated.
-- M4 durable factory control plane is the current local source candidate on that exact M3 base: the separate [`factory/`](factory/) package provides trusted-M0-bound frozen intake, twelve isolated checksum PostgreSQL migrations, explicit local owner/runtime bootstrap, effective least-privilege runtime roles, durable command replay, fenced leases, database-authoritative capacity/accounting, kills, audit-v2 hash chains, bounded reconciliation, a fixed-row transactional metrics snapshot and an authenticated UDS-only server/CLI. The PR verifier provisions disposable PostgreSQL and performs an actual restart. It has no provider/execution/external-write or Trust CI authority; final exact-tree reviews, PR delivery, the App-owned exact-SHA check, signed scopes, merge and deployment remain pending.
+- M4 durable factory control plane is the current local source candidate on that exact M3 base: the separate [`factory/`](factory/) package provides trusted-M0-bound frozen intake, twelve isolated checksum PostgreSQL migrations, explicit local owner/runtime bootstrap, effective least-privilege runtime roles, durable command replay, fenced leases, database-authoritative capacity/accounting, kills, audit-v2 hash chains, bounded reconciliation, a fixed-row transactional metrics snapshot and an authenticated UDS-only server/CLI. Product anchor `94fc5ad` passed its direct PostgreSQL/root evidence, but the subsequent exact verifier exposed Bandit handling and official-image final-postmaster readiness defects; the current repair tree therefore has no final M4 completion claim until its successor SHA passes all gates. See the [M4 package status](factory/README.md), [program roadmap](DARK_FACTORY_ROADMAP.md) and [deadline schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
+- Development is parallel only at the source-work level: M5 branch `milestone/m5-isolated-execution-provisional-m4` / route `37b05f579320` and M6 branch `milestone/m6-semantic-validation-provisional-m4` / route `82aac86a3bf9` are provisional descendants of `94fc5ad`. M5 is blocked on a suitable rootless-isolation host; both branches must restack and pass dependency-ordered merge/Trust CI gates (M4 → M5 → M6). No M4/M5/M6 completion, push, external-check or merge claim exists, and the hard program deadline remains **2026-09-08 00:00 UTC+3** without waiving any gate.
 - Independent CI candidate: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
 - Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. The App-owned check is live as `adaptive-trust-ci/verified@6737355947c2` bound to GitHub App ID `4694114` on protected `main`. The PR #2 bootstrap exception is revoked. PR #5 is not mergeable while that Check Run is `action_required`.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
@@ -24,8 +25,10 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 5. [QUICKSTART.md](QUICKSTART.md)
 6. [`trust-ci/README.md`](trust-ci/README.md)
 7. [`factory/README.md`](factory/README.md)
-8. `.grok-stack/runtime/active-route.json` (live route; not product identity or merge authority)
-9. This README’s stack graph and map
+8. [`DARK_FACTORY_ROADMAP.md`](DARK_FACTORY_ROADMAP.md)
+9. [active M4 schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md)
+10. `.grok-stack/runtime/active-route.json` (live route; not product identity or merge authority)
+11. This README’s stack graph and map
 
 ## How work runs
 
@@ -69,6 +72,7 @@ Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, execu
 - [`scripts/install_into.py`](scripts/install_into.py)
 - [`trust-ci/`](trust-ci/) — external merge trust, deployed independently
 - [`factory/`](factory/) — local M4 task control plane; no execution or merge authority
+- [`DARK_FACTORY_ROADMAP.md`](DARK_FACTORY_ROADMAP.md) — dependency-ordered M0-M9 program status and hard deadline
 - [`engineering/runbooks/`](engineering/runbooks/)
 - [`packages/`](packages/)
 - [`examples/bitrix-module/`](examples/bitrix-module/)
@@ -90,7 +94,7 @@ Source-of-truth order is in AGENTS.md. Typed M1 intent is validated first, execu
 
 ## Stack graph
 
-Decorative inventory graph (K17): every listed core node is linked to every other with one of 136 `---` edges. It is an inventory regression only, not architecture authority or architectural evidence. The directed, trust-aware authority is the reviewed model and rules described below; prompts, generated views, local receipts, and delegated grants are not merge authority.
+Decorative inventory graph (K22): every listed core node is linked to every other with one of 231 `---` edges. It is an inventory regression only, not architecture authority or architectural evidence. The directed, trust-aware authority is the reviewed model and rules described below; prompts, generated views, local receipts, and delegated grants are not merge authority.
 
 ```mermaid
 graph TD
@@ -104,6 +108,11 @@ graph TD
   Holdout["external holdout"]
   GitHubApp["GitHub App Checks"]
   Factory["local factory control"]
+  M5Execution["M5 isolated execution"]
+  M6Semantic["M6 semantic validation"]
+  M7Shadow["M7 shadow PR bundle"]
+  M8Autonomy["M8 trust profile"]
+  M9Delivery["M9 preview/canary/recovery"]
   Route --- Skills
   Route --- Agents
   Route --- Hooks
@@ -240,6 +249,101 @@ graph TD
   Runner --- Factory
   Holdout --- Factory
   GitHubApp --- Factory
+  Route --- M5Execution
+  Route --- M6Semantic
+  Route --- M7Shadow
+  Route --- M8Autonomy
+  Route --- M9Delivery
+  Skills --- M5Execution
+  Skills --- M6Semantic
+  Skills --- M7Shadow
+  Skills --- M8Autonomy
+  Skills --- M9Delivery
+  Agents --- M5Execution
+  Agents --- M6Semantic
+  Agents --- M7Shadow
+  Agents --- M8Autonomy
+  Agents --- M9Delivery
+  Hooks --- M5Execution
+  Hooks --- M6Semantic
+  Hooks --- M7Shadow
+  Hooks --- M8Autonomy
+  Hooks --- M9Delivery
+  Policy --- M5Execution
+  Policy --- M6Semantic
+  Policy --- M7Shadow
+  Policy --- M8Autonomy
+  Policy --- M9Delivery
+  Verify --- M5Execution
+  Verify --- M6Semantic
+  Verify --- M7Shadow
+  Verify --- M8Autonomy
+  Verify --- M9Delivery
+  Packages --- M5Execution
+  Packages --- M6Semantic
+  Packages --- M7Shadow
+  Packages --- M8Autonomy
+  Packages --- M9Delivery
+  Contract --- M5Execution
+  Contract --- M6Semantic
+  Contract --- M7Shadow
+  Contract --- M8Autonomy
+  Contract --- M9Delivery
+  Decisions --- M5Execution
+  Decisions --- M6Semantic
+  Decisions --- M7Shadow
+  Decisions --- M8Autonomy
+  Decisions --- M9Delivery
+  Mistakes --- M5Execution
+  Mistakes --- M6Semantic
+  Mistakes --- M7Shadow
+  Mistakes --- M8Autonomy
+  Mistakes --- M9Delivery
+  TrustAPI --- M5Execution
+  TrustAPI --- M6Semantic
+  TrustAPI --- M7Shadow
+  TrustAPI --- M8Autonomy
+  TrustAPI --- M9Delivery
+  TrustWorker --- M5Execution
+  TrustWorker --- M6Semantic
+  TrustWorker --- M7Shadow
+  TrustWorker --- M8Autonomy
+  TrustWorker --- M9Delivery
+  Postgres --- M5Execution
+  Postgres --- M6Semantic
+  Postgres --- M7Shadow
+  Postgres --- M8Autonomy
+  Postgres --- M9Delivery
+  Runner --- M5Execution
+  Runner --- M6Semantic
+  Runner --- M7Shadow
+  Runner --- M8Autonomy
+  Runner --- M9Delivery
+  Holdout --- M5Execution
+  Holdout --- M6Semantic
+  Holdout --- M7Shadow
+  Holdout --- M8Autonomy
+  Holdout --- M9Delivery
+  GitHubApp --- M5Execution
+  GitHubApp --- M6Semantic
+  GitHubApp --- M7Shadow
+  GitHubApp --- M8Autonomy
+  GitHubApp --- M9Delivery
+  Factory --- M5Execution
+  Factory --- M6Semantic
+  Factory --- M7Shadow
+  Factory --- M8Autonomy
+  Factory --- M9Delivery
+  M5Execution --- M6Semantic
+  M5Execution --- M7Shadow
+  M5Execution --- M8Autonomy
+  M5Execution --- M9Delivery
+  M6Semantic --- M7Shadow
+  M6Semantic --- M8Autonomy
+  M6Semantic --- M9Delivery
+  M7Shadow --- M8Autonomy
+  M7Shadow --- M9Delivery
+  M8Autonomy --- M9Delivery
 ```
 
 | Node | Role |
@@ -261,6 +365,11 @@ graph TD
 | Holdout | External digest-pinned bundle, outside the PR checkout |
 | GitHubApp | App-owned Checks `adaptive-trust-ci/verified@<policy-sha12>` bound to the App ID |
 | Factory | Separate local M4 control API/store under `factory/`; no provider execution, external write, deployment or merge authority |
+| M5Execution | Provisional isolated execution packet/result boundary; rootless-host gate and no merge authority |
+| M6Semantic | Provisional independent semantic verdict and bounded-repair boundary; cannot self-approve implementation |
+| M7Shadow | Roadmap-only immutable ready-for-PR/shadow evidence bundle; human merge remains mandatory |
+| M8Autonomy | Roadmap-only empirical trust profile and immediate demotion; current authority ceiling is L2 |
+| M9Delivery | Roadmap-only exact signed artifact preview/staging/canary/recovery; production promotion remains human-owned |
 
 oneshots `migrate` / `runner-loader` reuse API/worker images; privileged rootless DinD is an execution edge of Runner.
 

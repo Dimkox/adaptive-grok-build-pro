@@ -10,7 +10,9 @@
 - [x] TDD scoped Unix-socket API/CLI and OpenAPI.
 - [x] Integrate architecture, diagrams, verifier/installer, README/roadmap.
 - [x] Run disposable PostgreSQL/API/effective-role/actual-restart exit suite.
-- [ ] Run final root verifier after remediation documentation is frozen.
+- [x] Reproduce exact-head Bandit B110 and disposable PostgreSQL bootstrap/postmaster handoff failures.
+- [x] TDD explicit best-effort fence instrumentation and final-PID1 PostgreSQL readiness.
+- [ ] Run final exact-head verifier after current documentation and repair evidence are frozen.
 - [ ] Hand final fingerprint to all five independent reviewers.
 
-No push, PR, merge, deployment or external/production write is authorized by this implementation task.
+Parallel source context only: M5 `milestone/m5-isolated-execution-provisional-m4` / `37b05f579320` and M6 `milestone/m6-semantic-validation-provisional-m4` / `82aac86a3bf9` are provisional from M4 anchor `94fc5ad`, must restack M4 → M5 → M6, and do not create completion or external authority. M5 is blocked on a suitable rootless-isolation host. No push, PR, merge, deployment or external/production write is authorized by this implementation task; the hard deadline remains **2026-09-08 00:00 UTC+3** without gate waiver. See [schedule](schedule.md), [release](release.md), [root status](../../../README.md), [roadmap](../../../DARK_FACTORY_ROADMAP.md) and [factory package](../../../factory/README.md).

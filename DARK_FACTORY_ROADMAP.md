@@ -110,11 +110,11 @@ At the roadmap baseline, the public branch response showed `main` without requir
 | Typed business specification | Missing | Build schema, validator, traceability, and evidence mapping |
 | Executable architecture model | M2-A source candidate | Complete final reviews/receipts, then implement the independent M2-B enforcement floor |
 | Agent-loop backpressure | Missing | Add structured findings and bounded repair cycles |
-| Semantic validator/adjudicator | Missing | Add independent requirement-level verdict separate from implementer reasoning |
+| Semantic validator/adjudicator | Provisional M6 source work | Route `82aac86a3bf9` on `milestone/m6-semantic-validation-provisional-m4`; restack after accepted M5 and retain independent verdict authority |
 | Controlled learning | Missing | Replace automatic Markdown promotion with reviewed rule lifecycle |
 | Debt/slop ledger | Missing | Track deliberate debt, owner, cost, trigger, and deadline |
-| Durable factory task queue | Missing | Build a separate factory control plane |
-| Background implementation environment | Missing | Add isolated ephemeral workspaces independent of a laptop session |
+| Durable factory task queue | M4 local source candidate | Product anchor `94fc5ad`; close current verifier repair, reviews and dependency-ordered external gates before any completion claim |
+| Background implementation environment | Provisional M5 source work, host-blocked | Route `37b05f579320` on `milestone/m5-isolated-execution-provisional-m4`; suitable rootless-isolation host remains a blocker and the branch must restack after accepted M4 |
 | Immutable implementation run manifest | Missing | Record model, prompt, tools, policy, costs, and provenance |
 | WIP, cost, and PR flood controls | Missing | Add hard per-repository and global limits |
 | Automated PR lifecycle | Missing | Create branch, commit, PR, evidence summary, and supersession logic |
@@ -204,6 +204,20 @@ M1 + M2 + M3
 ```
 
 Milestones M1, M2, and M3 may be developed in parallel only after M0 has a live proof or an explicitly documented bootstrap exception approved by the user. M4 must consume their stable interfaces rather than inventing replacements.
+
+Current execution is parallel only for reversible source development: M4 repair follows product anchor `94fc5ad`; M5 branch `milestone/m5-isolated-execution-provisional-m4` / route `37b05f579320` and M6 branch `milestone/m6-semantic-validation-provisional-m4` / route `82aac86a3bf9` are provisional descendants. Acceptance, PR delivery, merge and Trust CI remain strictly dependency ordered M4 → M5 → M6, and each downstream branch must restack onto its accepted predecessor. M5 additionally remains blocked on a suitable rootless-isolation host. The hard deadline is **2026-09-08 00:00 UTC+3**; no M4/M5/M6 completion or external action is claimed merely from source presence or calendar pressure. See the [root current state](README.md), [M4 package](factory/README.md) and [active schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
+
+## 7.1 Exact milestone handoff contracts
+
+| Edge | Producer → consumer binding | Gate and invalidation | Rollback / forbidden authority |
+| --- | --- | --- | --- |
+| M4 → M5 | M4 emits an immutable task packet bound to `task_id`, accepted base/head SHA, complete frozen-intent/spec/architecture/governance/policy digests, route and budget; M5 accepts only the exact packet digest and M4 product SHA. | Accepted M4 exact-SHA verification/reviews/Trust CI plus a suitable rootless-isolation host; any predecessor SHA, packet field, policy or authority change invalidates dispatch and requires restack/reissue. | Cancel/expire the M4 lease, preserve packet/audit and destroy only the isolated workspace; M5 receives no intake-policy, Trust CI, merge, production or cross-task authority. |
+| M5 → M6 | M5 emits an immutable execution-result/run-manifest digest bound to task packet digest, exact base/head SHA, workspace/image/tool/network/secret-scope evidence and artifacts; M6 verifies all bindings before judging. | Accepted M5 isolation/capability/orphan evidence and predecessor exact SHA; changed code, manifest, artifact, image or policy invalidates the verdict and starts a fresh bounded validation cycle. | Quarantine result/artifacts and return a structured finding to bounded repair; M6 cannot write implementation, mint Trust CI/human approval or mutate execution evidence. |
+| M6 → M7 | M6 emits a signed/immutable semantic-verdict digest bound to execution result, requirement/criterion IDs, exact head SHA, findings, repair count and residual risk; M7 consumes only a PASS verdict with matching local/external checks. | Independent adjudication, repair ceiling and exact-SHA verifier/Trust CI; any source, criterion, policy, holdout or verdict change invalidates the ready-for-PR state. | Revert to needs-human/repair or supersede the bundle while preserving evidence; M7 cannot push/open/update a PR without exact delegated authority and cannot merge or publish Trust CI. |
+| M7 → M8 | M7 emits an immutable shadow ready-for-PR bundle digest binding task/run/verdict/check/PR-head/human-decision and outcome metrics; M8 cohorts only exact trust-profile tuples. | At least 30 human-accepted tasks for the exact class/profile tuple, complete disagreement/rollback/security metrics and human merge for every PR; any tuple component or evidence mutation starts a new cohort. | Demote/discard the affected cohort and keep human merge; under current authority M8 is capped at L2, cannot auto-merge, rewrite historical decisions or activate governance. |
+| M8 → M9 | M8 emits a durable trust-profile digest and L2-or-lower decision bound to repository/class/models/prompts/policy/runner/holdout digests; M9 binds preview/staging/canary inputs to the exact merged SHA and signed artifact digest. | Accepted predecessor profiles, exact signed supply-chain artifact, reproducible preview/staging, explicit canary thresholds and exercised recovery; incident, rollback, policy/artifact/SHA change invalidates promotion and triggers demotion. | Halt/rollback the canary, preserve deployment evidence and demote the profile; production promotion remains human-owned and no agent gains production, signing-key, branch-protection or Trust CI authority. |
+
+M7-M9 are roadmap contracts only: no implementation, completion, cohort, preview, canary or external-delivery claim is made in the current tree.
 
 ---
 
@@ -561,7 +575,7 @@ factory/
 
 Do not add a root packaging marker.
 
-Current status: the M4 local source candidate lives under `factory/` on accepted M3 base `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`. Unchecked work and exit items remain unchecked until the final exact-tree verifier, independent reviews and external PR authority are recorded; source presence alone is not completion or deployment.
+Current status: the M4 local source candidate lives under [`factory/`](factory/) on accepted M3 base `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`. Product anchor `94fc5ad` passed direct PostgreSQL/root evidence, while its later exact verifier exposed Bandit handling and final-postmaster readiness defects now under repair; the successor SHA must pass all local gates before review. Unchecked work and exit items remain unchecked until final exact-tree verification, independent reviews and external PR authority are recorded; source presence alone is not completion or deployment. Current dates and dependency gates are in the [M4 schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
 
 ## Factory task state machine
 
@@ -644,6 +658,8 @@ updated_at
 
 # M5 — Isolated Background Execution Plane
 
+Current status: provisional source branch `milestone/m5-isolated-execution-provisional-m4`, route `37b05f579320`, starts from M4 anchor `94fc5ad` and must restack after M4 acceptance. A suitable rootless-isolation host is a real exit-gate blocker; no M5 completion, push, external check or merge is claimed.
+
 ## Objective
 
 Run implementation agents in ephemeral workspaces that survive laptop disconnection, cannot affect other tasks, and expose only task-scoped capabilities.
@@ -717,6 +733,8 @@ output contract
 
 # M6 — Independent Semantic Validation, Meta-Review, and Bounded Repair
 
+Current status: provisional source branch `milestone/m6-semantic-validation-provisional-m4`, route `82aac86a3bf9`, starts from M4 anchor `94fc5ad` for parallel development only. It must restack first onto accepted M4/M5 in dependency order and has no completion, push, external check or merge claim.
+
 ## Objective
 
 Add backpressure inside the agent loop so incorrect implementations stop early, produce structured findings, and undergo a finite repair process.
@@ -787,6 +805,8 @@ needs_human
 ---
 
 # M7 — Automated Pull-Request Lifecycle and Shadow Mode
+
+Current status: roadmap only. Its future output is the immutable ready-for-PR/shadow bundle defined in §7.1; no PR lifecycle or shadow cohort is claimed.
 
 ## Objective
 
@@ -874,6 +894,8 @@ security escalation rate
 ---
 
 # M8 — Earned and Revocable Low-Risk Autonomy
+
+Current status: roadmap only. Promotion requires at least 30 human-accepted tasks for one exact trust-profile tuple, immediate demotion remains mandatory, and current authority caps the system at L2 (automated recommendation, human merge).
 
 ## Objective
 
@@ -968,6 +990,8 @@ Never initially eligible:
 ---
 
 # M9 — Preview, Staging, Canary, and Recovery-Aware Delivery
+
+Current status: roadmap only. Any future delivery must bind the exact merged SHA to a signed artifact through preview/staging/canary/recovery evidence, while production promotion remains human-owned.
 
 ## Objective
 

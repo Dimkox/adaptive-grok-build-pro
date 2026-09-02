@@ -14,6 +14,25 @@ def _run(command: list[str], *, environment: dict[str, str] | None = None, timeo
     subprocess.run(command, check=True, env=environment, timeout=timeout)
 
 
+def _final_postgres_ready(name: str) -> bool:
+    final_postmaster = subprocess.run(
+        [
+            "docker", "exec", name, "sh", "-c",
+            'test "$(sed -n "1p" "$PGDATA/postmaster.pid")" = 1',
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    if final_postmaster.returncode != 0:
+        return False
+    ready = subprocess.run(
+        ["docker", "exec", name, "pg_isready", "-U", "factory_exit", "-d", "factory_exit"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    return ready.returncode == 0
+
+
 def main() -> int:
     name = f"adaptive-factory-exit-{uuid.uuid4().hex[:12]}"
     password = f"local-{uuid.uuid4().hex}"
@@ -35,19 +54,11 @@ def main() -> int:
         environment["FACTORY_TEST_DATABASE_URL"] = f"postgresql://factory_exit:{password}@127.0.0.1:{port}/factory_exit"
         deadline = time.monotonic() + 30
         while True:
-            ready = subprocess.run(
-                ["docker", "exec", name, "pg_isready", "-U", "factory_exit", "-d", "factory_exit"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            if ready.returncode == 0:
+            if _final_postgres_ready(name):
                 break
             if time.monotonic() >= deadline:
-                raise RuntimeError("disposable PostgreSQL did not become ready")
+                raise RuntimeError("disposable PostgreSQL final postmaster did not become ready")
             time.sleep(0.25)
-        # Avoid the image's one-time bootstrap/postmaster handoff after the
-        # first successful readiness response before opening host TCP clients.
-        time.sleep(1.0)
         with tempfile.TemporaryDirectory(prefix="adaptive-factory-exit-venv-") as environment_root:
             environment["UV_PROJECT_ENVIRONMENT"] = environment_root
             uv = ["uv", "run", "--project", "factory"]

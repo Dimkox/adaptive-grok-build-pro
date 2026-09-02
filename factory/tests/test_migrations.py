@@ -1,9 +1,23 @@
 import unittest
+from unittest.mock import patch
 
 from adaptive_factory.migrations import AppliedMigration, MigrationError, discover_migrations, plan_migrations
+from factory.tests import run_disposable_exit
 
 
 class MigrationTests(unittest.TestCase):
+    def test_exit_runner_waits_for_final_pid1_postmaster_and_readiness(self):
+        completed = type("Completed", (), {"returncode": 0})()
+        with patch.object(run_disposable_exit.subprocess, "run", side_effect=[completed, completed]) as run:
+            self.assertTrue(run_disposable_exit._final_postgres_ready("factory-test"))
+        self.assertIn("postmaster.pid", run.call_args_list[0].args[0][-1])
+        self.assertEqual(run.call_args_list[1].args[0][3], "pg_isready")
+
+        not_final = type("Completed", (), {"returncode": 1})()
+        with patch.object(run_disposable_exit.subprocess, "run", return_value=not_final) as run:
+            self.assertFalse(run_disposable_exit._final_postgres_ready("factory-test"))
+        self.assertEqual(run.call_count, 1)
+
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
         self.assertEqual([item.version for item in migrations], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])

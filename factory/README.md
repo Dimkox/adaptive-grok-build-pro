@@ -2,7 +2,9 @@
 
 This nested Python package is a source-only, local control plane. It validates immutable M1/M2/M3/M0-bound intake, stores operational truth in an isolated PostgreSQL `factory` schema, schedules work with database leases and monotonic fences, enforces 20 global readers / 10 readers per repository / one writer, bounds retries and budgets, retains hash-chained audit, and performs restart-safe reconciliation.
 
-It does not execute providers, shell or repository commands; access Git/GitHub, Trust CI state or credentials; install systemd; deploy; publish; or perform any external/production write. `ready_for_human` is its positive terminal state. M5+ capabilities remain absent.
+It does not execute providers, shell or repository commands; access Git/GitHub, Trust CI state or credentials; install systemd; deploy; publish; or perform any external/production write. `ready_for_human` is its positive terminal state. M5+ capabilities remain absent from this package.
+
+Current status is bounded by the [root current-state summary](../README.md), [program roadmap](../DARK_FACTORY_ROADMAP.md) and [active M4 schedule](../engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md). M4 product anchor `94fc5ad` is undergoing a successor repair for explicit Bandit handling and deterministic final-postmaster readiness; it is not final or externally accepted. M5 branch `milestone/m5-isolated-execution-provisional-m4` (route `37b05f579320`) and M6 branch `milestone/m6-semantic-validation-provisional-m4` (route `82aac86a3bf9`) are provisional from that anchor and must restack in dependency order; M5 currently has a rootless-isolation host blocker. The hard deadline is **2026-09-08 00:00 UTC+3**, but no deadline waives local verification, independent review, exact-SHA Trust CI or signed scopes.
 
 ## Local disposable verification
 
