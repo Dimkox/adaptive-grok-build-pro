@@ -1,7 +1,7 @@
 # Test rereview — bounded workspace process cleanup
 
-**Route:** `fa3ae6080deb`  
-**Reviewed verification fingerprint:** `a9a4cc297ab7e84b301340aaf8bea48b1c6a92d8bb578e862d081370826a3da9`  
+**Route:** `fa3ae6080deb`
+**Reviewed verification fingerprint:** `a9a4cc297ab7e84b301340aaf8bea48b1c6a92d8bb578e862d081370826a3da9`
 **Verdict:** **PASS**
 
 This is the independent rereview after the prior fingerprint's blocking TR-001 finding. The old `test-review.md` remains an accurate FAIL record for that older tree; this report evaluates the remediated current tree.

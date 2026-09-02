@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from functools import partial
 import os
 import threading
 import time
@@ -113,7 +114,7 @@ class PostgresFactoryTests(unittest.TestCase):
         provision_runtime_login(DATABASE_URL, cls.runtime_login, cls.runtime_password)
         provision_artifact_attestor_login(
             DATABASE_URL, cls.artifact_attestor_login, cls.artifact_attestor_password,
-            runtime_login="factory_service_test",
+            runtime_login=cls.runtime_login,
         )
         cls.artifact_attestor_url = make_conninfo(**{
             **conninfo_to_dict(DATABASE_URL),
@@ -1914,6 +1915,93 @@ class PostgresFactoryTests(unittest.TestCase):
                 (bounded.lease.run_id,),
             )
             self.assertEqual(cursor.fetchone()[0], 2)
+    def _assert_claim_terminal_race_releases_capacity(self, action: str) -> None:
+        import psycopg
+
+        class PausingCloseStore(PostgresFactoryStore):
+            def __init__(self, database_url):
+                super().__init__(database_url)
+                self.close_snapshot_complete = threading.Event()
+                self.resume_terminal = threading.Event()
+                self._pause_once = True
+
+            def _close_active_lease(self, cursor, task_id):
+                super()._close_active_lease(cursor, task_id)
+                if self._pause_once:
+                    self._pause_once = False
+                    self.close_snapshot_complete.set()
+                    if not self.resume_terminal.wait(timeout=5):
+                        raise RuntimeError("terminal transition barrier timed out")
+
+        for index, role in enumerate((RunRole.READER, RunRole.WRITER), start=1):
+            with self.subTest(action=action, role=role.value):
+                source = f"{action}-claim-race-{role.value}"
+                repository = f"race/{action}/{role.value}"
+                task = self.submit(repository=repository, source=source).task
+                pausing_store = PausingCloseStore(self.runtime_url)
+                pausing_service = FactoryService(pausing_store)
+                command_key = f"{index if action == 'cancel' else index + 2}" * 64
+
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    if action == "cancel":
+                        terminal_future = pool.submit(
+                            pausing_service.cancel,
+                            task.task_id,
+                            reason="operator-race",
+                            idempotency_key=command_key,
+                            actor=OPERATOR,
+                            now=NOW,
+                        )
+                    else:
+                        replacement = self.payload(repository=repository, source=source)
+                        replacement["source_digest"] = f"{index + 7}" * 64
+                        terminal_future = pool.submit(
+                            pausing_service.intake, replacement, actor=OPERATOR, now=NOW
+                        )
+                    self.assertTrue(pausing_store.close_snapshot_complete.wait(timeout=5))
+                    claim_future = pool.submit(
+                        self.service.claim,
+                        owner="ignored-race-owner",
+                        role=role,
+                        repositories=(task.repository_id,),
+                        lease_seconds=60,
+                        actor=WORKER,
+                        now=NOW,
+                    )
+                    try:
+                        grant = claim_future.result(timeout=5)
+                    finally:
+                        pausing_store.resume_terminal.set()
+                    terminal_future.result(timeout=5)
+
+                self.assertIsNotNone(grant)
+                expected = TaskStatus.CANCELLED if action == "cancel" else TaskStatus.SUPERSEDED
+                self.assertEqual(self.store.get_task(task.task_id).status, expected)
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT current_run_id,current_fence FROM factory.tasks WHERE task_id=%s",
+                        (task.task_id,),
+                    )
+                    self.assertEqual(cursor.fetchone(), (None, None))
+                    cursor.execute(
+                        "SELECT count(*) FROM factory.runs WHERE task_id=%s AND released_at IS NULL",
+                        (task.task_id,),
+                    )
+                    self.assertEqual(cursor.fetchone()[0], 0)
+                    cursor.execute(
+                        "SELECT count(*) FROM factory.capacity_allocations WHERE task_id=%s AND released_at IS NULL",
+                        (task.task_id,),
+                    )
+                    self.assertEqual(cursor.fetchone()[0], 0)
+                    scopes = [f"global:{role.value}"]
+                    if role is RunRole.READER:
+                        scopes.append(f"repository:{task.repository_id}:reader")
+                    cursor.execute(
+                        "SELECT scope_key,active_count FROM factory.capacity_counters WHERE scope_key=ANY(%s)",
+                        (scopes,),
+                    )
+                    self.assertEqual(dict(cursor.fetchall()), {scope: 0 for scope in scopes})
+                self.assertTrue(self.store.readiness()["capacity_consistent"])
 
     def authority_payload(self, kind: str, source: str, suffix: int):
         import psycopg
@@ -2186,6 +2274,12 @@ class PostgresFactoryTests(unittest.TestCase):
                 self.assertEqual(cursor.fetchone()[0], 0)
             result = self.service.reconcile(actor=OPERATOR, now=NOW)
             self.assertEqual(result.repaired, 0)
+
+    def test_cancel_racing_claim_releases_reader_and_writer_capacity(self):
+        self._assert_claim_terminal_race_releases_capacity("cancel")
+
+    def test_supersede_racing_claim_releases_reader_and_writer_capacity(self):
+        self._assert_claim_terminal_race_releases_capacity("supersede")
 
     def test_reservations_are_bounded_replay_safe_and_settled_by_usage(self):
         import psycopg
@@ -3008,6 +3102,130 @@ class PostgresFactoryTests(unittest.TestCase):
                 (first_candidate.run_id,),
             )
             self.assertEqual(cursor.fetchone(), (1, 2, 2, 2))
+    def test_accepted_infrastructure_retry_limits_are_exact_on_release(self):
+        for infrastructure_retries in range(3):
+            with self.subTest(infrastructure_retries=infrastructure_retries):
+                repository = f"retry/release-{infrastructure_retries}"
+                payload = self.payload(
+                    repository=repository,
+                    source=f"release-limit-{infrastructure_retries}",
+                )
+                payload["limits"]["infrastructure_retries"] = infrastructure_retries
+                self.service.intake(payload, actor=OPERATOR, now=NOW)
+                for attempt_no in range(1, infrastructure_retries + 2):
+                    grant = self.service.claim(
+                        owner=f"release-limit-{infrastructure_retries}-{attempt_no}",
+                        role=RunRole.READER,
+                        repositories=(repository,),
+                        lease_seconds=30,
+                        actor=WORKER,
+                        now=NOW,
+                    )
+                    self.assertIsNotNone(grant)
+                    status = self.service.release(
+                        grant, outcome=FailureClass.WORKER_LOST, actor=WORKER, now=NOW
+                    )
+                    expected = (
+                        TaskStatus.RETRY
+                        if attempt_no <= infrastructure_retries
+                        else TaskStatus.DEAD
+                    )
+                    self.assertEqual(status, expected)
+                self.assertIsNone(
+                    self.service.claim(
+                        owner=f"release-limit-{infrastructure_retries}-exhausted",
+                        role=RunRole.READER,
+                        repositories=(repository,),
+                        lease_seconds=30,
+                        actor=WORKER,
+                        now=NOW,
+                    )
+                )
+
+    def test_infrastructure_retry_limit_is_persisted_with_frozen_intent(self):
+        import psycopg
+
+        source = "persisted-retry-limit"
+        first_payload = self.payload(source=source)
+        first_payload["limits"]["infrastructure_retries"] = 1
+        first = self.service.intake(first_payload, actor=OPERATOR, now=NOW).task
+        replacement_payload = self.payload(source=source)
+        replacement_payload["limits"]["infrastructure_retries"] = 0
+        replacement = self.service.intake(replacement_payload, actor=OPERATOR, now=NOW).task
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT t.task_id,t.infrastructure_retries,
+                (i.body #>> '{limits,infrastructure_retries}')::integer,
+                t.packet_digest,i.intent_digest,t.state
+                FROM factory.tasks t JOIN factory.accepted_intents i ON i.intent_id=t.intent_id
+                WHERE t.task_id=ANY(%s) ORDER BY t.generation""",
+                ([first.task_id, replacement.task_id],),
+            )
+            rows = cursor.fetchall()
+        self.assertEqual(
+            [
+                (str(row[0]), row[1], row[2], row[3].strip(), row[4].strip(), row[5])
+                for row in rows
+            ],
+            [
+                (
+                    first.task_id,
+                    1,
+                    1,
+                    first.packet_digest,
+                    first.intent_digest,
+                    TaskStatus.SUPERSEDED.value,
+                ),
+                (
+                    replacement.task_id,
+                    0,
+                    0,
+                    replacement.packet_digest,
+                    replacement.intent_digest,
+                    TaskStatus.QUEUED.value,
+                ),
+            ],
+        )
+
+    def test_accepted_infrastructure_retry_limits_are_exact_on_reconciliation(self):
+        import psycopg
+
+        for infrastructure_retries in range(3):
+            with self.subTest(infrastructure_retries=infrastructure_retries):
+                repository = f"retry/reconcile-{infrastructure_retries}"
+                payload = self.payload(
+                    repository=repository,
+                    source=f"reconcile-limit-{infrastructure_retries}",
+                )
+                payload["limits"]["infrastructure_retries"] = infrastructure_retries
+                task = self.service.intake(payload, actor=OPERATOR, now=NOW).task
+                for attempt_no in range(1, infrastructure_retries + 2):
+                    grant = self.service.claim(
+                        owner=f"reconcile-limit-{infrastructure_retries}-{attempt_no}",
+                        role=RunRole.READER,
+                        repositories=(repository,),
+                        lease_seconds=30,
+                        actor=WORKER,
+                        now=NOW,
+                    )
+                    self.assertIsNotNone(grant)
+                    with psycopg.connect(DATABASE_URL) as connection:
+                        connection.execute(
+                            "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=%s",
+                            (grant.run_id,),
+                        )
+                    result = self.service.reconcile(actor=OPERATOR, now=NOW)
+                    self.assertEqual((result.candidates, result.repaired), (1, 1))
+                    expected = (
+                        TaskStatus.RETRY
+                        if attempt_no <= infrastructure_retries
+                        else TaskStatus.DEAD
+                    )
+                    self.assertEqual(self.store.get_task(task.task_id).status, expected)
+                self.assertEqual(
+                    self.service.reconcile(actor=OPERATOR, now=NOW).repaired,
+                    0,
+                )
 
     def test_release_metrics_inventory_tracks_durable_operations_and_rejections(self):
         import psycopg
@@ -3543,21 +3761,25 @@ class PostgresFactoryTests(unittest.TestCase):
                     VALUES ('owner/repository','manual','legacy-blocked-zero'),
                            ('owner/repository','manual','legacy-ready-reservation')"""
                 )
-                for legacy_intent_id, source in (
-                    (blocked_intent_id, "legacy-blocked-zero"),
-                    (ready_intent_id, "legacy-ready-reservation"),
-                    (ready_new_intent_id, "legacy-ready-reservation"),
+                for legacy_intent_id, source, body in (
+                    (blocked_intent_id, "legacy-blocked-zero", "{}"),
+                    (ready_intent_id, "legacy-ready-reservation", "{}"),
+                    (
+                        ready_new_intent_id,
+                        "legacy-ready-reservation",
+                        '{"limits":{"infrastructure_retries":0}}',
+                    ),
                 ):
                     cursor.execute(
                         """INSERT INTO factory.accepted_intents
                         (intent_id,intent_digest,idempotency_key,repository_id,source_type,source_id,source_digest,
                          exact_base_sha,spec_digest,architecture_digest,governance_digest,policy_digest,body)
-                        VALUES (%s,%s,%s,'owner/repository','manual',%s,%s,%s,%s,%s,%s,%s,'{}')""",
+                        VALUES (%s,%s,%s,'owner/repository','manual',%s,%s,%s,%s,%s,%s,%s,%s::jsonb)""",
                         (
                             legacy_intent_id, uuid.uuid4().hex * 2, uuid.uuid4().hex * 2, source,
                             uuid.uuid4().hex * 2, uuid.uuid4().hex + uuid.uuid4().hex[:8],
                             uuid.uuid4().hex * 2, uuid.uuid4().hex * 2,
-                            uuid.uuid4().hex * 2, uuid.uuid4().hex * 2,
+                            uuid.uuid4().hex * 2, uuid.uuid4().hex * 2, body,
                         ),
                     )
                 cursor.execute(
@@ -3631,7 +3853,10 @@ class PostgresFactoryTests(unittest.TestCase):
                     ('forged-untrusted-key','unknown',777)"""
                 )
 
-            applied = PostgresMigrator(upgrade_url).apply()
+            applied = PostgresMigrator(upgrade_url).apply(
+                expected_runtime_login=self.runtime_login,
+                expected_artifact_attestor_login=self.artifact_attestor_login,
+            )
             from psycopg.conninfo import conninfo_to_dict, make_conninfo
             upgraded_runtime_url = make_conninfo(**{
                 **conninfo_to_dict(upgrade_url), "user": self.runtime_login,
@@ -3650,7 +3875,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12, 13], "ready", 13, True,
+                    [9, 10, 11, 12, 13, 14], "ready", 14, True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
@@ -3669,6 +3894,18 @@ class PostgresFactoryTests(unittest.TestCase):
                 (4, 1, 1, 0, 25_000_500, 1, 3),
             )
             with psycopg.connect(upgrade_url) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT task_id,infrastructure_retries FROM factory.tasks ORDER BY task_id"
+                )
+                self.assertEqual(
+                    dict(cursor.fetchall()),
+                    {
+                        task_id: 2,
+                        blocked_task_id: 2,
+                        ready_task_id: 2,
+                        ready_new_task_id: 0,
+                    },
+                )
                 cursor.execute(
                     "SELECT metric_name,outcome,value FROM factory.metric_counters_pre_012_untrusted ORDER BY metric_name"
                 )
@@ -3757,7 +3994,13 @@ class PostgresFactoryTests(unittest.TestCase):
                     (ready_task_id,),
                 )
             self.assertEqual(upgraded_store.readiness()["status"], "ready")
-            self.assertEqual(PostgresMigrator(upgrade_url).apply(), ())
+            self.assertEqual(
+                PostgresMigrator(upgrade_url).apply(
+                    expected_runtime_login=self.runtime_login,
+                    expected_artifact_attestor_login=self.artifact_attestor_login,
+                ),
+                (),
+            )
         finally:
             with psycopg.connect(DATABASE_URL, autocommit=True) as admin:
                 admin.execute(
@@ -3869,6 +4112,96 @@ class PostgresFactoryTests(unittest.TestCase):
         self.assertEqual(errors, [])
         self.assertEqual(self.store.get_task(task.task_id).status, TaskStatus.CANCELLED)
 
+    def test_api_mutation_families_fail_bounded_under_database_lock_contention(self):
+        import psycopg
+
+        class FastBoundStore(PostgresFactoryStore):
+            _MUTATION_LOCK_TIMEOUT = "100ms"
+            _MUTATION_STATEMENT_TIMEOUT = "500ms"
+
+        bounded = FastBoundStore(DATABASE_URL)
+        operations = []
+        for index, name in enumerate(("heartbeat", "release", "reserve", "observe"), start=1):
+            repository = f"bounds/{name}"
+            task = self.submit(repository=repository, source=f"bounded-{name}").task
+            grant = self.service.claim(
+                owner="bounded-worker",
+                role=RunRole.READER,
+                repositories=(repository,),
+                lease_seconds=60,
+                actor=WORKER,
+                now=NOW,
+            )
+            key = f"{index:064x}"
+            if name == "heartbeat":
+                operation = partial(bounded.heartbeat, grant, WORKER, NOW, idempotency_key=key)
+            elif name == "release":
+                operation = partial(
+                    bounded.release,
+                    grant, FailureClass.WORKER_LOST, WORKER, NOW, idempotency_key=key
+                )
+            elif name == "reserve":
+                operation = partial(bounded.reserve_budget, grant, 0, 0, 0, "a" * 64, key, WORKER)
+            else:
+                operation = partial(
+                    bounded.observe_usage,
+                    grant, "bounded-provider-call", "b" * 64, 0, 0, 0, WORKER,
+                    idempotency_key=key,
+                )
+            operations.append((name, "task", task.task_id, operation))
+
+        cancel_task = self.submit(repository="bounds/cancel", source="bounded-cancel").task
+        operations.append(
+            (
+                "cancel",
+                "task",
+                cancel_task.task_id,
+                lambda: bounded.cancel(
+                    cancel_task.task_id, "bounded", "5" * 64, OPERATOR, NOW
+                ),
+            )
+        )
+        kill_key = "6" * 64
+        operations.append(
+            (
+                "kill",
+                "advisory",
+                kill_key,
+                lambda: bounded.set_kill(
+                    "repository:bounds/kill", False, "bounded", kill_key, OPERATOR, NOW
+                ),
+            )
+        )
+
+        outcomes = {}
+        for name, lock_kind, identity, operation in operations:
+            with self.subTest(name=name):
+                blocker = psycopg.connect(DATABASE_URL)
+                if lock_kind == "task":
+                    blocker.execute(
+                        "SELECT task_id FROM factory.tasks WHERE task_id=%s FOR UPDATE", (identity,)
+                    )
+                else:
+                    blocker.execute(
+                        "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", (identity,)
+                    )
+                with ThreadPoolExecutor(max_workers=1) as pool:
+                    future = pool.submit(operation)
+                    try:
+                        future.result(timeout=0.5)
+                    except StoreError as exc:
+                        outcomes[name] = type(exc).__name__
+                    except FutureTimeout:
+                        outcomes[name] = "client_timeout"
+                    except Exception as exc:
+                        outcomes[name] = f"raw:{type(exc).__name__}"
+                    else:
+                        outcomes[name] = "returned"
+                    finally:
+                        blocker.rollback()
+                        blocker.close()
+        self.assertEqual(outcomes, {name: "StoreUnavailable" for name, *_rest in operations})
+
     def test_representative_hot_queries_use_task_scoped_indexes(self):
         import psycopg
 
@@ -3939,54 +4272,62 @@ class PostgresFactoryTests(unittest.TestCase):
 
     def test_shipped_local_bootstrap_provisions_effective_runtime_login(self):
         import psycopg
-        from adaptive_factory.admin import BootstrapError, bootstrap_local, provision_runtime_login
+        from adaptive_factory.admin import BootstrapError, bootstrap_local
 
-        login = "factory_service_test"
-        attestor_login = "factory_artifact_service_test"
-        unsafe_login = "factory_unsafe_dual_test"
         mismatch_login = "factory_mismatch_test"
         from psycopg import sql
 
         def cleanup_bootstrap_roles():
             with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
-                for role in (login, attestor_login, unsafe_login, mismatch_login):
-                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(role)))
+                cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(
+                    sql.Identifier(mismatch_login)
+                ))
 
         self.addCleanup(cleanup_bootstrap_roles)
-        password = "-".join(("local", "runtime", "bootstrap", "test"))
-        attestor_password = "-".join(("local", "artifact", "attestor", "test"))
-        from psycopg.conninfo import conninfo_to_dict, make_conninfo
-
-        runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
-        attestor_url = make_conninfo(**{
-            **conninfo_to_dict(DATABASE_URL), "user": attestor_login,
-            "password": attestor_password,
-        })
-        with self.assertRaisesRegex(BootstrapError, "runtime readiness validation failed"):
+        with self.assertRaisesRegex(BootstrapError, "role boundary validation failed"):
             bootstrap_local(
                 DATABASE_URL, mismatch_login, "local-runtime-mismatch-test",
                 self.runtime_url,
             )
         result = bootstrap_local(
-            DATABASE_URL, login, password, runtime_url,
-            attestor_login, attestor_password, attestor_url,
+            DATABASE_URL, self.runtime_login, self.runtime_password, self.runtime_url,
+            self.artifact_attestor_login, self.artifact_attestor_password,
+            self.artifact_attestor_url,
         )
         self.assertEqual(result["database_role"], "factory_runtime")
         self.assertEqual(result["artifact_attestor_database_role"], "factory_artifact_attestor")
-        self.assertEqual(result["schema_version"], 13)
-        with psycopg.connect(runtime_url) as connection, connection.cursor() as cursor:
+        self.assertEqual(result["schema_version"], 14)
+        self.assertEqual(
+            PostgresMigrator(DATABASE_URL).apply(
+                expected_runtime_login=self.runtime_login,
+                expected_artifact_attestor_login=self.artifact_attestor_login,
+            ),
+            (),
+        )
+        with psycopg.connect(self.runtime_url) as connection, connection.cursor() as cursor:
             cursor.execute("SET ROLE factory_runtime")
             cursor.execute("SELECT session_user,current_user")
-            self.assertEqual(cursor.fetchone(), (login, "factory_runtime"))
+            self.assertEqual(cursor.fetchone(), (self.runtime_login, "factory_runtime"))
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
-            cursor.execute(
-                "CREATE ROLE factory_unsafe_dual_test LOGIN NOINHERIT PASSWORD 'local-unsafe-dual-test'"
-            )
-            cursor.execute("GRANT factory_artifact_attestor TO factory_unsafe_dual_test")
-        with self.assertRaisesRegex(BootstrapError, "unsafe role membership"):
-            provision_runtime_login(
-                DATABASE_URL, unsafe_login, "local-unsafe-dual-test"
-            )
+            cursor.execute(sql.SQL("GRANT factory_artifact_attestor TO {}").format(
+                sql.Identifier(self.runtime_login)
+            ))
+        try:
+            with self.assertRaisesRegex(BootstrapError, "role boundary validation failed"):
+                bootstrap_local(
+                    DATABASE_URL,
+                    self.runtime_login,
+                    self.runtime_password,
+                    self.runtime_url,
+                    self.artifact_attestor_login,
+                    self.artifact_attestor_password,
+                    self.artifact_attestor_url,
+                )
+        finally:
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(sql.SQL("REVOKE factory_artifact_attestor FROM {}").format(
+                    sql.Identifier(self.runtime_login)
+                ))
     def test_store_and_migration_reject_owner_or_transitively_privileged_capability_roles(self):
         import psycopg
         from psycopg import sql
@@ -4069,6 +4410,123 @@ class PostgresFactoryTests(unittest.TestCase):
         finally:
             with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
                 cursor.execute("REVOKE pg_read_all_data FROM factory_artifact_attestor")
+
+    def test_bootstrap_rejects_unsafe_factory_role_attributes_and_memberships(self):
+        import psycopg
+        from adaptive_factory.admin import BootstrapError, bootstrap_local
+        from psycopg import sql
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        def assert_rejected_before_login(login: str, password: str) -> None:
+            runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
+            with self.assertRaises(BootstrapError):
+                bootstrap_local(DATABASE_URL, login, password, runtime_url)
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute("SELECT 1 FROM pg_roles WHERE rolname=%s", (login,))
+                self.assertIsNone(cursor.fetchone())
+
+        with self.subTest(boundary="unsafe capability attribute"):
+            login = "factory_unsafe_attribute_test"
+            password = "-".join(("unsafe", "attribute", "test", "password"))
+            try:
+                with psycopg.connect(DATABASE_URL) as connection:
+                    connection.execute("ALTER ROLE factory_runtime CREATEDB")
+                assert_rejected_before_login(login, password)
+            finally:
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute("ALTER ROLE factory_runtime NOCREATEDB")
+                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login)))
+
+        with self.subTest(boundary="factory role is member of another role"):
+            login = "factory_unsafe_parent_test"
+            password = "-".join(("unsafe", "parent", "membership", "password"))
+            parent = "factory_unexpected_parent_test"
+            try:
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(sql.SQL("CREATE ROLE {} NOLOGIN NOINHERIT").format(sql.Identifier(parent)))
+                    cursor.execute(
+                        sql.SQL("GRANT {} TO factory_runtime").format(sql.Identifier(parent))
+                    )
+                assert_rejected_before_login(login, password)
+            finally:
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        sql.SQL("REVOKE {} FROM factory_runtime").format(sql.Identifier(parent))
+                    )
+                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login)))
+                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(parent)))
+
+        with self.subTest(boundary="factory role has an unexpected member"):
+            login = "factory_unsafe_member_target"
+            password = "-".join(("unsafe", "member", "target", "password"))
+            member = "factory_unexpected_member_test"
+            try:
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(sql.SQL("CREATE ROLE {} NOLOGIN NOINHERIT").format(sql.Identifier(member)))
+                    cursor.execute(
+                        sql.SQL("GRANT factory_runtime TO {}").format(sql.Identifier(member))
+                    )
+                assert_rejected_before_login(login, password)
+            finally:
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        sql.SQL("REVOKE factory_runtime FROM {}").format(sql.Identifier(member))
+                    )
+                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login)))
+                    cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(member)))
+
+    def test_bootstrap_rejects_service_login_with_unexpected_membership(self):
+        import psycopg
+        from adaptive_factory.admin import BootstrapError, bootstrap_local
+        from psycopg import sql
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        login = "factory_unsafe_service_test"
+        password = "-".join(("unsafe", "service", "login", "password"))
+        unexpected_role = "factory_unexpected_service_role"
+        runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
+        try:
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    sql.SQL("CREATE ROLE {} NOLOGIN NOINHERIT").format(sql.Identifier(unexpected_role))
+                )
+                cursor.execute(
+                    sql.SQL(
+                        "CREATE ROLE {} LOGIN NOINHERIT NOSUPERUSER NOCREATEROLE "
+                        "NOCREATEDB NOREPLICATION NOBYPASSRLS PASSWORD {}"
+                    ).format(sql.Identifier(login), sql.Literal(password))
+                )
+                cursor.execute(
+                    sql.SQL("GRANT {} TO {}").format(
+                        sql.Identifier(unexpected_role), sql.Identifier(login)
+                    )
+                )
+            with self.assertRaises(BootstrapError):
+                bootstrap_local(DATABASE_URL, login, password, runtime_url)
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT parent.rolname
+                    FROM pg_auth_members membership
+                    JOIN pg_roles parent ON parent.oid=membership.roleid
+                    JOIN pg_roles member ON member.oid=membership.member
+                    WHERE member.rolname=%s ORDER BY parent.rolname""",
+                    (login,),
+                )
+                self.assertEqual(cursor.fetchall(), [(unexpected_role,)])
+        finally:
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    sql.SQL("REVOKE factory_runtime FROM {}").format(sql.Identifier(login))
+                )
+                cursor.execute(
+                    sql.SQL("REVOKE {} FROM {}").format(
+                        sql.Identifier(unexpected_role), sql.Identifier(login)
+                    )
+                )
+                cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(login)))
+                cursor.execute(
+                    sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(unexpected_role))
+                )
 
     def test_roles_are_isolated_and_audit_is_append_only_and_verifiable(self):
         task = self.submit(source="audit-role-check").task

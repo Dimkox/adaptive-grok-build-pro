@@ -1,0 +1,70 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "code_reviewer",
+    "test_reviewer",
+    "frontend_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher"
+  ],
+  "base_commit": "1c06299894279a88b881defa3f19b004fa742223",
+  "base_fingerprint": "48a871e8bab45e8737b228730c674c69fd6937c6cfe83b8883017cac3dea0fba",
+  "complexity": "standard",
+  "created_at": "2026-09-01T15:20:32+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "frontend"
+  ],
+  "human_gates": [],
+  "intent": "test",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "frontend"
+  ],
+  "rationale": [
+    "bounded change without high-risk signals",
+    "intent=test",
+    "domains=frontend",
+    "repository=generic",
+    "write-owner=frontend_implementer",
+    "analysis-wave=3/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "low",
+  "route_id": "23b06c1b62a3",
+  "schema_version": 1,
+  "session_id": "codex-seo-landing-side-project-20260901-feature",
+  "status": "routed",
+  "task": "Create an isolated side project inside this repository: adapt upstream aleksandr-alhoff/seo-landing into a Codex-native reusable skill for on-demand SEO landing generation, audit, and optimization; add a Russian static showcase page; preserve upstream license and provenance; add behavior tests plus frontend accessibility and performance checks; leave Trust CI behavior unchanged.",
+  "task_domains": [
+    "frontend"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "verification-evidence",
+    "frontend-change"
+  ],
+  "write_agent": "frontend_implementer"
+}

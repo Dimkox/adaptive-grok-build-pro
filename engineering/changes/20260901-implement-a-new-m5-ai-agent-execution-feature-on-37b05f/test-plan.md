@@ -13,7 +13,7 @@
 | P0 | canonical SQL cross-binding, terminal-derived M4 transition, result-row/digest corruption rejection | migration/store + disposable PostgreSQL adversarial tests |
 | P0 | execution orphan/cancel cleanup cannot leave M5 rows, capacity, or factual result in an ambiguous state | reconciliation/restart PostgreSQL tests |
 | P0 | every execution request/response/event/nested object is closed and inventoried | JSON Schema/OpenAPI/architecture contract tests |
-| P0 | OpenAPI inventories 20 operation IDs, 15 required JSON bodies, 50 request headers, 123 explicit response variants, 18 success response headers and 38 closed component schemas | root structure + conservative architecture comparator tests |
+| P0 | OpenAPI inventories 20 operation IDs, 15 required JSON bodies, 50 request headers, 138 explicit response variants including bounded database-unavailable responses on all 15 mutations, 18 success response headers and 38 closed component schemas | root structure + conservative architecture comparator tests |
 | P0 | recovery emits one orphan stage/event only, cleans workspace first, preserves attestation/result tables and is keyset/idempotency safe | fake recovery + disposable PostgreSQL + actual restart probe |
 | P0 | unit topology has fixed commands/users/hardening/limits and no activation path | systemd source parser tests |
 | P1 | note/artifact/usage/terminal bounds, redaction, idempotency | broker tests |

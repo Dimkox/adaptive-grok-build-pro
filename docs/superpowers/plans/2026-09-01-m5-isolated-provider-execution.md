@@ -4,7 +4,7 @@
 
 **Goal:** Add a provider-neutral, fixture-tested, persistence-integrated M5 execution source plane while preserving factual M4 claim semantics and explicitly blocking unavailable OS-isolation exit evidence.
 
-**Architecture:** Pure immutable contracts and a bounded protocol parser define the trust boundary before persistence. Exact-version fixture adapters feed proposal/workspace brokers; additive migration `013` and new execution endpoints bind every mutation to the existing M4 task/run/owner/fence/allocation/deadline/budget invariants. Source-controlled systemd units and fake-runtime tests are locally verifiable, while live provider and rootless-host operations stay absent.
+**Architecture:** Pure immutable contracts and a bounded protocol parser define the trust boundary before persistence. Exact-version fixture adapters feed proposal/workspace brokers; additive migration `014` and new execution endpoints bind every mutation to the existing M4 task/run/owner/fence/allocation/deadline/budget invariants. Source-controlled systemd units and fake-runtime tests are locally verifiable, while live provider and rootless-host operations stay absent.
 
 **Tech Stack:** Python 3.11+, frozen dataclasses, canonical JSON/JSONL, JSON Schema 2020-12, FastAPI, PostgreSQL 15+, `unittest`, source-controlled systemd units.
 
@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Exact current M4 review base is `460a8a01a6394cac710b4e3f9eea3d94d4beef89`; route is `37b05f579320`; branch is `milestone/m5-isolated-execution-provisional-m4`. The original provisional anchor `94fc5ad878e6b15df6418303caada49a3b93bf4c` is superseded for implementation and retained only as restack lineage.
+- Tasks 1-6 source head is exact `141e51e75b2bb337fa3bb1544639c6c46c287309`; route is `37b05f579320`; branch is `milestone/m5-isolated-execution-provisional-m4`. The current local normal-restack checkpoint uses M4 predecessor `56e12b2b394436ee227c66d78b1caba8f7317c78`; it is not acceptance/delivery, and a later M4 exact SHA requires another normal merge plus fresh evidence.
 - Delivery target is `2026-09-08 00:00 UTC+3`; calendar pressure cannot waive tests, independent review, external Trust CI, or the dedicated rootless-host exit gate.
 - Keep `/v1/claims` legacy semantics: its `packet_digest` remains the M4 `intent_digest`; use new execution endpoints and a new canonical packet digest.
 - Preserve M4 ceilings and authority: 20 global readers, 10 readers per repository, one writer, four hours, USD 25, and initial attempt plus two infrastructure retries.
@@ -32,7 +32,7 @@
 - `factory/tests/fixtures/{codex-0.152.1,grok-1.0.17}/`: safe native fixture streams and expected canonical events.
 - `factory/src/adaptive_factory/brokers.py`: note/artifact/usage/terminal validation and redaction.
 - `factory/src/adaptive_factory/workspace.py`: workspace/Git protocols, fake runtime and host capability report.
-- `factory/src/adaptive_factory/resources/013_execution_plane.sql`: additive execution persistence and capabilities.
+- `factory/src/adaptive_factory/resources/014_execution_plane.sql`: additive execution persistence and capabilities after M4 migration `013`.
 - `factory/src/adaptive_factory/{models,store,service,api}.py`: execution projections, transactions/use cases and endpoints.
 - `factory/src/adaptive_factory/recovery.py`: bounded orphan reconciliation.
 - `factory/systemd/`: predefined supervisor/reader/writer/broker source units.
@@ -103,10 +103,10 @@
 - [ ] **Step 5: Implement capability protocols/fakes/probe.** Do not invoke a repository command or create a real namespace; the injected probe makes behavior deterministic.
 - [ ] **Step 6: Confirm GREEN and commit.** Run both test modules and commit with `feat(factory): enforce execution broker boundaries`.
 
-### Task 4: Add migration 013 and explicit execution service/API
+### Task 4: Add execution migration 014 and explicit execution service/API
 
 **Files:**
-- Create: `factory/src/adaptive_factory/resources/013_execution_plane.sql`
+- Create: `factory/src/adaptive_factory/resources/014_execution_plane.sql`
 - Modify: `factory/src/adaptive_factory/models.py`
 - Modify: `factory/src/adaptive_factory/store.py`
 - Modify: `factory/src/adaptive_factory/service.py`
@@ -120,7 +120,7 @@
 - Consumes: current authenticated worker, execution selection, M4 claim/fence/allocation and canonical proposal values.
 - Produces: `ExecutionGrant`, `ExecutionStage`, `claim_execution`, `advance_execution`, `commit_execution_proposal`, and six `/v1/execution/*` endpoints.
 
-- [ ] **Step 1: Write failing migration/legacy tests.** Assert versions are `1..13`, migration 013 only creates/adds/revokes/grants, and existing `/v1/claims` response and `packet_digest=intent_digest` fixture are unchanged.
+- [ ] **Step 1: Write failing migration/legacy tests.** Assert versions are `1..14`, M4 `013` and M5 `014` have frozen distinct identities, migration 014 only creates/adds/revokes/grants, and existing `/v1/claims` response and `packet_digest=intent_digest` fixture are unchanged.
 - [ ] **Step 2: Confirm RED.** Run `PYTHONPATH=factory/src python3 -m unittest factory.tests.test_migrations factory.tests.test_execution_service -v`; expect migration/version and missing execution failures.
 - [ ] **Step 3: Implement additive schema and pure fake-store vertical slice.** Persist immutable packet/manifest first, append stages/proposals, and validate every operation against live task/run/owner/fence/allocation/packet/deadline/budget/idempotency.
 - [ ] **Step 4: Write failing API contract tests.** Cover auth/scope/repository/body bounds, exact responses, idempotency conflict, stale fence and absence of provider-native or secret fields.

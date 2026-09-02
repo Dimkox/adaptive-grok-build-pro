@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-This is the approved implementation design for route `37b05f579320`, branch `milestone/m5-isolated-execution-provisional-m4`, and change [`20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f`](../../../engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md). It specializes the canonical [model-agnostic factory design](2026-08-26-model-agnostic-autonomous-factory-design.md) for M5 source work on exact current M4 review base `460a8a01a6394cac710b4e3f9eea3d94d4beef89`; the former provisional anchor `94fc5ad878e6b15df6418303caada49a3b93bf4c` is lineage only after the conflict-free restack.
+This is the approved implementation design for route `37b05f579320`, branch `milestone/m5-isolated-execution-provisional-m4`, and change [`20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f`](../../../engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md). M5 Tasks 1-6 originate at exact source head `141e51e75b2bb337fa3bb1544639c6c46c287309` and are locally normal-restacked on current M4 checkpoint predecessor `56e12b2b394436ee227c66d78b1caba8f7317c78`; this is provisional source integration, not M4/M5 acceptance or delivery, and any newer M4 exact SHA requires another normal merge and fresh evidence.
 
 The calendar target is `2026-09-08 00:00 UTC+3`. M5 and M6 may develop in parallel on isolated branches, but external integration is dependency ordered: accepted M4, then M5, then M6. This document grants no push, PR, merge, deployment, systemd activation, live provider call, credential access, or Trust CI/human-key operation.
 
@@ -84,7 +84,7 @@ Terminal proposals are recommendations, never state-selection authority. The con
 
 ## Persistence, API and lifecycle
 
-Additive migration `013_execution_plane.sql` creates immutable packet, manifest, stage, canonical event, note, artifact and terminal-proposal tables plus fixed execution metrics. Existing tables/columns/constraints/functions remain unchanged. Runtime gets explicit EXECUTE/INSERT-only capabilities through fixed-search-path functions; no generic DML or policy mutation.
+Additive migration `014_execution_plane.sql` follows M4's immutable `013_persisted_infrastructure_retry_limit.sql` and creates packet, manifest, stage, canonical event, note, artifact and terminal-proposal tables plus fixed execution metrics. Existing tables/columns/constraints/functions remain unchanged. Runtime gets explicit EXECUTE/INSERT-only capabilities through fixed-search-path functions; no generic DML or policy mutation. Its frozen SHA-256 is `9faa5622cbd66b3c90afd34873e8e17ad24062a2c02036ea86852bdd4c7128d9`; once accepted, execution-plane repair is forward-only as `015+`.
 
 New endpoints are `/v1/execution/claims`, `/v1/execution/stages`, `/v1/execution/notes`, `/v1/execution/artifacts`, `/v1/execution/usage`, and `/v1/execution/terminal`. All use the current actor authentication, body cap, idempotency/correlation boundary, and M4 live-fence checks. `/v1/claims` and its OpenAPI response remain byte-for-byte semantically legacy.
 

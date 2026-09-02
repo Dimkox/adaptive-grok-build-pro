@@ -1,8 +1,8 @@
 # Repository analysis — M3 restack onto accepted M2
 
-Route: `41eadaeae674`  
-M3 head: `d4cc01fe8d6ec82cce93106191774fc32e8dbb46`  
-Accepted M2: `022411b05924618cfde0cb97b8c8aff4955e6013`  
+Route: `41eadaeae674`
+M3 head: `d4cc01fe8d6ec82cce93106191774fc32e8dbb46`
+Accepted M2: `022411b05924618cfde0cb97b8c8aff4955e6013`
 Common ancestor: `635c9ddf2d63c1ea823074106976a8f3de6299a9`
 
 ## Ancestry

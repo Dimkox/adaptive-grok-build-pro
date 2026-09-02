@@ -1,7 +1,7 @@
 # Integration analysis — bounded workspace cleanup hotfix
 
-Route: `fa3ae6080deb`  
-Change: `20260831-fix-trust-ci-bounded-workspace-process-cleanup-i-fa3ae6`  
+Route: `fa3ae6080deb`
+Change: `20260831-fix-trust-ci-bounded-workspace-process-cleanup-i-fa3ae6`
 Method: read-only product analysis; this report is the sole write.
 
 ## Boundary decision
@@ -48,4 +48,3 @@ For any hotfix commit, a new PR head SHA requires a new deployed GitHub App-owne
 - Active route and change package.
 - `trust-ci/src/adaptive_trust_ci/workspace.py` and `trust-ci/tests/test_workspace.py`.
 - M2 architecture/rules, Trust-CI Compose topology/contracts, `AGENTS.md`, and Trust-CI runner design documents.
-

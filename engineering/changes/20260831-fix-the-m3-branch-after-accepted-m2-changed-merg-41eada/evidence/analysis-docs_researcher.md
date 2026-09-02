@@ -1,7 +1,7 @@
 # Documentation and evidence analysis — M3 restack on accepted M2
 
-**Route:** `41eadaeae674`  
-**Change:** `20260831-fix-the-m3-branch-after-accepted-m2-changed-merg-41eada`  
+**Route:** `41eadaeae674`
+**Change:** `20260831-fix-the-m3-branch-after-accepted-m2-changed-merg-41eada`
 **Mode:** repository-local analysis; no product edits.
 
 ## Exact restack fact and authority boundary

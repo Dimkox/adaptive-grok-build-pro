@@ -28,17 +28,19 @@ reviewed intent
 
 ## 2. Canonical baseline
 
-Roadmap baseline:
+Original planning baseline and current integration observation:
 
 ```text
 repository: Dimkox/adaptive-grok-build-pro
 branch: main
-baseline SHA: 73e4ae7c68a95d3a7440378964b8cc1879df9b89
-product version: 2.0.12
+original baseline SHA: 73e4ae7c68a95d3a7440378964b8cc1879df9b89
+current origin/main SHA: 78ad2f679d38dc3244e716c586332417e610089c
+product version: 2.0.13
 Trust CI service version: 2.1.0
+required check: adaptive-trust-ci/verified@06ecf1c875bc
 ```
 
-Before implementing any milestone, compare the current `main` SHA with this baseline and update the milestone plan for intervening changes. Do not reset or discard newer work merely to match this document.
+Before implementing any milestone, compare the current `main` SHA with the recorded observation and update the milestone plan for intervening changes. Do not reset or discard newer work merely to match either historical identity.
 
 ## 3. What already exists
 
@@ -81,20 +83,11 @@ Implemented in-tree:
 
 ### 3.3 Current operational qualification
 
-The GitHub App `adaptive-trust-ci` is registered. Registration is not the same as operational proof.
+M0 Live Trust Authority is delivered. Protected `main` requires the App-owned policy-epoch check `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`; repository source, prompts, local receipts and local grants cannot mint or replace it. The original roadmap observation predated that activation and is historical only.
 
-The following must be verified against the live environment rather than inferred from repository source:
+PR #17 closed at `2026-09-02T10:08:38Z` because it exactly duplicated open M4 source PR #21 at head `460a8a01a6394cac710b4e3f9eea3d94d4beef89`. PR #21 has a successful App-owned check and separate unresolved GitGuardian FAILURE metadata; no finding value is read, copied or dismissed, and neither result transfers to the current integration tree. Repair head `547ee628812fbf098f337a854f68edf660091ead` passed 13/14 local verifier gates and failed only on credential-shaped synthetic test literals; parent `5a6cdfb7a129e02724c632f78c31de6406d6863a` repaired that scanner finding without weakening the scanner or tests. The current `2.0.13` release-state candidate is the commit containing `PROJECT_STATE.json`; final exact-head verification, five fresh reviews/reports/receipts and new external exact-head authority remain pending.
 
-- App installation on `Dimkox/adaptive-grok-build-pro`;
-- live App ID and installation ID available to the worker;
-- worker-only RSA private key provisioning;
-- API-only webhook secret provisioning;
-- deployed API, worker, PostgreSQL, runner, holdout, and HTTPS endpoint;
-- a real App-owned policy-epoch Check Run on an exact pull-request SHA;
-- offline verification of the associated signed attestation;
-- `main` branch protection requiring that exact check from the App ID.
-
-At the roadmap baseline, the public branch response showed `main` without required protection. Treat operational activation as the first milestone even if parts have since been completed.
+PRs #12 and #13 remain stale old-epoch `ACTION_REQUIRED` work whose unique lazy CLI imports/tests and repository-scoped Trust CI profiles are absent from `main`. PR #15's current-epoch `adaptive-trust-ci/verified@06ecf1c875bc` conclusion is `FAILURE` while GitGuardian is `SUCCESS`; its failure cause was not inspected or inferred. Wholesale merge of its obsolete M1-M3 aggregate is superseded, while investor-demo commit `9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b` and packaging hardening remain unique. All three need clean successor extraction; no successor PR is claimed.
 
 ## 4. Consolidated gap analysis
 
@@ -104,23 +97,23 @@ At the roadmap baseline, the public branch response showed `main` without requir
 | One write owner | Implemented locally | Enforce across distributed factory workers |
 | Low-by-default reasoning | Implemented | Record effective effort in every run manifest |
 | Local verification | Implemented | Keep as preflight, never merge authority |
-| Exact-SHA external Trust CI | Source implemented | Activate and prove live authority |
-| GitHub App registration | Implemented externally | Verify installation, credentials, check ownership, and branch protection |
+| Exact-SHA external Trust CI | M0 delivered and live | Preserve exact-head/App ownership; every new M4+ SHA must earn a fresh check |
+| GitHub App registration | Delivered external authority | Keep credentials and deployed policy outside the PR trust domain |
 | Durable CI jobs | Implemented | Keep separate from implementation task state |
-| Typed business specification | Missing | Build schema, validator, traceability, and evidence mapping |
-| Executable architecture model | M2-A source candidate | Complete final reviews/receipts, then implement the independent M2-B enforcement floor |
-| Agent-loop backpressure | Missing | Add structured findings and bounded repair cycles |
-| Semantic validator/adjudicator | Provisional M6 source work | Route `82aac86a3bf9` on `milestone/m6-semantic-validation-provisional-m4`; restack after accepted M5 and retain independent verdict authority |
-| Controlled learning | Missing | Replace automatic Markdown promotion with reviewed rule lifecycle |
-| Debt/slop ledger | Missing | Track deliberate debt, owner, cost, trigger, and deadline |
-| Durable factory task queue | Separate M4 local candidate | `01a10f5` exists locally but is not this M5 branch's parent, not pushed and not merged; dependency-ordered external gates remain open |
-| Background implementation environment | Provisional M5 source work, host-blocked | Route `37b05f579320` on `milestone/m5-isolated-execution-provisional-m4`; Task 5 checkpoint `161199b` requires restack, rootless isolation and a trusted live Git snapshot broker |
-| Immutable implementation run manifest | Provisional M5 source | Exact packet/profile/manifest/proposal/result digest contracts exist; live trusted result-head evidence remains blocked |
-| WIP, cost, and PR flood controls | Missing | Add hard per-repository and global limits |
-| Automated PR lifecycle | Missing | Create branch, commit, PR, evidence summary, and supersession logic |
-| Shadow-mode metrics | Missing | Measure quality and human disagreement before autonomy |
-| Earned auto-merge | Missing and deliberately deferred | Enable only for proven low-risk classes |
-| Preview/staging/canary delivery | Missing and deferred | Build after shadow-mode evidence |
+| Typed business specification | M1 implemented/reviewed in accepted stack | Deliver the full accepted source to main without confusing stack merge with delivery |
+| Executable architecture model | M2 implemented/reviewed in accepted stack | Deliver through the dependency-ordered current-main path; retain independent enforcement |
+| Agent-loop backpressure | Provisional M6 Task 3 at `f3b2c0d0`; quarantined | Restack after accepted M5, renumber migration `015`, refresh checksum/upgrade/restart proof, and continue with untouched Task 4 |
+| Semantic validator/adjudicator | Deterministic verdict persistence at `f3b2c0d0`; focused 67/67, legacy 40/40, PG17 1/1 and architecture PASS only | Keep quarantined until accepted-M5 restack and retain independent verdict authority |
+| Controlled learning | M3 implemented/reviewed; registries intentionally empty | Deliver accepted source; activation still requires independent evidence and human governance |
+| Debt/slop ledger | M3 source implemented | Keep empty/unapproved records non-authoritative and preserve owner/trigger/evidence requirements |
+| Durable factory task queue | M4 `2.0.13` release-state predecessor `56e12b2`; scanner-repair parent `5a6cdfb7` | Preserve the exact predecessor and use only PR/external gates for any delivery; no local merge claims acceptance |
+| Background implementation environment | M5 Tasks 1-6 from `141e51e7` normal-restacked locally onto exact M4 `56e12b2`; host evidence pending | Keep migration `014` contiguous, prove a suitable rootless live host/trusted Git snapshot and complete fresh exact-tree review |
+| Immutable implementation run manifest | Provisional M5 restacked source | Accept only after isolation/capability/orphan, trusted Git snapshot and rootless live-host evidence pass on the exact restacked tree |
+| WIP, cost, and PR flood controls | M4 enforces durable WIP/cost; PR flood remains M7 work | Preserve M4 ceilings and add PR lifecycle bounds only at M7 |
+| Automated PR lifecycle | Provisional M7 synthetic algorithm source at `c8b450f4` | Restack after accepted M6; add runtime, real outcomes and reviews before acceptance |
+| Shadow-mode metrics | Synthetic algorithm evidence only | Measure real quality and human disagreement before autonomy |
+| Earned auto-merge | M8 Task-1 contracts only at `5735e762`; deliberately inactive | Finish Tasks 2-3, then require an exact-profile 30-real-task cohort before any activation |
+| Preview/staging/canary delivery | M9 Task-1 frozen contracts only at `00030179` | Finish later tasks only after predecessor acceptance; require real signed input, environment and recovery evidence |
 
 ## 5. Non-negotiable constraints
 
@@ -205,7 +198,7 @@ M1 + M2 + M3
 
 Milestones M1, M2, and M3 may be developed in parallel only after M0 has a live proof or an explicitly documented bootstrap exception approved by the user. M4 must consume their stable interfaces rather than inventing replacements.
 
-Current execution is parallel only for reversible source development. Separate local M4 candidate `01a10f5` is not the parent of the M5 branch, not pushed and not merged; M5 still descends from `460a8a01a6394cac710b4e3f9eea3d94d4beef89`, with `94fc5ad878e6b15df6418303caada49a3b93bf4c` retained as historical lineage. M5 route `37b05f579320` and M6 route `82aac86a3bf9` remain provisional; M6 paused at `5c5c371` still targets old M5 bridge `61db79f`. Acceptance, PR delivery, merge and Trust CI remain dependency ordered M4 → M5 → M6, and each downstream branch must restack onto its accepted predecessor. M5 remains `BLOCKED` on a suitable rootless-isolation host and trusted live Git snapshot broker. The hard deadline is **2026-09-08 00:00 UTC+3**; no completion or external authority follows from source presence or calendar pressure. See the [root current state](README.md), [factory source map](factory/README.md), [M5 design](docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md), [plan](docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md), [package](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md), [release](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/release.md), [rollback](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/rollback.md) and [evidence](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/evidence/README.md).
+Current execution is parallel only for reversible source work; it is not acceptance. Exact M4 `2.0.13` release-state predecessor `56e12b2b394436ee227c66d78b1caba8f7317c78` (tree `e5d49d98230ba25bcb5c75e5125e85a75f4dd213`) is built on scanner-repair parent `5a6cdfb7a129e02724c632f78c31de6406d6863a`. M5 Tasks 1-6 from `141e51e75b2bb337fa3bb1544639c6c46c287309` are normal-merged locally onto that exact predecessor with contiguous migration `014_execution_plane.sql`; rootless live-host isolation, a trusted live Git snapshot, fresh exact-tree verification/reviews/receipts, PR delivery and external gates remain pending. M6 Task 3 is provisional at `f3b2c0d07116686b27feab4b60166e8a7402d672`; it must restack only after accepted M5 and move its provisional migration to `015`, while Task 4 is untouched. M7 `c8b450f494b3d44b580556c6a612b21a3a780368` remains synthetic-only. M8 Task 1 is `5735e762b8d7571887f6fa4ac9cf10cd1fad1954`; M9 Task 1 is `000301796ac19c518ede110b97b9de09dc077cbd`. None of M4-M9 is claimed delivered or externally accepted here. Acceptance, PR delivery, merge and Trust CI remain strictly dependency ordered M4 → M5 → M6 → M7 → M8 → M9. The hard deadline is **2026-09-08 00:00 UTC+3**; source presence or calendar pressure creates no completion or external authority. See the [root current state](README.md), [factory source map](factory/README.md), [M5 design](docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md), [plan](docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md), [package](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md), [release](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/release.md), [rollback](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/rollback.md) and [evidence](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/evidence/README.md).
 
 ## 7.1 Exact milestone handoff contracts
 
@@ -217,7 +210,7 @@ Current execution is parallel only for reversible source development. Separate l
 | M7 → M8 | M7 emits an immutable shadow ready-for-PR bundle digest binding task/run/verdict/check/PR-head/human-decision and outcome metrics; M8 cohorts only exact trust-profile tuples. | At least 30 human-accepted tasks for the exact class/profile tuple, complete disagreement/rollback/security metrics and human merge for every PR; any tuple component or evidence mutation starts a new cohort. | Demote/discard the affected cohort and keep human merge; under current authority M8 is capped at L2, cannot auto-merge, rewrite historical decisions or activate governance. |
 | M8 → M9 | M8 emits a durable trust-profile digest and L2-or-lower decision bound to repository/class/models/prompts/policy/runner/holdout digests; M9 binds preview/staging/canary inputs to the exact merged SHA and signed artifact digest. | Accepted predecessor profiles, exact signed supply-chain artifact, reproducible preview/staging, explicit canary thresholds and exercised recovery; incident, rollback, policy/artifact/SHA change invalidates promotion and triggers demotion. | Halt/rollback the canary, preserve deployment evidence and demote the profile; production promotion remains human-owned and no agent gains production, signing-key, branch-protection or Trust CI authority. |
 
-M7-M9 are roadmap contracts only: no implementation, completion, cohort, preview, canary or external-delivery claim is made in the current tree.
+M7 has provisional synthetic algorithm source, M8 has a provisional Task-1 closed-contract slice using synthetic fixtures, and M9 remains design-only. None has accepted predecessor integration, completion, a factual cohort, activation, preview/canary evidence or external-delivery authority.
 
 ---
 
@@ -541,7 +534,7 @@ status
 - [x] Introduce a debt ledger that distinguishes intentional debt from accidental slop.
 - [x] Prevent a factory task from activating its own governance rule.
 
-Checked M3 items denote behavior accepted at exact merge `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`; they do not denote deployment, active governance, or authority for any later tree. The seven small example source files exist, but the canonical-example registry remains empty until an independent exact-record authority and real human governance approval are available; therefore the two canonical-example work items remain open. M4 is now the active local source candidate on that exact base and must obtain its own final verification, independent reviews, PR delivery and external exact-SHA authority.
+Checked M3 items denote behavior accepted at exact merge `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`; they do not denote deployment, active governance, or authority for any later tree. The seven small example source files exist, but the canonical-example registry remains empty until an independent exact-record authority and real human governance approval are available; therefore the two canonical-example work items remain open. M4 consumed that exact base and is now a local current-main integration candidate; the merged tree must obtain fresh verification, independent reviews, PR delivery and external exact-SHA authority.
 
 ## Exit criteria
 
@@ -575,23 +568,21 @@ factory/
 
 Do not add a root packaging marker.
 
-Current status: the M4 local source candidate lives under [`factory/`](factory/) on accepted M3 base `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`. Product anchor `94fc5ad` passed direct PostgreSQL/root evidence, while its later exact verifier exposed Bandit handling and final-postmaster readiness defects now under repair; the successor SHA must pass all local gates before review. Unchecked work and exit items remain unchecked until final exact-tree verification, independent reviews and external PR authority are recorded; source presence alone is not completion or deployment. Current dates and dependency gates are in the [M4 schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
+Current status: the M4 control plane under [`factory/`](factory/) has historical production commit `4f75558770f2f332b32b4a47fe6afa61fcc524ec` and source head `460a8a01a6394cac710b4e3f9eea3d94d4beef89`. The current `2.0.13` release-state candidate is the commit containing `PROJECT_STATE.json`, on repair parent `5a6cdfb7a129e02724c632f78c31de6406d6863a`. Repair head `547ee628` passed 13/14 verifier gates before the sole synthetic-fixture secret-scan finding was repaired at `5a6cdfb7`; final verification and five fresh reviews/reports/receipts remain pending. PR #17 closed as an exact duplicate of open PR #21; PR delivery, a new external exact-SHA Trust CI result, unresolved PR #21 GitGuardian FAILURE metadata and merge remain pending. M4 is not accepted or delivered. Current dates and dependency gates are in the [M4 schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
 
 ## Factory task state machine
 
 ```text
 inbox
 → triaged
-→ waiting_approval
+→ waiting_design_approval
 → queued
 → leased
 → analyzing
 → implementing
 → verifying
 → reviewing
-→ pr_open
-→ ready
-→ merged
+→ ready_for_human
 ```
 
 Exceptional states:
@@ -604,44 +595,65 @@ cancelled
 superseded
 ```
 
+`ready_for_human` is M4's positive terminal state. GitHub/PR states such as `pr_open` and `merged` are deliberately absent: they belong to later delivery milestones, and Trust CI remains a separate authority domain.
+
 ## Minimum durable fields
 
 ```text
+intent_id
+intent_digest
+idempotency_key
 task_id
-repository
+repository_id
 source_type
 source_id
+source_digest
 route_id
 change_id
 spec_digest
 architecture_digest
-base_sha
-head_sha
-branch
-risk_pre
-risk_post
+governance_digest
+exact_base_sha
 policy_digest
-attempt
+acceptance_ids
+task_limits
+state
+generation
+packet_digest
+run_id
+attempt_no
+role
+fence
 lease_owner
 lease_expires_at
-budget
+deadline_at
+budget_reservations
+usage_observations
+event_sequence
+audit_digest
 created_at
 updated_at
 ```
 
+The immutable accepted-intent body also freezes both producer handoffs, including their exact head SHA. M4 does not own or persist a Git branch, pull request, merge state, or Trust CI result.
+
 ## Work items
 
-- [ ] Implement GitHub Issue intake plus authenticated manual API/CLI intake.
-- [ ] Derive an idempotency key that prevents duplicate active tasks for the same source, base SHA, and policy/spec version.
-- [ ] Use PostgreSQL `FOR UPDATE SKIP LOCKED` leases.
-- [ ] Add heartbeat, lease expiry, reclaim, bounded attempts, dead-letter, and reconciliation.
-- [ ] Cancel or supersede stale tasks when issue content, base SHA, or accepted spec changes.
-- [ ] Add global and per-repository kill switches.
-- [ ] Add per-repository concurrency limits.
-- [ ] Add hard limits for active tasks, open factory PRs, runtime, tokens, cost, repair cycles, and PR age.
-- [ ] Separate read-only analysis concurrency from single-writer concurrency.
-- [ ] Persist every state transition and actor in an append-only audit log.
-- [ ] Refuse dispatch when M0 Trust CI authority is unavailable unless the user records a named bootstrap exception.
+- [x] Implement authenticated manual API/CLI intake.
+- [ ] Add a GitHub Issue connector in a later GitHub-capable milestone; M4 only accepts an already projected, authenticated source record.
+- [x] Derive an idempotency key that prevents duplicate active tasks for the same source and frozen authority.
+- [x] Use PostgreSQL `FOR UPDATE SKIP LOCKED` leases.
+- [x] Add heartbeat, lease expiry, reclaim, bounded attempts, dead-letter, and reconciliation.
+- [x] Cancel or supersede stale tasks when source content or frozen authority changes.
+- [x] Add global and per-repository kill switches.
+- [x] Add global/per-repository reader limits and a single-writer limit.
+- [x] Add hard limits for runtime, tokens, cost, output, events, and repair cycles.
+- [ ] Add open-factory-PR and PR-age limits only after a later milestone owns GitHub PR delivery.
+- [x] Separate read-only analysis concurrency from single-writer concurrency.
+- [x] Persist every state transition and actor in an append-only audit log.
+- [x] Refuse dispatch when M0 Trust CI authority is unavailable unless the user records a named bootstrap exception.
+
+Checked M4 items denote locally implemented behavior only. They do not claim final review, external Trust CI acceptance, PR delivery, merge, deployment, or production activation.
 
 ## Exit criteria
 
@@ -658,13 +670,13 @@ updated_at
 
 # M5 — Isolated Background Execution Plane
 
-Current status: provisional source branch `milestone/m5-isolated-execution-provisional-m4`, route `37b05f579320`, still descends from exact M4 review base `460a8a01a6394cac710b4e3f9eea3d94d4beef89` and historical anchor `94fc5ad878e6b15df6418303caada49a3b93bf4c`. Separate local M4 candidate `01a10f5` is not its parent, not pushed and not merged. Task 5 source checkpoint `161199bb163e0ba84ac1b32010be87f113df5e86` adds bounded orphan recovery, six fixed metrics and four inert systemd topology files; rootless OS isolation and a trusted live Git snapshot broker remain `BLOCKED`, so no M5 completion, push, external check or merge is claimed.
+Current status: M5 Tasks 1-6 source from exact clean head `141e51e75b2bb337fa3bb1544639c6c46c287309`, route `37b05f579320`, is normal-merged locally onto exact M4 `2.0.13` predecessor `56e12b2b394436ee227c66d78b1caba8f7317c78` (tree `e5d49d98230ba25bcb5c75e5125e85a75f4dd213`). The restack uses contiguous additive migration `014_execution_plane.sql`. Rootless live-host isolation and a trusted live Git snapshot remain unresolved, and fresh exact-tree verification/reviews/receipts, PR delivery and external gates remain pending; no M5 acceptance or delivery is claimed.
 
 Navigation: [root current state](README.md) ↔ [factory source map](factory/README.md) ↔ [M5 design](docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md) ↔ [plan](docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md) ↔ [active package](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md) / [release](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/release.md) / [rollback](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/rollback.md) / [evidence](engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/evidence/README.md).
 
 The current M5 factual boundary is four closed execution schemas plus a closed 20-operation OpenAPI surface. M4 state/lease/fence/allocation/budget facts bind the exact `TaskPacketV1`, provider profile and `RunManifestV1`; canonical proposals and a trusted workspace snapshot bind `WorkspaceResultV1`. Recovery appends only one control-plane `orphaned` stage/event after fake-workspace cleanup—no terminal proposal and no WorkspaceResult fabrication.
 
-M6 paused at `5c5c371` is `BLOCKED` pending dependency-ordered restack: it consumes old M5 bridge `61db79f`, lacks current `m4_status`, `failure_class`, `failure_reason` and exact task/run/fence/packet/result linkage. The future semantic subject must bind immutable M5 packet/manifest/proposal/snapshot/result digests; provider facts are not authority, fake brokers are not authority and no component may self-approve. That result may later feed M6 verdict → M7 shadow bundle → M8 profile after at least 30 human-accepted outcomes with demotion and an L2 ceiling → M9 preview/staging/canary/recovery; any SHA/digest change invalidates downstream evidence and production remains human-owned.
+M6 Task 3 at `f3b2c0d07116686b27feab4b60166e8a7402d672` remains quarantined pending accepted-M5 restack. Its provisional migration must move from `014` to `015`, and it must preserve exact task/run/fence/packet/result linkage and immutable M5 packet/manifest/proposal/snapshot/result digests. Provider facts are not authority, fake brokers are not authority and no component may self-approve. Task 4 remains untouched.
 
 ## Objective
 
@@ -739,7 +751,7 @@ output contract
 
 # M6 — Independent Semantic Validation, Meta-Review, and Bounded Repair
 
-Current status: M6 paused at `5c5c371` on provisional route `82aac86a3bf9`. It remains based on old M5 bridge `61db79f`, has no factual exact task/run/fence/packet/result linkage, and must restack first onto accepted M4/M5 in dependency order; no compatibility, completion, push, external check or merge is claimed.
+Current status: clean provisional branch `milestone/m6-semantic-validation-provisional-m4`, route `82aac86a3bf9`, has Task-3 source at `f3b2c0d07116686b27feab4b60166e8a7402d672`. It persists deterministic semantic verdicts on provisional Task-2 migration `014` and publish/read persistence. Task 3 passed focused 67/67, legacy 40/40, dedicated PostgreSQL 17 1/1 and architecture checks locally, but remains quarantined behind accepted-M5 restack and must move its migration to `015`; Task 4 is untouched, and no M6 acceptance, delivery, external check or merge is claimed.
 
 ## Objective
 
@@ -812,7 +824,7 @@ needs_human
 
 # M7 — Automated Pull-Request Lifecycle and Shadow Mode
 
-Current status: roadmap only. Its future output is the immutable ready-for-PR/shadow bundle defined in §7.1; no PR lifecycle or shadow cohort is claimed.
+Current status: clean provisional source `c8b450f494b3d44b580556c6a612b21a3a780368` on `milestone/m7-shadow-handoff-provisional-m4` / route `e5911c3f8721` has synthetic algorithm evidence only. Accepted-M6 restack, runtime proof, real outcomes and reviews remain pending; no PR lifecycle acceptance or real shadow cohort is claimed.
 
 ## Objective
 
@@ -901,7 +913,7 @@ security escalation rate
 
 # M8 — Earned and Revocable Low-Risk Autonomy
 
-Current status: roadmap only. Promotion requires at least 30 human-accepted tasks for one exact trust-profile tuple, immediate demotion remains mandatory, and current authority caps the system at L2 (automated recommendation, human merge).
+Current status: branch `milestone/m8-earned-autonomy-provisional-m4` / route `670ffe5522e0` began at `46a6c8eba6b5bd8e4654f3041e52061cdd1a15d6` and has a first source-only Task-1 closed-contract slice with synthetic fixtures at clean provisional head `5735e762b8d7571887f6fa4ac9cf10cd1fad1954`. Tasks 2-3, accepted-M7 restack/reviews, a factual trust profile, the required 30-real-task cohort, activation and acceptance remain absent; immediate demotion remains mandatory and current authority is capped at L2 (automated recommendation, human merge).
 
 ## Objective
 
@@ -997,7 +1009,7 @@ Never initially eligible:
 
 # M9 — Preview, Staging, Canary, and Recovery-Aware Delivery
 
-Current status: roadmap only. Any future delivery must bind the exact merged SHA to a signed artifact through preview/staging/canary/recovery evidence, while production promotion remains human-owned.
+Current status: clean provisional Task-1 head `000301796ac19c518ede110b97b9de09dc077cbd` on `milestone/m9-staged-recovery-provisional-m4` / route `e376373492fe` freezes source-only delivery contracts. Later tasks, real signed input, environment/recovery evidence and production authority remain absent; production promotion remains human-owned.
 
 ## Objective
 

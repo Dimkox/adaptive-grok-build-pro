@@ -180,7 +180,13 @@ class StructureTests(unittest.TestCase):
     def test_version_identity_matches_readme(self) -> None:
         version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+        roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
+        self.assertEqual(version, "2.0.13")
         self.assertTrue(readme.startswith(f"# Adaptive Grok Build Pro v{version}\n"))
+        self.assertIn("Identity: **2.0.13**", readme)
+        self.assertTrue(changelog.startswith("# Changelog\n\n## 2.0.13 — 2026-09-02\n"))
+        self.assertIn("product version: 2.0.13", roadmap)
 
     def test_readme_stack_graph_is_complete(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -288,6 +294,15 @@ class StructureTests(unittest.TestCase):
         self.assertEqual(operations, expected_operations)
         operation_ids = {operation_id for _, _, operation_id in operations}
         self.assertEqual(len(operation_ids), len(operations))
+        self.assertEqual(
+            sum(
+                len(operation["responses"])
+                for path_item in openapi["paths"].values()
+                for method, operation in path_item.items()
+                if method in {"get", "post", "put", "patch", "delete"}
+            ),
+            138,
+        )
 
         for method, path, operation_id in sorted(operations):
             operation = openapi["paths"][path][method.lower()]
@@ -341,10 +356,10 @@ class StructureTests(unittest.TestCase):
         texts = {name: path.read_text(encoding="utf-8") for name, path in current_docs.items()}
         combined = "\n".join(texts.values())
         for fact in (
-            "161199bb163e0ba84ac1b32010be87f113df5e86",
-            "01a10f5",
-            "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
-            "94fc5ad878e6b15df6418303caada49a3b93bf4c",
+            "141e51e75b2bb337fa3bb1544639c6c46c287309",
+            "56e12b2b394436ee227c66d78b1caba8f7317c78",
+            "f3b2c0d07116686b27feab4b60166e8a7402d672",
+            "014_execution_plane.sql",
             "37b05f579320",
             "2026-09-08 00:00 UTC+3",
             "BLOCKED",
@@ -353,9 +368,8 @@ class StructureTests(unittest.TestCase):
         for phrase in (
             "no WorkspaceResult fabrication",
             "restack",
-            "not pushed",
-            "not merged",
-            "M6 paused",
+            "not accepted or delivered",
+            "M6 Task 3",
             "provider facts are not authority",
             "production remains human-owned",
         ):

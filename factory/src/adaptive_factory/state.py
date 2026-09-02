@@ -133,11 +133,18 @@ _RETRYABLE = frozenset(
 )
 
 
-def classify_retry(failure: FailureClass, *, attempt_no: int) -> RetryDecision:
-    if type(attempt_no) is not int or attempt_no < 1:
+def classify_retry(
+    failure: FailureClass, *, attempt_no: int, infrastructure_retries: int
+) -> RetryDecision:
+    if (
+        type(attempt_no) is not int
+        or attempt_no < 1
+        or type(infrastructure_retries) is not int
+        or not 0 <= infrastructure_retries <= 2
+    ):
         return RetryDecision(False, TaskStatus.NEEDS_HUMAN, "invalid attempt evidence")
     if failure not in _RETRYABLE:
         return RetryDecision(False, TaskStatus.NEEDS_HUMAN, "failure class is not retryable")
-    if attempt_no >= 3:
-        return RetryDecision(False, TaskStatus.DEAD, "initial attempt plus two retries exhausted")
+    if attempt_no > infrastructure_retries:
+        return RetryDecision(False, TaskStatus.DEAD, "initial attempt plus accepted retries exhausted")
     return RetryDecision(True, TaskStatus.RETRY, "typed infrastructure retry")

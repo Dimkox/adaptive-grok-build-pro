@@ -164,6 +164,7 @@
         "filesystem",
         "https",
         "postgresql",
+        "tcp",
         "unix_http"
       ],
       "id": "FIT-DECLARED-NETWORK-ONLY",

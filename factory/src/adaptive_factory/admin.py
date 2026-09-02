@@ -4,7 +4,12 @@ import argparse
 import os
 import re
 
-from .migrations import PostgresMigrator, discover_migrations
+from .migrations import (
+    PostgresMigrator,
+    RoleSafetyError,
+    discover_migrations,
+    validate_factory_role_boundary,
+)
 from .store import PostgresArtifactAttestationStore, PostgresFactoryStore
 
 
@@ -67,35 +72,49 @@ def _grant_and_validate_membership(cursor, login: str, role: str, label: str) ->
         raise BootstrapError(f"{label} login has unsafe role membership")
 
 
-def provision_runtime_login(owner_url: str, login: str, password: str) -> None:
+def provision_runtime_login(
+    owner_url: str,
+    login: str,
+    password: str,
+    *,
+    artifact_attestor_login: str | None = None,
+) -> None:
     if not owner_url or not LOGIN_NAME.fullmatch(login) or not 16 <= len(password) <= 1024:
         raise BootstrapError("bounded owner URL, runtime login and password are required")
     import psycopg
     from psycopg import sql
 
-    with psycopg.connect(owner_url) as connection, connection.transaction(), connection.cursor() as cursor:
-        cursor.execute("""SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
-          rolreplication,rolbypassrls,COALESCE(rolconfig,ARRAY[]::text[])
-          FROM pg_roles WHERE rolname=%s""", (login,))
-        existing = cursor.fetchone()
-        if existing is None:
-            cursor.execute(
-                sql.SQL("CREATE ROLE {} LOGIN NOINHERIT NOSUPERUSER NOCREATEROLE NOCREATEDB PASSWORD {}").format(
-                    sql.Identifier(login), sql.Literal(password)
+    try:
+        with psycopg.connect(owner_url) as connection, connection.transaction(), connection.cursor() as cursor:
+            validate_factory_role_boundary(
+                cursor,
+                expected_runtime_login=login,
+                expected_artifact_attestor_login=artifact_attestor_login,
+                allow_missing_groups=False,
+                require_runtime_membership=False,
+            )
+            cursor.execute("SELECT 1 FROM pg_roles WHERE rolname=%s", (login,))
+            if cursor.fetchone() is None:
+                cursor.execute(
+                    sql.SQL(
+                        "CREATE ROLE {} LOGIN NOINHERIT NOSUPERUSER NOCREATEROLE "
+                        "NOCREATEDB NOREPLICATION NOBYPASSRLS PASSWORD {}"
+                    ).format(sql.Identifier(login), sql.Literal(password))
                 )
+            else:
+                cursor.execute(
+                    sql.SQL("ALTER ROLE {} PASSWORD {}").format(sql.Identifier(login), sql.Literal(password))
+                )
+            cursor.execute(sql.SQL("GRANT factory_runtime TO {}").format(sql.Identifier(login)))
+            validate_factory_role_boundary(
+                cursor,
+                expected_runtime_login=login,
+                expected_artifact_attestor_login=artifact_attestor_login,
+                allow_missing_groups=False,
+                require_runtime_membership=True,
             )
-        elif existing[:7] != (True, False, False, False, False, False, False) \
-                or tuple(existing[7]) != ():
-            raise BootstrapError("existing runtime login has unsafe attributes")
-        else:
-            cursor.execute(
-                sql.SQL("ALTER ROLE {} PASSWORD {}").format(sql.Identifier(login), sql.Literal(password))
-            )
-        _validate_capability_role(cursor, "factory_runtime", "runtime")
-        cursor.execute("SELECT pg_has_role(%s,'factory_artifact_attestor','MEMBER')", (login,))
-        if cursor.fetchone()[0]:
-            raise BootstrapError("runtime login has unsafe role membership")
-        _grant_and_validate_membership(cursor, login, "factory_runtime", "runtime")
+    except RoleSafetyError as exc:
+        raise BootstrapError("database role boundary validation failed") from exc
 
 
 def provision_artifact_attestor_login(
@@ -109,34 +128,50 @@ def provision_artifact_attestor_login(
     import psycopg
     from psycopg import sql
 
-    with psycopg.connect(owner_url) as connection, connection.transaction(), connection.cursor() as cursor:
-        cursor.execute(
-            """SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
-            rolreplication,rolbypassrls,COALESCE(rolconfig,ARRAY[]::text[])
-            FROM pg_roles WHERE rolname=%s""",
-            (login,),
-        )
-        existing = cursor.fetchone()
-        if existing is None:
-            cursor.execute(
-                sql.SQL(
-                    "CREATE ROLE {} LOGIN NOINHERIT NOSUPERUSER NOCREATEROLE NOCREATEDB PASSWORD {}"
-                ).format(sql.Identifier(login), sql.Literal(password))
+    try:
+        with psycopg.connect(owner_url) as connection, connection.transaction(), connection.cursor() as cursor:
+            validate_factory_role_boundary(
+                cursor,
+                expected_runtime_login=runtime_login,
+                expected_artifact_attestor_login=login,
+                allow_missing_groups=False,
+                require_runtime_membership=runtime_login is not None,
+                require_artifact_attestor_membership=False,
             )
-        elif existing[:7] != (True, False, False, False, False, False, False) \
-                or tuple(existing[7]) != ():
-            raise BootstrapError("existing artifact attestor login has unsafe attributes")
-        else:
-            cursor.execute(sql.SQL("ALTER ROLE {} PASSWORD {}").format(
-                sql.Identifier(login), sql.Literal(password)
-            ))
-        _validate_capability_role(cursor, "factory_artifact_attestor", "artifact attestor")
-        cursor.execute("SELECT pg_has_role(%s,'factory_runtime','MEMBER')", (login,))
-        if cursor.fetchone()[0]:
-            raise BootstrapError("artifact attestor login has unsafe role membership")
-        _grant_and_validate_membership(
-            cursor, login, "factory_artifact_attestor", "artifact attestor"
-        )
+            cursor.execute(
+                """SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
+                rolreplication,rolbypassrls,COALESCE(rolconfig,ARRAY[]::text[])
+                FROM pg_roles WHERE rolname=%s""",
+                (login,),
+            )
+            existing = cursor.fetchone()
+            if existing is None:
+                cursor.execute(
+                    sql.SQL(
+                        "CREATE ROLE {} LOGIN NOINHERIT NOSUPERUSER NOCREATEROLE NOCREATEDB PASSWORD {}"
+                    ).format(sql.Identifier(login), sql.Literal(password))
+                )
+            elif existing[:7] != (True, False, False, False, False, False, False) \
+                    or tuple(existing[7]) != ():
+                raise BootstrapError("existing artifact attestor login has unsafe attributes")
+            else:
+                cursor.execute(sql.SQL("ALTER ROLE {} PASSWORD {}").format(
+                    sql.Identifier(login), sql.Literal(password)
+                ))
+            _validate_capability_role(cursor, "factory_artifact_attestor", "artifact attestor")
+            _grant_and_validate_membership(
+                cursor, login, "factory_artifact_attestor", "artifact attestor"
+            )
+            validate_factory_role_boundary(
+                cursor,
+                expected_runtime_login=runtime_login,
+                expected_artifact_attestor_login=login,
+                allow_missing_groups=False,
+                require_runtime_membership=runtime_login is not None,
+                require_artifact_attestor_membership=True,
+            )
+    except RoleSafetyError as exc:
+        raise BootstrapError("database role boundary validation failed") from exc
 
 
 def bootstrap_local(
@@ -145,8 +180,24 @@ def bootstrap_local(
     artifact_attestor_password: str | None = None,
     artifact_attestor_url: str | None = None,
 ) -> dict[str, object]:
-    PostgresMigrator(owner_url).apply()
-    provision_runtime_login(owner_url, login, password)
+    if not owner_url or not LOGIN_NAME.fullmatch(login) or not 16 <= len(password) <= 1024:
+        raise BootstrapError("bounded owner URL, runtime login and password are required")
+    attestor_values = (artifact_attestor_login, artifact_attestor_password, artifact_attestor_url)
+    if any(attestor_values) and not all(attestor_values):
+        raise BootstrapError("complete artifact attestor configuration is required")
+    try:
+        PostgresMigrator(owner_url).apply(
+            expected_runtime_login=login,
+            expected_artifact_attestor_login=artifact_attestor_login,
+        )
+    except RoleSafetyError as exc:
+        raise BootstrapError("database role boundary validation failed") from exc
+    provision_runtime_login(
+        owner_url,
+        login,
+        password,
+        artifact_attestor_login=artifact_attestor_login,
+    )
     readiness = PostgresFactoryStore(runtime_url).readiness()
     if (
         readiness.get("status") != "ready"
@@ -154,10 +205,7 @@ def bootstrap_local(
         or readiness.get("session_user") != login
     ):
         raise BootstrapError("runtime readiness validation failed")
-    attestor_values = (artifact_attestor_login, artifact_attestor_password, artifact_attestor_url)
     if any(attestor_values):
-        if not all(attestor_values):
-            raise BootstrapError("complete artifact attestor configuration is required")
         provision_artifact_attestor_login(
             owner_url, artifact_attestor_login, artifact_attestor_password,
             runtime_login=login,
@@ -178,7 +226,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     owner_url = os.environ.get("FACTORY_MIGRATOR_DATABASE_URL", "")
     if args.command == "migrate":
-        applied = PostgresMigrator(owner_url).apply()
+        login = os.environ.get("FACTORY_RUNTIME_LOGIN") or None
+        artifact_attestor_login = os.environ.get("FACTORY_ARTIFACT_ATTESTOR_LOGIN") or None
+        applied = PostgresMigrator(owner_url).apply(
+            expected_runtime_login=login,
+            expected_artifact_attestor_login=artifact_attestor_login,
+        )
         print(f"schema_version={len(discover_migrations())} applied={len(applied)}")
         return 0
     login = os.environ.get("FACTORY_RUNTIME_LOGIN", "")

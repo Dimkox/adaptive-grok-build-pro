@@ -1,7 +1,7 @@
 # Integration compatibility analysis — M3 restack on accepted M2
 
-Route: 41eadaeae674  
-Change: 20260831-fix-the-m3-branch-after-accepted-m2-changed-merg-41eada  
+Route: 41eadaeae674
+Change: 20260831-fix-the-m3-branch-after-accepted-m2-changed-merg-41eada
 Method: read-only repository/history analysis; this report is the sole write.
 
 ## Decision
@@ -58,4 +58,3 @@ This restack has no new HTTP endpoint, webhook/event producer, schema, authentic
 - Active route and change package.
 - Git ancestry/diff/merge-tree for 635c9dd, 022411b, d4cc01f, and route base 1c062998.
 - M2 architecture contracts/rules and M3 governance handoff/schema, receipts, verification, architecture/governance tests.
-

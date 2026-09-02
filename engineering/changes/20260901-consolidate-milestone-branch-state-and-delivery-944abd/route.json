@@ -1,0 +1,78 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "1c06299894279a88b881defa3f19b004fa742223",
+  "base_fingerprint": "20e3a26edfc17eba294d9d5df33cbc3940529724e58171bdd906281618d9a818",
+  "complexity": "standard",
+  "created_at": "2026-09-01T18:31:22+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "infra",
+    "integration"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "integration",
+    "infra"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=infra,integration",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "944abd96ddb3",
+  "schema_version": 1,
+  "session_id": "consolidated-milestone-delivery-20260901",
+  "status": "routed",
+  "task": "Implement and deliver one consolidated milestone-state repair: inventory every local and remote branch and every pull request, reconcile M0-M9 implemented/reviewed/merged/delivered status, update PROJECT_STATE.json and README.md to truthful live GitHub and Trust CI state including policy epoch 06ecf1c875bc and App ID 4694114, record the route-proliferation root cause in mistakes.md, preserve the complete README graph, then deliver the state repair through one isolated pull request. Treat existing milestone branches as evidence and do not create separate routes for each milestone. Do not change Trust CI implementation or add GitHub Actions.",
+  "task_domains": [
+    "infra",
+    "integration"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "enterprise-integration"
+  ],
+  "write_agent": "integration_implementer"
+}

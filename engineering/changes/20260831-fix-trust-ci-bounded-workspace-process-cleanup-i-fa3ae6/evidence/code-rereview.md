@@ -2,9 +2,9 @@
 
 Verdict: **PASS**
 
-Route: `fa3ae6080deb`  
-Stacked base: `9493741dd34fdfa1e37efdc09b35e30d5535be7c`  
-Reviewed verification fingerprint: `a9a4cc297ab7e84b301340aaf8bea48b1c6a92d8bb578e862d081370826a3da9`  
+Route: `fa3ae6080deb`
+Stacked base: `9493741dd34fdfa1e37efdc09b35e30d5535be7c`
+Reviewed verification fingerprint: `a9a4cc297ab7e84b301340aaf8bea48b1c6a92d8bb578e862d081370826a3da9`
 Superseded code-review fingerprint: `7b768fbef0db4c1cfe7a9603349a6e71cdc60907c96d2f0f7b2ba3f6584e93b6`
 
 This report is independent local review evidence only. It does not modify the prior reports, create a receipt, or replace the App-owned exact-SHA Trust CI merge gate.

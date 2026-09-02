@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import shutil
@@ -56,6 +57,89 @@ _ADOPTION_MARKER = '''{
   "state": "adopted"
 }
 '''
+
+
+@contextlib.contextmanager
+def _divergent_pr_graph(route_files: dict[str, str]):
+    """Create clean divergent route and local PR target histories."""
+    with project_copy(git=True) as root:
+        common = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+        ).strip()
+        source_branch = subprocess.check_output(
+            ['git', 'branch', '--show-current'], cwd=root, text=True, encoding='utf-8'
+        ).strip()
+        for rel, content in route_files.items():
+            path = root / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding='utf-8')
+        subprocess.run(['git', 'add', '.'], cwd=root, check=True)
+        subprocess.run(['git', 'commit', '-qm', 'route base'], cwd=root, check=True)
+        route_base = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+        ).strip()
+        (root / 'feature.txt').write_text('feature\n', encoding='utf-8')
+        subprocess.run(['git', 'add', 'feature.txt'], cwd=root, check=True)
+        subprocess.run(['git', 'commit', '-qm', 'feature'], cwd=root, check=True)
+
+        subprocess.run(['git', 'checkout', '-qb', 'pr-target', common], cwd=root, check=True)
+        (root / 'target.txt').write_text('target\n', encoding='utf-8')
+        subprocess.run(['git', 'add', 'target.txt'], cwd=root, check=True)
+        subprocess.run(['git', 'commit', '-qm', 'target'], cwd=root, check=True)
+        target = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+        ).strip()
+        subprocess.run(
+            ['git', 'update-ref', 'refs/remotes/origin/main', target],
+            cwd=root,
+            check=True,
+        )
+        subprocess.run(['git', 'checkout', '-q', source_branch], cwd=root, check=True)
+        yield root, route_base, target, common
+
+
+@contextlib.contextmanager
+def _criss_cross_pr_graph():
+    """Create two heads with two distinct best common ancestors."""
+    with project_copy(git=True) as root:
+        common = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+        ).strip()
+        tree = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD^{tree}'], cwd=root, text=True, encoding='utf-8'
+        ).strip()
+
+        def commit(message: str, *parents: str) -> str:
+            command = ['git', 'commit-tree', tree]
+            for parent in parents:
+                command.extend(['-p', parent])
+            return subprocess.check_output(
+                command,
+                cwd=root,
+                input=message + '\n',
+                text=True,
+                encoding='utf-8',
+            ).strip()
+
+        left = commit('left', common)
+        right = commit('right', common)
+        source = commit('source merge', left, right)
+        target = commit('target merge', right, left)
+        source_branch = subprocess.check_output(
+            ['git', 'branch', '--show-current'], cwd=root, text=True, encoding='utf-8'
+        ).strip()
+        subprocess.run(
+            ['git', 'update-ref', f'refs/heads/{source_branch}', source], cwd=root, check=True
+        )
+        subprocess.run(
+            ['git', 'update-ref', 'refs/remotes/origin/main', target], cwd=root, check=True
+        )
+        subprocess.run(
+            ['git', 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main'],
+            cwd=root,
+            check=True,
+        )
+        yield root, left, right, target
 
 
 def _check(report: dict, name: str) -> dict | None:
@@ -224,6 +308,295 @@ class VerificationTests(unittest.TestCase):
             'governance-rule.schema.json',
         ):
             shutil.copy2(ROOT / 'schemas' / name, root / 'schemas' / name)
+
+    def test_pr_git_diff_check_rejects_whitespace_only_visible_from_local_target(self) -> None:
+        with _divergent_pr_graph({'legacy.md': 'legacy  \n'}) as (
+            root, route_base, target, merge_base
+        ):
+            set_active_route(root, {
+                'route_id': 'committed-pr-whitespace',
+                'base_commit': route_base,
+                'quality_profiles': ['base'],
+                'delivery_expected': False,
+            })
+            route_range = subprocess.run(
+                ['git', 'diff', '--check', f'{route_base}..HEAD'],
+                cwd=root,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(route_range.returncode, 0)
+
+            with patch(
+                'adaptive_grok.verification.command_exists',
+                side_effect=_which_only('git'),
+            ):
+                report = verify(root, mode='pr', record=False)
+
+            check = _check(report, 'git-diff-check')
+            self.assertIsNotNone(check)
+            self.assertEqual(check['status'], 'fail')
+            self.assertIn('legacy.md:1: trailing whitespace', check['stdout'])
+            checked = {
+                (item.get('kind'), item.get('base'), item.get('target'))
+                for item in check['details']
+                if item.get('code') == 'checked-range'
+            }
+            self.assertIn(('route', route_base, route_base), checked)
+            self.assertIn(('pr-target', merge_base, target), checked)
+
+    def test_pr_changed_file_inventory_unions_route_and_local_target_ranges(self) -> None:
+        contract = 'engineering/contracts/schemas/pr-only.schema.json'
+        with _divergent_pr_graph({contract: '{\n'}) as (
+            root, route_base, target, merge_base
+        ):
+            set_active_route(root, {
+                'route_id': 'pr-range-inventory',
+                'base_commit': route_base,
+                'quality_profiles': ['base'],
+                'delivery_expected': False,
+            })
+            self.assertNotIn(contract, subprocess.check_output(
+                ['git', 'diff', '--name-only', f'{route_base}...HEAD'],
+                cwd=root,
+                text=True,
+                encoding='utf-8',
+            ).splitlines())
+
+            with patch(
+                'adaptive_grok.verification.command_exists',
+                side_effect=_which_only('git'),
+            ):
+                report = verify(root, mode='pr', record=False)
+
+            self.assertIn(contract, report['changed_files'])
+            inventory = report['changed_file_inventory']
+            self.assertEqual(inventory['union_count'], len(report['changed_files']))
+            bases = {
+                (item['kind'], item['base'], item['count'])
+                for item in inventory['bases']
+            }
+            self.assertTrue(any(kind == 'route' and base == route_base for kind, base, _ in bases))
+            self.assertTrue(any(
+                kind == 'pr-target' and base == merge_base for kind, base, _ in bases
+            ))
+            self.assertTrue(any(
+                item['kind'] == 'pr-target' and item['target'] == target
+                for item in inventory['bases']
+            ))
+            contracts = _check(report, 'contract-structure')
+            self.assertIsNotNone(contracts)
+            self.assertEqual(contracts['status'], 'fail')
+            self.assertTrue(any(item['path'] == contract for item in contracts['details']))
+
+    def test_pr_git_diff_check_accepts_clean_distinct_committed_ranges(self) -> None:
+        with _divergent_pr_graph({'legacy.md': 'legacy\n'}) as (
+            root, route_base, target, merge_base
+        ):
+            set_active_route(root, {
+                'route_id': 'clean-pr-ranges',
+                'base_commit': route_base,
+                'quality_profiles': ['base'],
+                'delivery_expected': False,
+            })
+            with patch(
+                'adaptive_grok.verification.command_exists',
+                side_effect=_which_only('git'),
+            ):
+                report = verify(root, mode='pr', record=False)
+
+            check = _check(report, 'git-diff-check')
+            self.assertIsNotNone(check)
+            self.assertEqual(check['status'], 'pass')
+            self.assertIn(route_base, check['summary'])
+            self.assertIn(merge_base, check['summary'])
+            self.assertTrue(any(
+                item.get('kind') == 'pr-target'
+                and item.get('base') == merge_base
+                and item.get('target') == target
+                for item in check['details']
+            ))
+
+    def test_pr_git_diff_check_rejects_staged_whitespace(self) -> None:
+        with project_copy(git=True) as root:
+            base = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+            ).strip()
+            set_active_route(root, {
+                'route_id': 'staged-whitespace',
+                'base_commit': base,
+                'quality_profiles': ['base'],
+                'delivery_expected': False,
+            })
+            (root / 'staged.txt').write_text('staged  \n', encoding='utf-8')
+            subprocess.run(['git', 'add', 'staged.txt'], cwd=root, check=True)
+            with patch(
+                'adaptive_grok.verification.command_exists',
+                side_effect=_which_only('git'),
+            ):
+                report = verify(root, mode='pr', record=False)
+
+            check = _check(report, 'git-diff-check')
+            self.assertIsNotNone(check)
+            self.assertEqual(check['status'], 'fail')
+            self.assertIn('staged.txt:1: trailing whitespace', check['stdout'])
+
+    def test_pr_git_diff_check_fails_closed_for_invalid_route_bases(self) -> None:
+        for case in ('malformed', 'non-ancestor'):
+            with self.subTest(case=case), project_copy(git=True) as root:
+                head_branch = subprocess.check_output(
+                    ['git', 'branch', '--show-current'],
+                    cwd=root,
+                    text=True,
+                    encoding='utf-8',
+                ).strip()
+                common = subprocess.check_output(
+                    ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+                ).strip()
+                if case == 'malformed':
+                    route_base = 'not-an-exact-sha'
+                    expected_code = 'route-base-malformed'
+                else:
+                    subprocess.run(
+                        ['git', 'checkout', '-qb', 'unrelated-route', common],
+                        cwd=root,
+                        check=True,
+                    )
+                    (root / 'unrelated.txt').write_text('unrelated\n', encoding='utf-8')
+                    subprocess.run(['git', 'add', 'unrelated.txt'], cwd=root, check=True)
+                    subprocess.run(['git', 'commit', '-qm', 'unrelated route'], cwd=root, check=True)
+                    route_base = subprocess.check_output(
+                        ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+                    ).strip()
+                    subprocess.run(['git', 'checkout', '-q', head_branch], cwd=root, check=True)
+                    (root / 'head.txt').write_text('head\n', encoding='utf-8')
+                    subprocess.run(['git', 'add', 'head.txt'], cwd=root, check=True)
+                    subprocess.run(['git', 'commit', '-qm', 'head'], cwd=root, check=True)
+                    expected_code = 'route-base-non-ancestor'
+                set_active_route(root, {
+                    'route_id': f'invalid-route-{case}',
+                    'base_commit': route_base,
+                    'quality_profiles': ['base'],
+                    'delivery_expected': False,
+                })
+                with patch(
+                    'adaptive_grok.verification.command_exists',
+                    side_effect=_which_only('git'),
+                ):
+                    report = verify(root, mode='pr', record=False)
+
+                check = _check(report, 'git-diff-check')
+                self.assertIsNotNone(check)
+                self.assertEqual(check['status'], 'fail')
+                self.assertTrue(any(
+                    item.get('code') == expected_code for item in check['details']
+                ))
+
+    def test_pr_git_diff_check_fails_closed_for_ambiguous_local_targets(self) -> None:
+        with project_copy(git=True) as root:
+            route_base = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+            ).strip()
+            subprocess.run(
+                ['git', 'config', 'init.defaultBranch', 'topic'], cwd=root, check=True
+            )
+            subprocess.run(
+                ['git', 'update-ref', 'refs/remotes/origin/main', route_base],
+                cwd=root,
+                check=True,
+            )
+            (root / 'other.txt').write_text('other\n', encoding='utf-8')
+            subprocess.run(['git', 'add', 'other.txt'], cwd=root, check=True)
+            subprocess.run(['git', 'commit', '-qm', 'other target'], cwd=root, check=True)
+            other = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+            ).strip()
+            subprocess.run(
+                ['git', 'update-ref', 'refs/remotes/origin/master', other],
+                cwd=root,
+                check=True,
+            )
+            set_active_route(root, {
+                'route_id': 'ambiguous-pr-target',
+                'base_commit': route_base,
+                'quality_profiles': ['base'],
+                'delivery_expected': False,
+            })
+
+            with patch(
+                'adaptive_grok.verification.command_exists',
+                side_effect=_which_only('git'),
+            ):
+                report = verify(root, mode='pr', record=False)
+
+            check = _check(report, 'git-diff-check')
+            self.assertIsNotNone(check)
+            self.assertEqual(check['status'], 'fail')
+            self.assertTrue(any(
+                item.get('code') == 'pr-base-ambiguous' for item in check['details']
+            ))
+
+    def test_pr_git_diff_check_fails_closed_for_multiple_best_merge_bases(self) -> None:
+        with _criss_cross_pr_graph() as (root, left, right, target):
+            set_active_route(root, {
+                'route_id': 'criss-cross-pr-target',
+                'base_commit': left,
+                'quality_profiles': ['base'],
+                'delivery_expected': False,
+            })
+            observed = set(subprocess.check_output(
+                ['git', 'merge-base', '--all', target, 'HEAD'],
+                cwd=root,
+                text=True,
+                encoding='utf-8',
+            ).splitlines())
+            self.assertEqual(observed, {left, right})
+
+            with patch(
+                'adaptive_grok.verification.command_exists',
+                side_effect=_which_only('git'),
+            ):
+                report = verify(root, mode='pr', record=False)
+
+            check = _check(report, 'git-diff-check')
+            self.assertIsNotNone(check)
+            self.assertEqual(check['status'], 'fail')
+            self.assertTrue(any(
+                item.get('code') == 'pr-base-no-merge-base' for item in check['details']
+            ))
+
+    def test_pr_base_unavailable_fails_only_for_delivery_expected_routes(self) -> None:
+        for delivery_expected, expected_status in ((True, 'fail'), (False, 'pass')):
+            with self.subTest(delivery_expected=delivery_expected), project_copy(git=True) as root:
+                subprocess.run(['git', 'branch', '-m', 'topic'], cwd=root, check=True)
+                subprocess.run(
+                    ['git', 'config', 'init.defaultBranch', 'trunk'], cwd=root, check=True
+                )
+                route_base = subprocess.check_output(
+                    ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+                ).strip()
+                set_active_route(root, {
+                    'route_id': f'topic-only-{delivery_expected}',
+                    'base_commit': route_base,
+                    'quality_profiles': ['base'],
+                    'delivery_expected': delivery_expected,
+                })
+
+                with patch(
+                    'adaptive_grok.verification.command_exists',
+                    side_effect=_which_only('git'),
+                ):
+                    report = verify(root, mode='pr', record=False)
+
+                check = _check(report, 'git-diff-check')
+                self.assertIsNotNone(check)
+                self.assertEqual(check['status'], expected_status)
+                unavailable = [
+                    item for item in check['details']
+                    if item.get('code') == 'pr-base-unavailable'
+                ]
+                self.assertEqual(bool(unavailable), delivery_expected)
 
     def test_invalid_json_contract_fails(self) -> None:
         with project_copy() as root:

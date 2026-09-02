@@ -38,6 +38,10 @@ Freeze schema v1 and its YAML-subset reader for explicit unchanged-history compa
 
 The user explicitly approved rebuilding from the roadmap and its M1 design; preserve merged M0 and later repairs because the roadmap forbids discarding newer work. Treat the existing M1 prototype as characterization input, use dual-read/single-write migration, and deliver trusted-runtime deployment as a separate externally approved operation.
 
+## 2026-09-01 — Converge branch work through one delivery ledger
+
+Many isolated branches and worktrees may preserve implementation evidence, but they converge through one consolidated delivery route before completion. That route updates the five-axis `PROJECT_STATE.json` implementation/review/stack-merge/main-delivery/gate ledger so branch presence is never mistaken for delivery.
+
 ## 2026-08-24 — M0.3 bind main; revoke bootstrap exceptions
 
 Live App-owned check `adaptive-trust-ci/verified@6737355947c2` is bound to GitHub App ID `4694114` on protected `main`. Revoke the 2026-08-23 M1-start / PR #2 / PR #4 bootstrap exceptions because that live App-owned check exists (never by forging one). PR #5 stays unmerged while Check Run `97529209576` is `action_required`.
@@ -356,3 +360,23 @@ Scan only nonterminal manifests whose M4 run and capacity allocation are both du
 ## 2026-09-01 — Lock trusted authority inside intake without granting row mutation
 
 Use fixed-search-path security-definer predicates that take a row lock on the exact repository/policy/action subject, and invoke them after intake identity serialization in the insertion transaction. This prevents revocation TOCTOU while retaining an EXECUTE-only runtime boundary.
+
+## 2026-09-01 — Keep SEO landing generation isolated and repository-scoped
+
+Embedding the Codex skill under `.agents/skills/` and its showcase under `side-projects/` makes the capability available on demand without changing Trust CI runtime behavior. The showcase remains `noindex, nofollow` until a real production origin is supplied and verified.
+
+## 2026-09-02 — Integrate legacy evidence at the stricter contract boundary
+
+When a current-main merge introduces legacy evidence into a stricter accepted stack, migrate only the affected artifacts to the current canonical contract and model real local test capabilities explicitly. Pure URL parsing is not network access, while loopback browser execution is a declared `local_only` edge; this preserved validator strength without granting general egress.
+
+## 2026-09-02 — Bind PR preflight to route and target ranges
+
+Derive the exact route ancestor and the local PR target merge base from Git metadata, then use their changed-file union for hygiene, secret, contract, and SQL gates. This keeps a stale route base from hiding PR-only changes without fetching or treating repository prose as merge authority.
+
+## 2026-09-02 — Exclude exact verifier environments from architecture inventory
+
+Skip untracked directory components named `.venv`, but enumerate force-added index entries beneath them and inspect those exact paths through root-relative no-follow descriptors. This prevents verifier tooling from poisoning later runs without letting the cache-shaped name hide tracked repository source or symlinks.
+
+## 2026-09-02 — Terminalize conditionally across claim races
+
+Cancel and supersede may terminalize directly only while `current_run_id IS NULL`; a failed conditional transition re-reads the committed run, acquires capacity locks before the task row, releases the run exactly once, and retries. This preserves the canonical capacity-to-task order while preventing a winning claim from being erased with live capacity.

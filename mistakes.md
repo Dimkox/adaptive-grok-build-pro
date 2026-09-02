@@ -134,6 +134,31 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 **Symptom:** Escaped unpaired surrogates passed parsing, then crashed local and trusted semantic digest encoding with raw `UnicodeEncodeError`.
 **Root cause:** Structural walkers enforced length, depth, and node counts but assumed every decoded Python string was UTF-8 encodable.
 
+## 2026-09-01 — Treated developer Git objects as exact-checkout inputs
+
+**Symptom:** Trust CI passed both holdouts but failed root unittest because stacked M2/M3 commit objects were absent from its isolated exact-SHA checkout.
+**Root cause:** A mandatory state test treated objects reachable only through developer remote refs as part of the repository contract instead of recording the accepted merge-parent proof in durable state.
+
+## 2026-09-01 — Checked only the uncommitted diff for PR hygiene
+
+**Symptom:** Verification reported a clean diff while the committed PR range contained trailing whitespace and 294 PR-only paths bypassed changed-file gates.
+**Root cause:** Hygiene inspected only the working tree and inventory used only the stale route base; PR verification must union that exact ancestor with the locally resolved target merge-base range.
+
+## 2026-09-01 — Replaced a review report through delete then add
+
+**Symptom:** An interrupted reviewer rewrite temporarily deleted an evidence report before its replacement was written.
+**Root cause:** Replacement was split into destructive delete/add operations instead of one atomic update; preserved reports must be updated in place with a single patch.
+
+## 2026-09-01 — Browser runner lifecycle was not executed
+
+**Symptom:** The browser contract could report `passed: true` and then exit nonzero with `ENOTEMPTY` during cleanup.
+**Root cause:** The source-only contract failed to execute the real Chrome child lifecycle, allowing immediate profile deletion while the child was still writing; its replacement execution test then omitted the optional-dependency availability boundary and mistook local host capabilities for the immutable Trust runner contract.
+
+## 2026-09-01 — Used branches as the milestone delivery ledger
+
+**Symptom:** Completed M1-M4 work accumulated across stacked branches while the repository handoff still said M1 had not started, causing M4 to be overlooked.
+**Root cause:** Isolated branches were allowed, but completed work was not consolidated back into one active route and repository-level state that separated stack integration from protected-main delivery.
+
 ## 2026-08-24 — Misread «приложуха» as a public website
 
 **Symptom:** Agents treated «приложуха» as a public website instead of GitHub App `https://github.com/apps/adaptive-trust-ci`.
@@ -355,3 +380,40 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-02 — Treated an inert guard as sufficient systemd validation
 
 **Root cause:** `ExecCondition=/usr/bin/false` was treated as sufficient while future `ExecStart` binaries did not exist and the syscall-filter syntax had not been checked by systemd itself. Source-only units now use installed false stubs and must pass native `systemd-analyze verify`.
+
+## 2026-09-02 — Treated cache names and default Git answers as complete authority
+
+**Symptom:** Tracked `.venv` artifacts escaped architecture drift, criss-cross history appeared to have one PR merge base, and delivery verification silently lost its local PR-target range.
+**Root cause:** Inventory ignored filesystem names without consulting the index, while range selection accepted Git's default single merge-base output and represented an absent delivery target as an ordinary optional result.
+
+## 2026-09-02 — Reused one claim repository across supersede race subtests
+
+**Symptom:** The first GREEN run left writer capacity active because the writer claim selected the reader subtest's queued replacement instead of the task being superseded.
+**Root cause:** The concurrency fixture isolated source identities but not scheduler eligibility; each interleaving must use its own repository so a real `SKIP LOCKED` claim cannot select leftover eligible work from another subtest.
+
+## 2026-09-02 — Anchored new tests inside a composite test
+
+**Symptom:** Three retry-limit regression methods were initially inserted before the existing retry/budget test had ended, making its remaining assertions belong to the last new method.
+**Root cause:** The patch matched a repeated inner assertion instead of a method boundary; inspect test discovery and surrounding indentation after structural patches, then anchor additions at the next top-level test definition.
+
+## 2026-09-02 — Bypassed the factory project environment for API tests
+
+**Symptom:** A controller invoked API tests with system Python and hit a missing FastAPI import, producing no product evidence.
+**Root cause:** The command bypassed the factory-managed environment; focused factory checks must use `uv run --project factory ...`.
+
+## 2026-09-02 — Assumed the default package output path was trusted
+
+**Symptom:** The first `package_stack.py` run rejected `dist/` before creating an artifact because a repository ancestor grants group rename authority.
+**Root cause:** Secure packaging validates the whole output ancestor chain; in a shared workspace, generate into a private trusted temporary directory and copy the verified zip and sidecar to the tracked package path.
+
+## 2026-09-02 — Passed Markdown backticks through shell double quotes
+
+**Root cause:** A Markdown PR-comment body containing backticks was passed to `gh` through shell double-quoted `JSON.stringify` output, so the shell performed command substitution and removed inline code. POSIX-shell callers must single-quote the whole body while escaping only apostrophes, or use a safe `--body-file`/stdin path; never place Markdown backticks in a double-quoted shell argument.
+
+## 2026-09-02 — Applied a repeated transaction hunk without method anchors
+
+**Root cause:** A generic patch matched the first repeated connection lines and temporarily changed three read-only execution methods instead of only the intended mutators. Transaction-wrapper edits must include the enclosing method signature as patch context and be verified immediately against the complete method-to-wrapper inventory.
+
+## 2026-09-02 — Reused a stale architecture command spelling
+
+**Root cause:** Historical evidence named a conceptual `diagram-check`, but the current CLI exposes `diagram --check`; I invoked the remembered label before consulting current help. Verification commands must be taken from the checked-out CLI parser/help rather than prose shorthand from an older checkpoint.

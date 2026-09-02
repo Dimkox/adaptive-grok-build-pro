@@ -2,7 +2,7 @@
 
 All times are UTC+3. The superseding hard deadline is **2026-09-08 00:00 UTC+3**; normal work freezes at 2026-09-07 20:00 and the final four hours are reserved for exact-SHA gates, receipts, documentation parity and recovery evidence. The older 2026-09-15 deadline is retained only as superseded history.
 
-Current execution ruling: M4 repair, provisional M5 branch `milestone/m5-isolated-execution-provisional-m4` / route `37b05f579320`, and provisional M6 branch `milestone/m6-semantic-validation-provisional-m4` / route `82aac86a3bf9` may develop source in parallel from M4 anchor `94fc5ad`. M5 is blocked on a suitable rootless-isolation host. Acceptance, restack, PR delivery and Trust CI remain dependency ordered M4 → M5 → M6; no milestone is complete merely because its provisional branch exists.
+Current execution checkpoint: the M4 `2.0.13` release-state candidate is the commit containing `PROJECT_STATE.json`, built on scanner-repair parent `5a6cdfb7a129e02724c632f78c31de6406d6863a`. Repair head `547ee628812fbf098f337a854f68edf660091ead` passed 13/14 verifier gates before the sole synthetic-fixture secret-scan finding was repaired at `5a6cdfb7`; final exact-head verification and five fresh reviews/reports/receipts remain pending. PR #17 closed at `2026-09-02T10:08:38Z` as an exact duplicate of open source PR #21 at `460a8a01`; PR delivery, a new exact-SHA external Trust CI result, unresolved PR #21 GitGuardian FAILURE metadata and merge remain pending. PRs #12/#13 remain old-epoch `ACTION_REQUIRED`; PR #15's current-epoch Trust CI conclusion is `FAILURE` and GitGuardian is `SUCCESS`, with cause not inspected or inferred. Their unique scopes need clean successor extraction and no successor PR is claimed. M5 Tasks 1-6 are provisional at `141e51e75b2bb337fa3bb1544639c6c46c287309` and are the next accepted step after M4, with rootless host proof/restack/reviews pending. M6 Task 3 is provisional at `f3b2c0d07116686b27feab4b60166e8a7402d672`, with deterministic verdict persistence and local focused 67/67, legacy 40/40, PG17 1/1 and architecture PASS, but is quarantined behind accepted M5 and Task 4 is untouched. M7 `c8b450f494b3d44b580556c6a612b21a3a780368` is synthetic-only; M8 Task 1 is `5735e762b8d7571887f6fa4ac9cf10cd1fad1954`; M9 Task 1 is source-only at `000301796ac19c518ede110b97b9de09dc077cbd`. Parallel source work is not acceptance; restack, reviews, PR delivery and Trust CI remain dependency ordered M4 → M5 → M6 → M7 → M8 → M9.
 
 | Milestone | Start | Completion | Exit gate |
 | --- | ---: | ---: | --- |
@@ -23,8 +23,8 @@ Current execution ruling: M4 repair, provisional M5 branch `milestone/m5-isolate
 - 20:00-02:00: intake, transitions, leases, fences, capacity and restart semantics.
 - 02:00-08:00: budgets, retry/dead, kills, audit, API/CLI and reconciliation.
 - 08:00-12:00: real disposable PostgreSQL concurrency/restart exit tests.
-- 12:00-15:00: scope freeze, verifier and five reviews on one fingerprint.
-- 15:00-18:00: receipts, README, PR preparation and external exact-head gate.
+- 12:00-15:00: current-main integration, state/README/roadmap coherence, exact-tree verifier and five reviews on one fingerprint.
+- 15:00-18:00: review fixes if any, receipts, PR preparation and external exact-head gate; branch push or PR mutation still requires exact delegated authority.
 
 ## Control protocol
 

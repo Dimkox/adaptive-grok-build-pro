@@ -3,11 +3,87 @@ from contextlib import redirect_stderr
 from io import StringIO
 from unittest.mock import patch
 
-from adaptive_factory.migrations import AppliedMigration, MigrationError, discover_migrations, plan_migrations
+from adaptive_factory.migrations import (
+    AppliedMigration,
+    FACTORY_GROUP_ROLES,
+    MigrationError,
+    RoleSafetyError,
+    discover_migrations,
+    plan_migrations,
+    validate_factory_role_boundary,
+)
 from factory.tests import run_disposable_exit
 
 
 class MigrationTests(unittest.TestCase):
+    def test_role_boundary_covers_distinct_runtime_and_artifact_attestor_topology(self):
+        class BoundaryCursor:
+            def __init__(self, memberships):
+                self.memberships = memberships
+                self.rows = []
+
+            def execute(self, statement, parameters):
+                normalized = " ".join(statement.split()).lower()
+                if normalized.startswith("select rolname,rolcanlogin"):
+                    self.rows = [
+                        (role, False, False, False, False, False, False, False)
+                        for role in (
+                            "factory_migrator",
+                            "factory_runtime",
+                            "factory_audit_reader",
+                            "factory_artifact_attestor",
+                        )
+                    ]
+                elif normalized.startswith("select rolcanlogin"):
+                    self.rows = [(True, False, False, False, False, False, False)]
+                elif "from pg_auth_members" in normalized:
+                    self.rows = list(self.memberships)
+                else:
+                    raise AssertionError(normalized)
+
+            def fetchall(self):
+                return list(self.rows)
+
+            def fetchone(self):
+                return self.rows[0] if self.rows else None
+
+        safe = [
+            ("factory_runtime", "runtime_login", False, False, True),
+            ("factory_artifact_attestor", "attestor_login", False, False, True),
+        ]
+        self.assertEqual(
+            FACTORY_GROUP_ROLES,
+            (
+                "factory_migrator",
+                "factory_runtime",
+                "factory_audit_reader",
+                "factory_artifact_attestor",
+            ),
+        )
+        validate_factory_role_boundary(
+            BoundaryCursor(safe),
+            expected_runtime_login="runtime_login",
+            expected_artifact_attestor_login="attestor_login",
+            allow_missing_groups=False,
+            require_runtime_membership=True,
+            require_artifact_attestor_membership=True,
+        )
+        unsafe_memberships = (
+            safe + [("factory_artifact_attestor", "runtime_login", False, False, True)],
+            safe + [("pg_read_all_data", "factory_artifact_attestor", False, False, True)],
+            safe + [("factory_artifact_attestor", "unexpected_login", False, False, True)],
+        )
+        for memberships in unsafe_memberships:
+            with self.subTest(memberships=memberships), self.assertRaises(RoleSafetyError):
+                validate_factory_role_boundary(
+                    BoundaryCursor(memberships),
+                    expected_runtime_login="runtime_login",
+                    expected_artifact_attestor_login="attestor_login",
+                    allow_missing_groups=False,
+                    require_runtime_membership=True,
+                    require_artifact_attestor_membership=True,
+                )
+
     def test_exit_runner_accepts_only_repo_owned_postgres_images(self):
         self.assertEqual(
             run_disposable_exit._parse_args([]).postgres_image,
@@ -38,8 +114,22 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
-        self.assertEqual(len({item.sha256 for item in migrations}), 13)
+        self.assertEqual([item.version for item in migrations], list(range(1, 15)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 14)
+        self.assertEqual(
+            [item.name for item in migrations[-2:]],
+            [
+                "013_persisted_infrastructure_retry_limit.sql",
+                "014_execution_plane.sql",
+            ],
+        )
+        self.assertEqual(
+            [item.sha256 for item in migrations[-2:]],
+            [
+                "523d0b16521a258a8b922410b555c93d986b896e908011b2b0563a1c7b8f7fcb",
+                "9faa5622cbd66b3c90afd34873e8e17ad24062a2c02036ea86852bdd4c7128d9",
+            ],
+        )
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -92,13 +182,14 @@ class MigrationTests(unittest.TestCase):
             "increment_fence_rejected",
             "read_metrics_snapshot",
             "revoke select, insert, update, delete on factory.metric_counters",
+            "infrastructure_retries",
         ):
             self.assertIn(marker, sql)
         self.assertNotIn("on delete cascade", sql)
 
     def test_execution_migration_is_additive_and_capability_shaped(self):
         migration = discover_migrations()[-1]
-        self.assertEqual(migration.name, "013_execution_plane.sql")
+        self.assertEqual(migration.name, "014_execution_plane.sql")
         lowered = migration.sql.lower()
         self.assertNotIn("drop ", lowered)
         self.assertNotIn("alter table factory.tasks", lowered)

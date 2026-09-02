@@ -18,7 +18,14 @@ from .execution_contracts import ExecutionContractError
 from .models import Actor, ExecutionStage, LeaseGrant, RunRole
 from .protocol import ProtocolError
 from .service import AuthorizationError
-from .store import AuthorityError, BudgetError, FenceError, MetricsUnavailable, StoreError
+from .store import (
+    AuthorityError,
+    BudgetError,
+    FenceError,
+    MetricsUnavailable,
+    StoreError,
+    StoreUnavailable,
+)
 from .workspace import WorkspaceError
 
 
@@ -194,6 +201,10 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
     @app.exception_handler(BudgetError)
     async def budget_error(_request: Request, _error: BudgetError):
         return JSONResponse({"error": "stopped", "code": "budget"}, status_code=409)
+
+    @app.exception_handler(StoreUnavailable)
+    async def store_unavailable(_request: Request, _error: StoreUnavailable):
+        return JSONResponse({"error": "unavailable", "code": "database"}, status_code=503)
 
     @app.exception_handler(StoreError)
     async def store_error(_request: Request, _error: StoreError):

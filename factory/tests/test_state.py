@@ -55,11 +55,40 @@ class StatePolicyTests(unittest.TestCase):
         }
         for failure in FailureClass:
             with self.subTest(failure=failure):
-                decision = classify_retry(failure, attempt_no=1)
+                decision = classify_retry(failure, attempt_no=1, infrastructure_retries=2)
                 self.assertEqual(decision.retry, failure in retryable)
-        self.assertTrue(classify_retry(FailureClass.WORKER_LOST, attempt_no=2).retry)
-        self.assertFalse(classify_retry(FailureClass.WORKER_LOST, attempt_no=3).retry)
-        self.assertEqual(classify_retry(FailureClass.WORKER_LOST, attempt_no=3).terminal, TaskStatus.DEAD)
+        self.assertTrue(
+            classify_retry(FailureClass.WORKER_LOST, attempt_no=2, infrastructure_retries=2).retry
+        )
+        self.assertFalse(
+            classify_retry(FailureClass.WORKER_LOST, attempt_no=3, infrastructure_retries=2).retry
+        )
+        self.assertEqual(
+            classify_retry(
+                FailureClass.WORKER_LOST, attempt_no=3, infrastructure_retries=2
+            ).terminal,
+            TaskStatus.DEAD,
+        )
+
+    def test_accepted_infrastructure_retry_limit_is_exact(self):
+        for infrastructure_retries in range(3):
+            for attempt_no in range(1, infrastructure_retries + 2):
+                with self.subTest(
+                    infrastructure_retries=infrastructure_retries,
+                    attempt_no=attempt_no,
+                ):
+                    decision = classify_retry(
+                        FailureClass.WORKER_LOST,
+                        attempt_no=attempt_no,
+                        infrastructure_retries=infrastructure_retries,
+                    )
+                    self.assertEqual(decision.retry, attempt_no <= infrastructure_retries)
+                    self.assertEqual(
+                        decision.terminal,
+                        TaskStatus.RETRY
+                        if attempt_no <= infrastructure_retries
+                        else TaskStatus.DEAD,
+                    )
 
     def test_future_delivery_state_is_not_a_task_status(self):
         for name in ("pr_open", "merged", "deployed"):

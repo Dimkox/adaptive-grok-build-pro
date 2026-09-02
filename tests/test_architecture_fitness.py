@@ -3224,6 +3224,31 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "not_applicable")
         self.assertNotIn("new_network_client", report.triggers)
 
+    def test_network_analysis_ignores_pure_urllib_parse(self) -> None:
+        system = _system()
+        system["nodes"][0]["type"] = "service"
+        system["nodes"][0]["repository_paths"] = ["src"]
+        rules = _rules()
+        rules["network_policies"] = [{
+            "id": "FIT-NETWORK",
+            "node_types": ["service"],
+            "allowed_protocols": ["https"],
+            "require_declared_edge": True,
+            "severity": "error",
+        }]
+        repo, base = self._repo(system=system, rules=rules)
+        repo.write_text(
+            "src/parser.py",
+            "from urllib.parse import urlsplit\n"
+            "urlsplit('https://example.test/path')\n",
+        )
+        head = repo.commit("pure URL parsing")
+        report = self._evaluate(repo, base, head)
+        result = self._results(report)["network_client"]
+        self.assertEqual(result.status, "not_applicable")
+        self.assertEqual(report.status, "pass")
+        self.assertNotIn("new_network_client", report.triggers)
+
     def test_network_analysis_recognizes_local_src_layout_package_imports(self) -> None:
         system = _system()
         system["nodes"][0]["type"] = "service"

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import inspect
 import unittest
 
 from adaptive_factory.adapters import AdapterConformance, AdapterRegistry, TrustedExecutionProfile
@@ -6,7 +7,7 @@ from adaptive_factory.execution_contracts import ExecutionContractError, Executi
 from adaptive_factory.models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskStatus
 from adaptive_factory.service import AuthorizationError, FactoryService
 from adaptive_factory.brokers import ProposalContext
-from adaptive_factory.store import StoreError
+from adaptive_factory.store import PostgresFactoryStore, StoreError
 from adaptive_factory.workspace import (
     ArtifactAttestationUnavailable,
     ArtifactAttestationV1,
@@ -217,6 +218,22 @@ class TrustedTestArtifactAttestationStore:
 
 
 class ExecutionServiceTests(unittest.TestCase):
+    def test_execution_database_mutations_share_bounded_store_transaction(self):
+        mutation_methods = (
+            "record_execution_cleanup_success",
+            "terminalize_execution_orphan",
+            "record_execution_cleanup_failure",
+            "start_execution",
+            "advance_execution",
+            "commit_execution_proposal",
+            "finalize_execution",
+        )
+        for name in mutation_methods:
+            with self.subTest(name=name):
+                source = inspect.getsource(getattr(PostgresFactoryStore, name))
+                self.assertIn("with self._mutation() as", source)
+                self.assertNotIn("with self._connect(", source)
+
     def test_self_asserted_selection_is_rejected_without_trusted_registry(self):
         store = FakeExecutionStore()
         with self.assertRaisesRegex(ExecutionContractError, "provider_ineligible"):

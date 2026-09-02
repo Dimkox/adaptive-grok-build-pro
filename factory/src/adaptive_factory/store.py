@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from datetime import datetime
 import json
@@ -134,6 +135,10 @@ def _validate_capability_session(cursor, capability_role: str, label: str) -> No
         raise StoreError(f"{label} login has direct database authority")
 
 
+class StoreUnavailable(StoreError):
+    pass
+
+
 @dataclass(frozen=True)
 class IntakeResult:
     task: TaskProjection
@@ -214,6 +219,9 @@ class PostgresArtifactAttestationStore:
 
 
 class PostgresFactoryStore:
+    _MUTATION_LOCK_TIMEOUT = "5s"
+    _MUTATION_STATEMENT_TIMEOUT = "5s"
+
     def __init__(self, database_url: str) -> None:
         if not database_url:
             raise StoreError("database URL is required")
@@ -237,6 +245,28 @@ class PostgresFactoryStore:
             connection.close()
             raise
         return connection
+
+    def _set_transaction_bounds(self, cursor) -> None:
+        cursor.execute(
+            "SELECT set_config('lock_timeout',%s,true),set_config('statement_timeout',%s,true)",
+            (self._MUTATION_LOCK_TIMEOUT, self._MUTATION_STATEMENT_TIMEOUT),
+        )
+
+    @contextmanager
+    def _mutation(self):
+        import psycopg
+
+        try:
+            with self._connect(connect_timeout=5) as connection:
+                with connection.transaction(), connection.cursor() as cursor:
+                    self._set_transaction_bounds(cursor)
+                    yield cursor
+        except (
+            psycopg.OperationalError,
+            psycopg.errors.LockNotAvailable,
+            psycopg.errors.QueryCanceled,
+        ) as exc:
+            raise StoreUnavailable("database mutation unavailable") from exc
 
     def readiness(self) -> dict[str, object]:
         with self._connect() as connection, connection.cursor() as cursor:
@@ -365,7 +395,7 @@ class PostgresFactoryStore:
     def record_execution_cleanup_success(self, candidate: ExecutionRecoveryCandidate) -> None:
         if not isinstance(candidate, ExecutionRecoveryCandidate):
             raise StoreError("invalid execution recovery candidate")
-        with self._connect() as connection, connection.transaction(), connection.cursor() as db:
+        with self._mutation() as db:
             db.execute("SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='5s'")
             db.execute(
                 "SELECT factory.execution_recovery_cleanup_succeeded(%s,%s)",
@@ -376,7 +406,7 @@ class PostgresFactoryStore:
     def terminalize_execution_orphan(self, candidate: ExecutionRecoveryCandidate) -> str:
         if not isinstance(candidate, ExecutionRecoveryCandidate):
             raise StoreError("invalid execution recovery candidate")
-        with self._connect() as connection, connection.transaction(), connection.cursor() as db:
+        with self._mutation() as db:
             db.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
             db.execute(
                 "SELECT factory.execution_orphan_terminalize(%s,%s)",
@@ -390,7 +420,7 @@ class PostgresFactoryStore:
     def record_execution_cleanup_failure(self, candidate: ExecutionRecoveryCandidate) -> None:
         if not isinstance(candidate, ExecutionRecoveryCandidate):
             raise StoreError("invalid execution recovery candidate")
-        with self._connect() as connection, connection.transaction(), connection.cursor() as db:
+        with self._mutation() as db:
             db.execute("SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='5s'")
             db.execute(
                 "SELECT factory.execution_recovery_cleanup_failed(%s,%s)",
@@ -560,8 +590,7 @@ class PostgresFactoryStore:
         cursor.execute("UPDATE factory.audit_heads SET last_digest=%s WHERE task_id=%s", (digest, task_id))
 
     def intake(self, intake: TaskIntakeV1, actor: Actor, now: datetime) -> IntakeResult:
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
-            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+        with self._mutation() as cursor:
             cursor.execute(
                 "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
                 (f"{intake.repository_id}\x1f{intake.source_type}\x1f{intake.source_id}",),
@@ -585,11 +614,9 @@ class PostgresFactoryStore:
             )
             old_ids = [str(row[0]) for row in cursor.fetchall()]
             for old_id in old_ids:
-                self._close_active_lease(cursor, old_id)
-                cursor.execute(
-                    "UPDATE factory.tasks SET state='superseded',terminal_at=clock_timestamp(),updated_at=clock_timestamp(),current_run_id=NULL,current_fence=NULL WHERE task_id=%s",
-                    (old_id,),
-                )
+                changed = self._terminalize_task(cursor, old_id, TaskStatus.SUPERSEDED)
+                if not changed:
+                    continue
                 key = canonical_digest({"action": "superseded", "replacement": intake.intent_digest})
                 self._event(
                     cursor, old_id, actor, "superseded", key,
@@ -632,8 +659,8 @@ class PostgresFactoryStore:
                 ),
             )
             cursor.execute(
-                """INSERT INTO factory.tasks(task_id,intent_id,repository_id,source_type,source_id,state,generation,packet_digest,deadline_at,cost_limit_micros,token_limit,output_limit_bytes,event_limit,repair_limit,wall_limit_seconds)
-                VALUES (%s,%s,%s,%s,%s,'queued',%s,%s,now()+(%s * interval '1 second'),%s,%s,%s,%s,%s,%s) RETURNING deadline_at""",
+                """INSERT INTO factory.tasks(task_id,intent_id,repository_id,source_type,source_id,state,generation,packet_digest,deadline_at,cost_limit_micros,token_limit,output_limit_bytes,event_limit,repair_limit,wall_limit_seconds,infrastructure_retries)
+                VALUES (%s,%s,%s,%s,%s,'queued',%s,%s,now()+(%s * interval '1 second'),%s,%s,%s,%s,%s,%s,%s) RETURNING deadline_at""",
                 (
                     task_id,
                     intent_id,
@@ -649,6 +676,7 @@ class PostgresFactoryStore:
                     intake.limits.max_events,
                     intake.limits.semantic_repairs,
                     intake.limits.wall_seconds,
+                    intake.limits.infrastructure_retries,
                 ),
             )
             deadline = cursor.fetchone()[0]
@@ -755,8 +783,7 @@ class PostgresFactoryStore:
         return bool(cursor.fetchone()[0])
 
     def claim(self, request, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> LeaseGrant | None:
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
-            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+        with self._mutation() as cursor:
             command = {
                 "owner": request.owner,
                 "role": request.role.value,
@@ -787,7 +814,7 @@ class PostgresFactoryStore:
             if not eligible_repositories:
                 return no_grant()
             cursor.execute(
-                """SELECT t.task_id,t.repository_id,t.packet_digest,t.deadline_at
+                """SELECT t.task_id,t.repository_id,t.packet_digest,t.deadline_at,t.infrastructure_retries
                 FROM factory.tasks t WHERE t.state IN ('queued','retry') AND t.repository_id=ANY(%s)
                 AND t.deadline_at>clock_timestamp() AND NOT t.accounting_blocked
                 AND t.cost_reserved_micros=0 AND t.tokens_reserved=0 AND t.wall_reserved_seconds=0
@@ -799,7 +826,7 @@ class PostgresFactoryStore:
             row = cursor.fetchone()
             if not row:
                 return no_grant()
-            task_id, repository_id, packet_digest, deadline = row
+            task_id, repository_id, packet_digest, deadline, infrastructure_retries = row
             cursor.execute(
                 "INSERT INTO factory.lease_sequences(task_id,last_fence) VALUES (%s,1) ON CONFLICT(task_id) DO UPDATE SET last_fence=factory.lease_sequences.last_fence+1 RETURNING last_fence",
                 (task_id,),
@@ -807,7 +834,7 @@ class PostgresFactoryStore:
             fence = cursor.fetchone()[0]
             cursor.execute("SELECT COALESCE(max(attempt_no),0)+1 FROM factory.attempts WHERE task_id=%s", (task_id,))
             attempt_no = cursor.fetchone()[0]
-            if attempt_no > 3:
+            if attempt_no > infrastructure_retries + 1:
                 cursor.execute(
                     "UPDATE factory.tasks SET state='dead',terminal_at=clock_timestamp(),updated_at=clock_timestamp() WHERE task_id=%s",
                     (task_id,),
@@ -907,7 +934,7 @@ class PostgresFactoryStore:
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
     ) -> ExecutionGrant:
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+        with self._mutation() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
             self._lock_grant(cursor, grant)
             command = {
@@ -993,7 +1020,7 @@ class PostgresFactoryStore:
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
     ) -> ExecutionStage:
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+        with self._mutation() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
             self._lock_grant(cursor, grant)
             command = {"run_id": grant.run_id, "packet_digest": packet_digest, "stage": stage.value}
@@ -1237,7 +1264,7 @@ class PostgresFactoryStore:
             raise StoreError("execution proposal does not match command")
         body = asdict(proposal)
         command = self._execution_proposal_command(grant, event)
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+        with self._mutation() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
             replay, prior, request_digest = self._command_replay(
                 cursor, idempotency_key, actor, "execution_propose", command
@@ -1340,7 +1367,7 @@ class PostgresFactoryStore:
             "run_id": grant.run_id,
             "packet_digest": packet_digest,
         }
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+        with self._mutation() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
             replay, prior, request_digest = self._command_replay(
                 cursor, idempotency_key, actor, "execution_finalize", command
@@ -1547,6 +1574,32 @@ class PostgresFactoryStore:
         cursor.execute("SELECT factory.capacity_release(%s)", (run_id,))
         if not cursor.fetchone()[0]:
             raise StoreError("live lease capacity was not released")
+        cursor.execute(
+            "UPDATE factory.tasks SET current_run_id=NULL,current_fence=NULL WHERE task_id=%s AND current_run_id=%s",
+            (task_id, run_id),
+        )
+
+    def _terminalize_task(self, cursor, task_id: str, target: TaskStatus) -> bool:
+        if target not in {TaskStatus.CANCELLED, TaskStatus.SUPERSEDED}:
+            raise StoreError("unsupported terminal transition")
+        terminal = tuple(status.value for status in (TaskStatus.READY_FOR_HUMAN, TaskStatus.DEAD, TaskStatus.CANCELLED, TaskStatus.SUPERSEDED))
+        for _attempt in range(3):
+            self._close_active_lease(cursor, task_id)
+            cursor.execute(
+                """UPDATE factory.tasks SET state=%s,terminal_at=clock_timestamp(),updated_at=clock_timestamp(),
+                current_run_id=NULL,current_fence=NULL WHERE task_id=%s AND current_run_id IS NULL
+                AND state<>ALL(%s) RETURNING state""",
+                (target.value, task_id, list(terminal)),
+            )
+            if cursor.fetchone() is not None:
+                return True
+            cursor.execute("SELECT state,current_run_id FROM factory.tasks WHERE task_id=%s", (task_id,))
+            row = cursor.fetchone()
+            if row is None:
+                raise KeyError(task_id)
+            if row[0] in terminal:
+                return False
+        raise StoreError("terminal transition could not stabilize live lease")
 
     def _close_orphan_run(self, cursor, run_id: str, task_id: str, role: str, repository_id: str, actor: Actor) -> bool:
         if not self._lock_capacity_for_run(cursor, run_id):
@@ -1577,7 +1630,7 @@ class PostgresFactoryStore:
 
     def _lock_grant(self, cursor, grant: LeaseGrant, *, allow_expired: bool = False):
         cursor.execute(
-            """SELECT r.task_id,r.role,a.repository_id,at.attempt_no
+            """SELECT r.task_id,r.role,a.repository_id,at.attempt_no,t.infrastructure_retries
             FROM factory.runs r JOIN factory.tasks t ON t.task_id=r.task_id
             JOIN factory.capacity_allocations a ON a.run_id=r.run_id
             JOIN factory.attempts at ON at.run_id=r.run_id
@@ -1604,7 +1657,7 @@ class PostgresFactoryStore:
         return row
 
     def heartbeat(self, grant: LeaseGrant, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> LeaseGrant:
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+        with self._mutation() as cursor:
             command = {"grant": {"task_id": grant.task_id, "run_id": grant.run_id, "owner": grant.owner, "role": grant.role.value, "fence": grant.fence, "packet_digest": grant.packet_digest}}
             replay, prior, request_digest = self._command_replay(cursor, idempotency_key, actor, "heartbeat", command)
             if replay:
@@ -1631,9 +1684,15 @@ class PostgresFactoryStore:
             raise FenceError("stale or expired fence")
         if not self._lock_capacity_for_run(cursor, grant.run_id):
             raise FenceError("stale or expired fence")
-        task_id, _role, _repository_id, attempt_no = self._lock_grant(cursor, grant, allow_expired=allow_expired)
+        task_id, _role, _repository_id, attempt_no, infrastructure_retries = self._lock_grant(
+            cursor, grant, allow_expired=allow_expired
+        )
         if isinstance(outcome, FailureClass):
-            decision = classify_retry(outcome, attempt_no=attempt_no)
+            decision = classify_retry(
+                outcome,
+                attempt_no=attempt_no,
+                infrastructure_retries=infrastructure_retries,
+            )
             target = TaskStatus.RETRY if decision.retry else (decision.terminal or TaskStatus.NEEDS_HUMAN)
             cursor.execute(
                 "SELECT EXISTS(SELECT 1 FROM factory.budget_reservations WHERE task_id=%s AND run_id=%s AND released_at IS NULL)",
@@ -1698,7 +1757,7 @@ class PostgresFactoryStore:
         return target
 
     def release(self, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> TaskStatus:
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+        with self._mutation() as cursor:
             outcome_value = outcome.value if isinstance(outcome, FailureClass) else outcome
             command = {"task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence, "outcome": outcome_value}
             replay, prior, request_digest = self._command_replay(cursor, idempotency_key, actor, "release", command)
@@ -1724,7 +1783,7 @@ class PostgresFactoryStore:
             or not HEX64.fullmatch(key)
         ):
             raise BudgetError("invalid budget evidence")
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+        with self._mutation() as cursor:
             command = {
                 "task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence,
                 "cost_usd_micros": cost, "token_units": tokens, "wall_seconds": wall,
@@ -1802,7 +1861,7 @@ class PostgresFactoryStore:
             raise BudgetError("invalid usage evidence")
         blocked_reason = None
         result = None
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+        with self._mutation() as cursor:
             command = {
                 "task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence,
                 "provider_call_id": provider_call_id, "price_table_digest": price_table_digest,
@@ -1923,7 +1982,7 @@ class PostgresFactoryStore:
             raise StoreError("invalid kill scope")
         if not HEX64.fullmatch(key) or not reason or len(reason) > 128:
             raise StoreError("invalid kill evidence")
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+        with self._mutation() as cursor:
             command = {"scope": scope, "enabled": enabled, "reason": reason}
             replay, prior, request_digest = self._command_replay(cursor, key, actor, "set_kill", command)
             if replay:
@@ -1940,8 +1999,7 @@ class PostgresFactoryStore:
     def reconcile(self, actor: Actor, now: datetime, limit: int, cursor_id: str | None, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> ReconcileResult:
         repaired = 0
         last = None
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
-            cursor.execute("SET LOCAL statement_timeout='5s'")
+        with self._mutation() as cursor:
             if not self._capacity_consistent(cursor):
                 raise StoreError("capacity counters do not match live allocations")
             command = {"limit": limit, "cursor": cursor_id}
@@ -1990,21 +2048,12 @@ class PostgresFactoryStore:
         return result
 
     def cancel(self, task_id: str, reason: str, key: str, actor: Actor, now: datetime, *, correlation_id: str | None = None) -> TaskProjection:
-        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+        with self._mutation() as cursor:
             command = {"task_id": task_id, "reason": reason}
             replay, _prior, request_digest = self._command_replay(cursor, key, actor, "cancel", command)
             if replay:
                 return self.get_task(task_id)
-            self._close_active_lease(cursor, task_id)
-            cursor.execute("SELECT state FROM factory.tasks WHERE task_id=%s FOR UPDATE", (task_id,))
-            row = cursor.fetchone()
-            if not row:
-                raise KeyError(task_id)
-            if row[0] not in {"ready_for_human", "dead", "cancelled", "superseded"}:
-                cursor.execute(
-                    "UPDATE factory.tasks SET state='cancelled',current_run_id=NULL,current_fence=NULL,terminal_at=clock_timestamp(),updated_at=clock_timestamp() WHERE task_id=%s",
-                    (task_id,),
-                )
+            if self._terminalize_task(cursor, task_id, TaskStatus.CANCELLED):
                 self._event(
                     cursor, task_id, actor, "cancelled", key, {"reason": reason}, mandatory_cleanup=True
                 )

@@ -332,6 +332,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -601,6 +611,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -735,6 +755,16 @@
           },
           "422": {
             "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "database unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -883,6 +913,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -1017,6 +1057,16 @@
           },
           "422": {
             "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "database unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -1165,6 +1215,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -1299,6 +1359,16 @@
           },
           "422": {
             "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "database unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -1447,6 +1517,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -1581,6 +1661,16 @@
           },
           "422": {
             "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "database unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -1729,6 +1819,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -1863,6 +1963,16 @@
           },
           "422": {
             "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "database unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -2011,6 +2121,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -2145,6 +2265,16 @@
           },
           "422": {
             "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "database unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -2293,6 +2423,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "database unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -2427,6 +2567,16 @@
           },
           "422": {
             "description": "closed request invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "database unavailable",
             "content": {
               "application/json": {
                 "schema": {

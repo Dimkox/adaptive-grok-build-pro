@@ -7,15 +7,15 @@
 - [x] AC-003 factory-only contiguous checksum migrations create isolated durable state and roles without `trust_ci` access.
 - [x] AC-004 `SKIP LOCKED` claims and monotonic fences reject expired, reclaimed, replayed and conflicting worker mutations.
 - [x] AC-005 database transactions enforce at most 20 global readers, 10 readers/repository and one live writer.
-- [x] AC-006 only closed infrastructure failures retry; attempt three becomes `dead`.
+- [x] AC-006 only closed infrastructure failures retry; each frozen accepted limit 0..2 is persisted and permits exactly the initial attempt plus that many retries before `dead`.
 - [x] AC-007 14,400-second, USD 25, token, output, event and repair budgets fail closed on missing accounting.
 - [x] AC-008 global/repository kills block new claims while append-only hash-chained audit retains evidence.
 - [x] AC-009 reconciliation is restart-safe, idempotent, ordered, at most 100 candidates and five seconds.
 - [x] AC-010 scoped authenticated Unix-socket API/CLI provide health, submit, show/list, cancel, claim, heartbeat, proposal/release, kill and reconcile with bounds, idempotency, correlation and redaction.
 - [x] AC-011 no product path can execute a provider/repository command, write Git/GitHub/external/production state, activate systemd, or claim Trust CI authority.
-- [x] AC-012 real disposable PostgreSQL proves concurrency, capacity, fencing, retries, budgets, kill, restart and reconciliation.
+- [x] AC-012 real disposable PostgreSQL proves concurrency, capacity, fencing, accepted 0/1/2 retry limits, budgets, kill, actual restart and reconciliation.
 - [x] AC-013 architecture/diagrams, installer/verifier, README, release and rollback match the final tree.
-- [ ] AC-014 final verification plus code/test/security/data/release reviews bind one final fingerprint.
+- [ ] AC-014 final verification plus fresh code/test/security/data/release reviews and receipts still must bind the current repair tree to one final fingerprint; no review acceptance, external Trust CI result or delivery is claimed.
 
 ## Failure and edge cases
 

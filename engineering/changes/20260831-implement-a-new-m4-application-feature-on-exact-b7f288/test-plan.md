@@ -9,7 +9,7 @@
 | P0 | runtime generic metric DML/function denial; fixed capability saturation/concurrency; one-row snapshot consistency, constant plan and bounded lock timeout | real disposable PostgreSQL role/concurrency/plan tests |
 | P0 | stale-fence metric lock/error preserves the original prompt `409 stale_fence`; schema-008 upgrade ignores forged legacy counters and replays idempotently | unit + real disposable PostgreSQL upgrade/API tests |
 | P1 | duplicate intake and changed-authority supersession | service/PostgreSQL tests |
-| P1 | third infrastructure failure dead; other failures never retry | state/store tests |
+| P1 | accepted infrastructure retry limits 0/1/2 persist and allow exactly 1/2/3 total attempts on release, reconciliation and restart; other failures never retry | state/store/real PostgreSQL restart tests |
 | P1 | budget/accounting and kill switches stop claims | service/PostgreSQL tests |
 | P1 | repeated restart reconciliation repairs exactly once | PostgreSQL restart probe |
 

@@ -7,7 +7,7 @@
 - [x] AC-003 Codex and Grok native fixture adapters normalize only allowlisted projections, never make live calls or silently fall back, and report explicit conformance eligibility.
 - [x] AC-004 note, artifact, usage, and terminal proposal brokers validate role, fence, packet, sequence, size, digest, provenance, retention, budget, and terminal semantics without storing chain-of-thought.
 - [x] AC-005 workspace/Git/runtime boundaries expose capability-shaped interfaces, sanitized environments and adversarial fake-runtime denial tests for traversal, symlink, shared Git, credential, egress, cross-task, and external-write attempts.
-- [x] AC-006 unpublished additive migration `013` persists immutable execution packets/manifests/events/proposals/stages/results/recovery evidence and grants only narrow capability functions.
+- [x] AC-006 unpublished additive migration `014`, contiguous after M4 `013`, persists immutable execution packets/manifests/events/proposals/stages/results/recovery evidence and grants only narrow capability functions.
 - [x] AC-007 a new execution claim and stage path integrates with factual M4 while `/v1/claims` keeps its exact legacy contract and `packet_digest=intent_digest` meaning.
 - [x] AC-008 restart/orphan recovery reclaims eligible incomplete execution manifests idempotently, preserves attestations, creates no proposal/result, and exposes bounded low-cardinality execution metrics.
 - [x] AC-009 exactly four predefined source-controlled inert systemd units enforce fixed topology/resource/security policy and pass static/native checks without installation or activation.

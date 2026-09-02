@@ -1,7 +1,7 @@
 # Documentation analysis — Trust CI zombie-only bounded-process cleanup
 
-**Route:** `fa3ae6080deb`  
-**Change:** `20260831-fix-trust-ci-bounded-workspace-process-cleanup-i-fa3ae6`  
+**Route:** `fa3ae6080deb`
+**Change:** `20260831-fix-trust-ci-bounded-workspace-process-cleanup-i-fa3ae6`
 **Scope:** read-only product analysis; this file is workflow evidence only.
 
 ## Outcome and contract to freeze

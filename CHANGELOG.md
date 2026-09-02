@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.13 — 2026-09-02
+
+M4 control-plane repair candidate and exact current-state release artifact.
+
+- Product identity **2.0.13**; Trust CI service identity remains separately **2.1.0**
+- Repairs roadmap/state parity, claim-terminal lease races, bounded mutation failures, fail-closed role bootstrap, and persisted accepted retry limits through additive migration `013`
+- Records the current PR/milestone inventory without claiming review, external Trust CI acceptance, merge, deployment, tag, or GitHub Release publication
+- Tracked local artifact: `packages/adaptive-grok-build-pro-v2.0.13.zip` with its SHA-256 sidecar
+
 ## 2.0.12 — 2026-08-23
 
 Self-hosted Trust CI control plane in-tree, K16 README graph, optional docker/syft/trivy/cosign toolchain pins.

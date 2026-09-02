@@ -4,7 +4,7 @@
 - [x] Freeze M5 design and implementation plan; self-review and commit.
 - [x] TDD immutable schemas, packet/manifest contracts, protocol parser, and adapter fixtures.
 - [x] TDD proposal brokers, workspace/Git abstractions, host capability probe, and fake-runtime adversarial cases.
-- [x] TDD additive migration `013`, explicit execution claims/stages/proposals, and legacy compatibility (106-test disposable PostgreSQL suite plus restart probe green on 2026-09-02).
+- [x] TDD additive execution migration, explicit execution claims/stages/proposals, and legacy compatibility (106-test disposable PostgreSQL suite plus restart probe green on 2026-09-02); dependency restack preserves M4 `013` and renumbers execution to `014` with frozen checksum and fresh upgrade/restart evidence.
 - [x] Repair executable architecture ownership for all M5 execution sources without adding provider, database, Git, scheduler, Trust CI, or external authority.
 - [x] Require an injected exact trusted adapter/profile registry, deny reader write capabilities, clean failed post-claim leases, and bind grant role to the durable run.
 - [x] Enforce consecutive packet-bounded proposal streams, exact replay, no post-terminal effects, and serialized finalization without evidence mutation.

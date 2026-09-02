@@ -615,18 +615,24 @@ class PackageTests(unittest.TestCase):
 
     def test_included_files_and_shipped_zip_have_no_github_actions(self) -> None:
         version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
-        self.assertEqual(version, '2.0.12')
+        self.assertEqual(version, '2.0.13')
         rels = [path.relative_to(ROOT).as_posix() for path in included_files(ROOT)]
         self.assertFalse(any(rel.startswith('.github/workflows/') for rel in rels))
         self.assertNotIn('.github/dependabot.yml', rels)
         self.assertNotIn('.grok-stack/templates/ci/github-actions.yml', rels)
         zip_path = ROOT / 'packages' / f'adaptive-grok-build-pro-v{version}.zip'
-        if zip_path.is_file():
+        sidecar_path = zip_path.with_suffix('.zip.sha256')
+        if (ROOT / '.git').exists():
+            self.assertTrue(zip_path.is_file())
+            self.assertTrue(sidecar_path.is_file())
+            digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+            self.assertEqual(sidecar_path.read_text(encoding='utf-8'), f'{digest}  {zip_path.name}\n')
             with zipfile.ZipFile(zip_path) as archive:
                 names = archive.namelist()
                 member = 'adaptive-grok-build-pro/VERSION'
                 self.assertIn(member, names)
-                self.assertEqual(archive.read(member).decode('utf-8').strip(), '2.0.12')
+                self.assertIn('adaptive-grok-build-pro/MANIFEST.sha256', names)
+                self.assertEqual(archive.read(member).decode('utf-8').strip(), '2.0.13')
                 self.assertFalse(any('.github/workflows/' in name for name in names))
                 self.assertFalse(any(name.endswith('dependabot.yml') for name in names))
                 self.assertFalse(any(name.endswith('github-actions.yml') for name in names))

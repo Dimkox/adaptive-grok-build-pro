@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT))
 
 from adaptive_factory.admin import provision_artifact_attestor_login, provision_runtime_login
 from adaptive_factory.migrations import PostgresMigrator
-from adaptive_factory.models import Actor, RunRole
+from adaptive_factory.models import Actor, RunRole, TaskStatus
 from adaptive_factory.recovery import ExecutionRecovery
 from adaptive_factory.service import FactoryService
 from adaptive_factory.store import FenceError, PostgresArtifactAttestationStore, PostgresFactoryStore
@@ -112,26 +112,46 @@ def main() -> int:
     service = FactoryService(
         PostgresFactoryStore(runtime_url), execution_registry=trusted_registry(selection),
     )
-    service.intake(payload, actor=operator, now=now)
-    old = service.claim_execution(
+    zero_payload = {
+        **payload,
+        "request_id": "restart-probe-zero-retries",
+        "source_id": str(uuid.uuid4()),
+        "limits": {**payload["limits"], "infrastructure_retries": 0},
+    }
+    two_payload = {
+        **payload,
+        "request_id": "restart-probe-two-retries",
+        "source_id": str(uuid.uuid4()),
+        "limits": {**payload["limits"], "infrastructure_retries": 2},
+    }
+    zero_task = service.intake(zero_payload, actor=operator, now=now).task
+    old_zero = service.claim(
+        owner=lost_worker.actor_id, role=RunRole.READER,
+        repositories=("probe/repository",), lease_seconds=30,
+        actor=lost_worker, now=now,
+    )
+    two_task = service.intake(two_payload, actor=operator, now=now).task
+    old_two = service.claim_execution(
         owner=lost_worker.actor_id, role=RunRole.WRITER,
         repositories=("probe/repository",), lease_seconds=30, selection=selection,
         actor=lost_worker, now=now,
     )
     workspace = FakeWorkspaceBroker()
     workspace.register(
-        WorkspaceHandle(old.lease.task_id, old.lease.run_id, old.workspace_handle),
+        WorkspaceHandle(
+            old_two.lease.task_id, old_two.lease.run_id, old_two.workspace_handle,
+        ),
         WorkspacePolicy(("factory/src",), ("read", "write"), ("LANG",), ()),
     )
     attestation = ArtifactAttestationV1.from_facts({
         "contract_version": 1,
-        "task_id": old.lease.task_id,
-        "run_id": old.lease.run_id,
+        "task_id": old_two.lease.task_id,
+        "run_id": old_two.lease.run_id,
         "repository_id": "probe/repository",
-        "packet_digest": old.packet_digest,
-        "workspace_handle": old.workspace_handle,
+        "packet_digest": old_two.packet_digest,
+        "workspace_handle": old_two.workspace_handle,
         "producer_sequence": 1,
-        "fence": old.lease.fence,
+        "fence": old_two.lease.fence,
         "author_role": "writer",
         "artifact_class": "report",
         "path": "factory/src/restart-evidence.patch",
@@ -146,8 +166,8 @@ def main() -> int:
         raise SystemExit("restart probe could not seed exact artifact attestation")
     with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
         cursor.execute(
-            "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=%s",
-            (old.lease.run_id,),
+            "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=ANY(%s)",
+            ([old_zero.run_id, old_two.lease.run_id],),
         )
         cursor.execute(
             "SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.artifact_attestation_digest),'[]') FROM factory.execution_artifact_attestations a"
@@ -184,7 +204,10 @@ def main() -> int:
 
     fresh_store = PostgresFactoryStore(runtime_url)
     fresh = FactoryService(fresh_store)
-    m4 = fresh.reconcile(actor=operator, now=datetime.now(timezone.utc))
+    first = fresh.reconcile(actor=operator, now=datetime.now(timezone.utc))
+    second = fresh.reconcile(actor=operator, now=datetime.now(timezone.utc))
+    zero_status = fresh.store.get_task(zero_task.task_id).status
+    two_status = fresh.store.get_task(two_task.task_id).status
     recovery = ExecutionRecovery(fresh_store, workspace)
     m5 = recovery.reconcile(limit=100)
     m5_replay = recovery.reconcile(limit=100, cursor=m5.cursor)
@@ -200,13 +223,22 @@ def main() -> int:
         actor=new_worker, now=datetime.now(timezone.utc),
     )
     if (
-        m4.repaired != 1 or m5.orphaned != 1 or m5_replay.candidates != 0
-        or replacement is None or replacement.lease.fence <= old.lease.fence
+        first.repaired != 2
+        or second.repaired != 0
+        or zero_status is not TaskStatus.DEAD
+        or two_status is not TaskStatus.RETRY
+        or m5.orphaned != 1
+        or m5_replay.candidates != 0
+        or replacement is None
+        or replacement.lease.task_id != two_task.task_id
+        or replacement.lease.fence <= old_two.lease.fence
     ):
-        raise SystemExit("restart M4/M5 recovery was not exactly-once or did not issue a higher fence")
+        raise SystemExit(
+            "restart recovery did not preserve retry limits and M5 orphan fencing"
+        )
     try:
         fresh.commit_execution_proposal(
-            old.lease, packet_digest=old.packet_digest, sequence=1,
+            old_two.lease, packet_digest=old_two.packet_digest, sequence=1,
             event_type="note.proposed",
             payload={"note_type": "finding", "body": "late", "evidence": []},
             actor=lost_worker,
@@ -215,6 +247,12 @@ def main() -> int:
         pass
     else:
         raise SystemExit("late execution proposal unexpectedly succeeded")
+    try:
+        fresh.heartbeat(old_two.lease, actor=lost_worker, now=datetime.now(timezone.utc))
+    except FenceError:
+        pass
+    else:
+        raise SystemExit("late heartbeat unexpectedly succeeded")
     with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
         cursor.execute(
             """SELECT
@@ -224,7 +262,7 @@ def main() -> int:
             (SELECT count(*) FROM factory.workspace_results WHERE run_id=%s),
             (SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.artifact_attestation_digest),'[]')
               FROM factory.execution_artifact_attestations a)""",
-            (old.lease.run_id, old.lease.run_id),
+            (old_two.lease.run_id, old_two.lease.run_id),
         )
         orphan_events, workspace_results, attestations_after = cursor.fetchone()
     if (orphan_events, workspace_results, attestations_after) != (
@@ -232,8 +270,8 @@ def main() -> int:
     ):
         raise SystemExit("restart recovery mutated factual evidence or duplicated orphan stage")
     print(
-        "PASS: PostgreSQL restarted; M4 repaired; M5 orphaned once; replay no-op; "
-        "higher fence; late proposal rejected"
+        "PASS: PostgreSQL restarted; retry limits persisted; two M4 repairs; "
+        "M5 orphaned once; replays no-op; higher fence; late holder rejected"
     )
     return 0
 

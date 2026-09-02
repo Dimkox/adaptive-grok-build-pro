@@ -1,0 +1,378 @@
+{
+  "schema_version": 2,
+  "repository": "Dimkox/adaptive-grok-build-pro",
+  "default_branch": "main",
+  "observed_at": "2026-09-02T10:21:09Z",
+  "observed_main_sha": "78ad2f679d38dc3244e716c586332417e610089c",
+  "product_version": "2.0.13",
+  "latest_published_release": "v2.0.12",
+  "bootstrap_entrypoint": "START_HERE.md",
+  "engineering_contract": "AGENTS.md",
+  "roadmap": "DARK_FACTORY_ROADMAP.md",
+  "delivered_milestones_on_main": ["M0"],
+  "implemented_milestones": ["M0", "M1", "M2", "M3", "M4"],
+  "delivered_non_milestone_work": [
+    {
+      "name": "SEO landing side project",
+      "status": "delivered",
+      "pull_request": 19,
+      "source_head": "ecc85d903d0394f99a139fd4e74a7cc452e386c6",
+      "merge_commit": "8ab4e57038dec2e07f01aaa0b207813a387358f4",
+      "notes": "Optional repository-scoped SEO skill and non-indexable showcase; not M0-M9 progress."
+    }
+  ],
+  "active_delivery": {
+    "route_id": "b7f288f1e81e",
+    "branch": "integration/m4-main-20260902",
+    "change_package": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288",
+    "status": "local_m4_release_candidate_verification_pending",
+    "highest_implemented_milestone": "M4",
+    "current_provisional_milestone": "M9",
+    "next_roadmap_milestone": null,
+    "next_action": "Run final verification on the current 2.0.13 M4 release-state tree, then complete five fresh M4 reviews/reports/receipts on that exact fingerprint. PR-only delivery and a new external exact-head gate remain pending; after M4 acceptance, restack M5 first, then M6 with renumbered migrations and fresh checksum/upgrade/restart evidence."
+  },
+  "milestones": {
+    "M0": {
+      "implementation": {
+        "status": "complete",
+        "commit": "9590db4db14838ab534958aaa0842f5523f043ae",
+        "evidence": "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-repo-explorer.md"
+      },
+      "review": {
+        "status": "passed",
+        "commit": "9590db4db14838ab534958aaa0842f5523f043ae",
+        "evidence": ["engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-docs-researcher.md"]
+      },
+      "stack_integration": {
+        "status": "not_applicable",
+        "base_branch": null,
+        "pull_request": null,
+        "merge_commit": null
+      },
+      "main_delivery": {
+        "status": "delivered",
+        "pull_request": 5,
+        "merge_commit": "069fe8226addb8a1922dde3db4e753434baa3a3d",
+        "notes": "PRs 6 and 7 subsequently delivered M0-era repairs to main."
+      },
+      "external_gate": {
+        "status": "stale",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": "9590db4db14838ab534958aaa0842f5523f043ae",
+        "observed_historical_check": "adaptive-trust-ci/verified@6737355947c2",
+        "historical_conclusion": "success"
+      }
+    },
+    "M1": {
+      "implementation": {
+        "status": "complete",
+        "commit": "022411b05924618cfde0cb97b8c8aff4955e6013",
+        "evidence": "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-repo-explorer.md"
+      },
+      "review": {
+        "status": "passed",
+        "commit": "022411b05924618cfde0cb97b8c8aff4955e6013",
+        "evidence": [
+          "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-architect.md",
+          "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-docs-researcher.md"
+        ]
+      },
+      "stack_integration": {
+        "status": "merged",
+        "base_branch": "milestone/m1-typed-intent-evidence",
+        "pull_request": 10,
+        "merge_commit": "c23fd49f80c7d1c74ca3393b6079a74f251a72d8",
+        "merge_parents": [
+          "0a4dd0a867c876f99a8fe3580c9f0d47c90e3105",
+          "022411b05924618cfde0cb97b8c8aff4955e6013"
+        ],
+        "notes": "The complete M1 source was accepted as part of the combined M1/M2 stack."
+      },
+      "main_delivery": {
+        "status": "partial",
+        "pull_requests": [4, 8],
+        "merge_commits": [
+          "48cb9737fac7f26fb70b425957a3ed64d4c1eb55",
+          "e81ae72766972e1dda38f20bc7b3dece62319fd0"
+        ],
+        "notes": "Only the early typed-spec slice and design/plan are on main; the full reviewed milestone exit source is not."
+      },
+      "external_gate": {
+        "status": "success",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": "022411b05924618cfde0cb97b8c8aff4955e6013",
+        "notes": "This exact-head success authorized stack acceptance, not delivery to main."
+      }
+    },
+    "M2": {
+      "implementation": {
+        "status": "complete",
+        "commit": "022411b05924618cfde0cb97b8c8aff4955e6013",
+        "evidence": "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-repo-explorer.md"
+      },
+      "review": {
+        "status": "passed",
+        "commit": "022411b05924618cfde0cb97b8c8aff4955e6013",
+        "evidence": ["engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-architect.md"]
+      },
+      "stack_integration": {
+        "status": "merged",
+        "base_branch": "milestone/m1-typed-intent-evidence",
+        "pull_request": 10,
+        "merge_commit": "c23fd49f80c7d1c74ca3393b6079a74f251a72d8",
+        "merge_parents": [
+          "0a4dd0a867c876f99a8fe3580c9f0d47c90e3105",
+          "022411b05924618cfde0cb97b8c8aff4955e6013"
+        ]
+      },
+      "main_delivery": {
+        "status": "not_delivered",
+        "pull_request": null,
+        "merge_commit": null
+      },
+      "external_gate": {
+        "status": "success",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": "022411b05924618cfde0cb97b8c8aff4955e6013",
+        "notes": "This exact-head success authorized stack acceptance, not delivery to main."
+      }
+    },
+    "M3": {
+      "implementation": {
+        "status": "complete",
+        "commit": "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
+        "evidence": "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-repo-explorer.md"
+      },
+      "review": {
+        "status": "passed",
+        "commit": "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
+        "evidence": ["engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-architect.md"]
+      },
+      "stack_integration": {
+        "status": "merged",
+        "base_branch": "milestone/m2-executable-architecture",
+        "pull_request": 11,
+        "merge_commit": "67714a1f1b87effcfabe55d5ca2770d0a68d17c1",
+        "merge_parents": [
+          "022411b05924618cfde0cb97b8c8aff4955e6013",
+          "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d"
+        ]
+      },
+      "main_delivery": {
+        "status": "not_delivered",
+        "pull_request": null,
+        "merge_commit": null
+      },
+      "external_gate": {
+        "status": "success",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
+        "notes": "This exact-head success authorized stack acceptance, not delivery to main."
+      }
+    },
+    "M4": {
+      "implementation": {
+        "status": "complete",
+        "commit": "4f75558770f2f332b32b4a47fe6afa61fcc524ec",
+        "source_evidence_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
+        "integration_baseline": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
+        "latest_committed_repair_checkpoint": "5a6cdfb7a129e02724c632f78c31de6406d6863a",
+        "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
+        "evidence": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/implementation-report.md",
+        "notes": "The current 2.0.13 repository tree adds roadmap/state parity, claim-terminal race repair, bounded mutation errors, fail-closed role bootstrap, persisted accepted retry limits through additive migration 013, and scanner-safe synthetic bootstrap fixtures. Its committed repair parent is 5a6cdfb7; final verification and fresh independent reviews are pending, so this is not an accepted or delivered head."
+      },
+      "review": {
+        "status": "pending_refresh",
+        "commit": "4f75558770f2f332b32b4a47fe6afa61fcc524ec",
+        "evidence_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
+        "evidence": [
+          "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/code-review.md",
+          "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/test-review.md",
+          "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/security-review.md",
+          "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/data-review.md",
+          "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/release-review.md"
+        ],
+        "notes": "The listed five reports pass only for the pre-integration tree and do not cover the current repair tree. Five fresh reviews, reports and receipts remain pending; no review acceptance is claimed."
+      },
+      "stack_integration": {
+        "status": "local_integrated_candidate",
+        "branch": "integration/m4-main-20260902",
+        "base_branch": "origin/main",
+        "base_commit": "78ad2f679d38dc3244e716c586332417e610089c",
+        "source_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
+        "merge_parents": [
+          "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
+          "78ad2f679d38dc3244e716c586332417e610089c"
+        ],
+        "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
+        "latest_committed_repair_checkpoint": "5a6cdfb7a129e02724c632f78c31de6406d6863a",
+        "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
+        "intermediate_local_verification": {
+          "status": "passed",
+          "head_sha": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
+          "checks_passed": 14,
+          "checks_total": 14,
+          "changed_files": 469,
+          "notes": "Historical exact-code-head preflight only; subsequent repair commits and this migration/docs tree require a final rerun before completion."
+        },
+        "repair_local_verification": {
+          "status": "failed",
+          "head_sha": "547ee628812fbf098f337a854f68edf660091ead",
+          "tree_fingerprint": "f0efa89e689dbe47c701a4d301e97361ee671e299ef2f32b5295b908e182e768",
+          "checks_passed": 13,
+          "checks_total": 14,
+          "failed_check": "secret-scan",
+          "created_at": "2026-09-02T10:08:32Z",
+          "repair_head": "5a6cdfb7a129e02724c632f78c31de6406d6863a",
+          "notes": "The sole generic-secret finding was repaired in synthetic test fixtures; final exact-head verification and reviews remain pending."
+        },
+        "pull_request": null,
+        "merge_commit": null,
+        "notes": "The final release-state identity is the commit containing this state file; a commit cannot embed its own SHA. The repair parent is 5a6cdfb7. Full verification, five fresh reviews, PR delivery and an external exact-head check remain pending."
+      },
+      "main_delivery": {
+        "status": "not_delivered",
+        "pull_request": null,
+        "merge_commit": null,
+        "notes": "PR 17 closed at 2026-09-02T10:08:38Z because it exactly duplicated open PR 21 at source head 460a8a01. The local integration branch has no successor PR and has not been externally accepted, merged or delivered to main."
+      },
+      "external_gate": {
+        "status": "not_run",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": null,
+        "source_pull_request": 21,
+        "source_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
+        "source_trust_ci_status": "success",
+        "source_gitguardian_status": "failure_metadata_only",
+        "notes": "PR 21's source-head Trust CI success cannot transfer to the new merge tree. Its GitGuardian FAILURE metadata remains unresolved; the integration does not inspect or dismiss the finding and has no external authority."
+      }
+    },
+    "M5": {
+      "implementation": {"status": "provisional_locally_restacked", "commit": "141e51e75b2bb337fa3bb1544639c6c46c287309", "evidence": "milestone/m5-isolated-execution-provisional-m4", "notes": "Tasks 1-6 source from exact clean head 141e51e75b2bb337fa3bb1544639c6c46c287309 is normal-restacked locally on current M4 checkpoint 56e12b2b394436ee227c66d78b1caba8f7317c78. M4 migration 013 is preserved and M5 execution is contiguous migration 014. This is provisional local source integration only, not acceptance or delivery; a newer exact M4 predecessor requires another normal merge and fresh evidence."},
+      "review": {"status": "pending_final", "commit": "141e51e75b2bb337fa3bb1544639c6c46c287309", "evidence": [], "notes": "A final review wave remains pending after accepted-M4 restack and rootless live-host isolation proof."},
+      "stack_integration": {"status": "local_restack_provisional", "base_branch": "integration/m4-main-20260902", "base_commit": "56e12b2b394436ee227c66d78b1caba8f7317c78", "base_tree": "e5d49d98230ba25bcb5c75e5125e85a75f4dd213", "pull_request": null, "merge_commit": null, "notes": "The current tree normal-merges the exact M4 checkpoint and resolves migration numbering as immutable M4 013 plus M5 014. The merge is local/provisional and cannot establish acceptance, delivery or external authority; package-inventory follow-up on M4 still requires a second normal merge and refreshed checksum/upgrade/restart evidence."},
+      "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
+      "external_gate": {"status": "blocked", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null, "notes": "A final exact M4 predecessor, rootless live-host isolation proof, trusted live Git snapshot, final reviews and a later exact PR SHA are still required."}
+    },
+    "M6": {
+      "implementation": {"status": "provisional_task3_source", "commit": "f3b2c0d07116686b27feab4b60166e8a7402d672", "task1_head": "3def83eb915ca68e66379269526ffa64822a1104", "task2_head": "a8ca0f3afffbd9ef5584825252f9a669a324d2a5", "evidence": "milestone/m6-semantic-validation-provisional-m4", "local_evidence": {"task2": {"tests_passed": 209, "tests_total": 209, "actual_restart": "passed"}, "task3": {"focused_passed": 67, "focused_total": 67, "legacy_passed": 40, "legacy_total": 40, "postgresql17_passed": 1, "postgresql17_total": 1, "architecture_checks": "passed"}}, "notes": "Provisional Task 3 persists deterministic semantic verdicts on top of Task-2 migration/publish/read source. It is quarantined until accepted-M5 restack and migration renumbering with fresh checksum/upgrade/restart evidence; Task 4 is untouched and pending."},
+      "review": {"status": "not_started", "commit": null, "evidence": [], "notes": "Final restack and reviews wait for accepted M5."},
+      "stack_integration": {"status": "blocked_on_m5_acceptance", "base_branch": "milestone/m5-isolated-execution-provisional-m4", "pull_request": null, "merge_commit": null},
+      "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
+      "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null, "notes": "No external gate is eligible before accepted M4 and M5 predecessors."}
+    },
+    "M7": {
+      "implementation": {"status": "provisional_algorithm_source", "commit": "c8b450f494b3d44b580556c6a612b21a3a780368", "evidence": "milestone/m7-shadow-handoff-provisional-m4", "notes": "Clean provisional source has synthetic algorithm evidence only; it proves no runtime or real outcomes."},
+      "review": {"status": "not_started", "commit": null, "evidence": [], "notes": "Final reviews require accepted-M6 restack plus runtime and real-outcome evidence."},
+      "stack_integration": {"status": "blocked_on_m6_acceptance", "base_branch": "milestone/m6-semantic-validation-provisional-m4", "pull_request": null, "merge_commit": null},
+      "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
+      "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
+    },
+    "M8": {
+      "implementation": {"status": "provisional_task1_source", "commit": "5735e762b8d7571887f6fa4ac9cf10cd1fad1954", "starting_head": "46a6c8eba6b5bd8e4654f3041e52061cdd1a15d6", "evidence": "milestone/m8-earned-autonomy-provisional-m4", "notes": "The clean provisional branch contains only the first source-only Task-1 closed-contract slice with synthetic fixtures; Tasks 2-3 remain pending."},
+      "review": {"status": "not_started", "commit": null, "evidence": [], "notes": "No factual trust profile, 30-real-task cohort, activation or acceptance exists."},
+      "stack_integration": {"status": "blocked_on_m7_acceptance", "base_branch": "milestone/m7-shadow-handoff-provisional-m4", "pull_request": null, "merge_commit": null},
+      "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
+      "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
+    },
+    "M9": {
+      "implementation": {"status": "provisional_task1_source", "commit": "000301796ac19c518ede110b97b9de09dc077cbd", "prior_design_head": "055051e26e26bf08fa85376523ba6632afcca747", "evidence": "milestone/m9-staged-recovery-provisional-m4", "notes": "A source-only Task-1 frozen-contract slice exists, but later tasks, real signed input, environment/recovery proof and production authority remain absent."},
+      "review": {"status": "not_started", "commit": null, "evidence": []},
+      "stack_integration": {"status": "blocked_on_m8_acceptance", "base_branch": "milestone/m8-earned-autonomy-provisional-m4", "pull_request": null, "merge_commit": null},
+      "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
+      "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
+    }
+  },
+  "work_inventory": {
+    "active": [
+      {
+        "route_id": "b7f288f1e81e",
+        "branch": "integration/m4-main-20260902",
+        "source_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
+        "base_head": "78ad2f679d38dc3244e716c586332417e610089c",
+        "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
+        "latest_committed_repair_checkpoint": "5a6cdfb7a129e02724c632f78c31de6406d6863a",
+        "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
+        "purpose": "Run final verification on the current 2.0.13 release-state tree and complete five fresh reviews/reports/receipts before PR-only delivery."
+      },
+      {
+        "route_id": "37b05f579320",
+        "branch": "milestone/m5-isolated-execution-provisional-m4",
+        "head": "141e51e75b2bb337fa3bb1544639c6c46c287309",
+        "restack_predecessor": "56e12b2b394436ee227c66d78b1caba8f7317c78",
+        "purpose": "Tasks 1-6 are locally normal-restacked provisionally with M4 migration 013 plus M5 migration 014. Merge the later exact M4 package-inventory checkpoint normally, refresh checksum/upgrade/restart evidence, then prove rootless live-host isolation and trusted Git snapshot before review or acceptance."
+      },
+      {
+        "route_id": "82aac86a3bf9",
+        "branch": "milestone/m6-semantic-validation-provisional-m4",
+        "task1_head": "3def83eb915ca68e66379269526ffa64822a1104",
+        "task2_head": "a8ca0f3afffbd9ef5584825252f9a669a324d2a5",
+        "head": "f3b2c0d07116686b27feab4b60166e8a7402d672",
+        "purpose": "Task-3 deterministic verdict source is provisional and quarantined; after accepted M5, move its migration from 014 to 015, regenerate checksum/upgrade/restart evidence, and continue with untouched Task 4."
+      },
+      {
+        "route_id": "e5911c3f8721",
+        "branch": "milestone/m7-shadow-handoff-provisional-m4",
+        "head": "c8b450f494b3d44b580556c6a612b21a3a780368",
+        "purpose": "Synthetic algorithm source only; restack after accepted M6 and add runtime/real-outcome proof plus reviews."
+      },
+      {
+        "route_id": "670ffe5522e0",
+        "branch": "milestone/m8-earned-autonomy-provisional-m4",
+        "starting_head": "46a6c8eba6b5bd8e4654f3041e52061cdd1a15d6",
+        "head": "5735e762b8d7571887f6fa4ac9cf10cd1fad1954",
+        "purpose": "First Task-1 source-only contract slice with synthetic fixtures; Tasks 2-3 and all factual cohort/activation gates remain pending."
+      },
+      {
+        "route_id": "e376373492fe",
+        "branch": "milestone/m9-staged-recovery-provisional-m4",
+        "prior_design_head": "055051e26e26bf08fa85376523ba6632afcca747",
+        "head": "000301796ac19c518ede110b97b9de09dc077cbd",
+        "purpose": "Task-1 frozen contracts are source-only; later tasks, real signed input, environment/recovery proof and production authority remain absent."
+      }
+    ],
+    "open_pull_requests": [
+      {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Lazy CLI imports and tests are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
+      {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Repository-scoped Trust CI profiles are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
+      {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "Investor demo and packaging hardening are absent from main.", "disposition": "Wholesale merge is superseded; extract the unique scope into a clean successor. No successor PR exists."},
+      {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89", "status": "open_trust_ci_success_gitguardian_failure", "disposition": "Preserve check metadata without inspecting or dismissing the finding; the new current-main merge tree requires fresh verification and exact-head checks."}
+    ],
+    "retained_unresolved": [
+      {"pull_request": 14, "local_head": "cb2fe7ce637c464179e20b5b37aae334e56c1838", "purpose": "Unique closed production-promotion work requiring explicit re-evaluation."},
+      {"branch": "feature/workflow-artifact-adapters", "local_head": "dccaeec2a6b79c73663765f5909243e468e4b070", "purpose": "Local-only work requiring comparison before cleanup."},
+      {"branch": "origin/milestone/a-plus-autopilot", "head": "90a5da294ec06e9fbbf8ea97d1c27c64484b9069", "purpose": "Design-only reference; not M8 implementation."}
+    ],
+    "superseded": [
+      {"pull_request": 1, "branch": "hardening/trust-boundary-v2-1", "reason": "Closed Actions-era trust design; never merge."},
+      {"pull_request": 17, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "milestone/m2-executable-architecture", "head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89", "status": "closed_duplicate", "closed_at": "2026-09-02T10:08:38Z", "duplicate_of": 21, "reason": "Closed because it exactly duplicated open PR 21 at the same head; it provides no separate delivery authority."},
+      {"pull_request": 18, "branch": "feature/seo-landing-codex-side-project", "reason": "Stacked staging integration only; PR 19 delivered the SEO source to main and this path is archival."},
+      {"branches": ["feat/m4-durable-factory-control-plane", "milestone/m4-durable-control-plane-local", "fix/m3-restack-accepted-m2"], "reason": "Local aliases carry no source beyond accepted M2/M3 and M4 source head 460a8a01; the current integration branch is authoritative for local continuation."}
+    ]
+  },
+  "trust_ci": {
+    "required_check": "adaptive-trust-ci/verified@06ecf1c875bc",
+    "policy_digest": "06ecf1c875bc12fa696956998983e04b102f28571a586bc3bb7a2fff5083fdb2",
+    "github_app_id": 4694114,
+    "protected_branch": "main",
+    "strict_up_to_date": true,
+    "service_identity": "2.1.0",
+    "no_github_actions": true,
+    "source_directory": "trust-ci",
+    "operator_runbooks": "engineering/runbooks"
+  },
+  "fresh_clone": {
+    "active_route_may_be_absent": true,
+    "must_fetch_remote_refs": true,
+    "continue_active_work_from_project_state": true,
+    "chat_history_required": false
+  },
+  "intentionally_untracked": [
+    "environment files and credentials",
+    "GitHub App private keys",
+    "human approval private keys",
+    "Trust CI signing private keys",
+    "PostgreSQL runtime state",
+    "runtime approvals and receipts",
+    "host-local deployment overlays and scratch"
+  ]
+}

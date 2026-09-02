@@ -1,7 +1,7 @@
 # Architecture analysis — bounded workspace zombie-only cleanup
 
-**Route:** `fa3ae6080deb`  
-**Stacked base:** `9493741dd34fdfa1e37efdc09b35e30d5535be7c`  
+**Route:** `fa3ae6080deb`
+**Stacked base:** `9493741dd34fdfa1e37efdc09b35e30d5535be7c`
 **Scope:** read-only product analysis; this report is workflow evidence, not merge authority.
 
 ## Architecture ruling
