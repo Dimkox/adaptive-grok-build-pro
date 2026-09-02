@@ -167,6 +167,7 @@ class MigrationTests(unittest.TestCase):
             "semantic_escalations",
             "semantic_plan_repair",
             "semantic_bind_repair_child",
+            "semantic_repair_intake_status",
             "semantic_task_claimable",
             "security definer set search_path=pg_catalog,factory",
             "revoke insert, update, delete",

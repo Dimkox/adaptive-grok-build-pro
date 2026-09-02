@@ -82,6 +82,9 @@ REPAIR_CHILD_BROKER = Actor(
 WORKER = Actor(
     "worker", "worker", frozenset({"task:claim", "task:execute", "task:heartbeat", "task:release", "task:budget"}), frozenset({"*"})
 )
+SECOND_WORKER = Actor(
+    "worker-2", "worker", frozenset({"task:claim", "task:execute", "task:heartbeat", "task:release", "task:budget"}), frozenset({"*"})
+)
 
 
 class TrustedPostgresTestSnapshotBroker:
@@ -290,6 +293,9 @@ class PostgresFactoryTests(unittest.TestCase):
         inherit_parent_bounds=True,
         intake_only=False,
         intake_actor=None,
+        align_parent_head=True,
+        direct_store_intake=False,
+        before_execution=None,
     ):
         def command_key(operation):
             return canonical_digest(
@@ -311,6 +317,11 @@ class PostgresFactoryTests(unittest.TestCase):
             intake_payload["source_type"] = "api"
             intake_payload["source_id"] = child_source_digest
             intake_payload["source_digest"] = child_source_digest
+            if align_parent_head:
+                parent_head = parent_repair.child_proposal.parent_exact_head_sha
+                intake_payload["architecture"]["exact_head_sha"] = parent_head
+                intake_payload["governance"]["exact_head_sha"] = parent_head
+                intake_payload["m0_authority"]["exact_head_sha"] = parent_head
             if inherit_parent_bounds:
                 intake_payload["limits"].update(
                     {
@@ -367,9 +378,12 @@ class PostgresFactoryTests(unittest.TestCase):
                 ),
             )
         intake = TaskIntakeV1.from_dict(intake_payload, now=intake_now)
-        task = self.service.intake(
-            intake_payload, actor=intake_actor, now=intake_now
-        ).task
+        if direct_store_intake:
+            task = self.store.intake(intake, intake_actor, intake_now).task
+        else:
+            task = self.service.intake(
+                intake_payload, actor=intake_actor, now=intake_now
+            ).task
         if intake_only:
             return {"task": task, "intent_digest": intake.intent_digest, "intake": intake}
         child_binding = None
@@ -382,9 +396,13 @@ class PostgresFactoryTests(unittest.TestCase):
                     "child_intent_digest": intake.intent_digest,
                 }
             )
-            PostgresSemanticCoordinatorStore(
+            binding_store = PostgresSemanticCoordinatorStore(
                 self.semantic_coordinator_url
-            ).bind_repair_child(child_binding)
+            )
+            self.assertEqual(binding_store.bind_repair_child(child_binding), child_binding)
+            self.assertEqual(binding_store.bind_repair_child(child_binding), child_binding)
+        if before_execution is not None:
+            before_execution(task, intake)
         packet = valid_packet()
         packet["provider"]["capabilities"] = ["structured_output", "usage"]
         selection = {
@@ -1987,89 +2005,117 @@ class PostgresFactoryTests(unittest.TestCase):
 
         def bind_child(child_result, fixture):
             binding = binding_for(child_result, fixture)
-            self.assertEqual(semantic_store.bind_repair_child(binding), binding)
-            self.assertEqual(semantic_store.bind_repair_child(binding), binding)
+            if fixture.get("child_binding") is None:
+                self.assertEqual(semantic_store.bind_repair_child(binding), binding)
+                self.assertEqual(semantic_store.bind_repair_child(binding), binding)
+            else:
+                self.assertEqual(fixture["child_binding"], binding)
             return binding
 
-        def claimable(fixture):
+        def claimable_as(fixture, owner, role):
             with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
                 cursor.execute(
                     """SELECT factory.semantic_task_claimable(
-                      task_id,intent_id,intake_actor_kind,intake_actor_id
+                      task_id,intent_id,intake_actor_kind,intake_actor_id,%s,%s
                     ) FROM factory.tasks WHERE task_id=%s""",
-                    (fixture["task"].task_id,),
+                    (owner, role.value, fixture["task"].task_id),
                 )
                 return cursor.fetchone()[0]
+
+        def claimable(fixture):
+            return claimable_as(fixture, WORKER.actor_id, RunRole.WRITER)
+
+        with self.subTest(case="repair-child-input-head-must-match-parent-result"):
+            with self.assertRaisesRegex(
+                StoreError, "repair child.*head.*proposal"
+            ):
+                self.semantic_repair_fixture(
+                    namespace="mismatched-parent-head",
+                    source_id=repair.child_proposal_digest,
+                    child_source_digest=repair.child_proposal_digest,
+                    parent_repair=repair,
+                    result_head_sha="5" * 40,
+                    intake_only=True,
+                    align_parent_head=False,
+                    direct_store_intake=True,
+                )
 
         wrong_broker_source = canonical_digest(
             {"case": "repair-broker-wrong-proposal-source"}
         )
-        wrong_broker_candidate = self.semantic_repair_fixture(
-            namespace="wrong-broker-source-candidate",
-            source_id=wrong_broker_source,
-            result_head_sha="5" * 40,
-            intake_only=True,
-            intake_actor=REPAIR_CHILD_BROKER,
-        )
-        self.assertIsNone(
-            self.service.claim(
-                owner=WORKER.actor_id,
-                role=RunRole.WRITER,
-                repositories=(task.repository_id,),
-                lease_seconds=60,
-                actor=WORKER,
-                now=datetime.now(timezone.utc),
-                idempotency_key=canonical_digest(
-                    {"case": "wrong-broker-source-claim"}
-                ),
+        with self.assertRaisesRegex(
+            StoreError, "broker source is not a pending proposal"
+        ):
+            self.semantic_repair_fixture(
+                namespace="wrong-broker-source-candidate",
+                source_id=wrong_broker_source,
+                result_head_sha="5" * 40,
+                intake_only=True,
+                intake_actor=REPAIR_CHILD_BROKER,
             )
-        )
-        self.assertEqual(
-            self.store.get_task(wrong_broker_candidate["task"].task_id).status,
-            TaskStatus.QUEUED,
-        )
-        self.assertEqual(
-            self.service.cancel(
-                wrong_broker_candidate["task"].task_id,
-                reason="unbound repair broker intake",
-                idempotency_key=canonical_digest(
-                    {"case": "wrong-broker-source-cancel"}
-                ),
-                actor=OPERATOR,
-                now=datetime.now(timezone.utc),
-            ).status,
-            TaskStatus.CANCELLED,
-        )
 
-        unbound_api_candidate = self.semantic_repair_fixture(
-            namespace="unbound-api-candidate",
-            source_id=repair.child_proposal_digest,
-            child_source_digest=repair.child_proposal_digest,
-            parent_repair=repair,
-            result_head_sha="5" * 40,
-            intake_only=True,
-            intake_actor=OPERATOR,
-        )
-        with self.assertRaisesRegex(StoreError, "binding rejected"):
-            semantic_store.bind_repair_child(
-                binding_for(repair, unbound_api_candidate)
+        with self.subTest(case="ordinary-intake-cannot-occupy-repair-source"):
+            with self.assertRaisesRegex(
+                StoreError, "repair proposal source requires.*broker"
+            ):
+                self.semantic_repair_fixture(
+                    namespace="ordinary-reserved-source-candidate",
+                    source_id=repair.child_proposal_digest,
+                    child_source_digest=repair.child_proposal_digest,
+                    parent_repair=repair,
+                    result_head_sha="5" * 40,
+                    intake_only=True,
+                    intake_actor=OPERATOR,
+                    direct_store_intake=True,
+                )
+        def assert_bound_claim_identity(child_task, _child_intake):
+            child = {"task": child_task}
+            with self.subTest(case="second-worker-cannot-claim-repair-child"):
+                self.assertFalse(
+                    claimable_as(child, SECOND_WORKER.actor_id, RunRole.WRITER)
+                )
+            with self.subTest(case="reader-role-cannot-claim-repair-child"):
+                self.assertFalse(
+                    claimable_as(child, WORKER.actor_id, RunRole.READER)
+                )
+            self.assertTrue(
+                claimable_as(child, WORKER.actor_id, RunRole.WRITER)
             )
-        self.assertFalse(claimable(unbound_api_candidate))
-        self.assertIsNone(
-            self.service.claim(
-                owner=WORKER.actor_id,
-                role=RunRole.WRITER,
-                repositories=(task.repository_id,),
-                lease_seconds=60,
-                actor=WORKER,
-                now=datetime.now(timezone.utc),
-                idempotency_key=canonical_digest({"case": "unbound-claim"}),
+            self.assertIsNone(
+                self.service.claim(
+                    owner=WORKER.actor_id,
+                    role=RunRole.WRITER,
+                    repositories=(child_task.repository_id,),
+                    lease_seconds=60,
+                    actor=SECOND_WORKER,
+                    now=datetime.now(timezone.utc),
+                    idempotency_key=canonical_digest(
+                        {"case": "repair-child-second-worker-claim"}
+                    ),
+                )
             )
-        )
-        self.assertEqual(
-            self.store.get_task(unbound_api_candidate["task"].task_id).status,
-            TaskStatus.QUEUED,
-        )
+            self.assertIsNone(
+                self.service.claim(
+                    owner=WORKER.actor_id,
+                    role=RunRole.READER,
+                    repositories=(child_task.repository_id,),
+                    lease_seconds=60,
+                    actor=WORKER,
+                    now=datetime.now(timezone.utc),
+                    idempotency_key=canonical_digest(
+                        {"case": "repair-child-reader-role-claim"}
+                    ),
+                )
+            )
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT t.state,count(r.run_id)
+                    FROM factory.tasks t LEFT JOIN factory.runs r ON r.task_id=t.task_id
+                    WHERE t.task_id=%s GROUP BY t.state""",
+                    (child_task.task_id,),
+                )
+                self.assertEqual(cursor.fetchone(), ("queued", 0))
+
         cycle_two_fixture = self.semantic_repair_fixture(
             namespace="main-cycle-2",
             source_id=repair.child_proposal_digest,
@@ -2078,9 +2124,17 @@ class PostgresFactoryTests(unittest.TestCase):
             result_head_sha="5" * 40,
             finding_rule="rule-cycle-two",
             original_writer_context_digest=repair.child_proposal.context_digest,
+            before_execution=assert_bound_claim_identity,
         )
         cycle_two_request = request_for(
             cycle_two_fixture, 2, repair.child_proposal_digest, "2" * 64
+        )
+        self.assertEqual(
+            (
+                cycle_two_fixture["published"].binding.owner,
+                cycle_two_fixture["published"].binding.role,
+            ),
+            (WORKER.actor_id, "writer"),
         )
         self.assertEqual(
             cycle_two_fixture["published"].subject.original_writer_context_digest,
@@ -2089,16 +2143,25 @@ class PostgresFactoryTests(unittest.TestCase):
         self.assertGreater(
             cycle_two_fixture["intake"].m0_authority.observed_at, root_now
         )
-        self.assertEqual(
-            (
-                cycle_two_fixture["intake"].m0_authority.check_name,
-                cycle_two_fixture["intake"].m0_authority.exact_head_sha,
-            ),
-            (
-                root_payload["m0_authority"]["check_name"],
-                root_payload["m0_authority"]["exact_head_sha"],
-            ),
-        )
+        with self.subTest(case="repair-child-positive-head-chain"):
+            self.assertEqual(
+                (
+                    cycle_two_fixture["intake"].m0_authority.check_name,
+                    cycle_two_fixture["intake"].m0_authority.exact_head_sha,
+                ),
+                (
+                    root_payload["m0_authority"]["check_name"],
+                    repair.child_proposal.parent_exact_head_sha,
+                ),
+            )
+            self.assertEqual(
+                (
+                    cycle_two_fixture["intake"].architecture.exact_head_sha,
+                    cycle_two_fixture["intake"].governance.exact_head_sha,
+                    cycle_two_fixture["published"].binding.input_head_sha,
+                ),
+                (repair.child_proposal.parent_exact_head_sha,) * 3,
+            )
         bind_child(repair, cycle_two_fixture)
         reused_context = semantic_store.request_repair(
             cycle_two_fixture["task"].task_id,
@@ -2377,6 +2440,14 @@ class PostgresFactoryTests(unittest.TestCase):
             request_for(revoked_authority_root, 1, None, "b" * 64),
             idempotency_key=canonical_digest({"case": "revoked-authority-root"}),
         )
+        stale_revoked_candidate = self.semantic_repair_fixture(
+            namespace="stale-revoked-authority-child",
+            source_id=revoked_authority_parent.child_proposal_digest,
+            child_source_digest=revoked_authority_parent.child_proposal_digest,
+            parent_repair=revoked_authority_parent,
+            result_head_sha="e" * 40,
+            intake_only=True,
+        )
         revoked_authority_child = self.semantic_repair_fixture(
             namespace="revoked-authority-child",
             source_id=revoked_authority_parent.child_proposal_digest,
@@ -2385,6 +2456,30 @@ class PostgresFactoryTests(unittest.TestCase):
             result_head_sha="e" * 40,
             intake_only=True,
         )
+        self.assertEqual(
+            self.store.get_task(stale_revoked_candidate["task"].task_id).status,
+            TaskStatus.SUPERSEDED,
+        )
+        stale_binding = binding_for(
+            revoked_authority_parent, stale_revoked_candidate
+        )
+        stale_canonical = canonical_json(stale_binding.to_dict()).decode("utf-8")
+        with semantic_store._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT factory.semantic_bind_repair_child(%s,%s)",
+                (stale_binding.digest, stale_canonical),
+            )
+            stale_response = cursor.fetchone()[0]
+            connection.rollback()
+        with self.subTest(case="superseded-child-bind-fails-before-consuming-proposal"):
+            self.assertIsNone(stale_response)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT count(*) FROM factory.semantic_child_task_bindings
+                WHERE child_proposal_digest=%s""",
+                (revoked_authority_parent.child_proposal_digest,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
         bind_child(revoked_authority_parent, revoked_authority_child)
         self.assertTrue(claimable(revoked_authority_child))
         revoked_intake = revoked_authority_child["intake"]
@@ -2488,7 +2583,8 @@ class PostgresFactoryTests(unittest.TestCase):
                   'semantic_create_assignment','semantic_append_evidence',
                   'semantic_adjudication_material','semantic_append_verdict',
                   'semantic_verdict_by_subject','semantic_plan_repair',
-                  'semantic_bind_repair_child','semantic_task_claimable'
+                  'semantic_bind_repair_child','semantic_repair_intake_status',
+                  'semantic_task_claimable'
                 ) ORDER BY p.proname"""
             )
             privileges = {row[0]: row[1:] for row in cursor.fetchall()}
@@ -2499,9 +2595,26 @@ class PostgresFactoryTests(unittest.TestCase):
             "semantic_bind_repair_child": (True, False, False, False),
             "semantic_create_assignment": (True, False, False, False),
             "semantic_plan_repair": (True, False, False, False),
+            "semantic_repair_intake_status": (False, False, False, True),
             "semantic_task_claimable": (False, False, False, True),
             "semantic_verdict_by_subject": (True, False, False, False),
         })
+        with self.store._connect() as connection, connection.cursor() as cursor:
+            with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                cursor.execute("SELECT 1 FROM factory.semantic_child_proposals")
+        with self.store._connect() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT factory.semantic_repair_intake_status(
+                %s,'api',%s,%s,%s,'repair_broker',
+                'semantic-repair-child-broker')""",
+                (
+                    task.repository_id,
+                    repair.child_proposal_digest,
+                    repair.child_proposal_digest,
+                    repair.child_proposal.parent_exact_head_sha,
+                ),
+            )
+            self.assertEqual(cursor.fetchone()[0], "bound")
 
     def test_execution_lifecycle_persists_new_digest_stages_and_redacted_proposal(self):
         task = self.submit(source="m5-execution-lifecycle").task

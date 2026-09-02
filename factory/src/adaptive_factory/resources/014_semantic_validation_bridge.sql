@@ -161,11 +161,53 @@ CREATE TABLE factory.semantic_child_task_bindings (
   created_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
 
+CREATE FUNCTION factory.semantic_repair_intake_status(
+  p_repository_id text,
+  p_source_type text,
+  p_source_id text,
+  p_source_digest char(64),
+  p_exact_head_sha char(40),
+  p_actor_kind text,
+  p_actor_id text
+) RETURNS text
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
+  SELECT CASE
+    WHEN NOT (
+      p_source_type='api'
+      AND p_source_id=trim(p_source_digest)
+      AND p_source_id ~ '^[0-9a-f]{64}$'
+    ) THEN 'ordinary'
+    WHEN p_actor_kind<>'repair_broker'
+      OR p_actor_id<>'semantic-repair-child-broker' THEN 'actor_mismatch'
+    WHEN NOT EXISTS (
+      SELECT 1
+      FROM factory.semantic_child_proposals proposal
+      JOIN factory.tasks parent_task ON parent_task.task_id=proposal.parent_task_id
+      WHERE proposal.child_proposal_digest=p_source_digest
+        AND proposal.proposal_state='pending_handoff'
+        AND proposal.body->>'proposal_state'='pending_handoff'
+        AND parent_task.repository_id=p_repository_id
+    ) THEN 'not_pending'
+    WHEN NOT EXISTS (
+      SELECT 1 FROM factory.semantic_child_proposals proposal
+      WHERE proposal.child_proposal_digest=p_source_digest
+        AND proposal.body->>'parent_exact_head_sha'=trim(p_exact_head_sha)
+    ) THEN 'head_mismatch'
+    WHEN EXISTS (
+      SELECT 1 FROM factory.semantic_child_task_bindings binding
+      WHERE binding.child_proposal_digest=p_source_digest
+    ) THEN 'bound'
+    ELSE 'allowed'
+  END
+$$;
+
 CREATE FUNCTION factory.semantic_task_claimable(
   p_task_id uuid,
   p_intent_id uuid,
   p_intake_actor_kind text,
-  p_intake_actor_id text
+  p_intake_actor_id text,
+  p_requested_owner text,
+  p_requested_role text
 ) RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
   SELECT COALESCE((
@@ -182,13 +224,17 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
       ) THEN (
         p_intake_actor_kind='repair_broker'
         AND p_intake_actor_id='semantic-repair-child-broker'
+        AND p_requested_role='writer'
         AND EXISTS (
           SELECT 1
           FROM factory.semantic_child_task_bindings binding
+          JOIN factory.semantic_child_proposals bound_proposal
+            ON bound_proposal.child_proposal_digest=binding.child_proposal_digest
           WHERE binding.child_task_id=p_task_id
             AND trim(binding.child_intent_digest)=intent.intent_digest
             AND trim(binding.child_proposal_digest)=intent.source_id
             AND trim(binding.child_proposal_digest)=intent.source_digest
+            AND bound_proposal.body->>'writer_id'=p_requested_owner
         )
         AND EXISTS (
           SELECT 1
@@ -1314,11 +1360,31 @@ BEGIN
   IF NOT FOUND OR v_child.body->>'proposal_state' IS DISTINCT FROM 'pending_handoff'
   THEN RETURN NULL; END IF;
 
+  SELECT * INTO v_parent_task FROM factory.tasks
+    WHERE task_id=v_child.parent_task_id;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
+    v_parent_task.repository_id || chr(31) || 'api' || chr(31) ||
+      trim(v_child.child_proposal_digest),0
+  ));
+  SELECT * INTO v_child_task FROM factory.tasks
+    WHERE task_id=(v_binding->>'child_task_id')::uuid FOR UPDATE;
+  IF NOT FOUND
+    OR v_child_task.state NOT IN ('queued','retry')
+    OR EXISTS (
+      SELECT 1 FROM factory.tasks newer
+      WHERE newer.repository_id=v_child_task.repository_id
+        AND newer.source_type=v_child_task.source_type
+        AND newer.source_id=v_child_task.source_id
+        AND newer.generation>v_child_task.generation
+    )
+  THEN RETURN NULL; END IF;
+
   SELECT * INTO v_existing FROM factory.semantic_child_task_bindings
     WHERE child_proposal_digest=v_child.child_proposal_digest;
   IF FOUND THEN
     RETURN CASE WHEN v_existing.binding_digest=p_binding_digest
-      AND v_existing.child_task_id=(v_binding->>'child_task_id')::uuid
+      AND v_existing.child_task_id=v_child_task.task_id
       AND v_existing.child_intent_digest=
         (v_binding->>'child_intent_digest')::char(64)
       AND v_existing.body IS NOT DISTINCT FROM v_binding
@@ -1326,17 +1392,13 @@ BEGIN
   END IF;
   IF EXISTS (
     SELECT 1 FROM factory.semantic_child_task_bindings
-    WHERE child_task_id=(v_binding->>'child_task_id')::uuid
+    WHERE child_task_id=v_child_task.task_id
       OR child_intent_digest=(v_binding->>'child_intent_digest')::char(64)
   ) THEN RETURN NULL; END IF;
 
-  SELECT * INTO v_child_task FROM factory.tasks
-    WHERE task_id=(v_binding->>'child_task_id')::uuid;
   SELECT * INTO v_child_intent FROM factory.accepted_intents
     WHERE intent_id=v_child_task.intent_id
       AND intent_digest=(v_binding->>'child_intent_digest')::char(64);
-  SELECT * INTO v_parent_task FROM factory.tasks
-    WHERE task_id=v_child.parent_task_id;
   SELECT * INTO v_parent_intent FROM factory.accepted_intents
     WHERE intent_id=v_parent_task.intent_id;
   SELECT * INTO v_child_observation FROM factory.m0_authority_observations
@@ -1384,14 +1446,24 @@ BEGIN
       v_parent_intent.body->>'change_id'
     OR v_child_intent.body->'acceptance_ids' IS DISTINCT FROM
       v_parent_intent.body->'acceptance_ids'
-    OR v_child_intent.body->'architecture' IS DISTINCT FROM
-      v_parent_intent.body->'architecture'
-    OR v_child_intent.body->'governance' IS DISTINCT FROM
-      v_parent_intent.body->'governance'
+    OR (v_child_intent.body->'architecture')-'exact_head_sha' IS DISTINCT FROM
+      (v_parent_intent.body->'architecture')-'exact_head_sha'
+    OR (v_child_intent.body->'governance')-'exact_head_sha' IS DISTINCT FROM
+      (v_parent_intent.body->'governance')-'exact_head_sha'
+    OR v_child_intent.body#>>'{architecture,exact_head_sha}' IS DISTINCT FROM
+      v_child.body->>'parent_exact_head_sha'
+    OR v_child_intent.body#>>'{governance,exact_head_sha}' IS DISTINCT FROM
+      v_child.body->>'parent_exact_head_sha'
+    OR v_child_intent.body#>>'{m0_authority,exact_head_sha}' IS DISTINCT FROM
+      v_child.body->>'parent_exact_head_sha'
+    OR NOT EXISTS (
+      SELECT 1 FROM factory.semantic_subjects parent_subject
+      WHERE parent_subject.subject_digest=v_child.subject_digest
+        AND trim(parent_subject.exact_head_sha)=
+          v_child.body->>'parent_exact_head_sha'
+    )
     OR v_child_intent.body#>>'{m0_authority,check_name}' IS DISTINCT FROM
       v_parent_intent.body#>>'{m0_authority,check_name}'
-    OR v_child_intent.body#>>'{m0_authority,exact_head_sha}' IS DISTINCT FROM
-      v_parent_intent.body#>>'{m0_authority,exact_head_sha}'
     OR v_child_observation.issuer IS DISTINCT FROM v_parent_observation.issuer
     OR v_child_task.accepted_at-v_child_observation.observed_at
       NOT BETWEEN interval '0 seconds' AND interval '300 seconds'
@@ -1586,8 +1658,17 @@ BEGIN
         v_subject.subject_body->>'exact_base_sha'
       OR v_previous.body->>'architecture_digest' IS DISTINCT FROM
         v_subject.subject_body->>'architecture_digest'
-      OR v_previous.body->>'authority_digest' IS DISTINCT FROM
-        v_subject.subject_body->>'authority_digest'
+      OR NOT EXISTS (
+        SELECT 1
+        FROM factory.semantic_subjects previous_subject
+        JOIN factory.execution_packets previous_packet
+          ON previous_packet.packet_digest=previous_subject.task_packet_digest
+            AND previous_packet.run_id=previous_subject.run_id
+        WHERE previous_subject.subject_digest=v_previous.subject_digest
+          AND (previous_packet.body->'authority')-'exact_head_sha'
+            IS NOT DISTINCT FROM
+              (v_packet.body->'authority')-'exact_head_sha'
+      )
       OR (
         v_previous.subject_digest<>v_subject.subject_digest
         AND v_previous.body->>'context_digest' IS DISTINCT FROM
@@ -1617,6 +1698,16 @@ BEGIN
           v_previous.body->>'exact_base_sha'
         OR trim(v_current_intent.architecture_digest) IS DISTINCT FROM
           v_previous.body->>'architecture_digest'
+        OR trim(v_subject.input_head_sha) IS DISTINCT FROM
+          v_previous.body->>'parent_exact_head_sha'
+        OR v_packet.body#>>'{authority,exact_head_sha}' IS DISTINCT FROM
+          v_previous.body->>'parent_exact_head_sha'
+        OR v_current_intent.body#>>'{architecture,exact_head_sha}' IS DISTINCT FROM
+          v_previous.body->>'parent_exact_head_sha'
+        OR v_current_intent.body#>>'{governance,exact_head_sha}' IS DISTINCT FROM
+          v_previous.body->>'parent_exact_head_sha'
+        OR v_current_intent.body#>>'{m0_authority,exact_head_sha}' IS DISTINCT FROM
+          v_previous.body->>'parent_exact_head_sha'
         OR v_current_task.accepted_at<v_previous.created_at
       THEN RETURN NULL; END IF;
     END IF;
@@ -1635,19 +1726,26 @@ BEGIN
     SELECT count(*) INTO v_lineage_count FROM lineage;
     IF v_lineage_count<>v_cycle-1 OR EXISTS (
       WITH RECURSIVE lineage AS (
-        SELECT cycle,body,previous_child_proposal_digest
+        SELECT cycle,subject_digest,body,previous_child_proposal_digest
         FROM factory.semantic_child_proposals
         WHERE child_proposal_digest=
           (v_input->>'previous_child_proposal_digest')::char(64)
         UNION ALL
-        SELECT prior.cycle,prior.body,prior.previous_child_proposal_digest
+        SELECT prior.cycle,prior.subject_digest,prior.body,
+          prior.previous_child_proposal_digest
         FROM factory.semantic_child_proposals prior JOIN lineage child
           ON prior.child_proposal_digest=child.previous_child_proposal_digest
       )
       SELECT 1 FROM lineage
+      JOIN factory.semantic_subjects lineage_subject
+        ON lineage_subject.subject_digest=lineage.subject_digest
       WHERE body->>'baseline_risk_level' IS DISTINCT FROM
         v_previous.body->>'baseline_risk_level'
         OR body->>'baseline_risk_level' NOT IN ('low','medium','high','critical')
+        OR body->>'parent_exact_head_sha' IS DISTINCT FROM
+          trim(lineage_subject.exact_head_sha)
+        OR body->>'authority_digest' IS DISTINCT FROM
+          lineage_subject.subject_body->>'authority_digest'
     ) THEN RETURN NULL; END IF;
     v_baseline_risk=v_previous.body->>'baseline_risk_level';
     v_budget=LEAST(
@@ -2007,7 +2105,8 @@ REVOKE ALL ON FUNCTION factory.semantic_append_verdict(
 ) FROM PUBLIC;
 REVOKE ALL ON FUNCTION factory.semantic_plan_repair(char,char,text,uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION factory.semantic_bind_repair_child(char,text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION factory.semantic_task_claimable(uuid,uuid,text,text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.semantic_repair_intake_status(text,text,text,char,char,text,text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION factory.semantic_task_claimable(uuid,uuid,text,text,text,text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION factory.semantic_verdict_by_subject(uuid,char) FROM PUBLIC;
 REVOKE ALL ON FUNCTION factory.semantic_subject_by_digest(uuid,char) FROM PUBLIC;
 
@@ -2037,5 +2136,7 @@ GRANT EXECUTE ON FUNCTION factory.semantic_plan_repair(char,char,text,uuid)
   TO factory_semantic_coordinator;
 GRANT EXECUTE ON FUNCTION factory.semantic_bind_repair_child(char,text)
   TO factory_semantic_coordinator;
-GRANT EXECUTE ON FUNCTION factory.semantic_task_claimable(uuid,uuid,text,text)
+GRANT EXECUTE ON FUNCTION factory.semantic_repair_intake_status(text,text,text,char,char,text,text)
+  TO factory_runtime;
+GRANT EXECUTE ON FUNCTION factory.semantic_task_claimable(uuid,uuid,text,text,text,text)
   TO factory_runtime;

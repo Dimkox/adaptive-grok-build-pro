@@ -367,3 +367,7 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-02 — Used cwd-sensitive factory imports and non-fail-fast shell sequencing
 
 **Root cause:** Factory tests importing `tests.*` resolve only when the working directory is `factory`, while semicolon-separated verification commands can continue after an earlier nonzero exit and obscure which evidence is valid. Run those suites from their declared working directory and use separate or fail-fast commands so every reported result is attributable.
+
+## 2026-09-02 — Bound repair authority to the parent's old input head
+
+**Root cause:** The repair handoff compared the child authority to the parent's intake authority as a whole, so it accepted an unchanged stale input head and rejected the correct parent-result head. Cross-cycle authority continuity must exclude only the intentional exact-head advance while preserving and checking every other authority field.

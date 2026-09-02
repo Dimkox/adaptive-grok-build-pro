@@ -372,3 +372,7 @@ Derive a semantic subject only from a verified writer `ready_for_human` packet/m
 ## 2026-09-02 — Quarantine semantic repair handoffs until exact binding
 
 Mark every dedicated repair-broker intake and every proposal-digest source collision as unclaimable until an append-only binding proves the exact task, intent and proposal lineage. Carry the earliest deadline and remaining parent resource ceilings through that lineage, decrement semantic repair budget exactly once per child, and fail closed on stale authority or attempted limit reset.
+
+## 2026-09-02 — Advance repair input only from the verified parent result
+
+Reserve exact proposal-digest intake sources to the repair broker through a fixed-search-path capability, require the child input/governance/M0 head to equal the proposal's parent result head, and preserve every other authority field. Bind only the latest queued generation, and admit claims only for the proposal's original writer in the writer role.

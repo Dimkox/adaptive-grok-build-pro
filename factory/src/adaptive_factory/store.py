@@ -1393,6 +1393,51 @@ class PostgresFactoryStore:
                 "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
                 (f"{intake.repository_id}\x1f{intake.source_type}\x1f{intake.source_id}",),
             )
+            reserved_repair_source = (
+                intake.source_type == "api"
+                and intake.source_id == intake.source_digest
+                and HEX64.fullmatch(intake.source_id) is not None
+            )
+            if reserved_repair_source and (
+                actor.kind != "repair_broker"
+                or actor.actor_id != "semantic-repair-child-broker"
+            ):
+                raise StoreError(
+                    "repair proposal source requires the exact repair child broker"
+                )
+            repair_intake_status = "ordinary"
+            if reserved_repair_source:
+                if (
+                    intake.m0_authority.exact_head_sha
+                    != intake.governance.exact_head_sha
+                ):
+                    raise StoreError(
+                        "repair child intake head does not match proposal parent head"
+                    )
+                cursor.execute(
+                    """SELECT factory.semantic_repair_intake_status(
+                    %s,%s,%s,%s,%s,%s,%s)""",
+                    (
+                        intake.repository_id,
+                        intake.source_type,
+                        intake.source_id,
+                        intake.source_digest,
+                        intake.governance.exact_head_sha,
+                        actor.kind,
+                        actor.actor_id,
+                    ),
+                )
+                repair_intake_status = cursor.fetchone()[0]
+                if repair_intake_status == "not_pending":
+                    raise StoreError(
+                        "repair child broker source is not a pending proposal"
+                    )
+                if repair_intake_status == "head_mismatch":
+                    raise StoreError(
+                        "repair child intake head does not match proposal parent head"
+                    )
+                if repair_intake_status not in {"allowed", "bound"}:
+                    raise StoreError("repair child intake is not authorized")
             if not self._verify_m0_authority(cursor, intake):
                 raise AuthorityError("M0 authority is not trusted for repository/policy/action")
             cursor.execute(
@@ -1406,6 +1451,8 @@ class PostgresFactoryStore:
             duplicate = cursor.fetchone()
             if duplicate:
                 return IntakeResult(self._projection(duplicate), False)
+            if repair_intake_status == "bound":
+                raise StoreError("bound repair proposal source cannot be superseded")
             cursor.execute(
                 "SELECT task_id FROM factory.tasks WHERE repository_id=%s AND source_type=%s AND source_id=%s AND state NOT IN ('ready_for_human','dead','cancelled','superseded')",
                 (intake.repository_id, intake.source_type, intake.source_id),
@@ -1629,10 +1676,11 @@ class PostgresFactoryStore:
                 AND NOT EXISTS (SELECT 1 FROM factory.budget_reservations b
                   WHERE b.task_id=t.task_id AND b.released_at IS NULL)
                 AND factory.semantic_task_claimable(
-                  t.task_id,t.intent_id,t.intake_actor_kind,t.intake_actor_id
+                  t.task_id,t.intent_id,t.intake_actor_kind,t.intake_actor_id,
+                  %s,%s
                 )
                 ORDER BY t.created_at,t.task_id FOR UPDATE SKIP LOCKED LIMIT 1""",
-                (list(eligible_repositories),),
+                (list(eligible_repositories), request.owner, request.role.value),
             )
             row = cursor.fetchone()
             if not row:
