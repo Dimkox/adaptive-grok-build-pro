@@ -406,6 +406,14 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 **Root cause:** Release and parity-test Git subprocesses inherited replace, graft, repository, index, object and config interpretation controls from their environment.
 **Correction:** Bind release Git commands to canonical `ROOT`, strip ambient Git controls, disable replacements and grafts, and keep the parity reader independently sanitized.
 
+## 2026-09-02 — Continued a downstream milestone across an upstream SHA change
+
+Any upstream SHA change pauses downstream writing and triggers both a three-way path-overlap audit and contract-compatibility audit before restacking. Module isolation alone is insufficient because shared tests, documentation, migrations, and behavioral interfaces can change without direct source-file overlap.
+
+## 2026-09-02 — Deferred root architecture drift behind factory-only verification
+
+**Root cause:** Factory-only suites were treated as a sufficient slice gate, so eight new execution sources reached stable commits before the root verifier checked executable architecture ownership. Every product-source slice must run root architecture validate and drift before its stable commit, even when final full verification remains centrally owned.
+
 ## 2026-09-03 — Let shell quoting reinterpret a PR comment
 
 **Symptom:** A Markdown PR comment was posted through a double-quoted shell argument, so backticks executed and mangled the text; the comment was immediately corrected with no repository or SHA impact.

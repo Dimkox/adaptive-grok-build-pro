@@ -2,8 +2,12 @@ flowchart LR
   node_4e78270f61d78ed8["NODE-DOCKER-ENGINE | service | Trust CI operators; compose-described TCP/2375 local executor"]
   node_0a0fe2f046a648e9["NODE-EXTERNAL-HOLDOUT | policy_bundle | external Trust CI policy operators"]
   node_a6c166e55f8e1784["NODE-FACTORY-CONTROL | local_component | local factory operators"]
+  node_0a087cfaed95a8ad["NODE-FACTORY-EXECUTION-CORE | local_component | local factory operators"]
   node_93915052ae8a2e67["NODE-FACTORY-LOCAL-API | service | local factory operators"]
   node_a77de286f8308fd4["NODE-FACTORY-POSTGRES | datastore | local factory operators"]
+  node_21b552fdfa11f1c2["NODE-FACTORY-PROPOSAL-BROKER | local_component | local factory operators"]
+  node_fae11f6a95d982dc["NODE-FACTORY-PROVIDER-ADAPTERS | local_component | local factory operators"]
+  node_23f89cd7152cc030["NODE-FACTORY-WORKSPACE-BROKER | local_component | local factory operators"]
   node_8b8a8cd21b180532["NODE-GITHUB | external_system | GitHub"]
   node_23677f8757246623["NODE-GOVERNANCE-VALIDATOR | local_component | repository engineering"]
   node_e4e37173e410ad23["NODE-HUMAN-APPROVAL | actor | human security approvers"]
@@ -16,8 +20,14 @@ flowchart LR
   node_070dda93443dcc1f["NODE-TRUST-CI-WORKER | worker | Trust CI operators"]
   node_d0e570b2fbe52f98 -->|"EDGE-API-POSTGRES | data_flow | postgresql"| node_1a6c7efb2d08591b
   node_4e78270f61d78ed8 -->|"EDGE-DOCKER-ISOLATED-RUNNER | deployment | docker_api"| node_1c3a10ba26a8e80d
+  node_fae11f6a95d982dc -->|"EDGE-FACTORY-ADAPTERS-EXECUTION-CORE | data_flow | jsonl"| node_0a087cfaed95a8ad
   node_93915052ae8a2e67 -->|"EDGE-FACTORY-API-CONTROL | control | unix_http"| node_a6c166e55f8e1784
+  node_a6c166e55f8e1784 -->|"EDGE-FACTORY-CONTROL-EXECUTION-CORE | dependency | python_import"| node_0a087cfaed95a8ad
   node_a6c166e55f8e1784 -->|"EDGE-FACTORY-CONTROL-POSTGRES | data_flow | postgresql"| node_a77de286f8308fd4
+  node_a6c166e55f8e1784 -->|"EDGE-FACTORY-CONTROL-PROPOSAL-BROKER | control | python_call"| node_21b552fdfa11f1c2
+  node_a6c166e55f8e1784 -->|"EDGE-FACTORY-CONTROL-WORKSPACE | control | filesystem"| node_23f89cd7152cc030
+  node_21b552fdfa11f1c2 -->|"EDGE-FACTORY-PROPOSAL-BROKER-EXECUTION-CORE | dependency | python_import"| node_0a087cfaed95a8ad
+  node_23f89cd7152cc030 -->|"EDGE-FACTORY-WORKSPACE-CONTROL | data_flow | filesystem"| node_a6c166e55f8e1784
   node_8b8a8cd21b180532 -->|"EDGE-GITHUB-TRUST-CI-API | data_flow | https"| node_d0e570b2fbe52f98
   node_23677f8757246623 -->|"EDGE-GOVERNANCE-VALIDATOR-LOCAL-VERIFIER | data_flow | filesystem"| node_23bed8fcbfc79861
   node_e4e37173e410ad23 -->|"EDGE-HUMAN-TRUST-CI-API | data_flow | https"| node_d0e570b2fbe52f98
