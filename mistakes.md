@@ -422,3 +422,26 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 
 **Symptom:** Ruff and JSON validation could not find repository-relative targets, producing no product evidence.
 **Root cause:** A mixed verification batch used `packages/` as its working directory; commands with root-relative paths must run from the repository root, while only the sidecar check should change directories.
+
+## 2026-09-02 — Shared ambient inventory between packager and verifier
+
+**Symptom:** Five ignored/untracked evidence files entered the ZIP while the common-mode parity test passed.
+**Root cause:** Both packager and verifier used the ambient filesystem `rglob` inventory instead of an independent exact Git-tree authority.
+**Correction:** Release artifact inventory and bytes must equal the filtered tracked exact `HEAD`, and the shipped-artifact test must derive its expectation independently from Git objects.
+
+## 2026-09-02 — Compared untracked permission bits with Git tree modes
+
+**Symptom:** The first rebuilt artifact matched HEAD inventory and bytes but the regression rejected a clean non-executable file whose worktree mode was `0664` while Git normalized it to `0644`.
+**Root cause:** The test compared full POSIX permission bits even though Git records only the executable distinction and the release invariant requires exact inventory, bytes and hashes.
+
+## 2026-09-02 — Treated symbolic HEAD and output paths as stable release inputs
+
+**Symptom:** A release command could report success after `HEAD` moved and could replace an included tracked source chosen as its output.
+**Root cause:** Inventory and cleanliness checks re-read symbolic `HEAD`, while publication had neither an immutable ref guard nor a canonical source/output disjointness boundary.
+**Correction:** Capture one commit/tree snapshot, guard it before and after reversible pair publication, and reject canonical overlap before creating archive output.
+
+## 2026-09-02 — Treated ambient Git interpretation as raw object authority
+
+**Symptom:** A replacement ref or inherited repository override could make release packaging succeed with bytes outside the raw repository `HEAD`.
+**Root cause:** Release and parity-test Git subprocesses inherited replace, graft, repository, index, object and config interpretation controls from their environment.
+**Correction:** Bind release Git commands to canonical `ROOT`, strip ambient Git controls, disable replacements and grafts, and keep the parity reader independently sanitized.

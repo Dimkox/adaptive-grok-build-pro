@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Tasks 1-6 source head is exact `141e51e75b2bb337fa3bb1544639c6c46c287309`; route is `37b05f579320`; branch is `milestone/m5-isolated-execution-provisional-m4`. The current local normal-restack uses M4 checkpoint `aa12e7c683c13e42f5709db18d0018f89bde1532` (tree `076aae3cd40a6fb0ba64a9faae916dcf93c9ea62`); an upstream exact-tracked-inventory correction is pending and must be normally merged before package/final evidence. This is provisional source integration, not M4/M5 acceptance or delivery.
+- Tasks 1-6 source head is exact `141e51e75b2bb337fa3bb1544639c6c46c287309`; route is `37b05f579320`; branch is `milestone/m5-isolated-execution-provisional-m4`. The local normal-restack uses final exact M4 predecessor `571cad7877431ac5ab5779b53fe9f7effd6859ce` (tree `9d29f25d3af4fc9f97bbb8b3d4970906b69338fd`). This is provisional source integration, not M4/M5 acceptance or delivery; M5 requires fresh exact-head evidence.
 - Delivery target is `2026-09-08 00:00 UTC+3`; calendar pressure cannot waive tests, independent review, external Trust CI, or the dedicated rootless-host exit gate.
 - Keep `/v1/claims` legacy semantics: its `packet_digest` remains the M4 `intent_digest`; use new execution endpoints and a new canonical packet digest.
 - Preserve M4 ceilings and authority: 20 global readers, 10 readers per repository, one writer, four hours, USD 25, and initial attempt plus two infrastructure retries.

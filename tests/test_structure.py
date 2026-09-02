@@ -357,8 +357,10 @@ class StructureTests(unittest.TestCase):
         combined = "\n".join(texts.values())
         for fact in (
             "141e51e75b2bb337fa3bb1544639c6c46c287309",
-            "56e12b2b394436ee227c66d78b1caba8f7317c78",
-            "aa12e7c683c13e42f5709db18d0018f89bde1532",
+            "571cad7877431ac5ab5779b53fe9f7effd6859ce",
+            "9d29f25d3af4fc9f97bbb8b3d4970906b69338fd",
+            "2f9b3ec2dd6f73e887bf375a02870dd91b8a322807e9383e6bd171e2113dba1b",
+            "5b29b7e8e439d1409c3f72757199d20de8f6f4c62bd1df972a37d13f615d9d0e",
             "f3b2c0d07116686b27feab4b60166e8a7402d672",
             "014_execution_plane.sql",
             "37b05f579320",

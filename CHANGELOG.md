@@ -2,13 +2,13 @@
 
 ## 2.0.14 — 2026-09-02
 
-M5 isolated-execution local provisional candidate; current restack checkpoint is M4 `aa12e7c` and a tracked-inventory predecessor refresh is pending.
+M5 isolated-execution local provisional candidate, normally restacked on final local M4 predecessor `571cad7`.
 
 - Product identity **2.0.14**; Trust CI service identity remains separately **2.1.0**, and the most recently published release remains **v2.0.12**
-- Normal-restacks M5 Tasks 1-6 from exact source `141e51e75b2bb337fa3bb1544639c6c46c287309` on current exact M4 checkpoint `aa12e7c683c13e42f5709db18d0018f89bde1532`; a newer tracked-inventory correction must still be merged
+- Normal-restacks M5 Tasks 1-6 from exact source `141e51e75b2bb337fa3bb1544639c6c46c287309` on exact M4 predecessor `571cad7877431ac5ab5779b53fe9f7effd6859ce`
 - Preserves M4 migration `013_persisted_infrastructure_retry_limit.sql` and adds contiguous M5 migration `014_execution_plane.sql`, bounded database transactions, single-transaction cancellation and fail-closed runtime/attestor roles
 - Records source as implemented but provisional; exact-head verification and independent review remain pending, rootless live-host isolation and a trusted live Git snapshot remain blocked, and PR/external/merge/delivery evidence is absent
-- Reserves distinct tracked local artifact identity `packages/adaptive-grok-build-pro-v2.0.14.zip`; it will be built only after the final M4 tracked-inventory correction, without M5 overwriting M4 `2.0.13`. No tag or GitHub Release publication is claimed
+- Reserves distinct tracked local artifact identity `packages/adaptive-grok-build-pro-v2.0.14.zip`; it will be built once from a clean exact M5 source commit without overwriting final M4 `2.0.13`. No tag or GitHub Release publication is claimed
 
 ## 2.0.13 — 2026-09-02
 
@@ -16,9 +16,10 @@ M4 control-plane repair candidate and exact current-state release artifact.
 
 - Product identity **2.0.13**; Trust CI service identity remains separately **2.1.0**
 - Repairs roadmap/state parity, claim-terminal lease races, all-runtime database bounds/typed availability, fail-closed role bootstrap, and persisted accepted retry limits through additive migration `013`
-- Audits legacy schema-12 retry exhaustion without advancing a fence or creating a lease, and makes the shipped candidate prove exact inventory, manifest and byte parity with current included source
+- Audits legacy schema-12 retry exhaustion without advancing a fence or creating a lease, and makes release packaging derive inventory and bytes from filtered, clean, exact Git `HEAD` while independent shipped-artifact tests reject ambient ignored/untracked members
 - Records the current PR/milestone inventory without claiming review, external Trust CI acceptance, merge, deployment, tag, or GitHub Release publication
 - Tracked local artifact: `packages/adaptive-grok-build-pro-v2.0.13.zip` with its SHA-256 sidecar
+- Final local M4 head `571cad7877431ac5ab5779b53fe9f7effd6859ce` passed 14/14 verification and five local reviews/receipts with no gaps; this creates no external acceptance or delivery authority
 
 ## 2.0.12 — 2026-08-23
 
