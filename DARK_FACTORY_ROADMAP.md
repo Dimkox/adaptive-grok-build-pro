@@ -991,7 +991,7 @@ Never initially eligible:
 
 # M9 — Preview, Staging, Canary, and Recovery-Aware Delivery
 
-Current status: roadmap only. Any future delivery must bind the exact merged SHA to a signed artifact through preview/staging/canary/recovery evidence, while production promotion remains human-owned.
+Current status: provisional documentation-only design checkpoint on M4 source base `9fe779ab9f90719201acfd01160d3452658ff075`; no M9 product source or activation exists. Factual accepted M8 restack/profile/cohort, external signed inputs, a nonproduction environment and exercised recovery remain `BLOCKED`. Any future delivery must bind the exact merged SHA to a signed artifact through preview/staging/canary/recovery evidence, while production promotion remains human-owned. See the [M9 package](engineering/changes/20260902-implement-a-new-m9-ai-agent-staged-delivery-cont-e37637/brief.md).
 
 ## Objective
 

@@ -1,0 +1,118 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {"receipt": "code_review"},
+        {"receipt": "security_review"}
+      ],
+      "id": "AC-001",
+      "statement": "The design freezes seven closed V1 delivery records and exact merged SHA artifact SBOM provenance M8 profile cohort policy holdout image environment and prior signed artifact bindings without representing signature material"
+    },
+    {
+      "evidence": [
+        {"receipt": "test_review"},
+        {"receipt": "security_review"}
+      ],
+      "id": "AC-002",
+      "statement": "The future evaluator fails closed and deterministically on missing stale contradictory or threshold-breaching health error latency security and business observations"
+    },
+    {
+      "evidence": [
+        {"receipt": "security_review"},
+        {"receipt": "release_review"}
+      ],
+      "id": "AC-003",
+      "statement": "The design permits only pre-authorized halt bounded exposure decrease or restoration of the exact prior signed artifact and makes current-route production always needs_human and unreachable"
+    },
+    {
+      "evidence": [
+        {"receipt": "release_review"}
+      ],
+      "id": "AC-004",
+      "statement": "The connectivity schedule release rollback and ledger preserve M4 through M9 ordering and mark accepted M8 external signed inputs nonproduction environment and exercised recovery proof BLOCKED until factual evidence exists"
+    },
+    {
+      "evidence": [
+        {"receipt": "verification"},
+        {"receipt": "test_review"}
+      ],
+      "id": "AC-005",
+      "statement": "The implementation plan is executable in small TDD commits using only pure local deterministic source a dry-run controller and an in-memory fake environment adapter with bounded redacted evidence"
+    }
+  ],
+  "approvals": {
+    "required_scopes": ["architecture", "security", "release"]
+  },
+  "change_id": "20260902-implement-a-new-m9-ai-agent-staged-delivery-cont-e37637",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [{"receipt": "security_review"}],
+      "id": "FORBID-001",
+      "statement": "Repository source generates reads requests submits verifies or simulates private keys signatures human approvals or externally verified authority"
+    },
+    {
+      "evidence": [{"receipt": "security_review"}],
+      "id": "FORBID-002",
+      "statement": "M9 source performs infrastructure provider remote network connector credential process system command or production operations"
+    },
+    {
+      "evidence": [{"receipt": "security_review"}, {"receipt": "release_review"}],
+      "id": "FORBID-003",
+      "statement": "Automatic recovery advances an environment increases exposure changes resources selects an unbound artifact or crosses the human production boundary"
+    },
+    {
+      "evidence": [{"receipt": "release_review"}],
+      "id": "FORBID-004",
+      "statement": "Documentation calendar or provisional source is presented as accepted M8 signed artifact environment canary recovery production or merge authority"
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [{"receipt": "test_review"}, {"receipt": "security_review"}],
+      "id": "INV-001",
+      "statement": "Environment order is exactly preview then staging then bounded_canary then production and production is terminal needs_human under the current route"
+    },
+    {
+      "evidence": [{"receipt": "test_review"}, {"receipt": "security_review"}],
+      "id": "INV-002",
+      "statement": "Every decision and evidence record binds the exact promotion artifact environment exposure policy holdout image M8 profile cohort and observation set digests"
+    },
+    {
+      "evidence": [{"receipt": "test_review"}],
+      "id": "INV-003",
+      "statement": "Missing stale duplicate contradictory nonfinite or out-of-bound observations deny promotion with closed stable reason codes independent of input order"
+    },
+    {
+      "evidence": [{"receipt": "security_review"}],
+      "id": "INV-004",
+      "statement": "Audit and metrics contain bounded identifiers digests timestamps numeric aggregates and closed reason codes only with no PII secrets prompts reasoning or untrusted bodies"
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Freeze a complete M9 staged-delivery and recovery design package on provisional M4 source base 9fe779ab9f90719201acfd01160d3452658ff075 without implementing or activating delivery",
+    "success_metric": "m9_design_package_validation",
+    "target": "Canonical spec structure and documentation checks pass and every nonlocal prerequisite remains explicitly BLOCKED"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "m9_design_package_validation",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "risk": {
+    "domains": ["ai", "api", "security"],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

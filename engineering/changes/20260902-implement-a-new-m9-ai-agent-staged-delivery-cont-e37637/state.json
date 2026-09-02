@@ -1,0 +1,29 @@
+{
+  "change_id": "20260902-implement-a-new-m9-ai-agent-staged-delivery-cont-e37637",
+  "created_at": "2026-09-02T00:37:13+00:00",
+  "history": [
+    {
+      "at": "2026-09-02T00:37:13+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-02T00:45:32+00:00",
+      "from": "draft",
+      "reason": "approved M9 scope closed contracts connectivity blockers and acceptance criteria recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-02T00:45:33+00:00",
+      "from": "scoped",
+      "reason": "user approved canonical design; documentation checkpoint only",
+      "to": "approved"
+    }
+  ],
+  "route_id": "e376373492fe",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Implement a new M9 AI agent staged delivery control feature on exact M4 evidence base 9fe779a for later M8 alignment: exact merged SHA and signed artifact bindings, authenticated promotion-request validation, incremental nonproduction exposure tiers, deterministic halt and prior-signed-artifact restoration, human-owned final environment. Local source only; no real environment mutation, remote operation or secret values.",
+  "updated_at": "2026-09-02T00:45:33+00:00"
+}
