@@ -12,7 +12,7 @@ from .api import Authenticator, create_app
 from .models import Actor
 from .service import FactoryService
 from .settings import FactorySettings, SettingsError, read_private_file, read_token_file
-from .store import PostgresFactoryStore
+from .store import PostgresArtifactAttestationStore, PostgresFactoryStore
 
 
 class ServerError(RuntimeError):
@@ -90,7 +90,14 @@ def prepare_unix_socket(path: Path) -> socket.socket:
 
 def build_app(settings: FactorySettings):
     store = PostgresFactoryStore(settings.database_url)
-    return create_app(FactoryService(store), Authenticator(load_actors(settings.actors_file)))
+    artifact_attestation_store = (
+        PostgresArtifactAttestationStore(settings.artifact_attestor_database_url)
+        if settings.artifact_attestor_database_url else None
+    )
+    return create_app(
+        FactoryService(store, artifact_attestation_store=artifact_attestation_store),
+        Authenticator(load_actors(settings.actors_file)),
+    )
 
 
 def main() -> int:

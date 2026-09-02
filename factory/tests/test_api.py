@@ -13,6 +13,7 @@ from adaptive_factory.api import Authenticator, create_app
 from adaptive_factory.cli import main as cli_main
 from adaptive_factory.contracts import TaskIntakeV1
 from adaptive_factory.models import Actor, TaskProjection, TaskStatus
+from adaptive_factory.protocol import CanonicalEvent
 from adaptive_factory.service import FactoryService
 from adaptive_factory.settings import SettingsError, read_token_file
 from adaptive_factory.store import IntakeResult
@@ -64,6 +65,12 @@ class FakeService:
         return kwargs["stage"]
 
     def commit_execution_proposal(self, *args, **kwargs):
+        grant = args[0]
+        CanonicalEvent.from_payload(
+            task_id=grant.task_id, run_id=grant.run_id,
+            packet_digest=kwargs["packet_digest"], sequence=kwargs["sequence"],
+            event_type=kwargs["event_type"], payload=kwargs["payload"],
+        )
         self.calls.append(("commit_execution_proposal", args, kwargs))
         return {"proposal_kind": kwargs["event_type"], "sequence": kwargs["sequence"]}
 
@@ -192,6 +199,11 @@ class ApiTests(unittest.TestCase):
             ).status_code,
             422,
         )
+        forbidden_note = client.post(
+            "/v1/execution/notes", headers=headers,
+            json={**common, "note_type": "analysis", "body": "safe", "evidence": []},
+        )
+        self.assertEqual(forbidden_note.status_code, 422, forbidden_note.text)
 
     def test_malformed_execution_payloads_return_bounded_422(self):
         class RejectingProposalService(FakeService):

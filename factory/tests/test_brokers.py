@@ -66,6 +66,22 @@ class BrokerTests(unittest.TestCase):
         self.assertEqual(proposal.evidence, ("factory/src/a.py",))
         self.assertEqual(len(proposal.idempotency_key), 64)
 
+    def test_forbidden_note_categories_are_rejected_before_proposal_creation(self):
+        for note_type in (
+            "analysis", "Reasoning", "scratch-pad", " raw prompt ",
+            "model_analysis", "private-reasoning", "raw_prompt_dump",
+        ):
+            with self.subTest(note_type=note_type), self.assertRaisesRegex(
+                BrokerError, "forbidden_note_type"
+            ):
+                ProposalBroker().accept(
+                    event(
+                        1, "note.proposed",
+                        {"note_type": note_type, "body": "safe", "evidence": []},
+                    ),
+                    context(), owner="writer-01", fence=7,
+                )
+
     def test_redaction_covers_bearer_aws_keyed_secrets_and_complete_pem(self):
         secret_text = (
             "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.payload.signature "

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 import math
+import re
 from types import MappingProxyType
 from typing import Any, Iterable, Mapping
 
@@ -42,6 +43,11 @@ _FORBIDDEN_KEYS = frozenset(
         "native_stream",
     }
 )
+_NOTE_TYPE = re.compile(r"^[A-Za-z][A-Za-z0-9._-]{0,63}$")
+_FORBIDDEN_NOTE_TYPES = frozenset({
+    "analysis", "reasoning", "scratchpad", "chainofthought", "rawprompt",
+    "prompt", "stdout", "stderr", "nativestream",
+})
 _PAYLOAD_FIELDS = {
     "adapter.ready": frozenset(
         {"provider_id", "adapter_id", "adapter_version", "native_version", "model_id", "capabilities"}
@@ -71,6 +77,18 @@ class ProtocolError(ValueError):
     def __init__(self, code: str, detail: str = "") -> None:
         super().__init__(f"{code}: {detail}" if detail else code)
         self.code = code
+
+
+def validate_note_type(value: object) -> str:
+    """Return a closed durable note category or reject private/native streams."""
+    if not isinstance(value, str):
+        raise ProtocolError("payload_fields")
+    normalized = re.sub(r"[^a-z0-9]+", "", value.casefold())
+    if any(marker in normalized for marker in _FORBIDDEN_NOTE_TYPES):
+        raise ProtocolError("forbidden_content", "note_type")
+    if not _NOTE_TYPE.fullmatch(value):
+        raise ProtocolError("payload_fields")
+    return value
 
 
 @dataclass(frozen=True)
@@ -180,9 +198,9 @@ def validate_event_payload(
         if not all(isinstance(value, str) for value in payload.values()):
             raise ProtocolError("payload_fields")
     elif event_type == "note.proposed":
+        validate_note_type(payload["note_type"])
         if (
-            not isinstance(payload["note_type"], str)
-            or not isinstance(payload["body"], str)
+            not isinstance(payload["body"], str)
             or not isinstance(payload["evidence"], list)
             or not all(isinstance(value, str) for value in payload["evidence"])
         ):

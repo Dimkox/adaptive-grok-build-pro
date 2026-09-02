@@ -207,6 +207,15 @@ class TrustedTestArtifactBroker:
         })
 
 
+class TrustedTestArtifactAttestationStore:
+    def __init__(self):
+        self.calls = 0
+
+    def record_artifact_attestation(self, attestation):
+        self.calls += 1
+        return attestation
+
+
 class ExecutionServiceTests(unittest.TestCase):
     def test_self_asserted_selection_is_rejected_without_trusted_registry(self):
         store = FakeExecutionStore()
@@ -399,30 +408,36 @@ class ExecutionServiceTests(unittest.TestCase):
 
     def test_artifact_proposal_fails_closed_without_server_attestation(self):
         store = FakeExecutionStore()
-        with self.assertRaisesRegex(ExecutionContractError, "artifact_attestation_unavailable"):
-            FactoryService(store).commit_execution_proposal(
+        payload = {
+            "artifact_class": "report",
+            "path": "artifacts/report.json",
+            "sha256": "e" * 64,
+            "size_bytes": 12,
+            "media_type": "application/json",
+        }
+        for service in (
+            FactoryService(store),
+            FactoryService(store, artifact_broker=TrustedTestArtifactBroker()),
+        ):
+            with self.assertRaisesRegex(ExecutionContractError, "artifact_attestation_unavailable"):
+                service.commit_execution_proposal(
                 GRANT,
                 packet_digest="d" * 64,
                 sequence=1,
                 event_type="artifact.proposed",
-                payload={
-                    "artifact_class": "report",
-                    "path": "artifacts/report.json",
-                    "sha256": "e" * 64,
-                    "size_bytes": 12,
-                    "media_type": "application/json",
-                },
+                payload=payload,
                 actor=WORKER,
             )
-        self.assertEqual(
-            tuple(item[0] for item in store.calls),
-            ("proposal_replay", "proposal_context"),
-        )
+        self.assertEqual(tuple(item[0] for item in store.calls).count("proposal"), 0)
 
     def test_trusted_artifact_attestation_is_exact_and_replay_precedes_broker(self):
         store = FakeExecutionStore()
         broker = TrustedTestArtifactBroker()
-        service = FactoryService(store, artifact_broker=broker)
+        attestation_store = TrustedTestArtifactAttestationStore()
+        service = FactoryService(
+            store, artifact_broker=broker,
+            artifact_attestation_store=attestation_store,
+        )
         payload = {
             "artifact_class": "report",
             "path": "artifacts/report.json",
@@ -444,6 +459,7 @@ class ExecutionServiceTests(unittest.TestCase):
         )
         self.assertEqual(replay, first)
         self.assertEqual(broker.calls, 1)
+        self.assertEqual(attestation_store.calls, 1)
         before = tuple(item[0] for item in store.calls)
         changed = dict(payload, sha256="f" * 64)
         with self.assertRaisesRegex(StoreError, "different command"):

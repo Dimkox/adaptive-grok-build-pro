@@ -43,11 +43,13 @@ class FactoryService:
         *,
         snapshot_broker=None,
         artifact_broker=None,
+        artifact_attestation_store=None,
         execution_registry=None,
     ) -> None:
         self.store = store
         self.snapshot_broker = snapshot_broker
         self.artifact_broker = artifact_broker
+        self.artifact_attestation_store = artifact_attestation_store
         self.execution_registry = execution_registry
 
     def readiness(self):
@@ -332,6 +334,10 @@ class FactoryService:
                 "repository_id": context.repository_id,
                 "packet_digest": context.packet_digest,
                 "workspace_handle": context.workspace_handle,
+                "producer_sequence": event.sequence,
+                "fence": grant.fence,
+                "author_role": context.role,
+                "artifact_class": event.payload["artifact_class"],
                 "path": event.payload["path"],
                 "sha256": event.payload["sha256"],
                 "size_bytes": event.payload["size_bytes"],
@@ -350,6 +356,17 @@ class FactoryService:
                 getattr(attestation, name) != value
                 for name, value in request.to_dict().items()
             ):
+                raise ExecutionContractError("artifact_attestation_mismatch")
+            if self.artifact_attestation_store is None:
+                raise ExecutionContractError("artifact_attestation_unavailable")
+            recorded = self.artifact_attestation_store.record_artifact_attestation(attestation)
+            if not isinstance(recorded, ArtifactAttestationV1):
+                raise ExecutionContractError("artifact_attestation_unavailable")
+            try:
+                recorded = ArtifactAttestationV1.from_dict(recorded.to_dict())
+            except ValueError as exc:
+                raise ExecutionContractError("artifact_attestation_invalid") from exc
+            if recorded != attestation:
                 raise ExecutionContractError("artifact_attestation_mismatch")
             artifact_attestation_digest = attestation.artifact_attestation_digest
         proposal = ProposalBroker().accept(

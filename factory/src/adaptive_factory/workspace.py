@@ -142,6 +142,10 @@ class ArtifactAttestationRequest:
     repository_id: str
     packet_digest: str
     workspace_handle: str
+    producer_sequence: int
+    fence: int
+    author_role: str
+    artifact_class: str
     path: str
     sha256: str
     size_bytes: int
@@ -158,6 +162,14 @@ class ArtifactAttestationRequest:
             raise WorkspaceError("artifact_attestation_packet")
         if not isinstance(data["workspace_handle"], str) or not _WORKSPACE.fullmatch(data["workspace_handle"]):
             raise WorkspaceError("artifact_attestation_workspace")
+        if type(data["producer_sequence"]) is not int or not 1 <= data["producer_sequence"] <= 100_000:
+            raise WorkspaceError("artifact_attestation_sequence")
+        if type(data["fence"]) is not int or not 1 <= data["fence"] < 2**63:
+            raise WorkspaceError("artifact_attestation_fence")
+        if data["author_role"] not in {"writer"}:
+            raise WorkspaceError("artifact_attestation_role")
+        if not isinstance(data["artifact_class"], str) or not _IDENTIFIER.fullmatch(data["artifact_class"]):
+            raise WorkspaceError("artifact_attestation_class")
         path = data["path"]
         if not isinstance(path, str) or not path or "\x00" in path:
             raise WorkspaceError("artifact_attestation_path")
@@ -184,6 +196,10 @@ class ArtifactAttestationV1:
     repository_id: str
     packet_digest: str
     workspace_handle: str
+    producer_sequence: int
+    fence: int
+    author_role: str
+    artifact_class: str
     path: str
     sha256: str
     size_bytes: int

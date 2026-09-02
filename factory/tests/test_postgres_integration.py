@@ -11,13 +11,19 @@ from fastapi.testclient import TestClient
 
 from adaptive_factory.migrations import PostgresMigrator, discover_migrations
 from adaptive_factory.api import Authenticator, create_app
-from adaptive_factory.brokers import NoteProposal, proposal_idempotency_key
+from adaptive_factory.brokers import ArtifactProposal, NoteProposal, proposal_idempotency_key
 from adaptive_factory.contracts import canonical_digest, canonical_json
 from adaptive_factory.execution_contracts import WorkspaceResultV1, workspace_evidence_digest
 from adaptive_factory.models import Actor, ExecutionStage, FailureClass, RunRole, TaskStatus
 from adaptive_factory.protocol import CanonicalEvent
 from adaptive_factory.service import AuthorizationError, FactoryService
-from adaptive_factory.store import BudgetError, FenceError, PostgresFactoryStore, StoreError
+from adaptive_factory.store import (
+    BudgetError,
+    FenceError,
+    PostgresArtifactAttestationStore,
+    PostgresFactoryStore,
+    StoreError,
+)
 from adaptive_factory.workspace import (
     ArtifactAttestationUnavailable,
     ArtifactAttestationV1,
@@ -71,18 +77,52 @@ class TrustedPostgresTestArtifactBroker:
         })
 
 
+class CountingArtifactAttestationStore(PostgresArtifactAttestationStore):
+    def __init__(self, database_url):
+        super().__init__(database_url)
+        self.calls = 0
+
+    def record_artifact_attestation(self, attestation):
+        self.calls += 1
+        return super().record_artifact_attestation(attestation)
+
+
 @unittest.skipUnless(DATABASE_URL, "FACTORY_TEST_DATABASE_URL must name a disposable database")
 class PostgresFactoryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         PostgresMigrator(DATABASE_URL).apply()
+        from adaptive_factory.admin import provision_artifact_attestor_login
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        cls.artifact_attestor_login = f"factory_artifact_test_{os.getpid()}"
+        cls.artifact_attestor_password = "local-artifact-attestor-test"
+        provision_artifact_attestor_login(
+            DATABASE_URL, cls.artifact_attestor_login, cls.artifact_attestor_password,
+            runtime_login="factory_service_test",
+        )
+        cls.artifact_attestor_url = make_conninfo(**{
+            **conninfo_to_dict(DATABASE_URL),
+            "user": cls.artifact_attestor_login,
+            "password": cls.artifact_attestor_password,
+        })
+
+    @classmethod
+    def tearDownClass(cls):
+        import psycopg
+        from psycopg import sql
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(
+                sql.Identifier(cls.artifact_attestor_login)
+            ))
 
     def setUp(self):
         import psycopg
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.workspace_results, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
+                "TRUNCATE factory.workspace_results, factory.execution_proposals, factory.execution_artifact_attestations, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
             )
             cursor.execute("SELECT to_regclass('factory.metric_counters_pre_012_untrusted')")
             if cursor.fetchone()[0] is not None:
@@ -155,7 +195,11 @@ class PostgresFactoryTests(unittest.TestCase):
             selection=selection, actor=WORKER, now=NOW,
         )
         broker = TrustedPostgresTestArtifactBroker()
-        service = FactoryService(self.store, artifact_broker=broker)
+        attestation_store = CountingArtifactAttestationStore(self.artifact_attestor_url)
+        service = FactoryService(
+            self.store, artifact_broker=broker,
+            artifact_attestation_store=attestation_store,
+        )
         payload = {
             "artifact_class": "report",
             "path": "factory/src/change.patch",
@@ -189,7 +233,15 @@ class PostgresFactoryTests(unittest.TestCase):
             forged_attestation,
             idempotency_key=proposal_idempotency_key(forged_attestation),
         )
-        for forged in (dict(forged_role.__dict__), dict(forged_attestation.__dict__)):
+        reused_attestation = replace(artifact, sequence=2, idempotency_key="0" * 64)
+        reused_attestation = replace(
+            reused_attestation,
+            idempotency_key=proposal_idempotency_key(reused_attestation),
+        )
+        for forged in (
+            dict(forged_role.__dict__), dict(forged_attestation.__dict__),
+            dict(reused_attestation.__dict__),
+        ):
             with self.subTest(forged=forged["author_role"] + forged["path"]):
                 with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
                     cursor.execute("SET ROLE factory_runtime")
@@ -254,6 +306,7 @@ class PostgresFactoryTests(unittest.TestCase):
         )
         self.assertEqual(replay, artifact)
         self.assertEqual(broker.calls, 1)
+        self.assertEqual(attestation_store.calls, 1)
         event = CanonicalEvent.from_payload(
             task_id=execution.lease.task_id, run_id=execution.lease.run_id,
             packet_digest=execution.packet_digest, sequence=1,
@@ -295,6 +348,7 @@ class PostgresFactoryTests(unittest.TestCase):
                 actor=WORKER, idempotency_key="e" * 64,
             )
         self.assertEqual(broker.calls, 1)
+        self.assertEqual(attestation_store.calls, 1)
 
         grant_payload = {
             "task_id": execution.lease.task_id, "run_id": execution.lease.run_id,
@@ -373,6 +427,7 @@ class PostgresFactoryTests(unittest.TestCase):
                 sequence=1, event_type="artifact.proposed", payload=dict(payload),
                 actor=WORKER, idempotency_key=command_key,
             )
+
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
                 """UPDATE factory.execution_proposals SET body=(body#>>'{}')::jsonb
@@ -410,6 +465,80 @@ class PostgresFactoryTests(unittest.TestCase):
                 sequence=1, event_type="artifact.proposed", payload=dict(payload),
                 actor=WORKER, idempotency_key=command_key,
             )
+
+    def test_runtime_cannot_forge_self_consistent_artifact_attestation(self):
+        import psycopg
+
+        repository = "owner/m5-runtime-forged-attestation"
+        task = self.submit(repository=repository, source="m5-runtime-forged-attestation").task
+        packet = valid_packet()
+        packet["provider"]["capabilities"] = ["artifacts", "notes", "structured_output"]
+        selection = {
+            "provider": packet["provider"], "capability_policy": packet["capability_policy"],
+            "plan": packet["plan"], "workspace_handle": packet["workspace_handle"],
+            "prompt_template_digest": "7" * 64, "role_definition_digest": "8" * 64,
+            "tool_policy_digest": "9" * 64, "output_schema_digest": "a" * 64,
+        }
+        execution = FactoryService(
+            self.store, execution_registry=trusted_registry(selection)
+        ).claim_execution(
+            owner=WORKER.actor_id, role=RunRole.WRITER, repositories=(repository,),
+            lease_seconds=60, selection=selection, actor=WORKER, now=NOW,
+        )
+        facts = {
+            "contract_version": 1, "task_id": execution.lease.task_id,
+            "run_id": execution.lease.run_id, "repository_id": repository,
+            "packet_digest": execution.packet_digest,
+            "workspace_handle": packet["workspace_handle"],
+            "producer_sequence": 1, "fence": execution.lease.fence,
+            "author_role": "writer", "artifact_class": "report",
+            "path": "factory/src/forged.patch", "sha256": "b" * 64,
+            "size_bytes": 12, "media_type": "text/plain",
+            "source": "trusted_workspace_broker",
+        }
+        attestation = ArtifactAttestationV1.from_facts(facts)
+        proposal = ArtifactProposal(
+            execution.lease.task_id, execution.lease.run_id, execution.packet_digest,
+            execution.lease.fence, 1, "writer", "report", facts["path"], facts["sha256"],
+            facts["size_bytes"], facts["media_type"],
+            attestation.artifact_attestation_digest, "0" * 64,
+        )
+        proposal = replace(proposal, idempotency_key=proposal_idempotency_key(proposal))
+        forbidden_note = NoteProposal(
+            execution.lease.task_id, execution.lease.run_id, execution.packet_digest,
+            execution.lease.fence, 1, "writer", "model_analysis", "safe finding", (), "0" * 64,
+        )
+        forbidden_note = replace(
+            forbidden_note, idempotency_key=proposal_idempotency_key(forbidden_note)
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute("SET ROLE factory_runtime")
+            cursor.execute(
+                "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,1,%s,'artifact',%s::jsonb)",
+                (
+                    execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+                    execution.lease.fence, execution.lease.packet_digest,
+                    execution.packet_digest, proposal.idempotency_key,
+                    psycopg.types.json.Jsonb(dict(proposal.__dict__)),
+                ),
+            )
+            self.assertFalse(cursor.fetchone()[0])
+            cursor.execute(
+                "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,1,%s,'note',%s::jsonb)",
+                (
+                    execution.lease.task_id, execution.lease.run_id, execution.lease.owner,
+                    execution.lease.fence, execution.lease.packet_digest,
+                    execution.packet_digest, forbidden_note.idempotency_key,
+                    psycopg.types.json.Jsonb(dict(forbidden_note.__dict__)),
+                ),
+            )
+            self.assertFalse(cursor.fetchone()[0])
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
 
     def test_execution_lifecycle_persists_new_digest_stages_and_redacted_proposal(self):
         task = self.submit(source="m5-execution-lifecycle").task
@@ -2876,22 +3005,44 @@ class PostgresFactoryTests(unittest.TestCase):
 
     def test_shipped_local_bootstrap_provisions_effective_runtime_login(self):
         import psycopg
-        from adaptive_factory.admin import bootstrap_local
+        from adaptive_factory.admin import BootstrapError, bootstrap_local, provision_runtime_login
 
         login = "factory_service_test"
+        attestor_login = "factory_artifact_service_test"
         password = "-".join(("local", "runtime", "bootstrap", "test"))
+        attestor_password = "-".join(("local", "artifact", "attestor", "test"))
         from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
         runtime_url = make_conninfo(**{**conninfo_to_dict(DATABASE_URL), "user": login, "password": password})
-        result = bootstrap_local(DATABASE_URL, login, password, runtime_url)
+        attestor_url = make_conninfo(**{
+            **conninfo_to_dict(DATABASE_URL), "user": attestor_login,
+            "password": attestor_password,
+        })
+        result = bootstrap_local(
+            DATABASE_URL, login, password, runtime_url,
+            attestor_login, attestor_password, attestor_url,
+        )
         self.assertEqual(result["database_role"], "factory_runtime")
+        self.assertEqual(result["artifact_attestor_database_role"], "factory_artifact_attestor")
         self.assertEqual(result["schema_version"], 13)
         with psycopg.connect(runtime_url) as connection, connection.cursor() as cursor:
             cursor.execute("SET ROLE factory_runtime")
             cursor.execute("SELECT session_user,current_user")
             self.assertEqual(cursor.fetchone(), (login, "factory_runtime"))
+        unsafe_login = "factory_unsafe_dual_test"
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "CREATE ROLE factory_unsafe_dual_test LOGIN NOINHERIT PASSWORD 'local-unsafe-dual-test'"
+            )
+            cursor.execute("GRANT factory_artifact_attestor TO factory_unsafe_dual_test")
+        with self.assertRaisesRegex(BootstrapError, "unsafe role membership"):
+            provision_runtime_login(
+                DATABASE_URL, unsafe_login, "local-unsafe-dual-test"
+            )
         with psycopg.connect(DATABASE_URL) as connection:
             connection.execute("DROP ROLE IF EXISTS " + login)
+            connection.execute("DROP ROLE IF EXISTS " + attestor_login)
+            connection.execute("DROP ROLE IF EXISTS " + unsafe_login)
 
     def test_roles_are_isolated_and_audit_is_append_only_and_verifiable(self):
         task = self.submit(source="audit-role-check").task
@@ -2903,11 +3054,32 @@ class PostgresFactoryTests(unittest.TestCase):
             cursor.execute("CREATE SCHEMA IF NOT EXISTS trust_ci; REVOKE ALL ON SCHEMA trust_ci FROM PUBLIC")
             cursor.execute(
                 "SELECT rolname,rolcanlogin,rolsuper,rolcreaterole FROM pg_roles WHERE rolname=ANY(%s) ORDER BY rolname",
-                (["factory_audit_reader", "factory_migrator", "factory_runtime"],),
+                (["factory_artifact_attestor", "factory_audit_reader", "factory_migrator", "factory_runtime"],),
             )
             roles = cursor.fetchall()
-            self.assertEqual([row[0] for row in roles], ["factory_audit_reader", "factory_migrator", "factory_runtime"])
+            self.assertEqual(
+                [row[0] for row in roles],
+                ["factory_artifact_attestor", "factory_audit_reader", "factory_migrator", "factory_runtime"],
+            )
             self.assertTrue(all(row[1:] == (False, False, False) for row in roles))
+            cursor.execute(
+                """SELECT
+                has_function_privilege('factory_runtime','factory.execution_record_artifact_attestation(jsonb)','EXECUTE'),
+                has_function_privilege('factory_artifact_attestor','factory.execution_record_artifact_attestation(jsonb)','EXECUTE'),
+                has_table_privilege('factory_runtime','factory.execution_artifact_attestations','SELECT'),
+                has_table_privilege('factory_artifact_attestor','factory.execution_artifact_attestations','SELECT'),
+                has_table_privilege('factory_runtime','factory.execution_artifact_attestations','UPDATE'),
+                has_table_privilege('factory_artifact_attestor','factory.execution_artifact_attestations','UPDATE'),
+                has_function_privilege('factory_artifact_attestor',
+                  'factory.execution_propose(uuid,uuid,text,bigint,character,character,bigint,character,text,jsonb)',
+                  'EXECUTE'),
+                pg_has_role('factory_runtime','factory_artifact_attestor','MEMBER'),
+                pg_has_role('factory_artifact_attestor','factory_runtime','MEMBER')"""
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                (False, True, False, False, False, False, False, False, False),
+            )
             cursor.execute(
                 "SELECT has_schema_privilege('factory_runtime','trust_ci','USAGE'), has_table_privilege('factory_runtime','factory.audit_log','UPDATE'), has_table_privilege('factory_runtime','factory.audit_log','DELETE')"
             )

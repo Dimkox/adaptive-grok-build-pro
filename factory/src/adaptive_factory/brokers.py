@@ -7,7 +7,7 @@ from typing import Any, Mapping
 
 from .contracts import canonical_digest
 from .models import FailureClass
-from .protocol import CanonicalEvent
+from .protocol import CanonicalEvent, ProtocolError, validate_note_type
 
 
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -307,6 +307,10 @@ class ProposalBroker:
         note_type, body, evidence = payload["note_type"], payload["body"], payload["evidence"]
         if context.role not in {"reader", "writer"} or not isinstance(note_type, str) or not note_type:
             raise BrokerError("note_role")
+        try:
+            validate_note_type(note_type)
+        except ProtocolError as exc:
+            raise BrokerError("forbidden_note_type") from exc
         _secret_free(note_type, 64)
         if not isinstance(body, str) or body.startswith("#!") or "\ngit push" in body:
             raise BrokerError("executable_note")

@@ -78,6 +78,25 @@ class ProtocolTests(unittest.TestCase):
             with self.subTest(key=key), self.assertRaisesRegex(ProtocolError, "forbidden_content"):
                 parser().feed(line(event(1, "run.completed", {"summary": "safe", key: "secret"})))
 
+    def test_forbidden_note_categories_cannot_become_durable_metadata(self):
+        for note_type in (
+            "analysis", "Reasoning", "scratch-pad", " raw prompt ",
+            "model_analysis", "private-reasoning", "raw_prompt_dump",
+        ):
+            with self.subTest(note_type=note_type), self.assertRaisesRegex(
+                ProtocolError, "forbidden_content"
+            ):
+                parser().feed(line(event(
+                    1, "note.proposed",
+                    {"note_type": note_type, "body": "safe", "evidence": []},
+                )))
+        for note_type in ("finding", "conclusion", "decision.record"):
+            stream = parser()
+            stream.feed(line(event(
+                1, "note.proposed",
+                {"note_type": note_type, "body": "safe", "evidence": []},
+            )))
+
     def test_every_payload_field_is_closed_and_scalar_typed(self):
         cases = (
             ("run.completed", {"summary": {"value": "not text"}}),

@@ -337,6 +337,10 @@ Derive the M4 target from the persisted terminal proposal, attempt, accounting, 
 
 Keep direct table reads revoked and expose only one fixed-search-path exact task/run/proposal-digest envelope function for replay. Recompute and cross-check the typed proposal key in the store so post-terminal replay needs neither a live lease nor renewed workspace attestation while corrupted or redirected evidence fails closed.
 
+## 2026-09-02 — Separate workspace observation from durable artifact authority
+
+Require a trusted workspace observer to produce an authority-bound artifact envelope, then let a distinct least-privilege PostgreSQL capability record and atomically consume that exact envelope. Keeping both capabilities absent or separate by default prevents a runtime worker, owner DSN, or recorder-only deployment from blessing caller-asserted file facts.
+
 ## 2026-09-01 — Lock trusted authority inside intake without granting row mutation
 
 Use fixed-search-path security-definer predicates that take a row lock on the exact repository/policy/action subject, and invoke them after intake identity serialization in the insertion transaction. This prevents revocation TOCTOU while retaining an EXECUTE-only runtime boundary.

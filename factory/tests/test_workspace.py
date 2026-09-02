@@ -107,7 +107,8 @@ class WorkspaceTests(unittest.TestCase):
         request = ArtifactAttestationRequest.from_facts({
             "task_id": "task-001", "run_id": "run-001",
             "repository_id": "owner/repository", "packet_digest": "b" * 64,
-            "workspace_handle": handle().value, "path": "factory/src/a.py",
+            "workspace_handle": handle().value, "producer_sequence": 1, "fence": 7,
+            "author_role": "writer", "artifact_class": "report", "path": "factory/src/a.py",
             "sha256": "c" * 64, "size_bytes": 12, "media_type": "text/x-python",
         })
         value = {
@@ -133,7 +134,8 @@ class WorkspaceTests(unittest.TestCase):
         request = ArtifactAttestationRequest.from_facts({
             "task_id": "task-001", "run_id": "run-001",
             "repository_id": "owner/repository", "packet_digest": "b" * 64,
-            "workspace_handle": handle().value, "path": "factory/src/a.py",
+            "workspace_handle": handle().value, "producer_sequence": 1, "fence": 7,
+            "author_role": "writer", "artifact_class": "report", "path": "factory/src/a.py",
             "sha256": "c" * 64, "size_bytes": 12, "media_type": "text/x-python",
         })
         result = FakeWorkspaceBroker().attest_artifact(request)

@@ -19,7 +19,12 @@ from .migrations import discover_migrations
 from .models import Actor, ExecutionGrant, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskProjection, TaskStatus
 from .protocol import CanonicalEvent, PROTOCOL_VERSION
 from .state import classify_retry
-from .workspace import WorkspaceSnapshotRequest, WorkspaceSnapshotV1
+from .workspace import (
+    ArtifactAttestationUnavailable,
+    ArtifactAttestationV1,
+    WorkspaceSnapshotRequest,
+    WorkspaceSnapshotV1,
+)
 
 
 class StoreError(RuntimeError):
@@ -59,6 +64,70 @@ class ReconcileResult:
 class UsageResult:
     observation_id: str
     created: bool
+
+
+class PostgresArtifactAttestationStore:
+    """Dedicated capability boundary; its login must not inherit factory_runtime."""
+
+    def __init__(self, database_url: str) -> None:
+        if not database_url:
+            raise StoreError("artifact attestor database URL is required")
+        self.database_url = database_url
+
+    def _connect(self):
+        import psycopg
+
+        connection = psycopg.connect(self.database_url)
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT session_user,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
+                    pg_has_role(session_user,'factory_artifact_attestor','MEMBER'),
+                    pg_has_role(session_user,'factory_runtime','MEMBER')
+                    FROM pg_roles WHERE rolname=session_user"""
+                )
+                identity = cursor.fetchone()
+                if identity is None or identity[1:] != (False, False, False, False, True, False):
+                    raise StoreError("artifact attestor login is not least privilege")
+                cursor.execute(
+                    """SELECT COALESCE(array_agg(r.rolname ORDER BY r.rolname),ARRAY[]::name[])
+                    FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.roleid
+                    JOIN pg_roles u ON u.oid=m.member WHERE u.rolname=session_user"""
+                )
+                if tuple(cursor.fetchone()[0]) != ("factory_artifact_attestor",):
+                    raise StoreError("artifact attestor login has excess role membership")
+                cursor.execute("SET ROLE factory_artifact_attestor")
+                cursor.execute("SELECT current_user")
+                if cursor.fetchone()[0] != "factory_artifact_attestor":
+                    raise StoreError("artifact attestor capability unavailable")
+            return connection
+        except Exception:
+            connection.close()
+            raise
+
+    def readiness(self) -> dict[str, str]:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT session_user,current_user")
+            session_user, current_user = cursor.fetchone()
+            return {"session_user": session_user, "database_role": current_user}
+
+    def record_artifact_attestation(
+        self, attestation: ArtifactAttestationV1
+    ) -> ArtifactAttestationV1 | ArtifactAttestationUnavailable:
+        with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT factory.execution_record_artifact_attestation(%s::jsonb)",
+                (json.dumps(attestation.to_dict(), sort_keys=True, separators=(",", ":")),),
+            )
+            value = cursor.fetchone()[0]
+        if value is None:
+            return ArtifactAttestationUnavailable(reason="trusted_artifact_attestation_rejected")
+        if isinstance(value, str):
+            value = json.loads(value)
+        try:
+            return ArtifactAttestationV1.from_dict(value)
+        except (TypeError, ValueError) as exc:
+            raise StoreError("corrupt artifact attestation envelope") from exc
 
 
 class PostgresFactoryStore:
