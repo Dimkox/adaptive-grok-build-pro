@@ -5,79 +5,70 @@
 - Reviewer role: route-selected read-only `security_reviewer`
 - Route: `b7f288f1e81e`
 - Accepted M3 base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-- Prior reviewed HEAD: `daa3930cb84ba6547171583e41bcf0dee2ab1314`
-- Exact reviewed product HEAD: `fa043d48430963f82c52a76fbdabe2c35cd3d995`
-- Exact reviewed Git tree: `d8024cc0a188b4d58006a87fca5685e66471346a`
-- Full reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..fa043d48430963f82c52a76fbdabe2c35cd3d995`
-- Exact-head verifier: PASS, fingerprint `9ec2ce27d8dd0e0ee896573d282f4e0dcef2349a05914659d9bdac1e8dc37d75`
+- Exact reviewed clean evidence HEAD: `9fe779ab9f90719201acfd01160d3452658ff075`
+- Exact reviewed evidence tree: `05707b35fb10ab9a29d3be35478faf4ef84789a1`
+- Exact reviewed product commit: `4f75558770f2f332b32b4a47fe6afa61fcc524ec`
+- Exact reviewed product tree: `5e4a46bab94f4943b6fc698472e309d4ee24fab2`
+- Full reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..9fe779ab9f90719201acfd01160d3452658ff075`
+- Exact-head verifier: PASS, fingerprint `2b9b3ee786663e3adba2e2f85e51e7c752c8e57166a0d7af6e3f62a88f4b45e8`
 
-**FAIL**
+**PASS**
 
 - Critical findings: **0**
-- Important findings: **1**
-- Moderate findings: **1**
+- Important findings: **0**
+- Moderate findings: **0**
 
-The authentication counter, fixed response inventory and redaction repair are locally bounded, but the newly security-relevant durable stale-fence metric is writable through an overbroad database role grant. That violates the M4 least-privilege and trustworthy-observability boundary and must be repaired before release closure.
+No security finding at Moderate severity or above remains on the exact reviewed tree. Prior SR-005 and SR-006 are closed by forward migration `012`; the final `4f75558` repair preserves the authoritative fence error, makes best-effort instrumentation handling explicit and changes no runtime authority.
 
-## Important finding
+## Final fix assessment
 
-### SR-005 — `factory_runtime` can forge or erase the durable stale-fence security signal
+### Migration 012 privilege and capability boundary — closed
 
-The metrics repair presents `factory_lease_reclaim_and_fence_rejection_total.fence_rejected` as a durable PostgreSQL-authoritative counter. `FactoryService._fenced()` catches a store `FenceError` after the failed transaction has unwound and calls `record_fence_rejection()`; that method performs a fixed-key, saturating `INSERT ... ON CONFLICT ... UPDATE` in a fresh transaction (`factory/src/adaptive_factory/service.py:85-149`; `factory/src/adaptive_factory/store.py:168-178`). The supported code path is safe and atomic.
+- Migration `012` takes write-conflicting locks over every authoritative snapshot source before backfill, renames the former generic counter table as explicitly untrusted evidence, and revokes all runtime/PUBLIC access to it (`factory/src/adaptive_factory/resources/012_bounded_metrics_snapshot.sql:1-7`). Forged pre-012 values are not imported; the trusted fence epoch starts at zero.
+- The replacement counter is a fixed 21-value singleton with closed nonnegative columns, not caller-selected metric/outcome keys (`012_bounded_metrics_snapshot.sql:9-32`). Runtime has no `SELECT`, `INSERT`, `UPDATE` or `DELETE` on the singleton or kill-switch head table (`012_bounded_metrics_snapshot.sql:258-261`).
+- Runtime receives only `read_metrics_snapshot()` and the no-argument `increment_fence_rejected()` capability. The latter can only monotonically increment the one fence value and saturates at signed-bigint maximum (`012_bounded_metrics_snapshot.sql:231-256,262-273`). PUBLIC execute and runtime execution of internal trigger functions are denied.
+- Every security-definer function fixes `search_path=pg_catalog,factory`; relations are schema-qualified. The trigger functions are migration-owner maintained and are executable as triggers without granting runtime generic function or table authority (`012_bounded_metrics_snapshot.sql:74-229`). No caller-controlled dynamic SQL or search-path substitution exists.
+- Effective-role PostgreSQL coverage proves both counter tables unreadable/unwritable by runtime, internal trigger functions uncallable, supported concurrent increments exact and monotonic, saturation bounded, and unknown/reset/decrement writes denied (`factory/tests/test_postgres_integration.py:955-1012`). The schema-008 upgrade case retains forged legacy rows only as inaccessible evidence and initializes the new snapshot from authoritative tables (`factory/tests/test_postgres_integration.py:1455-1510`).
 
-The database authority beneath it is not capability-shaped. Migration 005 grants `factory_runtime` unrestricted `SELECT, INSERT, UPDATE` on the entire `factory.metric_counters` table (`factory/src/adaptive_factory/resources/005_security_accounting_commands.sql:31-36,71`). The table permits arbitrary unbounded text in both key columns and any nonnegative bigint value. No later migration revokes that grant, and the effective-role negative test does not probe `metric_counters` (`factory/tests/test_postgres_integration.py:1537-1581`).
+### Authentication accounting and disclosure — closed
 
-Consequences under the repository's explicit compromised/effective-runtime-role threat boundary:
+- `Authenticator` stores only SHA-256 token digests, compares the candidate against every configured digest with `hmac.compare_digest`, and never emits a token, actor or repository value (`factory/src/adaptive_factory/api.py:39-68`). Uvicorn access logging remains disabled (`factory/src/adaptive_factory/server.py:96-103`).
+- The HTTP middleware increments one lock-protected saturating process counter after every final application 401/403, covering missing/malformed credentials, unmatched bearer, missing scope, actor-kind, repository and trusted-authority denials without changing endpoint error precedence (`factory/src/adaptive_factory/api.py:182-203`). It has no labels or reset API and intentionally resets only with the process.
+- The exact actor matrix proves 401/401/403/403/403 produces `auth_rejected=5`, a fresh application starts at zero, output stays at or below 2 KiB, and no credential/actor/repository material appears (`factory/tests/test_api.py:140-196`). A real UDS request independently proves one missing-auth rejection (`factory/tests/test_server.py:20-65`).
+- `/metrics` still requires `factory:reconcile` at authentication and wildcard operator authority at the service boundary; a repository-scoped operator or wrong actor kind receives 403 and cannot read global state (`factory/src/adaptive_factory/api.py:219-226`; `factory/src/adaptive_factory/service.py:172-189`).
 
-- the runtime credential can set the allow-listed `fence_rejected` value to zero or any chosen number, so an operator cannot trust the signal to reveal stale-holder attacks or fencing defects;
-- it can insert arbitrary metric names/outcomes and update them without going through the fixed allow-listed increment path;
-- because those key columns have no length bound, direct runtime access can create unbounded metric-key storage even though the HTTP response itself has fixed cardinality.
+### Bounds, denial of service and fence precedence — closed
 
-The HTTP API exposes no raw SQL, so this is not an unauthenticated remote injection. It is nevertheless Important: M4 repeatedly treats the effective runtime role as an independently constrained security boundary, and earlier capacity/allocation findings were repaired by removing direct DML and exposing only capability-shaped functions. A security rejection counter controlled by the same broad runtime authority is not durable security evidence.
+- Store metrics now execute one constant-row snapshot read rather than historical scans, with transaction-local 5-second statement and 500-millisecond lock timeouts; errors map to a bounded 503 (`factory/src/adaptive_factory/store.py:117-149`; `factory/src/adaptive_factory/api.py:178-180`). PostgreSQL coverage proves one data statement, atomic pre/post-release values, a one-row plan and bounded failure under an exclusive counter lock (`factory/tests/test_postgres_integration.py:1014-1097`).
+- Fence accounting uses a one-second connection timeout, 100-millisecond lock timeout and 250-millisecond statement timeout (`factory/src/adaptive_factory/store.py:151-155`). `FactoryService._fenced()` records only after the authoritative operation has raised `FenceError`, catches instrumentation failure, and bare re-raises the identical error (`factory/src/adaptive_factory/service.py:85-97`). A locked counter therefore cannot delay beyond the bound or replace exact `409 stale_fence`; the next unlocked rejection increments normally (`factory/tests/test_postgres_integration.py:1099-1167`; `factory/tests/test_service.py:48-70`).
+- Request bodies remain cumulatively limited to 1 MiB even without a usable Content-Length; malformed length is bounded 400 and oversized declared/streamed bodies are 413 (`factory/src/adaptive_factory/api.py:182-200`; `factory/tests/test_api.py:109-130`). Pages, repository lists, lease duration, reconciliation candidates/time and audit verification remain explicitly bounded.
+- The fixed snapshot row adds intentional write serialization but not an authority or unbounded-work path. The reproduced reconciliation/cancel inversion was repaired by making the reconciliation trigger a no-op until a completed-state delta exists; supported state changes retain the established capacity-before-task/counter order and the real deadlock regression passes.
 
-Required repair: add a forward migration that revokes direct `INSERT/UPDATE` (and preferably table-wide `SELECT` if not needed) on `metric_counters` from `factory_runtime`; expose a fixed-search-path, PUBLIC-revoked, narrowly granted security-definer increment function that accepts no caller-selected metric/outcome/value or validates an explicit closed allow-list and can only saturating-increment. Use that capability from `record_fence_rejection()`. Add effective-role tests proving arbitrary insert, reset/decrement and unknown-key writes fail while concurrent supported increments remain monotonic and the operator metrics response still reports the exact value. Do not edit an applied migration.
+## Full prior-closure reconfirmation
 
-## Moderate finding
+- **M0 authority and TOCTOU:** persisted observations/exceptions are repository, full-policy, action, issuer/scope/expiry and exact-head bound. Fixed-search-path definer validators hold `FOR SHARE`, which conflicts with revocation updates through intake commit. Both pre-validation rejection and post-validation blocking interleavings remain covered.
+- **Actor/resource authorization:** server-side checks bind scope, actor kind, repository, task/run owner, packet digest, fence, live allocation, lease/deadline and budget. Global reconcile/metrics and global kill require wildcard operator authority; repository actors cannot cross tenant boundaries.
+- **Capacity, accounting and cleanup:** runtime cannot forge capacity counters or allocations and cannot release allocations directly; only closed database capabilities remain. Claim and completion fail closed on accounting. Cancel, supersession, release and reconciliation clean runs/attempts/allocations idempotently and preserve mandatory event/audit evidence after ordinary-event exhaustion.
+- **Migration recovery:** schema-008 unsafe accounting is quarantined without losing task/run/reservation/usage/audit evidence. The newer active generation remains the exact claim target; readiness fails if the explicit quarantine marker is removed. Migration `012` is forward-only and a lock/timeout failure atomically leaves schema 011 intact.
+- **Audit and secrets:** audit-v2 binds task, run, correlation, actor, action, resource, reason, timestamp and canonical metadata; runtime cannot update/delete the append-only log. Actor/token files require absolute owner-pinned no-follow `0600` paths through trusted ancestry. Bounded application errors do not expose SQL, bearer values or configuration secrets.
+- **Transport and external authority:** the server pre-binds only an owned mode-0660 Unix socket beneath an owned non-writable parent; there is no TCP listener, provider/repository command, shell, Git/GitHub, connector, systemd, deployment, production mutation or Trust CI publication path in `factory/src`.
+- **M4 to M9 documentation:** every handoff is explicitly digest/SHA-bound and invalidated by predecessor, policy, artifact or evidence change. M5/M6 are provisional and must restack in dependency order; M7-M9 are roadmap-only. The documents grant no intake-policy, cross-task, signing-key, Trust CI, merge, production or human-approval authority, retain the current L2 cap and human-owned production promotion, and state that the deadline waives no gate.
 
-### SR-006 — authenticated metric collection has unbounded historical scan cost
+## Exact verification and reviewer evidence
 
-`PostgresFactoryStore.metrics()` performs full aggregate counts/sums over durable tasks, task events, runs, observations and reconciliation history without a statement timeout (`factory/src/adaptive_factory/store.py:112-165`). Output cardinality and response size are fixed, but query work grows with retained history. A wildcard operator over the protected UDS is already highly privileged, so this is not an Important cross-tenant or unauthenticated DoS. It is a real local availability risk if metrics are scraped frequently after long retention.
-
-Recommended hardening: set a bounded read-only transaction timeout for metrics and either maintain capability-shaped counters or document/test a bounded scrape interval and query-plan/retention envelope. A timeout should return a bounded unavailable response without affecting control-plane transactions.
-
-## Metrics authentication and disclosure assessment
-
-- `Authenticator` hashes configured credentials once and compares every candidate digest against every configured digest using `hmac.compare_digest`; valid and invalid bearer candidates traverse the full actor tuple. The new rejection counter does not change token matching or short-circuit on actor identity.
-- Missing/malformed bearer, unmatched bearer and missing-scope requests increment a lock-protected saturating signed-64-bit process counter before returning bounded 401/403 responses. Increment/read operations are serialized, so concurrent requests cannot lose Python-side increments. The counter intentionally resets on server restart and is documented as process-local rather than durable evidence.
-- `/metrics` still requires the `factory:reconcile` scope at the authentication boundary and then requires operator kind plus wildcard repository authority at the service boundary. A repository-scoped actor cannot read global operational aggregates.
-- The response contains only three fixed families and fixed aggregate keys. It has no actor ID, repository/source/task/run ID, body, reason, token, prompt or other variable label. Tests require the response to omit the valid fixture credentials and source identity and remain at most 2 KiB.
-- Missing, invalid and scope-denied auth paths are directly tested as 401/401/403 followed by `auth_rejected=3`; a real UDS request separately proves missing auth produces `auth_rejected=1`. Uvicorn access logging remains disabled, so no bearer value is copied into standard access logs.
-- Commit `fa043d4` only constructs deterministic test credentials from string fragments to satisfy the conservative scanner. Runtime credential bytes and negative disclosure assertions are unchanged; the exact verifier reports zero potential secrets, with no scanner suppression or rule weakening.
-
-## Prior security closures reconfirmed
-
-- **Authority/TOCTOU:** observation and exception validators retain static schema-qualified SQL, fixed search paths, PUBLIC-revoked EXECUTE and `FOR SHARE` serialization against revocation. Both pre-validation rejection and post-validation blocking interleavings remain tested.
-- **Schema-008 recovery:** the same-identity generation-1/generation-2 regression proves migration 011 avoids the active-identity collision, retains accounting evidence in `superseded/accounting_blocked`, preserves generation 2 as the exact claim target, fails readiness when the quarantine marker is removed and replays empty.
-- **Repository and worker isolation:** global metrics/reconciliation/kill require wildcard operator authority; task resources remain repository checked; worker grants bind actor, task/run, repository, owner, fence, packet, allocation, lease/deadline and budget.
-- **Capacity/accounting/cleanup:** direct capacity/allocation authority remains revoked or capability-shaped; claim and completion fail closed on accounting; mandatory release/reconcile/cancel cleanup is idempotent and audited even after ordinary-event exhaustion.
-- **Audit and credentials:** audit-v2 binds task/run/correlation and remains append-only under runtime; actor/token files retain absolute no-follow owner/mode checks; errors and metrics remain redacted.
-- **Transport/external boundary:** the server binds only an owned mode-0660 Unix socket with a protected parent. No TCP, provider/shell/repository/Git/GitHub/systemd/deployment/production or Trust CI mutation path was introduced.
-
-## Exact verification evidence
-
-The inspected receipt was created at `2026-09-01T22:57:57Z` for exact HEAD `fa043d48430963f82c52a76fbdabe2c35cd3d995` and fingerprint `9ec2ce27d8dd0e0ee896573d282f4e0dcef2349a05914659d9bdac1e8dc37d75`:
+The inspected verifier receipt was created at `2026-09-02T00:13:05Z` for exact HEAD `9fe779ab9f90719201acfd01160d3452658ff075` and fingerprint `2b9b3ee786663e3adba2e2f85e51e7c752c8e57166a0d7af6e3f62a88f4b45e8`:
 
 ```text
 14/14 verifier checks: PASS
 secret-scan: 0 potential secrets — PASS
 Bandit and Ruff — PASS
-root python-unittest: 488 tests in 485.320s — OK
-factory-unit: 24 tests in 0.013s — OK
-factory-postgres-exit: 65 tests in 35.876s — OK
+root python-unittest: 488 tests in 496.646s — OK
+factory-unit: 24 tests — OK
+factory-postgres-exit: 70 tests in 41.360s — OK
 actual restart: one repair; replay no-op; higher fence; late holder rejected — PASS
 source-stability: PASS
 ```
 
-`git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..fa043d48430963f82c52a76fbdabe2c35cd3d995` produced no output. `git rev-parse HEAD` and `HEAD^{tree}` matched the exact SHA/tree above. Before this report write, the only worktree change was the concurrently produced final `test-review.md`; it was not modified by this reviewer.
+This reviewer additionally ran the focused service/migration suite: 13/13 in 0.010s, including identical fence-error precedence, wildcard global authorization, M0 rejection, runtime boundaries, migration-012 markers and final-PID1 readiness. `git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..9fe779ab9f90719201acfd01160d3452658ff075` produced no output. The worktree was clean immediately before this report write.
 
-This review changed only `security-review.md`. It did not modify product code, receipts, Git history, databases, credentials, external systems, production or Trust CI state. This FAIL is local review evidence, not authority for migration, PR delivery, merge, release or deployment.
+This review changed only `security-review.md`. It did not modify product code, receipts, Git history, databases, credentials, external systems, production or Trust CI state. This PASS is local exact-tree review evidence only; it cannot authorize migration rollout, PR delivery, merge, release or deployment, and any later product/tree change requires fresh exact-SHA verification and affected independent reviews.

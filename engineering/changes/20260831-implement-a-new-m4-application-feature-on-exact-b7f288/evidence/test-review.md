@@ -7,87 +7,67 @@
 - Reviewer role: route-selected read-only `test_reviewer`
 - Route: `b7f288f1e81e`
 - Accepted M3 base: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`
-- Prior reviewed HEAD: `daa3930cb84ba6547171583e41bcf0dee2ab1314`
-- Exact reviewed product HEAD: `fa043d48430963f82c52a76fbdabe2c35cd3d995`
-- Exact reviewed Git tree: `d8024cc0a188b4d58006a87fca5685e66471346a`
-- Full reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..fa043d48430963f82c52a76fbdabe2c35cd3d995`
-- Exact-head verifier fingerprint: `9ec2ce27d8dd0e0ee896573d282f4e0dcef2349a05914659d9bdac1e8dc37d75`
+- Exact reviewed evidence HEAD: `9fe779ab9f90719201acfd01160d3452658ff075`
+- Exact reviewed Git tree before this report write: `05707b35fb10ab9a29d3be35478faf4ef84789a1`
+- Exact reviewed product commit: `4f75558770f2f332b32b4a47fe6afa61fcc524ec`
+- Full reviewed range: `67714a1f1b87effcfabe55d5ca2770d0a68d17c1..9fe779ab9f90719201acfd01160d3452658ff075`
+- Exact verifier tree fingerprint: `2b9b3ee786663e3adba2e2f85e51e7c752c8e57166a0d7af6e3f62a88f4b45e8`
 
-No Critical or Important test/evidence gap remains. The RR-003 observability repair has direct, state-changing PostgreSQL coverage for the fixed operational inventory, separate API coverage for missing/invalid/scope-denied authentication failures, a real UDS assertion, credential/redaction bounds, and exact-head secret-scan plus full verifier evidence. All previously reviewed schema migration, accounting recovery, authority, cleanup, concurrency, capacity, fencing, idempotency, role, audit, bootstrap and restart coverage remains present in the expanded 65-test disposable PostgreSQL exit.
+No Critical or Important test/evidence gap remains. The final wave directly covers migration 012 privileges, trusted backfill, concurrency, snapshot consistency, upgrade/replay, timeout and fence-lock behavior; the complete HTTP authorization matrix; final-PID1 PostgreSQL readiness; the repaired Bandit path; K22 documentation/graph integrity; and the required negative/non-vacuous paths.
 
 ## Findings
 
 No Critical or Important findings.
 
-## Operational metrics inventory coverage
+## Migration 012 and PostgreSQL validity
 
-`test_release_metrics_inventory_tracks_durable_operations_and_rejections` is a non-vacuous real PostgreSQL test (`factory/tests/test_postgres_integration.py:853-952`). It drives five independent task histories rather than inserting expected metric rows directly:
+The inspected tests exercise behavior against disposable PostgreSQL rather than accepting SQL markers alone:
 
-- one task stays queued;
-- one task takes three closed-infrastructure failures and becomes dead, exercising retry and dead projections;
-- one live task reserves exact cost/token/wall values `(7,11,13)`;
-- another live task records exact observed cost/token/output values `(5,6,7)`;
-- another lease is expired in PostgreSQL and reconciled, producing one candidate, one repair and one reclaimed run;
-- a stale heartbeat using the repaired grant raises `FenceError`, exercising the separately committed durable fence-rejection counter;
-- a global kill is enabled through the supported service path;
-- one missing-auth request exercises the process-local rejection total.
+- `test_metric_counter_runtime_is_capability_only_monotonic_and_saturating` proves the effective runtime role cannot select, insert, update or delete the trusted singleton, cannot read or mutate the quarantined pre-012 table, cannot execute internal trigger functions, and can execute only the two fixed public capabilities. Eight concurrent supported increments must return eight distinct monotonic values `1..8`; a separate boundary assertion proves saturation at bigint maximum.
+- `test_metrics_snapshot_is_atomic_constant_row_and_timed` uses a two-thread barrier around the actual snapshot query and a concurrent lease release. It accepts only the two coherent states `(live_leases,active_capacity)=(1,1)` or `(0,0)`, requires exactly one data `SELECT` through `read_metrics_snapshot()`, proves the plan reads one singleton row, verifies the exact `5s` statement and `500ms` lock bounds, and holds an exclusive table lock to require an HTTP 503 in under two seconds.
+- `test_schema_008_upgrade_quarantines_legacy_reservation_before_claim` builds a non-empty schema-008 database, applies exactly migrations 009-012, preserves/quarantines legacy accounting states, rejects readiness inconsistencies, keeps the active generation claimable, derives the trusted snapshot from authoritative tables, retains forged legacy counters only as inaccessible untrusted evidence, and then requires a second migrator apply to return the empty tuple.
+- `test_locked_metric_counter_never_delays_or_masks_stale_fence_409` holds the trusted counter row lock while issuing a real stale-fence HTTP heartbeat. The request must return the exact `409 {"error":"conflict","code":"stale_fence"}` in under one second with no counter change; after unlock the same authoritative error remains and the supported counter advances exactly once.
+- `test_reconcile_and_cancel_share_capacity_then_task_lock_order` holds the shared capacity lock, overlaps cancel and reconcile in separate workers, and requires both to finish without deadlock and the task to reach `cancelled`. This directly covers the migration-012 reconciliation-trigger repair that avoids taking the singleton before the established capacity/task order.
 
-The authorized response then asserts all three and only the three contract families, exact fixed key sets, and behaviorally derived values:
+The release inventory test is also state-changing and non-vacuous: it submits five task histories, drives three failures to retry/dead, reserves exact cost/token/wall values, records exact observed usage, expires and reconciles a lease, causes a real fence rejection, enables a kill, and then asserts fixed family/key sets plus exact values. It does not insert the expected trusted metric row directly.
+
+## HTTP authorization, error preservation and readiness
+
+`test_metrics_counts_auth_rejections_without_exposing_credentials` requires the complete final response matrix:
 
 ```text
-accepted/queued/retry/dead = 5/1/1/1
-transition_events >= 15
-live_leases/reclaimed/fence_rejected = 2/1/1
-active_capacity = 2
-reserved cost/tokens/wall = 7/11/13
-observed cost/tokens/output = 5/6/7
-active_kills = 1
-reconciliation runs/candidates/repaired = 1/1/1
-auth_rejected = 1
+missing bearer / invalid bearer / missing scope / repository-scoped operator / wrong actor kind
+401            / 401            / 403           / 403                        / 403
 ```
 
-The test also requires the response to exclude both the credential and a source identity and remain at most 2 KiB. Exact key-set assertions prevent an unbounded label or accidental payload expansion from passing unnoticed. Existing accounting and supersession tests continue to exercise the durable sources behind the two pre-existing `accounting_blocked` and `superseded` projections.
+The next authorized wildcard-operator response must report `auth_rejected=5`; actor IDs, repository identity and all four credentials must be absent; the response stays at most 2 KiB; and a fresh application instance must restart the explicitly process-local count at zero. `test_authenticated_request_reaches_real_unix_socket` independently proves the missing-auth and authorized paths through an actual Unix socket.
 
-## Authentication rejection and fixture integrity
+`test_fence_metric_failure_never_replaces_authoritative_fence_error` injects a store whose heartbeat raises one exact `FenceError` object and whose best-effort metric write fails. The service must re-raise the identical object. The final implementation's explicit `False` return closes Bandit B110 without widening the exception boundary or changing the authoritative error.
 
-`test_metrics_counts_auth_rejections_without_exposing_credentials` independently creates two actors and sends three distinct rejected requests (`factory/tests/test_api.py:139-162`):
+`test_exit_runner_waits_for_final_pid1_postmaster_and_readiness` covers both branches of the readiness helper: it requires the `postmaster.pid` first line to identify PID 1 before invoking `pg_isready`, and proves a non-final postmaster short-circuits without readiness acceptance. More importantly, the exact verifier's fresh PostgreSQL-17 exit ran the repaired helper end to end before all 70 database/API tests and the actual restart probe, so the unit test is not the only evidence for the image handoff.
 
-1. missing authorization header -> 401;
-2. invalid bearer credential -> 401;
-3. valid credential without the required scope -> 403.
+## K22 graph and documentation evidence
 
-The next valid wildcard-operator request must return `auth_rejected=3`; neither valid fixture credential may appear in the response, whose body is bounded to 2 KiB. This proves counting occurs at the authentication boundary even though Uvicorn access logging remains disabled. `test_authenticated_request_reaches_real_unix_socket` separately sends a missing-auth request through an actual Unix socket and requires the subsequent authenticated response to report `auth_rejected=1`.
+`test_readme_stack_graph_is_complete` enumerates all 22 named nodes, requires every unordered pair to appear in either direction, extracts the Mermaid block and requires exactly `C(22,2)=231` edge lines. This prevents a missing pair, a short graph or an extra edge from passing. The README explicitly labels K22 a decorative inventory regression rather than architecture authority. Root README, roadmap, factory README and the active release/rollback/schedule/tasks package consistently record the M4→M5→M6 restack order, provisional downstream branches/routes, the M5 rootless-host blocker, the `2026-09-08 00:00 UTC+3` deadline without gate waiver, and the roadmap-only M4→M9 bindings/rollback/forbidden-authority boundaries.
 
-Commit `fa043d4` changes only deterministic test credential construction from one literal to concatenated fragments. The resulting runtime strings and all auth/redaction assertions are unchanged. The exact-head secret-scan gate reports `0 potential secrets`; no scanner rule, exclusion or production authentication behavior was weakened. The focused ledger also records the repaired API auth test at 1/1 and a post-repair fresh PostgreSQL exit at 65/65 plus restart.
+## Exact verification and independent spot checks
 
-## Prior blocker coverage retained
-
-| Area | Direct evidence retained | Result |
-| --- | --- | --- |
-| Schema-008 upgrade | Real non-empty 008-to-current migration applies exactly 009-011, handles blocked-zero and live-reservation projections, preserves same-identity gen1 evidence, leaves gen2 uniquely claimable, verifies readiness fault injection and empty replay. | PASS |
-| Authority/TOCTOU | Observation and exception paths cover revoke-before rejection and revoke-after serialization through intake commit. | PASS |
-| Cleanup/bounds | Event, repair and database-deadline exhaustion fail closed; release, reconcile and cancel perform mandatory cleanup exactly once at exhausted ordinary-event budget. | PASS |
-| Accounting/idempotency | Cross-attempt reservations force recovery; replay remains exact; completion requires settled accounting; changed commands conflict. | PASS |
-| Concurrency/fencing/capacity | Real two-worker contention, monotonic fences, late-holder/hidden-allocation rejection, fixed cancel/reconcile lock order and exact 20/10/1 ceilings remain covered. | PASS |
-| Kill/reconciliation/indexes | Repository kill isolation, 100+1 paging, exact `5s` transaction bound, two-pass restart reconciliation and populated named-index plans remain direct PostgreSQL assertions. | PASS |
-| Roles/bootstrap/UDS | Effective-role forbidden DML, isolated schema, shipped owner/runtime bootstrap, authenticated UDS request and absence of TCP/execution endpoints remain covered. | PASS |
-
-## Exact-head verification evidence
-
-The inspected fingerprint-bound receipt was created at `2026-09-01T22:57:57Z` for exact HEAD `fa043d48430963f82c52a76fbdabe2c35cd3d995` and tree fingerprint `9ec2ce27d8dd0e0ee896573d282f4e0dcef2349a05914659d9bdac1e8dc37d75`:
+The inspected fingerprint-bound verification receipt was created at `2026-09-02T00:13:05Z`, names architecture head `9fe779ab9f90719201acfd01160d3452658ff075`, and reports:
 
 ```text
 14/14 verifier checks: PASS
-secret-scan: 0 potential secrets — PASS
-python-unittest: 488 tests in 485.320s — OK
-factory-unit: 24 tests in 0.013s — OK
-factory-postgres-exit: 65 tests in 35.876s — OK
-restart: one repair; replay no-op; higher fence; late holder rejected — PASS
-source-stability: PASS
+root python-unittest: 488 tests in 496.646s — OK
+factory-unit: 26 tests in 0.015s — OK
+factory-postgres-exit: 70 tests in 41.360s — OK
+actual restart: one repair; replay no-op; higher fence; late holder rejected — PASS
+Bandit / Ruff / secret scan / SQL safety / architecture / governance: PASS
+source stability: repository fingerprint remained stable — PASS
 ```
 
-The ledger additionally records RED failures for missing auth inventory and absent PostgreSQL operational keys; focused GREEN at API 1/1, PostgreSQL 1/1 twice, API/server/service 21/21 and Ruff; the first verifier's isolated secret-scan failure; and the scanner-safe repair followed by focused 1/1, PostgreSQL 65/65 plus restart, then the exact final 14/14 verifier above.
+The receipt's PostgreSQL stderr lists every migration/snapshot/lock/auth/readiness test above as executed and passing. The implementation ledger also preserves the preceding RED evidence: arbitrary runtime metric access, mixed snapshots, unbounded fence-lock delay, reconciliation deadlock, Bandit B110 and temporary-postmaster handoff failure all reproduced before their repairs.
 
-`git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..fa043d48430963f82c52a76fbdabe2c35cd3d995` produced no output. Before this report write, `git rev-parse HEAD` and `HEAD^{tree}` matched the exact SHA/tree above and `git status --short` was empty.
+Independent review spot checks on the clean reviewed tree passed the exact Bandit command, the K22 completeness test, all migration/service tests that do not require project dependencies, and then the isolated-project authorization/readiness/error-preservation trio 3/3. A mixed host-Python invocation passed its dependency-free cases but could not import FastAPI because FastAPI is intentionally absent from the host environment; rerunning the affected case in the locked factory project environment passed without source or dependency changes.
 
-This review changed only `test-review.md`. It did not modify product code, receipts, Git history, databases, external systems, production or Trust CI state. Writing the report changes the evidence-tree fingerprint; the coordinator must bind final review/verification receipts to the resulting final tree before claiming local closure.
+`git diff --check 67714a1f1b87effcfabe55d5ca2770d0a68d17c1..9fe779ab9f90719201acfd01160d3452658ff075` produced no output. Before this report write, `git status --short` was empty and `HEAD`/`HEAD^{tree}` matched the exact evidence SHA/tree above.
+
+This review changed only `test-review.md`. It did not modify product code, receipts, Git history, databases, external systems, production or Trust CI state. Writing the report changes the worktree fingerprint; the coordinator must bind the final review/verification receipts to the resulting final tree before claiming local closure.
