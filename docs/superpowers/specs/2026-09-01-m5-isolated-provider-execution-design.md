@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-This is the approved implementation design for route `37b05f579320`, branch `milestone/m5-isolated-execution-provisional-m4`, and change [`20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f`](../../../engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md). M5 Tasks 1-6 originate at exact source head `141e51e75b2bb337fa3bb1544639c6c46c287309` and are locally normal-restacked on current M4 checkpoint predecessor `56e12b2b394436ee227c66d78b1caba8f7317c78`; this is provisional source integration, not M4/M5 acceptance or delivery, and any newer M4 exact SHA requires another normal merge and fresh evidence.
+This is the approved implementation design for route `37b05f579320`, branch `milestone/m5-isolated-execution-provisional-m4`, and change [`20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f`](../../../engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md). M5 Tasks 1-6 originate at exact source head `141e51e75b2bb337fa3bb1544639c6c46c287309` and are locally normal-restacked on current M4 checkpoint `aa12e7c683c13e42f5709db18d0018f89bde1532` (tree `076aae3cd40a6fb0ba64a9faae916dcf93c9ea62`). An upstream exact-tracked-inventory correction remains to be normally merged; this is provisional source integration, not M4/M5 acceptance or delivery.
 
 The calendar target is `2026-09-08 00:00 UTC+3`. M5 and M6 may develop in parallel on isolated branches, but external integration is dependency ordered: accepted M4, then M5, then M6. This document grants no push, PR, merge, deployment, systemd activation, live provider call, credential access, or Trust CI/human-key operation.
 

@@ -4,7 +4,7 @@
   "default_branch": "main",
   "observed_at": "2026-09-02T10:21:09Z",
   "observed_main_sha": "78ad2f679d38dc3244e716c586332417e610089c",
-  "product_version": "2.0.13",
+  "product_version": "2.0.14",
   "latest_published_release": "v2.0.12",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
@@ -22,14 +22,14 @@
     }
   ],
   "active_delivery": {
-    "route_id": "b7f288f1e81e",
-    "branch": "integration/m4-main-20260902",
-    "change_package": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288",
-    "status": "local_m4_followup_candidate_exact_head_gated",
+    "route_id": "37b05f579320",
+    "branch": "milestone/m5-isolated-execution-provisional-m4",
+    "change_package": "engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f",
+    "status": "local_m5_provisional_candidate_predecessor_refresh_pending",
     "highest_implemented_milestone": "M4",
-    "current_provisional_milestone": "M9",
-    "next_roadmap_milestone": null,
-    "next_action": "Run local exact-head verification and all route-selected reviews/reports/receipts on the current committed 2.0.13 M4 candidate head. After those fresh local receipts, prepare only an authorized successor PR and require a new external exact-head gate; after M4 acceptance, restack M5 first, then M6 with renumbered migrations and fresh checksum/upgrade/restart evidence.",
+    "current_provisional_milestone": "M5",
+    "next_roadmap_milestone": "M5",
+    "next_action": "Normal-merge the forthcoming exact M4 tracked-inventory correction, then build the distinct 2.0.14 local M5 candidate once and run fresh exact-head verification plus route-selected reviews. Rootless live-host isolation and the trusted live Git snapshot remain blocking exit evidence; PR, external Trust CI, merge and delivery remain absent.",
     "m4_dimensions": {
       "implementation_source": {
         "status": "implemented_local_candidate",
@@ -59,6 +59,46 @@
         "external_exact_head_check": "not_run",
         "merge_commit": null,
         "notes": "Local source and package existence do not supply PR, external Trust CI, merge or protected-main delivery authority."
+      }
+    },
+    "m5_dimensions": {
+      "implementation_source": {
+        "status": "implemented_provisional_local_restack",
+        "source_head": "141e51e75b2bb337fa3bb1544639c6c46c287309",
+        "current_predecessor": "aa12e7c683c13e42f5709db18d0018f89bde1532",
+        "components": [
+          "provider_neutral_execution_contracts_and_protocol",
+          "fixture_only_codex_and_grok_adapters",
+          "proposal_workspace_and_attestation_brokers",
+          "contiguous_migration_014_after_m4_013",
+          "fenced_execution_api_store_and_recovery",
+          "inert_systemd_topology_and_static_hardening"
+        ],
+        "notes": "Tasks 1-6 are locally implemented and normally restacked; a newer M4 tracked-inventory correction must still be merged before the candidate identity is final. This status is source truth only, not acceptance or delivery."
+      },
+      "local_exact_head_verification": {
+        "status": "pending_final_predecessor_and_exact_head",
+        "head_sha": null,
+        "notes": "Earlier focused evidence does not bind the future final restacked package tree."
+      },
+      "rootless_live_host_isolation": {
+        "status": "blocked",
+        "notes": "This host lacks the supported rootless sandbox and egress toolchain, and unprivileged user namespaces fail with EPERM."
+      },
+      "trusted_live_git_snapshot": {
+        "status": "blocked",
+        "notes": "Only fake workspace/Git evidence exists; no trusted live snapshot attestation is available."
+      },
+      "independent_review": {
+        "status": "pending_final_exact_head",
+        "notes": "Route-selected reviewers must inspect the eventual committed exact tree."
+      },
+      "pr_external_merge_delivery": {
+        "status": "not_delivered",
+        "pull_request": null,
+        "external_exact_head_check": "not_run",
+        "merge_commit": null,
+        "notes": "No PR, external exact-SHA Trust CI, protected-branch merge or delivery authority exists."
       }
     }
   },
@@ -208,10 +248,10 @@
         "commit": "4f75558770f2f332b32b4a47fe6afa61fcc524ec",
         "source_evidence_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
         "integration_baseline": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "56e12b2b394436ee227c66d78b1caba8f7317c78",
+        "latest_committed_repair_checkpoint": "aa12e7c683c13e42f5709db18d0018f89bde1532",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "evidence": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/implementation-report.md",
-        "notes": "Release-state baseline 56e12b2 passed 14/14 local verifier gates. The current 2.0.13 candidate additionally enforces exact shipped-ZIP/source parity, bounds every runtime database connection/read with typed availability handling, keeps cancel authorization/replay/projection in one transaction, and audits already-exhausted schema-12 retries after migration 013 without advancing a fence. Exact-head verification and independent review receipts must bind the current committed candidate; this is not an accepted or delivered head."
+        "notes": "Release-state baseline 56e12b2 passed 14/14 local verifier gates. Checkpoint aa12e7c adds package-parity assertions, bounds every runtime database connection/read with typed availability handling, keeps cancellation in one transaction, audits already-exhausted schema-12 retries after migration 013 without advancing a fence, and states readiness invariants. A later tracked-inventory correction is pending, so neither exact-head acceptance nor delivery is claimed."
       },
       "review": {
         "status": "pending_refresh",
@@ -237,7 +277,7 @@
           "78ad2f679d38dc3244e716c586332417e610089c"
         ],
         "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "56e12b2b394436ee227c66d78b1caba8f7317c78",
+        "latest_committed_repair_checkpoint": "aa12e7c683c13e42f5709db18d0018f89bde1532",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "intermediate_local_verification": {
           "status": "passed",
@@ -269,7 +309,7 @@
         },
         "pull_request": null,
         "merge_commit": null,
-        "notes": "The final candidate identity is the commit containing this state file; a commit cannot embed its own SHA. Verified baseline 56e12b2 is the committed parent, but its receipt does not transfer to this follow-up. Exact-head local receipts, authorized PR delivery and an external exact-head check are still required."
+        "notes": "Checkpoint aa12e7c is normally integrated into the provisional M5 branch, but a later M4 tracked-inventory correction is pending. Historical baseline receipts do not transfer; exact-head local receipts, authorized PR delivery and an external exact-head check are still required."
       },
       "main_delivery": {
         "status": "not_delivered",
@@ -289,11 +329,11 @@
       }
     },
     "M5": {
-      "implementation": {"status": "provisional_locally_restacked", "commit": "141e51e75b2bb337fa3bb1544639c6c46c287309", "evidence": "milestone/m5-isolated-execution-provisional-m4", "notes": "Tasks 1-6 source from exact clean head 141e51e75b2bb337fa3bb1544639c6c46c287309 is normal-restacked locally on current M4 checkpoint 56e12b2b394436ee227c66d78b1caba8f7317c78. M4 migration 013 is preserved and M5 execution is contiguous migration 014. This is provisional local source integration only, not acceptance or delivery; a newer exact M4 predecessor requires another normal merge and fresh evidence."},
+      "implementation": {"status": "provisional_locally_restacked", "commit": "141e51e75b2bb337fa3bb1544639c6c46c287309", "evidence": "milestone/m5-isolated-execution-provisional-m4", "notes": "Tasks 1-6 source from exact clean head 141e51e75b2bb337fa3bb1544639c6c46c287309 is normal-restacked locally on current M4 checkpoint aa12e7c683c13e42f5709db18d0018f89bde1532. M4 migration 013 is preserved and M5 execution is contiguous migration 014. A newer M4 tracked-inventory correction still requires another normal merge and fresh evidence; this is provisional local source integration only, not acceptance or delivery."},
       "review": {"status": "pending_final", "commit": "141e51e75b2bb337fa3bb1544639c6c46c287309", "evidence": [], "notes": "A final review wave remains pending after accepted-M4 restack and rootless live-host isolation proof."},
-      "stack_integration": {"status": "local_restack_provisional", "base_branch": "integration/m4-main-20260902", "base_commit": "56e12b2b394436ee227c66d78b1caba8f7317c78", "base_tree": "e5d49d98230ba25bcb5c75e5125e85a75f4dd213", "pull_request": null, "merge_commit": null, "notes": "The current tree normal-merges the exact M4 checkpoint and resolves migration numbering as immutable M4 013 plus M5 014. The merge is local/provisional and cannot establish acceptance, delivery or external authority; package-inventory follow-up on M4 still requires a second normal merge and refreshed checksum/upgrade/restart evidence."},
+      "stack_integration": {"status": "local_restack_provisional", "base_branch": "integration/m4-main-20260902", "base_commit": "aa12e7c683c13e42f5709db18d0018f89bde1532", "base_tree": "076aae3cd40a6fb0ba64a9faae916dcf93c9ea62", "local_merge_checkpoint": "9eab0b361f8132a356dc668d5cc0e0ba5d6744f3", "pull_request": null, "merge_commit": null, "notes": "The current tree normal-merges checkpoint aa12e7c and resolves migration numbering as immutable M4 013 plus M5 014. The merge is local/provisional and cannot establish acceptance, delivery or external authority; the forthcoming M4 tracked-inventory correction requires another normal merge and refreshed checksum/upgrade/restart/package evidence."},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
-      "external_gate": {"status": "blocked", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null, "notes": "A final exact M4 predecessor, rootless live-host isolation proof, trusted live Git snapshot, final reviews and a later exact PR SHA are still required."}
+      "external_gate": {"status": "blocked", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null, "notes": "A final exact M4 tracked-inventory predecessor, rootless live-host isolation proof, trusted live Git snapshot, final reviews and a later exact PR SHA are still required."}
     },
     "M6": {
       "implementation": {"status": "provisional_task3_source", "commit": "f3b2c0d07116686b27feab4b60166e8a7402d672", "task1_head": "3def83eb915ca68e66379269526ffa64822a1104", "task2_head": "a8ca0f3afffbd9ef5584825252f9a669a324d2a5", "evidence": "milestone/m6-semantic-validation-provisional-m4", "local_evidence": {"task2": {"tests_passed": 209, "tests_total": 209, "actual_restart": "passed"}, "task3": {"focused_passed": 67, "focused_total": 67, "legacy_passed": 40, "legacy_total": 40, "postgresql17_passed": 1, "postgresql17_total": 1, "architecture_checks": "passed"}}, "notes": "Provisional Task 3 persists deterministic semantic verdicts on top of Task-2 migration/publish/read source. It is quarantined until accepted-M5 restack and migration renumbering with fresh checksum/upgrade/restart evidence; Task 4 is untouched and pending."},
@@ -332,7 +372,7 @@
         "source_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
         "base_head": "78ad2f679d38dc3244e716c586332417e610089c",
         "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "56e12b2b394436ee227c66d78b1caba8f7317c78",
+        "latest_committed_repair_checkpoint": "aa12e7c683c13e42f5709db18d0018f89bde1532",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "purpose": "Bind verification and route-selected reviews/reports/receipts to the current committed package/runtime/retry-evidence candidate exact head before any authorized PR-only delivery."
       },
@@ -340,8 +380,10 @@
         "route_id": "37b05f579320",
         "branch": "milestone/m5-isolated-execution-provisional-m4",
         "head": "141e51e75b2bb337fa3bb1544639c6c46c287309",
-        "restack_predecessor": "56e12b2b394436ee227c66d78b1caba8f7317c78",
-        "purpose": "Tasks 1-6 are locally normal-restacked provisionally with M4 migration 013 plus M5 migration 014. Merge the later exact M4 package-inventory checkpoint normally, refresh checksum/upgrade/restart evidence, then prove rootless live-host isolation and trusted Git snapshot before review or acceptance."
+        "restack_predecessor": "aa12e7c683c13e42f5709db18d0018f89bde1532",
+        "restack_predecessor_tree": "076aae3cd40a6fb0ba64a9faae916dcf93c9ea62",
+        "local_merge_checkpoint": "9eab0b361f8132a356dc668d5cc0e0ba5d6744f3",
+        "purpose": "Tasks 1-6 are locally normal-restacked provisionally with M4 migration 013 plus M5 migration 014. Merge the forthcoming exact M4 tracked-inventory correction normally, refresh checksum/upgrade/restart/package evidence, then prove rootless live-host isolation and trusted Git snapshot before review or acceptance."
       },
       {
         "route_id": "82aac86a3bf9",

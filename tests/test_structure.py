@@ -182,11 +182,11 @@ class StructureTests(unittest.TestCase):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
         roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
-        self.assertEqual(version, "2.0.13")
+        self.assertEqual(version, "2.0.14")
         self.assertTrue(readme.startswith(f"# Adaptive Grok Build Pro v{version}\n"))
-        self.assertIn("Identity: **2.0.13**", readme)
-        self.assertTrue(changelog.startswith("# Changelog\n\n## 2.0.13 — 2026-09-02\n"))
-        self.assertIn("product version: 2.0.13", roadmap)
+        self.assertIn("Identity: **2.0.14**", readme)
+        self.assertTrue(changelog.startswith("# Changelog\n\n## 2.0.14 — 2026-09-02\n"))
+        self.assertIn("product version: 2.0.14", roadmap)
 
     def test_readme_stack_graph_is_complete(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -358,6 +358,7 @@ class StructureTests(unittest.TestCase):
         for fact in (
             "141e51e75b2bb337fa3bb1544639c6c46c287309",
             "56e12b2b394436ee227c66d78b1caba8f7317c78",
+            "aa12e7c683c13e42f5709db18d0018f89bde1532",
             "f3b2c0d07116686b27feab4b60166e8a7402d672",
             "014_execution_plane.sql",
             "37b05f579320",

@@ -4,7 +4,7 @@ Navigation: [package](brief.md) ↔ [design](../../../docs/superpowers/specs/202
 
 - Target: `2026-09-08 00:00 UTC+3`.
 - Source lineage: Tasks 1-6 source is exact `141e51e75b2bb337fa3bb1544639c6c46c287309`; historical Task 5 checkpoint `161199bb163e0ba84ac1b32010be87f113df5e86` remains evidence only.
-- Current restack checkpoint: normal merge onto exact M4 `56e12b2b394436ee227c66d78b1caba8f7317c78`, preserving M4 migration `013` and moving M5 execution to `014`. A newer M4 exact SHA requires another normal merge; no acceptance or delivery is asserted.
+- Current local restack checkpoint: normal merge onto exact M4 `aa12e7c683c13e42f5709db18d0018f89bde1532` (tree `076aae3cd40a6fb0ba64a9faae916dcf93c9ea62`), preserving M4 migration `013` and moving M5 execution to `014`. A corrected exact-tracked-inventory M4 successor must still be merged; exact-head verification/review and host/snapshot exits remain open, and no acceptance or delivery is asserted.
 - Execution order: contracts/protocol/adapters -> brokers/workspace -> migration/API -> recovery/systemd -> docs/architecture/installer -> locally feasible verification.
 - Parallel program rule: M5 and M6 source may develop concurrently on isolated branches; external merge/integration remains M4 -> M5 -> M6. M6 Task 3 at `f3b2c0d07116686b27feab4b60166e8a7402d672` is `BLOCKED` pending accepted-M5 restack and migration move to `015`.
 - Blocking exits: a dedicated rootless host must prove credential and egress isolation, and a trusted live Git snapshot broker must attest the factual result head. This host lacks the required tools and denies unprivileged user namespaces with `EPERM`.

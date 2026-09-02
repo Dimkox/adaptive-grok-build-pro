@@ -4,7 +4,7 @@
 
 Change ID: `20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f`
 Route: `37b05f579320`
-Current normal-restack checkpoint predecessor: `56e12b2b394436ee227c66d78b1caba8f7317c78`
+Current normal-restack checkpoint: `aa12e7c683c13e42f5709db18d0018f89bde1532` (tree `076aae3cd40a6fb0ba64a9faae916dcf93c9ea62`); corrected exact-tracked-inventory predecessor pending
 Original Tasks 1-6 source: `141e51e75b2bb337fa3bb1544639c6c46c287309`
 
 Navigation: [README](../../../README.md) ↔ [roadmap](../../../DARK_FACTORY_ROADMAP.md) ↔ [design](../../../docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md) ↔ [plan](../../../docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md) ↔ [schedule](schedule.md) / [release](release.md) / [rollback](rollback.md) / [evidence](evidence/README.md).
@@ -24,7 +24,7 @@ Out of scope: live provider/network calls, credentials, Trust CI or human-key ac
 ## Approved rulings and gates
 
 - The user approved the canonical model-agnostic factory design and continuous parallel execution. That satisfies the route's scope/design gate; it does not grant external actions.
-- Tasks 1-6 source at `141e51e75b2bb337fa3bb1544639c6c46c287309` is locally normal-merged on current M4 checkpoint predecessor `56e12b2b394436ee227c66d78b1caba8f7317c78` (tree `e5d49d98230ba25bcb5c75e5125e85a75f4dd213`). This is provisional local integration only; a newer M4 exact SHA requires another normal merge, and no M4/M5 acceptance, delivery, push or external authority is claimed.
+- Tasks 1-6 source at `141e51e75b2bb337fa3bb1544639c6c46c287309` is locally normal-merged on current M4 checkpoint `aa12e7c683c13e42f5709db18d0018f89bde1532` (tree `076aae3cd40a6fb0ba64a9faae916dcf93c9ea62`). A corrected exact-tracked-inventory M4 successor must still be normally merged. This is provisional local integration only; exact-head verification/reviews remain pending, rootless live-host isolation and trusted live Git snapshot evidence remain blocked, and no M4/M5 acceptance, delivery, push or external authority is claimed.
 - Historical Task 5 checkpoint `161199bb163e0ba84ac1b32010be87f113df5e86` remains source evidence only. The migration-collision RED proved duplicate `013`; this restack preserves M4 `013_persisted_infrastructure_retry_limit.sql` and moves M5 to contiguous `014_execution_plane.sql` with fresh checksum/upgrade/restart verification required.
 - Codex candidate identity is `0.152.1` with distribution digest `b8201824…06f9`; Grok candidate identity is `1.0.17` with digest `82595e26…4568`. Grok remains ineligible until its complete required capability conformance is proven.
 - This host has no `podman`, `bwrap`, `newuidmap`, `slirp4netns`, or `pasta`, and unprivileged user-namespace creation is denied with `EPERM`. The OS-isolation exit is therefore `BLOCKED` pending a dedicated rootless execution host; M5 exit must not be claimed here.

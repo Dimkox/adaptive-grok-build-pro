@@ -22,7 +22,7 @@
     {"id":"INV-003","statement":"Provider identity adapter native version model capability and eligibility are explicit and never selected from untrusted content","evidence":[{"receipt":"security_review"}]},
     {"id":"INV-004","statement":"Durable data is canonical bounded allowlisted redacted proposal evidence without private reasoning","evidence":[{"receipt":"security_review"}]}
   ],
-  "objective":{"id":"OBJ-001","statement":"Normal-restack provider-neutral locally testable isolated execution Tasks 1-6 from exact source 141e51e75b2bb337fa3bb1544639c6c46c287309 on current exact M4 checkpoint predecessor 56e12b2b394436ee227c66d78b1caba8f7317c78 without claiming acceptance or delivery","success_metric":"m5_locally_feasible_source_gate","target":"All source fixture fake-runtime migration API systemd and recovery checks pass while unavailable OS isolation remains explicitly blocked"},
+  "objective":{"id":"OBJ-001","statement":"Normal-restack provider-neutral locally testable isolated execution Tasks 1-6 from exact source 141e51e75b2bb337fa3bb1544639c6c46c287309 on the eventual corrected exact M4 tracked-inventory predecessor; current checkpoint is aa12e7c683c13e42f5709db18d0018f89bde1532 and no acceptance or delivery is claimed","success_metric":"m5_locally_feasible_source_gate","target":"All source fixture fake-runtime migration API systemd and recovery checks pass while unavailable OS isolation remains explicitly blocked"},
   "observability":[
     {"id":"SIG-001","metric":"factory_execution_claim_and_stage_outcomes_total","proves":["OBJ-001"]},
     {"id":"SIG-002","metric":"factory_execution_protocol_and_proposal_outcomes_total","proves":["OBJ-001"]},

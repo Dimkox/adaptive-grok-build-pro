@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.14 — 2026-09-02
+
+M5 isolated-execution local provisional candidate; current restack checkpoint is M4 `aa12e7c` and a tracked-inventory predecessor refresh is pending.
+
+- Product identity **2.0.14**; Trust CI service identity remains separately **2.1.0**, and the most recently published release remains **v2.0.12**
+- Normal-restacks M5 Tasks 1-6 from exact source `141e51e75b2bb337fa3bb1544639c6c46c287309` on current exact M4 checkpoint `aa12e7c683c13e42f5709db18d0018f89bde1532`; a newer tracked-inventory correction must still be merged
+- Preserves M4 migration `013_persisted_infrastructure_retry_limit.sql` and adds contiguous M5 migration `014_execution_plane.sql`, bounded database transactions, single-transaction cancellation and fail-closed runtime/attestor roles
+- Records source as implemented but provisional; exact-head verification and independent review remain pending, rootless live-host isolation and a trusted live Git snapshot remain blocked, and PR/external/merge/delivery evidence is absent
+- Reserves distinct tracked local artifact identity `packages/adaptive-grok-build-pro-v2.0.14.zip`; it will be built only after the final M4 tracked-inventory correction, without M5 overwriting M4 `2.0.13`. No tag or GitHub Release publication is claimed
+
 ## 2.0.13 — 2026-09-02
 
 M4 control-plane repair candidate and exact current-state release artifact.

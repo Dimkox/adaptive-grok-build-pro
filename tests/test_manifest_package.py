@@ -615,7 +615,7 @@ class PackageTests(unittest.TestCase):
 
     def test_shipped_zip_exactly_matches_current_included_source(self) -> None:
         version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
-        self.assertEqual(version, '2.0.13')
+        self.assertEqual(version, '2.0.14')
         source_files = included_files(ROOT)
         rels = [path.relative_to(ROOT).as_posix() for path in source_files]
         self.assertFalse(any(rel.startswith('.github/workflows/') for rel in rels))
@@ -646,10 +646,17 @@ class PackageTests(unittest.TestCase):
                         archive.read(member) == source.read_bytes(),
                         f'archive member differs from current source: {source.relative_to(ROOT)}',
                     )
-                self.assertEqual(archive.read(f'{prefix}VERSION').decode('utf-8').strip(), '2.0.13')
+                self.assertEqual(archive.read(f'{prefix}VERSION').decode('utf-8').strip(), '2.0.14')
                 self.assertFalse(any('.github/workflows/' in name for name in names))
                 self.assertFalse(any(name.endswith('dependabot.yml') for name in names))
                 self.assertFalse(any(name.endswith('github-actions.yml') for name in names))
+
+    def test_current_m4_2_0_13_candidate_is_unchanged_by_m5_identity_work(self) -> None:
+        zip_path = ROOT / 'packages/adaptive-grok-build-pro-v2.0.13.zip'
+        sidecar_path = zip_path.with_suffix('.zip.sha256')
+        digest = '0dc0eb1433a5e7956074305a9dd6c20108f6a6cffd48c64c8cad5e27bdd36aee'
+        self.assertEqual(hashlib.sha256(zip_path.read_bytes()).hexdigest(), digest)
+        self.assertEqual(sidecar_path.read_text(encoding='utf-8'), f'{digest}  {zip_path.name}\n')
 
     def test_write_archive_preserves_source_manifest_and_embeds_current_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
