@@ -48,6 +48,46 @@
       "path": "factory/contracts/openapi/factory-control.v1.json",
       "role": "bidirectional",
       "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-EXECUTION-OPENAPI",
+      "kind": "openapi",
+      "path": "factory/contracts/openapi/factory-execution.v1.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-EXECUTION-EVENT",
+      "kind": "event",
+      "path": "factory/contracts/schemas/execution-event.v1.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-EXECUTION-INVOCATION",
+      "kind": "json_schema",
+      "path": "factory/contracts/schemas/execution-invocation.v1.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-TASK-PACKET",
+      "kind": "json_schema",
+      "path": "factory/contracts/schemas/task-packet.v1.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-WORKSPACE-RESULT",
+      "kind": "json_schema",
+      "path": "factory/contracts/schemas/workspace-result.v1.json",
+      "role": "producer",
+      "version": "1"
     }
   ],
   "data_classifications": [
@@ -679,7 +719,8 @@
       "id": "NODE-FACTORY-LOCAL-API",
       "owner": "local factory operators",
       "public_contracts": [
-        "CONTRACT-FACTORY-CONTROL-OPENAPI"
+        "CONTRACT-FACTORY-CONTROL-OPENAPI",
+        "CONTRACT-FACTORY-EXECUTION-OPENAPI"
       ],
       "repository_paths": [
         "factory/.env.example",
@@ -758,8 +799,14 @@
       "data_classification": "DATA-FACTORY-INTENT",
       "id": "NODE-FACTORY-EXECUTION-CORE",
       "owner": "local factory operators",
-      "public_contracts": [],
+      "public_contracts": [
+        "CONTRACT-FACTORY-EXECUTION-EVENT",
+        "CONTRACT-FACTORY-EXECUTION-INVOCATION",
+        "CONTRACT-FACTORY-TASK-PACKET",
+        "CONTRACT-FACTORY-WORKSPACE-RESULT"
+      ],
       "repository_paths": [
+        "factory/contracts/schemas",
         "factory/src/adaptive_factory/execution_contracts.py",
         "factory/src/adaptive_factory/protocol.py"
       ],
