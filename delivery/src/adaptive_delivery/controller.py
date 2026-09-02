@@ -152,9 +152,12 @@ def _transition_state(
         if effect != expected_effect or result != expected:
             raise EvidenceChainError("dry_run_effect", "stage order is not contiguous")
     elif effect == "changed_exposure" and has_recovery:
-        if "recovery_decrease" not in evidence.reason_codes:
+        if recovery_reasons.intersection(evidence.reason_codes) != {
+            "recovery_decrease"
+        }:
             raise EvidenceChainError(
-                "reason_codes", "decrease effect requires its closed recovery reason"
+                "reason_codes",
+                "decrease effect requires exactly its closed recovery reason",
             )
         exposures = _planned_exposures(promotion, environment)
         if exposure not in exposures:
@@ -172,9 +175,13 @@ def _transition_state(
     elif effect == "halted":
         if (
             not has_recovery
-            or result != current
-            or "recovery_halt" not in evidence.reason_codes
+            or recovery_reasons.intersection(evidence.reason_codes)
+            != {"recovery_halt"}
         ):
+            raise EvidenceChainError(
+                "reason_codes", "halt requires exactly its closed recovery reason"
+            )
+        if result != current:
             raise EvidenceChainError("dry_run_effect", "halt must retain exact state")
     elif effect == "restored":
         expected = (
@@ -184,9 +191,13 @@ def _transition_state(
         )
         if (
             not has_recovery
-            or result != expected
-            or "recovery_restore_previous" not in evidence.reason_codes
+            or recovery_reasons.intersection(evidence.reason_codes)
+            != {"recovery_restore_previous"}
         ):
+            raise EvidenceChainError(
+                "reason_codes", "restore requires exactly its closed recovery reason"
+            )
+        if result != expected:
             raise EvidenceChainError(
                 "dry_run_effect", "restore must name the exact previous artifact"
             )
@@ -288,7 +299,7 @@ class DryRunController:
     ) -> None:
         if not isinstance(promotion, DeliveryPromotionV1):
             raise EvidenceChainError("promotion", "must be DeliveryPromotionV1")
-        if not isinstance(adapter, FakeEnvironmentAdapter):
+        if type(adapter) is not FakeEnvironmentAdapter:
             raise EvidenceChainError(
                 "adapter", "only the bounded in-memory fake adapter is accepted"
             )

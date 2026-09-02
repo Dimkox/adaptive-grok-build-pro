@@ -26,6 +26,8 @@ class AppliedDryRunEffect:
 class FakeEnvironmentAdapter:
     """Record at most 128 nonproduction effects and do nothing else."""
 
+    __slots__ = ("_effects",)
+
     supported_effects = frozenset(
         {"entered_stage", "changed_exposure", "halted", "restored"}
     )

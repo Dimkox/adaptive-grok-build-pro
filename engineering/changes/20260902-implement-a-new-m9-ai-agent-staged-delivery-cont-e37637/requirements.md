@@ -19,6 +19,8 @@ Completed checkboxes prove only the named local source/documentation requirement
 - Treat any authority envelope as opaque external evidence. Local source validates only bounded shape, expiry and exact resource/scope bindings; it never parses signature bytes or claims cryptographic verification.
 - A failed preview, staging or bounded canary evaluation can only halt, decrease exposure within the same environment, or restore the exact `previous_signed_artifact` from the promotion.
 - No recovery decision may advance environment, increase exposure, replace policy/cohort/resource bindings, or name a new artifact.
+- Every recovery effect carries exactly its one matching closed recovery reason; mixed recovery reasons are invalid evidence.
+- The controller accepts only the exact bounded fake-adapter type, whose effect surface cannot be replaced on an instance or extended through a subclass.
 - Reaching production returns `needs_human`; no adapter method exists for production mutation.
 
 ## API/event compatibility

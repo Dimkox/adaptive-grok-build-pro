@@ -10,7 +10,7 @@
 - [x] Task 1: implement closed contracts and canonical digests from a witnessed missing-module RED and focused 11-test GREEN.
 - [x] Task 2: implement the pure deterministic exact-binding evaluator from a witnessed missing-module RED, a separate old-window/fresh-capture RED and focused 13-test GREEN.
 - [x] Task 3: implement the narrowing recovery selector from a witnessed missing-module RED and focused 9-test GREEN, including decision-time authority expiry.
-- [x] Task 4: implement the append-only dry-run controller and bounded fake adapter from witnessed missing-module, backward-time and no-recovery-terminal REDs followed by focused 12-test GREEN.
+- [x] Task 4: implement the append-only dry-run controller and bounded fake adapter from witnessed missing-module, backward-time, no-recovery-terminal, adapter-injection and mixed-recovery-reason REDs followed by focused 17-test GREEN.
 - [ ] Task 5: register schemas/architecture and integrate repository documentation only after its gate opens. `BLOCKED`.
 - [ ] Run exact-head verification and all route-selected independent reviews/receipts after product source exists.
 - [ ] Prove externally verified signed inputs, authorized nonproduction environment and exercised exact-prior-artifact recovery. `BLOCKED`.

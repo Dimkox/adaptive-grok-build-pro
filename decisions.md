@@ -336,3 +336,7 @@ Use fixed-search-path security-definer predicates that take a row lock on the ex
 ## 2026-09-02 — Select the least-authority valid recovery
 
 Walk the plan's closed canonical recovery order so an authorized halt wins before exposure decrease, and exact prior-artifact restoration is considered only when earlier narrowing actions are unavailable. Recheck promotion and artifact authority at recovery decision time so a stale failed decision cannot extend authority.
+
+## 2026-09-02 — Seal the M9 source-only adapter as a concrete value boundary
+
+Accept only the exact slotted fake-adapter type and reject every mixed recovery-reason set when importing evidence. This prevents subclass or instance monkeypatch capability injection while keeping the controller strictly in-memory and nonproduction.

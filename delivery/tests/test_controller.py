@@ -348,6 +348,98 @@ class ControllerTests(unittest.TestCase):
                     prior_evidence=(candidate,),
                 )
 
+    def test_controller_rejects_fake_adapter_subclasses_before_any_effect(self):
+        class CapabilityInjectingAdapter(FakeEnvironmentAdapter):
+            supported_effects = frozenset(
+                {*FakeEnvironmentAdapter.supported_effects, "production"}
+            )
+
+            def __init__(self):
+                super().__init__()
+                self.apply_calls = 0
+
+            def apply(self, **kwargs):
+                self.apply_calls += 1
+                return super().apply(**kwargs)
+
+        adapter = CapabilityInjectingAdapter()
+        with self.assertRaisesRegex(EvidenceChainError, "fake adapter"):
+            DryRunController(self.promotion, adapter)
+        self.assertEqual(adapter.apply_calls, 0)
+
+    def test_fake_adapter_instance_cannot_be_monkeypatched(self):
+        apply_target = FakeEnvironmentAdapter()
+        with self.assertRaises(AttributeError):
+            apply_target.apply = object()
+
+        effects_target = FakeEnvironmentAdapter()
+        with self.assertRaises(AttributeError):
+            effects_target.supported_effects = frozenset({"production"})
+
+    def assert_mixed_recovery_reason_is_rejected(
+        self,
+        promotion,
+        chain,
+        extra_reason,
+    ):
+        mutated = _replace_evidence(
+            chain[-1],
+            reason_codes=tuple(sorted((*chain[-1].reason_codes, extra_reason))),
+        )
+        with self.assertRaisesRegex(EvidenceChainError, "recovery reason"):
+            DryRunController(
+                promotion,
+                FakeEnvironmentAdapter(),
+                prior_evidence=(*chain[:-1], mutated),
+            )
+
+    def test_imported_halt_rejects_mixed_recovery_reasons(self):
+        halted_controller = DryRunController(
+            self.promotion,
+            FakeEnvironmentAdapter(),
+        )
+        halted = halted_controller.step(
+            (synthetic_observation(self.promotion, health_basis_points=9800),),
+            evaluation_time="2026-09-02T09:21:00Z",
+            recorded_at="2026-09-02T09:21:00Z",
+        )
+        self.assert_mixed_recovery_reason_is_rejected(
+            self.promotion,
+            (halted,),
+            "recovery_restore_previous",
+        )
+
+    def test_imported_restore_rejects_mixed_recovery_reasons(self):
+        restore_plan = synthetic_plan(allowed_recovery_actions=("restore_previous",))
+        restore_promotion = synthetic_promotion(plan=restore_plan)
+        restore_controller = DryRunController(
+            restore_promotion,
+            FakeEnvironmentAdapter(),
+        )
+        restored = restore_controller.step(
+            (
+                synthetic_observation(
+                    restore_promotion,
+                    health_basis_points=9800,
+                ),
+            ),
+            evaluation_time="2026-09-02T09:21:00Z",
+            recorded_at="2026-09-02T09:21:00Z",
+        )
+        self.assert_mixed_recovery_reason_is_rejected(
+            restore_promotion,
+            (restored,),
+            "recovery_decrease",
+        )
+
+    def test_imported_decrease_rejects_mixed_recovery_reasons(self):
+        decrease_chain = _synthetic_open_chain(self.promotion, 4)
+        self.assert_mixed_recovery_reason_is_rejected(
+            self.promotion,
+            decrease_chain,
+            "recovery_halt",
+        )
+
     def test_chain_and_fake_adapter_are_independently_capped_at_128(self):
         chain = _synthetic_open_chain(self.promotion, 128)
         controller = DryRunController(

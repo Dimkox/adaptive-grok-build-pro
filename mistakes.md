@@ -332,3 +332,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** A freshly captured record could carry an old evaluation window and still pass the M9 maximum-age gate.
 **Root cause:** The evaluator treated record capture as data freshness instead of also bounding the age of the aggregate window end.
+
+## 2026-09-02 — Treated a fake-adapter interface as a capability boundary
+
+**Symptom:** A subclass or instance attribute could replace the M9 dry-run adapter behavior, and imported recovery evidence could mix incompatible recovery reasons.
+**Root cause:** The first controller review checked nominal membership and expected-reason presence instead of sealing the concrete object surface and requiring an exact singleton recovery-reason mapping.
