@@ -23,7 +23,7 @@ Task 1 contract evidence is implemented: the exact command first failed because 
 ## Focused commands
 
 ```bash
-python3 -m unittest discover -s delivery/tests -p 'test_*.py' -v
+PYTHONPATH=delivery/src python3 -m unittest discover -s delivery/tests -p 'test_*.py' -v
 python3 -m unittest delivery.tests.test_evaluator delivery.tests.test_recovery -v
 python3 scripts/grok_architecture.py validate
 python3 scripts/grok_architecture.py diagram --check
