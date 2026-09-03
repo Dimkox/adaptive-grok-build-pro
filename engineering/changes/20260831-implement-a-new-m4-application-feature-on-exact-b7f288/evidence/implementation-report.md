@@ -50,6 +50,8 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 - `a1f64e9` — central fenced operation-scoped task transitions.
 - `18e75b3` — sole checked closed-inline 17-operation HTTP contract.
 - `5dac08e` — exact runtime/parser/configuration parity for the checked contract.
+- `1d837cb` — release archive modes derived only from exact Git tree identity.
+- `9017730` — explicit cross-checkout tree/mode/byte determinism proof.
 
 ## Independent-review remediation
 
@@ -82,6 +84,8 @@ The current repair makes deadline/accounting reconciliation cursor-stable and qu
 Focused PostgreSQL 17 evidence culminated in a 64/64 full integration pass in 57.594 seconds. The HTTP intake case proves fresh equivalent authority returns the same task, same-request changed body conflicts, a semantic change supersedes exactly once, and actual correlation headers persist independently in command/audit rows. Dependency-free factory tests report 67 passes plus 64 expected PostgreSQL skips, architecture tests report 53/53, and lint/compile/diff checks pass; these are implementation evidence, not final verifier/review receipts or external authority.
 
 The final contract-parity pass binds every operation to its exact scope and correlation policy, canonical lowercase dashed UUIDs, closed redacted correlated 500 responses, strict actor/repository identifiers and PostgreSQL/Python integer bounds. Dependency-free factory discovery then ran 141 tests with 77 passes plus 64 expected PostgreSQL skips in 1.445 seconds; architecture-model, fitness and governance tests passed 150/150 in 139.751 seconds. This pass changed no database transaction or SQL path, so the already-green 64/64 PostgreSQL evidence remains the applicable data-path proof; final exact-head verification and independent reviews are still pending.
+
+The package freeze also exposed that release ZIP attributes retained ambient non-executable worktree modes even though the bytes, inventory and embedded manifest came from exact Git `HEAD`. Release-only archiving now uses canonical Git `100644`/`100755` member modes while retaining full opened-file identity for no-follow and replacement detection; a same-commit clone regression proves byte equality across `0600`/`0664` and `0700`/`0775` checkouts. The pre-build package module passed 52/53 with only the intentionally stale shipped-ZIP parity test failing; that test must pass after the artifact-only rebuild.
 
 ## Verification evidence
 

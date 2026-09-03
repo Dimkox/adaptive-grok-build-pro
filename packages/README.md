@@ -25,6 +25,6 @@ Each zip has a sibling `.sha256`. Rebuild:
 python3 scripts/package_stack.py --output packages/adaptive-grok-build-pro-v2.0.13.zip
 ```
 
-Production rebuilds package only the filtered regular-file inventory and exact bytes of a clean Git `HEAD`; ignored and untracked files are excluded even when present locally. Direct tracked output is published atomically with its sidecar, so no ad-hoc copy step may separate artifact provenance. The prior `aa12e7c` 14/14 local verifier receipt is historical and stale for this follow-up; fresh exact-head verification and review of the final artifact commit are still required.
+Production rebuilds package only the filtered regular-file inventory, blob bytes and canonical `0644`/`0755` member modes of a clean Git `HEAD`; ignored/untracked files and ambient non-executable permission bits are excluded even when present locally. Direct tracked output is published atomically with its sidecar, so no ad-hoc copy step may separate artifact provenance. The prior `aa12e7c` 14/14 local verifier receipt is historical and stale for this follow-up; fresh exact-head verification and review of the final artifact commit are still required.
 
 `.env` and private keys are never packaged.

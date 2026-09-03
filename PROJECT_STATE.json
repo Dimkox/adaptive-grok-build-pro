@@ -211,7 +211,7 @@
         "commit": "4f75558770f2f332b32b4a47fe6afa61fcc524ec",
         "source_evidence_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
         "integration_baseline": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "5dac08ea3b9732001d015277aef569b8d2584c1e",
+        "latest_committed_repair_checkpoint": "9017730aef25ee9ba8c1bc0fb0179aafd5f3fc7c",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "evidence": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/implementation-report.md",
         "notes": "Release-state baseline 56e12b2 passed 14/14 local verifier gates, but that receipt is stale. The frozen source repair adds cursor-stable deadline/accounting quarantine, separate complete-intent/semantic-work/transport identities, immutable bounded lifecycle history, operation-scoped fenced phases and a sole checked closed-inline 17-operation HTTP contract with correlated errors. Local PostgreSQL 17 integration passed 64/64 before final docs; the tracked 2.0.13 archive/sidecar were rebuilt from the immediately preceding clean source/docs HEAD. Exact-head verification and independent review receipts must bind the final artifact commit; this is not an accepted or delivered head."
@@ -240,7 +240,7 @@
           "78ad2f679d38dc3244e716c586332417e610089c"
         ],
         "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "5dac08ea3b9732001d015277aef569b8d2584c1e",
+        "latest_committed_repair_checkpoint": "9017730aef25ee9ba8c1bc0fb0179aafd5f3fc7c",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "intermediate_local_verification": {
           "status": "passed",
@@ -335,7 +335,7 @@
         "source_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
         "base_head": "78ad2f679d38dc3244e716c586332417e610089c",
         "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "5dac08ea3b9732001d015277aef569b8d2584c1e",
+        "latest_committed_repair_checkpoint": "9017730aef25ee9ba8c1bc0fb0179aafd5f3fc7c",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "purpose": "Bind verification and route-selected reviews/reports/receipts to the final artifact commit whose 2.0.13 archive was rebuilt from the immediately preceding clean frozen source/docs HEAD, before any authorized PR-only delivery."
       },

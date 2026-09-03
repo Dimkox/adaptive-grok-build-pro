@@ -392,3 +392,7 @@ Disable runtime OpenAPI generation and describe all 17 operations with closed in
 ## 2026-09-03 — Normalize unexpected local API failures at the outer boundary
 
 Return one closed, redacted 500 envelope and establish correlation inside the outer exception handler because unexpected failures can bypass user middleware. Declare that response for every checked operation and never reflect exception text.
+
+## 2026-09-03 — Derive release member modes from the Git tree
+
+Use exact Git `100644`/`100755` modes only for release ZIP attributes while retaining the full opened-file identity for no-follow and replacement checks. This makes exact-tree archives byte-stable across checkouts without weakening secure source or publication binding.

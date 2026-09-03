@@ -435,3 +435,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** A follow-up audit found undocumented exact scopes, permissive UUID/config identifiers, mismatched integer bounds and an uncorrelated plain-text 500 after the initial contract checkpoint.
 **Root cause:** The first closure tests proved document structure and representative runtime behavior but did not bind every operation and shared scalar/error rule to its runtime producer or parser boundary; future freezes need a table-driven operation/scalar/error parity pass before packaging.
+
+## 2026-09-03 — Proved archive determinism only inside one checkout
+
+**Symptom:** Two builds in the active checkout matched, but the same Git tree in a clean clone produced different ZIP bytes for non-executable members with ambient `0600` versus `0664` modes.
+**Root cause:** Release ZIP attributes came from worktree `stat` permissions even though exact Git trees preserve only executable identity; determinism tests must compare distinct clean checkouts with deliberately different non-executable ambient modes.
