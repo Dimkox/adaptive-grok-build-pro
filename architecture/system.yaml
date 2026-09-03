@@ -58,6 +58,14 @@
       "version": "1"
     },
     {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2",
+      "kind": "openapi",
+      "path": "factory/contracts/openapi/factory-execution.v2.json",
+      "role": "bidirectional",
+      "version": "2"
+    },
+    {
       "compatibility": "consumer_accepts_old",
       "id": "CONTRACT-FACTORY-EXECUTION-EVENT",
       "kind": "event",
@@ -720,7 +728,8 @@
       "owner": "local factory operators",
       "public_contracts": [
         "CONTRACT-FACTORY-CONTROL-OPENAPI",
-        "CONTRACT-FACTORY-EXECUTION-OPENAPI"
+        "CONTRACT-FACTORY-EXECUTION-OPENAPI",
+        "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2"
       ],
       "repository_paths": [
         "factory/.env.example",
@@ -757,6 +766,7 @@
         "factory/src/adaptive_factory/contracts.py",
         "factory/src/adaptive_factory/migrations.py",
         "factory/src/adaptive_factory/models.py",
+        "factory/src/adaptive_factory/recovery.py",
         "factory/src/adaptive_factory/service.py",
         "factory/src/adaptive_factory/state.py",
         "factory/src/adaptive_factory/store.py",

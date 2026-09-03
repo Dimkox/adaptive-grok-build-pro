@@ -406,6 +406,51 @@ class ApiTests(unittest.TestCase):
         )
         self.assertEqual(len(self.service.calls), calls)
 
+    def test_terminal_response_version_uses_matched_route_under_root_path(self):
+        token = "execution-root-path-credential"
+        actor = Actor(
+            "worker-01",
+            "worker",
+            frozenset({"task:execute"}),
+            frozenset({"owner/repository"}),
+        )
+        client = TestClient(
+            create_app(self.service, Authenticator({token: actor})),
+            root_path="/gateway",
+        )
+        grant = {
+            "task_id": "00000000-0000-0000-0000-000000000001",
+            "run_id": "00000000-0000-0000-0000-000000000002",
+            "owner": "worker-01",
+            "role": "writer",
+            "fence": 7,
+            "expires_at": "2026-09-02T01:00:00Z",
+            "packet_digest": "0" * 64,
+        }
+        payload = {
+            "grant": grant,
+            "packet_digest": "d" * 64,
+            "sequence": 3,
+            "terminal_type": "run.completed",
+            "summary": "fixture complete",
+        }
+        for path, expected_fields in (
+            ("/v1/execution/terminal", {"proposal"}),
+            ("/v2/execution/terminal", {"proposal", "result"}),
+        ):
+            with self.subTest(path=path):
+                response = client.post(
+                    path,
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Idempotency-Key": f"root-path-{path[2]}",
+                        "X-Correlation-ID": f"root-path-correlation-{path[2]}",
+                    },
+                    json=payload,
+                )
+                self.assertEqual(response.status_code, 200, response.text)
+                self.assertEqual(set(response.json()), expected_fields)
+
     def test_execution_usage_authenticates_exactly_once(self):
         token = "execution-usage-credential"
         actor = Actor(

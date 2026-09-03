@@ -570,7 +570,8 @@ def create_app(
             correlation_id=correlation,
         )
         response = {"proposal": completion.proposal}
-        if request.url.path.startswith("/v2/"):
+        matched_route = request.scope.get("route")
+        if getattr(matched_route, "path", None) == "/v2/execution/terminal":
             response["result"] = completion.result
         return JSONResponse(_json(response), headers={"X-Correlation-ID": correlation})
 
