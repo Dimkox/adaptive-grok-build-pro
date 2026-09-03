@@ -382,6 +382,7 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Ruff and JSON validation could not find repository-relative targets, producing no product evidence.
 **Root cause:** A mixed verification batch used `packages/` as its working directory; commands with root-relative paths must run from the repository root, while only the sidecar check should change directories.
+**Location:** Wrong cwd `/home/pall/grok-projects/adaptive-grok-build-pro-m4-control-plane/packages`; correct root `/home/pall/grok-projects/adaptive-grok-build-pro-m4-control-plane`.
 
 ## 2026-09-02 — Shared ambient inventory between packager and verifier
 
@@ -460,3 +461,9 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The roughly ten-minute exact-head verifier ran through a turn-bound interactive exec session, so its handle and process vanished at the automatic session boundary before a receipt was produced.
 **Prevention:** Launch long verifiers as detached jobs with explicit PID, log, and exit-status files, then confirm the receipt and fingerprint before treating the run as evidence.
+
+## 2026-09-03 — Resolved a hook against the session cwd instead of the command workdir
+
+**Symptom:** `Hook denied: Production action git-push-branch requires an exact delegated local grant bound to the current SHA.` At `2026-09-03 21:52:25Z`, objective fingerprint `6943dc64...` was written to `/home/pall/grok-projects/google-ads-automation/.grok-stack/runtime/tool-denials.json`, not this M4 worktree runtime. No push occurred.
+**Root cause:** `.grok/hooks/pre_tool_use.py` delegated to `.grok-stack/adaptive_grok/_policy_legacy.py:production_action/evaluate_pre_tool`, whose `root_from`/`find_root` resolution used the event/session cwd rather than the nested exec command's explicit workdir; a hook launched or resolved in another repository therefore applied the wrong route and grant state.
+**Prevention:** Denials must persist the exact command, effective root, command workdir, and reason so a root mismatch is immediately diagnosable and a production denial cannot be attributed to the intended worktree without evidence.
