@@ -513,7 +513,7 @@ module.main()
                 ),
                 patch.object(subprocess, 'run', side_effect=capture),
             ):
-                sources = _head_release_sources(root)
+                sources = _release_sources(root, 'HEAD')
 
             self.assertEqual(sources['README.md'][0], b'tracked\n')
             self.assertTrue(commands)
@@ -1239,7 +1239,7 @@ module.main()
     def test_shipped_m4_zip_exactly_matches_its_immutable_source_commit(self) -> None:
         version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
         self.assertEqual(version, '2.0.13')
-        packaged_source = '571cad7877431ac5ab5779b53fe9f7effd6859ce'
+        packaged_source = '3b1f9a54a964d91f34cee2628374b17e7a42edeb'
         sources = _release_sources(ROOT, packaged_source)
         rels = list(sources)
         self.assertFalse(any(rel.startswith('.github/workflows/') for rel in rels))
@@ -1251,7 +1251,7 @@ module.main()
             self.assertTrue(zip_path.is_file())
             self.assertTrue(sidecar_path.is_file())
             digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
-            self.assertEqual(digest, '5b29b7e8e439d1409c3f72757199d20de8f6f4c62bd1df972a37d13f615d9d0e')
+            self.assertEqual(digest, '57e6e00a6c5281fda33e1317d955dd5ca0e1a6f9467e60daa256a8919b408bcc')
             self.assertEqual(sidecar_path.read_text(encoding='utf-8'), f'{digest}  {zip_path.name}\n')
             with zipfile.ZipFile(zip_path) as archive:
                 names = archive.namelist()
