@@ -104,6 +104,34 @@ class ServerTests(unittest.TestCase):
             with self.assertRaises(ServerError):
                 load_actors(config)
 
+    def test_actor_config_rejects_noncanonical_actor_ids_before_runtime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            token = root / "worker.token"
+            token.write_text("worker-token-value-123\n", encoding="utf-8")
+            token.chmod(0o600)
+            config = root / "actors.json"
+            for actor_id in (None, 7, "", "x" * 129, "control\nid", "space id"):
+                config.write_text(
+                    json.dumps(
+                        {
+                            "actors": [
+                                {
+                                    "actor_id": actor_id,
+                                    "kind": "worker",
+                                    "scopes": ["task:claim"],
+                                    "repositories": ["owner/repo"],
+                                    "token_file": str(token),
+                                }
+                            ]
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                config.chmod(0o600)
+                with self.subTest(actor_id=actor_id), self.assertRaises(ServerError):
+                    load_actors(config)
+
     def test_actor_config_rejects_relative_and_symlinked_ancestry(self):
         with self.assertRaises(ServerError):
             load_actors(Path("actors.json"))

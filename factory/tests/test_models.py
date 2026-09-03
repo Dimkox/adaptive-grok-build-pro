@@ -127,6 +127,7 @@ class ImmutableSnapshotTests(unittest.TestCase):
         for metadata in (
             {**base[6], "unknown": "not reviewed"},
             {**base[6], "fence": True},
+            {**base[6], "generation": 2_147_483_648},
             {**base[6], "target": "not-a-task-state"},
         ):
             with self.subTest(metadata=metadata), self.assertRaises(ValueError):

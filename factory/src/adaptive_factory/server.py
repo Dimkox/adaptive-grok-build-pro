@@ -8,7 +8,7 @@ import stat
 
 import uvicorn
 
-from .api import Authenticator, create_app
+from .api import TEXT_ID, Authenticator, create_app
 from .models import Actor
 from .service import FactoryService
 from .settings import FactorySettings, SettingsError, read_private_file, read_token_file
@@ -38,6 +38,9 @@ def load_actors(path: Path) -> dict[str, Actor]:
         expected = {"actor_id", "kind", "scopes", "repositories", "token_file"}
         if not isinstance(record, dict) or set(record) != expected:
             raise ServerError("closed actor record required")
+        actor_id = record["actor_id"]
+        if not isinstance(actor_id, str) or not TEXT_ID.fullmatch(actor_id):
+            raise ServerError("invalid actor identifier")
         if record["kind"] not in {"client", "worker", "operator"}:
             raise ServerError("invalid actor kind")
         if not all(isinstance(item, str) and item for item in record["scopes"] + record["repositories"]):
@@ -49,7 +52,7 @@ def load_actors(path: Path) -> dict[str, Actor]:
         if token in tokens:
             raise ServerError("duplicate actor token")
         tokens[token] = Actor(
-            str(record["actor_id"]),
+            actor_id,
             record["kind"],
             frozenset(record["scopes"]),
             frozenset(record["repositories"]),

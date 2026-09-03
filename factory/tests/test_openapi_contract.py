@@ -34,12 +34,34 @@ EXPECTED_OPERATIONS = {
     ("/v1/transitions", "post"): "proposeTaskPhaseTransition",
 }
 
-STANDARD_POST_STATUSES = {"200", "400", "401", "403", "409", "413", "422", "503"}
+EXPECTED_SCOPES = {
+    "getLiveHealth": None,
+    "getReadyHealth": None,
+    "getFactoryMetrics": "factory:reconcile",
+    "createTask": "task:submit",
+    "getTask": "task:read",
+    "listTasks": "task:list",
+    "cancelTask": "task:cancel",
+    "claimTask": "task:claim",
+    "renewTaskLease": "task:heartbeat",
+    "releaseTask": "task:release",
+    "reserveTaskBudget": "task:budget",
+    "recordTaskUsage": "task:budget",
+    "setFactoryKillSwitch": "factory:kill",
+    "reconcileFactoryState": "factory:reconcile",
+    "listTaskRuns": "task:read",
+    "listTaskEvents": "task:read",
+    "proposeTaskPhaseTransition": "task:release",
+}
+
+STANDARD_POST_STATUSES = {
+    "200", "400", "401", "403", "409", "413", "422", "500", "503"
+}
 EXPECTED_RESPONSE_STATUSES = {
-    ("/health/live", "get"): {"200"},
-    ("/health/ready", "get"): {"200", "503"},
-    ("/metrics", "get"): {"200", "401", "403", "503"},
-    ("/v1/tasks", "get"): {"200", "401", "403", "422", "503"},
+    ("/health/live", "get"): {"200", "500"},
+    ("/health/ready", "get"): {"200", "500", "503"},
+    ("/metrics", "get"): {"200", "401", "403", "500", "503"},
+    ("/v1/tasks", "get"): {"200", "401", "403", "422", "500", "503"},
     ("/v1/tasks", "post"): STANDARD_POST_STATUSES | {"201"},
     ("/v1/tasks/{task_id}", "get"): {
         "200",
@@ -47,6 +69,7 @@ EXPECTED_RESPONSE_STATUSES = {
         "403",
         "404",
         "422",
+        "500",
         "503",
     },
     ("/v1/tasks/{task_id}/runs", "get"): {
@@ -55,6 +78,7 @@ EXPECTED_RESPONSE_STATUSES = {
         "403",
         "404",
         "422",
+        "500",
         "503",
     },
     ("/v1/tasks/{task_id}/events", "get"): {
@@ -63,6 +87,7 @@ EXPECTED_RESPONSE_STATUSES = {
         "403",
         "404",
         "422",
+        "500",
         "503",
     },
     ("/v1/tasks/{task_id}/cancel", "post"): STANDARD_POST_STATUSES | {"404"},
@@ -132,6 +157,7 @@ class CheckedOpenApiContractTests(unittest.TestCase):
             if not isinstance(node, dict):
                 continue
             self.assertNotIn("$ref", node)
+            self.assertFalse({"oneOf", "anyOf", "allOf"} & set(node))
             schema_type = node.get("type")
             if schema_type == "object" or (
                 isinstance(schema_type, list) and "object" in schema_type
@@ -184,6 +210,37 @@ class CheckedOpenApiContractTests(unittest.TestCase):
                     schema = body["content"]["application/json"]["schema"]
                     self.assertEqual(schema["type"], "object")
                     self.assertFalse(schema["additionalProperties"])
+
+    def test_each_operation_documents_exact_runtime_scope_and_correlation_policy(self):
+        operations = dict(_operations(self.document))
+        for (_path, method), operation in operations.items():
+            operation_id = operation["operationId"]
+            required_scope = EXPECTED_SCOPES[operation_id]
+            description = operation.get("description", "")
+            expected_scope_text = (
+                "No bearer scope required."
+                if required_scope is None
+                else f"Required scope: {required_scope}."
+            )
+            with self.subTest(operation_id=operation_id, field="scope"):
+                self.assertIn(expected_scope_text, description)
+
+            correlation = next(
+                parameter
+                for parameter in operation["parameters"]
+                if parameter["in"] == "header"
+                and parameter["name"].lower() == "x-correlation-id"
+            )
+            with self.subTest(operation_id=operation_id, field="correlation"):
+                if method == "post":
+                    self.assertTrue(correlation["required"])
+                    self.assertIn("invalid values are rejected", correlation["description"])
+                else:
+                    self.assertFalse(correlation["required"])
+                    self.assertIn(
+                        "omitted or invalid values are discarded and replaced",
+                        correlation["description"],
+                    )
 
     def test_repeated_role_and_grant_schemas_do_not_drift(self):
         operations = dict(_operations(self.document))
@@ -238,6 +295,47 @@ class CheckedOpenApiContractTests(unittest.TestCase):
             and node["maximum"] > 9_000_000_000_000_000
         }
         self.assertEqual(large_maxima, {9_223_372_036_854_775_807})
+
+    def test_database_integer_and_event_cursor_bounds_match_runtime_storage(self):
+        generations = []
+        for node in _walk(self.document):
+            if isinstance(node, dict) and isinstance(node.get("properties"), dict):
+                generation = node["properties"].get("generation")
+                if isinstance(generation, dict):
+                    generations.append(generation)
+        self.assertEqual(len(generations), 6)
+        self.assertEqual({item["maximum"] for item in generations}, {2_147_483_647})
+
+        ready = self.document["paths"]["/health/ready"]["get"]
+        schema_version = ready["responses"]["200"]["content"]["application/json"][
+            "schema"
+        ]["properties"]["schema_version"]
+        self.assertEqual(schema_version["maximum"], 2_147_483_647)
+
+        events = self.document["paths"]["/v1/tasks/{task_id}/events"]["get"]
+        input_cursor = next(
+            item for item in events["parameters"] if item["name"] == "cursor"
+        )["schema"]
+        output_cursor = events["responses"]["200"]["content"]["application/json"][
+            "schema"
+        ]["properties"]["cursor"]
+        self.assertEqual(input_cursor["minimum"], 0)
+        self.assertEqual(output_cursor["minimum"], 1)
+
+    def test_every_uuid_schema_uses_the_canonical_lowercase_dashed_pattern(self):
+        canonical = (
+            "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-"
+            "[0-9a-f]{4}-[0-9a-f]{12}$"
+        )
+        uuid_patterns = [
+            node["pattern"]
+            for node in _walk(self.document)
+            if isinstance(node, dict)
+            and isinstance(node.get("pattern"), str)
+            and "{8}-" in node["pattern"]
+        ]
+        self.assertEqual(len(uuid_patterns), 38)
+        self.assertEqual(set(uuid_patterns), {canonical})
 
 
 if __name__ == "__main__":

@@ -1049,7 +1049,7 @@ _SUPPORTED_SCHEMA_KEYS = {
     "pattern",
 }
 _HTTP_METHODS = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
-_OPERATION_ID = re.compile(r"^[A-Za-z][A-Za-z0-9._-]{0,127}$")
+_HTTP_FIELD_NAME = re.compile(r"^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$")
 _SUPPORTED_CONTRACT_KINDS = {"event", "json_schema", "openapi", "signed_payload"}
 _SUPPORTED_COMPATIBILITY_MODES = {
     "bidirectional",
@@ -1339,7 +1339,11 @@ def _supported_response_headers(
         return False
     names: set[str] = set()
     for name, header in headers.items():
-        if not isinstance(name, str) or not name or name.lower() in names:
+        if (
+            not isinstance(name, str)
+            or not _HTTP_FIELD_NAME.fullmatch(name)
+            or name.lower() in names
+        ):
             return False
         names.add(name.lower())
         if not isinstance(header, dict) or not set(header) <= {
@@ -1436,9 +1440,17 @@ def _openapi_schemas(document: Any) -> tuple[dict[str, Any], ...] | None:
         return None
     schemas: list[dict[str, Any]] = []
     operation_ids: set[str] = set()
+    normalized_paths: set[str] = set()
     for path, path_item in paths.items():
         if not isinstance(path, str) or not path.startswith("/") or not isinstance(path_item, dict):
             return None
+        literal_path = re.sub(r"\{[^{}]+\}", "", path)
+        if "{" in literal_path or "}" in literal_path:
+            return None
+        normalized_path = re.sub(r"\{[^{}]+\}", "{}", path)
+        if normalized_path in normalized_paths:
+            return None
+        normalized_paths.add(normalized_path)
         if not set(path_item) <= _HTTP_METHODS | {"description", "parameters", "summary"}:
             return None
         if any(
@@ -1470,10 +1482,7 @@ def _openapi_schemas(document: Any) -> tuple[dict[str, Any], ...] | None:
                 return None
             if "operationId" in operation:
                 operation_id = operation["operationId"]
-                if (
-                    not _OPERATION_ID.fullmatch(operation_id)
-                    or operation_id in operation_ids
-                ):
+                if not operation_id or operation_id in operation_ids:
                     return None
                 operation_ids.add(operation_id)
             if "tags" in operation and (
@@ -1530,10 +1539,6 @@ def _openapi_schemas(document: Any) -> tuple[dict[str, Any], ...] | None:
                 name for (location, name) in effective_parameters if location == "path"
             }
             placeholders = set(re.findall(r"\{([^{}]+)\}", path))
-            if "{" in re.sub(r"\{[^{}]+\}", "", path) or "}" in re.sub(
-                r"\{[^{}]+\}", "", path
-            ):
-                return None
             if path_parameters != placeholders:
                 return None
     return tuple(schemas)

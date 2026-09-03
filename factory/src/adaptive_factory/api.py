@@ -99,7 +99,7 @@ def _closed(payload: Any, expected: set[str], *, optional: set[str] | None = Non
 
 
 def _text(value: Any, name: str, *, maximum: int = 128, identifier: bool = False) -> str:
-    if not isinstance(value, str) or not value or len(value.encode("utf-8")) > maximum:
+    if not isinstance(value, str) or not value or len(value) > maximum:
         raise HTTPException(422, f"invalid {name}")
     if any(ord(character) < 32 for character in value) or (identifier and not TEXT_ID.fullmatch(value)):
         raise HTTPException(422, f"invalid {name}")
@@ -110,9 +110,12 @@ def _uuid(value: Any, name: str) -> str:
     if not isinstance(value, str):
         raise HTTPException(422, f"invalid {name}")
     try:
-        return str(uuid.UUID(value))
+        parsed = str(uuid.UUID(value))
     except ValueError as exc:
         raise HTTPException(422, f"invalid {name}") from exc
+    if parsed != value:
+        raise HTTPException(422, f"invalid {name}")
+    return value
 
 
 def _integer(value: Any, name: str, minimum: int, maximum: int) -> int:
@@ -269,6 +272,19 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
     async def metrics_unavailable(_request: Request, _error: MetricsUnavailable):
         return _error_response(
             "unavailable", "metrics", "metrics snapshot unavailable", 503
+        )
+
+    @app.exception_handler(Exception)
+    async def unexpected_error(request: Request, _error: Exception):
+        correlation = getattr(request.state, "correlation_id", None)
+        if not isinstance(correlation, str) or not HEADER_ID.fullmatch(correlation):
+            correlation = str(uuid.uuid4())
+        return _error_response(
+            "unavailable",
+            "internal",
+            "internal server error",
+            500,
+            headers={"X-Correlation-ID": correlation},
         )
 
     @app.middleware("http")
@@ -611,8 +627,14 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         correlation = _request_id(x_correlation_id, "X-Correlation-ID")
         payload = _closed(payload, {"scope_key", "enabled", "reason"})
         scope_key = _text(payload["scope_key"], "scope_key", maximum=139)
-        if scope_key != "global" and not scope_key.startswith("repository:"):
-            raise HTTPException(422, "invalid scope_key")
+        if scope_key != "global":
+            if not scope_key.startswith("repository:"):
+                raise HTTPException(422, "invalid scope_key")
+            _text(
+                scope_key.removeprefix("repository:"),
+                "repository scope",
+                identifier=True,
+            )
         if type(payload["enabled"]) is not bool:
             raise HTTPException(422, "invalid enabled")
         enabled = service.set_kill(

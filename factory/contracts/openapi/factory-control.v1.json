@@ -9,13 +9,14 @@
     "/health/live": {
       "get": {
         "operationId": "getLiveHealth",
+        "description": "No bearer scope required. Returns local process liveness.",
         "security": [],
         "parameters": [
           {
             "name": "X-Correlation-ID",
             "in": "header",
             "required": false,
-            "description": "Optional bounded correlation identifier; the server generates one when omitted.",
+            "description": "Optional bounded correlation identifier; omitted or invalid values are discarded and replaced with a generated UUID.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -58,6 +59,54 @@
                 }
               }
             }
+          },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -65,13 +114,14 @@
     "/health/ready": {
       "get": {
         "operationId": "getReadyHealth",
+        "description": "No bearer scope required. Returns bounded database, schema, capacity and accounting readiness.",
         "security": [],
         "parameters": [
           {
             "name": "X-Correlation-ID",
             "in": "header",
             "required": false,
-            "description": "Optional bounded correlation identifier; the server generates one when omitted.",
+            "description": "Optional bounded correlation identifier; omitted or invalid values are discarded and replaced with a generated UUID.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -114,7 +164,7 @@
                     "schema_version": {
                       "type": "integer",
                       "minimum": 0,
-                      "maximum": 9223372036854775807
+                      "maximum": 2147483647
                     },
                     "capacity_consistent": {
                       "type": "boolean"
@@ -129,6 +179,54 @@
                     "schema_version",
                     "capacity_consistent",
                     "accounting_consistent"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
                   ],
                   "additionalProperties": false
                 }
@@ -186,7 +284,7 @@
     "/metrics": {
       "get": {
         "operationId": "getFactoryMetrics",
-        "description": "Requires wildcard operator factory:reconcile scope and returns three fixed redacted metric families.",
+        "description": "Required scope: factory:reconcile. The actor must also be a wildcard operator; returns three fixed redacted metric families.",
         "security": [
           {
             "bearerAuth": []
@@ -197,7 +295,7 @@
             "name": "X-Correlation-ID",
             "in": "header",
             "required": false,
-            "description": "Optional bounded correlation identifier; the server generates one when omitted.",
+            "description": "Optional bounded correlation identifier; omitted or invalid values are discarded and replaced with a generated UUID.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -493,6 +591,54 @@
               }
             }
           },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "503": {
             "description": "Bounded metrics snapshot unavailable or timed out.",
             "headers": {
@@ -544,6 +690,7 @@
     "/v1/tasks": {
       "get": {
         "operationId": "listTasks",
+        "description": "Required scope: task:list. Lists one authorized repository with a bounded task page.",
         "security": [
           {
             "bearerAuth": []
@@ -580,14 +727,14 @@
             "description": "Exclusive task UUID cursor.",
             "schema": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
             }
           },
           {
             "name": "X-Correlation-ID",
             "in": "header",
             "required": false,
-            "description": "Optional bounded correlation identifier; the server generates one when omitted.",
+            "description": "Optional bounded correlation identifier; omitted or invalid values are discarded and replaced with a generated UUID.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -623,7 +770,7 @@
                         "properties": {
                           "task_id": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                           },
                           "repository_id": {
                             "type": "string",
@@ -654,7 +801,7 @@
                           "generation": {
                             "type": "integer",
                             "minimum": 1,
-                            "maximum": 9223372036854775807
+                            "maximum": 2147483647
                           },
                           "intent_digest": {
                             "type": "string",
@@ -838,6 +985,54 @@
               }
             }
           },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "503": {
             "description": "Bounded database read is unavailable or timed out.",
             "headers": {
@@ -887,6 +1082,7 @@
       },
       "post": {
         "operationId": "createTask",
+        "description": "Required scope: task:submit. Validates and records one closed immutable intake command.",
         "security": [
           {
             "bearerAuth": []
@@ -909,7 +1105,7 @@
             "name": "X-Correlation-ID",
             "in": "header",
             "required": true,
-            "description": "Required bounded correlation identifier.",
+            "description": "Required bounded correlation identifier; invalid values are rejected with HTTP 400.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -1216,7 +1412,7 @@
                       "properties": {
                         "task_id": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                         },
                         "repository_id": {
                           "type": "string",
@@ -1247,7 +1443,7 @@
                         "generation": {
                           "type": "integer",
                           "minimum": 1,
-                          "maximum": 9223372036854775807
+                          "maximum": 2147483647
                         },
                         "intent_digest": {
                           "type": "string",
@@ -1312,7 +1508,7 @@
                       "properties": {
                         "task_id": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                         },
                         "repository_id": {
                           "type": "string",
@@ -1343,7 +1539,7 @@
                         "generation": {
                           "type": "integer",
                           "minimum": 1,
-                          "maximum": 9223372036854775807
+                          "maximum": 2147483647
                         },
                         "intent_digest": {
                           "type": "string",
@@ -1664,6 +1860,54 @@
               }
             }
           },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "503": {
             "description": "Bounded database mutation is unavailable or timed out.",
             "headers": {
@@ -1715,6 +1959,7 @@
     "/v1/tasks/{task_id}": {
       "get": {
         "operationId": "getTask",
+        "description": "Required scope: task:read. Returns one authorized bounded task projection.",
         "security": [
           {
             "bearerAuth": []
@@ -1728,14 +1973,14 @@
             "description": "Canonical task_id.",
             "schema": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
             }
           },
           {
             "name": "X-Correlation-ID",
             "in": "header",
             "required": false,
-            "description": "Optional bounded correlation identifier; the server generates one when omitted.",
+            "description": "Optional bounded correlation identifier; omitted or invalid values are discarded and replaced with a generated UUID.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -1766,7 +2011,7 @@
                   "properties": {
                     "task_id": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                     },
                     "repository_id": {
                       "type": "string",
@@ -1797,7 +2042,7 @@
                     "generation": {
                       "type": "integer",
                       "minimum": 1,
-                      "maximum": 9223372036854775807
+                      "maximum": 2147483647
                     },
                     "intent_digest": {
                       "type": "string",
@@ -2018,6 +2263,54 @@
               }
             }
           },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "503": {
             "description": "Bounded database read is unavailable or timed out.",
             "headers": {
@@ -2069,6 +2362,7 @@
     "/v1/tasks/{task_id}/runs": {
       "get": {
         "operationId": "listTaskRuns",
+        "description": "Required scope: task:read. Returns bounded authorized run and attempt history.",
         "security": [
           {
             "bearerAuth": []
@@ -2082,7 +2376,7 @@
             "description": "Canonical task_id.",
             "schema": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
             }
           },
           {
@@ -2103,14 +2397,14 @@
             "description": "Exclusive public run UUID cursor.",
             "schema": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
             }
           },
           {
             "name": "X-Correlation-ID",
             "in": "header",
             "required": false,
-            "description": "Optional bounded correlation identifier; the server generates one when omitted.",
+            "description": "Optional bounded correlation identifier; omitted or invalid values are discarded and replaced with a generated UUID.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -2149,11 +2443,11 @@
                             "properties": {
                               "run_id": {
                                 "type": "string",
-                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                               },
                               "task_id": {
                                 "type": "string",
-                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                               },
                               "owner": {
                                 "type": "string",
@@ -2235,15 +2529,15 @@
                             "properties": {
                               "attempt_id": {
                                 "type": "string",
-                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                               },
                               "task_id": {
                                 "type": "string",
-                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                               },
                               "run_id": {
                                 "type": "string",
-                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                               },
                               "attempt_no": {
                                 "type": "integer",
@@ -2331,7 +2625,7 @@
                         "string",
                         "null"
                       ],
-                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                     }
                   },
                   "required": [
@@ -2533,6 +2827,54 @@
               }
             }
           },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "503": {
             "description": "Bounded database read is unavailable or timed out.",
             "headers": {
@@ -2584,6 +2926,7 @@
     "/v1/tasks/{task_id}/events": {
       "get": {
         "operationId": "listTaskEvents",
+        "description": "Required scope: task:read. Returns bounded authorized event history.",
         "security": [
           {
             "bearerAuth": []
@@ -2597,7 +2940,7 @@
             "description": "Canonical task_id.",
             "schema": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
             }
           },
           {
@@ -2626,7 +2969,7 @@
             "name": "X-Correlation-ID",
             "in": "header",
             "required": false,
-            "description": "Optional bounded correlation identifier; the server generates one when omitted.",
+            "description": "Optional bounded correlation identifier; omitted or invalid values are discarded and replaced with a generated UUID.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -2662,11 +3005,11 @@
                         "properties": {
                           "event_id": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                           },
                           "task_id": {
                             "type": "string",
-                            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                           },
                           "event_sequence": {
                             "type": "integer",
@@ -2693,11 +3036,11 @@
                               "generation": {
                                 "type": "integer",
                                 "minimum": 1,
-                                "maximum": 9223372036854775807
+                                "maximum": 2147483647
                               },
                               "run_id": {
                                 "type": "string",
-                                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                               },
                               "fence": {
                                 "type": "integer",
@@ -2822,7 +3165,7 @@
                         "integer",
                         "null"
                       ],
-                      "minimum": 0,
+                      "minimum": 1,
                       "maximum": 9223372036854775807
                     }
                   },
@@ -3025,6 +3368,54 @@
               }
             }
           },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "503": {
             "description": "Bounded database read is unavailable or timed out.",
             "headers": {
@@ -3076,6 +3467,7 @@
     "/v1/tasks/{task_id}/cancel": {
       "post": {
         "operationId": "cancelTask",
+        "description": "Required scope: task:cancel. Cancels one authorized task idempotently.",
         "security": [
           {
             "bearerAuth": []
@@ -3089,7 +3481,7 @@
             "description": "Canonical task_id.",
             "schema": {
               "type": "string",
-              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
             }
           },
           {
@@ -3108,7 +3500,7 @@
             "name": "X-Correlation-ID",
             "in": "header",
             "required": true,
-            "description": "Required bounded correlation identifier.",
+            "description": "Required bounded correlation identifier; invalid values are rejected with HTTP 400.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -3161,7 +3553,7 @@
                   "properties": {
                     "task_id": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                     },
                     "repository_id": {
                       "type": "string",
@@ -3192,7 +3584,7 @@
                     "generation": {
                       "type": "integer",
                       "minimum": 1,
-                      "maximum": 9223372036854775807
+                      "maximum": 2147483647
                     },
                     "intent_digest": {
                       "type": "string",
@@ -3548,6 +3940,54 @@
               }
             }
           },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "503": {
             "description": "Bounded database mutation is unavailable or timed out.",
             "headers": {
@@ -3599,6 +4039,7 @@
     "/v1/claims": {
       "post": {
         "operationId": "claimTask",
+        "description": "Required scope: task:claim. Claims one authorized eligible task with a fenced lease.",
         "security": [
           {
             "bearerAuth": []
@@ -3621,7 +4062,7 @@
             "name": "X-Correlation-ID",
             "in": "header",
             "required": true,
-            "description": "Required bounded correlation identifier.",
+            "description": "Required bounded correlation identifier; invalid values are rejected with HTTP 400.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -3701,11 +4142,11 @@
                       "properties": {
                         "task_id": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                         },
                         "run_id": {
                           "type": "string",
-                          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                         },
                         "owner": {
                           "type": "string",
@@ -4036,6 +4477,54 @@
               }
             }
           },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "503": {
             "description": "Bounded database mutation is unavailable or timed out.",
             "headers": {
@@ -4087,6 +4576,7 @@
     "/v1/heartbeats": {
       "post": {
         "operationId": "renewTaskLease",
+        "description": "Required scope: task:heartbeat. Renews one current fenced live lease.",
         "security": [
           {
             "bearerAuth": []
@@ -4109,7 +4599,7 @@
             "name": "X-Correlation-ID",
             "in": "header",
             "required": true,
-            "description": "Required bounded correlation identifier.",
+            "description": "Required bounded correlation identifier; invalid values are rejected with HTTP 400.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -4128,11 +4618,11 @@
                 "properties": {
                   "task_id": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                   },
                   "run_id": {
                     "type": "string",
-                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                   },
                   "owner": {
                     "type": "string",
@@ -4199,11 +4689,11 @@
                   "properties": {
                     "task_id": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                     },
                     "run_id": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                     },
                     "owner": {
                       "type": "string",
@@ -4528,6 +5018,54 @@
               }
             }
           },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "503": {
             "description": "Bounded database mutation is unavailable or timed out.",
             "headers": {
@@ -4579,6 +5117,7 @@
     "/v1/transitions": {
       "post": {
         "operationId": "proposeTaskPhaseTransition",
+        "description": "Required scope: task:release. Advances one current fenced worker phase idempotently.",
         "security": [
           {
             "bearerAuth": []
@@ -4601,7 +5140,7 @@
             "name": "X-Correlation-ID",
             "in": "header",
             "required": true,
-            "description": "Required bounded correlation identifier.",
+            "description": "Required bounded correlation identifier; invalid values are rejected with HTTP 400.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -4623,11 +5162,11 @@
                     "properties": {
                       "task_id": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                       },
                       "run_id": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                       },
                       "owner": {
                         "type": "string",
@@ -5006,6 +5545,54 @@
               }
             }
           },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "503": {
             "description": "Bounded database mutation is unavailable or timed out.",
             "headers": {
@@ -5057,6 +5644,7 @@
     "/v1/proposals": {
       "post": {
         "operationId": "releaseTask",
+        "description": "Required scope: task:release. Releases one current fenced lease with a closed outcome.",
         "security": [
           {
             "bearerAuth": []
@@ -5079,7 +5667,7 @@
             "name": "X-Correlation-ID",
             "in": "header",
             "required": true,
-            "description": "Required bounded correlation identifier.",
+            "description": "Required bounded correlation identifier; invalid values are rejected with HTTP 400.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -5101,11 +5689,11 @@
                     "properties": {
                       "task_id": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                       },
                       "run_id": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                       },
                       "owner": {
                         "type": "string",
@@ -5494,6 +6082,54 @@
               }
             }
           },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "503": {
             "description": "Bounded database mutation is unavailable or timed out.",
             "headers": {
@@ -5545,6 +6181,7 @@
     "/v1/budget-reservations": {
       "post": {
         "operationId": "reserveTaskBudget",
+        "description": "Required scope: task:budget. Reserves bounded budget for one current fenced lease.",
         "security": [
           {
             "bearerAuth": []
@@ -5567,7 +6204,7 @@
             "name": "X-Correlation-ID",
             "in": "header",
             "required": true,
-            "description": "Required bounded correlation identifier.",
+            "description": "Required bounded correlation identifier; invalid values are rejected with HTTP 400.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -5589,11 +6226,11 @@
                     "properties": {
                       "task_id": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                       },
                       "run_id": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                       },
                       "owner": {
                         "type": "string",
@@ -5689,7 +6326,7 @@
                   "properties": {
                     "reservation_id": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                     }
                   },
                   "required": [
@@ -5980,6 +6617,54 @@
               }
             }
           },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "503": {
             "description": "Bounded database mutation is unavailable or timed out.",
             "headers": {
@@ -6031,6 +6716,7 @@
     "/v1/usage-observations": {
       "post": {
         "operationId": "recordTaskUsage",
+        "description": "Required scope: task:budget. Records bounded settled usage for one current fenced lease.",
         "security": [
           {
             "bearerAuth": []
@@ -6053,7 +6739,7 @@
             "name": "X-Correlation-ID",
             "in": "header",
             "required": true,
-            "description": "Required bounded correlation identifier.",
+            "description": "Required bounded correlation identifier; invalid values are rejected with HTTP 400.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -6075,11 +6761,11 @@
                     "properties": {
                       "task_id": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                       },
                       "run_id": {
                         "type": "string",
-                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                       },
                       "owner": {
                         "type": "string",
@@ -6184,7 +6870,7 @@
                   "properties": {
                     "observation_id": {
                       "type": "string",
-                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                     },
                     "created": {
                       "type": "boolean"
@@ -6479,6 +7165,54 @@
               }
             }
           },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "503": {
             "description": "Bounded database mutation is unavailable or timed out.",
             "headers": {
@@ -6530,6 +7264,7 @@
     "/v1/kill-switches": {
       "post": {
         "operationId": "setFactoryKillSwitch",
+        "description": "Required scope: factory:kill. Sets one global or repository kill switch idempotently.",
         "security": [
           {
             "bearerAuth": []
@@ -6552,7 +7287,7 @@
             "name": "X-Correlation-ID",
             "in": "header",
             "required": true,
-            "description": "Required bounded correlation identifier.",
+            "description": "Required bounded correlation identifier; invalid values are rejected with HTTP 400.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -6906,6 +7641,54 @@
               }
             }
           },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "503": {
             "description": "Bounded database mutation is unavailable or timed out.",
             "headers": {
@@ -6957,6 +7740,7 @@
     "/v1/reconcile": {
       "post": {
         "operationId": "reconcileFactoryState",
+        "description": "Required scope: factory:reconcile. Reconciles one bounded cursor page idempotently.",
         "security": [
           {
             "bearerAuth": []
@@ -6979,7 +7763,7 @@
             "name": "X-Correlation-ID",
             "in": "header",
             "required": true,
-            "description": "Required bounded correlation identifier.",
+            "description": "Required bounded correlation identifier; invalid values are rejected with HTTP 400.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -7006,7 +7790,7 @@
                       "string",
                       "null"
                     ],
-                    "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                   }
                 },
                 "required": [],
@@ -7050,7 +7834,7 @@
                         "string",
                         "null"
                       ],
-                      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
                     }
                   },
                   "required": [
@@ -7331,6 +8115,54 @@
                       "type": "string",
                       "minLength": 1,
                       "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "code",
+                    "detail"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected internal failure was redacted and normalized.",
+            "headers": {
+              "X-Correlation-ID": {
+                "description": "Stable request correlation identifier.",
+                "required": true,
+                "schema": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "unavailable"
+                      ]
+                    },
+                    "code": {
+                      "type": "string",
+                      "enum": [
+                        "internal"
+                      ]
+                    },
+                    "detail": {
+                      "type": "string",
+                      "enum": [
+                        "internal server error"
+                      ]
                     }
                   },
                   "required": [

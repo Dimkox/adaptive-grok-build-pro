@@ -967,7 +967,7 @@ class PostgresFactoryStore:
             raise ValueError("event metadata contains an unknown field")
         if "generation" in metadata and (
             type(metadata["generation"]) is not int
-            or not 1 <= metadata["generation"] <= 9_223_372_036_854_775_807
+            or not 1 <= metadata["generation"] <= 2_147_483_647
         ):
             raise ValueError("invalid event generation")
         if "run_id" in metadata:

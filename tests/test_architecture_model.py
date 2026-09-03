@@ -1742,6 +1742,61 @@ class ArchitectureModelTests(unittest.TestCase):
                 self.assertEqual(result.status, "unsupported")
                 self.assertIn("unsupported_openapi_construct", result.reasons)
 
+    def test_openapi_operation_ids_have_no_undocumented_charset_or_length_cap(self) -> None:
+        for operation_id in ("operation id/λ", "x" * 1024):
+            document = _openapi(
+                {
+                    "operationId": operation_id,
+                    "responses": {"200": {"description": "ok"}},
+                }
+            )
+            with self.subTest(operation_id=operation_id):
+                result = ARCH.compare_contracts(
+                    self._record(document, kind="openapi"),
+                    self._record(document, kind="openapi"),
+                    "bidirectional",
+                )
+                self.assertEqual(result.status, "compatible")
+
+    def test_openapi_rejects_invalid_header_names_and_ambiguous_template_siblings(self) -> None:
+        base = _openapi()
+        for header_name in ("Bad Header", "X-Ünicode", ":authority"):
+            malformed = copy.deepcopy(base)
+            malformed["paths"]["/items"]["get"]["responses"]["200"]["headers"] = {
+                header_name: {"schema": {"type": "string"}}
+            }
+            with self.subTest(header_name=header_name):
+                result = ARCH.compare_contracts(
+                    self._record(base, kind="openapi"),
+                    self._record(malformed, kind="openapi"),
+                    "bidirectional",
+                )
+                self.assertEqual(result.status, "unsupported")
+
+        ambiguous = _openapi()
+        ambiguous["paths"] = {
+            f"/items/{{{name}}}": {
+                "get": {
+                    "parameters": [
+                        {
+                            "in": "path",
+                            "name": name,
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "responses": {"200": {"description": "ok"}},
+                }
+            }
+            for name in ("id", "name")
+        }
+        result = ARCH.compare_contracts(
+            self._record(base, kind="openapi"),
+            self._record(ambiguous, kind="openapi"),
+            "bidirectional",
+        )
+        self.assertEqual(result.status, "unsupported")
+
     def test_openapi_operation_id_and_response_headers_are_compatibility_checked(self) -> None:
         base = _openapi(
             {

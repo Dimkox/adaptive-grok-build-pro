@@ -107,7 +107,16 @@ class FakeService:
         self.calls.append(("events", task_id, limit, cursor, actor.actor_id))
         return FactoryEventHistoryPageV1((event,), None)
 
-    def cancel(self, task_id, *, reason, idempotency_key, actor, now):
+    def cancel(
+        self,
+        task_id,
+        *,
+        reason,
+        idempotency_key,
+        actor,
+        now,
+        correlation_id,
+    ):
         raise KeyError(task_id)
 
     def readiness(self):
@@ -124,6 +133,21 @@ class FakeService:
     def transition_phase(self, grant, *, target, actor, now, idempotency_key, correlation_id):
         self.calls.append(("transition", grant, target, actor, idempotency_key, correlation_id))
         return target
+
+    def set_kill(self, *, scope_key, enabled, reason, idempotency_key, actor, now, correlation_id):
+        self.calls.append(
+            (
+                "kill",
+                scope_key,
+                enabled,
+                reason,
+                idempotency_key,
+                actor,
+                now,
+                correlation_id,
+            )
+        )
+        return enabled
 
     def metrics(self, *, actor=None):
         self.calls.append(("metrics", actor))
@@ -239,6 +263,92 @@ class ApiTests(unittest.TestCase):
             response.headers["X-Correlation-ID"], "not valid whitespace"
         )
         self.assertRegex(response.headers["X-Correlation-ID"], r"^[0-9a-f-]{36}$")
+
+    def test_uuid_inputs_must_use_canonical_lowercase_dashed_spelling(self):
+        for value in (
+            "00000000000000000000000000000001",
+            "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA",
+        ):
+            with self.subTest(value=value):
+                response = self.client.get(
+                    f"/v1/tasks/{value}",
+                    headers={"Authorization": f"Bearer {self.token}"},
+                )
+                self.assertEqual(response.status_code, 422)
+                self.assertEqual(response.json()["code"], "invalid_request")
+
+    def test_text_max_length_counts_unicode_code_points_like_the_contract(self):
+        accepted = self.client.post(
+            "/v1/tasks/00000000-0000-0000-0000-000000000001/cancel",
+            headers=self.auth,
+            json={"reason": "é" * 128},
+        )
+        self.assertEqual(accepted.status_code, 404)
+        rejected = self.client.post(
+            "/v1/tasks/00000000-0000-0000-0000-000000000001/cancel",
+            headers=self.auth,
+            json={"reason": "é" * 129},
+        )
+        self.assertEqual(rejected.status_code, 422)
+
+    def test_repository_kill_scope_requires_a_bounded_repository_identifier(self):
+        token = "kill-scope-token"
+        actor = Actor(
+            "operator",
+            "operator",
+            frozenset({"factory:kill"}),
+            frozenset({"*"}),
+        )
+        client = TestClient(create_app(self.service, Authenticator({token: actor})))
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Idempotency-Key": "kill-scope-command",
+            "X-Correlation-ID": "kill-scope-correlation",
+        }
+        for scope_key in ("repository:", "repository: ", "repository:not valid"):
+            with self.subTest(scope_key=scope_key):
+                response = client.post(
+                    "/v1/kill-switches",
+                    headers=headers,
+                    json={"scope_key": scope_key, "enabled": True, "reason": "test"},
+                )
+                self.assertEqual(response.status_code, 422)
+
+    def test_unexpected_failures_are_redacted_normalized_and_correlated(self):
+        marker = "sensitive-internal-marker"
+        failing_client = TestClient(self.client.app, raise_server_exceptions=False)
+        self.service.readiness = mock.Mock(side_effect=RuntimeError(marker))
+        health = failing_client.get(
+            "/health/ready", headers={"X-Correlation-ID": "health-failure"}
+        )
+        self.assertEqual(health.headers.get("content-type"), "application/json")
+        self.assertEqual(
+            (health.status_code, health.json()),
+            (
+                500,
+                {
+                    "error": "unavailable",
+                    "code": "internal",
+                    "detail": "internal server error",
+                },
+            ),
+        )
+        self.assertEqual(health.headers["X-Correlation-ID"], "health-failure")
+        self.assertNotIn(marker, health.text)
+
+        self.service.list_tasks = mock.Mock(side_effect=RuntimeError(marker))
+        protected = failing_client.get(
+            "/v1/tasks",
+            params={"repository_id": "owner/repository"},
+            headers={
+                "Authorization": f"Bearer {self.token}",
+                "X-Correlation-ID": "protected-failure",
+            },
+        )
+        self.assertEqual(protected.status_code, 500)
+        self.assertEqual(protected.json()["code"], "internal")
+        self.assertEqual(protected.headers["X-Correlation-ID"], "protected-failure")
+        self.assertNotIn(marker, protected.text)
 
     def test_bounded_run_attempt_and_event_history_are_exposed(self):
         task_id = "00000000-0000-0000-0000-000000000001"
