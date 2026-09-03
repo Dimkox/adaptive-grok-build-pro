@@ -2,7 +2,42 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-03T09:49:36Z",
+  "observed_at": "2026-09-03T13:00:36Z",
+  "program_schedule": {
+    "observed_at": "2026-09-03T16:00:36+03:00",
+    "hard_deadline": "2026-09-04T23:59:00+03:00",
+    "confidence": "at_risk_external_gates_not_evidenced_to_fit",
+    "critical_path": [
+      {
+        "stage": "stable_synthesis_exact_sha_evidence_and_reviews",
+        "target": "2026-09-03T16:00:00+03:00/2026-09-03T20:00:00+03:00",
+        "status": "source_implementation_in_progress"
+      },
+      {
+        "stage": "m4_final_descendant_and_external_acceptance",
+        "target": "prepare_by_2026-09-03T23:00:00+03:00_then_event_triggered",
+        "status": "not_accepted"
+      },
+      {
+        "stage": "accepted_m5_m6_m7_m8_m9",
+        "target": "event_triggered_dependency_order",
+        "status": "provisional_source_only"
+      },
+      {
+        "stage": "deadline_exact_state_decision",
+        "target": "2026-09-04T23:59:00+03:00",
+        "status": "pending"
+      }
+    ],
+    "provisional_source_start_targets": {
+      "M5": "2026-09-03T20:00:00+03:00",
+      "M6": "2026-09-04T00:00:00+03:00",
+      "M7": "2026-09-04T04:00:00+03:00",
+      "M8": "2026-09-04T08:00:00+03:00",
+      "M9": "2026-09-04T12:00:00+03:00"
+    },
+    "authority": "targets do not waive predecessor acceptance, exact-SHA Trust CI, human cohort, signed inputs, production authority, or authorize external writes"
+  },
   "observed_main_sha": "78ad2f679d38dc3244e716c586332417e610089c",
   "product_version": "2.0.13",
   "latest_published_release": "v2.0.12",

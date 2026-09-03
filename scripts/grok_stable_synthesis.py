@@ -10,8 +10,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / ".grok-stack"))
 
-from adaptive_grok.stable_synthesis import Journal, Monitor, SynthesisError, synthesize  # noqa: E402
-from adaptive_grok.util import load_json  # noqa: E402
+from adaptive_grok.stable_synthesis import (  # noqa: E402
+    MAX_INTENT_BYTES,
+    Journal,
+    Monitor,
+    SynthesisError,
+    _read_regular_bytes,
+    strict_json,
+    synthesize,
+)
 
 
 def main() -> int:
@@ -26,7 +33,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         if args.command == "analyze":
-            intent = load_json(Path(args.intent))
+            intent = strict_json(_read_regular_bytes(Path(args.intent), MAX_INTENT_BYTES), MAX_INTENT_BYTES)
             result = synthesize(intent)
             payload = asdict(result)
         elif args.command == "status":
@@ -36,8 +43,8 @@ def main() -> int:
         else:
             entries = Journal(ROOT).read()
             payload = {"ok": True, "entries": len(entries), "head_digest": entries[-1]["digest"] if entries else "0" * 64}
-    except (SynthesisError, OSError, ValueError) as exc:
-        print(json.dumps({"ok": False, "error": str(exc)[:160]}, sort_keys=True))
+    except (SynthesisError, OSError, ValueError):
+        print(json.dumps({"ok": False, "error": "invalid_input"}, sort_keys=True))
         return 2
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True, default=lambda value: asdict(value)))
     return 0

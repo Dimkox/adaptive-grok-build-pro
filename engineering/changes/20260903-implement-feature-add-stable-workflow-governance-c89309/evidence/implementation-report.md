@@ -17,6 +17,8 @@ Status: implementation complete locally; durable change remains `implementing` p
 - Architecture validate, drift and generated diagram parity: PASS.
 - Full root: 578/578 PASS in 383.962 seconds.
 - Post-root contract-enrollment repair: impacted stable/architecture/installer tests 101/101 PASS; stable/router 52/52 PASS; exact-predecessor architecture fitness PASS; Ruff and Bandit PASS. Parent exact-head verification remains required for the frozen commit.
+- Review remediation: reproduced and repaired all e56045a findings with adversarial state/journal/snapshot/lock, realistic GitHub topology, concrete transport/deadline, bounded synthesis readiness/input, recovery, no-subprocess, router morphology and CLI/systemd regressions. Focused stable/review/router is 65/65 PASS and expanded architecture/fitness/structure/installer/project-state is 196/196 PASS; architecture, exact-base fitness and static gates remain PASS. The journal is now projection authority, runtime errors are fixed/redacted, compare stays frozen-pin anchored, and exact-SHA claims remain exclusively outside this monitor in Trust CI.
+- Timing replan: at `2026-09-03 16:00 UTC+3`, the superseding whole-program deadline became `2026-09-04 23:59 UTC+3`. Current surfaces separate stable/M4 source preparation from event-triggered accepted M4 → M5 → M6 → M7 → M8 → M9; unevidenced isolation, human cohort, signed-input and external gates make the deadline at risk, not promised.
 
 ## Residual boundaries
 

@@ -42,7 +42,7 @@ class StableSynthesisContractTest(unittest.TestCase):
             root = Path(temp)
             (root / ".grok-stack/runtime").mkdir(parents=True)
             journal = Journal(root)
-            base = {"head_sha":"a" * 40,"tree_fingerprint":"b" * 64,"intent_digest":"c" * 64,"snapshot_digest":"d" * 64}
+            base = {"component_digest":"a" * 64,"config_digest":"b" * 64,"intent_digest":"c" * 64,"snapshot_digest":"d" * 64}
             first = journal.append({**base,"kind":"analyze","recorded_at":1}, "0" * 64)
             second = journal.append({**base,"kind":"ready","recorded_at":2}, first["digest"])
             self.assertEqual(journal.read(), [first, second])
@@ -58,7 +58,7 @@ class StableSynthesisContractTest(unittest.TestCase):
             root = Path(temp)
             (root / ".grok-stack/runtime").mkdir(parents=True)
             journal = Journal(root)
-            required = {"recorded_at":1,"kind":"monitor","head_sha":"a" * 40,"tree_fingerprint":"b" * 64,"intent_digest":"c" * 64,"snapshot_digest":"d" * 64}
+            required = {"recorded_at":1,"kind":"monitor","component_digest":"a" * 64,"config_digest":"b" * 64,"intent_digest":"c" * 64,"snapshot_digest":"d" * 64}
             with self.assertRaisesRegex(SynthesisError, "closed"):
                 journal.append({**required,"sequence":99}, "0" * 64)
             with self.assertRaisesRegex(SynthesisError, "closed"):
@@ -111,7 +111,7 @@ class StableSynthesisContractTest(unittest.TestCase):
             snapshots = journal.path.parent / "snapshots"
             snapshots.mkdir()
             (snapshots / f"{item['digest']}.json").symlink_to(root / "outside")
-            with self.assertRaisesRegex(SynthesisError, "regular"):
+            with self.assertRaisesRegex(SynthesisError, "unsafe"):
                 write_snapshot(root, value)
 
     def test_traceability_has_stable_spec_kit_categories_and_never_downgrades(self) -> None:

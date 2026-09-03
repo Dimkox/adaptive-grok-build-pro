@@ -4,14 +4,26 @@ After=network-online.target
 
 [Service]
 Type=oneshot
+User=adaptive-grok
+Group=adaptive-grok
 WorkingDirectory=/opt/adaptive-grok-build-pro
 ExecStart=/usr/bin/python3 scripts/grok_stable_synthesis.py check
+RuntimeMaxSec=100
 NoNewPrivileges=yes
 PrivateTmp=yes
+PrivateDevices=yes
 ProtectSystem=strict
-ProtectHome=yes
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectHostname=yes
 RestrictSUIDSGID=yes
 RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+AmbientCapabilities=
 LockPersonality=yes
 MemoryDenyWriteExecute=yes
 SystemCallArchitectures=native

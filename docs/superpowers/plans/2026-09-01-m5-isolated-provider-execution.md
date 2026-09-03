@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Route is `37b05f579320`. Successor 04 is frozen at `27b0ae6` on exact predecessor `8a7be8a`; successor-05 product/restart checkpoint `3940267` (tree `4646582`) on `27b0ae6` has a local two-restart PostgreSQL-17 proof, while final exact-head verification and repository-bound review remain open; successor 06 is the pending inert systemd/installer/configuration/final-doc slice. Every PR must use its immediate predecessor because cumulative M4→successor-04 exceeds the architecture change budget. Current M4 `9727bc3` and M5 SHAs are local observational checkpoints, not accepted roots or delivery authority.
-- Delivery target is `2026-09-08 00:00 UTC+3`; calendar pressure cannot waive tests, independent review, external Trust CI, or the dedicated rootless-host exit gate.
+- The superseding whole-program deadline is `2026-09-04 23:59 UTC+3`; calendar pressure cannot waive tests, independent review, external Trust CI, predecessor acceptance or the dedicated rootless-host exit gate.
 - Keep `/v1/claims` legacy semantics: its `packet_digest` remains the M4 `intent_digest`; use new execution endpoints and a new canonical packet digest.
 - Preserve M4 ceilings and authority: 20 global readers, 10 readers per repository, one writer, four hours, USD 25, and initial attempt plus two infrastructure retries.
 - Codex candidate is exact `0.152.1` / `b8201824…06f9`; Grok candidate is exact `1.0.17` / `82595e26…4568` and remains ineligible until full required conformance passes.

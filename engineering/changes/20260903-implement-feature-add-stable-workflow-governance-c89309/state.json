@@ -31,5 +31,5 @@
   "schema_version": 1,
   "status": "implementing",
   "title": "Implement feature: add stable workflow governance synthesis and a scheduled weekly read-only GitHub upstream monitor for Superpowers, BMAD, and Spec Kit, with deterministic typed state, provenance pins, bounded convergence, tests, and strict one-writer and exact-SHA trust invariants. Network reads only; no remote writes or automatic source changes.",
-  "updated_at": "2026-09-03T11:06:45+00:00"
+  "updated_at": "2026-09-03T13:00:36+00:00"
 }

@@ -289,6 +289,10 @@ Bind every authority and consumed evidence byte to the requested exact-head Git 
 Read-only CI helpers pass the exact canonical repository as command-scoped Git trust while continuing to ignore host configuration. Archive metadata is rendered in memory, leaving explicit generation as the only operation allowed to write the source manifest.
 The final measured compatibility diff is 10,739 lines, so the repository-owned architecture ceiling moves narrowly from 10,000 to 10,820 instead of weakening the security or streaming implementation.
 
+## 2026-09-03 — Make the stable journal the projection authority
+
+Serialize monitor and journal writers with one descriptor-opened `flock`, commit snapshot→journal→state, and reconstruct only from the latest verified monitor snapshot. This preserves append-only CAS evidence through crashes without adding a database or allowing stale state markers to claim authority.
+
 ## 2026-08-29 — Bind package bytes at the repository descriptor boundary
 
 Exclude symlinks/non-regular entries and open every source component root-relative with `O_NOFOLLOW`, then require the same identity and digest during manifest hashing and ZIP streaming. Create the random sibling with `O_EXCL|O_NOFOLLOW`, retain its fd and digest authority through publication, accept success only after the output name matches that inode, and resolve POSIX-only capabilities lazily so explicit legacy manifest helpers remain portable. Bind all output operations to one effective-UID-owned private parent fd beneath trusted/non-renamable ancestors, no-follow-bind and `fchmod` every newly created parent to exact `0700`, and publish the sidecar from its own exclusive verified fd so pre-existing names are never opened or followed.

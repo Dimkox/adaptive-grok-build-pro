@@ -29,4 +29,4 @@ Out of scope: M5 execution, M6 validation, M7 delivery, M8 autonomy, M9 deployme
 - The route was rebound before product code to accepted M3 merge `67714a1...`. The fingerprint was derived by the repository `tree_fingerprint` algorithm from that clean snapshot; the same bytes produce `17f8ca...`.
 - M1/M2/M3 intake identities are consumed from their own frozen producer artifacts. The implementation-base SHA is not substituted for producer exact-base/head pairs; historical SHAs are never fabricated into an intake handoff.
 - Migration permission is limited to a freshly created disposable local PostgreSQL test database. No existing, external, production, Trust CI, or shared database may be read or mutated.
-- Runtime deadline is 14,400 seconds per task. The 2026-09-08 calendar deadline is delivery planning only, never a product field or a gate waiver.
+- Runtime deadline is 14,400 seconds per task. The superseding `2026-09-04 23:59 UTC+3` whole-program deadline is delivery planning only, never a product field or a gate waiver.

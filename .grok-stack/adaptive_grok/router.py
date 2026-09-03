@@ -38,9 +38,9 @@ DOMAIN_KEYWORDS: dict[str, tuple[str, ...]] = {
 }
 
 HIGH_RISK = (
-    'production', 'прод', 'deploy', 'деплой', 'delete', 'удалить данные', 'drop table', 'truncate',
-    'auth', 'oauth', 'permission', 'права доступа', 'billing', 'платеж', 'payment', 'pii', 'персональн',
-    'secret', 'credential', 'пароль', 'irreversible', 'необрат', 'sap write', '1c write', '1с запись',
+    'production', 'прод', 'продакшен', 'deploy', 'деплой', 'delete', 'удалить', 'удалите', 'удаление', 'удаляем', 'drop table', 'truncate',
+    'auth', 'oauth', 'permission', 'права доступа', 'billing', 'платеж', 'платёж', 'payment', 'pii', 'персональн',
+    'secret', 'credential', 'пароль', 'irreversible', 'необратим', 'sap write', '1c write', '1с запись',
     'prompt injection', 'tenant isolation', 'изоляция арендат',
 )
 MEDIUM_RISK = (
@@ -264,6 +264,8 @@ def _has_term(text: str, term: str) -> bool:
         return False
     if ' ' in needle:
         return needle in haystack
+    if needle in {'продакшен', 'необратим', 'платеж', 'платёж'}:
+        return re.search(r'(?<![\w])' + re.escape(needle) + r'[а-яё]*(?![\w])', haystack, re.UNICODE) is not None
     return re.search(r'(?<![\w])' + re.escape(needle) + r'(?![\w])', haystack, re.UNICODE) is not None
 
 

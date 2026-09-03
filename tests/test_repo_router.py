@@ -185,6 +185,26 @@ class RouterTests(unittest.TestCase):
             self.assertEqual(route.risk, 'high')
             self.assertIn('production_action_approval', route.human_gates)
 
+    def test_russian_risk_morphology_is_bounded(self) -> None:
+        with project_copy() as root:
+            for prompt in (
+                'продакшене авария',
+                'необратимое изменение',
+                'платежи пользователей',
+                'платёжное списание',
+                'удаление данных',
+            ):
+                with self.subTest(prompt=prompt):
+                    self.assertEqual(build_route(root, prompt, 's-risk').risk, 'high')
+            self.assertNotEqual(
+                build_route(root, 'обнови продуктовую документацию', 's-product-2').risk,
+                'high',
+            )
+            self.assertNotEqual(
+                build_route(root, 'добавь удалённую работу', 's-remote-work').risk,
+                'high',
+            )
+
     def test_primary_test_request_uses_test_intent(self) -> None:
         with project_copy() as root:
             route = build_route(root, 'Добавь регрессионные PHPUnit тесты для сервиса заказов', 'x')

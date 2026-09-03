@@ -456,3 +456,11 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-03 — Repeatedly routed against main instead of the immediate predecessor
 
 **Root cause:** The new route again inherited observed `origin/main` instead of the explicitly selected implementation lineage `7748a8b`, which would make cumulative fitness measure unrelated stacked history. Bind every stacked route to its exact immediate reviewed predecessor before design or implementation and verify that pair in the durable package.
+
+## 2026-09-03 — Validated stable-monitor pieces without one authority trace
+
+**Root cause:** The initial vertical tested field bounds, atomic helpers and fixtures separately, but never traced state, journal, snapshot, locking, transport topology and readiness as one adversarial end-to-end authority path. Future controller slices must freeze the complete state machine and crash/contender/remote-envelope matrix before accepting component-level GREEN.
+
+## 2026-09-03 — Let provisional throughput outrun authoritative acceptance
+
+**Root cause:** We optimized parallel provisional source throughput while the predecessor and final exact SHA were unsettled, repeatedly staling restacks and verification/review/package evidence. Freeze one milestone's authoritative head and close its external delivery gate before accepting dependent work; parallel work must remain explicitly provisional.
