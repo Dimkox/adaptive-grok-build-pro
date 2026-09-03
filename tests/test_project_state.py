@@ -29,8 +29,8 @@ M4_FAILED_VERIFY_SHA = "547ee628812fbf098f337a854f68edf660091ead"
 M4_FAILED_VERIFY_FINGERPRINT = "f0efa89e689dbe47c701a4d301e97361ee671e299ef2f32b5295b908e182e768"
 M5_ENROLLMENT_SHA = "27b0ae619cacf0d9ddeed15c60212800ff6009ca"
 M5_ENROLLMENT_TREE = "1a4e3f87da8a12e173a81e66b53f5fc21cb241c6"
-M5_RUNTIME_CHECKPOINT = "3f56b6a80ada7020f22f967c2d873a138b2e9487"
-M5_RUNTIME_TREE = "b1aea0500d6266e4886655ebf9583dd10b2155ce"
+M5_RUNTIME_CHECKPOINT = "5073fc05013d1d40c99f22d48db5dd3d4d8c4b87"
+M5_RUNTIME_TREE = "54c2d08310b03504528e24331c39a94161ae0136"
 M6_TASK1_SHA = "3def83eb915ca68e66379269526ffa64822a1104"
 M6_TASK2_SHA = "a8ca0f3afffbd9ef5584825252f9a669a324d2a5"
 M6_PROVISIONAL_SHA = "f3b2c0d07116686b27feab4b60166e8a7402d672"
@@ -482,7 +482,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(inventory["active"][1]["tree"], M5_ENROLLMENT_TREE)
         self.assertEqual(inventory["active"][2]["head"], M5_RUNTIME_CHECKPOINT)
         self.assertEqual(inventory["active"][2]["tree"], M5_RUNTIME_TREE)
-        self.assertEqual(inventory["active"][2]["worktree"], "uncommitted_in_progress")
+        self.assertEqual(inventory["active"][2]["worktree"], "clean_at_runtime_checkpoint")
         self.assertEqual(inventory["active"][3]["task1_head"], M6_TASK1_SHA)
         self.assertEqual(inventory["active"][3]["task2_head"], M6_TASK2_SHA)
         self.assertEqual(inventory["active"][3]["head"], M6_PROVISIONAL_SHA)

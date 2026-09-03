@@ -3,9 +3,9 @@
 Navigation: [package](brief.md) ↔ [design](../../../docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md) ↔ [plan](../../../docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md) ↔ [release](release.md) / [rollback](rollback.md) / [evidence](evidence/README.md).
 
 - Hard deadline: `2026-09-08 00:00 UTC+3`; normal verification reserve begins `2026-09-07 20:00 UTC+3`.
-- Observation: `2026-09-03 11:03 UTC+3`, about 109 hours remain. M4's planned window is missed: PR #21 at `571cad7` failed external `root-unittest`; local hotfix/package candidate `9727bc3` is unpushed and not externally rechecked.
+- Observation: `2026-09-03 11:41 UTC+3`, about 108 hours remain. M4's planned window is missed: PR #21 at `571cad7` failed external `root-unittest`; local hotfix/package candidate `9727bc3` is unpushed and not externally rechecked.
 - Successor 04 contract enrollment/comparator was restacked at `2026-09-03 03:48-03:51 UTC+3` and is clean at `27b0ae6` on exact predecessor `8a7be8a`. Exact fitness and independent comparator/security review pass.
-- Successor 05 runtime/recovery/additive-v2 began from `27b0ae6`; preservation checkpoint `3f56b6a` was committed at `2026-09-03 03:54 UTC+3`. Pure/structure tests are green, but the actual M5 restart probe remains M4-only and the four inert systemd sources/tests are absent.
+- Successor 05 runtime/recovery/additive-v2 began from `27b0ae6`; preservation checkpoint `3f56b6a` was followed by coherent runtime checkpoint `5073fc0` (tree `54c2d08`). Pure/structure tests are green, but the actual M5 restart probe remains M4-only and the four inert systemd sources/tests are absent.
 - Successor 06 is reserved for inert systemd/installer/final docs if required by the bounded change budget. Each successor must use its immediate predecessor as PR base; cumulative `9727bc3` → `27b0ae6` exceeds the architecture size gate and may not be squashed.
 
 | Dependency window | Compressed target | Factual gate |

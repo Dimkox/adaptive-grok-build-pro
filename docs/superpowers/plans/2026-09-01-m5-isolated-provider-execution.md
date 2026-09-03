@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Route is `37b05f579320`. Successor 04 is frozen at `27b0ae6` on exact predecessor `8a7be8a`; successor 05 is in progress on `27b0ae6` at preservation checkpoint `3f56b6a`; successor 06 remains pending. Every PR must use its immediate predecessor because cumulative M4→successor-04 exceeds the architecture change budget. Current M4 `9727bc3` and M5 SHAs are local observational checkpoints, not accepted roots or delivery authority.
+- Route is `37b05f579320`. Successor 04 is frozen at `27b0ae6` on exact predecessor `8a7be8a`; successor 05 is in progress on `27b0ae6` at coherent runtime checkpoint `5073fc0` (tree `54c2d08`); successor 06 remains pending. Every PR must use its immediate predecessor because cumulative M4→successor-04 exceeds the architecture change budget. Current M4 `9727bc3` and M5 SHAs are local observational checkpoints, not accepted roots or delivery authority.
 - Delivery target is `2026-09-08 00:00 UTC+3`; calendar pressure cannot waive tests, independent review, external Trust CI, or the dedicated rootless-host exit gate.
 - Keep `/v1/claims` legacy semantics: its `packet_digest` remains the M4 `intent_digest`; use new execution endpoints and a new canonical packet digest.
 - Preserve M4 ceilings and authority: 20 global readers, 10 readers per repository, one writer, four hours, USD 25, and initial attempt plus two infrastructure retries.

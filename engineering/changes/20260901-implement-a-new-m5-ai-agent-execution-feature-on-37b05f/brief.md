@@ -6,7 +6,7 @@ Change ID: `20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f`
 Route: `37b05f579320`
 Current M4 local candidate: `9727bc30c82bb44a86db0ef5b62e507b5527207a` (source `3b1f9a5`, tree `5feb9a7`); PR #21 still contains failed `571cad7`, so accepted M4 remains absent.
 Frozen M5 predecessor: successor 04 contract enrollment/comparator `27b0ae619cacf0d9ddeed15c60212800ff6009ca` (tree `1a4e3f8`) on exact predecessor `8a7be8a`; independent review/fitness pass.
-Current successor: successor 05 runtime/recovery/additive-v2 on exact `27b0ae6`, preservation checkpoint `3f56b6a`, worktree provisional.
+Current successor: successor 05 runtime/recovery/additive-v2 on exact `27b0ae6`, coherent runtime checkpoint `5073fc0` (tree `54c2d08`); actual restart proof remains open.
 
 Navigation: [README](../../../README.md) ↔ [roadmap](../../../DARK_FACTORY_ROADMAP.md) ↔ [design](../../../docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md) ↔ [plan](../../../docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md) ↔ [schedule](schedule.md) / [release](release.md) / [rollback](rollback.md) / [evidence](evidence/README.md).
 

@@ -19,11 +19,17 @@
       "from": "scoped",
       "reason": "user approved canonical design and continuous M5 implementation",
       "to": "approved"
+    },
+    {
+      "at": "2026-09-03T00:48:01+00:00",
+      "from": "approved",
+      "reason": "bounded successor source implementation materialized; successor 04 is frozen and successor 05 runtime remains in progress without a verification, acceptance or delivery claim",
+      "to": "implementing"
     }
   ],
   "route_id": "37b05f579320",
   "schema_version": 1,
-  "status": "approved",
+  "status": "implementing",
   "title": "Materialize M5 as bounded stacked successors: successor 04 contract enrollment/comparator is frozen at 27b0ae6; successor 05 runtime recovery and additive v2 is provisional on that exact base; successor 06 systemd/installer/docs remains pending. Local source only; no live provider calls, secrets, package publication, operational activation or delivery authority.",
-  "updated_at": "2026-09-03T08:30:39+00:00"
+  "updated_at": "2026-09-03T08:41:53+00:00"
 }
