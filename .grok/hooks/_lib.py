@@ -135,12 +135,35 @@ def _literal_git_subcommand(words: list[str]) -> str | None:
 
 def _contains_nested_command_shell(words: list[str]) -> bool:
     shells = {'bash', 'sh', 'zsh', 'dash', 'ksh'}
-    for shell_index, token in enumerate(words):
-        if Path(token).name.lower() not in shells:
+    return any(Path(token).name.lower() in shells for token in words)
+
+
+def _has_dynamic_git_push_arguments(words: list[str]) -> bool:
+    segments: list[list[str]] = [[]]
+    for word in words:
+        if word in {'&&', '||', ';', '|'}:
+            segments.append([])
+        else:
+            segments[-1].append(word)
+    for segment in segments:
+        while segment and re.match(r'^[A-Za-z_][A-Za-z0-9_]*=', segment[0]):
+            segment = segment[1:]
+        if not segment or Path(segment[0]).name.lower() != 'git':
             continue
-        for option in words[shell_index + 1:-1]:
-            if re.fullmatch(r'-[A-Za-z]*c[A-Za-z]*', option):
-                return True
+        index = 1
+        while index < len(segment):
+            token = segment[index]
+            if token in {'-C', '-c', '--git-dir', '--work-tree'}:
+                index += 2
+                continue
+            if token.startswith(('--git-dir=', '--work-tree=')):
+                index += 1
+                continue
+            break
+        if index >= len(segment) or segment[index].lower() != 'push':
+            continue
+        if any('$' in token or '`' in token for token in segment[index + 1:]):
+            return True
     return False
 
 
@@ -238,9 +261,15 @@ def _command_directory_aliases(command: str, *, depth: int = 0) -> dict[str, str
     if words and words[0] == 'exec':
         aliases['command.exec-shell'] = '<ambiguous>'
         return aliases
-    if depth < 3 and words:
+    if _has_dynamic_git_push_arguments(words):
+        aliases['command.dynamic-production-arguments'] = '<ambiguous>'
+        return aliases
+    if words:
         executable = Path(words[0]).name.lower()
         if executable in {'bash', 'sh', 'zsh', 'dash', 'ksh'}:
+            if depth > 0:
+                aliases['command.nested-shell-depth'] = '<ambiguous>'
+                return aliases
             if len(words) != 3 or words[1] not in {'-c', '-lc'}:
                 aliases['command.shell-options'] = '<ambiguous>'
                 return aliases

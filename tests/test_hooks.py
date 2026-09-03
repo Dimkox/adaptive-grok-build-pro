@@ -535,6 +535,51 @@ class HookTests(unittest.TestCase):
             self.assertIn('ambiguous-command-root', serialized)
             self.assertNotIn('git push origin feature', serialized)
 
+    def test_nested_shell_sources_and_dynamic_push_scope_fail_closed(self) -> None:
+        with project_copy(git=True) as session_root, project_copy(git=True) as other_root:
+            command = "bash -lc 'bash -lc \"git push origin feature\"'"
+            with self.subTest(command=command):
+                _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                    'cwd': str(session_root),
+                    'session_id': 'nested-supported-shell',
+                    'tool_name': 'Bash',
+                    'tool_input': {'command': command},
+                })
+                self.assertEqual(data['decision'], 'deny', (error, data))
+
+            self._grant(session_root, 'production', actions=['git-push-branch'])
+            unsafe_commands = (
+                f'chroot {other_root} bash /push-script.sh',
+                f'chroot {other_root} sh -s',
+                f'unknown-dispatch --root {other_root} bash /push-script.sh',
+                f'unknown-dispatch --root {other_root} sh -s',
+                "bash -lc 'git push \"$REFS\"'",
+                "bash -lc 'git push \"${REFS}\"'",
+                "bash -lc 'git push \"$@\"' _",
+            )
+            for index, command in enumerate(unsafe_commands):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                        'cwd': str(session_root),
+                        'session_id': f'nested-shell-scope-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'deny', (command, error, data))
+
+            for index, command in enumerate((
+                "bash -lc 'echo \"$HOME\"'",
+                "bash -lc 'git status --short'",
+            )):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                        'cwd': str(session_root),
+                        'session_id': f'single-shell-read-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'allow', (command, error, data))
+
     def test_subagent_lifecycle_is_recorded(self) -> None:
         with project_copy() as root:
             route = build_route(root, 'Исправить PHP баг', 's1').to_dict()
