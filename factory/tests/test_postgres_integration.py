@@ -1381,7 +1381,20 @@ class PostgresFactoryTests(unittest.TestCase):
 
         conflicting = {**refreshed, "source_digest": "8" * 64}
         conflict = client.post("/v1/tasks", json=conflicting, headers=duplicate_headers)
-        self.assertEqual((conflict.status_code, conflict.json()), (409, {"error": "conflict"}))
+        self.assertEqual(
+            (conflict.status_code, conflict.json()),
+            (
+                409,
+                {
+                    "error": "conflict",
+                    "code": "store_conflict",
+                    "detail": "stored command conflicts with request",
+                },
+            ),
+        )
+        self.assertEqual(
+            conflict.headers["X-Correlation-ID"], "semantic-correlation-002"
+        )
 
         replacement = self.payload(source=source)
         replacement["request_id"] = "semantic-http-003"
@@ -1410,9 +1423,27 @@ class PostgresFactoryTests(unittest.TestCase):
             )
             self.assertEqual(dict(cursor.fetchall()), {"queued": 1, "superseded": 1})
             cursor.execute(
-                "SELECT count(*) FROM factory.command_results WHERE action='intake'"
+                "SELECT correlation_id FROM factory.command_results WHERE action='intake'"
             )
-            self.assertEqual(cursor.fetchone()[0], 3)
+            self.assertEqual(
+                {row[0] for row in cursor.fetchall()},
+                {
+                    "semantic-correlation-001",
+                    "semantic-correlation-002",
+                    "semantic-correlation-003",
+                },
+            )
+            cursor.execute(
+                "SELECT action,correlation_id FROM factory.audit_log ORDER BY audit_id"
+            )
+            self.assertEqual(
+                cursor.fetchall(),
+                [
+                    ("intake", "semantic-correlation-001"),
+                    ("superseded", "semantic-correlation-003"),
+                    ("intake", "semantic-correlation-003"),
+                ],
+            )
 
     def test_changed_frozen_head_authority_and_limits_supersede_exact_replay(self):
         import psycopg
@@ -2844,12 +2875,20 @@ class PostgresFactoryTests(unittest.TestCase):
                     locker.rollback()
         locker.close()
         self.assertFalse(timed_out, "metric row lock delayed the authoritative stale-fence response")
-        self.assertEqual((response.status_code, response.json()), (409, {"error": "conflict", "code": "stale_fence"}))
+        stale_fence_error = {
+            "error": "conflict",
+            "code": "stale_fence",
+            "detail": "lease fence is stale",
+        }
+        self.assertEqual((response.status_code, response.json()), (409, stale_fence_error))
         self.assertEqual(
             self.store.metrics()["factory_lease_reclaim_and_fence_rejection_total"]["fence_rejected"], 0
         )
         after_unlock = request("unlocked-fence-command")
-        self.assertEqual((after_unlock.status_code, after_unlock.json()), (409, {"error": "conflict", "code": "stale_fence"}))
+        self.assertEqual(
+            (after_unlock.status_code, after_unlock.json()),
+            (409, stale_fence_error),
+        )
         self.assertEqual(
             self.store.metrics()["factory_lease_reclaim_and_fence_rejection_total"]["fence_rejected"], 1
         )
@@ -3998,7 +4037,11 @@ class PostgresFactoryTests(unittest.TestCase):
             self.assertEqual(response.status_code, 503)
             self.assertEqual(
                 response.json(),
-                {"error": "unavailable", "code": "database"},
+                {
+                    "error": "unavailable",
+                    "code": "database",
+                    "detail": "database unavailable",
+                },
             )
             self.assertNotIn("connection slot contention", response.text)
         self.assertEqual(connect.call_count, 2)
@@ -4128,7 +4171,14 @@ class PostgresFactoryTests(unittest.TestCase):
                     pool.shutdown(wait=True)
                 self.assertEqual(
                     (response.status_code, response.json()),
-                    (503, {"error": "unavailable", "code": "database"}),
+                    (
+                        503,
+                        {
+                            "error": "unavailable",
+                            "code": "database",
+                            "detail": "database unavailable",
+                        },
+                    ),
                 )
                 self.assertLess(elapsed, 0.75)
 

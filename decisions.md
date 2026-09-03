@@ -384,3 +384,7 @@ Expose a task-bound run UUID cursor while resolving it to the run's immutable fe
 ## 2026-09-03 — Centralize task transitions without changing lock ownership
 
 Apply every task-state update through one operation-scoped, lock-neutral policy primitive after the caller acquires its required locks. This preserves capacity-before-task ordering in cleanup paths and makes any policy or evidence failure roll back the full mutation transaction.
+
+## 2026-09-03 — Make one checked document the API contract
+
+Disable runtime OpenAPI generation and describe all 17 operations with closed inline schemas, stable operation IDs, normalized errors and required response correlation in the checked contract. Keeping operation IDs optional for legacy architecture inputs while validating uniqueness and compatibility when present preserves existing Trust CI contracts without weakening the factory-specific gate.

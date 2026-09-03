@@ -13,6 +13,7 @@ from adaptive_factory.models import (
     TaskProjection,
     TaskStatus,
 )
+from adaptive_factory.store import PostgresFactoryStore
 
 
 NOW = datetime(2026, 9, 3, 12, 0, tzinfo=timezone.utc)
@@ -100,6 +101,38 @@ class ImmutableSnapshotTests(unittest.TestCase):
                 "nested": {"labels": ["one", {"name": "two"}]},
             },
         )
+
+    def test_store_event_projection_enforces_closed_public_metadata_superset(self):
+        task_id = "00000000-0000-0000-0000-000000000001"
+        base = (
+            "00000000-0000-0000-0000-000000000004",
+            task_id,
+            1,
+            "c" * 64,
+            "worker-1",
+            "phase_transitioned",
+            {
+                "from_state": "leased",
+                "target": "analyzing",
+                "operation": "phase",
+                "run_id": "00000000-0000-0000-0000-000000000002",
+                "fence": 1,
+            },
+            False,
+            NOW,
+        )
+        event = PostgresFactoryStore._event_snapshot(base, task_id)
+        self.assertEqual(event.metadata["operation"], "phase")
+
+        for metadata in (
+            {**base[6], "unknown": "not reviewed"},
+            {**base[6], "fence": True},
+            {**base[6], "target": "not-a-task-state"},
+        ):
+            with self.subTest(metadata=metadata), self.assertRaises(ValueError):
+                PostgresFactoryStore._event_snapshot(
+                    (*base[:6], metadata, *base[7:]), task_id
+                )
 
 
 if __name__ == "__main__":

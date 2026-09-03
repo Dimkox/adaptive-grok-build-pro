@@ -1049,6 +1049,7 @@ _SUPPORTED_SCHEMA_KEYS = {
     "pattern",
 }
 _HTTP_METHODS = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
+_OPERATION_ID = re.compile(r"^[A-Za-z][A-Za-z0-9._-]{0,127}$")
 _SUPPORTED_CONTRACT_KINDS = {"event", "json_schema", "openapi", "signed_payload"}
 _SUPPORTED_COMPATIBILITY_MODES = {
     "bidirectional",
@@ -1331,6 +1332,33 @@ def _supported_parameters(parameters: Any, schemas: list[dict[str, Any]]) -> boo
     return True
 
 
+def _supported_response_headers(
+    headers: Any, schemas: list[dict[str, Any]]
+) -> bool:
+    if not isinstance(headers, dict):
+        return False
+    names: set[str] = set()
+    for name, header in headers.items():
+        if not isinstance(name, str) or not name or name.lower() in names:
+            return False
+        names.add(name.lower())
+        if not isinstance(header, dict) or not set(header) <= {
+            "description",
+            "required",
+            "schema",
+        }:
+            return False
+        if "description" in header and not isinstance(header["description"], str):
+            return False
+        if "required" in header and not isinstance(header["required"], bool):
+            return False
+        schema = header.get("schema")
+        if _unsupported_schema(schema):
+            return False
+        schemas.append(schema)
+    return True
+
+
 def _security_schemes(document: dict[str, Any]) -> dict[str, dict[str, Any]] | None:
     components = document.get("components", {})
     if not isinstance(components, dict) or not set(components) <= {"securitySchemes"}:
@@ -1407,6 +1435,7 @@ def _openapi_schemas(document: Any) -> tuple[dict[str, Any], ...] | None:
     if "security" in document and not _supported_security(document["security"], schemes):
         return None
     schemas: list[dict[str, Any]] = []
+    operation_ids: set[str] = set()
     for path, path_item in paths.items():
         if not isinstance(path, str) or not path.startswith("/") or not isinstance(path_item, dict):
             return None
@@ -1439,6 +1468,14 @@ def _openapi_schemas(document: Any) -> tuple[dict[str, Any], ...] | None:
                 for key in ("description", "operationId", "summary")
             ):
                 return None
+            if "operationId" in operation:
+                operation_id = operation["operationId"]
+                if (
+                    not _OPERATION_ID.fullmatch(operation_id)
+                    or operation_id in operation_ids
+                ):
+                    return None
+                operation_ids.add(operation_id)
             if "tags" in operation and (
                 not isinstance(operation["tags"], list)
                 or not all(isinstance(item, str) for item in operation["tags"])
@@ -1475,14 +1512,30 @@ def _openapi_schemas(document: Any) -> tuple[dict[str, Any], ...] | None:
                 if not isinstance(response, dict) or not set(response) <= {
                     "content",
                     "description",
+                    "headers",
                 }:
                     return None
                 if not isinstance(response.get("description"), str):
+                    return None
+                if "headers" in response and not _supported_response_headers(
+                    response["headers"], schemas
+                ):
                     return None
                 if "content" in response and not _supported_content(
                     response["content"], schemas
                 ):
                     return None
+            effective_parameters = _effective_parameters(path_item, operation)
+            path_parameters = {
+                name for (location, name) in effective_parameters if location == "path"
+            }
+            placeholders = set(re.findall(r"\{([^{}]+)\}", path))
+            if "{" in re.sub(r"\{[^{}]+\}", "", path) or "}" in re.sub(
+                r"\{[^{}]+\}", "", path
+            ):
+                return None
+            if path_parameters != placeholders:
+                return None
     return tuple(schemas)
 
 
@@ -1519,6 +1572,13 @@ def _effective_security(document: dict[str, Any], operation: dict[str, Any]) -> 
     return operation["security"] if "security" in operation else document.get("security")
 
 
+def _response_headers(response: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {
+        name.lower(): header
+        for name, header in response.get("headers", {}).items()
+    }
+
+
 def _security_identity(value: Any) -> tuple[tuple[str, ...], ...]:
     return tuple(sorted(tuple(sorted(requirement)) for requirement in (value or [])))
 
@@ -1535,6 +1595,11 @@ def _compare_openapi(base: dict[str, Any], head: dict[str, Any], reasons: set[st
     for key in sorted(set(base_operations) & set(head_operations)):
         base_path_item, base_operation = base_operations[key]
         head_path_item, head_operation = head_operations[key]
+        if (
+            "operationId" in base_operation
+            and base_operation.get("operationId") != head_operation.get("operationId")
+        ):
+            reasons.add("changed_operation_id")
         base_security = _effective_security(base, base_operation)
         head_security = _effective_security(head, head_operation)
         if _security_identity(base_security) != _security_identity(head_security):
@@ -1616,6 +1681,24 @@ def _compare_openapi(base: dict[str, Any], head: dict[str, Any], reasons: set[st
                 reasons.add("removed_response_schema")
             elif head_schemas:
                 reasons.add("widened_producer_output")
+            base_headers = _response_headers(base_response)
+            head_headers = _response_headers(head_response)
+            for header_name in set(base_headers) - set(head_headers):
+                if base_headers[header_name].get("required", False):
+                    reasons.add("removed_response_header")
+            for header_name in set(base_headers) & set(head_headers):
+                base_header = base_headers[header_name]
+                head_header = head_headers[header_name]
+                if base_header.get("required", False) and not head_header.get(
+                    "required", False
+                ):
+                    reasons.add("changed_response_header_requirement")
+                _compare_schema_direction(
+                    base_header["schema"],
+                    head_header["schema"],
+                    "producer",
+                    reasons,
+                )
 
 
 def _event_meaning(document: dict[str, Any]) -> tuple[tuple[str, str], ...]:

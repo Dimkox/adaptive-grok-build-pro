@@ -36,9 +36,9 @@ class FakeService:
     def __init__(self):
         self.calls = []
 
-    def intake(self, payload, *, actor, now):
+    def intake(self, payload, *, actor, now, correlation_id=None):
         intake = TaskIntakeV1.from_dict(payload, now=now)
-        self.calls.append(("intake", actor, intake))
+        self.calls.append(("intake", actor, intake, correlation_id))
         task = TaskProjection(
             "00000000-0000-0000-0000-000000000001",
             intake.repository_id,
@@ -94,7 +94,13 @@ class FakeService:
             "c" * 64,
             "worker-1",
             "phase_transitioned",
-            {"from_state": "leased", "target": "analyzing", "nested": {"values": [1, 2]}},
+            {
+                "from_state": "leased",
+                "target": "analyzing",
+                "operation": "phase",
+                "attempts": 1,
+                "infrastructure_retries": 2,
+            },
             False,
             now,
         )
@@ -158,15 +164,81 @@ class ApiTests(unittest.TestCase):
         response = self.client.post("/v1/tasks", headers=self.auth, json=self.payload())
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.headers["X-Correlation-ID"], "correlation-001")
+        self.assertEqual(self.service.calls[-1][3], "correlation-001")
         self.assertNotIn(self.token, response.text)
 
-    def test_api_has_no_execution_external_write_or_systemd_endpoint(self):
-        paths = set(self.client.get("/openapi.json").json()["paths"])
+    def test_checked_contract_is_the_only_openapi_surface(self):
+        self.assertEqual(self.client.get("/openapi.json").status_code, 404)
+        contract = json.loads(
+            (Path(__file__).resolve().parents[1] / "contracts/openapi/factory-control.v1.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        paths = set(contract["paths"])
         forbidden = {"/v1/providers/run", "/v1/git/push", "/v1/pull-requests", "/v1/deploy", "/v1/systemd", "/v1/shell"}
         self.assertFalse(paths & forbidden)
         self.assertIn("/v1/budget-reservations", paths)
         self.assertIn("/v1/usage-observations", paths)
         self.assertEqual(self.client.get("/health/ready").json()["database_role"], "factory_runtime")
+
+    def test_declared_errors_are_normalized_correlated_and_preserve_auth_challenge(self):
+        unauthorized = self.client.post("/v1/tasks", json=self.payload())
+        self.assertEqual(unauthorized.status_code, 401)
+        self.assertEqual(unauthorized.headers["WWW-Authenticate"], "Bearer")
+        self.assertRegex(unauthorized.headers["X-Correlation-ID"], r"^[0-9a-f-]{36}$")
+        self.assertEqual(
+            unauthorized.json(),
+            {
+                "error": "unauthorized",
+                "code": "authentication",
+                "detail": "bearer authentication required",
+            },
+        )
+
+        malformed = self.client.post(
+            "/v1/tasks",
+            headers={
+                "Authorization": f"Bearer {self.token}",
+                "X-Correlation-ID": "error-correlation",
+            },
+            json=self.payload(),
+        )
+        self.assertEqual(malformed.status_code, 400)
+        self.assertEqual(malformed.headers["X-Correlation-ID"], "error-correlation")
+        self.assertEqual(
+            malformed.json(),
+            {
+                "error": "invalid",
+                "code": "invalid_request",
+                "detail": "valid Idempotency-Key header required",
+            },
+        )
+
+    def test_body_limit_applies_only_to_body_bearing_methods(self):
+        response = self.client.request(
+            "GET",
+            "/health/live",
+            headers={"Content-Length": "not-a-number"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "live"})
+        self.assertRegex(response.headers["X-Correlation-ID"], r"^[0-9a-f-]{36}$")
+
+    def test_optional_read_correlation_is_normalized_at_the_response_boundary(self):
+        response = self.client.get(
+            "/v1/tasks",
+            params={"repository_id": "owner/repository"},
+            headers={
+                "Authorization": f"Bearer {self.token}",
+                "X-Correlation-ID": "not valid whitespace",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"items": []})
+        self.assertNotEqual(
+            response.headers["X-Correlation-ID"], "not valid whitespace"
+        )
+        self.assertRegex(response.headers["X-Correlation-ID"], r"^[0-9a-f-]{36}$")
 
     def test_bounded_run_attempt_and_event_history_are_exposed(self):
         task_id = "00000000-0000-0000-0000-000000000001"
@@ -192,7 +264,7 @@ class ApiTests(unittest.TestCase):
         )
         self.assertEqual(events.status_code, 200)
         self.assertEqual(events.json()["items"][0]["event_sequence"], 1)
-        self.assertEqual(events.json()["items"][0]["metadata"]["nested"]["values"], [1, 2])
+        self.assertEqual(events.json()["items"][0]["metadata"]["attempts"], 1)
         self.assertIsNone(events.json()["cursor"])
         self.assertEqual(self.service.calls[-2][0], "runs")
         self.assertEqual(self.service.calls[-1][0], "events")
@@ -253,7 +325,14 @@ class ApiTests(unittest.TestCase):
         )
         self.assertEqual(
             (conflict.status_code, conflict.json()),
-            (409, {"error": "conflict", "code": "invalid_transition"}),
+            (
+                409,
+                {
+                    "error": "conflict",
+                    "code": "invalid_transition",
+                    "detail": "task transition is not allowed",
+                },
+            ),
         )
         self.assertNotIn("internal transition policy detail", conflict.text)
         for payload in (
@@ -305,7 +384,14 @@ class ApiTests(unittest.TestCase):
         response = self.client.post("/v1/tasks", headers=self.auth, json=self.payload())
         self.assertEqual(
             (response.status_code, response.json()),
-            (503, {"error": "unavailable", "code": "database"}),
+            (
+                503,
+                {
+                    "error": "unavailable",
+                    "code": "database",
+                    "detail": "database unavailable",
+                },
+            ),
         )
         self.assertNotIn("internal database detail", response.text)
 

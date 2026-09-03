@@ -6,15 +6,16 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 
 ## Delivered behavior
 
-- Closed typed intake, handoff, actor, task, run, attempt and command records with canonical digests, full-frozen-intent duplicate identity, atomic supersession and bounded 4xx validation.
-- Twelve contiguous checksum-locked factory migrations, repository/full-policy/action-bound transaction-serialized M0 authority, complete schema-008 unsafe-accounting quarantine, audit-v2 evidence, task-history indexes, capability-shaped capacity and fixed-metrics authority, effective least-privilege `factory_runtime` execution and no `trust_ci` privileges.
+- Closed typed intake, handoff, actor, task, run, attempt, event and command records with canonical digests, separate complete-intent/semantic-work/transport-command identities, atomic supersession and bounded validation.
+- Thirteen contiguous checksum-locked factory migrations, repository/full-policy/action-bound transaction-serialized M0 authority, complete schema-008 unsafe-accounting quarantine, audit-v2 evidence, task-history indexes, capability-shaped capacity and fixed-metrics authority, effective least-privilege `factory_runtime` execution and no `trust_ci` privileges.
 - Transactional `FOR UPDATE SKIP LOCKED` claims, monotonic per-task fences, database-time leases/deadlines and 20 global readers / 10 per repository / one writer capacity.
 - Initial attempt plus two infrastructure retries, terminal dead/needs-human handling, 14,400-second and USD 25/token/output/event/repair ceilings, durable fail-closed missing accounting and idempotent usage observations.
-- Global/repository kills, complete task/run/correlation-bound hash-chained audit, and capacity-before-task reconciliation capped at 100 candidates and an exact five-second transaction timeout.
-- Constant-time scoped bearer authentication, actor/repository-bound worker mutations, bounded streaming bodies, durable idempotency/correlation, accounting endpoints, checked-in OpenAPI, and CLI control over Unix HTTP only.
+- Global/repository kills, complete task/run/correlation-bound hash-chained audit, and capacity-before-task reconciliation capped at 100 candidates under one five-second PostgreSQL 17 operation deadline.
+- Constant-time scoped bearer authentication, actor/repository-bound worker mutations, bounded streaming bodies, durable idempotency/correlation, bounded run/attempt/event history, fenced phase transitions, accounting endpoints, and CLI control over Unix HTTP only.
+- One checked closed-inline OpenAPI document describes all 17 stable operations; runtime generation is disabled, every response is correlated, and normalized bounded errors preserve code/detail and the 401 bearer challenge.
 - Runnable `adaptive-factory-server` composition that pre-binds only an owned mode-`0660` Unix socket, absolute owner-pinned no-follow actor/token ancestry, plus dependency-aware readiness and the three declared redacted metric families.
 - Reproducible `adaptive-factory-admin` local bootstrap/migration interface with distinct owner/runtime DSNs, bounded `NOINHERIT` runtime login membership and effective-role readiness validation.
-- Architecture model/rules/diagrams, K17 README graph, roadmap/status, installer inventory, verifier integration, release and forward-recovery documentation.
+- Architecture model/rules/diagrams, K22 README graph, roadmap/status, installer inventory, verifier integration, release and forward-recovery documentation.
 
 ## Commits
 
@@ -42,6 +43,11 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 - `7eaccd6` — frozen observability-boundary review evidence.
 - `94fc5ad` — transactional fixed-row metrics snapshot, closed runtime capabilities and bounded rejection accounting.
 - `4f75558` — explicit best-effort rejection handling, final-PID1 PostgreSQL readiness and M4-M9 program connectivity.
+- `ea5ef4f` — deadline/accounting reconciliation lifecycle repair.
+- `3b13742` — separate semantic work and transport command identity.
+- `a48c78f` — immutable versioned lifecycle snapshots.
+- `85523e8` — bounded authorized lifecycle history.
+- `a1f64e9` — central fenced operation-scoped task transitions.
 
 ## Independent-review remediation
 
@@ -67,6 +73,12 @@ The first exact verifier after wave six passed 12/14 gates but rejected two exit
 
 Current documentation connects M4 control/evidence through the provisional M5 packet/execution result and M6 semantic verdict, then roadmap-only M7 ready-for-PR shadow bundle, M8 exact-profile cohort/demotion and M9 exact signed-artifact delivery/recovery. Each edge names digest/SHA binding, gate, invalidation, rollback and forbidden authority; the hard deadline is **2026-09-08 00:00 UTC+3**, M5 remains rootless-host blocked, current authority caps M8 at L2, and production promotion remains human-owned. None of these connections claims M4-M9 completion, push, external check, merge or deployment.
 
+## Resumed data and architecture repairs
+
+The current repair makes deadline/accounting reconciliation cursor-stable and quarantines unresolved cancel/supersede evidence; separates immutable full intent from semantic work and transport replay; adds frozen task/run/attempt/event projections with bounded authorized history; and routes every task-state mutation through one operation-scoped transition policy while preserving lock order and the seven-field lease grant. The checked OpenAPI document is now the sole schema surface and declares the exact 17-operation runtime, closed inline bodies/results/errors and correlation headers; generated `/openapi.json` is disabled.
+
+Focused PostgreSQL 17 evidence culminated in a 64/64 full integration pass in 57.594 seconds. The HTTP intake case proves fresh equivalent authority returns the same task, same-request changed body conflicts, a semantic change supersedes exactly once, and actual correlation headers persist independently in command/audit rows. Dependency-free factory tests report 67 passes plus 64 expected PostgreSQL skips, architecture tests report 53/53, and lint/compile/diff checks pass; these are implementation evidence, not final verifier/review receipts or external authority.
+
 ## Verification evidence
 
 - Final remediation factory suite: 63/63 passed in 32.699s against fresh disposable PostgreSQL 17, including API integration, both authority interleavings/forms, schema-008 upgrade safety, exhausted-event cleanup, effective-role denials, accounting recovery, deadlock regression, repository kill, bounded reconciliation, query plans, bootstrap and UDS authentication.
@@ -89,7 +101,7 @@ Only exact disposable local PostgreSQL containers created by the focused and exi
 
 ## Rollout, rollback and remaining authority
 
-Source rollout only: no service was activated and no migration was run outside disposable databases. Recovery after durable intake is global kill, stop local intake/claims, preserve audit/state, restore backup into a separate comparison database and forward-fix with migration `013+`; destructive down-migration is prohibited.
+Source rollout only: no service was activated and no migration was run outside disposable databases. Recovery after durable intake is global kill, stop local intake/claims, preserve audit/state, restore backup into a separate comparison database and use a separately reviewed dependency-coordinated forward repair; destructive down-migration is prohibited. The tracked `2.0.13` archive and sidecar predate these repairs and remain stale until rebuilt after the final product/document tree is frozen.
 
 M5 branch `milestone/m5-isolated-execution-provisional-m4` (route `37b05f579320`) and M6 branch `milestone/m6-semantic-validation-provisional-m4` (route `82aac86a3bf9`) are provisional parallel work based on M4 product `94fc5ad`; both must restack onto their accepted predecessors. This is a repository-local dependency handoff, not a push, external check or delivery claim.
 

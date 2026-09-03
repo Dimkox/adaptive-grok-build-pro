@@ -10,7 +10,9 @@ import uuid
 from typing import Any, Mapping
 
 from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .contracts import ContractError, canonical_digest
 from .models import Actor, LeaseGrant, RunRole, TaskStatus
@@ -30,6 +32,7 @@ MAX_BODY_BYTES = 1_048_576
 HEADER_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 TEXT_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 HEX64_TEXT = re.compile(r"^[0-9a-f]{64}$")
+BODY_BEARING_METHODS = frozenset({"POST", "PUT", "PATCH"})
 
 
 def _json(value: Any) -> Any:
@@ -156,66 +159,163 @@ def _grant(payload: Mapping[str, Any]) -> LeaseGrant:
         raise HTTPException(422, "invalid lease grant") from exc
 
 
+def _error_response(
+    error: str,
+    code: str,
+    detail: str,
+    status_code: int,
+    *,
+    headers: Mapping[str, str] | None = None,
+) -> JSONResponse:
+    return JSONResponse(
+        {"error": error, "code": code, "detail": detail},
+        status_code=status_code,
+        headers=dict(headers or {}),
+    )
+
+
+def _http_error(status_code: int, detail: Any) -> tuple[str, str, str]:
+    safe_detail = detail if isinstance(detail, str) and len(detail) <= 160 else "request rejected"
+    if status_code == 401:
+        return "unauthorized", "authentication", safe_detail
+    if status_code == 403:
+        return "unauthorized", "authorization", safe_detail
+    if status_code == 404:
+        return "not_found", "not_found", safe_detail
+    if status_code == 409:
+        return "conflict", "conflict", safe_detail
+    if status_code == 413:
+        return "invalid", "body_too_large", safe_detail
+    if status_code == 503:
+        return "unavailable", "unavailable", safe_detail
+    return "invalid", "invalid_request", safe_detail
+
+
 def create_app(service, authenticator: Authenticator) -> FastAPI:
-    app = FastAPI(title="Adaptive Factory Local Control API", version="1.0.0", docs_url=None, redoc_url=None)
+    app = FastAPI(
+        title="Adaptive Factory Local Control API",
+        version="1.0.0",
+        openapi_url=None,
+        docs_url=None,
+        redoc_url=None,
+    )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error(_request: Request, error: StarletteHTTPException):
+        category, code, detail = _http_error(error.status_code, error.detail)
+        return _error_response(
+            category,
+            code,
+            detail,
+            error.status_code,
+            headers=error.headers,
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def request_validation_error(_request: Request, _error: RequestValidationError):
+        return _error_response(
+            "invalid", "invalid_request", "request validation failed", 422
+        )
 
     @app.exception_handler(ContractError)
     async def contract_error(_request: Request, error: ContractError):
-        return JSONResponse({"error": "invalid", "code": error.code}, status_code=422)
+        return _error_response(
+            "invalid", error.code, "contract validation failed", 422
+        )
 
     @app.exception_handler(AuthorizationError)
     async def authorization_error(_request: Request, _error: AuthorizationError):
-        return JSONResponse({"error": "unauthorized"}, status_code=403)
+        return _error_response(
+            "unauthorized", "authorization", "authorization denied", 403
+        )
 
     @app.exception_handler(AuthorityError)
     async def authority_error(_request: Request, _error: AuthorityError):
-        return JSONResponse({"error": "unauthorized", "code": "m0_authority"}, status_code=403)
+        return _error_response(
+            "unauthorized", "m0_authority", "M0 authority rejected", 403
+        )
 
     @app.exception_handler(FenceError)
     async def fence_error(_request: Request, _error: FenceError):
-        return JSONResponse({"error": "conflict", "code": "stale_fence"}, status_code=409)
+        return _error_response(
+            "conflict", "stale_fence", "lease fence is stale", 409
+        )
 
     @app.exception_handler(BudgetError)
     async def budget_error(_request: Request, _error: BudgetError):
-        return JSONResponse({"error": "stopped", "code": "budget"}, status_code=409)
+        return _error_response(
+            "stopped", "budget", "bounded budget rejected the command", 409
+        )
 
     @app.exception_handler(TransitionError)
     async def transition_error(_request: Request, _error: TransitionError):
-        return JSONResponse(
-            {"error": "conflict", "code": "invalid_transition"}, status_code=409
+        return _error_response(
+            "conflict", "invalid_transition", "task transition is not allowed", 409
         )
 
     @app.exception_handler(StoreUnavailable)
     async def store_unavailable(_request: Request, _error: StoreUnavailable):
-        return JSONResponse({"error": "unavailable", "code": "database"}, status_code=503)
+        return _error_response(
+            "unavailable", "database", "database unavailable", 503
+        )
 
     @app.exception_handler(StoreError)
     async def store_error(_request: Request, _error: StoreError):
-        return JSONResponse({"error": "conflict"}, status_code=409)
+        return _error_response(
+            "conflict", "store_conflict", "stored command conflicts with request", 409
+        )
 
     @app.exception_handler(MetricsUnavailable)
     async def metrics_unavailable(_request: Request, _error: MetricsUnavailable):
-        return JSONResponse({"error": "unavailable", "code": "metrics"}, status_code=503)
+        return _error_response(
+            "unavailable", "metrics", "metrics snapshot unavailable", 503
+        )
 
     @app.middleware("http")
     async def bound_body(request: Request, call_next):
-        length = request.headers.get("content-length")
-        if length:
-            try:
-                declared = int(length)
-            except ValueError:
-                return JSONResponse({"detail": "invalid content length"}, status_code=400)
-            if declared < 0:
-                return JSONResponse({"detail": "invalid content length"}, status_code=400)
-            if declared > MAX_BODY_BYTES:
-                return JSONResponse({"detail": "request body too large"}, status_code=413)
-        body = bytearray()
-        async for chunk in request.stream():
-            if len(body) + len(chunk) > MAX_BODY_BYTES:
-                return JSONResponse({"detail": "request body too large"}, status_code=413)
-            body.extend(chunk)
-        request._body = bytes(body)
+        supplied_correlation = request.headers.get("x-correlation-id")
+        correlation = (
+            supplied_correlation
+            if supplied_correlation and HEADER_ID.fullmatch(supplied_correlation)
+            else str(uuid.uuid4())
+        )
+        request.state.correlation_id = correlation
+
+        if request.method in BODY_BEARING_METHODS:
+            length = request.headers.get("content-length")
+            if length:
+                try:
+                    declared = int(length)
+                except ValueError:
+                    response = _error_response(
+                        "invalid", "invalid_request", "invalid content length", 400
+                    )
+                    response.headers["X-Correlation-ID"] = correlation
+                    return response
+                if declared < 0:
+                    response = _error_response(
+                        "invalid", "invalid_request", "invalid content length", 400
+                    )
+                    response.headers["X-Correlation-ID"] = correlation
+                    return response
+                if declared > MAX_BODY_BYTES:
+                    response = _error_response(
+                        "invalid", "body_too_large", "request body too large", 413
+                    )
+                    response.headers["X-Correlation-ID"] = correlation
+                    return response
+            body = bytearray()
+            async for chunk in request.stream():
+                if len(body) + len(chunk) > MAX_BODY_BYTES:
+                    response = _error_response(
+                        "invalid", "body_too_large", "request body too large", 413
+                    )
+                    response.headers["X-Correlation-ID"] = correlation
+                    return response
+                body.extend(chunk)
+            request._body = bytes(body)
         response = await call_next(request)
+        response.headers["X-Correlation-ID"] = correlation
         if response.status_code in {401, 403}:
             authenticator.record_rejection()
         return response
@@ -252,7 +352,12 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         correlation = _request_id(x_correlation_id, "X-Correlation-ID")
         if payload.get("request_id") != key:
             raise HTTPException(409, "idempotency header does not match closed request")
-        result = service.intake(payload, actor=actor, now=datetime.now(timezone.utc))
+        result = service.intake(
+            payload,
+            actor=actor,
+            now=datetime.now(timezone.utc),
+            correlation_id=correlation,
+        )
         return JSONResponse(
             _json({"task": result.task, "created": result.created}),
             status_code=201 if result.created else 200,
@@ -260,15 +365,14 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         )
 
     @app.get("/v1/tasks/{task_id}", tags=["tasks"])
-    def show(task_id: str, authorization: str | None = Header(None), x_correlation_id: str | None = Header(None)):
+    def show(task_id: str, authorization: str | None = Header(None)):
         actor = authenticator.authenticate(authorization, "task:read")
-        correlation = _request_id(x_correlation_id or "generated-read", "X-Correlation-ID")
         task_id = _uuid(task_id, "task_id")
         try:
             task = service.get_task(task_id, actor=actor)
         except KeyError:
             raise HTTPException(404, "task not found")
-        return JSONResponse(_json(task), headers={"X-Correlation-ID": correlation})
+        return JSONResponse(_json(task))
 
     @app.get("/v1/tasks", tags=["tasks"])
     def list_tasks(
@@ -276,16 +380,13 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         limit: int = 100,
         cursor: str | None = None,
         authorization: str | None = Header(None),
-        x_correlation_id: str | None = Header(None),
     ):
         actor = authenticator.authenticate(authorization, "task:list")
-        correlation = _request_id(x_correlation_id or "generated-list", "X-Correlation-ID")
         repository_id = _text(repository_id, "repository_id", identifier=True)
         limit = _integer(limit, "limit", 1, 100)
         cursor = _uuid(cursor, "cursor") if cursor is not None else None
         return JSONResponse(
             _json({"items": service.list_tasks(repository_id=repository_id, limit=limit, cursor=cursor, actor=actor)}),
-            headers={"X-Correlation-ID": correlation},
         )
 
     @app.get("/v1/tasks/{task_id}/runs", tags=["tasks"])
@@ -294,10 +395,8 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         limit: int = 100,
         cursor: str | None = None,
         authorization: str | None = Header(None),
-        x_correlation_id: str | None = Header(None),
     ):
         actor = authenticator.authenticate(authorization, "task:read")
-        correlation = _request_id(x_correlation_id or "generated-runs", "X-Correlation-ID")
         task_id = _uuid(task_id, "task_id")
         limit = _integer(limit, "limit", 1, 100)
         cursor = _uuid(cursor, "cursor") if cursor is not None else None
@@ -309,7 +408,7 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
             raise HTTPException(404, "task not found") from exc
         except ValueError as exc:
             raise HTTPException(422, "invalid cursor") from exc
-        return JSONResponse(_json(result), headers={"X-Correlation-ID": correlation})
+        return JSONResponse(_json(result))
 
     @app.get("/v1/tasks/{task_id}/events", tags=["tasks"])
     def list_task_events(
@@ -317,10 +416,8 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         limit: int = 100,
         cursor: int | None = None,
         authorization: str | None = Header(None),
-        x_correlation_id: str | None = Header(None),
     ):
         actor = authenticator.authenticate(authorization, "task:read")
-        correlation = _request_id(x_correlation_id or "generated-events", "X-Correlation-ID")
         task_id = _uuid(task_id, "task_id")
         limit = _integer(limit, "limit", 1, 100)
         cursor = _integer(cursor, "cursor", 0, 9_223_372_036_854_775_807) if cursor is not None else None
@@ -330,7 +427,7 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
             )
         except KeyError as exc:
             raise HTTPException(404, "task not found") from exc
-        return JSONResponse(_json(result), headers={"X-Correlation-ID": correlation})
+        return JSONResponse(_json(result))
 
     @app.post("/v1/tasks/{task_id}/cancel", tags=["tasks"])
     def cancel(

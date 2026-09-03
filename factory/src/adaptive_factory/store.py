@@ -553,8 +553,16 @@ class PostgresFactoryStore:
         )
         cursor.execute("UPDATE factory.audit_heads SET last_digest=%s WHERE task_id=%s", (digest, task_id))
 
-    def intake(self, intake: TaskIntakeV1, actor: Actor, now: datetime) -> IntakeResult:
+    def intake(
+        self,
+        intake: TaskIntakeV1,
+        actor: Actor,
+        now: datetime,
+        *,
+        correlation_id: str | None = None,
+    ) -> IntakeResult:
         with self._transaction() as cursor:
+            audit_correlation = correlation_id or intake.request_id
             command_key = self._intake_command_key(intake.request_id)
             replay, prior, request_digest = self._command_replay(
                 cursor,
@@ -588,7 +596,7 @@ class PostgresFactoryStore:
                     actor,
                     "intake",
                     request_digest,
-                    intake.request_id,
+                    audit_correlation,
                     self._intake_command_result(result),
                 )
                 return result
@@ -620,7 +628,7 @@ class PostgresFactoryStore:
                     "superseded",
                     f"task:{old_id}",
                     "frozen_input_changed",
-                    intake.request_id,
+                    audit_correlation,
                     metadata,
                 )
             cursor.execute(
@@ -681,7 +689,7 @@ class PostgresFactoryStore:
                 "intake",
                 f"task:{task_id}",
                 "accepted",
-                intake.request_id,
+                audit_correlation,
                 {"intent_digest": intake.intent_digest},
             )
             result = IntakeResult(
@@ -702,7 +710,7 @@ class PostgresFactoryStore:
                 actor,
                 "intake",
                 request_digest,
-                intake.request_id,
+                audit_correlation,
                 self._intake_command_result(result),
             )
             return result
@@ -940,6 +948,58 @@ class PostgresFactoryStore:
         return FactoryRunAttemptV1(run, attempt)
 
     @classmethod
+    def _validate_event_metadata(cls, metadata: Mapping[str, object]) -> None:
+        allowed = {
+            "generation",
+            "run_id",
+            "fence",
+            "role",
+            "attempts",
+            "infrastructure_retries",
+            "replacement_intent_digest",
+            "accounting_quarantined",
+            "from_state",
+            "target",
+            "reason",
+            "operation",
+        }
+        if set(metadata) - allowed:
+            raise ValueError("event metadata contains an unknown field")
+        if "generation" in metadata and (
+            type(metadata["generation"]) is not int
+            or not 1 <= metadata["generation"] <= 9_223_372_036_854_775_807
+        ):
+            raise ValueError("invalid event generation")
+        if "run_id" in metadata:
+            cls._history_uuid(metadata["run_id"])
+        if "fence" in metadata and (
+            type(metadata["fence"]) is not int
+            or not 1 <= metadata["fence"] <= 9_223_372_036_854_775_807
+        ):
+            raise ValueError("invalid event fence")
+        if "role" in metadata:
+            RunRole(metadata["role"])
+        for name, maximum in (("attempts", 3), ("infrastructure_retries", 2)):
+            if name in metadata and (
+                type(metadata[name]) is not int
+                or not 0 <= metadata[name] <= maximum
+            ):
+                raise ValueError(f"invalid event {name}")
+        if "replacement_intent_digest" in metadata:
+            cls._history_digest(metadata["replacement_intent_digest"])
+        if "accounting_quarantined" in metadata and type(
+            metadata["accounting_quarantined"]
+        ) is not bool:
+            raise ValueError("invalid accounting quarantine marker")
+        for name in ("from_state", "target"):
+            if name in metadata:
+                TaskStatus(metadata[name])
+        if "reason" in metadata:
+            cls._history_text(metadata["reason"])
+        if "operation" in metadata:
+            TransitionOperation(metadata["operation"])
+
+    @classmethod
     def _event_snapshot(cls, row, requested_task_id: str) -> FactoryEventV1:
         event_id = cls._history_uuid(row[0])
         event_task_id = cls._history_uuid(row[1])
@@ -950,6 +1010,7 @@ class PostgresFactoryStore:
             raise ValueError("invalid event sequence")
         if not isinstance(row[6], Mapping):
             raise ValueError("event metadata must be an object")
+        cls._validate_event_metadata(row[6])
         if type(row[7]) is not bool:
             raise ValueError("invalid mandatory cleanup marker")
         return FactoryEventV1(

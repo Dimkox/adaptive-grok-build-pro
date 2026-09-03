@@ -15,7 +15,7 @@ The positive M4 endpoint is `ready_for_human`. M4 has no provider, workspace, re
 
 ## Scope
 
-In scope: closed contracts; immutable accepted intent/task/run/attempt facts; idempotent superseding intake; factory-only checksum migrations; `SKIP LOCKED` leases and monotonic fences; 20/10/1 capacity; initial plus two infrastructure retries; four-hour/USD 25/token/output/event/repair ceilings; kill switches; hash-chained audit; bounded reconciliation; scoped Unix-socket API/CLI; disposable PostgreSQL tests; architecture, verifier, installer, README and recovery documentation.
+In scope: closed contracts; immutable accepted intent/task/run/attempt/event facts; separate full-intent, semantic-work and command replay identities; idempotent superseding intake; factory-only checksum migrations; `SKIP LOCKED` leases and monotonic fences; operation-scoped task transitions; 20/10/1 capacity; initial plus two infrastructure retries; four-hour/USD 25/token/output/event/repair ceilings; kill switches; hash-chained audit; bounded reconciliation; scoped Unix-socket API/CLI with bounded history; one checked closed inline OpenAPI contract and correlated errors; disposable PostgreSQL tests; architecture, verifier, installer, README and recovery documentation.
 
 Out of scope: M5 execution, M6 validation, M7 delivery, M8 autonomy, M9 deployment, `baby-bot`, TCP exposure, Trust CI state or credentials, external writes and production mutations.
 

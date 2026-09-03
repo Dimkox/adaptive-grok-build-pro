@@ -425,3 +425,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Later phase-policy cases received a grant for an earlier queued/retry task and reported misleading transition failures.
 **Root cause:** The test matrix reused one repository while intentionally leaving claimable rows behind; each independent claim case must use an isolated repository (or explicitly remove prior eligibility).
+
+## 2026-09-03 — Generated bigint JSON bounds through an unsafe numeric type
+
+**Symptom:** Initial inline OpenAPI output rounded PostgreSQL's signed-bigint maximum from `9223372036854775807` to `9223372036854776000`.
+**Root cause:** Contract assembly passed the bound through JavaScript `Number`; exact wire integers above `2^53-1` must be emitted as preserved decimal text or corrected and covered by a parsed-value regression.

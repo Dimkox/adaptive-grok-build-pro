@@ -1706,6 +1706,117 @@ class ArchitectureModelTests(unittest.TestCase):
                 self.assertEqual(result.status, "incompatible")
                 self.assertIn(reason, result.reasons)
 
+    def test_openapi_validates_present_operation_ids_and_path_parameters(self) -> None:
+        duplicate = _openapi(
+            {"operationId": "sameOperation", "responses": {"200": {"description": "ok"}}}
+        )
+        duplicate["paths"]["/other"] = copy.deepcopy(duplicate["paths"]["/items"])
+        malformed = _openapi(
+            {"operationId": "", "responses": {"200": {"description": "ok"}}}
+        )
+        missing_path_parameter = _openapi()
+        missing_path_parameter["paths"] = {
+            "/items/{item_id}": missing_path_parameter["paths"]["/items"]
+        }
+        extra_path_parameter = _openapi()
+        extra_path_parameter["paths"]["/items"]["parameters"] = [
+            {
+                "in": "path",
+                "name": "item_id",
+                "required": True,
+                "schema": {"type": "string"},
+            }
+        ]
+        for document in (
+            duplicate,
+            malformed,
+            missing_path_parameter,
+            extra_path_parameter,
+        ):
+            with self.subTest(document=document):
+                result = ARCH.compare_contracts(
+                    self._record(_openapi(), kind="openapi"),
+                    self._record(document, kind="openapi"),
+                    "bidirectional",
+                )
+                self.assertEqual(result.status, "unsupported")
+                self.assertIn("unsupported_openapi_construct", result.reasons)
+
+    def test_openapi_operation_id_and_response_headers_are_compatibility_checked(self) -> None:
+        base = _openapi(
+            {
+                "operationId": "getItems",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "headers": {
+                            "X-Correlation-ID": {
+                                "required": True,
+                                "schema": {"type": "string", "minLength": 1},
+                            },
+                            "X-Optional": {
+                                "required": False,
+                                "schema": {"type": "string"},
+                            },
+                        },
+                    }
+                },
+            }
+        )
+        case_only = copy.deepcopy(base)
+        headers = case_only["paths"]["/items"]["get"]["responses"]["200"]["headers"]
+        headers["x-correlation-id"] = headers.pop("X-Correlation-ID")
+        optional = headers.pop("X-Optional")
+        headers["x-optional"] = optional
+        self.assertEqual(
+            ARCH.compare_contracts(
+                self._record(base, kind="openapi"),
+                self._record(case_only, kind="openapi"),
+                "bidirectional",
+            ).status,
+            "compatible",
+        )
+
+        changed_id = copy.deepcopy(base)
+        changed_id["paths"]["/items"]["get"]["operationId"] = "listItems"
+        removed_required = copy.deepcopy(base)
+        del removed_required["paths"]["/items"]["get"]["responses"]["200"]["headers"][
+            "X-Correlation-ID"
+        ]
+        demoted_required = copy.deepcopy(base)
+        demoted_required["paths"]["/items"]["get"]["responses"]["200"]["headers"][
+            "X-Correlation-ID"
+        ]["required"] = False
+        changed_schema = copy.deepcopy(base)
+        changed_schema["paths"]["/items"]["get"]["responses"]["200"]["headers"][
+            "X-Correlation-ID"
+        ]["schema"]["type"] = "integer"
+        for label, head, reason in (
+            ("operation id", changed_id, "changed_operation_id"),
+            ("removed required header", removed_required, "removed_response_header"),
+            ("demoted required header", demoted_required, "changed_response_header_requirement"),
+            ("changed header schema", changed_schema, "changed_type"),
+        ):
+            result = ARCH.compare_contracts(
+                self._record(base, kind="openapi"),
+                self._record(head, kind="openapi"),
+                "bidirectional",
+            )
+            with self.subTest(label=label):
+                self.assertEqual(result.status, "incompatible")
+                self.assertIn(reason, result.reasons)
+
+        added_optional = copy.deepcopy(base)
+        added_optional["paths"]["/items"]["get"]["responses"]["200"]["headers"][
+            "X-New"
+        ] = {"required": False, "schema": {"type": "string"}}
+        result = ARCH.compare_contracts(
+            self._record(base, kind="openapi"),
+            self._record(added_optional, kind="openapi"),
+            "bidirectional",
+        )
+        self.assertEqual(result.status, "compatible")
+
     def test_openapi_comparison_rejects_optional_webhook_inputs_becoming_required(
         self,
     ) -> None:

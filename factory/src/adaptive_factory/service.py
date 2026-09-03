@@ -41,10 +41,19 @@ class FactoryService:
         if repository is not None and "*" not in actor.repositories and repository not in actor.repositories:
             raise AuthorizationError("repository is outside actor authorization")
 
-    def intake(self, payload, *, actor: Actor, now: datetime):
+    def intake(
+        self,
+        payload,
+        *,
+        actor: Actor,
+        now: datetime,
+        correlation_id: str | None = None,
+    ):
         intake = TaskIntakeV1.from_dict(payload, now=now) if not isinstance(payload, TaskIntakeV1) else payload
         self._require(actor, "task:submit", intake.repository_id)
-        return self.store.intake(intake, actor, now)
+        return self.store.intake(
+            intake, actor, now, correlation_id=correlation_id
+        )
 
     def get_task(self, task_id: str, *, actor: Actor):
         self._require(actor, "task:read")

@@ -17,8 +17,8 @@
 - [x] TDD separate full intent, semantic work and intake command identities without changing the opaque M5 packet digest.
 - [x] TDD frozen versioned task/run/attempt/event snapshots and bounded authorized run/event history without a migration or lease-grant change.
 - [x] TDD the central operation-scoped task transition owner, fenced idempotent worker phase progression and all-live-phase lease/reconciliation behavior.
-- [ ] Disable runtime-generated OpenAPI and make the checked-in closed inline document the sole reviewed HTTP contract with normalized correlated errors.
-- [ ] Thread submit correlation header through service/store command and audit evidence during the closed OpenAPI/error-envelope repair.
+- [x] Disable runtime-generated OpenAPI and make the checked-in closed inline document the sole reviewed HTTP contract with normalized correlated errors.
+- [x] Thread submit correlation header through service/store command and audit evidence during the closed OpenAPI/error-envelope repair.
 - [ ] Run final exact-head verifier after current documentation and repair evidence are frozen.
 - [ ] Hand final fingerprint to all five independent reviewers.
 

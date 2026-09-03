@@ -24,10 +24,10 @@ class RecordingStore:
     def __init__(self):
         self.calls = []
 
-    def intake(self, intake, actor, now):
+    def intake(self, intake, actor, now, *, correlation_id=None):
         if intake.m0_authority.bootstrap_exception is not None:
             raise AuthorizationError("transactional authority lookup rejected")
-        self.calls.append(("intake", intake, actor, now))
+        self.calls.append(("intake", intake, actor, now, correlation_id))
         return {"task_id": "task-1", "created": True}
 
     def claim(self, request, actor, now, **_kwargs):
@@ -106,9 +106,12 @@ class ServiceTests(unittest.TestCase):
         store = RecordingStore()
         service = FactoryService(store)
         actor = Actor("caller", "client", frozenset({"task:submit"}), frozenset({"owner/repository"}))
-        result = service.intake(valid_intake(), actor=actor, now=NOW)
+        result = service.intake(
+            valid_intake(), actor=actor, now=NOW, correlation_id="transport-correlation"
+        )
         self.assertTrue(result["created"])
         self.assertEqual(store.calls[0][1].repository_id, "owner/repository")
+        self.assertEqual(store.calls[0][4], "transport-correlation")
 
     def test_submit_rejects_caller_asserted_or_unpersisted_m0_authority(self):
         store = RecordingStore()
