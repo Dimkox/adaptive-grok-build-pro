@@ -369,6 +369,45 @@ class HookTests(unittest.TestCase):
             })
             self.assertEqual(data['decision'], 'allow', (error, data))
 
+    def test_ambiguous_dynamic_shell_composition_denies_without_classifier_match(self) -> None:
+        with project_copy(git=True) as session_root, project_copy(git=True) as other_root:
+            commands = (
+                "eval 'git push origin feature'",
+                "cmd='git push origin feature' && $cmd",
+                'git -c alias.ship=push ship origin feature',
+                'if true; then git push origin feature; fi',
+                f"cmd='git -C {other_root} push origin feature'; eval \"$cmd\"",
+                'exec git push origin feature',
+                "bash -lc '$RELEASE_COMMAND'",
+            )
+            for index, command in enumerate(commands):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                        'cwd': str(session_root),
+                        'session_id': f'ambiguous-shell-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'deny', (command, error, data))
+                    self.assertIn('ambiguous-sensitive-shell', data['reason'])
+
+            ledger = json.loads(
+                (session_root / '.grok-stack/runtime/tool-denials.json').read_text(encoding='utf-8')
+            )
+            serialized = json.dumps(ledger, sort_keys=True)
+            self.assertIn('ambiguous-sensitive-shell', serialized)
+            self.assertNotIn('git push origin feature', serialized)
+
+    def test_benign_shell_expansion_and_read_chain_remain_soft(self) -> None:
+        with project_copy(git=True) as root:
+            for command in ('echo "$HOME"', 'cat VERSION && git status --short'):
+                _, data, error = run_hook(root, 'pre_tool_use.py', {
+                    'cwd': str(root),
+                    'tool_name': 'Bash',
+                    'tool_input': {'command': command},
+                })
+                self.assertEqual(data['decision'], 'allow', (command, error, data))
+
     def test_subagent_lifecycle_is_recorded(self) -> None:
         with project_copy() as root:
             route = build_route(root, 'Исправить PHP баг', 's1').to_dict()

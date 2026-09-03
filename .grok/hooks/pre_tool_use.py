@@ -242,6 +242,8 @@ def main() -> None:
             'tool_name': current_tool,
             'tool_input': current_input,
         })
+        if current_tool == 'Bash' and context.has_ambiguous_command_evidence and action is None:
+            action = 'ambiguous-sensitive-shell'
         root = context.effective_root or context.session_root
         if action and not context.sensitive_safe:
             allowed = False

@@ -78,6 +78,10 @@ class RootContext:
         return self.effective_root is not None and self.resolution_status in {'session-root', 'effective-root'}
 
     @property
+    def has_ambiguous_command_evidence(self) -> bool:
+        return any(value == '<ambiguous>' for value in self.command_workdirs.values())
+
+    @property
     def ledger_root(self) -> Path | None:
         return self.effective_root or self.session_root
 
@@ -93,6 +97,18 @@ def _command_directory_aliases(command: str, *, depth: int = 0) -> dict[str, str
         words = shlex.split(command)
     except ValueError:
         return {'shell': '<ambiguous>'}
+    expects_command = True
+    for word in words:
+        if word in {'&&', '||', ';', '|'}:
+            expects_command = True
+            continue
+        if not expects_command:
+            continue
+        if re.match(r'^[A-Za-z_][A-Za-z0-9_]*=', word):
+            continue
+        if word.startswith(('$', '`')) or '$(' in word or '${' in word:
+            return {'command.dynamic-position': '<ambiguous>'}
+        expects_command = False
     if any(word in {'cd', 'pushd'} for word in words) and os.environ.get('CDPATH'):
         return {'command.cdpath-environment': '<ambiguous>'}
     if any(word.startswith('CDPATH=') and word != 'CDPATH=' for word in words):
@@ -118,6 +134,9 @@ def _command_directory_aliases(command: str, *, depth: int = 0) -> dict[str, str
         words = words[1:]
     if any(word in {'eval', 'source', '.'} for word in words):
         aliases['command.dynamic-shell'] = '<ambiguous>'
+        return aliases
+    if words and words[0] == 'exec':
+        aliases['command.exec-shell'] = '<ambiguous>'
         return aliases
     if depth < 3 and words:
         executable = Path(words[0]).name.lower()

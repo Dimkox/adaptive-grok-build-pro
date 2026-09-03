@@ -27,3 +27,15 @@ README, fresh-clone handoff, project state, roadmap, package documentation, chan
 ## Rollback and remaining gates
 
 Rollback is the source-only commit revert; no schema, factory source, package artifact or external state changed. Remaining gates are a two-clone artifact-only rebuild from this source freeze, exact-head local verification and route-selected rereviews on the final artifact child, followed only under separate authority by PR/external Trust CI delivery. No full verifier, live PostgreSQL/factory exit, network or external action ran in this repair.
+
+## Exact-head composition follow-up
+
+Targeted security and release rereview of artifact head `fa3f1c573d70a88491a4dc8ce26227933b5c7037` found that ambiguous root evidence was not itself sufficient to activate fail-closed behavior when the production classifier returned no action. A regression-first hook test recorded RED for all seven composed forms: direct `eval`, assignment plus command-position variable execution, Git alias dispatch, `if` control flow, cross-root command text executed through `eval`, `exec git push`, and a dynamic command variable inside literal `bash -lc`. Every subcase returned `allow`; the expected denial ledger was consequently absent. Benign `echo "$HOME"` and a chained local read remained allowed.
+
+The minimal repair adds an explicit `RootContext.has_ambiguous_command_evidence` property, detects variable/backtick/substitution tokens only in command position, and maps normalized Bash with that evidence and no classified action to `ambiguous-sensitive-shell`. The existing sensitive-root denial path and sanitized schema-3 ledger then apply without parsing structured patch bodies or making ordinary argument expansion sensitive.
+
+Focused GREEN command:
+
+`python3 -m unittest tests.test_hooks tests.test_policy tests.test_pre_tool_circuit_breaker tests.test_protected_write_hook tests.test_policy_shell_targets -v`
+
+Result: 55/55 passed in 20.588 seconds. State remains `verifying`; no package, factory, documentation or external state changed in this source-only follow-up. The prior artifact pair must be rebuilt from the resulting source commit before final exact-head review and verification.
