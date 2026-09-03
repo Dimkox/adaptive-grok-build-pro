@@ -12,7 +12,13 @@ from adaptive_factory.api import Authenticator, create_app
 from adaptive_factory.contracts import TaskIntakeV1, canonical_digest
 from adaptive_factory.models import Actor, FailureClass, RunRole, TaskStatus
 from adaptive_factory.service import AuthorizationError, FactoryService
-from adaptive_factory.store import BudgetError, FenceError, PostgresFactoryStore, StoreError
+from adaptive_factory.store import (
+    BudgetError,
+    FenceError,
+    PostgresFactoryStore,
+    StoreError,
+    StoreUnavailable,
+)
 from factory.tests.test_contracts import valid_intake
 
 
@@ -26,6 +32,9 @@ OPERATOR = Actor(
 )
 WORKER = Actor(
     "worker", "worker", frozenset({"task:claim", "task:heartbeat", "task:release", "task:budget"}), frozenset({"*"})
+)
+READER = Actor(
+    "reader", "client", frozenset({"task:read"}), frozenset({"owner/repository"})
 )
 
 
@@ -243,6 +252,280 @@ class PostgresFactoryTests(unittest.TestCase):
         self.assertEqual(first.task.task_id, duplicate.task.task_id)
         self.assertNotEqual(first.task.task_id, replacement.task.task_id)
         self.assertEqual(self.store.get_task(first.task.task_id).status, TaskStatus.SUPERSEDED)
+
+    def test_run_attempt_and_event_history_pages_are_stable_bounded_and_authorized(self):
+        task = self.submit(source="history-pages").task
+        grants = []
+        for _ in range(3):
+            grant = self.service.claim(
+                owner=WORKER.actor_id,
+                role=RunRole.READER,
+                repositories=(task.repository_id,),
+                lease_seconds=60,
+                actor=WORKER,
+                now=NOW,
+            )
+            self.assertIsNotNone(grant)
+            grants.append(grant)
+            self.service.release(
+                grant,
+                outcome=FailureClass.WORKER_LOST,
+                actor=WORKER,
+                now=NOW,
+            )
+
+        pages = []
+        cursor = None
+        while True:
+            page = self.service.list_task_runs(
+                task.task_id, limit=1, cursor=cursor, actor=READER
+            )
+            pages.append(page)
+            if page.cursor is None:
+                break
+            cursor = page.cursor
+        items = [page.items[0] for page in pages]
+        self.assertEqual([item.run.fence for item in items], [1, 2, 3])
+        self.assertEqual([item.attempt.attempt_no for item in items], [1, 2, 3])
+        self.assertEqual(
+            [(item.run.run_id, item.attempt.run_id) for item in items],
+            [(grant.run_id, grant.run_id) for grant in grants],
+        )
+        self.assertEqual([page.cursor is None for page in pages], [False, False, True])
+
+        first_events = self.service.list_task_events(
+            task.task_id, limit=2, cursor=None, actor=READER
+        )
+        self.assertEqual(
+            [event.event_sequence for event in first_events.items],
+            [1, 2],
+        )
+        self.assertIsNotNone(first_events.cursor)
+        seen = list(first_events.items)
+        cursor_sequence = first_events.cursor
+        while cursor_sequence is not None:
+            page = self.service.list_task_events(
+                task.task_id, limit=2, cursor=cursor_sequence, actor=READER
+            )
+            seen.extend(page.items)
+            cursor_sequence = page.cursor
+        self.assertEqual(
+            [event.event_sequence for event in seen],
+            list(range(1, len(seen) + 1)),
+        )
+        self.assertEqual(len({event.event_id for event in seen}), len(seen))
+
+        denied = Actor(
+            "cross-reader",
+            "client",
+            frozenset({"task:read"}),
+            frozenset({"other/repository"}),
+        )
+        with self.assertRaises(AuthorizationError):
+            self.service.list_task_runs(task.task_id, limit=1, cursor=None, actor=denied)
+        with self.assertRaises(AuthorizationError):
+            self.service.list_task_events(task.task_id, limit=1, cursor=None, actor=denied)
+
+    def test_run_history_cursor_is_task_bound_and_cardinality_fails_closed(self):
+        import psycopg
+
+        first = self.submit(source="history-cursor-first").task
+        first_grant = self.service.claim(
+            owner=WORKER.actor_id,
+            role=RunRole.READER,
+            repositories=(first.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        second = self.submit(source="history-cursor-second").task
+        second_grant = self.service.claim(
+            owner=WORKER.actor_id,
+            role=RunRole.READER,
+            repositories=(second.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        for invalid in (str(uuid.uuid4()), second_grant.run_id):
+            with self.subTest(cursor=invalid):
+                with self.assertRaisesRegex(ValueError, "invalid run cursor"):
+                    self.service.list_task_runs(
+                        first.task_id, limit=1, cursor=invalid, actor=READER
+                    )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO factory.attempts
+                (attempt_id,task_id,run_id,attempt_no)
+                VALUES (%s,%s,%s,2)""",
+                (uuid.uuid4(), first.task_id, first_grant.run_id),
+            )
+        with self.assertRaises(StoreUnavailable):
+            self.service.list_task_runs(first.task_id, limit=100, cursor=None, actor=READER)
+
+    def test_run_history_orders_by_fence_not_uuid(self):
+        import psycopg
+
+        task = self.submit(source="history-fence-order").task
+        run_ids = (
+            "ffffffff-ffff-4fff-8fff-ffffffffffff",
+            "11111111-1111-4111-8111-111111111111",
+            "88888888-8888-4888-8888-888888888888",
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            for fence, run_id in enumerate(run_ids, start=1):
+                cursor.execute(
+                    """INSERT INTO factory.runs
+                    (run_id,task_id,owner_id,role,packet_digest,fence,state,
+                     lease_expires_at,deadline_at,released_at)
+                    VALUES (%s,%s,'history-reader','reader',%s,%s,'completed',
+                      clock_timestamp(),clock_timestamp(),clock_timestamp())""",
+                    (run_id, task.task_id, task.packet_digest, fence),
+                )
+                cursor.execute(
+                    """INSERT INTO factory.attempts
+                    (attempt_id,task_id,run_id,attempt_no,finished_at)
+                    VALUES (%s,%s,%s,%s,clock_timestamp())""",
+                    (uuid.uuid4(), task.task_id, run_id, fence),
+                )
+        page = self.service.list_task_runs(
+            task.task_id, limit=100, cursor=None, actor=READER
+        )
+        self.assertEqual(tuple(item.run.run_id for item in page.items), run_ids)
+        self.assertIsNone(page.cursor)
+
+    def test_run_history_missing_attempt_fails_closed(self):
+        import psycopg
+
+        task = self.submit(source="history-missing-attempt").task
+        run_id = uuid.uuid4()
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO factory.runs
+                (run_id,task_id,owner_id,role,packet_digest,fence,state,
+                 lease_expires_at,deadline_at,released_at)
+                VALUES (%s,%s,'orphan-reader','reader',%s,1,'released',
+                  clock_timestamp(),clock_timestamp(),clock_timestamp())""",
+                (run_id, task.task_id, task.packet_digest),
+            )
+        with self.assertRaises(StoreUnavailable):
+            self.service.list_task_runs(task.task_id, limit=100, cursor=None, actor=READER)
+
+    def test_history_store_rejects_boolean_bounds_and_cursors(self):
+        task = self.submit(source="history-bool-bounds").task
+        for read in (
+            lambda: self.store.list_task_runs(
+                task.task_id, limit=True, cursor_run_id=None
+            ),
+            lambda: self.store.list_task_runs(
+                task.task_id, limit=1, cursor_run_id=True
+            ),
+            lambda: self.store.list_task_events(
+                task.task_id, limit=True, cursor_sequence=None
+            ),
+            lambda: self.store.list_task_events(
+                task.task_id, limit=1, cursor_sequence=True
+            ),
+        ):
+            with self.assertRaises(ValueError):
+                read()
+
+    def test_history_http_boundary_is_authorized_typed_and_redacted(self):
+        from fastapi.testclient import TestClient
+
+        task = self.submit(source="history-http").task
+        grant = self.service.claim(
+            owner=WORKER.actor_id,
+            role=RunRole.READER,
+            repositories=(task.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        other = self.submit(source="history-http-other").task
+        other_grant = self.service.claim(
+            owner=WORKER.actor_id,
+            role=RunRole.READER,
+            repositories=(other.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        token = "history-reader-token"
+        client = TestClient(create_app(self.service, Authenticator({token: READER})))
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-Correlation-ID": "history-http-correlation",
+        }
+        runs = client.get(f"/v1/tasks/{task.task_id}/runs", headers=headers)
+        events = client.get(f"/v1/tasks/{task.task_id}/events", headers=headers)
+        self.assertEqual(runs.status_code, 200)
+        self.assertEqual(runs.json()["items"][0]["run"]["run_id"], grant.run_id)
+        self.assertEqual(runs.json()["items"][0]["attempt"]["attempt_no"], 1)
+        self.assertEqual(events.status_code, 200)
+        self.assertEqual(events.headers["X-Correlation-ID"], "history-http-correlation")
+
+        cross_cursor = client.get(
+            f"/v1/tasks/{task.task_id}/runs",
+            headers=headers,
+            params={"cursor": other_grant.run_id},
+        )
+        unknown_cursor = client.get(
+            f"/v1/tasks/{task.task_id}/runs",
+            headers=headers,
+            params={"cursor": str(uuid.uuid4())},
+        )
+        for response in (cross_cursor, unknown_cursor):
+            self.assertEqual(response.status_code, 422)
+            self.assertNotIn(other.task_id, response.text)
+            self.assertNotIn(other_grant.run_id, response.text)
+        missing = client.get(
+            f"/v1/tasks/{uuid.uuid4()}/events",
+            headers=headers,
+        )
+        self.assertEqual(missing.status_code, 404)
+
+    def test_history_projection_corruption_in_lookahead_fails_closed(self):
+        import psycopg
+
+        task = self.submit(source="history-lookahead-corruption").task
+        first = self.service.claim(
+            owner=WORKER.actor_id,
+            role=RunRole.READER,
+            repositories=(task.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        second_run_id = uuid.uuid4()
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO factory.runs
+                (run_id,task_id,owner_id,role,packet_digest,fence,state,
+                 lease_expires_at,deadline_at,released_at)
+                VALUES (%s,%s,'corrupt-reader','reader',%s,2,'failed',
+                  clock_timestamp(),clock_timestamp(),clock_timestamp())""",
+                (second_run_id, task.task_id, task.packet_digest),
+            )
+            cursor.execute(
+                """INSERT INTO factory.attempts
+                (attempt_id,task_id,run_id,attempt_no,failure_class)
+                VALUES (%s,%s,%s,2,'worker_lost')""",
+                (uuid.uuid4(), task.task_id, second_run_id),
+            )
+            cursor.execute(
+                """INSERT INTO factory.task_events
+                (event_id,task_id,event_sequence,idempotency_key,actor_id,action,metadata)
+                VALUES (%s,%s,3,%s,'corrupt-reader','corrupt',%s::jsonb)""",
+                (uuid.uuid4(), task.task_id, uuid.uuid4().hex * 2, "[]"),
+            )
+
+        with self.assertRaises(StoreUnavailable):
+            self.service.list_task_runs(task.task_id, limit=1, cursor=None, actor=READER)
+        with self.assertRaises(StoreUnavailable):
+            self.service.list_task_events(task.task_id, limit=2, cursor=None, actor=READER)
+        self.assertEqual(first.fence, 1)
 
     def test_intake_separates_semantic_work_identity_from_command_replay(self):
         import psycopg

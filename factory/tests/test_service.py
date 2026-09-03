@@ -1,7 +1,16 @@
 from datetime import datetime, timezone
 import unittest
 
-from adaptive_factory.models import Actor, FailureClass, LeaseGrant, RunRole, TaskProjection, TaskStatus
+from adaptive_factory.models import (
+    Actor,
+    FactoryEventHistoryPageV1,
+    FactoryRunHistoryPageV1,
+    FailureClass,
+    LeaseGrant,
+    RunRole,
+    TaskProjection,
+    TaskStatus,
+)
 from adaptive_factory.contracts import ContractError
 from adaptive_factory.service import AuthorizationError, FactoryService
 from adaptive_factory.store import FenceError, StoreError
@@ -31,6 +40,16 @@ class RecordingStore:
     def list_tasks(self, **kwargs):
         self.calls.append(("list", kwargs))
         return (self.get_task("task-1"),)
+
+    def list_task_runs(self, task_id, **kwargs):
+        kwargs["authorize_repository"]("owner/repository")
+        self.calls.append(("runs", task_id, kwargs["limit"], kwargs["cursor_run_id"]))
+        return FactoryRunHistoryPageV1((), None)
+
+    def list_task_events(self, task_id, **kwargs):
+        kwargs["authorize_repository"]("owner/repository")
+        self.calls.append(("events", task_id, kwargs["limit"], kwargs["cursor_sequence"]))
+        return FactoryEventHistoryPageV1((), None)
 
     def release(self, grant, outcome, actor, now, **_kwargs):
         self.calls.append(("release", outcome))
@@ -191,6 +210,49 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(store.calls[-1], ("release", FailureClass.WORKER_LOST))
         with self.assertRaises(ValueError):
             service.release(grant, outcome="provider_says_retry", actor=worker, now=NOW)
+
+    def test_run_and_event_history_authorize_the_parent_repository(self):
+        store = RecordingStore()
+        service = FactoryService(store)
+        reader = Actor(
+            "reader",
+            "client",
+            frozenset({"task:read"}),
+            frozenset({"owner/repository"}),
+        )
+        self.assertEqual(
+            service.list_task_runs(
+                "task-1",
+                limit=3,
+                cursor="00000000-0000-0000-0000-000000000002",
+                actor=reader,
+            ),
+            FactoryRunHistoryPageV1((), None),
+        )
+        self.assertEqual(
+            service.list_task_events("task-1", limit=10, cursor=4, actor=reader),
+            FactoryEventHistoryPageV1((), None),
+        )
+        self.assertEqual(
+            store.calls[-2:],
+            [
+                ("runs", "task-1", 3, "00000000-0000-0000-0000-000000000002"),
+                ("events", "task-1", 10, 4),
+            ],
+        )
+
+        denied = Actor(
+            "reader",
+            "client",
+            frozenset({"task:read"}),
+            frozenset({"other/repository"}),
+        )
+        for read in (
+            lambda: service.list_task_runs("task-1", limit=3, cursor=None, actor=denied),
+            lambda: service.list_task_events("task-1", limit=10, cursor=None, actor=denied),
+        ):
+            with self.assertRaises(AuthorizationError):
+                read()
 
 
 if __name__ == "__main__":

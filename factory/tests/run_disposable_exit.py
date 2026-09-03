@@ -33,14 +33,42 @@ def _final_postgres_ready(name: str) -> bool:
     return ready.returncode == 0
 
 
+def _cleanup(name: str, volume: str) -> None:
+    subprocess.run(
+        ["docker", "rm", "-f", name],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    subprocess.run(
+        ["docker", "volume", "rm", volume],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    container = subprocess.run(
+        ["docker", "inspect", name],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    data = subprocess.run(
+        ["docker", "volume", "inspect", volume],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    if container.returncode == 0 or data.returncode == 0:
+        raise RuntimeError("disposable PostgreSQL cleanup left owned resources")
+
+
 def main() -> int:
     name = f"adaptive-factory-exit-{uuid.uuid4().hex[:12]}"
+    volume = f"{name}-pgdata"
     password = f"local-{uuid.uuid4().hex}"
     environment = os.environ.copy()
     environment["FACTORY_TEST_POSTGRES_CONTAINER"] = name
     try:
+        _run(["docker", "volume", "create", volume], timeout=60)
         _run([
             "docker", "run", "--name", name,
+            "--mount", f"type=volume,source={volume},target=/var/lib/postgresql/data",
             "-e", "POSTGRES_DB=factory_exit",
             "-e", "POSTGRES_USER=factory_exit",
             "-e", f"POSTGRES_PASSWORD={password}",
@@ -67,7 +95,7 @@ def main() -> int:
         print("PASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation")
         return 0
     finally:
-        subprocess.run(["docker", "rm", "-f", name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        _cleanup(name, volume)
 
 
 if __name__ == "__main__":

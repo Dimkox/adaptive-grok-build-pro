@@ -1,9 +1,11 @@
 import unittest
+from unittest import mock
 
 from adaptive_factory.models import FailureClass, TaskStatus
 from adaptive_factory.state import (
     TransitionCommand,
     TransitionOperation,
+    TRANSITIONS,
     authorize_transition,
     classify_retry,
 )
@@ -164,6 +166,25 @@ class StatePolicyTests(unittest.TestCase):
             ).code,
             "allowed",
         )
+
+    def test_normal_operation_cannot_bypass_the_closed_graph(self):
+        without_completion = TRANSITIONS[TaskStatus.REVIEWING] - {
+            TaskStatus.READY_FOR_HUMAN
+        }
+        with mock.patch.dict(
+            TRANSITIONS,
+            {TaskStatus.REVIEWING: without_completion},
+        ):
+            decision = authorize_transition(
+                TaskStatus.REVIEWING,
+                TaskStatus.READY_FOR_HUMAN,
+                TransitionCommand(
+                    actor_kind="worker",
+                    target=TaskStatus.READY_FOR_HUMAN,
+                    operation=TransitionOperation.RELEASE_COMPLETED,
+                ),
+            )
+        self.assertEqual(decision.code, "forbidden")
 
     def test_only_closed_infrastructure_failures_retry_twice(self):
         retryable = {

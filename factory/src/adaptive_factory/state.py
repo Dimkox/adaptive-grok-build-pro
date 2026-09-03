@@ -122,6 +122,17 @@ def authorize_transition(current: TaskStatus, target: TaskStatus, command: Trans
         return TransitionDecision("forbidden", "command target does not match requested state")
     if current in TERMINAL:
         return TransitionDecision("forbidden", "transition is not in the closed M4 graph")
+    completed_release_compatibility = (
+        current is TaskStatus.LEASED
+        and target is TaskStatus.READY_FOR_HUMAN
+        and command.actor_kind == "worker"
+        and command.operation is TransitionOperation.RELEASE_COMPLETED
+    )
+    if (
+        target not in TRANSITIONS.get(current, set())
+        and not completed_release_compatibility
+    ):
+        return TransitionDecision("forbidden", "transition is not in the closed M4 graph")
 
     if command.operation is TransitionOperation.PHASE:
         phase_edges = {
@@ -137,7 +148,7 @@ def authorize_transition(current: TaskStatus, target: TaskStatus, command: Trans
     if command.operation is TransitionOperation.RELEASE_COMPLETED:
         if command.actor_kind != "worker" or target is not TaskStatus.READY_FOR_HUMAN:
             return TransitionDecision("forbidden", "completed release requires a worker completion target")
-        if current is TaskStatus.LEASED:
+        if completed_release_compatibility:
             return TransitionDecision("allowed", "legacy completed-release compatibility")
         if current is TaskStatus.REVIEWING:
             return TransitionDecision("allowed", "reviewed completion authorized")

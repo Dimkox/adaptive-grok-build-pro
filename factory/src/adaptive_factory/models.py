@@ -87,7 +87,7 @@ class FactoryRunV1:
     role: RunRole
     packet_digest: str
     fence: int
-    status: RunStatus
+    state: RunStatus
     lease_expires_at: datetime
     deadline_at: datetime
     created_at: datetime

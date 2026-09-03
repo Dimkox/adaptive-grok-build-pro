@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 import json
@@ -10,7 +10,21 @@ import uuid
 
 from .contracts import HEX64, TaskIntakeV1, canonical_digest
 from .migrations import discover_migrations
-from .models import Actor, FailureClass, LeaseGrant, RunRole, TaskProjection, TaskStatus
+from .models import (
+    Actor,
+    FactoryAttemptV1,
+    FactoryEventHistoryPageV1,
+    FactoryEventV1,
+    FactoryRunAttemptV1,
+    FactoryRunHistoryPageV1,
+    FactoryRunV1,
+    FailureClass,
+    LeaseGrant,
+    RunRole,
+    RunStatus,
+    TaskProjection,
+    TaskStatus,
+)
 from .state import classify_retry
 
 
@@ -635,7 +649,7 @@ class PostgresFactoryStore:
     def list_tasks(
         self, *, repository_id: str | None = None, limit: int = 100, cursor_task_id: str | None = None
     ) -> tuple[TaskProjection, ...]:
-        if not 1 <= limit <= 100:
+        if type(limit) is not int or not 1 <= limit <= 100:
             raise ValueError("limit must be 1..100")
         conditions, params = [], []
         if repository_id:
@@ -648,6 +662,235 @@ class PostgresFactoryStore:
         with self._transaction() as db:
             db.execute(self._task_select() + where + " ORDER BY t.task_id LIMIT %s", (*params, limit))
             return tuple(self._projection(row) for row in db.fetchall())
+
+    def list_task_runs(
+        self,
+        task_id: str,
+        *,
+        limit: int,
+        cursor_run_id: str | None,
+        authorize_repository: Callable[[str], None] | None = None,
+    ) -> FactoryRunHistoryPageV1:
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise ValueError("limit must be 1..100")
+        if cursor_run_id is not None:
+            try:
+                cursor_run_id = self._history_uuid(cursor_run_id)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("invalid run cursor") from exc
+        with self._transaction() as cursor:
+            task = self._get_task(cursor, task_id)
+            if authorize_repository is not None:
+                authorize_repository(task.repository_id)
+            cursor_fence = 0
+            if cursor_run_id is not None:
+                cursor.execute(
+                    "SELECT fence FROM factory.runs WHERE task_id=%s AND run_id=%s",
+                    (task_id, cursor_run_id),
+                )
+                cursor_row = cursor.fetchone()
+                if cursor_row is None:
+                    raise ValueError("invalid run cursor")
+                cursor_fence = cursor_row[0]
+            cursor.execute(
+                """WITH page AS MATERIALIZED (
+                  SELECT run_id,task_id,owner_id,role,packet_digest,fence,state,
+                    lease_expires_at,deadline_at,created_at,released_at
+                  FROM factory.runs
+                  WHERE task_id=%s AND fence>%s
+                  ORDER BY fence
+                  LIMIT %s
+                )
+                SELECT p.run_id,p.task_id,p.owner_id,p.role,p.packet_digest,p.fence,p.state,
+                  p.lease_expires_at,p.deadline_at,p.created_at,p.released_at,
+                  a.attempt_id,a.task_id,a.run_id,a.attempt_no,a.failure_class,
+                  a.failure_code,a.failure_digest,a.created_at,a.finished_at
+                FROM page p LEFT JOIN factory.attempts a ON a.run_id=p.run_id
+                ORDER BY p.fence,a.attempt_no,a.attempt_id""",
+                (task_id, cursor_fence, limit + 1),
+            )
+            rows = cursor.fetchall()
+
+        try:
+            grouped: dict[str, list] = {}
+            order: list[str] = []
+            for row in rows:
+                run_id = self._history_uuid(row[0])
+                if run_id not in grouped:
+                    grouped[run_id] = []
+                    order.append(run_id)
+                grouped[run_id].append(row)
+            if any(
+                len(grouped[run_id]) != 1 or grouped[run_id][0][11] is None
+                for run_id in order
+            ):
+                raise ValueError("one attempt per run required")
+
+            all_items = tuple(
+                self._run_attempt_snapshot(grouped[run_id][0], task_id)
+                for run_id in order
+            )
+        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+            raise StoreUnavailable("run attempt history invariant failed") from exc
+
+        has_more = len(all_items) > limit
+        items = all_items[:limit]
+        next_cursor = items[-1].run.run_id if has_more else None
+        return FactoryRunHistoryPageV1(items, next_cursor)
+
+    def list_task_events(
+        self,
+        task_id: str,
+        *,
+        limit: int,
+        cursor_sequence: int | None,
+        authorize_repository: Callable[[str], None] | None = None,
+    ) -> FactoryEventHistoryPageV1:
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise ValueError("limit must be 1..100")
+        if (
+            cursor_sequence is not None
+            and (
+                type(cursor_sequence) is not int
+                or not 0 <= cursor_sequence <= 9_223_372_036_854_775_807
+            )
+        ):
+            raise ValueError("cursor must be nonnegative")
+        with self._transaction() as cursor:
+            task = self._get_task(cursor, task_id)
+            if authorize_repository is not None:
+                authorize_repository(task.repository_id)
+            cursor.execute(
+                """SELECT event_id,task_id,event_sequence,idempotency_key,actor_id,action,
+                  metadata,mandatory_cleanup,created_at
+                FROM factory.task_events
+                WHERE task_id=%s AND event_sequence>%s
+                ORDER BY event_sequence
+                LIMIT %s""",
+                (task_id, cursor_sequence or 0, limit + 1),
+            )
+            rows = cursor.fetchall()
+        try:
+            all_items = tuple(
+                self._event_snapshot(row, task_id)
+                for row in rows
+            )
+        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+            raise StoreUnavailable("event history invariant failed") from exc
+        has_more = len(all_items) > limit
+        items = all_items[:limit]
+        next_cursor = items[-1].event_sequence if has_more else None
+        return FactoryEventHistoryPageV1(items, next_cursor)
+
+    @staticmethod
+    def _history_uuid(value) -> str:
+        parsed = str(uuid.UUID(str(value)))
+        if str(value) != parsed:
+            raise ValueError("noncanonical UUID")
+        return parsed
+
+    @staticmethod
+    def _history_datetime(value, *, nullable: bool = False) -> datetime | None:
+        if value is None and nullable:
+            return None
+        if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("timezone-aware timestamp required")
+        return value
+
+    @staticmethod
+    def _history_text(value, *, maximum: int = 128) -> str:
+        if (
+            not isinstance(value, str)
+            or not value
+            or len(value.encode("utf-8")) > maximum
+            or any(ord(character) < 32 for character in value)
+        ):
+            raise ValueError("invalid history text")
+        return value
+
+    @staticmethod
+    def _history_digest(value) -> str:
+        if not isinstance(value, str):
+            raise ValueError("invalid history digest")
+        value = value.strip()
+        if not HEX64.fullmatch(value):
+            raise ValueError("invalid history digest")
+        return value
+
+    @classmethod
+    def _run_attempt_snapshot(cls, row, requested_task_id: str) -> FactoryRunAttemptV1:
+        run_id = cls._history_uuid(row[0])
+        run_task_id = cls._history_uuid(row[1])
+        attempt_id = cls._history_uuid(row[11])
+        attempt_task_id = cls._history_uuid(row[12])
+        attempt_run_id = cls._history_uuid(row[13])
+        if (
+            run_task_id != requested_task_id
+            or attempt_task_id != requested_task_id
+            or attempt_run_id != run_id
+        ):
+            raise ValueError("history identity mismatch")
+        fence, attempt_no = row[5], row[14]
+        if type(fence) is not int or not 1 <= fence <= 9_223_372_036_854_775_807:
+            raise ValueError("invalid run fence")
+        if type(attempt_no) is not int or not 1 <= attempt_no <= 3:
+            raise ValueError("invalid attempt number")
+        failure_evidence = row[15:18]
+        if not (all(value is None for value in failure_evidence) or all(value is not None for value in failure_evidence)):
+            raise ValueError("partial attempt failure evidence")
+        failure_class = FailureClass(row[15]) if row[15] is not None else None
+        failure_code = cls._history_text(row[16]) if row[16] is not None else None
+        failure_digest = cls._history_digest(row[17]) if row[17] is not None else None
+        run = FactoryRunV1(
+            run_id=run_id,
+            task_id=run_task_id,
+            owner=cls._history_text(row[2]),
+            role=RunRole(row[3]),
+            packet_digest=cls._history_digest(row[4]),
+            fence=fence,
+            state=RunStatus(row[6]),
+            lease_expires_at=cls._history_datetime(row[7]),
+            deadline_at=cls._history_datetime(row[8]),
+            created_at=cls._history_datetime(row[9]),
+            released_at=cls._history_datetime(row[10], nullable=True),
+        )
+        attempt = FactoryAttemptV1(
+            attempt_id=attempt_id,
+            task_id=attempt_task_id,
+            run_id=attempt_run_id,
+            attempt_no=attempt_no,
+            failure_class=failure_class,
+            failure_code=failure_code,
+            failure_digest=failure_digest,
+            created_at=cls._history_datetime(row[18]),
+            finished_at=cls._history_datetime(row[19], nullable=True),
+        )
+        return FactoryRunAttemptV1(run, attempt)
+
+    @classmethod
+    def _event_snapshot(cls, row, requested_task_id: str) -> FactoryEventV1:
+        event_id = cls._history_uuid(row[0])
+        event_task_id = cls._history_uuid(row[1])
+        if event_task_id != requested_task_id:
+            raise ValueError("event task mismatch")
+        sequence = row[2]
+        if type(sequence) is not int or not 1 <= sequence <= 9_223_372_036_854_775_807:
+            raise ValueError("invalid event sequence")
+        if not isinstance(row[6], Mapping):
+            raise ValueError("event metadata must be an object")
+        if type(row[7]) is not bool:
+            raise ValueError("invalid mandatory cleanup marker")
+        return FactoryEventV1(
+            event_id=event_id,
+            task_id=event_task_id,
+            event_sequence=sequence,
+            idempotency_key=cls._history_digest(row[3]),
+            actor_id=cls._history_text(row[4]),
+            action=cls._history_text(row[5]),
+            metadata=row[6],
+            mandatory_cleanup=row[7],
+            created_at=cls._history_datetime(row[8]),
+        )
 
     def verify_audit_chain(self, task_id: str) -> bool:
         with self._transaction() as cursor:

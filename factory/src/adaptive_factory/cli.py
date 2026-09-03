@@ -36,6 +36,14 @@ def main(argv: list[str] | None = None) -> int:
     show.add_argument("task_id")
     listing = sub.add_parser("list")
     listing.add_argument("repository_id")
+    runs = sub.add_parser("runs")
+    runs.add_argument("task_id")
+    runs.add_argument("--limit", type=int, default=100)
+    runs.add_argument("--cursor")
+    events = sub.add_parser("events")
+    events.add_argument("task_id")
+    events.add_argument("--limit", type=int, default=100)
+    events.add_argument("--cursor", type=int)
     cancel = sub.add_parser("cancel")
     cancel.add_argument("task_id")
     cancel.add_argument("reason")
@@ -86,6 +94,16 @@ def main(argv: list[str] | None = None) -> int:
             response = client.get(f"/v1/tasks/{args.task_id}", headers=headers)
         elif args.command == "list":
             response = client.get("/v1/tasks", headers=headers, params={"repository_id": args.repository_id})
+        elif args.command == "runs":
+            params = {"limit": args.limit}
+            if args.cursor is not None:
+                params["cursor"] = args.cursor
+            response = client.get(f"/v1/tasks/{args.task_id}/runs", headers=headers, params=params)
+        elif args.command == "events":
+            params = {"limit": args.limit}
+            if args.cursor is not None:
+                params["cursor"] = args.cursor
+            response = client.get(f"/v1/tasks/{args.task_id}/events", headers=headers, params=params)
         elif args.command == "cancel":
             response = client.post(f"/v1/tasks/{args.task_id}/cancel", headers=headers, json={"reason": args.reason})
         elif args.command == "claim":

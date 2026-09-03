@@ -109,6 +109,28 @@ def main() -> int:
     two_status = fresh.store.get_task(two_task.task_id).status
     new_worker = Actor("new-worker", "worker", frozenset({"task:claim"}), frozenset({"probe/repository"}))
     new = fresh.claim(owner=new_worker.actor_id, role=RunRole.READER, repositories=("probe/repository",), lease_seconds=30, actor=new_worker, now=datetime.now(timezone.utc))
+    reader = Actor(
+        "history-reader",
+        "client",
+        frozenset({"task:read"}),
+        frozenset({"probe/repository"}),
+    )
+    first_run_page = fresh.list_task_runs(
+        two_task.task_id, limit=1, cursor=None, actor=reader
+    )
+    second_run_page = fresh.list_task_runs(
+        two_task.task_id, limit=1, cursor=first_run_page.cursor, actor=reader
+    )
+    event_sequence = []
+    event_cursor = None
+    while True:
+        event_page = fresh.list_task_events(
+            two_task.task_id, limit=1, cursor=event_cursor, actor=reader
+        )
+        event_sequence.extend(event.event_sequence for event in event_page.items)
+        if event_page.cursor is None:
+            break
+        event_cursor = event_page.cursor
     if (
         first.repaired != 2
         or second.repaired != 0
@@ -117,12 +139,17 @@ def main() -> int:
         or new is None
         or new.task_id != two_task.task_id
         or new.fence <= old_two.fence
+        or [item.run.fence for item in first_run_page.items] != [old_two.fence]
+        or first_run_page.cursor != old_two.run_id
+        or [item.run.fence for item in second_run_page.items] != [new.fence]
+        or second_run_page.cursor is not None
+        or event_sequence != list(range(1, len(event_sequence) + 1))
     ):
         raise SystemExit("restart reconciliation did not preserve exact accepted retry limits")
     try:
         fresh.heartbeat(old_two, actor=lost_worker, now=datetime.now(timezone.utc))
     except FenceError:
-        print("PASS: PostgreSQL restarted; retry limits persisted; two repairs; replay no-op; higher fence; late holder rejected")
+        print("PASS: PostgreSQL restarted; history pages persisted; retry limits persisted; two repairs; replay no-op; higher fence; late holder rejected")
         return 0
     raise SystemExit("late heartbeat unexpectedly succeeded")
 

@@ -274,6 +274,50 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
             headers={"X-Correlation-ID": correlation},
         )
 
+    @app.get("/v1/tasks/{task_id}/runs", tags=["tasks"])
+    def list_task_runs(
+        task_id: str,
+        limit: int = 100,
+        cursor: str | None = None,
+        authorization: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:read")
+        correlation = _request_id(x_correlation_id or "generated-runs", "X-Correlation-ID")
+        task_id = _uuid(task_id, "task_id")
+        limit = _integer(limit, "limit", 1, 100)
+        cursor = _uuid(cursor, "cursor") if cursor is not None else None
+        try:
+            result = service.list_task_runs(
+                task_id, limit=limit, cursor=cursor, actor=actor
+            )
+        except KeyError as exc:
+            raise HTTPException(404, "task not found") from exc
+        except ValueError as exc:
+            raise HTTPException(422, "invalid cursor") from exc
+        return JSONResponse(_json(result), headers={"X-Correlation-ID": correlation})
+
+    @app.get("/v1/tasks/{task_id}/events", tags=["tasks"])
+    def list_task_events(
+        task_id: str,
+        limit: int = 100,
+        cursor: int | None = None,
+        authorization: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:read")
+        correlation = _request_id(x_correlation_id or "generated-events", "X-Correlation-ID")
+        task_id = _uuid(task_id, "task_id")
+        limit = _integer(limit, "limit", 1, 100)
+        cursor = _integer(cursor, "cursor", 0, 9_223_372_036_854_775_807) if cursor is not None else None
+        try:
+            result = service.list_task_events(
+                task_id, limit=limit, cursor=cursor, actor=actor
+            )
+        except KeyError as exc:
+            raise HTTPException(404, "task not found") from exc
+        return JSONResponse(_json(result), headers={"X-Correlation-ID": correlation})
+
     @app.post("/v1/tasks/{task_id}/cancel", tags=["tasks"])
     def cancel(
         task_id: str,

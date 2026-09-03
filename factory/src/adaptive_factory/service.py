@@ -56,6 +56,28 @@ class FactoryService:
         self._require(actor, "task:list", repository_id)
         return self.store.list_tasks(repository_id=repository_id, limit=limit, cursor_task_id=cursor)
 
+    def list_task_runs(self, task_id: str, *, limit: int, cursor: str | None, actor: Actor):
+        self._require(actor, "task:read")
+        return self.store.list_task_runs(
+            task_id,
+            limit=limit,
+            cursor_run_id=cursor,
+            authorize_repository=lambda repository_id: self._require(
+                actor, "task:read", repository_id
+            ),
+        )
+
+    def list_task_events(self, task_id: str, *, limit: int, cursor: int | None, actor: Actor):
+        self._require(actor, "task:read")
+        return self.store.list_task_events(
+            task_id,
+            limit=limit,
+            cursor_sequence=cursor,
+            authorize_repository=lambda repository_id: self._require(
+                actor, "task:read", repository_id
+            ),
+        )
+
     def claim(
         self, *, owner: str, role: RunRole, repositories: Iterable[str], lease_seconds: int, actor: Actor, now: datetime,
         idempotency_key: str | None = None, correlation_id: str | None = None

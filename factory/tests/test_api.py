@@ -13,7 +13,19 @@ from fastapi.testclient import TestClient
 from adaptive_factory.api import Authenticator, create_app
 from adaptive_factory.cli import main as cli_main
 from adaptive_factory.contracts import TaskIntakeV1
-from adaptive_factory.models import Actor, TaskProjection, TaskStatus
+from adaptive_factory.models import (
+    Actor,
+    FactoryAttemptV1,
+    FactoryEventHistoryPageV1,
+    FactoryEventV1,
+    FactoryRunAttemptV1,
+    FactoryRunHistoryPageV1,
+    FactoryRunV1,
+    RunRole,
+    RunStatus,
+    TaskProjection,
+    TaskStatus,
+)
 from adaptive_factory.service import FactoryService
 from adaptive_factory.settings import SettingsError, read_token_file
 from adaptive_factory.store import IntakeResult, StoreError
@@ -43,6 +55,51 @@ class FakeService:
 
     def list_tasks(self, *, repository_id, limit, cursor, actor):
         return ()
+
+    def list_task_runs(self, task_id, *, limit, cursor, actor):
+        now = datetime(2026, 9, 3, 12, 0, tzinfo=timezone.utc)
+        run = FactoryRunV1(
+            "00000000-0000-0000-0000-000000000002",
+            task_id,
+            "worker-1",
+            RunRole.READER,
+            "b" * 64,
+            1,
+            RunStatus.COMPLETED,
+            now,
+            now,
+            now,
+            now,
+        )
+        attempt = FactoryAttemptV1(
+            "00000000-0000-0000-0000-000000000003",
+            task_id,
+            run.run_id,
+            1,
+            None,
+            None,
+            None,
+            now,
+            now,
+        )
+        self.calls.append(("runs", task_id, limit, cursor, actor.actor_id))
+        return FactoryRunHistoryPageV1((FactoryRunAttemptV1(run, attempt),), None)
+
+    def list_task_events(self, task_id, *, limit, cursor, actor):
+        now = datetime(2026, 9, 3, 12, 0, tzinfo=timezone.utc)
+        event = FactoryEventV1(
+            "00000000-0000-0000-0000-000000000004",
+            task_id,
+            1,
+            "c" * 64,
+            "worker-1",
+            "phase_transitioned",
+            {"from_state": "leased", "target": "analyzing", "nested": {"values": [1, 2]}},
+            False,
+            now,
+        )
+        self.calls.append(("events", task_id, limit, cursor, actor.actor_id))
+        return FactoryEventHistoryPageV1((event,), None)
 
     def cancel(self, task_id, *, reason, idempotency_key, actor, now):
         raise KeyError(task_id)
@@ -106,6 +163,50 @@ class ApiTests(unittest.TestCase):
         self.assertIn("/v1/budget-reservations", paths)
         self.assertIn("/v1/usage-observations", paths)
         self.assertEqual(self.client.get("/health/ready").json()["database_role"], "factory_runtime")
+
+    def test_bounded_run_attempt_and_event_history_are_exposed(self):
+        task_id = "00000000-0000-0000-0000-000000000001"
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "X-Correlation-ID": "history-correlation",
+        }
+        runs = self.client.get(
+            f"/v1/tasks/{task_id}/runs",
+            headers=headers,
+            params={"limit": 3},
+        )
+        self.assertEqual(runs.status_code, 200)
+        self.assertEqual(runs.headers["X-Correlation-ID"], "history-correlation")
+        self.assertEqual(runs.json()["items"][0]["run"]["state"], "completed")
+        self.assertEqual(runs.json()["items"][0]["attempt"]["attempt_no"], 1)
+        self.assertIsNone(runs.json()["cursor"])
+
+        events = self.client.get(
+            f"/v1/tasks/{task_id}/events",
+            headers=headers,
+            params={"limit": 10, "cursor": 0},
+        )
+        self.assertEqual(events.status_code, 200)
+        self.assertEqual(events.json()["items"][0]["event_sequence"], 1)
+        self.assertEqual(events.json()["items"][0]["metadata"]["nested"]["values"], [1, 2])
+        self.assertIsNone(events.json()["cursor"])
+        self.assertEqual(self.service.calls[-2][0], "runs")
+        self.assertEqual(self.service.calls[-1][0], "events")
+
+    def test_history_rejects_unbounded_pages_and_malformed_cursors(self):
+        task_id = "00000000-0000-0000-0000-000000000001"
+        headers = {"Authorization": f"Bearer {self.token}"}
+        cases = (
+            (f"/v1/tasks/{task_id}/runs?limit=0", 422),
+            (f"/v1/tasks/{task_id}/runs?limit=101", 422),
+            (f"/v1/tasks/{task_id}/runs?cursor=not-a-uuid", 422),
+            (f"/v1/tasks/{task_id}/events?limit=0", 422),
+            (f"/v1/tasks/{task_id}/events?limit=101", 422),
+            (f"/v1/tasks/{task_id}/events?cursor=-1", 422),
+        )
+        for path, expected in cases:
+            with self.subTest(path=path):
+                self.assertEqual(self.client.get(path, headers=headers).status_code, expected)
 
     def test_body_over_one_mebibyte_is_rejected_without_parsing(self):
         response = self.client.post(
@@ -327,6 +428,8 @@ class ApiTests(unittest.TestCase):
             "kill",
             "unkill",
             "reconcile",
+            "runs",
+            "events",
         ):
             self.assertIn(command, output.getvalue())
 

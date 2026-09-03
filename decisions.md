@@ -376,3 +376,7 @@ No M4 candidate was accepted or authorized for persistent rollout, so the repair
 ## 2026-09-03 — Separate intent, work and command identities
 
 Keep `intent_digest` over the complete normalized intake as the immutable stored/M5 packet identity, but deduplicate on a namespaced semantic work digest that excludes only transport `request_id` and the entire M0 proof. Bind each request ID separately to its full request digest and exact result in `command_results`, so refreshed equivalent authority deduplicates while changed reuse conflicts.
+
+## 2026-09-03 — Keep history cursors public but order by durable keys
+
+Expose a task-bound run UUID cursor while resolving it to the run's immutable fence, and use event sequence directly for event pages. Selecting and validating a `limit+1` window before slicing preserves stable pagination and makes malformed lookahead evidence fail closed without changing schema or `LeaseGrant` v1.

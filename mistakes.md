@@ -415,3 +415,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** A read-only `rg` pattern containing Markdown backticks triggered shell command substitution and printed `013: command not found` before the intended search results.
 **Root cause:** The pattern was passed through double-quoted shell text instead of a literal-safe argument; repository searches containing backticks must use single-quoted shell literals or structured argv construction.
+
+## 2026-09-03 — Used ephemeral PGDATA for a restart-persistence probe
+
+**Symptom:** The disposable PostgreSQL restart probe lost the migrated cluster and failed at `SET ROLE factory_runtime` after restart.
+**Root cause:** PGDATA was mounted as tmpfs, whose contents do not survive a container restart; restart durability probes require an explicitly named disposable volume that is removed after evidence collection.

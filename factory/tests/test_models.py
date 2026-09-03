@@ -41,7 +41,7 @@ class ImmutableSnapshotTests(unittest.TestCase):
             role=RunRole.WRITER,
             packet_digest="b" * 64,
             fence=2,
-            status=RunStatus.LEASED,
+            state=RunStatus.LEASED,
             lease_expires_at=NOW,
             deadline_at=NOW,
             created_at=NOW,
@@ -58,7 +58,7 @@ class ImmutableSnapshotTests(unittest.TestCase):
             created_at=NOW,
             finished_at=None,
         )
-        self.assertEqual(run.status, RunStatus.LEASED)
+        self.assertEqual(run.state, RunStatus.LEASED)
         self.assertEqual(attempt.attempt_no, 2)
         with self.assertRaisesRegex(Exception, "cannot assign"):
             run.fence = 3

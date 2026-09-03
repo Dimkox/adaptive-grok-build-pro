@@ -18,6 +18,28 @@ class MigrationTests(unittest.TestCase):
             self.assertFalse(run_disposable_exit._final_postgres_ready("factory-test"))
         self.assertEqual(run.call_count, 1)
 
+    def test_exit_runner_removes_its_exact_container_and_restart_volume(self):
+        removed = type("Completed", (), {"returncode": 0})()
+        absent = type("Completed", (), {"returncode": 1})()
+        with patch.object(
+            run_disposable_exit.subprocess,
+            "run",
+            side_effect=[removed, removed, absent, absent],
+        ) as run:
+            run_disposable_exit._cleanup(
+                "factory-test-container",
+                "factory-test-volume",
+            )
+        self.assertEqual(
+            [call.args[0] for call in run.call_args_list],
+            [
+                ["docker", "rm", "-f", "factory-test-container"],
+                ["docker", "volume", "rm", "factory-test-volume"],
+                ["docker", "inspect", "factory-test-container"],
+                ["docker", "volume", "inspect", "factory-test-volume"],
+            ],
+        )
+
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
         self.assertEqual([item.version for item in migrations], list(range(1, 14)))
