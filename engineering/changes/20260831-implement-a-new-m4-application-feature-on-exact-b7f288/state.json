@@ -67,11 +67,17 @@
       "from": "reviewing",
       "reason": "Human approved the exact six-rule bounded architecture budget amendment; implementation remains local with no migration or external action",
       "to": "implementing"
+    },
+    {
+      "at": "2026-09-03T21:35:14+00:00",
+      "from": "implementing",
+      "reason": "Final source and package are frozen; run the exact-head verifier before independent reviews",
+      "to": "verifying"
     }
   ],
   "route_id": "b7f288f1e81e",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "verifying",
   "title": "Implement a new M4 application feature on exact base 67714a1f1b87effcfabe55d5ca2770d0a68d17c1: typed immutable task, run, and attempt records; PostgreSQL migrations and durable state; idempotent intake; lease fencing and capacity; bounded retry, dead-letter and budgets; kill switches, audit, reconciliation; authenticated local API and CLI; PostgreSQL integration tests. The feature remains local and has no network side effects.",
-  "updated_at": "2026-09-03T20:33:28+00:00"
+  "updated_at": "2026-09-03T21:35:14+00:00"
 }

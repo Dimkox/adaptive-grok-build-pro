@@ -455,3 +455,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** Ambient umask `0002` created clone and output-parent directories with mode `0775`, violating the packager's ancestor-authority boundary before publication.
 **Prevention:** Set an explicit secure umask before clone/build and stat-check both the output parent and its ancestor chain before invoking the packager.
+
+## 2026-09-03 — Ran a long verifier in a turn-bound session
+
+**Root cause:** The roughly ten-minute exact-head verifier ran through a turn-bound interactive exec session, so its handle and process vanished at the automatic session boundary before a receipt was produced.
+**Prevention:** Launch long verifiers as detached jobs with explicit PID, log, and exit-status files, then confirm the receipt and fingerprint before treating the run as evidence.
