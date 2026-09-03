@@ -736,6 +736,61 @@ module.main()
                     ],
                 )
 
+    def test_release_cli_derives_deterministic_member_modes_from_git_tree(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            self._init_release_repository(root)
+            script = root / 'scripts/run.sh'
+            script.parent.mkdir()
+            script.write_text('#!/bin/sh\necho ok\n', encoding='utf-8')
+            script.chmod(0o755)
+            subprocess.run(['git', 'add', 'scripts/run.sh'], cwd=root, check=True)
+            subprocess.run(
+                [
+                    'git', '-c', 'user.name=Package Test', '-c',
+                    'user.email=package@example.invalid', 'commit', '-q', '-m',
+                    'add executable fixture',
+                ],
+                cwd=root,
+                check=True,
+            )
+            clone = Path(tmp) / 'clone'
+            subprocess.run(
+                ['git', 'clone', '--no-local', '-q', str(root), str(clone)],
+                check=True,
+            )
+            (root / 'README.md').chmod(0o600)
+            script.chmod(0o700)
+            (clone / 'README.md').chmod(0o664)
+            (clone / 'scripts/run.sh').chmod(0o775)
+            first = Path(tmp) / 'first.zip'
+            second = Path(tmp) / 'second.zip'
+
+            first_result = self._run_release_cli(root, first)
+            second_result = self._run_release_cli(clone, second)
+
+            self.assertEqual(
+                first_result.returncode,
+                0,
+                first_result.stderr.decode('utf-8', errors='replace'),
+            )
+            self.assertEqual(
+                second_result.returncode,
+                0,
+                second_result.stderr.decode('utf-8', errors='replace'),
+            )
+            self.assertEqual(first.read_bytes(), second.read_bytes())
+            with zipfile.ZipFile(first) as archive:
+                prefix = 'adaptive-grok-build-pro/'
+                self.assertEqual(
+                    archive.getinfo(f'{prefix}README.md').external_attr >> 16,
+                    0o100644,
+                )
+                self.assertEqual(
+                    archive.getinfo(f'{prefix}scripts/run.sh').external_attr >> 16,
+                    0o100755,
+                )
+
     def test_release_cli_allows_explicit_tracked_excluded_package_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'project'

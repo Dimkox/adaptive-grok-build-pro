@@ -83,6 +83,7 @@ class ReleaseSnapshot(NamedTuple):
     tree_oid: str
     entries: tuple[ManifestEntry, ...]
     included_paths: tuple[Path, ...]
+    member_modes: tuple[tuple[str, int], ...]
 
 
 class _PublicationBackup(NamedTuple):
@@ -748,6 +749,7 @@ def _release_snapshot_from_tracked_head(root: Path) -> ReleaseSnapshot:
         head.tree_oid,
         tuple(entries),
         tuple(file.path.resolve(strict=True) for file in files),
+        tuple((file.relative_path, file.mode) for file in files),
     )
     _require_release_head(canonical_root, head)
     return snapshot
@@ -789,10 +791,18 @@ def _stage_archive(
     directory: _OutputDirectory,
     output_name: str,
     entries: list[ManifestEntry] | tuple[ManifestEntry, ...],
+    *,
+    member_modes: dict[str, int] | None = None,
 ) -> tuple[_TemporaryArchive, str]:
     manifest = render_manifest(root, entries=list(entries))
     members = [
-        (entry.relative_path, entry.identity.mode, entry)
+        (
+            entry.relative_path,
+            entry.identity.mode
+            if member_modes is None
+            else member_modes[entry.relative_path],
+            entry,
+        )
         for entry in entries
     ]
     members.append(('MANIFEST.sha256', 0o100644, manifest))
@@ -1009,7 +1019,13 @@ def write_release_archive(
         try:
             _existing_output_mode(directory, output.name)
             _existing_sidecar_mode(directory, f'{output.name}.sha256')
-            temporary, digest = _stage_archive(root, directory, output.name, snapshot.entries)
+            temporary, digest = _stage_archive(
+                root,
+                directory,
+                output.name,
+                snapshot.entries,
+                member_modes=dict(snapshot.member_modes),
+            )
             temporaries.append(temporary)
             sidecar = _stage_sidecar(directory, output.name, digest)
             temporaries.append(sidecar)
