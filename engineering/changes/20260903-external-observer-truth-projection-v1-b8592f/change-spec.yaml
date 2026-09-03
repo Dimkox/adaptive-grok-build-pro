@@ -1,0 +1,125 @@
+schema_version: 1
+change_id: 20260903-external-observer-truth-projection-v1-b8592f
+objective:
+  id: OBJ-001
+  statement: Emit a deterministic bounded read-only projection that distinguishes repository claims from coherent public GitHub facts without acquiring delivery authority
+  success_metric: public_status_v1_consistent_fixture_matrix
+  target: EO-001_through_EO-010_pass_on_exact_frozen_tree
+risk:
+  tier: yellow
+  domains:
+    - api
+    - integration
+    - security
+acceptance_criteria:
+  - id: AC-001
+    statement: EO-001 closed operator subject and bounds config with placeholder-only repository example
+    evidence:
+      - kind: test
+        ref: tests/test_external_observer_contracts.py
+  - id: AC-002
+    statement: EO-002 PROJECT_STATE typed manifest and receipts remain exact-bound claims while free-form README has no authority
+    evidence:
+      - kind: test
+        ref: tests/test_external_observer_claims.py
+  - id: AC-003
+    statement: EO-003 PUBLIC_STATUS.v1 JSON digest and human rendering are closed canonical deterministic and stage-separated
+    evidence:
+      - kind: test
+        ref: tests/test_external_observer_contracts.py
+  - id: AC-004
+    statement: EO-004 opening and closing main and configured PR identities must match for fresh exact-equality projection
+    evidence:
+      - kind: test
+        ref: tests/test_external_observer.py
+  - id: AC-005
+    statement: EO-005 required Check Run matches exact head name App ID status and conclusion without following details URL
+    evidence:
+      - kind: test
+        ref: tests/test_external_observer.py
+  - id: AC-006
+    statement: EO-006 newest stable tag resolves through bounded annotated objects and release lag requires real-shape compare proof
+    evidence:
+      - kind: test
+        ref: tests/test_external_observer.py
+  - id: AC-007
+    statement: EO-007 only exact configured PR merge plus merge-commit ancestry proves current delivery and historical milestones remain claims
+    evidence:
+      - kind: test
+        ref: tests/test_external_observer_claims.py
+  - id: AC-008
+    statement: EO-008 transport is fixed HTTPS GitHub GET only with strict parsing body cardinality redirect proxy and deadline bounds
+    evidence:
+      - kind: test
+        ref: tests/test_external_observer_transport.py
+  - id: AC-009
+    statement: EO-009 state is atomic locked no-follow bounded and first failure unavailable while later failure is stale
+    evidence:
+      - kind: test
+        ref: tests/test_external_observer_state.py
+  - id: AC-010
+    statement: EO-010 observer is a separate nonprivileged read-only domain with no controller Factory Trust production or external-write edge and unobservable attestation remains explicit
+    evidence:
+      - kind: test
+        ref: tests/test_architecture_model.py
+      - kind: receipt
+        ref: security_review
+invariants:
+  - id: INV-001
+    statement: No stage implies another and every positive fact binds exact SHA digest and freshness evidence
+    evidence:
+      - kind: test
+        ref: tests/test_external_observer_claims.py
+  - id: INV-002
+    statement: Tests use fake transport only and runtime never performs GitHub write Git subprocess credential read or raw-body persistence
+    evidence:
+      - kind: test
+        ref: tests/test_external_observer_transport.py
+      - kind: receipt
+        ref: security_review
+  - id: INV-003
+    statement: Observer and accepted M4 precede accepted M5 while source preparation never becomes acceptance by schedule
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260903-external-observer-truth-projection-v1-b8592f/tasks.md
+forbidden_outcomes:
+  - id: FORBID-001
+    statement: Observer performs remote mutation follows check details URL uses credentials or gains Trust CI human approval signing Factory or production authority
+    evidence:
+      - kind: receipt
+        ref: security_review
+  - id: FORBID-002
+    statement: SHA inequality list discovery README prose or local receipt alone is reported as fresh delivered released or signature verified
+    evidence:
+      - kind: test
+        ref: tests/test_external_observer_claims.py
+  - id: FORBID-003
+    statement: GitHub Actions arbitrary URLs unbounded payloads secrets raw external text or tracked automatic state mutation enter the tree or output
+    evidence:
+      - kind: test
+        ref: tests/test_external_observer_transport.py
+      - kind: receipt
+        ref: code_review
+contracts:
+  openapi: []
+  json_schema:
+    - engineering/contracts/schemas/external-observer-config.v1.schema.json
+    - engineering/contracts/schemas/public-status.v1.schema.json
+  events: []
+observability:
+  - metric: external_observer_runs_by_status_total
+    proves:
+      - OBJ-001
+  - metric: external_observer_snapshot_age_seconds
+    proves:
+      - OBJ-001
+  - metric: external_observer_claim_mismatches_total
+    proves:
+      - OBJ-001
+rollback:
+  strategy: forward_fix
+  maximum_steps: 3
+approvals:
+  required_scopes:
+    - architecture
+    - security

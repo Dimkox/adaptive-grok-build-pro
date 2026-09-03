@@ -1,0 +1,81 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "78ad2f679d38dc3244e716c586332417e610089c",
+  "base_fingerprint": "ad51258f4c4b6c5cbfffcbfc3bd8a6523f92e534b11a2423cacd048b42339b42",
+  "complexity": "standard",
+  "created_at": "2026-09-03T13:39:15+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api",
+    "integration"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "integration"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=feature",
+    "domains=api,integration",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "b8592fb2815a",
+  "schema_version": 1,
+  "session_id": "codex-external-truth-observer-feature2-20260903",
+  "status": "routed",
+  "task": "Add a feature integration: a read-only GitHub REST endpoint observer for main, a configured numbered change proposal, exact check runs, newest tag, and typed milestone claims, emitting deterministic PUBLIC_STATUS.v1 JSON plus plain-text rendering; flag mismatched SHA or stale snapshot and make no remote writes.",
+  "task_domains": [
+    "api",
+    "integration"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "enterprise-integration"
+  ],
+  "write_agent": "integration_implementer"
+}

@@ -174,3 +174,7 @@ The M0 Trust CI host is hostname `claw` (Xeon E5-2680 v4, ~16 GiB ECC, Ubuntu 24
 ## 2026-09-01 — Keep SEO landing generation isolated and repository-scoped
 
 Embedding the Codex skill under `.agents/skills/` and its showcase under `side-projects/` makes the capability available on demand without changing Trust CI runtime behavior. The showcase remains `noindex, nofollow` until a real production origin is supplied and verified.
+
+## 2026-09-03 — Freeze non-SHA intent before exact-state evidence
+
+Write goal, requirements, design, executable plan and schedule without mutable SHA claims; implement locally only after that checkpoint. Freeze the implementation commit before writing SHA/fingerprint evidence, then review and verify that exact tree so later prose cannot silently stale authority.

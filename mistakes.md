@@ -61,3 +61,7 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** First `grok_verify --mode pr` could not be the completion receipt; reports and `state.json` still had to be written.
 **Root cause:** Verification was used as a mid-implementation checkpoint. The receipt fingerprint is the whole dirty tree, so any later change-package or review-report write invalidates it. Evidence must be recorded only after the last file that will remain in that tree.
+
+## 2026-09-03 — Hand-authored mutable facts as current truth
+
+**Root cause:** Mutable PR, SHA and milestone facts were copied into current-state prose and JSON without a freshness invariant or coherent remote snapshot. Treat repository status surfaces as historical claims and derive current truth through the separate bounded Observer; never promote a claim by repetition.
