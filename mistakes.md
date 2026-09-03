@@ -452,3 +452,7 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 ## 2026-09-03 — Narrowed upstream observation below the approved requirement
 
 **Root cause:** Preparation prioritized safe execution boundaries without first tracing every user noun and verb, so “check fixes and new releases” became a stable-release-only report and omitted post-pin/main change and bugfix intake. Map each user requirement to a typed AC before exclusions; safety narrows execution authority, not observation coverage.
+
+## 2026-09-03 — Repeatedly routed against main instead of the immediate predecessor
+
+**Root cause:** The new route again inherited observed `origin/main` instead of the explicitly selected implementation lineage `7748a8b`, which would make cumulative fitness measure unrelated stacked history. Bind every stacked route to its exact immediate reviewed predecessor before design or implementation and verify that pair in the durable package.

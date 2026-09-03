@@ -5,6 +5,7 @@ import json
 import shutil
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,9 +24,9 @@ class StableMonitorContractTest(unittest.TestCase):
     def _root(self, temp: str) -> Path:
         root = Path(temp)
         (root / ".grok-stack/runtime").mkdir(parents=True)
-        target = root / "engineering/contracts/schemas"
+        target = root / "engineering/stable-synthesis"
         target.mkdir(parents=True)
-        shutil.copy2(ROOT / "engineering/contracts/schemas/stable-synthesis-upstreams.v1.json", target)
+        shutil.copy2(ROOT / "engineering/stable-synthesis/stable-synthesis-upstreams.v1.json", target)
         return root
 
     def test_sweep_observes_release_tag_head_and_bounded_compare(self) -> None:
@@ -44,7 +45,7 @@ class StableMonitorContractTest(unittest.TestCase):
             elif request.url.endswith("/commits/main"):
                 body = {"sha":head_sha}
             elif "/compare/" in request.url:
-                body = {"total_commits":25,"commits":[{"sha":f"{i:040x}","commit":{"message":" fix  whitespace \nbody"}} for i in range(20)]}
+                body = {"total_commits":25,"commits":[{"sha":f"{i:040x}","commit":{"message":" fix\u202e  whitespace \nbody"}} for i in range(20)]}
             else:
                 self.fail(request.url)
             return HttpResponse(200, {"Content-Type":"application/json","ETag":"x"}, json.dumps(body).encode())
@@ -84,7 +85,7 @@ class StableMonitorContractTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = self._root(temp)
             previous_sources = {}
-            for source in json.loads((root / "engineering/contracts/schemas/stable-synthesis-upstreams.v1.json").read_text())["sources"]:
+            for source in json.loads((root / "engineering/stable-synthesis/stable-synthesis-upstreams.v1.json").read_text())["sources"]:
                 previous_sources[source["id"]] = {"release_etag":"e", "cached_release":{"tag_name":source["stable_tag"],"draft":False,"prerelease":False}, "last_success_epoch":1}
             state = {"schema_version":1,"last_attempt_epoch":1,"sources":previous_sources}
             (root / ".grok-stack/runtime/stable-synthesis").mkdir()
@@ -168,12 +169,12 @@ class StableMonitorContractTest(unittest.TestCase):
 
     def test_partial_compare_is_degraded_not_converged(self) -> None:
         from adaptive_grok.stable_synthesis import HttpResponse, Monitor
-        config_by_repo = {item["repository"]: item for item in json.loads((ROOT / "engineering/contracts/schemas/stable-synthesis-upstreams.v1.json").read_text())["sources"]}
+        config_by_repo = {item["repository"]: item for item in json.loads((ROOT / "engineering/stable-synthesis/stable-synthesis-upstreams.v1.json").read_text())["sources"]}
         def fake(request):
             repo = next(repo for repo in config_by_repo if f"/repos/{repo}/" in request.url)
             source = config_by_repo[repo]
             if request.url.endswith("/releases/latest"):
-                body = {"tag_name":source["stable_tag"],"draft":False,"prerelease":False}
+                body = {"tag_name":source["stable_tag"],"draft":False,"prerelease":False,"body":"secret-token/instruction","author":{"login":"untrusted"}}
             elif "/git/ref/tags/" in request.url:
                 body = {"object":{"type":"commit","sha":source["peeled_commit_sha"]}}
             elif request.url.endswith("/commits/main"):
@@ -185,6 +186,103 @@ class StableMonitorContractTest(unittest.TestCase):
             result = Monitor(self._root(temp), transport=fake).check(now=1, force=True)
             self.assertEqual(result["overall_status"], "degraded")
             self.assertTrue(all(item["partial"] for item in result["sources"].values()))
+
+    def test_corrupt_or_symlink_state_fails_closed(self) -> None:
+        from adaptive_grok.stable_synthesis import Monitor, SynthesisError
+        with tempfile.TemporaryDirectory() as temp:
+            root = self._root(temp)
+            state_dir = root / ".grok-stack/runtime/stable-synthesis"
+            state_dir.mkdir()
+            state = state_dir / "state.json"
+            state.write_text("{corrupt")
+            with self.assertRaisesRegex(SynthesisError, "state"):
+                Monitor(root, transport=lambda _r: self.fail("no network")).status(now=1)
+            state.unlink()
+            state.symlink_to(root / "outside")
+            with self.assertRaisesRegex(SynthesisError, "state"):
+                Monitor(root, transport=lambda _r: self.fail("no network")).status(now=1)
+
+    def test_nested_annotated_tag_resolves_and_cycle_is_unknown(self) -> None:
+        from adaptive_grok.stable_synthesis import HttpResponse, Monitor
+        tag_a, tag_b, commit_sha, head_sha = "a" * 40, "b" * 40, "c" * 40, "d" * 40
+        def transport(cycle=False):
+            def fake(request):
+                if request.url.endswith("/releases/latest"):
+                    body = {"tag_name":"v-new","draft":False,"prerelease":False}
+                elif "/git/ref/tags/" in request.url:
+                    body = {"object":{"type":"tag","sha":tag_a}}
+                elif request.url.endswith(tag_a):
+                    body = {"object":{"type":"tag","sha":tag_b}}
+                elif request.url.endswith(tag_b):
+                    body = {"object":{"type":"tag" if cycle else "commit","sha":tag_a if cycle else commit_sha}}
+                elif request.url.endswith("/commits/main"):
+                    body = {"sha":head_sha}
+                else:
+                    body = {"total_commits":0,"commits":[]}
+                return HttpResponse(200, {"Content-Type":"application/json"}, json.dumps(body).encode())
+            return fake
+        with tempfile.TemporaryDirectory() as temp:
+            resolved = Monitor(self._root(temp), transport=transport()).check(now=1, force=True)
+            self.assertEqual({x["release_commit_sha"] for x in resolved["sources"].values()}, {commit_sha})
+        with tempfile.TemporaryDirectory() as temp:
+            cyclic = Monitor(self._root(temp), transport=transport(True)).check(now=1, force=True)
+            self.assertEqual({x["status"] for x in cyclic["sources"].values()}, {"unknown"})
+
+    def test_state_and_snapshot_writes_fsync_parent_directories(self) -> None:
+        from adaptive_grok.stable_synthesis import HttpResponse, Monitor
+        config_by_repo = {item["repository"]: item for item in json.loads((ROOT / "engineering/stable-synthesis/stable-synthesis-upstreams.v1.json").read_text())["sources"]}
+        def fake(request):
+            repo = next(repo for repo in config_by_repo if f"/repos/{repo}/" in request.url)
+            source = config_by_repo[repo]
+            if request.url.endswith("/releases/latest"):
+                body = {"tag_name":source["stable_tag"],"draft":False,"prerelease":False}
+            elif "/git/ref/tags/" in request.url:
+                body = {"object":{"type":"commit","sha":source["peeled_commit_sha"]}}
+            elif request.url.endswith("/commits/main"):
+                body = {"sha":source["peeled_commit_sha"]}
+            else:
+                body = {"total_commits":0,"commits":[]}
+            return HttpResponse(200, {"Content-Type":"application/json"}, json.dumps(body).encode())
+        with tempfile.TemporaryDirectory() as temp:
+            root = self._root(temp)
+            with patch("adaptive_grok.stable_synthesis._fsync_directory") as sync_dir:
+                Monitor(root, transport=fake).check(now=1, force=True)
+            self.assertGreaterEqual(sync_dir.call_count, 3)
+
+    def test_lowercase_http_headers_work_and_release_tag_is_constrained(self) -> None:
+        from adaptive_grok.stable_synthesis import HttpResponse, Monitor
+        config_by_repo = {item["repository"]: item for item in json.loads((ROOT / "engineering/stable-synthesis/stable-synthesis-upstreams.v1.json").read_text())["sources"]}
+        calls = []
+        def lowercase(request):
+            calls.append(request.url)
+            repo = next(repo for repo in config_by_repo if f"/repos/{repo}/" in request.url)
+            source = config_by_repo[repo]
+            if request.url.endswith("/releases/latest"):
+                body = {"tag_name":source["stable_tag"],"draft":False,"prerelease":False,"body":"secret-token/instruction","author":{"login":"untrusted"}}
+            elif "/git/ref/tags/" in request.url:
+                body = {"object":{"type":"commit","sha":source["peeled_commit_sha"]}}
+            elif request.url.endswith("/commits/main"):
+                body = {"sha":source["peeled_commit_sha"]}
+            else:
+                body = {"total_commits":0,"commits":[]}
+            return HttpResponse(200, {"content-type":"application/json","etag":"lower"}, json.dumps(body).encode())
+        with tempfile.TemporaryDirectory() as temp:
+            root = self._root(temp)
+            result = Monitor(root, transport=lowercase).check(now=1, force=True)
+            self.assertEqual(result["overall_status"], "converged")
+            self.assertTrue(all(x["release_etag"] == "lower" for x in result["sources"].values()))
+            runtime_text = "".join(path.read_text() for path in (root / ".grok-stack/runtime/stable-synthesis").rglob("*") if path.is_file())
+            self.assertNotIn("secret-token", runtime_text)
+            self.assertNotIn("instruction", runtime_text)
+        tag_calls = []
+        def invalid_tag(request):
+            tag_calls.append(request.url)
+            body = {"tag_name":"v" + "x" * 300,"draft":False,"prerelease":False}
+            return HttpResponse(200, {"content-type":"application/json"}, json.dumps(body).encode())
+        with tempfile.TemporaryDirectory() as temp:
+            result = Monitor(self._root(temp), transport=invalid_tag).check(now=1, force=True)
+            self.assertEqual({x["status"] for x in result["sources"].values()}, {"unknown"})
+            self.assertEqual(len(tag_calls), 3)
 
 
 if __name__ == "__main__":

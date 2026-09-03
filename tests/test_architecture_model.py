@@ -1160,8 +1160,37 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
-        self.assertIn("CONTRACT-STABLE-UPSTREAMS-V1", documents)
-        self.assertIn("CONTRACT-STABLE-JOURNAL-V1", documents)
+        for contract_id in ("CONTRACT-STABLE-UPSTREAMS-V1", "CONTRACT-STABLE-JOURNAL-V1"):
+            record = next(item for item in records if item.id == contract_id)
+            comparison = ARCH.compare_contracts(
+                record,
+                record,
+                record.compatibility,
+                base_inventory=records,
+                head_inventory=records,
+            )
+            self.assertEqual(comparison.status, "compatible", comparison.reasons)
+        stable_node = next(
+            node
+            for node in snapshot.system["nodes"]
+            if node["id"] == "NODE-STABLE-SYNTHESIS-MONITOR"
+        )
+        self.assertEqual(
+            set(stable_node["public_contracts"]),
+            {"CONTRACT-STABLE-UPSTREAMS-V1", "CONTRACT-STABLE-JOURNAL-V1"},
+        )
+        self.assertIn(
+            "engineering/contracts/schemas/stable-synthesis-upstreams.v1.schema.json",
+            stable_node["repository_paths"],
+        )
+        self.assertIn(
+            "engineering/stable-synthesis/stable-synthesis-upstreams.v1.json",
+            stable_node["repository_paths"],
+        )
+        self.assertIn(
+            "engineering/contracts/schemas/stable-synthesis-journal.v1.json",
+            stable_node["repository_paths"],
+        )
         factory_api = next(record for record in records if record.id == "CONTRACT-FACTORY-CONTROL-OPENAPI")
         self.assertEqual(factory_api.kind, "openapi")
         self.assertEqual(factory_api.role, "bidirectional")

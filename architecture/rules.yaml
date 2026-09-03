@@ -222,7 +222,8 @@
         ".grok-stack/adaptive_grok/stable_synthesis.py",
         "scripts/grok_stable_synthesis.py",
         "engineering/contracts/schemas/stable-synthesis-journal.v1.json",
-        "engineering/contracts/schemas/stable-synthesis-upstreams.v1.json"
+        "engineering/contracts/schemas/stable-synthesis-upstreams.v1.schema.json",
+        "engineering/stable-synthesis/stable-synthesis-upstreams.v1.json"
       ]
     },
     {

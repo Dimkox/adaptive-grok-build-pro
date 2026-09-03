@@ -72,7 +72,8 @@ MANAGED_FILES = (
     "schemas/canonical-example.schema.json",
     "schemas/governance-handoff-v1.schema.json",
     "engineering/contracts/schemas/stable-synthesis-journal.v1.json",
-    "engineering/contracts/schemas/stable-synthesis-upstreams.v1.json",
+    "engineering/contracts/schemas/stable-synthesis-upstreams.v1.schema.json",
+    "engineering/stable-synthesis/stable-synthesis-upstreams.v1.json",
 )
 SKIP_PREFIXES = (".grok-stack/runtime/",)
 TARGET_OWNED_ARCHITECTURE = frozenset(

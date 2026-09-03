@@ -1,1 +1,19 @@
-{"schema_version":1,"contract":"stable-synthesis.journal.v1","required":["sequence","recorded_at","kind","head_sha","tree_fingerprint","intent_digest","snapshot_digest","prior_digest","digest"],"maximum_entries":10000,"digest":"sha256-canonical-json"}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.local/contracts/stable-synthesis-journal.v1.json",
+  "title": "Stable synthesis journal entry v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sequence", "recorded_at", "kind", "head_sha", "tree_fingerprint", "intent_digest", "snapshot_digest", "prior_digest", "digest"],
+  "properties": {
+    "sequence": {"type": "integer", "minimum": 1},
+    "recorded_at": {"oneOf": [{"type": "number", "minimum": 0}, {"type": "string", "minLength": 1, "maxLength": 64}]},
+    "kind": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,31}$"},
+    "head_sha": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[0-9a-f]{40}$"}]},
+    "tree_fingerprint": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "intent_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "snapshot_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "prior_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
+import os
 import re
+import stat
 import time
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -12,15 +16,24 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from .state import runtime_lock
-from .util import atomic_write_text, git_head, load_json, runtime_dir, tree_fingerprint
+from .util import atomic_write_text, git_head, runtime_dir, tree_fingerprint
 
 WEEK_SECONDS = 604800
 MAX_ITERATIONS = 8
 MAX_JOURNAL_ENTRIES = 10000
 MAX_SUBJECT = 160
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
+SHA64 = re.compile(r"^[0-9a-f]{64}$")
+TAG_TOKEN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$")
+JOURNAL_RECORD_FIELDS = frozenset({"recorded_at", "kind", "head_sha", "tree_fingerprint", "intent_digest", "snapshot_digest"})
+JOURNAL_ENTRY_FIELDS = JOURNAL_RECORD_FIELDS | {"sequence", "prior_digest", "digest"}
 SOURCE_IDS = ("bmad_method", "spec_kit", "superpowers")
 ALLOWED_REPOS = ("bmad-code-org/BMAD-METHOD", "github/spec-kit", "obra/superpowers")
+PIN_AUTHORITY = {
+    "bmad_method": ("bmad-code-org/BMAD-METHOD", "v6.11.0", "178414679b11a171ca1597b0ebc1723ed488fc73", "9ce3c397c9b238de96f7365da8019f6f66b059da", "BMad Code LLC (2025)"),
+    "spec_kit": ("github/spec-kit", "v1.0.4", "98d9fe5010aa7d857264e19d439782e186bf641a", "cb610277fdea781fcfa83d20522c2db37c94068d", "GitHub Inc. (2025)"),
+    "superpowers": ("obra/superpowers", "v6.3.0", "86babb696875227929e85420f287d6309374b93f", "b36e0829c6d0140e93cfef2ca599b1b07d4a7797", "Jesse Vincent (2025)"),
+}
 TERMINAL_STATES = frozenset({"ready", "blocked", "needs_human", "iteration_limit"})
 TRANSITIONS = {
     "pending": frozenset({"analyzing", "blocked"}),
@@ -130,13 +143,19 @@ def strict_json(raw: bytes, max_bytes: int) -> Any:
         raise SynthesisError("response body exceeds configured bound")
     try:
         text = raw.decode("utf-8", errors="strict")
-        return json.loads(text, object_pairs_hook=_strict_object_pairs)
+        return json.loads(
+            text,
+            object_pairs_hook=_strict_object_pairs,
+            parse_constant=lambda value: (_ for _ in ()).throw(
+                SynthesisError(f"non-finite JSON number: {value}")
+            ),
+        )
     except (UnicodeError, json.JSONDecodeError) as exc:
         raise SynthesisError("response is not strict UTF-8 JSON") from exc
 
 
 def load_upstreams(root: Path) -> tuple[Upstream, ...]:
-    path = root / "engineering/contracts/schemas/stable-synthesis-upstreams.v1.json"
+    path = root / "engineering/stable-synthesis/stable-synthesis-upstreams.v1.json"
     raw = strict_json(path.read_bytes(), 128 * 1024)
     expected_top = {"schema_version", "interval_seconds", "request_timeout_seconds", "run_timeout_seconds", "max_body_bytes", "max_candidates_per_source", "sources"}
     if not isinstance(raw, dict) or set(raw) != expected_top or raw["schema_version"] != 1:
@@ -160,6 +179,23 @@ def load_upstreams(root: Path) -> tuple[Upstream, ...]:
             raise SynthesisError("pin SHA must be lowercase 40-hex")
         if source.license != "MIT" or source.repository not in ALLOWED_REPOS:
             raise SynthesisError("source authority is outside closed allowlist")
+        repository, tag, tag_object, peeled, holder = PIN_AUTHORITY.get(source.id, (None,) * 5)
+        expected = {
+            "repository": repository,
+            "repository_url": f"https://github.com/{repository}",
+            "stable_tag": tag,
+            "tag_object_sha": tag_object,
+            "peeled_commit_sha": peeled,
+            "release_url": f"https://github.com/{repository}/releases/tag/{tag}",
+            "commit_url": f"https://github.com/{repository}/commit/{peeled}",
+            "license": "MIT",
+            "license_holder": holder,
+            "license_url": f"https://github.com/{repository}/blob/{peeled}/LICENSE",
+        }
+        actual = asdict(source)
+        actual.pop("id")
+        if actual != expected:
+            raise SynthesisError(f"source authority mismatch: {source.id}")
         parsed.append(source)
     if tuple(s.id for s in parsed) != SOURCE_IDS or tuple(s.repository for s in parsed) != ALLOWED_REPOS:
         raise SynthesisError("sources must be unique and canonically ordered")
@@ -262,12 +298,19 @@ class Journal:
         if self.path.is_symlink() or not self.path.is_file():
             raise SynthesisError("journal path is not a regular file")
         entries: list[dict[str, Any]] = []
-        for line in self.path.read_text(encoding="utf-8").splitlines():
-            entries.append(strict_json(line.encode(), 128 * 1024))
+        with self.path.open("r", encoding="utf-8", errors="strict") as handle:
+            for _ in range(MAX_JOURNAL_ENTRIES + 1):
+                line = handle.readline(128 * 1024 + 1)
+                if not line:
+                    break
+                if len(line.encode("utf-8")) > 128 * 1024:
+                    raise SynthesisError("journal line bound exceeded")
+                entries.append(strict_json(line.encode(), 128 * 1024))
         if len(entries) > MAX_JOURNAL_ENTRIES:
             raise SynthesisError("journal replay bound exceeded")
         prior = "0" * 64
         for sequence, entry in enumerate(entries, 1):
+            _validate_journal_entry(entry)
             recorded = dict(entry)
             actual = recorded.pop("digest", None)
             if entry.get("sequence") != sequence or entry.get("prior_digest") != prior or digest(recorded) != actual:
@@ -281,6 +324,10 @@ class Journal:
             return self._append_unlocked(record, expected_prior)
 
     def _append_unlocked(self, record: dict[str, Any], expected_prior: str) -> dict[str, Any]:
+        if set(record) != JOURNAL_RECORD_FIELDS:
+            raise SynthesisError("journal record is not closed v1")
+        provisional = {"sequence": 1, "prior_digest": "0" * 64, **record, "digest": "0" * 64}
+        _validate_journal_entry(provisional, validate_digest=False)
         entries = self.read()
         prior = entries[-1]["digest"] if entries else "0" * 64
         if prior != expected_prior or len(entries) >= MAX_JOURNAL_ENTRIES:
@@ -289,18 +336,49 @@ class Journal:
         item["digest"] = digest(item)
         text = "".join(json.dumps(x, sort_keys=True, separators=(",", ":")) + "\n" for x in [*entries, item])
         atomic_write_text(self.path, text)
+        _fsync_directory(self.path.parent)
         return item
+
+
+def _validate_journal_entry(entry: Any, *, validate_digest: bool = True) -> None:
+    if not isinstance(entry, dict) or set(entry) != JOURNAL_ENTRY_FIELDS:
+        raise SynthesisError("journal entry is not closed v1")
+    if isinstance(entry["sequence"], bool) or not isinstance(entry["sequence"], int) or entry["sequence"] < 1:
+        raise SynthesisError("journal sequence is invalid")
+    recorded_at = entry["recorded_at"]
+    if (
+        isinstance(recorded_at, bool)
+        or not isinstance(recorded_at, (int, float, str))
+        or (isinstance(recorded_at, (int, float)) and (recorded_at < 0 or not math.isfinite(recorded_at)))
+        or (isinstance(recorded_at, str) and not 1 <= len(recorded_at) <= 64)
+    ):
+        raise SynthesisError("journal timestamp is invalid")
+    if not isinstance(entry["kind"], str) or not re.fullmatch(r"[a-z][a-z0-9_-]{0,31}", entry["kind"]):
+        raise SynthesisError("journal kind is invalid")
+    if entry["head_sha"] is not None and (not isinstance(entry["head_sha"], str) or not SHA40.fullmatch(entry["head_sha"])):
+        raise SynthesisError("journal head SHA is invalid")
+    for field in ("tree_fingerprint", "intent_digest", "snapshot_digest", "prior_digest"):
+        if not isinstance(entry[field], str) or not SHA64.fullmatch(entry[field]):
+            raise SynthesisError(f"journal {field} is invalid")
+    if validate_digest and (not isinstance(entry["digest"], str) or not SHA64.fullmatch(entry["digest"])):
+        raise SynthesisError("journal digest is invalid")
 
 
 def write_snapshot(root: Path, value: Any) -> Path:
     item = snapshot(value)
     directory = _state_dir(root) / "snapshots"
+    created = not directory.exists()
     directory.mkdir(mode=0o700, exist_ok=True)
+    if created:
+        _fsync_directory(directory.parent)
     path = directory / f"{item['digest']}.json"
+    if path.is_symlink() or (path.exists() and not path.is_file()):
+        raise SynthesisError("snapshot target is not a regular file")
     if path.exists():
         verify_snapshot(strict_json(path.read_bytes(), 1048576))
     else:
         atomic_write_text(path, json.dumps(item, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n")
+        _fsync_directory(directory)
     return path
 
 
@@ -333,27 +411,63 @@ def _state_dir(root: Path) -> Path:
     target = base / "stable-synthesis"
     if target.exists() and (target.is_symlink() or not target.is_dir()):
         raise SynthesisError("stable synthesis state path is unsafe")
+    created = not target.exists()
     target.mkdir(mode=0o700, exist_ok=True)
+    if created:
+        _fsync_directory(base)
     return target
+
+
+def _fsync_directory(path: Path) -> None:
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags)
+    try:
+        if not stat.S_ISDIR(os.fstat(descriptor).st_mode):
+            raise SynthesisError("durability target is not a directory")
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 def _sanitize_subject(value: Any) -> str:
     if not isinstance(value, str):
         raise SynthesisError("candidate subject must be a string")
-    clean = " ".join(value.replace("\x00", " ").split())
+    clean = " ".join("".join(" " if unicodedata.category(char).startswith("C") else char for char in value).split())
     return clean[:MAX_SUBJECT]
+
+
+def _bounded_etag(value: Any) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str) or len(value) > 256 or any(unicodedata.category(char).startswith("C") for char in value):
+        raise SynthesisError("ETag is outside bounded syntax")
+    return value
 
 
 class Monitor:
     def __init__(self, root: Path, transport: Callable[[HttpRequest], HttpResponse] | None = None) -> None:
         self.root = root.resolve()
         self.transport = transport or GitHubTransport()
-        self.config = load_json(self.root / "engineering/contracts/schemas/stable-synthesis-upstreams.v1.json", {})
+        load_upstreams(self.root)
+        self.config = strict_json((self.root / "engineering/stable-synthesis/stable-synthesis-upstreams.v1.json").read_bytes(), 128 * 1024)
         self.state_path = self.root / ".grok-stack/runtime/stable-synthesis/state.json"
 
     def _load_state(self) -> dict[str, Any]:
-        state = load_json(self.state_path, {})
-        return state if isinstance(state, dict) and state.get("schema_version") in (None, 1) else {}
+        runtime = self.root / ".grok-stack/runtime"
+        parent = self.state_path.parent
+        if runtime.is_symlink() or parent.is_symlink() or self.state_path.is_symlink():
+            raise SynthesisError("monitor state path is unsafe")
+        if not self.state_path.exists():
+            return {}
+        if not self.state_path.is_file():
+            raise SynthesisError("monitor state is not a regular file")
+        try:
+            state = strict_json(self.state_path.read_bytes(), 1048576)
+        except SynthesisError as exc:
+            raise SynthesisError("monitor state is corrupt") from exc
+        if not isinstance(state, dict) or state.get("schema_version") != 1:
+            raise SynthesisError("monitor state is invalid")
+        return state
 
     def status(self, now: float | None = None) -> dict[str, Any]:
         timestamp = time.time() if now is None else now
@@ -377,18 +491,19 @@ class Monitor:
             raise TransportError("run_timeout")
         request = HttpRequest("GET", self._url(repository, suffix), tuple(headers), max(1, min(10, int(remaining + 0.999))))
         response = self.transport(request)
+        response_headers = {str(key).lower(): str(value) for key, value in response.headers.items()}
         if response.status in (301, 302, 303, 307, 308):
             raise TransportError("redirects are forbidden")
         if response.status in (403, 429):
             raise TransportError("rate_limited")
         if response.status == 304:
-            return None, response.headers.get("ETag") or etag
+            return None, _bounded_etag(response_headers.get("etag") or etag)
         if response.status != 200:
             raise TransportError(f"GitHub status {response.status}")
-        content_type = response.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
+        content_type = response_headers.get("content-type", "").split(";", 1)[0].strip().lower()
         if content_type not in {"application/json", "application/vnd.github+json"}:
             raise TransportError("unexpected content type")
-        return strict_json(response.body, int(self.config["max_body_bytes"])), response.headers.get("ETag")
+        return strict_json(response.body, int(self.config["max_body_bytes"])), _bounded_etag(response_headers.get("etag"))
 
     def _observe(self, source: Upstream, previous: dict[str, Any], deadline: float) -> dict[str, Any]:
         if time.monotonic() > deadline:
@@ -401,26 +516,31 @@ class Monitor:
         if not isinstance(release, dict) or release.get("draft") is not False or release.get("prerelease") is not False or not isinstance(release.get("tag_name"), str):
             raise SynthesisError("latest release is not a qualifying stable release")
         tag = release["tag_name"]
+        if not TAG_TOKEN.fullmatch(tag):
+            raise SynthesisError("release tag is outside bounded token syntax")
+        release = {"tag_name": tag, "draft": False, "prerelease": False}
         encoded = urllib.parse.quote(tag, safe="")
         ref, _ = self._get(source.repository, f"/git/ref/tags/{encoded}", deadline=deadline)
         if not isinstance(ref, dict) or not isinstance(ref.get("object"), dict):
             raise SynthesisError("tag ref shape invalid")
         obj = ref["object"]
-        kind, sha = obj.get("type"), obj.get("sha")
-        if not isinstance(sha, str) or not SHA40.fullmatch(sha):
-            raise SynthesisError("invalid tag object")
-        if kind == "commit":
-            stable_sha = sha
-        elif kind == "tag":
+        seen: set[str] = set()
+        for _ in range(4):
+            kind, sha = obj.get("type"), obj.get("sha")
+            if not isinstance(sha, str) or not SHA40.fullmatch(sha) or sha in seen:
+                raise SynthesisError("invalid or cyclic tag object")
+            seen.add(sha)
+            if kind == "commit":
+                stable_sha = sha
+                break
+            if kind != "tag":
+                raise SynthesisError("tag does not terminate at a commit")
             tag_doc, _ = self._get(source.repository, f"/git/tags/{sha}", deadline=deadline)
             if not isinstance(tag_doc, dict) or not isinstance(tag_doc.get("object"), dict):
                 raise SynthesisError("annotated tag shape invalid")
-            terminal = tag_doc["object"]
-            stable_sha = terminal.get("sha")
-            if terminal.get("type") != "commit" or not isinstance(stable_sha, str) or not SHA40.fullmatch(stable_sha):
-                raise SynthesisError("annotated tag does not terminate at a commit")
+            obj = tag_doc["object"]
         else:
-            raise SynthesisError("tag does not terminate at a commit")
+            raise SynthesisError("annotated tag depth exceeded")
         head, _ = self._get(source.repository, "/commits/main", deadline=deadline)
         head_sha = head.get("sha") if isinstance(head, dict) else None
         if not isinstance(head_sha, str) or not SHA40.fullmatch(head_sha):
@@ -478,6 +598,7 @@ class Monitor:
                 prior = entries[-1]["digest"] if entries else "0" * 64
                 journal._append_unlocked({"recorded_at": timestamp, "kind": "monitor", "head_sha": state["head_sha"], "tree_fingerprint": state["tree_fingerprint"], "intent_digest": digest(self.config), "snapshot_digest": snap_path.stem}, prior)
                 atomic_write_text(self.state_path, json.dumps(state, ensure_ascii=False, sort_keys=True, indent=2) + "\n")
+                _fsync_directory(self.state_path.parent)
                 return {**state, "performed": True}
         except TimeoutError:
             return {"performed": False, "status": "busy", "overall_status": "degraded"}

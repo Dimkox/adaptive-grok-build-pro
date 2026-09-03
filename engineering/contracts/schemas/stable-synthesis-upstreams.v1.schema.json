@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.local/contracts/stable-synthesis-upstreams.v1.schema.json",
+  "title": "Stable synthesis upstream configuration v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "interval_seconds", "request_timeout_seconds", "run_timeout_seconds", "max_body_bytes", "max_candidates_per_source", "sources"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "interval_seconds": {"const": 604800},
+    "request_timeout_seconds": {"const": 10},
+    "run_timeout_seconds": {"const": 90},
+    "max_body_bytes": {"type": "integer", "minimum": 1024, "maximum": 1048576},
+    "max_candidates_per_source": {"type": "integer", "minimum": 1, "maximum": 100},
+    "sources": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "repository", "repository_url", "stable_tag", "tag_object_sha", "peeled_commit_sha", "release_url", "commit_url", "license", "license_holder", "license_url"],
+        "properties": {
+          "id": {"type": "string", "enum": ["bmad_method", "spec_kit", "superpowers"]},
+          "repository": {"type": "string", "minLength": 3, "maxLength": 128},
+          "repository_url": {"type": "string", "minLength": 19, "maxLength": 256},
+          "stable_tag": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$"},
+          "tag_object_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "peeled_commit_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "release_url": {"type": "string", "minLength": 19, "maxLength": 512},
+          "commit_url": {"type": "string", "minLength": 19, "maxLength": 512},
+          "license": {"const": "MIT"},
+          "license_holder": {"type": "string", "minLength": 1, "maxLength": 128},
+          "license_url": {"type": "string", "minLength": 19, "maxLength": 512}
+        }
+      }
+    }
+  }
+}

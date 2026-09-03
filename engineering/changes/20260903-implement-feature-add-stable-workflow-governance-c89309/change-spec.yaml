@@ -25,7 +25,7 @@
     {"id":"FORBID-001","statement":"No remote write, auth secret, redirect, clone, install, subprocess or arbitrary URL.","evidence":[{"test":"tests/test_stable_monitor.py"}]},
     {"id":"FORBID-002","statement":"No automatic source, pin, route, Git, PR, release, Factory, Trust CI or production mutation.","evidence":[{"test":"tests/test_stable_integration.py"}]}
   ],
-  "contracts": {"openapi":[],"json_schema":["engineering/contracts/schemas/stable-synthesis-upstreams.v1.json","engineering/contracts/schemas/stable-synthesis-journal.v1.json"],"events":[]},
+  "contracts": {"openapi":[],"json_schema":["engineering/contracts/schemas/stable-synthesis-upstreams.v1.schema.json"],"events":["engineering/contracts/schemas/stable-synthesis-journal.v1.json"]},
   "observability": [
     {"id":"SIG-001","metric":"stable_synthesis_overall_status","proves":["OBJ-001"]},
     {"id":"SIG-002","metric":"stable_synthesis_last_attempt_and_next_due","proves":["OBJ-001"]},

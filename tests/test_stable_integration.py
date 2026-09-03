@@ -12,6 +12,8 @@ class StableIntegrationContractTest(unittest.TestCase):
         timer = (ROOT / "systemd/adaptive-stable-synthesis.timer").read_text()
         self.assertNotIn("WantedBy", service + timer)
         self.assertNotIn("Authorization", service)
+        self.assertIn("ReadWritePaths=-/opt/adaptive-grok-build-pro/.grok-stack/runtime\n", service)
+        self.assertNotIn("ReadWritePaths=-/opt/adaptive-grok-build-pro/.grok-stack/runtime/stable-synthesis", service)
         self.assertFalse((ROOT / ".github/workflows").exists())
 
     def test_architecture_declares_only_read_only_github_monitor_edge(self) -> None:
@@ -27,7 +29,8 @@ class StableIntegrationContractTest(unittest.TestCase):
     def test_installer_carries_local_contract_and_cli_but_not_timer_activation(self) -> None:
         import runpy
         module = runpy.run_path(str(ROOT / "scripts/install_into.py"))
-        self.assertIn("engineering/contracts/schemas/stable-synthesis-upstreams.v1.json", module["MANAGED_FILES"])
+        self.assertIn("engineering/stable-synthesis/stable-synthesis-upstreams.v1.json", module["MANAGED_FILES"])
+        self.assertIn("engineering/contracts/schemas/stable-synthesis-upstreams.v1.schema.json", module["MANAGED_FILES"])
         self.assertIn("scripts/grok_stable_synthesis.py", module["MANAGED_FILES"])
         self.assertNotIn("systemd", module["MANAGED_DIRS"])
 

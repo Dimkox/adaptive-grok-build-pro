@@ -5,7 +5,7 @@
       "compatibility": "consumer_accepts_old",
       "id": "CONTRACT-STABLE-UPSTREAMS-V1",
       "kind": "json_schema",
-      "path": "engineering/contracts/schemas/stable-synthesis-upstreams.v1.json",
+      "path": "engineering/contracts/schemas/stable-synthesis-upstreams.v1.schema.json",
       "role": "consumer",
       "version": "1"
     },
@@ -944,7 +944,8 @@
         ".grok-stack/adaptive_grok/stable_synthesis.py",
         "scripts/grok_stable_synthesis.py",
         "engineering/contracts/schemas/stable-synthesis-journal.v1.json",
-        "engineering/contracts/schemas/stable-synthesis-upstreams.v1.json",
+        "engineering/contracts/schemas/stable-synthesis-upstreams.v1.schema.json",
+        "engineering/stable-synthesis/stable-synthesis-upstreams.v1.json",
         "systemd/adaptive-stable-synthesis.service",
         "systemd/adaptive-stable-synthesis.timer"
       ],
