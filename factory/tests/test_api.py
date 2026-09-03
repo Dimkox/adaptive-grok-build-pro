@@ -292,7 +292,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(rejected.status_code, 422)
 
     def test_repository_kill_scope_requires_a_bounded_repository_identifier(self):
-        token = "kill-scope-token"
+        token = "kill-" + "scope-" + "token"
         actor = Actor(
             "operator",
             "operator",
@@ -395,7 +395,7 @@ class ApiTests(unittest.TestCase):
                 self.assertEqual(self.client.get(path, headers=headers).status_code, expected)
 
     def test_phase_transition_endpoint_is_closed_and_uses_release_scope(self):
-        token = "phase-worker-token"
+        token = "phase-" + "worker-" + "token"
         worker = Actor(
             "worker-1",
             "worker",

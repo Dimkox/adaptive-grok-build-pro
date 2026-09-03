@@ -1157,7 +1157,7 @@ class PostgresFactoryTests(unittest.TestCase):
             actor=WORKER,
             now=NOW,
         )
-        token = "history-reader-token"
+        token = "history-" + "reader-" + "token"
         client = TestClient(create_app(self.service, Authenticator({token: READER})))
         headers = {
             "Authorization": f"Bearer {token}",

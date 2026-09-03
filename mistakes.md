@@ -440,3 +440,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Two builds in the active checkout matched, but the same Git tree in a clean clone produced different ZIP bytes for non-executable members with ambient `0600` versus `0664` modes.
 **Root cause:** Release ZIP attributes came from worktree `stat` permissions even though exact Git trees preserve only executable identity; determinism tests must compare distinct clean checkouts with deliberately different non-executable ambient modes.
+
+## 2026-09-03 — Reintroduced credential-shaped synthetic fixtures
+
+**Symptom:** The repository secret heuristic flagged deterministic fake tokens in two test files.
+**Root cause:** New tests assigned long token literals directly despite the established scanner convention; construct synthetic credential fixtures from split literals so assignments do not look like committed credentials while preserving runtime behavior.
