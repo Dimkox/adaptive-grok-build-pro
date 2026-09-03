@@ -12,7 +12,9 @@
 - [x] Run disposable PostgreSQL/API/effective-role/actual-restart exit suite.
 - [x] Reproduce exact-head Bandit B110 and disposable PostgreSQL bootstrap/postmaster handoff failures.
 - [x] TDD explicit best-effort fence instrumentation and final-PID1 PostgreSQL readiness.
-- [ ] Run final exact-head verifier after current documentation and repair evidence are frozen.
-- [ ] Hand final fingerprint to all five independent reviewers.
+- [x] Reproduce PR #21's UID-10001 different-owner Git failure and TDD one command-scoped canonical `safe.directory` for package/source parity while ambient configuration stays scrubbed.
+- [x] Rebuild the tracked `2.0.13` package locally at candidate `9727bc3`; root 537/537 and focused different-owner/package checks pass.
+- [ ] Refresh current M4 docs/package parity, rebuild if bytes change, and run the final exact-head verifier on the resulting candidate.
+- [ ] Hand that final fingerprint to all five independent reviewers, then require an authorized PR update and fresh App-owned exact-head check.
 
-Parallel source context only: M5 `milestone/m5-isolated-execution-provisional-m4` / `37b05f579320` and M6 `milestone/m6-semantic-validation-provisional-m4` / `82aac86a3bf9` are provisional from M4 anchor `94fc5ad`, must restack M4 → M5 → M6, and do not create completion or external authority. M5 is blocked on a suitable rootless-isolation host. No push, PR, merge, deployment or external/production write is authorized by this implementation task; the hard deadline remains **2026-09-08 00:00 UTC+3** without gate waiver. See [schedule](schedule.md), [release](release.md), [root status](../../../README.md), [roadmap](../../../DARK_FACTORY_ROADMAP.md) and [factory package](../../../factory/README.md).
+Downstream M5-M9 source remains provisional and must be restacked after the final M4 candidate; no current downstream SHA is promised by this package. No push, PR, merge, deployment or external/production write is authorized by this implementation task. At the 2026-09-03 11:03 UTC+3 observation about 109 hours remain to the **2026-09-08 00:00 UTC+3** deadline, without any gate waiver. See [schedule](schedule.md), [release](release.md), [root status](../../../README.md), [roadmap](../../../DARK_FACTORY_ROADMAP.md) and [factory package](../../../factory/README.md).

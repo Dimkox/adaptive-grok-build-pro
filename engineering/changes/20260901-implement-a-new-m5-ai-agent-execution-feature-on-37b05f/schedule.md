@@ -2,12 +2,21 @@
 
 Navigation: [package](brief.md) ↔ [design](../../../docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md) ↔ [plan](../../../docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md) ↔ [release](release.md) / [rollback](rollback.md) / [evidence](evidence/README.md).
 
-- Target: `2026-09-08 00:00 UTC+3`.
-- Source root: exact final local M4 `571cad7877431ac5ab5779b53fe9f7effd6859ce` (tree `9d29f25d3af4fc9f97bbb8b3d4970906b69338fd`).
-- Slice 01: contracts/protocol/adapters plus brokers/workspace and partial architecture ownership at truth-bound head `34dd6184fc506bb927699b382f13546e59503974` (tree `c9c4db5102534af60b7095479c4cf06f51a1fcfb`; product checkpoint `9ba284e`); exact-predecessor fitness and focused checks pass, but no delivery authority exists.
-- Slice 02: exact predecessor `34dd6184fc506bb927699b382f13546e59503974`; migration `014`, execution persistence/API lifecycle and its separate additive OpenAPI fragment are provisionally checkpointed at `cbfca6550acaa50508eec5829df2724093e32076` (tree `7bf88df3a0fd71a1bafd8298d5259eddcdcfa461`).
-- Slice 03: exact predecessor `cbfca6550acaa50508eec5829df2724093e32076`; preserve `014` byte-identically, add non-destructive forward expand `015` for canonical proposal, trusted attestation, result/finalize and role boundaries, then apply DROP-only contract `016` for the two superseded constraints. Rollout must quiesce old finalizers before `015` locks proposals then results. `015` accepts compatible live non-final `014` evidence but atomically refuses any legacy finalized workspace row or unattested `014` artifact proposal; `015` and `016` apply in one transaction. `014` was never accepted or published, so this is not asserted as a universal production upgrade; integrated M6 starts at `017`.
-- Successor order: slice 02 migration `014`/execution API -> slice 03 canonical persistence -> slice 04 recovery/metrics/systemd/control-plane finalize wiring -> final docs/installer/state/exact-head verification. Each slice uses its immediate predecessor for fitness and remains PR/external-gate dependent.
-- Provisional M6/M7/M8 source may remain isolated, but external merge/integration remains M4 -> M5 slices 01-04 -> M6 -> M7 -> M8.
-- Blocking exit: a dedicated rootless host must prove credential and egress isolation. This host lacks the required tools and denies unprivileged user namespaces with `EPERM`.
-- No calendar state creates semantic verdict, PR, trust-level, deployment, external-write, or production authority.
+- Hard deadline: `2026-09-08 00:00 UTC+3`; normal verification reserve begins `2026-09-07 20:00 UTC+3`.
+- Observation: `2026-09-03 11:03 UTC+3`, about 109 hours remain. M4's planned window is missed: PR #21 at `571cad7` failed external `root-unittest`; local hotfix/package candidate `9727bc3` is unpushed and not externally rechecked.
+- Successor 04 contract enrollment/comparator was restacked at `2026-09-03 03:48-03:51 UTC+3` and is clean at `27b0ae6` on exact predecessor `8a7be8a`. Exact fitness and independent comparator/security review pass.
+- Successor 05 runtime/recovery/additive-v2 began from `27b0ae6`; preservation checkpoint `3f56b6a` was committed at `2026-09-03 03:54 UTC+3`. Pure/structure tests are green, but the actual M5 restart probe remains M4-only and the four inert systemd sources/tests are absent.
+- Successor 06 is reserved for inert systemd/installer/final docs if required by the bounded change budget. Each successor must use its immediate predecessor as PR base; cumulative `9727bc3` → `27b0ae6` exceeds the architecture size gate and may not be squashed.
+
+| Dependency window | Compressed target | Factual gate |
+| --- | ---: | --- |
+| M4 parity, repair and recheck | immediate; already delayed | final documentation/package-parity descendant, rebuilt package if inventory changes, fresh verifier/reviews, then separately authorized PR update and App-owned exact-head success |
+| M5 successor 05 source | by 2026-09-03 18:00 | migration 017, additive v2, atomic terminal, actual two-restart PG17 recovery proof |
+| M5 successor 06 / exit | 2026-09-03 18:00-2026-09-04 06:00 | inert units/installer/docs, exact predecessor fitness/reviews; trusted rootless broker and live OS isolation remain external blockers |
+| M6 | 2026-09-04 06:00-2026-09-04 20:00 | accepted M5 restack; first migration renumbered to 018; semantic/repair evidence |
+| M7 | 2026-09-04 20:00-2026-09-05 14:00 | accepted M6; real shadow PR lifecycle evidence |
+| M8 | 2026-09-05 14:00-2026-09-07 08:00 | accepted M7 and at least 30 eligible real human outcomes; this cohort is deadline-critical and cannot be synthesized |
+| M9 | 2026-09-07 08:00-2026-09-07 20:00 | accepted M8, real signed inputs, preview/canary/recovery proof and human production authority |
+| protected reserve | 2026-09-07 20:00-2026-09-08 00:00 | exact-state checks, reviews, external gates and recovery decision |
+
+These are compressed planning windows, not completion claims. The pending M4 external rerun, M5 live isolation gate and M8 cohort are deadline-critical blockers; there is no current evidence that every gate will fit. Calendar pressure never waives dependency order, immediate-predecessor fitness, PostgreSQL/restart evidence, signed scopes, external exact-SHA Trust CI, the M8 cohort or human production authority.

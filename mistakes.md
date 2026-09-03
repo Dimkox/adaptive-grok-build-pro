@@ -427,3 +427,15 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 
 **Symptom:** A Markdown PR comment was posted through a double-quoted shell argument, so backticks executed and mangled the text; the comment was immediately corrected with no repository or SHA impact.
 **Root cause:** The command ignored the exec escaping rule; GitHub comment bodies must use a structured payload or single-quoted literal so the shell cannot reinterpret Markdown.
+
+## 2026-09-03 — Deferred current-state documentation across successor restacks
+
+**Symptom:** `PROJECT_STATE.json`, root/factory/package READMEs, the roadmap and active M5 package still described slice 01, migrations ending at 016 and M6 starting at 017 after successor 04/05 and migration 017 already existed.
+**Root cause:** Documentation was treated as final-closeout work instead of a versioned interface updated at every topology or migration allocation decision.
+**Correction:** Each bounded successor checkpoint updates the machine-readable state, current-state summaries, schedule and migration handoff before further implementation; historical evidence remains explicitly historical.
+
+## 2026-09-03 — Tried to enroll a contract only after changing its wire bytes
+
+**Symptom:** A head-versus-head added-contract comparison could pass while the preexisting execution-v1 contract had already changed incompatibly.
+**Root cause:** Contract enrollment was initially ordered after runtime edits, so the comparator had no old enrolled baseline to compare.
+**Correction:** Freeze enrollment/comparator before runtime changes, keep v1 byte-identical, publish incompatible strictness as additive v2, and require exact immediate-predecessor fitness for every successor.

@@ -15,19 +15,22 @@ CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
 CURRENT_MAIN_SHA = "78ad2f679d38dc3244e716c586332417e610089c"
 SEO_MERGE_SHA = "8ab4e57038dec2e07f01aaa0b207813a387358f4"
-M4_PRODUCT_SHA = "571cad7877431ac5ab5779b53fe9f7effd6859ce"
-M4_FINAL_TREE = "9d29f25d3af4fc9f97bbb8b3d4970906b69338fd"
-M4_FINAL_FINGERPRINT = "2f9b3ec2dd6f73e887bf375a02870dd91b8a322807e9383e6bd171e2113dba1b"
-M4_FINAL_ARTIFACT_SHA256 = "5b29b7e8e439d1409c3f72757199d20de8f6f4c62bd1df972a37d13f615d9d0e"
-M4_SOURCE_SHA = "460a8a01a6394cac710b4e3f9eea3d94d4beef89"
+M4_PRODUCT_SHA = "9727bc30c82bb44a86db0ef5b62e507b5527207a"
+M4_FINAL_TREE = "5feb9a74eda6c54cd37539a2c5dda378a5e27853"
+M4_FINAL_ARTIFACT_SHA256 = "57e6e00a6c5281fda33e1317d955dd5ca0e1a6f9467e60daa256a8919b408bcc"
+M4_SOURCE_SHA = "3b1f9a54a964d91f34cee2628374b17e7a42edeb"
+M4_FAILED_EXTERNAL_SHA = "571cad7877431ac5ab5779b53fe9f7effd6859ce"
+M4_HISTORICAL_SOURCE_SHA = "460a8a01a6394cac710b4e3f9eea3d94d4beef89"
 M4_INTEGRATION_SHA = "da7ec8d7d40f52663aba1ff59bf03ccf209395b0"
 M4_SCANNER_REPAIR_SHA = "5a6cdfb7a129e02724c632f78c31de6406d6863a"
 M4_RELEASE_STATE_BASE_SHA = "56e12b2b394436ee227c66d78b1caba8f7317c78"
 M4_RELEASE_STATE_BASE_FINGERPRINT = "e27caec9d2de459ef26bea49b99b93b5b7326a9c84c89b97f4ec482c237d4add"
 M4_FAILED_VERIFY_SHA = "547ee628812fbf098f337a854f68edf660091ead"
 M4_FAILED_VERIFY_FINGERPRINT = "f0efa89e689dbe47c701a4d301e97361ee671e299ef2f32b5295b908e182e768"
-M5_SLICE1_SHA = "9ba284eeeb21b36e8b484c9f25a5f7c8ea8077c1"
-M5_SLICE1_TREE = "177112f6a862d88cb867f92235b30ea6bad890ec"
+M5_ENROLLMENT_SHA = "27b0ae619cacf0d9ddeed15c60212800ff6009ca"
+M5_ENROLLMENT_TREE = "1a4e3f87da8a12e173a81e66b53f5fc21cb241c6"
+M5_RUNTIME_CHECKPOINT = "3f56b6a80ada7020f22f967c2d873a138b2e9487"
+M5_RUNTIME_TREE = "b1aea0500d6266e4886655ebf9583dd10b2155ce"
 M6_TASK1_SHA = "3def83eb915ca68e66379269526ffa64822a1104"
 M6_TASK2_SHA = "a8ca0f3afffbd9ef5584825252f9a669a324d2a5"
 M6_PROVISIONAL_SHA = "f3b2c0d07116686b27feab4b60166e8a7402d672"
@@ -84,7 +87,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(state["product_version"], "2.0.13")
         self.assertEqual(state["latest_published_release"], "v2.0.12")
         self.assertEqual(state["observed_main_sha"], CURRENT_MAIN_SHA)
-        self.assertRegex(state["observed_at"], r"^2026-09-02T\d{2}:\d{2}:\d{2}Z$")
+        self.assertRegex(state["observed_at"], r"^2026-09-03T\d{2}:\d{2}:\d{2}Z$")
         self.assertEqual(set(state["milestones"]), MILESTONES)
         for milestone in state["milestones"].values():
             self.assertEqual(set(milestone), set(AXES))
@@ -94,8 +97,8 @@ class ProjectStateTests(unittest.TestCase):
             "M1": ("complete", "passed", "merged", "partial", "success"),
             "M2": ("complete", "passed", "merged", "not_delivered", "success"),
             "M3": ("complete", "passed", "merged", "not_delivered", "success"),
-            "M4": ("complete", "five_local_reviews_passed", "final_local_gate_complete", "not_delivered", "not_run"),
-            "M5": ("provisional_successor_slice_01", "pending_slice_pr_and_external_gate", "slice_01_rooted_on_final_local_m4", "not_delivered", "not_run"),
+            "M4": ("local_hotfix_candidate", "refresh_pending_after_hotfix", "local_hotfix_rebuilt_after_external_failure", "not_delivered", "not_run_current_candidate"),
+            "M5": ("provisional_successor_05_runtime_in_progress", "successor_04_pass_runtime_in_progress", "bounded_stacked_successors_in_progress", "not_delivered", "not_run"),
             "M6": ("provisional_task3_source", "not_started", "blocked_on_m5_acceptance", "not_delivered", "not_run"),
             "M7": ("provisional_algorithm_source", "not_started", "blocked_on_m6_acceptance", "not_delivered", "not_run"),
             "M8": ("provisional_evaluator_source", "not_started", "blocked_on_m7_acceptance", "not_delivered", "not_run"),
@@ -163,7 +166,7 @@ class ProjectStateTests(unittest.TestCase):
                 self.assertEqual(actual["external_gate"]["head_sha"], exact["gate_head"])
 
         m4 = state["milestones"]["M4"]
-        self.assertEqual(m4["implementation"]["source_evidence_head"], M4_PRODUCT_SHA)
+        self.assertEqual(m4["implementation"]["source_evidence_head"], M4_SOURCE_SHA)
         self.assertEqual(m4["implementation"]["tree"], M4_FINAL_TREE)
         self.assertEqual(m4["implementation"]["artifact_sha256"], M4_FINAL_ARTIFACT_SHA256)
         self.assertEqual(m4["implementation"]["integration_baseline"], M4_INTEGRATION_SHA)
@@ -171,69 +174,41 @@ class ProjectStateTests(unittest.TestCase):
             m4["implementation"]["latest_committed_repair_checkpoint"],
             M4_PRODUCT_SHA,
         )
-        self.assertEqual(m4["review"]["evidence_head"], M4_PRODUCT_SHA)
+        self.assertEqual(m4["review"]["evidence_head"], M4_FAILED_EXTERNAL_SHA)
         self.assertEqual(m4["stack_integration"]["base_commit"], CURRENT_MAIN_SHA)
         self.assertEqual(m4["stack_integration"]["source_head"], M4_SOURCE_SHA)
-        self.assertEqual(m4["stack_integration"]["merge_parents"], [M4_SOURCE_SHA, CURRENT_MAIN_SHA])
-        self.assertEqual(m4["stack_integration"]["intermediate_code_head"], M4_INTEGRATION_SHA)
         self.assertEqual(
             m4["stack_integration"]["latest_committed_repair_checkpoint"],
             M4_PRODUCT_SHA,
         )
         self.assertEqual(
-            m4["stack_integration"]["intermediate_local_verification"],
-            {
-                "status": "passed",
-                "head_sha": M4_INTEGRATION_SHA,
-                "checks_passed": 14,
-                "checks_total": 14,
-                "changed_files": 469,
-                "notes": "Historical exact-code-head preflight only; subsequent repair commits and this migration/docs tree require a final rerun before completion.",
-            },
-        )
-        self.assertEqual(
-            m4["stack_integration"]["repair_local_verification"],
-            {
-                "status": "failed",
-                "head_sha": M4_FAILED_VERIFY_SHA,
-                "tree_fingerprint": M4_FAILED_VERIFY_FINGERPRINT,
-                "checks_passed": 13,
-                "checks_total": 14,
-                "failed_check": "secret-scan",
-                "created_at": "2026-09-02T10:08:32Z",
-                "repair_head": M4_SCANNER_REPAIR_SHA,
-                "notes": "The sole generic-secret finding was repaired in synthetic test fixtures and superseded by the passing release-state verification at 56e12b2.",
-            },
-        )
-        self.assertEqual(
-            m4["stack_integration"]["release_state_local_verification"],
+            m4["stack_integration"]["local_hotfix_verification"],
             {
                 "status": "passed",
                 "head_sha": M4_PRODUCT_SHA,
-                "tree_sha": M4_FINAL_TREE,
-                "tree_fingerprint": M4_FINAL_FINGERPRINT,
-                "checks_passed": 14,
-                "checks_total": 14,
-                "notes": "Final exact-head local M4 evidence; it does not transfer to M5 or create external acceptance.",
+                "checks": "14/14 local verifier plus 537/537 root unittest and focused different-owner/package checks",
+                "tree_fingerprint": "b0a230f6ddc14a643ef9944dfa1fc707a05b84ea2b57ee48f9c10e9f2da160d4",
+                "created_at": "2026-09-03T08:08:55Z",
+                "notes": "Local evidence binds 9727bc3 only; docs/package changes make it historical, and the App-owned check has not run on this SHA.",
             },
         )
         self.assertIsNone(m4["stack_integration"]["merge_commit"])
         self.assertEqual(m4["external_gate"]["source_pull_request"], 21)
-        self.assertEqual(m4["external_gate"]["source_head"], M4_SOURCE_SHA)
-        self.assertEqual(m4["external_gate"]["source_trust_ci_status"], "success")
-        self.assertEqual(m4["external_gate"]["source_gitguardian_status"], "failure_metadata_only")
+        self.assertEqual(m4["external_gate"]["observed_failed_head"], M4_FAILED_EXTERNAL_SHA)
+        self.assertEqual(m4["external_gate"]["observed_failed_check"], "root-unittest")
 
         m5 = state["milestones"]["M5"]
-        self.assertEqual(m5["implementation"]["commit"], M5_SLICE1_SHA)
-        self.assertEqual(m5["implementation"]["tree"], M5_SLICE1_TREE)
-        self.assertEqual(m5["stack_integration"]["base_commit"], M4_PRODUCT_SHA)
-        self.assertEqual(m5["stack_integration"]["source_pull_request"], 21)
-        self.assertFalse(m5["stack_integration"]["source_pull_request_contains_base_commit"])
+        self.assertEqual(m5["implementation"]["commit"], M5_RUNTIME_CHECKPOINT)
+        self.assertEqual(m5["implementation"]["tree"], M5_RUNTIME_TREE)
+        self.assertEqual(m5["implementation"]["frozen_predecessor"], M5_ENROLLMENT_SHA)
+        self.assertEqual(m5["stack_integration"]["base_commit"], M5_ENROLLMENT_SHA)
+        self.assertIn("immediate predecessor", m5["stack_integration"]["notes"])
         self.assertIsNone(m5["main_delivery"]["merge_commit"])
         m6 = state["milestones"]["M6"]
         self.assertEqual(m6["implementation"]["commit"], M6_PROVISIONAL_SHA)
         self.assertEqual(m6["implementation"]["task1_head"], M6_TASK1_SHA)
         self.assertEqual(m6["implementation"]["task2_head"], M6_TASK2_SHA)
+        self.assertEqual(m6["implementation"]["required_first_migration"], "018")
         self.assertEqual(
             m6["implementation"]["local_evidence"],
             {
@@ -270,16 +245,14 @@ class ProjectStateTests(unittest.TestCase):
 
     def test_m4_source_implementation_is_distinct_from_verification_review_and_delivery(self) -> None:
         dimensions = self.state["active_delivery"]["m4_dimensions"]
-        self.assertTrue(
-            self.state["active_delivery"]["next_action"].startswith(
-                "Keep slice 01 as the bounded first M5 successor"
-            )
-        )
+        self.assertIn("successor 05", self.state["active_delivery"]["next_action"])
+        self.assertIn("fresh external exact-head Trust CI", self.state["active_delivery"]["next_action"])
         self.assertEqual(
             dimensions["implementation_source"],
             {
-                "status": "implemented_local_gate_complete",
+                "status": "local_hotfix_candidate_unpublished",
                 "head_sha": M4_PRODUCT_SHA,
+                "source_sha": M4_SOURCE_SHA,
                 "tree_sha": M4_FINAL_TREE,
                 "artifact_sha256": M4_FINAL_ARTIFACT_SHA256,
                 "components": [
@@ -303,25 +276,28 @@ class ProjectStateTests(unittest.TestCase):
                 )
             },
             {
-                "local_exact_head_verification": "passed_local_only",
-                "independent_review": "five_local_reviews_passed",
+                "local_exact_head_verification": "hotfix_tests_passed_local_only",
+                "independent_review": "refresh_pending_after_hotfix",
                 "pr_external_merge_delivery": "not_delivered",
             },
         )
         self.assertEqual(dimensions["pr_external_merge_delivery"]["pull_request"], 21)
         self.assertFalse(dimensions["pr_external_merge_delivery"]["contains_current_candidate"])
+        self.assertEqual(dimensions["pr_external_merge_delivery"]["external_exact_head_check"], "failed_root_unittest")
+        self.assertEqual(dimensions["pr_external_merge_delivery"]["gitguardian_check"], "failure_uninspected")
         m5 = self.state["active_delivery"]["m5_dimensions"]
-        self.assertEqual(m5["current_slice"]["implementation_checkpoint"], M5_SLICE1_SHA)
-        self.assertEqual(m5["current_slice"]["implementation_tree"], M5_SLICE1_TREE)
+        self.assertEqual(m5["current_slice"]["implementation_checkpoint"], M5_RUNTIME_CHECKPOINT)
+        self.assertEqual(m5["current_slice"]["implementation_tree"], M5_RUNTIME_TREE)
+        self.assertEqual(m5["current_slice"]["predecessor_head"], M5_ENROLLMENT_SHA)
         self.assertEqual(m5["current_slice"]["package_status"], "not_created_for_source_slice")
-        self.assertEqual(m5["local_verification"]["exact_predecessor_fitness"], "passed_all_applicable_categories")
+        self.assertEqual(m5["local_verification"]["successor_04_exact_fitness"], "passed_on_8a7be8a_to_27b0ae6")
         self.assertEqual(
             self.state["milestones"]["M4"]["implementation"]["source_status"],
-            "implemented_local_gate_complete",
+            "source_fix_and_package_rebuilt_local_only",
         )
         self.assertEqual(
             self.state["milestones"]["M5"]["implementation"]["status"],
-            "provisional_successor_slice_01",
+            "provisional_successor_05_runtime_in_progress",
         )
 
     def test_local_git_objects_corrobate_durable_stack_proof_when_available(self) -> None:
@@ -462,7 +438,7 @@ class ProjectStateTests(unittest.TestCase):
         self.assertIn("authenticated manual API/CLI intake", checked_items)
         self.assertIn("PostgreSQL `FOR UPDATE SKIP LOCKED` leases", checked_items)
         self.assertEqual(self.state["milestones"]["M4"]["main_delivery"]["status"], "not_delivered")
-        self.assertEqual(self.state["milestones"]["M4"]["external_gate"]["status"], "not_run")
+        self.assertEqual(self.state["milestones"]["M4"]["external_gate"]["status"], "not_run_current_candidate")
 
     def test_work_inventory_preserves_open_and_unresolved_continuation_work(self) -> None:
         inventory = self.state["work_inventory"]
@@ -470,7 +446,7 @@ class ProjectStateTests(unittest.TestCase):
             {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Lazy CLI imports and tests are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
             {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Repository-scoped Trust CI profiles are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
             {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": CURRENT_CHECK, "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "Investor demo and packaging hardening are absent from main.", "disposition": "Wholesale merge is superseded; extract the unique scope into a clean successor. No successor PR exists."},
-            {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": M4_SOURCE_SHA, "status": "open_trust_ci_success_gitguardian_failure", "disposition": "Preserve check metadata without inspecting or dismissing the finding; the new current-main merge tree requires fresh verification and exact-head checks."},
+            {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": M4_FAILED_EXTERNAL_SHA, "status": "open_trust_ci_failed_root_unittest", "observed_check": CURRENT_CHECK, "observed_check_conclusion": "FAILURE", "failed_check": "root-unittest", "gitguardian_conclusion": "FAILURE", "gitguardian_finding": "not inspected or inferred", "disposition": "The local 9727bc3 hotfix is not on the PR and will be superseded by a documentation/package-parity descendant. Preserve the failed exact-head results; verify and review the final descendant before any separately authorized PR update and new App-owned exact-head check."},
         ]
         self.assertEqual(inventory["open_pull_requests"], expected_open)
         seo = self.state["delivered_non_milestone_work"][0]
@@ -490,7 +466,8 @@ class ProjectStateTests(unittest.TestCase):
             [(item["route_id"], item["branch"]) for item in inventory["active"]],
             [
                 ("b7f288f1e81e", "integration/m4-main-20260902"),
-                ("37b05f579320", "milestone/m5-successor-01-contracts-brokers"),
+                ("37b05f579320", "milestone/m5-successor-04-contract-enrollment"),
+                ("37b05f579320", "milestone/m5-successor-05-runtime-recovery"),
                 ("82aac86a3bf9", "milestone/m6-semantic-validation-provisional-m4"),
                 ("e5911c3f8721", "milestone/m7-shadow-handoff-provisional-m4"),
                 ("670ffe5522e0", "milestone/m8-earned-autonomy-provisional-m4"),
@@ -500,24 +477,28 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(inventory["active"][0]["head"], M4_PRODUCT_SHA)
         self.assertEqual(inventory["active"][0]["tree"], M4_FINAL_TREE)
         self.assertEqual(inventory["active"][0]["artifact_sha256"], M4_FINAL_ARTIFACT_SHA256)
-        self.assertEqual(inventory["active"][1]["head"], M5_SLICE1_SHA)
-        self.assertEqual(inventory["active"][1]["tree"], M5_SLICE1_TREE)
-        self.assertEqual(inventory["active"][2]["task1_head"], M6_TASK1_SHA)
-        self.assertEqual(inventory["active"][2]["task2_head"], M6_TASK2_SHA)
-        self.assertEqual(inventory["active"][2]["head"], M6_PROVISIONAL_SHA)
-        self.assertEqual(inventory["active"][3]["head"], M7_PROVISIONAL_SHA)
-        self.assertEqual(inventory["active"][4]["starting_head"], M8_STARTING_SHA)
-        self.assertEqual(inventory["active"][4]["head"], M8_PROVISIONAL_SHA)
-        self.assertEqual(inventory["active"][4]["tree"], M8_PROVISIONAL_TREE)
-        self.assertEqual(inventory["active"][5]["prior_design_head"], M9_DESIGN_SHA)
-        self.assertEqual(inventory["active"][5]["head"], M9_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][0]["source_head"], M4_SOURCE_SHA)
+        self.assertEqual(inventory["active"][1]["head"], M5_ENROLLMENT_SHA)
+        self.assertEqual(inventory["active"][1]["tree"], M5_ENROLLMENT_TREE)
+        self.assertEqual(inventory["active"][2]["head"], M5_RUNTIME_CHECKPOINT)
+        self.assertEqual(inventory["active"][2]["tree"], M5_RUNTIME_TREE)
+        self.assertEqual(inventory["active"][2]["worktree"], "uncommitted_in_progress")
+        self.assertEqual(inventory["active"][3]["task1_head"], M6_TASK1_SHA)
+        self.assertEqual(inventory["active"][3]["task2_head"], M6_TASK2_SHA)
+        self.assertEqual(inventory["active"][3]["head"], M6_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][4]["head"], M7_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][5]["starting_head"], M8_STARTING_SHA)
+        self.assertEqual(inventory["active"][5]["head"], M8_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][5]["tree"], M8_PROVISIONAL_TREE)
+        self.assertEqual(inventory["active"][6]["prior_design_head"], M9_DESIGN_SHA)
+        self.assertEqual(inventory["active"][6]["head"], M9_PROVISIONAL_SHA)
         self.assertIn(1, {item.get("pull_request") for item in inventory["superseded"]})
         self.assertIn(
             {
                 "pull_request": 17,
                 "branch": "milestone/m4-durable-control-plane-accepted-m3",
                 "base": "milestone/m2-executable-architecture",
-                "head": M4_SOURCE_SHA,
+                "head": M4_HISTORICAL_SOURCE_SHA,
                 "status": "closed_duplicate",
                 "closed_at": "2026-09-02T10:08:38Z",
                 "duplicate_of": 21,

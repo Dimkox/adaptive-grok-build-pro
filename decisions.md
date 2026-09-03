@@ -384,3 +384,15 @@ Require trusted artifact verification to be deterministic and idempotent by cano
 ## 2026-09-03 — Scope Git ownership trust to the canonical package root
 
 Pass one command-local `safe.directory=<canonical-root>` entry only to repository Git reads while retaining the scrubbed config environment. This supports read-only runner mounts owned by another UID without trusting a wildcard, persisting configuration, or broadening non-repository commands.
+
+## 2026-09-03 — Deliver M5 only as immediate-predecessor successors
+
+Keep contract enrollment/comparator, runtime recovery/additive v2, and inert systemd/installer closure in bounded stacked successors because the cumulative M4-to-enrollment diff exceeds the architecture size gate. This preserves real old-to-new contract comparison and prevents a squash from bypassing either enrollment semantics or change-budget policy.
+
+## 2026-09-03 — Preserve execution v1 while adding strict v2
+
+Keep the enrolled execution-v1 bytes and response projection stable, but make its terminal route run the same server-owned proposal/snapshot/finalize saga as additive v2. This retains wire compatibility without leaving a proposal-only execution path or hiding stricter response contracts behind head-to-head enrollment.
+
+## 2026-09-03 — Make recovery PostgreSQL-17-bounded and cleanup at-least-once
+
+Require PostgreSQL 17 `transaction_timeout` for integrated recovery so connection setup, validation and mutations share a transaction-wide bound. Treat workspace release as exact-handle deterministic/idempotent and at-least-once after TTL/crash, with `already_absent` success and stale outcome fences denied.

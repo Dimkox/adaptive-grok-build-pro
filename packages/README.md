@@ -1,6 +1,6 @@
 # Release packages
 
-Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). The `2.0.13` files are the final local M4 candidate from exact head `571cad7877431ac5ab5779b53fe9f7effd6859ce`; their archive digest is `5b29b7e8e439d1409c3f72757199d20de8f6f4c62bd1df972a37d13f615d9d0e`. They do not claim a tag or GitHub Release, and the most recently published release remains `v2.0.12`. M5 successor slice 01 is source-only and intentionally creates no `2.0.14` package or sidecar.
+Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). The `2.0.13` files are the rebuilt local M4 hotfix candidate from exact package commit `9727bc30c82bb44a86db0ef5b62e507b5527207a` (source fix `3b1f9a54a964d91f34cee2628374b17e7a42edeb`, tree `5feb9a74eda6c54cd37539a2c5dda378a5e27853`); their archive digest is `57e6e00a6c5281fda33e1317d955dd5ca0e1a6f9467e60daa256a8919b408bcc`. PR #21 still contains predecessor `571cad7`, whose external `root-unittest` failed; the rebuilt candidate is unpushed and externally unchecked. It does not claim a tag or GitHub Release, and the most recently published release remains `v2.0.12`. M5 successors remain source-only and create no `2.0.14` package or sidecar.
 
 | File | Version |
 | --- | --- |
@@ -26,6 +26,6 @@ python3 scripts/package_stack.py
 cp dist/adaptive-grok-build-pro-v$(tr -d '[:space:]' < VERSION).zip* packages/
 ```
 
-Production rebuilds package only the filtered regular-file inventory and exact bytes of a clean immutable Git commit; ignored and untracked files are excluded, ambient replace/graft interpretation is disabled, and tracked-source output overlap is rejected. The final local M4 verifier passed 14/14 at `571cad7`, but that evidence creates no external acceptance and does not transfer to any M5 slice.
+Production rebuilds package only the filtered regular-file inventory and exact bytes of a clean immutable Git commit; ignored and untracked files are excluded, ambient replace/graft interpretation is disabled, and tracked-source output overlap is rejected. Repository Git commands trust only the one canonical checkout root through command-scoped `safe.directory`; ambient Git configuration remains scrubbed. Local 537/537 root and focused different-owner/package checks pass at the rebuilt candidate, but that evidence creates no external acceptance and does not transfer to M5.
 
 `.env` and private keys are never packaged.

@@ -15,7 +15,7 @@
 - [x] AC-011 no product path can execute a provider/repository command, write Git/GitHub/external/production state, activate systemd, or claim Trust CI authority.
 - [x] AC-012 real disposable PostgreSQL proves concurrency, capacity, fencing, accepted 0/1/2 retry limits, budgets, kill, actual restart and reconciliation.
 - [x] AC-013 architecture/diagrams, installer/verifier, README, release and rollback match the final tree.
-- [ ] AC-014 final verification plus fresh code/test/security/data/release reviews and receipts still must bind the current repair tree to one final fingerprint; no review acceptance, external Trust CI result or delivery is claimed.
+- [ ] AC-014 current local hotfix/package candidate must receive final docs/package parity, exact-head verification, refreshed code/test/security/data/release reviews and a fresh App-owned PR check before delivery; PR #21's failed `571cad7` result and earlier reviews do not transfer.
 
 ## Failure and edge cases
 

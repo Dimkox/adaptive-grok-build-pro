@@ -24,6 +24,6 @@
   "route_id": "37b05f579320",
   "schema_version": 1,
   "status": "approved",
-  "title": "Materialize M5 as bounded successor slices rooted at exact final local M4 571cad7: slice 01 contracts, adapters, brokers and architecture ownership; later slices add migration/API, recovery/systemd and final integration. Local source only; no live provider calls, secrets, package publication or delivery authority.",
-  "updated_at": "2026-09-02T00:00:32+00:00"
+  "title": "Materialize M5 as bounded stacked successors: successor 04 contract enrollment/comparator is frozen at 27b0ae6; successor 05 runtime recovery and additive v2 is provisional on that exact base; successor 06 systemd/installer/docs remains pending. Local source only; no live provider calls, secrets, package publication, operational activation or delivery authority.",
+  "updated_at": "2026-09-03T08:30:39+00:00"
 }

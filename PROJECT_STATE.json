@@ -2,7 +2,7 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-02T10:21:09Z",
+  "observed_at": "2026-09-03T08:30:39Z",
   "observed_main_sha": "78ad2f679d38dc3244e716c586332417e610089c",
   "product_version": "2.0.13",
   "latest_published_release": "v2.0.12",
@@ -23,19 +23,20 @@
   ],
   "active_delivery": {
     "route_id": "37b05f579320",
-    "branch": "milestone/m5-successor-01-contracts-brokers",
+    "branch": "milestone/m5-successor-05-runtime-recovery",
     "change_package": "engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f",
-    "status": "m5_successor_slice_01_local_source",
+    "status": "m5_successor_05_runtime_in_progress",
     "highest_implemented_milestone": "M4",
     "current_provisional_milestone": "M5",
     "next_roadmap_milestone": "M5",
-    "next_action": "Keep slice 01 as the bounded first M5 successor rooted at exact local M4 571cad7. Any authorized delivery still requires a PR and a fresh external exact-head Trust CI result; later M5 slices must follow in order and use the immediate predecessor for fitness. No package is created for slice 01.",
+    "next_action": "Finish and independently verify successor 05 runtime recovery/v2 on exact predecessor 27b0ae6, then put inert systemd/installer/final documentation in bounded successor 06 if required by the change budget. Keep every successor stacked on its immediate predecessor. Bring M4 documentation/package parity into a final descendant, verify and review that exact descendant, and only then consider a separately authorized PR update and fresh external exact-head Trust CI result; no M4 or M5 delivery is claimed.",
     "m4_dimensions": {
       "implementation_source": {
-        "status": "implemented_local_gate_complete",
-        "head_sha": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
-        "tree_sha": "9d29f25d3af4fc9f97bbb8b3d4970906b69338fd",
-        "artifact_sha256": "5b29b7e8e439d1409c3f72757199d20de8f6f4c62bd1df972a37d13f615d9d0e",
+        "status": "local_hotfix_candidate_unpublished",
+        "head_sha": "9727bc30c82bb44a86db0ef5b62e507b5527207a",
+        "source_sha": "3b1f9a54a964d91f34cee2628374b17e7a42edeb",
+        "tree_sha": "5feb9a74eda6c54cd37539a2c5dda378a5e27853",
+        "artifact_sha256": "57e6e00a6c5281fda33e1317d955dd5ca0e1a6f9467e60daa256a8919b408bcc",
         "components": [
           "typed_intake_and_task_state",
           "postgresql_migrations_001_013",
@@ -47,70 +48,72 @@
         ]
       },
       "local_exact_head_verification": {
-        "status": "passed_local_only",
-        "head_sha": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
-        "checks": "14/14",
-        "fingerprint": "2f9b3ec2dd6f73e887bf375a02870dd91b8a322807e9383e6bd171e2113dba1b",
-        "notes": "This local result binds final M4 only and creates no external acceptance or delivery authority."
+        "status": "hotfix_tests_passed_local_only",
+        "head_sha": "9727bc30c82bb44a86db0ef5b62e507b5527207a",
+        "checks": "14/14 local verifier plus 537/537 root unittest and focused different-owner/package checks",
+        "fingerprint": "b0a230f6ddc14a643ef9944dfa1fc707a05b84ea2b57ee48f9c10e9f2da160d4",
+        "created_at": "2026-09-03T08:08:55Z",
+        "notes": "This evidence binds 9727bc3. The current documentation/package descendant requires a fresh verifier; no local result is an App-owned check or creates delivery authority."
       },
       "independent_review": {
-        "status": "five_local_reviews_passed",
-        "critical_or_important_gaps": 0,
-        "minor_test_review_gaps": [
-          "archive_and_sidecar_rename_injection_coverage",
-          "representative_malformed_field_endpoint_coverage"
-        ],
-        "notes": "Local reviews are preflight evidence, not merge authority."
+        "status": "refresh_pending_after_hotfix",
+        "notes": "Targeted safe.directory security review passed, while the five full reviews on 571cad7 are historical after the hotfix. Fresh complete exact-head reviews are required for the final documentation/package-parity descendant; local evidence is never merge authority."
       },
       "pr_external_merge_delivery": {
         "status": "not_delivered",
         "pull_request": 21,
-        "observed_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
+        "observed_head": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
         "contains_current_candidate": false,
-        "external_exact_head_check": "not_run",
+        "external_exact_head_check": "failed_root_unittest",
+        "gitguardian_check": "failure_uninspected",
         "merge_commit": null,
-        "notes": "Local source and package existence do not supply PR, external Trust CI, merge or protected-main delivery authority."
+        "notes": "The App-owned check on PR 21 at 571cad7 failed root-unittest because scrubbed Git configuration rejected the differently owned /workspace repository. Candidate 9727bc3 fixes that local defect but is unpushed and has no external recheck, merge or protected-main delivery authority."
       }
     },
     "m5_dimensions": {
       "current_slice": {
-        "index": 1,
-        "total": 4,
-        "status": "implemented_provisional_source",
+        "index": 5,
+        "total": 6,
+        "status": "runtime_recovery_v2_in_progress",
         "scope": [
-          "execution_schemas_and_protocol",
-          "fixture_only_codex_and_grok_adapters",
-          "proposal_and_workspace_brokers",
-          "architecture_ownership_rules_and_generated_parity"
+          "additive_execution_openapi_v2",
+          "atomic_resumable_terminal_completion",
+          "migration_017_recovery_metrics_and_least_privilege",
+          "bounded_workspace_cleanup_and_restart_proof"
         ],
-        "predecessor_head": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
-        "predecessor_tree": "9d29f25d3af4fc9f97bbb8b3d4970906b69338fd",
-        "implementation_checkpoint": "9ba284eeeb21b36e8b484c9f25a5f7c8ea8077c1",
-        "implementation_tree": "177112f6a862d88cb867f92235b30ea6bad890ec",
+        "predecessor_head": "27b0ae619cacf0d9ddeed15c60212800ff6009ca",
+        "predecessor_tree": "1a4e3f87da8a12e173a81e66b53f5fc21cb241c6",
+        "implementation_checkpoint": "3f56b6a80ada7020f22f967c2d873a138b2e9487",
+        "implementation_tree": "b1aea0500d6266e4886655ebf9583dd10b2155ce",
+        "worktree_status": "uncommitted_runtime_in_progress",
         "package_status": "not_created_for_source_slice"
       },
       "local_verification": {
-        "exact_predecessor_fitness": "passed_all_applicable_categories",
+        "successor_04_exact_fitness": "passed_on_8a7be8a_to_27b0ae6",
         "architecture": "validate_drift_and_diagram_parity_passed",
-        "architecture_tests": "52/52 passed",
-        "focused_factory_tests": "25/25 passed",
-        "notes": "Fitness risk is red only because new architecture edges require the declared architecture review scope; no fitness category failed."
+        "architecture_tests": "60/60 passed",
+        "architecture_fitness_tests": "88/88 passed",
+        "runtime_pure_factory_tests": "263 discovered: 149 passed and 114 PostgreSQL skips",
+        "runtime_structure_tests": "17/17 passed",
+        "notes": "Successor 04 is clean and independently reviewed. Successor 05 remains work in progress: its new PostgreSQL restart proof, systemd source topology, final exact-head verification and completion reviews are not yet complete."
       },
       "successor_map": [
-        "slice_02_persistence_execution_api_and_migration_014",
-        "slice_03_security_recovery_and_systemd",
-        "slice_04_final_integration_state_and_exact_head_verification"
+        "successor_04_contract_enrollment_and_bounded_comparator_frozen_at_27b0ae6",
+        "successor_05_runtime_recovery_and_additive_v2_in_progress_on_27b0ae6",
+        "successor_06_inert_systemd_installer_and_final_docs_if_required_by_budget"
       ],
       "blocked_final_gates": [
-        "rootless_live_host_isolation",
-        "trusted_live_git_snapshot"
+        "m4_current_candidate_external_exact_head_recheck",
+        "m5_actual_postgresql_restart_recovery_probe",
+        "trusted_rootless_workspace_snapshot_broker",
+        "live_os_credential_and_egress_isolation"
       ],
       "pr_external_merge_delivery": {
         "status": "not_delivered",
         "pull_request": null,
         "external_exact_head_check": "not_run",
         "merge_commit": null,
-        "notes": "Slice 01 has no PR, external check, acceptance, merge, package, tag or release."
+        "notes": "No M5 successor has a PR or App-owned exact-head check. The stack must be delivered as bounded immediate-predecessor PRs; cumulative 9727bc3 to 27b0ae6 exceeds the architecture change budget and must not be squashed into one PR."
       }
     }
   },
@@ -255,20 +258,20 @@
     },
     "M4": {
       "implementation": {
-        "status": "complete",
-        "source_status": "implemented_local_gate_complete",
-        "commit": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
-        "tree": "9d29f25d3af4fc9f97bbb8b3d4970906b69338fd",
-        "source_evidence_head": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
+        "status": "local_hotfix_candidate",
+        "source_status": "source_fix_and_package_rebuilt_local_only",
+        "commit": "9727bc30c82bb44a86db0ef5b62e507b5527207a",
+        "tree": "5feb9a74eda6c54cd37539a2c5dda378a5e27853",
+        "source_evidence_head": "3b1f9a54a964d91f34cee2628374b17e7a42edeb",
         "integration_baseline": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
-        "artifact_sha256": "5b29b7e8e439d1409c3f72757199d20de8f6f4c62bd1df972a37d13f615d9d0e",
-        "evidence": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/implementation-report.md",
-        "notes": "Final local M4 completed exact-head verification and review at 571cad7. This is not an externally accepted or delivered head."
+        "latest_committed_repair_checkpoint": "9727bc30c82bb44a86db0ef5b62e507b5527207a",
+        "artifact_sha256": "57e6e00a6c5281fda33e1317d955dd5ca0e1a6f9467e60daa256a8919b408bcc",
+        "evidence": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/implementation-ledger.md",
+        "notes": "The command-scoped canonical safe.directory hotfix and rebuilt 2.0.13 package are local only. They were committed at 2026-09-03 03:15-03:16 UTC+3 and have not been pushed, externally rechecked, merged, tagged or released."
       },
       "review": {
-        "status": "five_local_reviews_passed",
-        "commit": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
+        "status": "refresh_pending_after_hotfix",
+        "commit": "9727bc30c82bb44a86db0ef5b62e507b5527207a",
         "evidence_head": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
         "evidence": [
           "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/code-review.md",
@@ -277,82 +280,86 @@
           "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/data-review.md",
           "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/release-review.md"
         ],
-        "notes": "All five local reports pass at the final M4 head with 0 Critical/Important gaps. The test review retains two Minor gaps: archive/sidecar rename-injection coverage and representative malformed-field endpoint coverage. Local review is not external merge authority."
+        "notes": "These five reports bind historical candidate 571cad7. Local verifier 14/14, root 537/537 and focused hotfix checks pass at 9727bc3, but refreshed exact-head route reviews are required for the final documentation/package-parity descendant."
       },
       "stack_integration": {
-        "status": "final_local_gate_complete",
+        "status": "local_hotfix_rebuilt_after_external_failure",
         "branch": "integration/m4-main-20260902",
         "base_branch": "origin/main",
         "base_commit": "78ad2f679d38dc3244e716c586332417e610089c",
-        "source_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
-        "merge_parents": [
-          "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
-          "78ad2f679d38dc3244e716c586332417e610089c"
-        ],
-        "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
-        "intermediate_local_verification": {
+        "source_head": "3b1f9a54a964d91f34cee2628374b17e7a42edeb",
+        "latest_committed_repair_checkpoint": "9727bc30c82bb44a86db0ef5b62e507b5527207a",
+        "local_hotfix_verification": {
           "status": "passed",
-          "head_sha": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-          "checks_passed": 14,
-          "checks_total": 14,
-          "changed_files": 469,
-          "notes": "Historical exact-code-head preflight only; subsequent repair commits and this migration/docs tree require a final rerun before completion."
-        },
-        "repair_local_verification": {
-          "status": "failed",
-          "head_sha": "547ee628812fbf098f337a854f68edf660091ead",
-          "tree_fingerprint": "f0efa89e689dbe47c701a4d301e97361ee671e299ef2f32b5295b908e182e768",
-          "checks_passed": 13,
-          "checks_total": 14,
-          "failed_check": "secret-scan",
-          "created_at": "2026-09-02T10:08:32Z",
-          "repair_head": "5a6cdfb7a129e02724c632f78c31de6406d6863a",
-          "notes": "The sole generic-secret finding was repaired in synthetic test fixtures and superseded by the passing release-state verification at 56e12b2."
-        },
-        "release_state_local_verification": {
-          "status": "passed",
-          "head_sha": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
-          "tree_sha": "9d29f25d3af4fc9f97bbb8b3d4970906b69338fd",
-          "tree_fingerprint": "2f9b3ec2dd6f73e887bf375a02870dd91b8a322807e9383e6bd171e2113dba1b",
-          "checks_passed": 14,
-          "checks_total": 14,
-          "notes": "Final exact-head local M4 evidence; it does not transfer to M5 or create external acceptance."
+          "head_sha": "9727bc30c82bb44a86db0ef5b62e507b5527207a",
+          "checks": "14/14 local verifier plus 537/537 root unittest and focused different-owner/package checks",
+          "tree_fingerprint": "b0a230f6ddc14a643ef9944dfa1fc707a05b84ea2b57ee48f9c10e9f2da160d4",
+          "created_at": "2026-09-03T08:08:55Z",
+          "notes": "Local evidence binds 9727bc3 only; docs/package changes make it historical, and the App-owned check has not run on this SHA."
         },
         "pull_request": 21,
-        "pull_request_observed_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
+        "pull_request_observed_head": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
         "pull_request_contains_current_candidate": false,
         "merge_commit": null,
-        "notes": "Final local M4 head is 571cad7. Authorized PR delivery and a fresh App-owned external exact-head check are still absent and required before any protected merge."
+        "notes": "Documentation/package parity will supersede candidate 9727bc3. The final descendant must pass fresh exact-head verification and reviews before any separately authorized PR update can request a new external check."
       },
       "main_delivery": {
         "status": "not_delivered",
         "pull_request": 21,
-        "observed_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
+        "observed_head": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
         "contains_current_candidate": false,
         "merge_commit": null,
-        "notes": "PR 17 closed at 2026-09-02T10:08:38Z because it exactly duplicated open PR 21 at source head 460a8a01. The local integration branch has no successor PR and has not been externally accepted, merged or delivered to main."
+        "notes": "PR 21 remains unmerged. Local candidate 9727bc3 is not present on the PR or protected main."
       },
+      "external_gate": {
+        "status": "not_run_current_candidate",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": null,
+        "source_pull_request": 21,
+        "observed_failed_head": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
+        "observed_failed_check": "root-unittest",
+        "notes": "The exact 571cad7 App check failed because package Git commands scrubbed configured safe.directory in the differently owned runner checkout. Local candidate 9727bc3 contains the narrow fix but has no external result."
+      }
+    },
+    "M5": {
+      "implementation": {
+        "status": "provisional_successor_05_runtime_in_progress",
+        "commit": "3f56b6a80ada7020f22f967c2d873a138b2e9487",
+        "tree": "b1aea0500d6266e4886655ebf9583dd10b2155ce",
+        "evidence": "milestone/m5-successor-05-runtime-recovery",
+        "frozen_predecessor": "27b0ae619cacf0d9ddeed15c60212800ff6009ca",
+        "frozen_predecessor_tree": "1a4e3f87da8a12e173a81e66b53f5fc21cb241c6",
+        "notes": "Successor 04 contract enrollment/comparator is clean and frozen. Successor 05 has a preservation commit plus uncommitted runtime work for additive v2, recovery migration 017 and terminal completion; this committed status checkpoint records that work accurately, while the actual M5 restart probe and inert systemd source topology remain open."
+      },
+      "review": {
+        "status": "successor_04_pass_runtime_in_progress",
+        "commit": "27b0ae619cacf0d9ddeed15c60212800ff6009ca",
+        "evidence": [],
+        "notes": "Independent successor-04 comparator/security review passed at 2026-09-03 11:02:56 UTC+3. Successor 05 has partial focused review only and no final fingerprint-bound completion receipts."
+      },
+      "stack_integration": {
+        "status": "bounded_stacked_successors_in_progress",
+        "base_branch": "milestone/m5-successor-04-contract-enrollment",
+        "base_commit": "27b0ae619cacf0d9ddeed15c60212800ff6009ca",
+        "pull_request": null,
+        "merge_commit": null,
+        "successors": [
+          "04 contract enrollment/comparator: frozen 27b0ae6",
+          "05 runtime recovery/additive v2: in progress on 27b0ae6",
+          "06 inert systemd/installer/final docs: pending if budget split is required"
+        ],
+        "notes": "Every successor must use its immediate predecessor as PR base. Cumulative 9727bc3 to 27b0ae6 fails only bounded architecture change size (1,146,419 bytes and 16,007 lines), so a squash/cumulative PR is prohibited."
+      },
+      "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
       "external_gate": {
         "status": "not_run",
         "name": "adaptive-trust-ci/verified@06ecf1c875bc",
         "head_sha": null,
-        "source_pull_request": 21,
-        "source_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
-        "source_trust_ci_status": "success",
-        "source_gitguardian_status": "failure_metadata_only",
-        "notes": "PR 21's source-head Trust CI success cannot transfer to the new merge tree. Its GitGuardian FAILURE metadata remains unresolved; the integration does not inspect or dismiss the finding and has no external authority."
+        "notes": "No M5 successor PR or App-owned check exists. Operational activation is blocked on a trusted rootless broker/live OS isolation even after source tests complete."
       }
     },
-    "M5": {
-      "implementation": {"status": "provisional_successor_slice_01", "commit": "9ba284eeeb21b36e8b484c9f25a5f7c8ea8077c1", "tree": "177112f6a862d88cb867f92235b30ea6bad890ec", "evidence": "milestone/m5-successor-01-contracts-brokers", "notes": "Only the first of four bounded M5 successors is present: contracts/protocol, fixture adapters, brokers/workspace and architecture ownership. It has no migration, execution HTTP surface or package and does not constitute acceptance or delivery."},
-      "review": {"status": "pending_slice_pr_and_external_gate", "commit": "9ba284eeeb21b36e8b484c9f25a5f7c8ea8077c1", "evidence": [], "notes": "Focused local checks pass, but route-selected completion review and external exact-head authority are absent."},
-      "stack_integration": {"status": "slice_01_rooted_on_final_local_m4", "base_branch": "integration/m4-main-20260902", "intended_remote_branch": "milestone/m4-durable-control-plane-accepted-m3", "base_commit": "571cad7877431ac5ab5779b53fe9f7effd6859ce", "source_pull_request": 21, "source_pull_request_observed_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89", "source_pull_request_contains_base_commit": false, "pull_request": null, "merge_commit": null, "notes": "Successors remain ordered: slice 02 adds migration 014/API, slice 03 recovery/systemd, slice 04 final integration/state. Each must pass fitness against its immediate predecessor."},
-      "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
-      "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null, "notes": "No slice-01 PR or App-owned exact-head check exists. Rootless live-host isolation and trusted live Git snapshot proof remain blocked final-M5 gates."}
-    },
     "M6": {
-      "implementation": {"status": "provisional_task3_source", "commit": "f3b2c0d07116686b27feab4b60166e8a7402d672", "task1_head": "3def83eb915ca68e66379269526ffa64822a1104", "task2_head": "a8ca0f3afffbd9ef5584825252f9a669a324d2a5", "evidence": "milestone/m6-semantic-validation-provisional-m4", "local_evidence": {"task2": {"tests_passed": 209, "tests_total": 209, "actual_restart": "passed"}, "task3": {"focused_passed": 67, "focused_total": 67, "legacy_passed": 40, "legacy_total": 40, "postgresql17_passed": 1, "postgresql17_total": 1, "architecture_checks": "passed"}}, "notes": "Provisional Task 3 persists deterministic semantic verdicts on top of Task-2 migration/publish/read source. It is quarantined until accepted-M5 restack and migration renumbering with fresh checksum/upgrade/restart evidence; Task 4 is untouched and pending."},
+      "implementation": {"status": "provisional_task3_source", "commit": "f3b2c0d07116686b27feab4b60166e8a7402d672", "task1_head": "3def83eb915ca68e66379269526ffa64822a1104", "task2_head": "a8ca0f3afffbd9ef5584825252f9a669a324d2a5", "evidence": "milestone/m6-semantic-validation-provisional-m4", "required_first_migration": "018", "local_evidence": {"task2": {"tests_passed": 209, "tests_total": 209, "actual_restart": "passed"}, "task3": {"focused_passed": 67, "focused_total": 67, "legacy_passed": 40, "legacy_total": 40, "postgresql17_passed": 1, "postgresql17_total": 1, "architecture_checks": "passed"}}, "notes": "Provisional Task 3 persists deterministic semantic verdicts on its old migration/publish/read source. It is quarantined until accepted-M5 restack, where its first migration must become 018 after M5 recovery migration 017, with fresh checksum/upgrade/restart evidence; Task 4 is untouched and pending."},
       "review": {"status": "not_started", "commit": null, "evidence": [], "notes": "Final restack and reviews wait for accepted M5."},
       "stack_integration": {"status": "blocked_on_m5_acceptance", "base_branch": "milestone/m5-isolated-execution-provisional-m4", "pull_request": null, "merge_commit": null},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
@@ -385,17 +392,28 @@
       {
         "route_id": "b7f288f1e81e",
         "branch": "integration/m4-main-20260902",
-        "head": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
-        "tree": "9d29f25d3af4fc9f97bbb8b3d4970906b69338fd",
-        "artifact_sha256": "5b29b7e8e439d1409c3f72757199d20de8f6f4c62bd1df972a37d13f615d9d0e",
-        "purpose": "Final local M4 predecessor for bounded M5 successor slices. Local verifier/reviews passed, but PR, external exact-head authority, protected merge, acceptance and release remain absent."
+        "head": "9727bc30c82bb44a86db0ef5b62e507b5527207a",
+        "source_head": "3b1f9a54a964d91f34cee2628374b17e7a42edeb",
+        "tree": "5feb9a74eda6c54cd37539a2c5dda378a5e27853",
+        "artifact_sha256": "57e6e00a6c5281fda33e1317d955dd5ca0e1a6f9467e60daa256a8919b408bcc",
+        "purpose": "Local M4 hotfix/package candidate after the PR-21 different-owner Git failure. Verifier 14/14, root 537/537 and focused different-owner/package tests pass locally; documentation/package parity will create a descendant needing fresh checks, while push, external exact-head success, protected merge, acceptance and release remain absent."
       },
       {
         "route_id": "37b05f579320",
-        "branch": "milestone/m5-successor-01-contracts-brokers",
-        "head": "9ba284eeeb21b36e8b484c9f25a5f7c8ea8077c1",
-        "tree": "177112f6a862d88cb867f92235b30ea6bad890ec",
-        "purpose": "First of four bounded M5 successors: contracts, fixture adapters, brokers/workspace and architecture ownership only. No migration or package; slice 02 will introduce contiguous migration 014 and execution API."
+        "branch": "milestone/m5-successor-04-contract-enrollment",
+        "head": "27b0ae619cacf0d9ddeed15c60212800ff6009ca",
+        "tree": "1a4e3f87da8a12e173a81e66b53f5fc21cb241c6",
+        "base": "8a7be8a32132a6e6fb96a5ce730fdb5513c121cd",
+        "purpose": "Clean frozen contract enrollment and bounded comparator successor. Independent comparator/security review and exact-predecessor fitness pass; it has no PR or external gate."
+      },
+      {
+        "route_id": "37b05f579320",
+        "branch": "milestone/m5-successor-05-runtime-recovery",
+        "head": "3f56b6a80ada7020f22f967c2d873a138b2e9487",
+        "tree": "b1aea0500d6266e4886655ebf9583dd10b2155ce",
+        "base": "27b0ae619cacf0d9ddeed15c60212800ff6009ca",
+        "worktree": "uncommitted_in_progress",
+        "purpose": "Runtime recovery and additive-v2 successor in progress. Migration 017 and atomic terminal behavior exist in provisional source; actual M5 restart proof and inert systemd topology remain open."
       },
       {
         "route_id": "82aac86a3bf9",
@@ -403,7 +421,7 @@
         "task1_head": "3def83eb915ca68e66379269526ffa64822a1104",
         "task2_head": "a8ca0f3afffbd9ef5584825252f9a669a324d2a5",
         "head": "f3b2c0d07116686b27feab4b60166e8a7402d672",
-        "purpose": "Task-3 deterministic verdict source is provisional and quarantined; after accepted M5 migration 014, renumber its provisional migration to 015, regenerate checksum/upgrade/restart evidence, and continue with untouched Task 4."
+        "purpose": "Task-3 deterministic verdict source is provisional and quarantined; after accepted M5 migration 017, renumber its first provisional migration to 018, regenerate checksum/upgrade/restart evidence, and continue with untouched Task 4."
       },
       {
         "route_id": "e5911c3f8721",
@@ -431,7 +449,7 @@
       {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Lazy CLI imports and tests are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
       {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Repository-scoped Trust CI profiles are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
       {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "Investor demo and packaging hardening are absent from main.", "disposition": "Wholesale merge is superseded; extract the unique scope into a clean successor. No successor PR exists."},
-      {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89", "status": "open_trust_ci_success_gitguardian_failure", "disposition": "Preserve check metadata without inspecting or dismissing the finding; the new current-main merge tree requires fresh verification and exact-head checks."}
+      {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": "571cad7877431ac5ab5779b53fe9f7effd6859ce", "status": "open_trust_ci_failed_root_unittest", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "failed_check": "root-unittest", "gitguardian_conclusion": "FAILURE", "gitguardian_finding": "not inspected or inferred", "disposition": "The local 9727bc3 hotfix is not on the PR and will be superseded by a documentation/package-parity descendant. Preserve the failed exact-head results; verify and review the final descendant before any separately authorized PR update and new App-owned exact-head check."}
     ],
     "retained_unresolved": [
       {"pull_request": 14, "local_head": "cb2fe7ce637c464179e20b5b37aae334e56c1838", "purpose": "Unique closed production-promotion work requiring explicit re-evaluation."},

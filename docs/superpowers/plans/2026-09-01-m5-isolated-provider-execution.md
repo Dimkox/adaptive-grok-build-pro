@@ -4,15 +4,15 @@
 
 **Goal:** Add a provider-neutral, fixture-tested, persistence-integrated M5 execution source plane while preserving factual M4 claim semantics and explicitly blocking unavailable OS-isolation exit evidence.
 
-**Architecture:** Pure immutable contracts and a bounded protocol parser define the trust boundary before persistence. Exact-version fixture adapters feed proposal/workspace brokers; immutable successor migration `014`, forward-only canonical expand overlay `015`, DROP-only contract migration `016`, and new execution endpoints bind every mutation to the existing M4 task/run/owner/fence/allocation/deadline/budget invariants. Source-controlled systemd units and fake-runtime tests are locally verifiable, while live provider and rootless-host operations stay absent.
+**Architecture:** Pure immutable contracts and a bounded protocol parser define the trust boundary before persistence. Exact-version fixture adapters feed proposal/workspace brokers; migrations `014`-`017`, compatible v1 plus additive v2 endpoints, server-owned trusted terminal finalization and bounded two-lane recovery bind every mutation to existing M4 task/run/owner/fence/allocation/deadline/budget invariants. Inert systemd sources and fake-runtime tests are locally verifiable; live provider/rootless-host operations stay absent.
 
-**Tech Stack:** Python 3.11+, frozen dataclasses, canonical JSON/JSONL, JSON Schema 2020-12, FastAPI, PostgreSQL 15+, `unittest`, source-controlled systemd units.
+**Tech Stack:** Python 3.11+, frozen dataclasses, canonical JSON/JSONL, JSON Schema 2020-12, FastAPI, PostgreSQL 17+ for integrated recovery, `unittest`, inert source-controlled systemd units.
 
 **Spec:** `docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md`
 
 ## Global Constraints
 
-- Exact root is final local M4 `571cad7877431ac5ab5779b53fe9f7effd6859ce`; route is `37b05f579320`. Slice 01 product checkpoint is `9ba284eeeb21b36e8b484c9f25a5f7c8ea8077c1`, its truth-bound head and the exact slice-02 predecessor is `34dd6184fc506bb927699b382f13546e59503974`; later slices use their immediate predecessor. `94fc5ad`, `460a8a0` and aggregate `141e51e7` are historical lineage only.
+- Route is `37b05f579320`. Successor 04 is frozen at `27b0ae6` on exact predecessor `8a7be8a`; successor 05 is in progress on `27b0ae6` at preservation checkpoint `3f56b6a`; successor 06 remains pending. Every PR must use its immediate predecessor because cumulative M4→successor-04 exceeds the architecture change budget. Current M4 `9727bc3` and M5 SHAs are local observational checkpoints, not accepted roots or delivery authority.
 - Delivery target is `2026-09-08 00:00 UTC+3`; calendar pressure cannot waive tests, independent review, external Trust CI, or the dedicated rootless-host exit gate.
 - Keep `/v1/claims` legacy semantics: its `packet_digest` remains the M4 `intent_digest`; use new execution endpoints and a new canonical packet digest.
 - Preserve M4 ceilings and authority: 20 global readers, 10 readers per repository, one writer, four hours, USD 25, and initial attempt plus two infrastructure retries.
@@ -35,6 +35,7 @@
 - `factory/src/adaptive_factory/resources/014_execution_plane.sql`: successor-slice execution persistence and capabilities after M4 `013`.
 - `factory/src/adaptive_factory/resources/015_execution_canonical_persistence.sql`: forward-only canonical proposal/attestation/result overlay; after quiescing old finalizers, lock proposals then results, preserve compatible non-final `014` evidence, and refuse legacy finalized rows or unattested artifacts before mutation.
 - `factory/src/adaptive_factory/resources/016_contract_execution_canonical_persistence.sql`: DROP-only contract phase that removes the superseded 64-KiB proposal-body check and global snapshot uniqueness after `015` installs their canonical successors in the same migrator transaction.
+- `factory/src/adaptive_factory/resources/017_execution_recovery_topology.sql`: PostgreSQL-17 recovery jobs/claims/outcomes, bounded two-lane discovery and stable atomic execution metrics; integrated M6 begins at `018`.
 - `factory/src/adaptive_factory/{models,store,service,api}.py`: execution projections, transactions/use cases and endpoints.
 - `factory/src/adaptive_factory/recovery.py`: bounded orphan reconciliation.
 - `factory/systemd/`: predefined supervisor/reader/writer/broker source units.
@@ -143,13 +144,13 @@
 
 **Interfaces:**
 - Consumes: keyset cursor, max `100`, database time, current M4 live allocation/fence evidence.
-- Produces: `ExecutionRecovery.reconcile(limit, cursor)`, fixed execution metric families, static hardened units.
+- Produces: `ExecutionRecovery.reconcile(limit, cursor)`, fixed execution metric families, and eventually static hardened units. Recovery limit is 2..100; exact-handle cleanup is at-least-once and idempotent; terminalization fabricates no proposal/result.
 
-- [ ] **Step 1: Write failing recovery tests.** Assert ordered bounded scan, live manifest preservation, stale manifest orphaning once, late event rejection, cleanup failure retention and replay idempotency.
-- [ ] **Step 2: Confirm RED.** Run the exact recovery cases in `factory.tests.test_execution_service`; expect missing recovery behavior.
-- [ ] **Step 3: Implement minimal recovery and fixed metrics.** No dynamic label/key surface; protocol/proposal/orphan outcomes are fixed fields.
+- [x] **Step 1: Write failing recovery tests.** Assert raw-page/keyset bounds, lane fairness, live-manifest preservation, stale/cancelled classification, cleanup TTL/fencing/history and replay idempotency.
+- [x] **Step 2: Confirm RED and implement recovery/metrics.** Migration `017`, coordinator/store and focused pure/PostgreSQL tests exist; no dynamic labels or fabricated proposal/result.
+- [ ] **Step 3: Replace the legacy restart probe.** Use distinct runtime/attestor roles and two real PostgreSQL restarts to prove failure → due retry → higher-fence `already_absent` success and immutable evidence.
 - [ ] **Step 4: Write failing unit topology tests.** Parse unit sections and assert fixed users/commands, no task interpolation, hardening/resource/restart values and no install/enable section.
-- [ ] **Step 5: Add units, confirm GREEN and commit.** Run recovery/systemd tests and locally available migration/integration checks; commit with `feat(factory): add restart-safe execution topology`.
+- [ ] **Step 5: Add exactly four inert units, confirm GREEN and commit.** Run recovery/systemd tests and locally available migration/integration checks; never install, enable or activate a unit.
 
 ### Task 6: Connect current docs, architecture, installer and M6 bridge
 

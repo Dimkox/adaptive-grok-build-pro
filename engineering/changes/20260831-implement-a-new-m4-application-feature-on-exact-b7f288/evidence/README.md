@@ -1,3 +1,3 @@
 # Evidence
 
-Store human-readable review reports here. Machine receipts live under `.grok-stack/runtime/receipts/` and are bound to the current repository fingerprint.
+Store human-readable review reports here. Existing five-review reports bind historical candidate `571cad7`, whose App-owned Trust CI run later failed `root-unittest`; they do not bind local hotfix/package candidate `9727bc3` or a later docs-parity descendant. Candidate `9727bc3` passed local verifier 14/14 at fingerprint `b0a230f6ddc14a643ef9944dfa1fc707a05b84ea2b57ee48f9c10e9f2da160d4` on `2026-09-03T08:08:55Z`, root 537/537, focused different-owner/package checks and targeted safe.directory security review. Current docs/package parity makes that evidence interim; a fresh exact-head verifier and all five route reviews remain required. Machine receipts live under `.grok-stack/runtime/receipts/` and are bound to one repository fingerprint; none is merge authority.

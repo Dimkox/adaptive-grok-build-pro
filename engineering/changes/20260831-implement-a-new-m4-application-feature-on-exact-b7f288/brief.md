@@ -13,6 +13,10 @@ Interactive work has no independent durable control plane. M4 adds a separate lo
 
 The positive M4 endpoint is `ready_for_human`. M4 has no provider, workspace, repository command, GitHub, deployment, Trust CI, systemd, connector, or production-write capability.
 
+## Current delivery checkpoint
+
+PR #21 at `571cad7877431ac5ab5779b53fe9f7effd6859ce` had only `root-unittest` fail within its App-owned Trust CI run: package Git helpers scrubbed configured `safe.directory`, so the UID-10001 runner rejected its differently owned `/workspace` checkout. GitGuardian separately reports FAILURE; its contents are not inspected or inferred. Local source fix `3b1f9a54a964d91f34cee2628374b17e7a42edeb` and rebuilt package commit `9727bc30c82bb44a86db0ef5b62e507b5527207a` pass verifier 14/14 at fingerprint `b0a230f6…`, root 537/537 and focused different-owner/package checks. This is an unpushed local candidate, not the final promised PR head: current docs/package parity may create a descendant SHA, which must receive fresh exact-head verification/reviews and an authorized PR update before App-owned recheck. No merge, tag, release or activation is claimed.
+
 ## Scope
 
 In scope: closed contracts; immutable accepted intent/task/run/attempt facts; idempotent superseding intake; factory-only checksum migrations; `SKIP LOCKED` leases and monotonic fences; 20/10/1 capacity; initial plus two infrastructure retries; four-hour/USD 25/token/output/event/repair ceilings; kill switches; hash-chained audit; bounded reconciliation; scoped Unix-socket API/CLI; disposable PostgreSQL tests; architecture, verifier, installer, README and recovery documentation.

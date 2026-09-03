@@ -61,11 +61,17 @@
       "from": "verifying",
       "reason": "Exact product/evidence verification passed and all five route-selected final reviews independently reported PASS; freeze report-only evidence for final fingerprint binding",
       "to": "reviewing"
+    },
+    {
+      "at": "2026-09-03T08:02:56+00:00",
+      "from": "reviewing",
+      "reason": "PR 21 external root-unittest failed under different repository ownership; local command-scoped safe.directory hotfix/package candidate 9727bc3 passed verifier 14/14 at fingerprint b0a230f6 plus root 537/537 and focused checks, but current docs parity makes that evidence historical and full verification/review refresh remains open",
+      "to": "implementing"
     }
   ],
   "route_id": "b7f288f1e81e",
   "schema_version": 1,
-  "status": "reviewing",
-  "title": "Implement a new M4 application feature on exact base 67714a1f1b87effcfabe55d5ca2770d0a68d17c1: typed immutable task, run, and attempt records; PostgreSQL migrations and durable state; idempotent intake; lease fencing and capacity; bounded retry, dead-letter and budgets; kill switches, audit, reconciliation; authenticated local API and CLI; PostgreSQL integration tests. The feature remains local and has no network side effects.",
-  "updated_at": "2026-09-02T00:27:28+00:00"
+  "status": "implementing",
+  "title": "Repair the local M4 2.0.13 candidate after PR 21 different-owner package Git failure; preserve the durable factory scope, rebuild exact package parity, rerun exact-head verification/reviews, and require a fresh external check. No push, merge, release or activation is claimed.",
+  "updated_at": "2026-09-03T08:30:39+00:00"
 }
