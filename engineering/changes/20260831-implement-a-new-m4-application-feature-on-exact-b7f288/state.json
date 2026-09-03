@@ -73,11 +73,23 @@
       "from": "implementing",
       "reason": "Final source and package are frozen; run the exact-head verifier before independent reviews",
       "to": "verifying"
+    },
+    {
+      "at": "2026-09-03T22:34:16+00:00",
+      "from": "verifying",
+      "reason": "Exact-head security and release review found SEC-001 and REL-DOC-001.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-03T22:58:06+00:00",
+      "from": "implementing",
+      "reason": "SEC-001 and REL-DOC-001 regression repairs, focused tests, package rollback characterization, and state-stable documentation are frozen; proceed to artifact-only rebuild and exact-head gates.",
+      "to": "verifying"
     }
   ],
   "route_id": "b7f288f1e81e",
   "schema_version": 1,
   "status": "verifying",
   "title": "Implement a new M4 application feature on exact base 67714a1f1b87effcfabe55d5ca2770d0a68d17c1: typed immutable task, run, and attempt records; PostgreSQL migrations and durable state; idempotent intake; lease fencing and capacity; bounded retry, dead-letter and budgets; kill switches, audit, reconciliation; authenticated local API and CLI; PostgreSQL integration tests. The feature remains local and has no network side effects.",
-  "updated_at": "2026-09-03T21:35:14+00:00"
+  "updated_at": "2026-09-03T22:58:06+00:00"
 }

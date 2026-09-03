@@ -46,6 +46,17 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(production_action('git push origin v2.1.0'), 'git-push-tag')
         self.assertEqual(production_action("bash -lc 'gh release create v2.1.0'"), 'github-release')
         self.assertEqual(production_action('gh workflow run release.yml'), 'workflow-dispatch')
+        self.assertEqual(production_action('git -C nested push origin feature'), 'git-push-branch')
+        self.assertEqual(production_action('git -C nested push origin v2.1.0'), 'git-push-tag')
+        self.assertEqual(production_action('git --git-dir=../repo/.git push origin feature'), 'git-push-branch')
+        for command in (
+            'sudo -E git push origin feature',
+            'doas -u root git push origin feature',
+            'env GIT_DIR=../repo/.git git push origin feature',
+            '/usr/bin/git push origin feature',
+            "bash --noprofile -lc 'git push origin feature'",
+        ):
+            self.assertEqual(production_action(command), 'git-push-branch', command)
 
     def test_blocks_production_side_effect_without_grant(self) -> None:
         with github_project() as root:

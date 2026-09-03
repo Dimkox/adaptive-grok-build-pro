@@ -1,6 +1,6 @@
 # Release packages
 
-Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). At the current source/docs freeze, which includes the approved finite architecture-budget amendment, the previous `2.0.13` files remain stale; the immediately following artifact-only commit must rebuild them directly from that clean HEAD. They do not claim verification, review, acceptance, a tag or a GitHub Release. The most recently published release remains `v2.0.12`.
+Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). Exact shipped-package parity against source HEAD determines whether the `2.0.13` pair is current; after tracked mutation, rebuild an artifact-only child only if parity fails. When parity passes, proceed to exact-head verification and reviews rather than another unconditional rebuild. The files do not claim verification, review, acceptance, a tag or a GitHub Release. The most recently published release remains `v2.0.12`.
 
 | File | Version |
 | --- | --- |
@@ -25,6 +25,6 @@ Each zip has a sibling `.sha256`. Rebuild:
 python3 scripts/package_stack.py --output packages/adaptive-grok-build-pro-v2.0.13.zip
 ```
 
-Production rebuilds package only the filtered regular-file inventory, blob bytes and canonical `0644`/`0755` member modes of a clean Git `HEAD`; ignored/untracked files and ambient non-executable permission bits are excluded even when present locally. Direct tracked output is published atomically with its sidecar, so no ad-hoc copy step may separate artifact provenance. The artifact-head verifier at `9f07c32` passed runtime, test, security and fresh PostgreSQL gates but failed the conservative secret heuristic and the pre-amendment architecture budget; the fixture repair and approved budget-policy source now make that archive stale. Fresh exact-head verification and review of the rebuilt final artifact commit are still required.
+Production rebuilds package only the filtered regular-file inventory, blob bytes and canonical `0644`/`0755` member modes of a clean Git `HEAD`; ignored/untracked files and ambient non-executable permission bits are excluded even when present locally. Direct tracked output is published atomically with its sidecar, so no ad-hoc copy step may separate artifact provenance. The artifact-head verifier at `9f07c32` passed runtime, test, security and fresh PostgreSQL gates but failed the conservative secret heuristic and the pre-amendment architecture budget. Current acceptance depends on exact shipped parity followed by fresh exact-head verification and review of the final artifact commit.
 
 `.env` and private keys are never packaged.

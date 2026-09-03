@@ -258,7 +258,7 @@ class ProjectStateTests(unittest.TestCase):
         dimensions = self.state["active_delivery"]["m4_dimensions"]
         self.assertTrue(
             self.state["active_delivery"]["next_action"].startswith(
-                "Rebuild and validate the tracked 2.0.13 archive and sidecar"
+                "Validate exact shipped-package parity for 2.0.13"
             )
         )
         self.assertEqual(
@@ -302,6 +302,30 @@ class ProjectStateTests(unittest.TestCase):
             self.state["milestones"]["M5"]["implementation"]["status"],
             "provisional_source_complete",
         )
+
+    def test_m4_handoff_does_not_make_an_unconditional_stale_package_claim(self) -> None:
+        surfaces = (
+            'README.md',
+            'START_HERE.md',
+            'packages/README.md',
+            'PROJECT_STATE.json',
+            'DARK_FACTORY_ROADMAP.md',
+            'engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/release.md',
+            'engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/tasks.md',
+        )
+        forbidden = (
+            'currently stale candidate package',
+            'tracked stale local artifact',
+            'tracked zip is a stale local artifact',
+            'zip/sidecar are stale',
+            'zip/sidecar were built from an earlier tree and are stale',
+            'previous 2.0.13 files remain stale',
+            'tracked archive still represents an earlier tree and must be rebuilt',
+        )
+        for relative in surfaces:
+            content = (ROOT / relative).read_text(encoding='utf-8').lower()
+            for claim in forbidden:
+                self.assertNotIn(claim, content, (relative, claim))
 
     def test_delivery_schedule_is_dependency_relative_and_does_not_revive_missed_dates(self) -> None:
         schedule = self.state["active_delivery"]["schedule"]

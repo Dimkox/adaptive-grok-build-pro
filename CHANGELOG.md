@@ -9,6 +9,8 @@ M4 control-plane repair candidate and exact current-state release artifact.
 - Audits legacy schema-12 retry exhaustion without advancing a fence or creating a lease, and makes release packaging derive inventory and bytes from filtered, clean, exact Git `HEAD` while independent shipped-artifact tests reject ambient ignored/untracked members
 - Records the current PR/milestone inventory without claiming review, external Trust CI acceptance, merge, deployment, tag, or GitHub Release publication
 - Tracked local artifact: `packages/adaptive-grok-build-pro-v2.0.13.zip` with its SHA-256 sidecar
+- Binds sensitive hook policy and denial evidence to the unique effective repository root, including nested workdir aliases and literal `cd`/`git -C` shell overrides, without recording raw commands
+- Makes package handoff state-stable: rebuild an artifact-only child only when exact shipped parity fails; when it passes, proceed to exact-head verification and review
 - The `aa12e7c` 14/14 verifier receipt is historical and stale for this follow-up after release rereview exposed ambient files in its archive; fresh exact-head verification and review remain required
 
 ## 2.0.12 — 2026-08-23

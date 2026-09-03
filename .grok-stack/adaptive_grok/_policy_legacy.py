@@ -175,12 +175,34 @@ def _leading_argv(chunk: str) -> list[str]:
         tokens = stripped.split()
     while tokens and re.match(r'^[A-Za-z_][A-Za-z0-9_]*=', tokens[0]):
         tokens = tokens[1:]
+    if tokens and Path(tokens[0]).name.lower() in {'sudo', 'doas', 'env'}:
+        commands = {'git', 'gh', 'docker', 'npm', 'bash', 'sh', 'zsh', 'dash', 'ksh'}
+        command_index = next(
+            (index for index, token in enumerate(tokens[1:], 1) if Path(token).name.lower() in commands),
+            None,
+        )
+        if command_index is not None:
+            tokens = tokens[command_index:]
     while tokens and tokens[0].lower() in _WRAPPERS:
         tokens = tokens[1:]
+    if tokens:
+        tokens[0] = Path(tokens[0]).name
     return [token.lower() for token in tokens]
 
 
 def _unwrap_shell(chunk: str) -> str:
+    try:
+        tokens = shlex.split(chunk)
+    except ValueError:
+        tokens = []
+    shells = {'bash', 'sh', 'zsh', 'dash', 'ksh'}
+    for index, token in enumerate(tokens):
+        if Path(token).name.lower() not in shells:
+            continue
+        for option_index in range(index + 1, len(tokens) - 1):
+            if re.fullmatch(r'-[A-Za-z]*c[A-Za-z]*', tokens[option_index]):
+                return tokens[option_index + 1]
+        break
     match = _UNWRAP_SHELL.match(chunk)
     if not match:
         return chunk
@@ -191,6 +213,17 @@ def _unwrap_shell(chunk: str) -> str:
 
 
 def _production_action(argv: list[str]) -> str | None:
+    if argv and argv[0] == 'git':
+        index = 1
+        while index < len(argv):
+            if index + 1 < len(argv) and argv[index] in {'-c', '--git-dir', '--work-tree'}:
+                index += 2
+                continue
+            if argv[index].startswith(('--git-dir=', '--work-tree=')):
+                index += 1
+                continue
+            break
+        argv = ['git', *argv[index:]]
     if argv[:2] == ['git', 'push']:
         if '--tags' in argv or any(item.startswith('refs/tags/') for item in argv[2:]):
             return 'git-push-tag'

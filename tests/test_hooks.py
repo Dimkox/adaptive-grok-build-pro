@@ -10,13 +10,30 @@ sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.receipts import write_receipt
 from adaptive_grok.router import build_route
-from adaptive_grok.state import get_active_route, set_active_route
+from adaptive_grok.state import add_approval, get_active_route, set_active_route
 import subprocess
 
 from tests._support import project_copy, run_hook
 
 
 class HookTests(unittest.TestCase):
+    def _grant(self, root: Path, scope: str, *, actions: list[str], resources: list[str] | None = None) -> None:
+        subprocess.run(
+            ['git', 'remote', 'add', 'origin', 'git@github.com:Dimkox/adaptive-grok-build-pro.git'],
+            cwd=root,
+            check=True,
+        )
+        set_active_route(root, build_route(root, 'Review exact local operation', 'root-test').to_dict())
+        add_approval(
+            root,
+            scope,
+            'root authority regression fixture',
+            5,
+            actions=actions,
+            resources=resources,
+            source='explicit-user-consent',
+        )
+
     def test_root_shim_dispatches_pre_tool_use(self) -> None:
         with project_copy() as root:
             shim = (ROOT / 'pre_tool_use.py').read_text(encoding='utf-8')
@@ -144,6 +161,213 @@ class HookTests(unittest.TestCase):
             })
             output = data['hookSpecificOutput']
             self.assertEqual(output['permissionDecision'], 'deny')
+
+    def test_sensitive_nested_workdir_cannot_borrow_session_repository_grant(self) -> None:
+        with project_copy(git=True) as session_root, project_copy(git=True) as command_root:
+            self._grant(session_root, 'production', actions=['git-push-branch'])
+            payload = {
+                'cwd': str(session_root),
+                'session_id': 'cross-root',
+                'tool_name': 'run_terminal_command',
+                'tool_input': {'command': 'git push origin feature', 'workdir': str(command_root)},
+            }
+            _, data, _ = run_hook(session_root, 'pre_tool_use.py', payload)
+            self.assertEqual(data['decision'], 'deny')
+            self.assertIn('root', data['reason'].lower())
+
+    def test_sensitive_root_aliases_canonicalize_and_conflicts_fail_closed(self) -> None:
+        with project_copy(git=True) as session_root, project_copy(git=True) as other_root:
+            self._grant(session_root, 'production', actions=['git-push-branch'])
+            subdir = session_root / 'nested'
+            subdir.mkdir()
+            (session_root / '$TARGET_ROOT').mkdir()
+            base = {
+                'cwd': str(session_root),
+                'session_id': 'aliases',
+                'tool_name': 'Bash',
+            }
+            for nested in (
+                {'command': 'git push origin feature'},
+                {'command': 'git push origin feature', 'workdir': 'nested'},
+                {'command': 'git push origin feature', 'workingDirectory': str(subdir)},
+            ):
+                _, data, error = run_hook(session_root, 'pre_tool_use.py', {**base, 'tool_input': nested})
+                self.assertEqual(data['decision'], 'allow', error)
+
+            conflicting = {
+                **base,
+                'tool_input': {
+                    'command': 'git push origin feature',
+                    'workdir': str(session_root),
+                    'working_directory': str(other_root),
+                },
+            }
+            _, data, _ = run_hook(session_root, 'pre_tool_use.py', conflicting)
+            self.assertEqual(data['decision'], 'deny')
+
+            top_level_conflict = {
+                'cwd': str(session_root),
+                'workspaceRoot': str(other_root),
+                'session_id': 'top-level-aliases',
+                'tool_name': 'Bash',
+                'tool_input': {'command': 'git push origin feature'},
+            }
+            _, data, _ = run_hook(session_root, 'pre_tool_use.py', top_level_conflict)
+            self.assertEqual(data['decision'], 'deny')
+
+            unrecognized_top_level = {
+                'cwd': str(session_root),
+                'workspaceRoot': '/path/that/is/not/a/recognized/repository',
+                'session_id': 'unrecognized-top-level-alias',
+                'tool_name': 'Bash',
+                'tool_input': {'command': 'git push origin feature'},
+            }
+            _, data, _ = run_hook(session_root, 'pre_tool_use.py', unrecognized_top_level)
+            self.assertEqual(data['decision'], 'deny')
+
+            missing = {
+                'session_id': 'missing-root',
+                'tool_name': 'Bash',
+                'tool_input': {'command': 'git push origin feature'},
+            }
+            _, data, _ = run_hook(session_root, 'pre_tool_use.py', missing)
+            self.assertEqual(data['decision'], 'deny')
+
+    def test_sensitive_external_and_protected_writes_cannot_borrow_session_grants(self) -> None:
+        with project_copy(git=True) as session_root, project_copy(git=True) as command_root:
+            target = '.grok-stack/adaptive_grok/policy.py'
+            self._grant(
+                session_root,
+                'protected-path',
+                actions=['protected-path-write'],
+                resources=[target],
+            )
+            _, data, _ = run_hook(session_root, 'pre_tool_use.py', {
+                'cwd': str(session_root),
+                'tool_name': 'Write',
+                'tool_input': {'path': target, 'cwd': str(command_root)},
+            })
+            self.assertEqual(data['decision'], 'deny')
+
+        with project_copy(git=True) as session_root, project_copy(git=True) as command_root:
+            resource = 'https://example.test/items'
+            self._grant(
+                session_root,
+                'external-write',
+                actions=['external-write'],
+                resources=[resource],
+            )
+            _, data, _ = run_hook(session_root, 'pre_tool_use.py', {
+                'cwd': str(session_root),
+                'tool_name': 'Bash',
+                'tool_input': {
+                    'command': f"curl -X POST {resource} -d '{{}}'",
+                    'workingDirectory': str(command_root),
+                },
+            })
+            self.assertEqual(data['decision'], 'deny')
+
+    def test_command_local_roots_block_cross_repo_borrowing_but_allow_same_repo(self) -> None:
+        with project_copy(git=True) as session_root, project_copy(git=True) as command_root:
+            subdir = session_root / 'nested'
+            subdir.mkdir()
+            nested_command_root = subdir / 'other'
+            command_root.rename(nested_command_root)
+            command_root = nested_command_root
+            (session_root / 'other').mkdir()
+            self._grant(session_root, 'production', actions=['git-push-branch'])
+            commands = (
+                f'cd {command_root} && git push origin feature',
+                f'git -C {command_root} push origin feature',
+                f"bash -lc 'cd {command_root} && git push origin feature'",
+                f"bash -lc 'git -C {command_root} push origin feature'",
+                f"sudo bash -lc 'cd {command_root} && git push origin feature'",
+                f'sudo git -C {command_root} push origin feature',
+                f"doas bash -lc 'git -C {command_root} push origin feature'",
+                f'doas git -C {command_root} push origin feature',
+                f'git -c protocol.version=2 -C {command_root} push origin feature',
+                f'pushd {command_root} && git push origin feature',
+                f'cd -- {command_root} && git push origin feature',
+                'git -C nested -C other push origin feature',
+                f'GIT_DIR={command_root}/.git git push origin feature',
+                f"eval 'cd {command_root}' && git push origin feature",
+                f'git --git-dir={command_root}/.git push origin feature',
+                f'git -C {command_root} status && cd nested && git push origin feature',
+                f'GIT_DIR={command_root}/.git cd nested && git push origin feature',
+                f'sudo -E git -C {command_root} push origin feature',
+                f'doas -u root git -C {command_root} push origin feature',
+                f'env GIT_DIR={command_root}/.git git push origin feature',
+                f'/usr/bin/git -C {command_root} push origin feature',
+                f"bash --noprofile -lc 'git -C {command_root} push origin feature'",
+                'git -c url.example.invalid.insteadOf=origin push origin feature',
+                f'TARGET_ROOT={command_root} cd "$TARGET_ROOT" && git push origin feature',
+                'CDPATH=/tmp cd nested && git push origin feature',
+            )
+            for command in commands:
+                _, data, _ = run_hook(session_root, 'pre_tool_use.py', {
+                    'cwd': str(session_root),
+                    'tool_name': 'Bash',
+                    'tool_input': {'command': command},
+                })
+                self.assertEqual(data['decision'], 'deny', command)
+
+            for command in (
+                'cd nested && git push origin feature',
+                'git -C nested push origin feature',
+                "bash -lc 'cd nested && git push origin feature'",
+                "sudo bash -lc 'git -C nested push origin feature'",
+                'doas git -C nested push origin feature',
+                'git -c protocol.version=2 -C nested push origin feature',
+                'pushd nested && git push origin feature',
+                'cd -- nested && git push origin feature',
+                'git -C nested -C .. push origin feature',
+            ):
+                _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                    'cwd': str(session_root),
+                    'tool_name': 'Bash',
+                    'tool_input': {'command': command},
+                })
+                self.assertEqual(data['decision'], 'allow', (command, error, data))
+
+            _, data, _ = run_hook(session_root, 'pre_tool_use.py', {
+                'cwd': str(session_root),
+                'tool_name': 'Bash',
+                'tool_input': {
+                    'command': 'git push origin feature',
+                    'workdir': '~adaptive_grok_user_that_must_not_exist/root',
+                },
+            })
+            self.assertEqual(data['decision'], 'deny')
+
+    def test_non_sensitive_read_with_explicit_cross_root_remains_allowed(self) -> None:
+        with project_copy(git=True) as session_root, project_copy(git=True) as command_root:
+            _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                'cwd': str(session_root),
+                'tool_name': 'Read',
+                'tool_input': {'path': 'AGENTS.md', 'workdir': str(command_root)},
+            })
+            self.assertEqual(data['decision'], 'allow', error)
+
+    def test_apply_patch_body_is_not_parsed_as_a_shell_execution_root(self) -> None:
+        with project_copy(git=True) as session_root, project_copy(git=True) as other_root:
+            self._grant(
+                session_root,
+                'protected-path',
+                actions=['protected-path-write'],
+                resources=['AGENTS.md'],
+            )
+            patch_body = (
+                '*** Begin Patch\n'
+                '*** Update File: AGENTS.md\n'
+                f'+example text: git -C {other_root} push origin feature\n'
+                '*** End Patch\n'
+            )
+            _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                'cwd': str(session_root),
+                'tool_name': 'apply_patch',
+                'tool_input': {'command': patch_body},
+            })
+            self.assertEqual(data['decision'], 'allow', (error, data))
 
     def test_subagent_lifecycle_is_recorded(self) -> None:
         with project_copy() as root:

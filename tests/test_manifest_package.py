@@ -711,6 +711,42 @@ module.main()
             self.assertEqual(subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(), second)
             self.assertEqual(subprocess.check_output(['git', 'status', '--porcelain=v1'], cwd=root), b'')
 
+    def test_release_cli_restores_preexisting_outputs_when_sidecar_publication_rename_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            self._init_release_repository(root)
+            publish = Path(tmp) / 'publish'
+            publish.mkdir(mode=0o700)
+            output = publish / 'project.zip'
+            sidecar = publish / 'project.zip.sha256'
+            old_archive = b'previous archive bytes\n'
+            old_sidecar = b'previous checksum bytes\n'
+            output.write_bytes(old_archive)
+            sidecar.write_bytes(old_sidecar)
+            real_replace = PACKAGE.os.replace
+            replacement_count = 0
+
+            def fail_sidecar_publication(*args, **kwargs):
+                nonlocal replacement_count
+                replacement_count += 1
+                if replacement_count == 2:
+                    raise OSError('injected sidecar publication rename failure')
+                return real_replace(*args, **kwargs)
+
+            with (
+                patch.object(PACKAGE, 'ROOT', root),
+                patch.object(sys, 'argv', ['package_stack.py', '--output', str(output)]),
+                patch.object(PACKAGE.os, 'replace', side_effect=fail_sidecar_publication),
+            ):
+                with self.assertRaisesRegex(OSError, 'injected sidecar publication rename failure'):
+                    PACKAGE.main()
+
+            self.assertEqual(replacement_count, 3)
+            self.assertEqual(output.read_bytes(), old_archive)
+            self.assertEqual(sidecar.read_bytes(), old_sidecar)
+            self.assertEqual(set(publish.iterdir()), {output, sidecar})
+            self.assertEqual(subprocess.check_output(['git', 'status', '--porcelain=v1'], cwd=root), b'')
+
     def test_release_cli_packages_only_clean_tracked_head_files(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'project'
