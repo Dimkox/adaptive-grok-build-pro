@@ -356,3 +356,7 @@ Skip untracked directory components named `.venv`, but enumerate force-added ind
 ## 2026-09-02 — Terminalize conditionally across claim races
 
 Cancel and supersede may terminalize directly only while `current_run_id IS NULL`; a failed conditional transition re-reads the committed run, acquires capacity locks before the task row, releases the run exactly once, and retries. This preserves the canonical capacity-to-task order while preventing a winning claim from being erased with live capacity.
+
+## 2026-09-03 — Scope Git ownership trust to the canonical package root
+
+Pass one command-local `safe.directory=<canonical-root>` entry only to repository Git reads while retaining the scrubbed config environment. This supports read-only runner mounts owned by another UID without trusting a wildcard, persisting configuration, or broadening non-repository commands.

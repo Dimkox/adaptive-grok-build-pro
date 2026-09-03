@@ -536,6 +536,8 @@ def _git_invocation(root: Path, arguments: list[str]) -> tuple[list[str], dict[s
         'git',
         '--no-replace-objects',
         '-c',
+        f'safe.directory={canonical_root}',
+        '-c',
         'core.useReplaceRefs=false',
         '-c',
         f'core.worktree={canonical_root}',

@@ -405,3 +405,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 **Symptom:** A replacement ref or inherited repository override could make release packaging succeed with bytes outside the raw repository `HEAD`.
 **Root cause:** Release and parity-test Git subprocesses inherited replace, graft, repository, index, object and config interpretation controls from their environment.
 **Correction:** Bind release Git commands to canonical `ROOT`, strip ambient Git controls, disable replacements and grafts, and keep the parity reader independently sanitized.
+
+## 2026-09-03 — Let shell quoting reinterpret a PR comment
+
+**Symptom:** A Markdown PR comment was posted through a double-quoted shell argument, so backticks executed and mangled the text; the comment was immediately corrected with no repository or SHA impact.
+**Root cause:** The command ignored the exec escaping rule; GitHub comment bodies must use a structured payload or single-quoted literal so the shell cannot reinterpret Markdown.

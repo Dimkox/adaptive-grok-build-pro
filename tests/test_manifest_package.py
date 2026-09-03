@@ -54,7 +54,15 @@ def _shipped_git_command(
 ) -> subprocess.CompletedProcess[bytes]:
     canonical_root = root.resolve(strict=True)
     return subprocess.run(
-        ['git', '--no-replace-objects', '-C', str(canonical_root), *arguments],
+        [
+            'git',
+            '--no-replace-objects',
+            '-c',
+            f'safe.directory={canonical_root}',
+            '-C',
+            str(canonical_root),
+            *arguments,
+        ],
         input=input_bytes,
         check=True,
         capture_output=True,
@@ -438,6 +446,88 @@ module.main()
                     archive.read('adaptive-grok-build-pro/README.md'),
                     b'tracked\n',
                 )
+
+    def test_release_git_invocation_trusts_only_canonical_root_for_different_owner(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            self._init_release_repository(root)
+            canonical_root = root.resolve(strict=True)
+            command, environment = PACKAGE._git_invocation(
+                root,
+                ['rev-parse', '--verify', 'HEAD^{commit}'],
+            )
+            trust_entries = [
+                argument
+                for argument in command
+                if argument.startswith('safe.directory=')
+            ]
+            self.assertEqual(
+                trust_entries,
+                [f'safe.directory={canonical_root}'],
+            )
+            self.assertFalse(any(name.startswith('GIT_') for name in environment if name not in {
+                'GIT_CONFIG_COUNT',
+                'GIT_CONFIG_GLOBAL',
+                'GIT_CONFIG_NOSYSTEM',
+                'GIT_CONFIG_SYSTEM',
+                'GIT_GRAFT_FILE',
+                'GIT_NO_REPLACE_OBJECTS',
+                'GIT_OPTIONAL_LOCKS',
+            }))
+            environment['GIT_TEST_ASSUME_DIFFERENT_OWNER'] = '1'
+            result = subprocess.run(
+                command,
+                check=False,
+                capture_output=True,
+                env=environment,
+            )
+            self.assertEqual(
+                result.returncode,
+                0,
+                result.stderr.decode('utf-8', errors='replace'),
+            )
+
+    def test_shipped_head_reader_trusts_only_canonical_root_for_different_owner(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            self._init_release_repository(root)
+            canonical_root = root.resolve(strict=True)
+            real_environment = _shipped_git_environment
+            real_run = subprocess.run
+            commands: list[tuple[str, ...]] = []
+
+            def different_owner_environment() -> dict[str, str]:
+                return {
+                    **real_environment(),
+                    'GIT_TEST_ASSUME_DIFFERENT_OWNER': '1',
+                }
+
+            def capture(command, **kwargs):
+                commands.append(tuple(command))
+                return real_run(command, **kwargs)
+
+            with (
+                patch(
+                    f'{__name__}._shipped_git_environment',
+                    side_effect=different_owner_environment,
+                ),
+                patch.object(subprocess, 'run', side_effect=capture),
+            ):
+                sources = _head_release_sources(root)
+
+            self.assertEqual(sources['README.md'][0], b'tracked\n')
+            self.assertTrue(commands)
+            for command in commands:
+                with self.subTest(command=command):
+                    trust_entries = [
+                        argument
+                        for argument in command
+                        if argument.startswith('safe.directory=')
+                    ]
+                    self.assertEqual(
+                        trust_entries,
+                        [f'safe.directory={canonical_root}'],
+                    )
 
     def test_release_cli_keeps_linked_worktree_discovery(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
