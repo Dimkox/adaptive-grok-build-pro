@@ -467,3 +467,9 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 **Symptom:** `Hook denied: Production action git-push-branch requires an exact delegated local grant bound to the current SHA.` At `2026-09-03 21:52:25Z`, objective fingerprint `6943dc64...` was written to `/home/pall/grok-projects/google-ads-automation/.grok-stack/runtime/tool-denials.json`, not this M4 worktree runtime. No push occurred.
 **Root cause:** `.grok/hooks/pre_tool_use.py` delegated to `.grok-stack/adaptive_grok/_policy_legacy.py:production_action/evaluate_pre_tool`, whose `root_from`/`find_root` resolution used the event/session cwd rather than the nested exec command's explicit workdir; a hook launched or resolved in another repository therefore applied the wrong route and grant state.
 **Prevention:** Denials must persist the exact command, effective root, command workdir, and reason so a root mismatch is immediately diagnosable and a production denial cannot be attributed to the intended worktree without evidence.
+
+## 2026-09-03 — Started broad verification before the tracked state was frozen
+
+**Symptom:** A detached full PR verifier was launched while a required `mistakes.md` update and ready-state finalization were still pending; it spent about nine minutes in coverage and unittest work and had to be terminated before producing any usable receipt, wasting compute and electricity.
+**Root cause:** The controller scheduled the expensive whole-tree gate by sequence habit before completing all known tracked bookkeeping and finalization and before impact-gating the unchanged factory tree, making the run predictably stale.
+**Prevention:** Freeze every known tracked change and artifact input first. For unchanged surfaces or a single failed check, run only the affected or failed check; run the full exact-head PR verifier once on the final frozen candidate, and repeat it only when a tracked mutation or receipt contract truly requires that.
