@@ -808,6 +808,75 @@ module.main()
                     0o100755,
                 )
 
+    def test_release_cli_rejects_git_executable_missing_from_worktree(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            self._init_release_repository(root)
+            script = root / 'run.sh'
+            script.write_text('#!/bin/sh\necho ok\n', encoding='utf-8')
+            script.chmod(0o755)
+            subprocess.run(['git', 'add', 'run.sh'], cwd=root, check=True)
+            subprocess.run(
+                [
+                    'git', '-c', 'user.name=Package Test', '-c',
+                    'user.email=package@example.invalid', 'commit', '-q', '-m',
+                    'add executable fixture',
+                ],
+                cwd=root,
+                check=True,
+            )
+            subprocess.run(
+                ['git', 'config', 'core.filemode', 'false'], cwd=root, check=True
+            )
+            script.chmod(0o644)
+
+            result = self._run_release_cli(root, Path(tmp) / 'project.zip')
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(b'release source mode differs from tracked HEAD', result.stderr)
+
+    def test_release_inventory_includes_only_regular_git_blob_modes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'project'
+            self._init_release_repository(root)
+            executable = root / 'run.sh'
+            executable.write_text('#!/bin/sh\necho ok\n', encoding='utf-8')
+            executable.chmod(0o755)
+            (root / 'alias').symlink_to('README.md')
+            head = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD'], cwd=root, text=True
+            ).strip()
+            subprocess.run(['git', 'add', 'run.sh', 'alias'], cwd=root, check=True)
+            subprocess.run(
+                ['git', 'update-index', '--add', '--cacheinfo', f'160000,{head},nested'],
+                cwd=root,
+                check=True,
+            )
+            subprocess.run(
+                [
+                    'git', '-c', 'user.name=Package Test', '-c',
+                    'user.email=package@example.invalid', 'commit', '-q', '-m',
+                    'add mode fixtures',
+                ],
+                cwd=root,
+                check=True,
+            )
+            tree = subprocess.check_output(
+                ['git', 'rev-parse', 'HEAD^{tree}'], cwd=root, text=True
+            ).strip()
+
+            files = PACKAGE._tracked_head_files(root, tree)
+
+            self.assertEqual(
+                {item.relative_path: item.mode for item in files},
+                {
+                    '.gitignore': 0o100644,
+                    'README.md': 0o100644,
+                    'VERSION': 0o100644,
+                    'run.sh': 0o100755,
+                },
+            )
+
     def test_release_cli_allows_explicit_tracked_excluded_package_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'project'
@@ -1346,7 +1415,14 @@ module.main()
                         f'archive member differs from exact HEAD source: {member.removeprefix(prefix)}',
                     )
                     archive_mode = archive.getinfo(member).external_attr >> 16
-                    self.assertEqual(bool(archive_mode & 0o111), bool(mode & 0o111))
+                    self.assertEqual(
+                        archive_mode,
+                        stat.S_IFREG | (0o755 if mode & 0o111 else 0o644),
+                    )
+                self.assertEqual(
+                    archive.getinfo(manifest_member).external_attr >> 16,
+                    stat.S_IFREG | 0o644,
+                )
                 self.assertEqual(archive.read(f'{prefix}VERSION').decode('utf-8').strip(), '2.0.13')
                 self.assertFalse(any('.github/workflows/' in name for name in names))
                 self.assertFalse(any(name.endswith('dependabot.yml') for name in names))
