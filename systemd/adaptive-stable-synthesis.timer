@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly Adaptive Grok stable synthesis observation
+
+[Timer]
+OnCalendar=Mon *-*-* 00:00:00 UTC
+Persistent=true
+RandomizedDelaySec=0
+Unit=adaptive-stable-synthesis.service
+
+# Source-only example. Deliberately no [Install] section.

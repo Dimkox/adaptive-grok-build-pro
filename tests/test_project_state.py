@@ -47,7 +47,7 @@ CANONICAL_GRAPH_NODES = {
     "Route", "Skills", "Agents", "Hooks", "Policy", "Verify", "Packages", "Contract",
     "Decisions", "Mistakes", "TrustAPI", "TrustWorker", "Postgres", "Runner", "Holdout",
     "GitHubApp", "Factory", "M5Execution", "M6Semantic", "M7Shadow", "M8Autonomy",
-    "M9Delivery",
+    "M9Delivery", "StableSynthesis",
 }
 
 
@@ -72,8 +72,8 @@ def _assert_readme_graph(test: unittest.TestCase, readme: str) -> None:
     expected = {tuple(sorted(pair)) for pair in itertools.combinations(CANONICAL_GRAPH_NODES, 2)}
     test.assertEqual(role_nodes, CANONICAL_GRAPH_NODES)
     test.assertEqual(nodes, role_nodes)
-    test.assertEqual(len(edges), 231)
-    test.assertEqual(len(set(edges)), 231)
+    test.assertEqual(len(edges), 253)
+    test.assertEqual(len(set(edges)), 253)
     test.assertEqual(set(edges), expected)
 
 

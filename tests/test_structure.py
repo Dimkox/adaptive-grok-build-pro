@@ -227,6 +227,7 @@ class StructureTests(unittest.TestCase):
             "M7Shadow",
             "M8Autonomy",
             "M9Delivery",
+            "StableSynthesis",
         ]
         missing = []
         for left, right in itertools.combinations(nodes, 2):

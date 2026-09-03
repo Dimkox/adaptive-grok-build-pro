@@ -8,6 +8,8 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 - Identity: **2.0.13** (`VERSION`, README H1). The tracked local package candidate is `packages/adaptive-grok-build-pro-v2.0.13.zip`; the most recently published GitHub Release remains `v2.0.12`, and no `v2.0.13` tag or release is claimed.
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
+- Stable workflow synthesis is an implementing local candidate on `feature/stable-workflow-synthesis`: closed pins, deterministic BMAD/SpecKit-style readiness, bounded weekly GET-only latest-release plus post-pin change intake, explicit CLI and an inert timer live under [`stable-synthesis/`](stable-synthesis/) and [its change package](engineering/changes/20260903-implement-feature-add-stable-workflow-governance-c89309/brief.md). It has no release, activation, remote-write, automatic pin/source-change, or Trust-CI authority.
+- A direct unsandboxed `grok --continue` pilot was observed in the separate `google-ads-automation` directory, but no `adaptive-factory` process/unit. It is not M5 broker-mediated isolation; this monitor neither touches it nor claims M5 activation.
 - Independent Trust CI: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
 - M0 Live Trust Authority is delivered on `main`. PR #7 repaired the Trust CI workspace/runtime path, PR #6 fixed target-aware shell policy/denial loops, and PR #5 delivered the milestone.
 - Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.13`. The current integration base is protected `origin/main` `78ad2f679d38dc3244e716c586332417e610089c`; the required App-owned check remains `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`, with deployed policy digest `06ecf1c875bc12fa696956998983e04b102f28571a586bc3bb7a2fff5083fdb2`.
@@ -61,6 +63,9 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - [`scripts/grok_route.py`](scripts/grok_route.py)
 - [`scripts/grok_change.py`](scripts/grok_change.py)
 - [`scripts/grok_spec.py`](scripts/grok_spec.py)
+- [`scripts/grok_stable_synthesis.py`](scripts/grok_stable_synthesis.py) — explicit local synthesis/status/GET-only monitor CLI
+- [`engineering/contracts/schemas/stable-synthesis-upstreams.v1.json`](engineering/contracts/schemas/stable-synthesis-upstreams.v1.json) — closed official pins; adjacent journal v1 metadata
+- [`systemd/adaptive-stable-synthesis.timer`](systemd/adaptive-stable-synthesis.timer) — inert source-only weekly example; never auto-installed/enabled
 - [`schemas/change-spec.schema.json`](schemas/change-spec.schema.json)
 - [architecture model](architecture/system.yaml)
 - [architecture rules](architecture/rules.yaml)
@@ -110,7 +115,7 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 
 ## Stack graph
 
-Decorative inventory graph (K22): every listed core node is linked to every other with one of 231 `---` edges. It is an inventory regression only, not architecture authority or architectural evidence. The directed, trust-aware authority is the reviewed model and rules described below; prompts, generated views, local receipts, and delegated grants are not merge authority.
+Decorative inventory graph (K23): every listed core node is linked to every other with one of 253 `---` edges. It is an inventory regression only, not architecture authority or architectural evidence. The directed, trust-aware authority is the reviewed model and rules described below; prompts, generated views, local receipts, and delegated grants are not merge authority.
 
 ```mermaid
 graph TD
@@ -129,6 +134,7 @@ graph TD
   M7Shadow["M7 shadow PR bundle"]
   M8Autonomy["M8 trust profile"]
   M9Delivery["M9 preview/canary/recovery"]
+  StableSynthesis["stable synthesis monitor"]
   Route --- Skills
   Route --- Agents
   Route --- Hooks
@@ -360,6 +366,28 @@ graph TD
   M7Shadow --- M8Autonomy
   M7Shadow --- M9Delivery
   M8Autonomy --- M9Delivery
+  Route --- StableSynthesis
+  Skills --- StableSynthesis
+  Agents --- StableSynthesis
+  Hooks --- StableSynthesis
+  Policy --- StableSynthesis
+  Verify --- StableSynthesis
+  Packages --- StableSynthesis
+  Contract --- StableSynthesis
+  Decisions --- StableSynthesis
+  Mistakes --- StableSynthesis
+  TrustAPI --- StableSynthesis
+  TrustWorker --- StableSynthesis
+  Postgres --- StableSynthesis
+  Runner --- StableSynthesis
+  Holdout --- StableSynthesis
+  GitHubApp --- StableSynthesis
+  Factory --- StableSynthesis
+  M5Execution --- StableSynthesis
+  M6Semantic --- StableSynthesis
+  M7Shadow --- StableSynthesis
+  M8Autonomy --- StableSynthesis
+  M9Delivery --- StableSynthesis
 ```
 
 | Node | Role |
@@ -386,6 +414,7 @@ graph TD
 | M7Shadow | Provisional six-schema typed shadow-bundle boundary at `4df2516`; durable lookup, runtime and real outcomes are absent, and human merge remains mandatory |
 | M8Autonomy | Provisional typed-M7 wire, evaluator and demotion at `2cee9b9`; temporary reader must be removed, no factual cohort/profile activation exists, and current authority ceiling is L2 |
 | M9Delivery | Provisional Tasks 1-4 contracts/evaluator/recovery/dry-run controller at `6b42ba6`; Task 5, real signed input, environment/recovery proof and production authority are absent |
+| StableSynthesis | Additive deterministic local readiness and bounded weekly GET-only upstream review intake; implementing candidate only, inert and without mutation/merge authority |
 
 oneshots `migrate` / `runner-loader` reuse API/worker images; privileged rootless DinD is an execution edge of Runner.
 
@@ -520,6 +549,7 @@ Local loop: route → change → verify → independent reviews → `ready` → 
 | `scripts/grok_change.py` | Start durable local change package |
 | `scripts/grok_governance.py` | Validate/summarize target-owned governance, check read-only projections, and emit an exact clean-state handoff |
 | `scripts/grok_status.py` | Local runtime status |
+| `scripts/grok_stable_synthesis.py` | Deterministic local analyze/status/journal verification and bounded GET-only upstream review intake |
 | `scripts/grok_verify.py` | Local verification preflight (unittest, Ruff, Bandit, measured coverage in `pr`/`release`) |
 | `scripts/grok_review.py` | Record local review receipt |
 | `scripts/grok_approve.py` | Delegated local action/resource grant bound to repository, route, change, exact HEAD and tree fingerprint; not accepted by Trust CI |

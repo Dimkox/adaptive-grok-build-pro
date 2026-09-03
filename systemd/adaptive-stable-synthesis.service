@@ -1,0 +1,21 @@
+[Unit]
+Description=Adaptive Grok local stable synthesis read-only upstream monitor
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/adaptive-grok-build-pro
+ExecStart=/usr/bin/python3 scripts/grok_stable_synthesis.py check
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+UMask=0077
+ReadWritePaths=-/opt/adaptive-grok-build-pro/.grok-stack/runtime/stable-synthesis
+
+# Source-only example. Deliberately no [Install] section.

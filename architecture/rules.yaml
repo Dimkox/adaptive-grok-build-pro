@@ -94,6 +94,26 @@
     {
       "edge_types": [
         "control",
+        "dependency",
+        "deployment",
+        "publication",
+        "secret_flow"
+      ],
+      "from_trust_domains": [
+        "TD-LOCAL-PREFLIGHT"
+      ],
+      "id": "FIT-STABLE-SYNTHESIS-NO-AUTHORITY-EDGE",
+      "severity": "error",
+      "to_trust_domains": [
+        "TD-FACTORY-CONTROL",
+        "TD-TRUST-CI-CONTROL",
+        "TD-TRUST-CI-EXECUTION",
+        "TD-PRODUCTION-TRUST"
+      ]
+    },
+    {
+      "edge_types": [
+        "control",
         "data_flow",
         "dependency",
         "deployment",
@@ -189,6 +209,22 @@
     }
   ],
   "path_boundaries": [
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory",
+        "adaptive_trust_ci",
+        "trust_ci",
+        "subprocess"
+      ],
+      "id": "FIT-STABLE-SYNTHESIS-LOCAL-ONLY",
+      "severity": "error",
+      "source_prefixes": [
+        ".grok-stack/adaptive_grok/stable_synthesis.py",
+        "scripts/grok_stable_synthesis.py",
+        "engineering/contracts/schemas/stable-synthesis-journal.v1.json",
+        "engineering/contracts/schemas/stable-synthesis-upstreams.v1.json"
+      ]
+    },
     {
       "forbidden_dependency_prefixes": [
         "trust-ci"

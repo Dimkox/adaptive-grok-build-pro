@@ -44,6 +44,12 @@ Before implementing any milestone, compare the current `main` SHA with the recor
 
 ## 3. What already exists
 
+### 3.0 Additive stable workflow synthesis candidate
+
+Route `c893098ede04` is implementing a local-only extension combining deterministic BMAD/SpecKit-style traceability/readiness with bounded weekly GET-only review intake of newest stable releases and post-pin changes/bugfix candidates from exactly three pinned official repositories. It is not a milestone-completion claim or second controller: pins, tracked source, Git, PRs, Trust CI and production stay unchanged, and the timer is inert.
+
+A separate direct unsandboxed `grok --continue` pilot was observed in `google-ads-automation`, with no `adaptive-factory` process/unit observed. This is not M5 broker-mediated isolation/activation, and the stable monitor has no path or authority to interact with it.
+
 ### 3.1 Local agent workflow
 
 Implemented:

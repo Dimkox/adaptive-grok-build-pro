@@ -56,6 +56,17 @@ CLOSED_ROUTE_STATUSES = frozenset({'ready', 'released', 'completed', 'cancelled'
 FEATURE_LIKE_INTENTS = frozenset({'feature', 'architecture', 'refactor', 'research'})
 DEFAULT_ANALYSIS_CAP = 10
 
+# These entries are deliberate multilingual stems. Every other single-token
+# keyword is a whole word; phrases remain exact bounded substrings.
+PREFIX_TERMS = frozenset({
+    'авар', 'ошиб', 'исправ', 'рефактор', 'модерниз', 'переписать', 'передел',
+    'исслед', 'добав', 'реализ', 'создай', 'документац', 'инструкц', 'битрикс',
+    'инфоблок', 'фронтенд', 'интерфейс', 'эндпоинт', 'событи', 'очеред',
+    'миграц', 'интеграц', 'внешн', 'генеративн', 'нейросет', 'инфраструктур',
+    'безопасност', 'персональн', 'изоляц', 'прод', 'деплой', 'выкат', 'удалить',
+    'платеж', 'необрат', 'установка', 'агент',
+})
+
 DEFAULT_ROUTING: dict[str, Any] = {
     'schema_version': 1,
     'max_parallel_analysis': DEFAULT_ANALYSIS_CAP,
@@ -180,7 +191,19 @@ def _score(text: str, mapping: dict[str, tuple[str, ...]]) -> dict[str, int]:
     lowered = f' {text.lower()} '
     scores: dict[str, int] = {}
     for label, keywords in mapping.items():
-        score = sum(2 if ' ' in word.strip() else 1 for word in keywords if word in lowered)
+        score = 0
+        for word in keywords:
+            needle = word.lower().strip()
+            if not needle:
+                continue
+            if ' ' in needle:
+                matched = f' {needle} ' in lowered
+            elif needle in PREFIX_TERMS:
+                matched = re.search(r'(?<![\w])' + re.escape(needle) + r'[\w-]*(?![\w])', lowered, re.UNICODE) is not None
+            else:
+                matched = re.search(r'(?<![\w])' + re.escape(needle) + r'(?![\w])', lowered, re.UNICODE) is not None
+            if matched:
+                score += 2 if ' ' in needle else 1
         if score:
             scores[label] = score
     return scores
@@ -194,7 +217,7 @@ def _best_intent(text: str) -> str:
     # Defect, release, review and architectural intent must not be masked by
     # secondary words such as "add a regression test". Generic implementation
     # verbs are deliberately lower priority than the concrete work type.
-    for intent in ('incident', 'bugfix', 'review', 'release', 'refactor', 'architecture', 'research', 'docs'):
+    for intent in ('incident', 'bugfix', 'review', 'release', 'refactor', 'architecture', 'research'):
         if scores.get(intent):
             return intent
 
@@ -214,6 +237,8 @@ def _best_intent(text: str) -> str:
         return 'feature'
     if scores.get('test'):
         return 'test'
+    if scores.get('docs'):
+        return 'docs'
     return next(iter(scores))
 
 

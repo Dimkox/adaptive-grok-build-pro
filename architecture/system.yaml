@@ -2,6 +2,22 @@
   "architecture_id": "ARCH-ADAPTIVE-GROK-M2",
   "contracts": [
     {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-STABLE-UPSTREAMS-V1",
+      "kind": "json_schema",
+      "path": "engineering/contracts/schemas/stable-synthesis-upstreams.v1.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-STABLE-JOURNAL-V1",
+      "kind": "event",
+      "path": "engineering/contracts/schemas/stable-synthesis-journal.v1.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
       "compatibility": "bidirectional",
       "id": "CONTRACT-TRUST-CI-OPENAPI",
       "kind": "openapi",
@@ -139,6 +155,12 @@
       "classification": "restricted",
       "contains_secret": false,
       "id": "DATA-HOLDOUT",
+      "tenant_scoped": false
+    },
+    {
+      "classification": "public",
+      "contains_secret": false,
+      "id": "DATA-UPSTREAM-OBSERVATION",
       "tenant_scoped": false
     },
     {
@@ -484,6 +506,29 @@
       "protocol": "filesystem",
       "sync_or_async": "synchronous",
       "to": "NODE-LOCAL-VERIFIER",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-UPSTREAM-OBSERVATION"
+      ],
+      "authentication": "none",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 10000
+      },
+      "from": "NODE-STABLE-SYNTHESIS-MONITOR",
+      "id": "EDGE-STABLE-SYNTHESIS-GITHUB-READ",
+      "network_policy": "allowlisted_egress",
+      "protocol": "https",
+      "sync_or_async": "synchronous",
+      "to": "NODE-GITHUB",
       "type": "data_flow"
     },
     {
@@ -885,6 +930,32 @@
       },
       "secrets": [],
       "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-UPSTREAM-OBSERVATION",
+      "id": "NODE-STABLE-SYNTHESIS-MONITOR",
+      "owner": "repository engineering",
+      "public_contracts": [
+        "CONTRACT-STABLE-UPSTREAMS-V1",
+        "CONTRACT-STABLE-JOURNAL-V1"
+      ],
+      "repository_paths": [
+        ".grok-stack/adaptive_grok/stable_synthesis.py",
+        "scripts/grok_stable_synthesis.py",
+        "engineering/contracts/schemas/stable-synthesis-journal.v1.json",
+        "engineering/contracts/schemas/stable-synthesis-upstreams.v1.json",
+        "systemd/adaptive-stable-synthesis.service",
+        "systemd/adaptive-stable-synthesis.timer"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "declared_egress"
+      },
+      "secrets": [],
+      "trust_domain": "TD-LOCAL-PREFLIGHT",
       "type": "local_component"
     },
     {

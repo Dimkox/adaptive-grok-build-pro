@@ -49,6 +49,7 @@ MANAGED_FILES = (
     "scripts/grok_approve.py",
     "scripts/grok_doctor.py",
     "scripts/grok_status.py",
+    "scripts/grok_stable_synthesis.py",
     "scripts/grok_deploy.py",
     "session_start.py",
     "user_prompt_submit.py",
@@ -70,6 +71,8 @@ MANAGED_FILES = (
     "schemas/debt-entry.schema.json",
     "schemas/canonical-example.schema.json",
     "schemas/governance-handoff-v1.schema.json",
+    "engineering/contracts/schemas/stable-synthesis-journal.v1.json",
+    "engineering/contracts/schemas/stable-synthesis-upstreams.v1.json",
 )
 SKIP_PREFIXES = (".grok-stack/runtime/",)
 TARGET_OWNED_ARCHITECTURE = frozenset(

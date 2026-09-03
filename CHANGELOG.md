@@ -14,6 +14,12 @@ M4 control-plane repair candidate and exact current-state release artifact.
 - Current documentation/package parity will supersede `9727bc3`; the resulting exact descendant still needs a rebuilt archive where inventory changes, fresh verifier/reviews, a separately authorized PR update and App-owned exact-head success before any merge/tag/release claim
 - M5 successor-05 product/restart checkpoint `3940267` remains source-only and creates no `2.0.14` artifact; its local two-restart PostgreSQL-17 proof is not M4 release authority
 
+### Unreleased additive candidate
+
+- Stable synthesis adds a closed three-source provenance contract, deterministic typed traceability/readiness, content-addressed snapshots and digest-chained local journal.
+- It adds bounded weekly GET-only newest stable release and post-pin change/bugfix review intake, explicit CLI, inert units, architecture ownership and router boundary regressions.
+- Local candidate only: VERSION remains 2.0.13; no upstream code execution/copy, automatic source/pin mutation, external check, release, activation, M5 isolation or production authority is claimed.
+
 ## 2.0.12 — 2026-08-23
 
 Self-hosted Trust CI control plane in-tree, K16 README graph, optional docker/syft/trivy/cosign toolchain pins.

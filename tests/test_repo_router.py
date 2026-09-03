@@ -109,6 +109,16 @@ class RouterTests(unittest.TestCase):
             self.assertIn('verification', route.required_evidence)
             self.assertIn('code_review', route.required_evidence)
 
+    def test_documentation_inside_feature_phrase_does_not_mask_feature(self) -> None:
+        with project_copy() as root:
+            route = build_route(root, 'Implement documentation-aware stable workflow feature', 'bounded-doc')
+            self.assertEqual(route.intent, 'feature')
+
+    def test_ui_is_not_matched_inside_unrelated_words(self) -> None:
+        with project_copy() as root:
+            route = build_route(root, 'Implement a build quality monitor', 'bounded-ui')
+            self.assertNotIn('frontend', route.task_domains)
+
     def test_micro_bug(self) -> None:
         with project_copy() as root:
             route = build_route(root, 'Исправь баг в одной функции PHP', 's10')

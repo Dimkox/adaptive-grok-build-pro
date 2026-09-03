@@ -21,6 +21,16 @@
       "notes": "Optional repository-scoped SEO skill and non-indexable showcase; not M0-M9 progress."
     }
   ],
+  "stable_synthesis_candidate": {
+    "status": "implementing_local_candidate",
+    "route_id": "c893098ede04",
+    "branch": "feature/stable-workflow-synthesis",
+    "change_package": "engineering/changes/20260903-implement-feature-add-stable-workflow-governance-c89309",
+    "scope": "deterministic additive readiness plus weekly read-only newest stable release and bounded post-pin change/bugfix review intake for three closed official sources",
+    "authority": "local observation and review queue only; no automatic pin/source/Git/PR/Trust-CI/production mutation",
+    "version": "2.0.13 unchanged",
+    "executor_observation": "Separate direct unsandboxed grok --continue pilot observed under google-ads-automation; no adaptive-factory process/unit observed, not M5 broker isolation, and out of monitor scope."
+  },
   "active_delivery": {
     "route_id": "37b05f579320",
     "branch": "milestone/m5-successor-05-runtime-recovery",

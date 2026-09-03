@@ -4,6 +4,9 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 ## Current project state
 
+- Stable synthesis is an implementing local candidate under route `c893098ede04`: deterministic typed readiness plus a fixed weekly read-only GitHub review queue for three pinned official sources, covering newest stable releases and bounded post-pin changes/bugfix candidates. It is inert by default, does not advance pins/source, and has no release/external/merge/production authority.
+- A separate direct unsandboxed `grok --continue` pilot was observed in `google-ads-automation`; no adaptive-factory process/unit was observed. Do not equate that pilot with M5 broker isolation, and do not let stable synthesis touch it.
+
 - Product source identity is `2.0.13`; its tracked zip is a local candidate only. The most recently published GitHub Release remains `v2.0.12`, and no `v2.0.13` tag or publication is claimed.
 - M0 (Live Trust Authority) is delivered to `main`.
 - M0 runtime repair and policy-loop fixes are also merged into `main` through PR #7 and PR #6.

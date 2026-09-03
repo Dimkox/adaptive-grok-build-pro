@@ -1156,10 +1156,12 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 12)
+        self.assertEqual(len(records), 14)
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
+        self.assertIn("CONTRACT-STABLE-UPSTREAMS-V1", documents)
+        self.assertIn("CONTRACT-STABLE-JOURNAL-V1", documents)
         factory_api = next(record for record in records if record.id == "CONTRACT-FACTORY-CONTROL-OPENAPI")
         self.assertEqual(factory_api.kind, "openapi")
         self.assertEqual(factory_api.role, "bidirectional")
