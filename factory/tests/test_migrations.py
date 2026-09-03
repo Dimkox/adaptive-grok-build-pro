@@ -1,8 +1,9 @@
 import unittest
 from unittest.mock import patch
+import subprocess
 
 from adaptive_factory.migrations import AppliedMigration, MigrationError, discover_migrations, plan_migrations
-from factory.tests import run_disposable_exit
+from factory.tests import postgres_restart_probe, run_disposable_exit
 
 
 PRE_RECOVERY_MIGRATIONS = (
@@ -26,12 +27,308 @@ PRE_RECOVERY_MIGRATIONS = (
 
 
 class MigrationTests(unittest.TestCase):
+    def test_exit_runner_orders_bound_preflight_before_mutating_suite(self):
+        container_id = "a" * 64
+        created = type("Completed", (), {"returncode": 0, "stdout": container_id})()
+        port = type(
+            "Completed", (), {"returncode": 0, "stdout": "127.0.0.1:5432\n"}
+        )()
+        with patch.object(
+            run_disposable_exit.subprocess, "run", side_effect=[created, port]
+        ) as subprocess_run, patch.object(
+            run_disposable_exit, "_binding_matches", return_value=True
+        ), patch.object(
+            run_disposable_exit, "_final_postgres_ready", return_value=True
+        ), patch.object(run_disposable_exit, "_run") as run, patch.object(
+            run_disposable_exit, "_remove_bound_container"
+        ) as remove, patch("builtins.print") as printed:
+            self.assertEqual(run_disposable_exit.main(), 0)
+        self.assertEqual(
+            subprocess_run.call_args_list[1].args[0],
+            ["docker", "port", container_id, "5432/tcp"],
+        )
+        commands = [call.args[0] for call in run.call_args_list]
+        self.assertIn("--preflight-only", commands[0])
+        self.assertIn("unittest", commands[1])
+        self.assertNotIn("--preflight-only", commands[2])
+        self.assertEqual(remove.call_args.args[0], container_id)
+        printed.assert_called_once_with(
+            "PASS: disposable PostgreSQL + API + effective roles + actual "
+            "restart/reconciliation"
+        )
+
+    def test_exit_runner_reports_leaked_id_without_cleanup_when_binding_fails(self):
+        container_id = "a" * 64
+        created = type("Completed", (), {"returncode": 0, "stdout": container_id})()
+        with patch.object(
+            run_disposable_exit.subprocess, "run", return_value=created
+        ), patch.object(
+            run_disposable_exit, "_binding_matches", return_value=False
+        ), patch.object(run_disposable_exit, "_run") as run, patch.object(
+            run_disposable_exit, "_remove_bound_container"
+        ) as remove:
+            with self.assertRaisesRegex(RuntimeError, f"leaked id={container_id}"):
+                run_disposable_exit.main()
+        run.assert_not_called()
+        remove.assert_not_called()
+
+    def test_restart_probe_database_identity_is_exact_postgresql_17_cluster(self):
+        valid = ("factory_exit", "factory_exit", 170_006, "cluster-1")
+        self.assertTrue(
+            postgres_restart_probe._database_session_is_bound(valid, "cluster-1")
+        )
+        invalid = (
+            ("other", "factory_exit", 170_006, "cluster-1"),
+            ("factory_exit", "other", 170_006, "cluster-1"),
+            ("factory_exit", "factory_exit", 160_009, "cluster-1"),
+            ("factory_exit", "factory_exit", 180_000, "cluster-1"),
+            ("factory_exit", "factory_exit", 170_006, "cluster-2"),
+        )
+        for identity in invalid:
+            with self.subTest(identity=identity):
+                self.assertFalse(
+                    postgres_restart_probe._database_session_is_bound(
+                        identity, "cluster-1"
+                    )
+                )
+
+    def test_restart_database_revalidates_binding_and_targets_only_full_id(self):
+        container_id = "a" * 64
+        name = "adaptive-factory-exit-012345abcdef"
+        nonce = "b" * 32
+        owner = "postgresql://factory_exit:password@127.0.0.1:5432/factory_exit"
+        runtime = postgres_restart_probe._database_url_for_login(
+            owner, "runtime", "runtime-password"
+        )
+        attestor = postgres_restart_probe._database_url_for_login(
+            owner, "attestor", "attestor-password"
+        )
+        with patch.object(
+            postgres_restart_probe, "_assert_disposable_target"
+        ) as validate, patch.object(
+            postgres_restart_probe, "_postmaster_started_at", side_effect=[1, 2]
+        ), patch.object(
+            postgres_restart_probe.subprocess, "run"
+        ) as run, patch.object(
+            postgres_restart_probe, "_published_port", return_value=6543
+        ) as published_port, patch.object(
+            postgres_restart_probe, "_wait_for_database"
+        ):
+            moved = postgres_restart_probe._restart_database(
+                name, container_id, nonce, owner, runtime, attestor
+            )
+        self.assertEqual(
+            run.call_args.args[0], ["docker", "restart", container_id]
+        )
+        self.assertEqual(published_port.call_args.args, (container_id,))
+        self.assertEqual(validate.call_count, 2)
+        self.assertEqual(validate.call_args_list[0].args, (owner, name, container_id, nonce))
+        self.assertEqual(validate.call_args_list[1].args[1:], (name, container_id, nonce))
+        from psycopg.conninfo import conninfo_to_dict
+
+        self.assertEqual(
+            tuple(conninfo_to_dict(value)["port"] for value in moved),
+            ("6543", "6543", "6543"),
+        )
+
+    def test_restart_probe_rejects_bad_container_metadata_before_database_access(self):
+        container_id = "a" * 64
+        name = "adaptive-factory-exit-012345abcdef"
+        nonce = "b" * 32
+        valid = [container_id, f"/{name}", "postgres:17-alpine", "true", nonce]
+        variants = []
+        for index, replacement in enumerate(
+            ("c" * 64, "/other", "postgres:18-alpine", "false", "d" * 32)
+        ):
+            changed = list(valid)
+            changed[index] = replacement
+            variants.append("\t".join(changed))
+        for metadata in variants:
+            completed = type("Completed", (), {"stdout": metadata})()
+            with self.subTest(metadata=metadata), patch.object(
+                postgres_restart_probe.subprocess, "run", return_value=completed
+            ) as run, self.assertRaises(RuntimeError):
+                postgres_restart_probe._assert_disposable_target(
+                    "postgresql://factory_exit:pw@127.0.0.1:5432/factory_exit",
+                    name,
+                    container_id,
+                    nonce,
+                )
+            self.assertEqual(run.call_count, 1)
+
+    def test_exit_runner_container_binding_and_cleanup_are_exact_id_scoped(self):
+        container_id = "a" * 64
+        name = "adaptive-factory-exit-012345abcdef"
+        nonce = "b" * 32
+        valid = f"{container_id}\t/{name}\tpostgres:17-alpine\ttrue\t{nonce}\n"
+        variants = (
+            valid.replace(container_id, "c" * 64, 1),
+            valid.replace(f"/{name}", "/other", 1),
+            valid.replace("postgres:17-alpine", "postgres:18-alpine", 1),
+            valid.replace("\ttrue\t", "\tfalse\t", 1),
+            valid.replace("\ttrue\t", "\tunknown\t", 1),
+            valid.replace(nonce, "d" * 32, 1),
+        )
+        for output in variants:
+            completed = type(
+                "Completed", (), {"returncode": 0, "stdout": output}
+            )()
+            with self.subTest(output=output), patch.object(
+                run_disposable_exit.subprocess, "run", return_value=completed
+            ):
+                self.assertFalse(
+                    run_disposable_exit._binding_matches(
+                        container_id, name, nonce, require_running=True
+                    )
+                )
+
+        for state, expected in (("false", True), ("unknown", False), ("", False)):
+            metadata = (
+                f"{container_id}\t/{name}\tpostgres:17-alpine\t{state}\t{nonce}\n"
+            )
+            completed = type(
+                "Completed", (), {"returncode": 0, "stdout": metadata}
+            )()
+            with self.subTest(cleanup_state=state), patch.object(
+                run_disposable_exit.subprocess, "run", return_value=completed
+            ):
+                self.assertIs(
+                    run_disposable_exit._binding_matches(
+                        container_id, name, nonce, require_running=False
+                    ),
+                    expected,
+                )
+
+        inspected = type("Completed", (), {"returncode": 0, "stdout": valid})()
+        removed = type("Completed", (), {"returncode": 0, "stdout": ""})()
+        with patch.object(
+            run_disposable_exit.subprocess,
+            "run",
+            side_effect=[inspected, removed],
+        ) as run:
+            run_disposable_exit._remove_bound_container(container_id, name, nonce)
+        self.assertEqual(run.call_args_list[-1].args[0], ["docker", "rm", "-f", container_id])
+        self.assertEqual(run.call_args_list[0].args[0][-1], container_id)
+
+        with patch.object(
+            run_disposable_exit, "_binding_matches", return_value=False
+        ), patch.object(run_disposable_exit.subprocess, "run") as run:
+            with self.assertRaisesRegex(RuntimeError, "leaked id"):
+                run_disposable_exit._remove_bound_container(
+                    container_id, name, nonce
+                )
+            run.assert_not_called()
+
+    def test_restart_releaser_wraps_real_broker_with_exact_at_least_once_outcomes(self):
+        from adaptive_factory.workspace import WorkspaceHandle, WorkspaceReleaseOutcome
+
+        first_handle = WorkspaceHandle("task-a", "run-a", "workspace:" + "a" * 64)
+        second_handle = WorkspaceHandle("task-b", "run-b", "workspace:" + "b" * 64)
+        unknown = WorkspaceHandle("task-c", "run-c", "workspace:" + "c" * 64)
+        backend = postgres_restart_probe.WorkspaceBackend()
+        backend.register(first_handle)
+        backend.register(second_handle)
+        first = postgres_restart_probe.AmbiguousWorkspaceReleaser(
+            backend, ambiguous=first_handle
+        )
+        self.assertEqual(
+            first.release(second_handle, timeout_seconds=4.0),
+            WorkspaceReleaseOutcome("released"),
+        )
+        with self.assertRaises(TimeoutError):
+            first.release(first_handle, timeout_seconds=3.0)
+        second = postgres_restart_probe.AmbiguousWorkspaceReleaser(backend)
+        self.assertEqual(
+            second.release(first_handle, timeout_seconds=2.0),
+            WorkspaceReleaseOutcome("already_absent"),
+        )
+        before = tuple(backend.outcomes)
+        with self.assertRaises(RuntimeError):
+            second.release(unknown, timeout_seconds=2.0)
+        self.assertEqual(tuple(backend.outcomes), before)
+        self.assertEqual(
+            backend.outcomes,
+            [
+                (second_handle, 4.0, "released"),
+                (first_handle, 3.0, "released"),
+                (first_handle, 2.0, "already_absent"),
+            ],
+        )
+
+    def test_exit_runner_never_deletes_by_name_when_container_creation_fails(self):
+        commands = []
+
+        def failed_create(command, **kwargs):
+            commands.append(command)
+            if command[:2] == ["docker", "run"]:
+                raise subprocess.CalledProcessError(125, command)
+            return type("Completed", (), {"returncode": 0, "stdout": ""})()
+
+        with patch.object(run_disposable_exit.subprocess, "run", side_effect=failed_create):
+            with self.assertRaises(subprocess.CalledProcessError):
+                run_disposable_exit.main()
+        self.assertFalse(any(command[:2] == ["docker", "rm"] for command in commands))
+
+    def test_restart_probe_rejects_ambiguous_or_non_loopback_port_bindings(self):
+        invalid = (
+            "127.0.0.1:5432\n[::]:5432\n",
+            "0.0.0.0:5432\n",
+            "[::1]:5432\n",
+            "localhost:5432\n",
+            "",
+            "127.0.0.1:0\n",
+            "127.0.0.1:65536\n",
+        )
+        for published in invalid:
+            completed = type("Completed", (), {"stdout": published})()
+            with self.subTest(published=published), patch.object(
+                postgres_restart_probe.subprocess, "run", return_value=completed
+            ), self.assertRaises(RuntimeError):
+                postgres_restart_probe._published_port("a" * 64)
+            with self.subTest(runner=published), self.assertRaises(RuntimeError):
+                run_disposable_exit._published_loopback_port(published)
+        self.assertEqual(
+            run_disposable_exit._published_loopback_port("127.0.0.1:5432\n"),
+            5432,
+        )
+
+    def test_restart_probe_rebuilds_distinct_capability_urls_after_port_change(self):
+        owner = "postgresql://owner:owner-password@127.0.0.1:5432/factory_exit"
+        runtime = postgres_restart_probe._database_url_for_login(
+            owner, "factory_probe_runtime", "runtime-password"
+        )
+        attestor = postgres_restart_probe._database_url_for_login(
+            owner, "factory_probe_attestor", "attestor-password"
+        )
+        moved = tuple(
+            postgres_restart_probe._database_url_at_port(value, 6543)
+            for value in (owner, runtime, attestor)
+        )
+
+        from psycopg.conninfo import conninfo_to_dict
+
+        parsed = tuple(conninfo_to_dict(value) for value in moved)
+        self.assertEqual(
+            tuple((value["user"], value["port"]) for value in parsed),
+            (
+                ("owner", "6543"),
+                ("factory_probe_runtime", "6543"),
+                ("factory_probe_attestor", "6543"),
+            ),
+        )
+        self.assertEqual(
+            tuple(value["host"] for value in parsed),
+            ("127.0.0.1",) * 3,
+        )
+
     def test_exit_runner_waits_for_final_pid1_postmaster_and_readiness(self):
         completed = type("Completed", (), {"returncode": 0})()
         with patch.object(run_disposable_exit.subprocess, "run", side_effect=[completed, completed]) as run:
             self.assertTrue(run_disposable_exit._final_postgres_ready("factory-test"))
         self.assertIn("postmaster.pid", run.call_args_list[0].args[0][-1])
         self.assertEqual(run.call_args_list[1].args[0][3], "pg_isready")
+        self.assertEqual(run.call_args_list[0].kwargs["timeout"], 10)
+        self.assertEqual(run.call_args_list[1].kwargs["timeout"], 10)
 
         not_final = type("Completed", (), {"returncode": 1})()
         with patch.object(run_disposable_exit.subprocess, "run", return_value=not_final) as run:

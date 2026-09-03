@@ -439,3 +439,8 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 **Symptom:** A head-versus-head added-contract comparison could pass while the preexisting execution-v1 contract had already changed incompatibly.
 **Root cause:** Contract enrollment was initially ordered after runtime edits, so the comparator had no old enrolled baseline to compare.
 **Correction:** Freeze enrollment/comparator before runtime changes, keep v1 byte-identical, publish incompatible strictness as additive v2, and require exact immediate-predecessor fitness for every successor.
+
+## 2026-09-03 — Used an ambiguous `USING` join in restart evidence
+
+**Root cause:** A multi-table evidence query used `USING(task_id)` after its left relation retained two qualified `task_id` columns; the real PostgreSQL restart probe correctly rejected the ambiguity.
+**Correction:** Use explicit, fully qualified `ON` predicates for multi-table evidence joins.
