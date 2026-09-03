@@ -11,6 +11,7 @@ from .execution_contracts import (
     ExecutionSelectionV1,
     RunManifestV1,
     TaskPacketV1,
+    WorkspaceResultV1,
 )
 from .models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole
 from .protocol import CanonicalEvent
@@ -18,6 +19,7 @@ from .workspace import (
     ArtifactAttestationRequest,
     ArtifactAttestationV1,
     WorkspaceError,
+    WorkspaceSnapshotUnavailable,
     WorkspaceSnapshotV1,
 )
 from .store import FenceError, StoreUnavailable
@@ -27,12 +29,26 @@ class AuthorizationError(PermissionError):
     pass
 
 
+class SnapshotBrokerUnavailable(RuntimeError):
+    pass
+
+
+class SnapshotBrokerIntegrityError(RuntimeError):
+    pass
+
+
 @dataclass(frozen=True)
 class ClaimRequest:
     owner: str
     role: RunRole
     repositories: tuple[str, ...]
     lease_seconds: int
+
+
+@dataclass(frozen=True)
+class ExecutionTerminalCompletion:
+    proposal: object
+    result: WorkspaceResultV1
 
 
 class FactoryService:
@@ -275,14 +291,43 @@ class FactoryService:
         )
         if replay is not None:
             return replay
-        if self.snapshot_broker is None:
-            raise ExecutionContractError("workspace_snapshot_unavailable")
-        request = self.store.workspace_snapshot_request(grant, packet_digest)
-        snapshot = self.snapshot_broker.snapshot(request)
-        if not isinstance(snapshot, WorkspaceSnapshotV1):
-            raise ExecutionContractError("workspace_snapshot_unavailable")
-        return self._fenced(
-            lambda: self.store.finalize_execution(
+        try:
+            if self.snapshot_broker is None:
+                raise SnapshotBrokerUnavailable("trusted workspace snapshot unavailable")
+            request = self.store.workspace_snapshot_request(grant, packet_digest)
+            try:
+                snapshot = self.snapshot_broker.snapshot(request, timeout_seconds=5.0)
+            except TimeoutError as exc:
+                raise SnapshotBrokerUnavailable(
+                    "trusted workspace snapshot unavailable"
+                ) from exc
+            except (TypeError, WorkspaceError) as exc:
+                raise SnapshotBrokerIntegrityError(
+                    "trusted workspace snapshot is invalid"
+                ) from exc
+            if not isinstance(snapshot, WorkspaceSnapshotV1):
+                if isinstance(snapshot, WorkspaceSnapshotUnavailable):
+                    raise SnapshotBrokerUnavailable(
+                        "trusted workspace snapshot unavailable"
+                    )
+                raise SnapshotBrokerIntegrityError(
+                    "trusted workspace snapshot is invalid"
+                )
+            try:
+                snapshot = WorkspaceSnapshotV1.from_dict(snapshot.to_dict())
+            except WorkspaceError as exc:
+                raise SnapshotBrokerIntegrityError(
+                    "trusted workspace snapshot is invalid"
+                ) from exc
+            if (
+                snapshot.repository_id != request.repository_id
+                or snapshot.workspace_handle != request.workspace_handle
+                or snapshot.input_head_sha != request.input_head_sha
+            ):
+                raise SnapshotBrokerIntegrityError(
+                    "trusted workspace snapshot binding mismatch"
+                )
+            return self.store.finalize_execution(
                 grant,
                 packet_digest,
                 snapshot,
@@ -290,7 +335,92 @@ class FactoryService:
                 idempotency_key=idempotency_key,
                 correlation_id=correlation_id,
             )
+        except (
+            FenceError,
+            StoreUnavailable,
+            SnapshotBrokerIntegrityError,
+            SnapshotBrokerUnavailable,
+        ) as error:
+            try:
+                replay = self.store.execution_finalization_replay(
+                    grant, packet_digest, actor, idempotency_key=idempotency_key
+                )
+            except (FenceError, StoreUnavailable):
+                replay = None
+            if replay is not None:
+                return replay
+            if isinstance(error, FenceError):
+                self._record_fence_rejection_best_effort()
+            raise
+
+    def commit_terminal_and_finalize(
+        self,
+        grant: LeaseGrant,
+        *,
+        packet_digest: str,
+        sequence: int,
+        event_type: str,
+        payload,
+        actor: Actor,
+        idempotency_key: str,
+        correlation_id: str | None = None,
+    ) -> ExecutionTerminalCompletion:
+        if (
+            type(idempotency_key) is not str
+            or len(idempotency_key) != 64
+            or any(character not in "0123456789abcdef" for character in idempotency_key)
+        ):
+            raise ExecutionContractError("terminal_idempotency_required")
+
+        def phase_key(phase: str) -> str:
+            return canonical_digest(
+                {
+                    "contract": "adaptive-factory.execution-terminal-phase/v1",
+                    "command": idempotency_key,
+                    "phase": phase,
+                }
+            )
+
+        proposal_key = phase_key("proposal")
+        finalize_key = phase_key("finalize")
+        event = CanonicalEvent.from_payload(
+            task_id=grant.task_id,
+            run_id=grant.run_id,
+            packet_digest=packet_digest,
+            sequence=sequence,
+            event_type=event_type,
+            payload=payload,
         )
+        self._require_grant_actor(grant, actor, "task:execute")
+        self._fenced(
+            lambda: self.store.begin_execution_terminal_composite(
+                grant,
+                event,
+                actor,
+                proposal_key=proposal_key,
+                finalize_key=finalize_key,
+                idempotency_key=idempotency_key,
+                correlation_id=correlation_id,
+            )
+        )
+        proposal = self.commit_execution_proposal(
+            grant,
+            packet_digest=packet_digest,
+            sequence=sequence,
+            event_type=event_type,
+            payload=payload,
+            actor=actor,
+            idempotency_key=proposal_key,
+            correlation_id=correlation_id,
+        )
+        result = self.finalize_execution(
+            grant,
+            packet_digest=packet_digest,
+            actor=actor,
+            idempotency_key=finalize_key,
+            correlation_id=correlation_id,
+        )
+        return ExecutionTerminalCompletion(proposal, result)
 
     def commit_execution_proposal(
         self,

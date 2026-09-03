@@ -16,7 +16,11 @@ from .brokers import BrokerError, secret_free_identity
 from .contracts import ContractError, canonical_digest
 from .execution_contracts import ExecutionContractError
 from .models import Actor, ExecutionStage, LeaseGrant, RunRole
-from .service import AuthorizationError
+from .service import (
+    AuthorizationError,
+    SnapshotBrokerIntegrityError,
+    SnapshotBrokerUnavailable,
+)
 from .store import (
     AuthorityError,
     BudgetError,
@@ -219,6 +223,23 @@ def create_app(
             {"error": "internal", "code": "internal_integrity"}, status_code=500
         )
 
+    @app.exception_handler(SnapshotBrokerIntegrityError)
+    async def snapshot_integrity_error(
+        _request: Request, _error: SnapshotBrokerIntegrityError
+    ):
+        return JSONResponse(
+            {"error": "internal", "code": "internal_integrity"}, status_code=500
+        )
+
+    @app.exception_handler(SnapshotBrokerUnavailable)
+    async def snapshot_unavailable(
+        _request: Request, _error: SnapshotBrokerUnavailable
+    ):
+        return JSONResponse(
+            {"error": "unavailable", "code": "workspace_snapshot"},
+            status_code=503,
+        )
+
     @app.exception_handler(StoreError)
     async def store_error(_request: Request, _error: StoreError):
         return JSONResponse({"error": "conflict"}, status_code=409)
@@ -368,6 +389,7 @@ def create_app(
         )
         return JSONResponse(_json({"grant": grant}), headers={"X-Correlation-ID": correlation})
 
+    @app.post("/v2/execution/claims", tags=["execution"])
     @app.post("/v1/execution/claims", tags=["execution"])
     def claim_execution(
         payload: dict,
@@ -410,6 +432,7 @@ def create_app(
         )
         return JSONResponse(_json({"grant": grant}), headers={"X-Correlation-ID": correlation})
 
+    @app.post("/v2/execution/stages", tags=["execution"])
     @app.post("/v1/execution/stages", tags=["execution"])
     def advance_execution(
         payload: dict,
@@ -460,6 +483,7 @@ def create_app(
         )
         return JSONResponse(_json({"proposal": proposal}), headers={"X-Correlation-ID": correlation})
 
+    @app.post("/v2/execution/notes", tags=["execution"])
     @app.post("/v1/execution/notes", tags=["execution"])
     def execution_note(
         payload: dict,
@@ -475,6 +499,7 @@ def create_app(
             idempotency_key=idempotency_key, correlation_id=x_correlation_id,
         )
 
+    @app.post("/v2/execution/artifacts", tags=["execution"])
     @app.post("/v1/execution/artifacts", tags=["execution"])
     def execution_artifact(
         payload: dict,
@@ -491,6 +516,7 @@ def create_app(
             idempotency_key=idempotency_key, correlation_id=x_correlation_id,
         )
 
+    @app.post("/v2/execution/usage", tags=["execution"])
     @app.post("/v1/execution/usage", tags=["execution"])
     def execution_usage(
         payload: dict,
@@ -510,9 +536,11 @@ def create_app(
             idempotency_key=idempotency_key, correlation_id=x_correlation_id,
         )
 
+    @app.post("/v2/execution/terminal", tags=["execution"])
     @app.post("/v1/execution/terminal", tags=["execution"])
     def execution_terminal(
         payload: dict,
+        request: Request,
         authorization: str | None = Header(None),
         idempotency_key: str | None = Header(None),
         x_correlation_id: str | None = Header(None),
@@ -529,11 +557,22 @@ def create_app(
         expected = terminal_fields.get(terminal_type)
         if expected is None or set(payload) != common | expected:
             raise HTTPException(422, "invalid terminal proposal")
-        return execution_proposal(
-            payload, actor=actor, event_type=terminal_type,
-            proposal_payload={name: payload[name] for name in expected},
-            idempotency_key=idempotency_key, correlation_id=x_correlation_id,
+        key = _execution_command_key(idempotency_key)
+        correlation = _execution_request_id(x_correlation_id, "X-Correlation-ID")
+        completion = service.commit_terminal_and_finalize(
+            _grant(payload["grant"]),
+            packet_digest=_digest(payload["packet_digest"], "packet_digest"),
+            sequence=_integer(payload["sequence"], "sequence", 1, 100_000),
+            event_type=terminal_type,
+            payload={name: payload[name] for name in expected},
+            actor=actor,
+            idempotency_key=key,
+            correlation_id=correlation,
         )
+        response = {"proposal": completion.proposal}
+        if request.url.path.startswith("/v2/"):
+            response["result"] = completion.result
+        return JSONResponse(_json(response), headers={"X-Correlation-ID": correlation})
 
     @app.post("/v1/heartbeats", tags=["worker"])
     def heartbeat(
@@ -680,6 +719,12 @@ def create_app(
             "/v1/execution/artifacts",
             "/v1/execution/usage",
             "/v1/execution/terminal",
+            "/v2/execution/claims",
+            "/v2/execution/stages",
+            "/v2/execution/notes",
+            "/v2/execution/artifacts",
+            "/v2/execution/usage",
+            "/v2/execution/terminal",
         }
         app.router.routes = [
             route

@@ -30,7 +30,7 @@ class ServerTests(unittest.TestCase):
                 return request
 
         class SnapshotBroker:
-            def snapshot(self, request):
+            def snapshot(self, request, *, timeout_seconds):
                 return request
 
         return Registry(), ArtifactVerifier(), SnapshotBroker()
@@ -65,7 +65,7 @@ class ServerTests(unittest.TestCase):
                 "status": "ready",
                 "session_user": "factory_runtime_login",
                 "database_role": "factory_runtime",
-                "schema_version": 16,
+                "schema_version": 17,
                 "capacity_consistent": True,
                 "accounting_consistent": True,
             }
@@ -122,7 +122,7 @@ class ServerTests(unittest.TestCase):
                     "status": "ready",
                     "session_user": "factory_runtime_login",
                     "database_role": "factory_runtime",
-                    "schema_version": 16,
+                    "schema_version": 17,
                     "capacity_consistent": True,
                     "accounting_consistent": True,
                 },
@@ -136,7 +136,7 @@ class ServerTests(unittest.TestCase):
                     "status": "ready",
                     "session_user": "factory_runtime_login",
                     "database_role": "factory_artifact_attestor",
-                    "schema_version": 16,
+                    "schema_version": 17,
                     "capacity_consistent": True,
                     "accounting_consistent": True,
                 },
@@ -150,7 +150,7 @@ class ServerTests(unittest.TestCase):
                     "status": "ready",
                     "session_user": "same_login",
                     "database_role": "factory_runtime",
-                    "schema_version": 16,
+                    "schema_version": 17,
                     "capacity_consistent": True,
                     "accounting_consistent": True,
                 },
@@ -312,7 +312,7 @@ class ServerTests(unittest.TestCase):
                 "status": "ready",
                 "session_user": "factory_runtime_login",
                 "database_role": "factory_runtime",
-                "schema_version": 16,
+                "schema_version": 17,
                 "capacity_consistent": True,
                 "accounting_consistent": True,
             }

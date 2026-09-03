@@ -37,7 +37,9 @@ class TrustedPostgresTestSnapshotBroker:
     def __init__(self):
         self.calls = 0
 
-    def snapshot(self, request):
+    def snapshot(self, request, *, timeout_seconds=5.0):
+        if timeout_seconds != 5.0:
+            raise AssertionError("snapshot timeout must stay bounded")
         self.calls += 1
         return WorkspaceSnapshotV1.from_facts({
             "contract_version": 1, "repository_id": request.repository_id,
@@ -105,13 +107,21 @@ class PostgresFactoryTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
+                "TRUNCATE factory.execution_recovery_outcomes, factory.execution_recovery_claims, factory.execution_recovery_jobs, factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
             )
             cursor.execute("SELECT to_regclass('factory.metric_counters_pre_012_untrusted')")
             if cursor.fetchone()[0] is not None:
                 cursor.execute("TRUNCATE factory.kill_switch_heads")
                 cursor.execute("INSERT INTO factory.metric_counters(singleton) VALUES (true)")
             cursor.execute("UPDATE factory.capacity_counters SET active_count=0")
+            cursor.execute(
+                "UPDATE factory.execution_metric_counters SET "
+                "execution_claimed=0,stage_prepared=0,stage_running=0,stage_collecting=0,"
+                "stage_completed=0,stage_failed=0,stage_needs_human=0,stage_cancelled=0,"
+                "stage_orphaned=0,proposal_note=0,proposal_artifact=0,proposal_usage=0,"
+                "proposal_terminal=0,recovery_claimed=0,recovery_orphaned=0,"
+                "recovery_cancelled=0,cleanup_succeeded=0,cleanup_failed=0"
+            )
             cursor.execute(
                 "INSERT INTO factory.m0_authority_observations(observation_id,observed_at,check_name,exact_head_sha,issuer,evidence_digest,repository_id,policy_digest) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
                 (
@@ -1569,11 +1579,21 @@ class PostgresFactoryTests(unittest.TestCase):
                 "factory_intake_and_rejection_outcomes_total",
                 "factory_lease_reclaim_and_fence_rejection_total",
                 "factory_capacity_budget_kill_and_reconcile_outcomes_total",
+                "factory_execution_claim_and_stage_outcomes_total",
+                "factory_execution_protocol_and_proposal_outcomes_total",
+                "factory_execution_orphan_and_cleanup_outcomes_total",
             },
         )
         intake = metrics["factory_intake_and_rejection_outcomes_total"]
         leases = metrics["factory_lease_reclaim_and_fence_rejection_total"]
         operations = metrics["factory_capacity_budget_kill_and_reconcile_outcomes_total"]
+        execution_stages = metrics["factory_execution_claim_and_stage_outcomes_total"]
+        execution_protocol = metrics[
+            "factory_execution_protocol_and_proposal_outcomes_total"
+        ]
+        execution_recovery = metrics[
+            "factory_execution_orphan_and_cleanup_outcomes_total"
+        ]
         self.assertEqual(set(intake), {"accepted", "superseded", "queued", "retry", "dead", "transition_events"})
         self.assertEqual(set(leases), {"live_leases", "reclaimed", "fence_rejected"})
         self.assertEqual(
@@ -1584,6 +1604,20 @@ class PostgresFactoryTests(unittest.TestCase):
                 "output_observed_bytes", "accounting_blocked", "active_kills",
                 "reconciliation_runs", "reconciliation_candidates", "repaired", "auth_rejected",
             },
+        )
+        self.assertEqual(
+            set(execution_stages),
+            {
+                "claimed", "prepared", "running", "collecting", "completed",
+                "failed", "needs_human", "cancelled", "orphaned",
+            },
+        )
+        self.assertEqual(
+            set(execution_protocol), {"note", "artifact", "usage", "terminal"}
+        )
+        self.assertEqual(
+            set(execution_recovery),
+            {"claimed", "orphaned", "cancelled", "workspace_released", "cleanup_failed"},
         )
         self.assertEqual(
             (intake["accepted"], intake["queued"], intake["retry"], intake["dead"]),
@@ -1692,7 +1726,7 @@ class PostgresFactoryTests(unittest.TestCase):
                 result = self.inner.execute(statement, parameters)
                 if (
                     "from factory.runs" in text and "filter (where state='leased'" in text
-                ) or "read_metrics_snapshot" in text:
+                ) or "read_combined_metrics_snapshot" in text:
                     if not observed.is_set():
                         observed.set()
                         if not proceed.wait(2):
@@ -1723,9 +1757,10 @@ class PostgresFactoryTests(unittest.TestCase):
         self.assertIn((leases, capacity), {(1, 1), (0, 0)})
         self.assertIn("set local statement_timeout='5s'", statements)
         self.assertIn("set local lock_timeout='500ms'", statements)
+        self.assertIn("set local transaction_timeout='3s'", statements)
         data_statements = [item for item in statements if item.startswith("select")]
         self.assertEqual(len(data_statements), 1)
-        self.assertIn("read_metrics_snapshot", data_statements[0])
+        self.assertIn("read_combined_metrics_snapshot", data_statements[0])
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute("EXPLAIN (ANALYZE,FORMAT JSON) SELECT * FROM factory.metric_counters WHERE singleton")
@@ -2038,7 +2073,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
                     self.assertEqual(
                         [item.version for item in self.migrate(upgrade_url)],
-                        [13, 14, 15, 16],
+                        [13, 14, 15, 16, 17],
                     )
                     upgraded_store = self.runtime_store(upgrade_url)
                     upgraded_service = FactoryService(upgraded_store)
@@ -2323,7 +2358,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12, 13, 14, 15, 16], "ready", 16, True,
+                    [9, 10, 11, 12, 13, 14, 15, 16, 17], "ready", 17, True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
@@ -3005,7 +3040,7 @@ class PostgresFactoryTests(unittest.TestCase):
             self.runtime_url,
         )
         self.assertEqual(result["database_role"], "factory_runtime")
-        self.assertEqual(result["schema_version"], 16)
+        self.assertEqual(result["schema_version"], 17)
         self.assertEqual(
             PostgresMigrator(DATABASE_URL).apply(
                 expected_runtime_login=self.runtime_login

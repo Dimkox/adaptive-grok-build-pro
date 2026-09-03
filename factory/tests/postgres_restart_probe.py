@@ -39,11 +39,19 @@ def main() -> int:
     check_name = "adaptive-trust-ci/verified@0123456789ab"
     with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
         cursor.execute(
-            "TRUNCATE factory.workspace_results, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
+            "TRUNCATE factory.execution_recovery_outcomes, factory.execution_recovery_claims, factory.execution_recovery_jobs, factory.workspace_results, factory.execution_artifact_attestations, factory.execution_proposals, factory.execution_stage_events, factory.execution_manifests, factory.execution_packets, factory.audit_log, factory.audit_heads, factory.task_events, factory.command_results, factory.metric_counters, factory.budget_reservations, factory.usage_observations, factory.capacity_allocations, factory.attempts, factory.runs, factory.lease_sequences, factory.kill_switches, factory.reconciliation_runs, factory.tasks, factory.accepted_intents, factory.intake_identities, factory.m0_authority_observations, factory.m0_bootstrap_exceptions RESTART IDENTITY"
         )
         cursor.execute("TRUNCATE factory.kill_switch_heads")
         cursor.execute("INSERT INTO factory.metric_counters(singleton) VALUES (true)")
         cursor.execute("UPDATE factory.capacity_counters SET active_count=0")
+        cursor.execute(
+            "UPDATE factory.execution_metric_counters SET "
+            "execution_claimed=0,stage_prepared=0,stage_running=0,stage_collecting=0,"
+            "stage_completed=0,stage_failed=0,stage_needs_human=0,stage_cancelled=0,"
+            "stage_orphaned=0,proposal_note=0,proposal_artifact=0,proposal_usage=0,"
+            "proposal_terminal=0,recovery_claimed=0,recovery_orphaned=0,"
+            "recovery_cancelled=0,cleanup_succeeded=0,cleanup_failed=0"
+        )
         cursor.execute(
             "INSERT INTO factory.m0_authority_observations(observation_id,observed_at,check_name,exact_head_sha,issuer,evidence_digest,repository_id,policy_digest) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
             (uuid.uuid4(), now, check_name, "6" * 40, "external-test-verifier", "a" * 64, "probe/repository", policy_digest),
