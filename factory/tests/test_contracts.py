@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import unittest
 
@@ -79,6 +80,135 @@ class ContractTests(unittest.TestCase):
             parsed = TaskIntakeV1.from_dict(changed, now=NOW)
             self.assertNotEqual(parsed.intent_digest, replay.intent_digest)
             self.assertNotEqual(parsed.idempotency_key, replay.idempotency_key)
+
+    def test_transport_and_m0_proof_do_not_change_semantic_work_identity(self):
+        original_payload = valid_intake()
+        original = TaskIntakeV1.from_dict(original_payload, now=NOW)
+        refreshed_payload = valid_intake()
+        refreshed_payload["request_id"] = "request-002"
+        refreshed_payload["m0_authority"]["observed_at"] = (
+            NOW + timedelta(seconds=1)
+        ).isoformat()
+        refreshed = TaskIntakeV1.from_dict(
+            refreshed_payload,
+            now=NOW + timedelta(seconds=1),
+        )
+
+        self.assertNotEqual(original.intent_digest, refreshed.intent_digest)
+        self.assertEqual(original.idempotency_key, refreshed.idempotency_key)
+        work_identity = original.to_dict()
+        for field in ("request_id", "m0_authority", "intent_digest", "idempotency_key"):
+            work_identity.pop(field)
+        self.assertEqual(
+            original.idempotency_key,
+            canonical_digest(
+                {
+                    "contract": "adaptive-factory.work-identity/v1",
+                    "work": work_identity,
+                }
+            ),
+        )
+
+    def test_each_semantic_work_field_changes_identity_but_m0_form_does_not(self):
+        baseline_payload = valid_intake()
+        baseline = TaskIntakeV1.from_dict(baseline_payload, now=NOW)
+
+        def changed(path, value, *companions):
+            payload = deepcopy(baseline_payload)
+            for item_path, item_value in ((path, value), *companions):
+                target = payload
+                for component in item_path[:-1]:
+                    target = target[component]
+                target[item_path[-1]] = item_value
+            return payload
+
+        cases = [
+            ("repository_id", changed(("repository_id",), "other/repository")),
+            ("source_type", changed(("source_type",), "api")),
+            ("source_id", changed(("source_id",), "ticket-43")),
+            ("source_digest", changed(("source_digest",), "8" * 64)),
+            ("route_id", changed(("route_id",), "other-route")),
+            ("change_id", changed(("change_id",), "other-change")),
+            ("exact_base_sha", changed(("exact_base_sha",), "4" * 40)),
+            ("spec_digest", changed(("spec_digest",), "8" * 64)),
+            (
+                "architecture_digest",
+                changed(
+                    ("architecture", "architecture_digest"),
+                    "8" * 64,
+                    (("governance", "architecture_digest"), "8" * 64),
+                ),
+            ),
+            (
+                "architecture_evidence_digest",
+                changed(("architecture", "architecture_evidence_digest"), "8" * 64),
+            ),
+            (
+                "handoff_exact_base_sha",
+                changed(
+                    ("architecture", "exact_base_sha"),
+                    "4" * 40,
+                    (("governance", "exact_base_sha"), "4" * 40),
+                ),
+            ),
+            (
+                "handoff_exact_head_sha",
+                changed(
+                    ("architecture", "exact_head_sha"),
+                    "4" * 40,
+                    (("governance", "exact_head_sha"), "4" * 40),
+                    (("m0_authority", "exact_head_sha"), "4" * 40),
+                ),
+            ),
+            ("governance_digest", changed(("governance", "governance_digest"), "8" * 64)),
+            (
+                "governance_evidence_digest",
+                changed(("governance", "governance_evidence_digest"), "8" * 64),
+            ),
+            (
+                "policy_digest",
+                changed(
+                    ("policy_digest",),
+                    "abcdefabcdef" + "8" * 52,
+                    (
+                        ("m0_authority", "check_name"),
+                        "adaptive-trust-ci/verified@abcdefabcdef",
+                    ),
+                ),
+            ),
+            (
+                "acceptance_ids",
+                changed(("acceptance_ids",), ["AC-001", "AC-002", "AC-003"]),
+            ),
+        ]
+        limit_values = {
+            "wall_seconds": 14_399,
+            "max_cost_usd_micros": 24_999_999,
+            "max_token_units": 1_999_999,
+            "max_output_bytes": 9_999_999,
+            "max_events": 99_999,
+            "infrastructure_retries": 1,
+            "semantic_repairs": 2,
+        }
+        cases.extend(
+            (f"limits.{name}", changed(("limits", name), value))
+            for name, value in limit_values.items()
+        )
+        for name, payload in cases:
+            with self.subTest(field=name):
+                parsed = TaskIntakeV1.from_dict(payload, now=NOW)
+                self.assertNotEqual(parsed.idempotency_key, baseline.idempotency_key)
+
+        bootstrap_payload = deepcopy(baseline_payload)
+        bootstrap_payload["m0_authority"] = {
+            "bootstrap_exception": "M0-bootstrap-semantic-identity",
+            "issuer": "repository-owner",
+            "scope": "m4-disposable-local",
+            "expires_at": (NOW + timedelta(minutes=10)).isoformat(),
+        }
+        bootstrap = TaskIntakeV1.from_dict(bootstrap_payload, now=NOW)
+        self.assertNotEqual(bootstrap.intent_digest, baseline.intent_digest)
+        self.assertEqual(bootstrap.idempotency_key, baseline.idempotency_key)
 
     def test_observed_m0_check_suffix_must_match_policy_identity(self):
         payload = valid_intake()

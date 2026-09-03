@@ -317,6 +317,65 @@ class PostgresFactoryStore:
     def _task_select() -> str:
         return "SELECT t.task_id,t.repository_id,t.state,t.generation,i.intent_digest,t.packet_digest,t.deadline_at FROM factory.tasks t JOIN factory.accepted_intents i ON i.intent_id=t.intent_id"
 
+    @staticmethod
+    def _intake_command_key(request_id: str) -> str:
+        return canonical_digest(
+            {
+                "contract": "adaptive-factory.intake-command/v1",
+                "request_id": request_id,
+            }
+        )
+
+    @staticmethod
+    def _intake_command_result(result: IntakeResult) -> dict:
+        return {
+            "task_id": result.task.task_id,
+            "repository_id": result.task.repository_id,
+            "status": result.task.status.value,
+            "generation": result.task.generation,
+            "intent_digest": result.task.intent_digest,
+            "packet_digest": result.task.packet_digest,
+            "deadline_at": result.task.deadline_at.isoformat().replace("+00:00", "Z"),
+            "created": result.created,
+        }
+
+    @staticmethod
+    def _intake_result_from_command(result: dict) -> IntakeResult:
+        expected = {
+            "task_id",
+            "repository_id",
+            "status",
+            "generation",
+            "intent_digest",
+            "packet_digest",
+            "deadline_at",
+            "created",
+        }
+        try:
+            if set(result) != expected or type(result["created"]) is not bool:
+                raise ValueError("invalid shape")
+            if type(result["generation"]) is not int or result["generation"] < 1:
+                raise ValueError("invalid generation")
+            if not HEX64.fullmatch(result["intent_digest"]) or not HEX64.fullmatch(
+                result["packet_digest"]
+            ):
+                raise ValueError("invalid digest")
+            deadline = datetime.fromisoformat(result["deadline_at"].replace("Z", "+00:00"))
+            if deadline.tzinfo is None:
+                raise ValueError("invalid deadline")
+            task = TaskProjection(
+                str(uuid.UUID(result["task_id"])),
+                result["repository_id"],
+                TaskStatus(result["status"]),
+                result["generation"],
+                result["intent_digest"],
+                result["packet_digest"],
+                deadline,
+            )
+        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+            raise StoreError("stored intake command result is invalid") from exc
+        return IntakeResult(task, result["created"])
+
     def _event(
         self, cursor, task_id: str, actor: Actor, action: str, idempotency_key: str,
         metadata: dict | None = None, *, mandatory_cleanup: bool = False,
@@ -413,6 +472,16 @@ class PostgresFactoryStore:
 
     def intake(self, intake: TaskIntakeV1, actor: Actor, now: datetime) -> IntakeResult:
         with self._transaction() as cursor:
+            command_key = self._intake_command_key(intake.request_id)
+            replay, prior, request_digest = self._command_replay(
+                cursor,
+                command_key,
+                actor,
+                "intake",
+                intake.to_dict(),
+            )
+            if replay:
+                return self._intake_result_from_command(prior)
             cursor.execute(
                 "SELECT pg_advisory_xact_lock(hashtextextended(%s,0))",
                 (f"{intake.repository_id}\x1f{intake.source_type}\x1f{intake.source_id}",),
@@ -429,7 +498,17 @@ class PostgresFactoryStore:
             )
             duplicate = cursor.fetchone()
             if duplicate:
-                return IntakeResult(self._projection(duplicate), False)
+                result = IntakeResult(self._projection(duplicate), False)
+                self._record_command(
+                    cursor,
+                    command_key,
+                    actor,
+                    "intake",
+                    request_digest,
+                    intake.request_id,
+                    self._intake_command_result(result),
+                )
+                return result
             cursor.execute(
                 "SELECT task_id FROM factory.tasks WHERE repository_id=%s AND source_type=%s AND source_id=%s AND state NOT IN ('ready_for_human','dead','cancelled','superseded')",
                 (intake.repository_id, intake.source_type, intake.source_id),
@@ -519,7 +598,7 @@ class PostgresFactoryStore:
                 intake.request_id,
                 {"intent_digest": intake.intent_digest},
             )
-            return IntakeResult(
+            result = IntakeResult(
                 TaskProjection(
                     str(task_id),
                     intake.repository_id,
@@ -531,6 +610,16 @@ class PostgresFactoryStore:
                 ),
                 True,
             )
+            self._record_command(
+                cursor,
+                command_key,
+                actor,
+                "intake",
+                request_digest,
+                intake.request_id,
+                self._intake_command_result(result),
+            )
+            return result
 
     def get_task(self, task_id: str) -> TaskProjection:
         with self._transaction() as cursor:

@@ -268,8 +268,16 @@ class TaskIntakeV1:
             "limits": TaskLimitsV1.from_dict(data["limits"]),
         }
         intent_digest = canonical_digest(normalized)
+        work_identity = {
+            key: value
+            for key, value in normalized.items()
+            if key not in {"request_id", "m0_authority"}
+        }
         idempotency_key = canonical_digest(
-            {"contract": "adaptive-factory.intake/v1", "intent_digest": intent_digest}
+            {
+                "contract": "adaptive-factory.work-identity/v1",
+                "work": work_identity,
+            }
         )
         return cls(**normalized, intent_digest=intent_digest, idempotency_key=idempotency_key)
 

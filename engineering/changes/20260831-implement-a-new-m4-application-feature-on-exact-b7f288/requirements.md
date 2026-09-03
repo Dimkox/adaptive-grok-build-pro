@@ -5,7 +5,7 @@
 The canonical typed acceptance criteria remain `AC-001` through `AC-004` in `change-spec.yaml`. The `RQ-*` items below decompose those criteria for implementation tracking; they do not create, replace or extend typed acceptance authority.
 
 - [ ] RQ-001 closed versioned intake validates frozen M1 spec, M2 architecture, M3 governance, exact source/base, policy, route/change, acceptance IDs, M0 observation/exception and hard ceilings.
-- [ ] RQ-002 duplicate active intake returns one task; changed source or frozen authority atomically supersedes eligible nonterminal work without rewriting accepted intent.
+- [ ] RQ-002 semantic duplicate intake returns one task across new request IDs and refreshed equivalent M0 proof; command replay binds one request ID to one full body/result, while changed semantic work atomically supersedes eligible nonterminal work without rewriting accepted intent.
 - [x] RQ-003 factory-only contiguous checksum migrations create isolated durable state and roles without `trust_ci` access.
 - [x] RQ-004 `SKIP LOCKED` claims and monotonic fences reject expired, reclaimed, replayed and conflicting worker mutations.
 - [x] RQ-005 database transactions enforce at most 20 global readers, 10 readers/repository and one live writer.

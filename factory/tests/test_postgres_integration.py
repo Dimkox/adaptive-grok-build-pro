@@ -9,6 +9,7 @@ import uuid
 
 from adaptive_factory.migrations import PostgresMigrator, discover_migrations
 from adaptive_factory.api import Authenticator, create_app
+from adaptive_factory.contracts import TaskIntakeV1, canonical_digest
 from adaptive_factory.models import Actor, FailureClass, RunRole, TaskStatus
 from adaptive_factory.service import AuthorizationError, FactoryService
 from adaptive_factory.store import BudgetError, FenceError, PostgresFactoryStore, StoreError
@@ -64,6 +65,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
     def payload(self, repository="owner/repository", source=None):
         value = valid_intake()
+        value["request_id"] = f"request-{uuid.uuid4()}"
         value["repository_id"] = repository
         value["source_id"] = source or str(uuid.uuid4())
         value["m0_authority"]["observed_at"] = NOW.isoformat()
@@ -236,10 +238,193 @@ class PostgresFactoryTests(unittest.TestCase):
         changed["source_digest"] = "8" * 64
         replacement = self.service.intake(changed, actor=OPERATOR, now=NOW)
         self.assertTrue(first.created)
-        self.assertFalse(duplicate.created)
+        self.assertTrue(duplicate.created)
+        self.assertEqual(first, duplicate)
         self.assertEqual(first.task.task_id, duplicate.task.task_id)
         self.assertNotEqual(first.task.task_id, replacement.task.task_id)
         self.assertEqual(self.store.get_task(first.task.task_id).status, TaskStatus.SUPERSEDED)
+
+    def test_intake_separates_semantic_work_identity_from_command_replay(self):
+        import psycopg
+
+        source = "semantic-work-identity"
+        original = self.payload(source=source)
+        original_contract = TaskIntakeV1.from_dict(original, now=NOW)
+        first = self.service.intake(original, actor=OPERATOR, now=NOW)
+
+        refreshed = self.payload(source=source)
+        refreshed["request_id"] = "semantic-request-002"
+        refreshed_at = NOW - timedelta(seconds=1)
+        refreshed["m0_authority"]["observed_at"] = refreshed_at.isoformat()
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO factory.m0_authority_observations
+                (observation_id,observed_at,check_name,exact_head_sha,issuer,evidence_digest,
+                repository_id,policy_digest)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+                (
+                    uuid.uuid4(),
+                    refreshed_at,
+                    refreshed["m0_authority"]["check_name"],
+                    refreshed["m0_authority"]["exact_head_sha"],
+                    "external-trust-ci-api",
+                    uuid.uuid4().hex * 2,
+                    refreshed["repository_id"],
+                    refreshed["policy_digest"],
+                ),
+            )
+
+        duplicate = self.service.intake(refreshed, actor=OPERATOR, now=NOW)
+        replay = self.service.intake(refreshed, actor=OPERATOR, now=NOW)
+        self.assertTrue(first.created)
+        self.assertFalse(duplicate.created)
+        self.assertFalse(replay.created)
+        self.assertEqual(first.task.task_id, duplicate.task.task_id)
+        self.assertEqual(first.task.intent_digest, duplicate.task.intent_digest)
+        self.assertEqual(first.task.packet_digest, first.task.intent_digest)
+
+        conflicting = self.payload(source=source)
+        conflicting["request_id"] = refreshed["request_id"]
+        conflicting["m0_authority"] = dict(refreshed["m0_authority"])
+        conflicting["source_digest"] = "8" * 64
+        with self.assertRaisesRegex(StoreError, "idempotency key reused with different command"):
+            self.service.intake(conflicting, actor=OPERATOR, now=NOW)
+
+        expected_command_keys = {
+            canonical_digest(
+                {
+                    "contract": "adaptive-factory.intake-command/v1",
+                    "request_id": request_id,
+                }
+            )
+            for request_id in (original["request_id"], refreshed["request_id"])
+        }
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT i.intent_digest,i.idempotency_key,i.body,t.packet_digest,t.generation
+                FROM factory.accepted_intents i JOIN factory.tasks t ON t.intent_id=i.intent_id
+                WHERE i.repository_id=%s AND i.source_type=%s AND i.source_id=%s""",
+                (original["repository_id"], original["source_type"], source),
+            )
+            stored = cursor.fetchone()
+            self.assertIsNotNone(stored)
+            self.assertEqual(stored[0].strip(), first.task.intent_digest)
+            self.assertEqual(stored[1].strip(), canonical_digest({
+                "contract": "adaptive-factory.work-identity/v1",
+                "work": {
+                    key: value
+                    for key, value in original.items()
+                    if key not in {"request_id", "m0_authority"}
+                },
+            }))
+            self.assertEqual(stored[2], original_contract.to_dict())
+            self.assertEqual(stored[3].strip(), first.task.intent_digest)
+            self.assertEqual(stored[4], 1)
+            cursor.execute(
+                """SELECT idempotency_key,action,result->>'task_id',result->>'created'
+                FROM factory.command_results WHERE idempotency_key=ANY(%s)
+                ORDER BY idempotency_key""",
+                (list(expected_command_keys),),
+            )
+            commands = cursor.fetchall()
+            self.assertEqual({row[0].strip() for row in commands}, expected_command_keys)
+            self.assertEqual({row[1] for row in commands}, {"intake"})
+            self.assertEqual({row[2] for row in commands}, {first.task.task_id})
+            self.assertEqual({row[3] for row in commands}, {"true", "false"})
+
+    def test_http_intake_deduplicates_fresh_proof_and_conflicts_on_command_reuse(self):
+        import psycopg
+        from fastapi.testclient import TestClient
+
+        token = "-".join(("semantic", "operator", "credential"))
+        client = TestClient(create_app(self.service, Authenticator({token: OPERATOR})))
+        source = "semantic-http-identity"
+        original = self.payload(source=source)
+        original["request_id"] = "semantic-http-001"
+
+        def headers(request_id: str, correlation_id: str):
+            return {
+                "Authorization": f"Bearer {token}",
+                "Idempotency-Key": request_id,
+                "X-Correlation-ID": correlation_id,
+            }
+
+        accepted = client.post(
+            "/v1/tasks",
+            json=original,
+            headers=headers(original["request_id"], "semantic-correlation-001"),
+        )
+        self.assertEqual(accepted.status_code, 201)
+        first = accepted.json()
+        self.assertTrue(first["created"])
+
+        refreshed = self.payload(source=source)
+        refreshed["request_id"] = "semantic-http-002"
+        refreshed_at = NOW - timedelta(seconds=2)
+        refreshed["m0_authority"]["observed_at"] = refreshed_at.isoformat()
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO factory.m0_authority_observations
+                (observation_id,observed_at,check_name,exact_head_sha,issuer,evidence_digest,
+                repository_id,policy_digest)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+                (
+                    uuid.uuid4(),
+                    refreshed_at,
+                    refreshed["m0_authority"]["check_name"],
+                    refreshed["m0_authority"]["exact_head_sha"],
+                    "external-trust-ci-api",
+                    uuid.uuid4().hex * 2,
+                    refreshed["repository_id"],
+                    refreshed["policy_digest"],
+                ),
+            )
+        duplicate_headers = headers(refreshed["request_id"], "semantic-correlation-002")
+        duplicate = client.post("/v1/tasks", json=refreshed, headers=duplicate_headers)
+        replay = client.post("/v1/tasks", json=refreshed, headers=duplicate_headers)
+        for response in (duplicate, replay):
+            self.assertEqual(response.status_code, 200)
+            self.assertFalse(response.json()["created"])
+            self.assertEqual(response.json()["task"]["task_id"], first["task"]["task_id"])
+            self.assertEqual(
+                response.headers["X-Correlation-ID"],
+                "semantic-correlation-002",
+            )
+
+        conflicting = {**refreshed, "source_digest": "8" * 64}
+        conflict = client.post("/v1/tasks", json=conflicting, headers=duplicate_headers)
+        self.assertEqual((conflict.status_code, conflict.json()), (409, {"error": "conflict"}))
+
+        replacement = self.payload(source=source)
+        replacement["request_id"] = "semantic-http-003"
+        replacement["m0_authority"] = dict(refreshed["m0_authority"])
+        replacement["source_digest"] = "8" * 64
+        replacement_headers = headers(
+            replacement["request_id"],
+            "semantic-correlation-003",
+        )
+        created = client.post("/v1/tasks", json=replacement, headers=replacement_headers)
+        created_replay = client.post(
+            "/v1/tasks",
+            json=replacement,
+            headers=replacement_headers,
+        )
+        self.assertEqual((created.status_code, created_replay.status_code), (201, 201))
+        self.assertEqual(created.json(), created_replay.json())
+        self.assertNotEqual(created.json()["task"]["task_id"], first["task"]["task_id"])
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT state,count(*) FROM factory.tasks
+                WHERE repository_id=%s AND source_type=%s AND source_id=%s
+                GROUP BY state ORDER BY state""",
+                (original["repository_id"], original["source_type"], source),
+            )
+            self.assertEqual(dict(cursor.fetchall()), {"queued": 1, "superseded": 1})
+            cursor.execute(
+                "SELECT count(*) FROM factory.command_results WHERE action='intake'"
+            )
+            self.assertEqual(cursor.fetchone()[0], 3)
 
     def test_changed_frozen_head_authority_and_limits_supersede_exact_replay(self):
         import psycopg
@@ -247,7 +432,10 @@ class PostgresFactoryTests(unittest.TestCase):
         source = "full-frozen-intent"
         original = self.payload(source=source)
         first = self.service.intake(original, actor=OPERATOR, now=NOW)
-        self.assertFalse(self.service.intake(original, actor=OPERATOR, now=NOW).created)
+        self.assertEqual(
+            self.service.intake(original, actor=OPERATOR, now=NOW),
+            first,
+        )
         changed_limits = self.payload(source=source)
         changed_limits["limits"]["max_events"] -= 1
         second = self.service.intake(changed_limits, actor=OPERATOR, now=NOW)
@@ -404,7 +592,11 @@ class PostgresFactoryTests(unittest.TestCase):
                 self.assertTrue(revocation_blocked)
                 self.assertTrue(accepted.created)
                 self.assertLessEqual(intake_committed_at, revoked_at)
-                later = {**payload, "source_id": f"later-{kind}"}
+                later = {
+                    **payload,
+                    "request_id": f"{payload['request_id']}-later",
+                    "source_id": f"later-{kind}",
+                }
                 with self.assertRaises(StoreError):
                     self.service.intake(later, actor=OPERATOR, now=NOW)
 
@@ -517,8 +709,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     first = self.service.intake(replacement, actor=OPERATOR, now=NOW)
                     replay = self.service.intake(replacement, actor=OPERATOR, now=NOW)
                     self.assertTrue(first.created)
-                    self.assertFalse(replay.created)
-                    self.assertEqual(first.task.task_id, replay.task.task_id)
+                    self.assertEqual(replay, first)
                     terminal_state = "superseded"
                     event_action = "superseded"
                     audit_action = "superseded"

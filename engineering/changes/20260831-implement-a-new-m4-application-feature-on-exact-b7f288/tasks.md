@@ -14,6 +14,8 @@
 - [x] TDD explicit best-effort fence instrumentation and final-PID1 PostgreSQL readiness.
 - [x] TDD deadline-crossing reconciliation, queued/retry deadline cleanup, whole-page PostgreSQL 17 timeout and terminal accounting quarantine.
 - [x] Resolve Markdown checklist taxonomy against canonical typed acceptance and add the M4 local rollout/recovery runbook.
+- [x] TDD separate full intent, semantic work and intake command identities without changing the opaque M5 packet digest.
+- [ ] Thread submit correlation header through service/store command and audit evidence during the closed OpenAPI/error-envelope repair.
 - [ ] Run final exact-head verifier after current documentation and repair evidence are frozen.
 - [ ] Hand final fingerprint to all five independent reviewers.
 

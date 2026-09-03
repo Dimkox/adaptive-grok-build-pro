@@ -14,6 +14,7 @@
 | P0 | reconciliation has one deterministic five-second operation deadline; statement timeout preserves committed candidate progress while PostgreSQL 17 transaction timeout rolls back the partial batch | real disposable PostgreSQL timeout injection |
 | P0 | tracked candidate ZIP exactly equals current included-source inventory, embedded manifest and per-member bytes; stale same-version archives fail | package regression + sidecar/archive verification |
 | P1 | duplicate intake and changed-authority supersession | service/PostgreSQL tests |
+| P1 | complete intent digest remains opaque packet identity; semantic work identity excludes request ID/full M0 proof; namespaced command replay deduplicates refreshed proof and conflicts on same-request changed body | contract + real PostgreSQL HTTP tests |
 | P1 | accepted infrastructure retry limits 0/1/2 persist and allow exactly 1/2/3 total attempts on release, reconciliation and restart; other failures never retry | state/store/real PostgreSQL restart tests |
 | P1 | schema-12 retry rows already exhausted under backfilled limits 0/1 terminalize once with mandatory event and hash-chained audit, no fence/lease and idempotent command replay | real PostgreSQL 12→13 upgrade tests |
 | P1 | budget/accounting and kill switches stop claims | service/PostgreSQL tests |
