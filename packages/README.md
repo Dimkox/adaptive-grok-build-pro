@@ -1,6 +1,6 @@
 # Release packages
 
-Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). The `2.0.13` files are a local candidate and do not claim a tag or GitHub Release; the most recently published release remains `v2.0.12`.
+Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). At the source/docs freeze the previous `2.0.13` files remain stale; the immediately following artifact-only commit rebuilds them directly from that clean HEAD. They do not claim verification, review, acceptance, a tag or a GitHub Release. The most recently published release remains `v2.0.12`.
 
 | File | Version |
 | --- | --- |
@@ -22,10 +22,9 @@ Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). The `2.0
 Each zip has a sibling `.sha256`. Rebuild:
 
 ```bash
-python3 scripts/package_stack.py
-cp dist/adaptive-grok-build-pro-v$(tr -d '[:space:]' < VERSION).zip* packages/
+python3 scripts/package_stack.py --output packages/adaptive-grok-build-pro-v2.0.13.zip
 ```
 
-Production rebuilds package only the filtered regular-file inventory and exact bytes of a clean Git `HEAD`; ignored and untracked files are excluded even when present locally. The prior `aa12e7c` 14/14 local verifier receipt is historical and stale for this follow-up because release rereview found ambient ignored/untracked files in that candidate; fresh exact-head verification and review are still required.
+Production rebuilds package only the filtered regular-file inventory and exact bytes of a clean Git `HEAD`; ignored and untracked files are excluded even when present locally. Direct tracked output is published atomically with its sidecar, so no ad-hoc copy step may separate artifact provenance. The prior `aa12e7c` 14/14 local verifier receipt is historical and stale for this follow-up; fresh exact-head verification and review of the final artifact commit are still required.
 
 `.env` and private keys are never packaged.

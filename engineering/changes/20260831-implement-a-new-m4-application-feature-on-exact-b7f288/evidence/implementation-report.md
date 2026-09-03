@@ -48,6 +48,8 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 - `a48c78f` — immutable versioned lifecycle snapshots.
 - `85523e8` — bounded authorized lifecycle history.
 - `a1f64e9` — central fenced operation-scoped task transitions.
+- `18e75b3` — sole checked closed-inline 17-operation HTTP contract.
+- `5dac08e` — exact runtime/parser/configuration parity for the checked contract.
 
 ## Independent-review remediation
 
@@ -79,6 +81,8 @@ The current repair makes deadline/accounting reconciliation cursor-stable and qu
 
 Focused PostgreSQL 17 evidence culminated in a 64/64 full integration pass in 57.594 seconds. The HTTP intake case proves fresh equivalent authority returns the same task, same-request changed body conflicts, a semantic change supersedes exactly once, and actual correlation headers persist independently in command/audit rows. Dependency-free factory tests report 67 passes plus 64 expected PostgreSQL skips, architecture tests report 53/53, and lint/compile/diff checks pass; these are implementation evidence, not final verifier/review receipts or external authority.
 
+The final contract-parity pass binds every operation to its exact scope and correlation policy, canonical lowercase dashed UUIDs, closed redacted correlated 500 responses, strict actor/repository identifiers and PostgreSQL/Python integer bounds. Dependency-free factory discovery then ran 141 tests with 77 passes plus 64 expected PostgreSQL skips in 1.445 seconds; architecture-model, fitness and governance tests passed 150/150 in 139.751 seconds. This pass changed no database transaction or SQL path, so the already-green 64/64 PostgreSQL evidence remains the applicable data-path proof; final exact-head verification and independent reviews are still pending.
+
 ## Verification evidence
 
 - Final remediation factory suite: 63/63 passed in 32.699s against fresh disposable PostgreSQL 17, including API integration, both authority interleavings/forms, schema-008 upgrade safety, exhausted-event cleanup, effective-role denials, accounting recovery, deadlock regression, repository kill, bounded reconciliation, query plans, bootstrap and UDS authentication.
@@ -101,7 +105,7 @@ Only exact disposable local PostgreSQL containers created by the focused and exi
 
 ## Rollout, rollback and remaining authority
 
-Source rollout only: no service was activated and no migration was run outside disposable databases. Recovery after durable intake is global kill, stop local intake/claims, preserve audit/state, restore backup into a separate comparison database and use a separately reviewed dependency-coordinated forward repair; destructive down-migration is prohibited. The tracked `2.0.13` archive and sidecar predate these repairs and remain stale until rebuilt after the final product/document tree is frozen.
+Source rollout only: no service was activated and no migration was run outside disposable databases. Recovery after durable intake is global kill, stop local intake/claims, preserve audit/state, restore backup into a separate comparison database and use a separately reviewed dependency-coordinated forward repair; destructive down-migration is prohibited. This product/documentation freeze is the direct input to the immediately following artifact-only commit, which rebuilds the tracked `2.0.13` archive plus sidecar without changing source; final exact-head verification and independent reviews remain pending.
 
 M5 branch `milestone/m5-isolated-execution-provisional-m4` (route `37b05f579320`) and M6 branch `milestone/m6-semantic-validation-provisional-m4` (route `82aac86a3bf9`) are provisional parallel work based on M4 product `94fc5ad`; both must restack onto their accepted predecessors. This is a repository-local dependency handoff, not a push, external check or delivery claim.
 

@@ -29,7 +29,7 @@
     "highest_implemented_milestone": "M4",
     "current_provisional_milestone": "M9",
     "next_roadmap_milestone": null,
-    "next_action": "Freeze the M4 repair source/docs and rebuild the stale tracked 2.0.13 archive/sidecar, then run local exact-head verification and all route-selected reviews/reports/receipts on that committed candidate. After those fresh local receipts, prepare only an authorized successor PR and require a new external exact-head gate; after M4 acceptance, restack M5 first, then M6 with renumbered migrations and fresh checksum/upgrade/restart evidence.",
+    "next_action": "Run local exact-head verification and all route-selected reviews/reports/receipts on the final artifact commit whose tracked 2.0.13 archive was rebuilt from the immediately preceding clean frozen source/docs HEAD. After those fresh local receipts, prepare only an authorized successor PR and require a new external exact-head gate; after M4 acceptance, restack M5 first, then M6 with renumbered migrations and fresh checksum/upgrade/restart evidence.",
     "m4_dimensions": {
       "implementation_source": {
         "status": "implemented_local_candidate",
@@ -43,7 +43,7 @@
           "sole_checked_closed_inline_17_operation_http_contract",
           "authenticated_uds_api_cli_and_admin",
           "disposable_postgresql_and_restart_tests",
-          "stale_tracked_2_0_13_candidate_package_pending_rebuild"
+          "rebuilt_tracked_2_0_13_candidate_from_preceding_clean_source_head"
         ]
       },
       "local_exact_head_verification": {
@@ -61,7 +61,7 @@
         "pull_request": null,
         "external_exact_head_check": "not_run",
         "merge_commit": null,
-        "notes": "Local source and a stale pre-repair package do not supply PR, external Trust CI, merge or protected-main delivery authority."
+        "notes": "Frozen local source and its rebuilt candidate package do not supply verification, review, PR, external Trust CI, merge or protected-main delivery authority."
       }
     }
   },
@@ -211,10 +211,10 @@
         "commit": "4f75558770f2f332b32b4a47fe6afa61fcc524ec",
         "source_evidence_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
         "integration_baseline": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "a1f64e90693aad22136bbd6a0663f92d259d1875",
+        "latest_committed_repair_checkpoint": "5dac08ea3b9732001d015277aef569b8d2584c1e",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "evidence": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/implementation-report.md",
-        "notes": "Release-state baseline 56e12b2 passed 14/14 local verifier gates, but that receipt is stale. The current source repair adds cursor-stable deadline/accounting quarantine, separate complete-intent/semantic-work/transport identities, immutable bounded lifecycle history, operation-scoped fenced phases and a sole checked closed-inline 17-operation HTTP contract with correlated errors. Local PostgreSQL 17 integration passed 64/64 before final docs; the tracked 2.0.13 archive/sidecar predate the repair and remain stale until rebuilt after tree freeze. Exact-head verification and independent review receipts must bind the final committed candidate; this is not an accepted or delivered head."
+        "notes": "Release-state baseline 56e12b2 passed 14/14 local verifier gates, but that receipt is stale. The frozen source repair adds cursor-stable deadline/accounting quarantine, separate complete-intent/semantic-work/transport identities, immutable bounded lifecycle history, operation-scoped fenced phases and a sole checked closed-inline 17-operation HTTP contract with correlated errors. Local PostgreSQL 17 integration passed 64/64 before final docs; the tracked 2.0.13 archive/sidecar were rebuilt from the immediately preceding clean source/docs HEAD. Exact-head verification and independent review receipts must bind the final artifact commit; this is not an accepted or delivered head."
       },
       "review": {
         "status": "pending_refresh",
@@ -240,7 +240,7 @@
           "78ad2f679d38dc3244e716c586332417e610089c"
         ],
         "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "a1f64e90693aad22136bbd6a0663f92d259d1875",
+        "latest_committed_repair_checkpoint": "5dac08ea3b9732001d015277aef569b8d2584c1e",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "intermediate_local_verification": {
           "status": "passed",
@@ -272,7 +272,7 @@
         },
         "pull_request": null,
         "merge_commit": null,
-        "notes": "The final candidate identity is the commit containing this state file; a commit cannot embed its own SHA. Local repair checkpoints through a1f64e9 and the current OpenAPI/correlation working tree supersede verified baseline 56e12b2; its receipt and tracked archive do not transfer. Rebuild the archive only after final tree freeze, then obtain exact-head local receipts, authorized PR delivery and an external exact-head check."
+        "notes": "The candidate identity is the commit containing this state file; a commit cannot embed its own SHA. Frozen repair source/docs and the artifact-only rebuild supersede verified baseline 56e12b2; its receipt does not transfer. Obtain exact-head local receipts on the final artifact commit before authorized PR delivery and an external exact-head check."
       },
       "main_delivery": {
         "status": "not_delivered",
@@ -335,9 +335,9 @@
         "source_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
         "base_head": "78ad2f679d38dc3244e716c586332417e610089c",
         "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "a1f64e90693aad22136bbd6a0663f92d259d1875",
+        "latest_committed_repair_checkpoint": "5dac08ea3b9732001d015277aef569b8d2584c1e",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
-        "purpose": "Freeze the repaired source/docs, rebuild the explicitly stale 2.0.13 archive, then bind verification and route-selected reviews/reports/receipts to that exact committed candidate before any authorized PR-only delivery."
+        "purpose": "Bind verification and route-selected reviews/reports/receipts to the final artifact commit whose 2.0.13 archive was rebuilt from the immediately preceding clean frozen source/docs HEAD, before any authorized PR-only delivery."
       },
       {
         "route_id": "37b05f579320",

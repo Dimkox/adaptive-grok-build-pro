@@ -430,3 +430,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Initial inline OpenAPI output rounded PostgreSQL's signed-bigint maximum from `9223372036854775807` to `9223372036854776000`.
 **Root cause:** Contract assembly passed the bound through JavaScript `Number`; exact wire integers above `2^53-1` must be emitted as preserved decimal text or corrected and covered by a parsed-value regression.
+
+## 2026-09-03 — Closed the API contract without a complete cross-layer parity matrix
+
+**Symptom:** A follow-up audit found undocumented exact scopes, permissive UUID/config identifiers, mismatched integer bounds and an uncorrelated plain-text 500 after the initial contract checkpoint.
+**Root cause:** The first closure tests proved document structure and representative runtime behavior but did not bind every operation and shared scalar/error rule to its runtime producer or parser boundary; future freezes need a table-driven operation/scalar/error parity pass before packaging.

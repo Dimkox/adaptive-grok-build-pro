@@ -20,7 +20,7 @@ M4_SOURCE_SHA = "460a8a01a6394cac710b4e3f9eea3d94d4beef89"
 M4_INTEGRATION_SHA = "da7ec8d7d40f52663aba1ff59bf03ccf209395b0"
 M4_SCANNER_REPAIR_SHA = "5a6cdfb7a129e02724c632f78c31de6406d6863a"
 M4_RELEASE_STATE_BASE_SHA = "56e12b2b394436ee227c66d78b1caba8f7317c78"
-M4_REPAIR_CHECKPOINT_SHA = "a1f64e90693aad22136bbd6a0663f92d259d1875"
+M4_REPAIR_CHECKPOINT_SHA = "5dac08ea3b9732001d015277aef569b8d2584c1e"
 M4_RELEASE_STATE_BASE_FINGERPRINT = "e27caec9d2de459ef26bea49b99b93b5b7326a9c84c89b97f4ec482c237d4add"
 M4_FAILED_VERIFY_SHA = "547ee628812fbf098f337a854f68edf660091ead"
 M4_FAILED_VERIFY_FINGERPRINT = "f0efa89e689dbe47c701a4d301e97361ee671e299ef2f32b5295b908e182e768"
@@ -258,7 +258,7 @@ class ProjectStateTests(unittest.TestCase):
         dimensions = self.state["active_delivery"]["m4_dimensions"]
         self.assertTrue(
             self.state["active_delivery"]["next_action"].startswith(
-                "Freeze the M4 repair source/docs and rebuild the stale tracked"
+                "Run local exact-head verification and all route-selected reviews"
             )
         )
         self.assertEqual(
@@ -275,7 +275,7 @@ class ProjectStateTests(unittest.TestCase):
                     "sole_checked_closed_inline_17_operation_http_contract",
                     "authenticated_uds_api_cli_and_admin",
                     "disposable_postgresql_and_restart_tests",
-                    "stale_tracked_2_0_13_candidate_package_pending_rebuild",
+                    "rebuilt_tracked_2_0_13_candidate_from_preceding_clean_source_head",
                 ],
             },
         )

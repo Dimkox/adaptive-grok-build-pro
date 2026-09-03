@@ -29,6 +29,7 @@ The canonical typed acceptance criteria remain `AC-001` through `AC-004` in `cha
 | `AC-004` | `RQ-013`, `RQ-014` |
 | `INV-001`, `FORBID-002` | `RQ-003` |
 | `INV-002` | `RQ-005` |
+| `INV-003` | `RQ-004`, `RQ-006`, `RQ-007`, `RQ-009`, `RQ-010` |
 | `INV-004` | `RQ-007` |
 
 ## Failure and edge cases

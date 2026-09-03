@@ -388,3 +388,7 @@ Apply every task-state update through one operation-scoped, lock-neutral policy 
 ## 2026-09-03 — Make one checked document the API contract
 
 Disable runtime OpenAPI generation and describe all 17 operations with closed inline schemas, stable operation IDs, normalized errors and required response correlation in the checked contract. Keeping operation IDs optional for legacy architecture inputs while validating uniqueness and compatibility when present preserves existing Trust CI contracts without weakening the factory-specific gate.
+
+## 2026-09-03 — Normalize unexpected local API failures at the outer boundary
+
+Return one closed, redacted 500 envelope and establish correlation inside the outer exception handler because unexpected failures can bypass user middleware. Declare that response for every checked operation and never reflect exception text.
