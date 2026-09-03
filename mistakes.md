@@ -473,3 +473,9 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 **Symptom:** A detached full PR verifier was launched while a required `mistakes.md` update and ready-state finalization were still pending; it spent about nine minutes in coverage and unittest work and had to be terminated before producing any usable receipt, wasting compute and electricity.
 **Root cause:** The controller scheduled the expensive whole-tree gate by sequence habit before completing all known tracked bookkeeping and finalization and before impact-gating the unchanged factory tree, making the run predictably stale.
 **Prevention:** Freeze every known tracked change and artifact input first. For unchanged surfaces or a single failed check, run only the affected or failed check; run the full exact-head PR verifier once on the final frozen candidate, and repeat it only when a tracked mutation or receipt contract truly requires that.
+
+## 2026-09-03 — Treated visible dispatcher tokens as complete execution authority
+
+**Symptom:** Direct wrapper regressions passed, but `xargs -a` could supply a missing Git subcommand or widen a visible branch push, while `chroot` or another unknown dispatcher could hide a root-changing nested shell and borrow the session repository's grant.
+**Root cause:** Root resolution required a complete literal sensitive action before marking an unknown/input-driven dispatcher ambiguous, while production classification independently looked through nested shells; the visible argv therefore did not bind the eventual executable, effective root and exact action as one authority decision.
+**Prevention:** Only a bounded cwd- and argv-neutral wrapper chain is authority-transparent. Input-driven dispatch to an incomplete sensitive executable, or an unknown prefix exposing a complete sensitive action or nested command shell, must become ambiguous before grant lookup; retain explicit compatibility tests only for fixed non-escalatable reads.

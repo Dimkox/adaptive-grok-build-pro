@@ -479,6 +479,62 @@ class HookTests(unittest.TestCase):
                     })
                     self.assertEqual(data['decision'], 'allow', (command, error, data))
 
+    def test_input_driven_and_unknown_dispatchers_fail_closed(self) -> None:
+        with project_copy(git=True) as session_root, project_copy(git=True) as other_root:
+            no_grant_commands = (
+                'xargs -a commands.txt git',
+                f'xargs -a commands.txt git -C {other_root}',
+                'xargs -a commands.txt command git',
+                'xargs -a commands.txt nice git',
+                'xargs -a commands.txt env git',
+            )
+            for index, command in enumerate(no_grant_commands):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                        'cwd': str(session_root),
+                        'session_id': f'input-dispatch-no-grant-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'deny', (command, error, data))
+                    self.assertIn('ambiguous-sensitive-shell', data['reason'])
+
+            self._grant(session_root, 'production', actions=['git-push-branch'])
+            grant_borrow_commands = (
+                f"chroot {other_root} bash -lc 'git push origin feature'",
+                "xargs -a args.txt bash -lc 'git push \"$@\"' _",
+                f"unknown-dispatch --root {other_root} sh -c 'git push origin feature'",
+                f"unknown-dispatch --root {other_root} bash -xec 'git push origin feature'",
+                f"unknown-dispatch --root {other_root} bash --noprofile -lc 'git push origin feature'",
+            )
+            for index, command in enumerate(grant_borrow_commands):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                        'cwd': str(session_root),
+                        'session_id': f'dispatch-grant-borrow-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'deny', (command, error, data))
+                    self.assertIn('root resolution status is ambiguous-command-root', data['reason'])
+
+            for index, command in enumerate(('echo git', 'xargs -a commands.txt echo git')):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                        'cwd': str(session_root),
+                        'session_id': f'benign-dispatch-argument-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'allow', (command, error, data))
+
+            ledger = json.loads(
+                (session_root / '.grok-stack/runtime/tool-denials.json').read_text(encoding='utf-8')
+            )
+            serialized = json.dumps(ledger, sort_keys=True)
+            self.assertIn('ambiguous-command-root', serialized)
+            self.assertNotIn('git push origin feature', serialized)
+
     def test_subagent_lifecycle_is_recorded(self) -> None:
         with project_copy() as root:
             route = build_route(root, 'Исправить PHP баг', 's1').to_dict()

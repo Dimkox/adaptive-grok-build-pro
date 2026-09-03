@@ -95,6 +95,90 @@ def _recognized_root(value: Path) -> Path | None:
     return root.resolve() if (root / '.grok-stack').is_dir() else None
 
 
+def _literal_xargs_command(words: list[str]) -> list[str] | None:
+    index = 1
+    while index < len(words):
+        token = words[index]
+        if token == '--':
+            return words[index + 1:]
+        if token in {'-a', '--arg-file'}:
+            if index + 1 >= len(words):
+                return None
+            index += 2
+            continue
+        if token.startswith('--arg-file='):
+            index += 1
+            continue
+        if token.startswith('-'):
+            return None
+        return words[index:]
+    return []
+
+
+def _literal_git_subcommand(words: list[str]) -> str | None:
+    index = 1
+    while index < len(words):
+        token = words[index]
+        if token in {'-C', '-c', '--git-dir', '--work-tree'}:
+            if index + 1 >= len(words):
+                return None
+            index += 2
+            continue
+        if token.startswith(('--git-dir=', '--work-tree=')):
+            index += 1
+            continue
+        if token.startswith('-'):
+            return None
+        return token.lower()
+    return None
+
+
+def _contains_nested_command_shell(words: list[str]) -> bool:
+    shells = {'bash', 'sh', 'zsh', 'dash', 'ksh'}
+    for shell_index, token in enumerate(words):
+        if Path(token).name.lower() not in shells:
+            continue
+        for option in words[shell_index + 1:-1]:
+            if re.fullmatch(r'-[A-Za-z]*c[A-Za-z]*', option):
+                return True
+    return False
+
+
+def _has_unsafe_dispatcher_composition(words: list[str]) -> bool:
+    if not words:
+        return False
+    shells = {'bash', 'sh', 'zsh', 'dash', 'ksh'}
+    sensitive = {'git', 'gh', 'docker', 'npm', 'curl', 'wget'}
+    outer = Path(words[0]).name.lower()
+    if outer == 'xargs':
+        dispatched = _literal_xargs_command(words)
+        if dispatched is None:
+            return any(Path(token).name.lower() in sensitive | shells for token in words[1:])
+        if not dispatched:
+            return False
+        dispatched, ambiguous_wrapper = _unwrap_execution_wrappers(dispatched)
+        if ambiguous_wrapper:
+            return True
+        if not dispatched:
+            return False
+        executable = Path(dispatched[0]).name.lower()
+        if executable in shells:
+            return True
+        if executable == 'git':
+            return _literal_git_subcommand(dispatched) != 'status'
+        if executable in sensitive:
+            return True
+        if executable in {'echo', 'printf'}:
+            return False
+        if executable in {'env', 'sudo', 'doas', 'chroot', 'xargs'}:
+            if any(Path(token).name.lower() in sensitive for token in dispatched[1:]):
+                return True
+        return _contains_nested_command_shell(dispatched[1:])
+    if outer in sensitive | shells | {'cd', 'pushd', 'echo', 'printf'}:
+        return False
+    return _contains_nested_command_shell(words[1:])
+
+
 def _command_directory_aliases(command: str, *, depth: int = 0) -> dict[str, str]:
     aliases: dict[str, str] = {}
     try:
@@ -137,6 +221,9 @@ def _command_directory_aliases(command: str, *, depth: int = 0) -> dict[str, str
     words, ambiguous_wrapper = _unwrap_execution_wrappers(words)
     if ambiguous_wrapper:
         aliases['command.wrapper-options'] = '<ambiguous>'
+        return aliases
+    if _has_unsafe_dispatcher_composition(words):
+        aliases['command.dispatcher-composition'] = '<ambiguous>'
         return aliases
     if _contains_embedded_sensitive_command(words) and (
         not words
