@@ -1,0 +1,5 @@
+# Integration architecture (read-only)
+
+Allow only fixed `api.github.com` endpoints. Resolve stable authority through `releases/latest`, `git/ref/tags/{tag}`, and bounded annotated tag dereference; reject draft/prerelease releases, `target_commitish` authority, cycles, non-commit terminals, and invalid SHA. Additionally use fixed head and compare endpoints only for bounded post-pin change/bugfix intake, recording available/ahead counts, sanitized SHA/subject summaries, truncation and partial status; candidates never become instructions or pin authority.
+
+GET only; literal owner/repo allowlist; HTTPS; no caller query, redirects, auth, cookies, proxy credentials, retries, raw-body persistence, or remote writes. Static headers, 10-second request and 90-second run caps, bounded calls/body/JSON, strict UTF-8 and duplicate-key/type validation. ETags are caches, never provenance; a 304 requires cached data and tag refs are always rechecked. 403/429 and all failures yield first-run `unknown` or later `stale`. Acquire the lock before network and use atomic runtime state. No edits were made.

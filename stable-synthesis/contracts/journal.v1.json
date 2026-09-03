@@ -1,0 +1,1 @@
+{"schema_version":1,"contract":"stable-synthesis.journal.v1","required":["sequence","recorded_at","kind","head_sha","tree_fingerprint","intent_digest","snapshot_digest","prior_digest","digest"],"maximum_entries":10000,"digest":"sha256-canonical-json"}

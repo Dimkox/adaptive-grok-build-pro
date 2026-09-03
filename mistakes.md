@@ -444,3 +444,11 @@ Any upstream SHA change pauses downstream writing and triggers both a three-way 
 
 **Root cause:** A multi-table evidence query used `USING(task_id)` after its left relation retained two qualified `task_id` columns; the real PostgreSQL restart probe correctly rejected the ambiguity.
 **Correction:** Use explicit, fully qualified `ON` predicates for multi-table evidence joins.
+
+## 2026-09-03 — Used raw substrings for bounded classifier terms
+
+**Root cause:** Single-token routing keywords were matched as arbitrary substrings, allowing `documentation` to mask feature intent and `ui` to appear inside unrelated words. Use Unicode word boundaries for whole-word terms and reserve prefix matching for explicitly declared stems.
+
+## 2026-09-03 — Narrowed upstream observation below the approved requirement
+
+**Root cause:** Preparation prioritized safe execution boundaries without first tracing every user noun and verb, so “check fixes and new releases” became a stable-release-only report and omitted post-pin/main change and bugfix intake. Map each user requirement to a typed AC before exclusions; safety narrows execution authority, not observation coverage.

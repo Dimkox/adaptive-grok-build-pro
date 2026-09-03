@@ -1,0 +1,36 @@
+{
+  "schema_version": 2,
+  "change_id": "20260903-implement-feature-add-stable-workflow-governance-c89309",
+  "objective": {"id":"OBJ-001","statement":"Add deterministic local stable-workflow synthesis and bounded weekly read-only upstream review intake without another controller or mutation authority.","success_metric":"Contract and fake-transport verification","target":"AC-001 through AC-011 pass without remote or tracked-source mutation"},
+  "risk": {"tier":"yellow","domains":["api","integration"]},
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"Closed config contains exactly three official immutable pins and attribution.","evidence":[{"test":"tests/test_stable_synthesis.py"}]},
+    {"id":"AC-002","statement":"Typed deterministic synthesis, DAG, convergence, snapshots and journal fail closed.","evidence":[{"test":"tests/test_stable_synthesis.py"}]},
+    {"id":"AC-003","statement":"Weekly due, locking, failure advancement and rollback clocks are exact.","evidence":[{"test":"tests/test_stable_monitor.py"}]},
+    {"id":"AC-004","statement":"GitHub transport is fixed GET-only, credential-free, strict and bounded.","evidence":[{"test":"tests/test_stable_monitor.py"}]},
+    {"id":"AC-005","statement":"Stable release/tag peeling resolves only a terminal immutable commit.","evidence":[{"test":"tests/test_stable_monitor.py"}]},
+    {"id":"AC-006","statement":"Post-pin intake reports total and bounded sanitized candidates with truncation.","evidence":[{"test":"tests/test_stable_monitor.py"}]},
+    {"id":"AC-007","statement":"Atomic runtime state models converged, review-required, degraded, unavailable, unknown and stale.","evidence":[{"test":"tests/test_stable_monitor.py"}]},
+    {"id":"AC-008","statement":"CLI and inert units provide no automatic or remote mutation authority.","evidence":[{"test":"tests/test_stable_integration.py"}]},
+    {"id":"AC-009","statement":"Architecture owns a distinct monitor and sole read-only GitHub edge.","evidence":[{"test":"tests/test_stable_integration.py"}]},
+    {"id":"AC-010","statement":"Router matching uses bounded terms instead of incidental substrings.","evidence":[{"test":"tests/test_repo_router.py"}]},
+    {"id":"AC-011","statement":"Existing behavior remains compatible.","evidence":[{"receipt":"verification"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Active route, one writer and Trust CI remain authoritative.","evidence":[{"test":"tests/test_stable_integration.py"}]},
+    {"id":"INV-002","statement":"Pins advance only through separately reviewed changes with tests and exact-SHA evidence.","evidence":[{"test":"tests/test_stable_synthesis.py"}]},
+    {"id":"INV-003","statement":"External strings are bounded untrusted data and never instructions.","evidence":[{"test":"tests/test_stable_monitor.py"}]}
+  ],
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"No remote write, auth secret, redirect, clone, install, subprocess or arbitrary URL.","evidence":[{"test":"tests/test_stable_monitor.py"}]},
+    {"id":"FORBID-002","statement":"No automatic source, pin, route, Git, PR, release, Factory, Trust CI or production mutation.","evidence":[{"test":"tests/test_stable_integration.py"}]}
+  ],
+  "contracts": {"openapi":[],"json_schema":["stable-synthesis/contracts/upstreams.v1.json","stable-synthesis/contracts/journal.v1.json"],"events":[]},
+  "observability": [
+    {"id":"SIG-001","metric":"stable_synthesis_overall_status","proves":["OBJ-001"]},
+    {"id":"SIG-002","metric":"stable_synthesis_last_attempt_and_next_due","proves":["OBJ-001"]},
+    {"id":"SIG-003","metric":"stable_synthesis_source_candidate_and_error_summary","proves":["OBJ-001"]}
+  ],
+  "rollback": {"strategy":"forward_fix","maximum_steps":2},
+  "approvals": {"required_scopes":[]}
+}

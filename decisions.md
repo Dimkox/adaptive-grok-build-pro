@@ -404,3 +404,7 @@ Validate a randomly labelled PostgreSQL-17 container by immutable container ID, 
 ## 2026-09-03 — Extract only unique work from stale pull requests
 
 Preserve PR #12's lazy command-local Trust CI CLI imports/tests, PR #13's `PolicyCatalog` repository-policy binding and fail-closed profile/holdout validation, and only PR #15's investor-demo commit as clean successor candidates. PR #15's packaging-stage hardening is superseded by the stronger current M4 package tests, so reviving its aggregate would add obsolete scope.
+
+## 2026-09-03 — Bound routing terms by lexical intent
+
+Classifier terms representing whole words use Unicode boundaries, while phrases and explicitly declared stems keep deliberate prefix semantics. This prevents incidental `ui`/`documentation` matches without weakening multilingual routing signals.

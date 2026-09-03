@@ -1,0 +1,3 @@
+# Test plan — stable workflow synthesis
+
+Tests use fixtures/fake transport only and fail on real I/O. P0 covers exact pins/schema/canonicalization; DAG cycles/transitions/repair/convergence; journal CAS/corruption/resume/contention; snapshots; direct/annotated/cyclic tags; draft/prerelease; release/head/compare movement; candidate count/truncation; 304/cache/tag movement; redirects/timeouts/oversize/content-type/duplicate JSON/403/429; first unknown/later stale/partial; exact week/rollback clock/lock-before-network. P1 covers no credentials/remote methods/tracked mutation, inert units, architecture ownership/edges, CLI and router terms. Run focused tests, architecture validate/drift/diagrams, existing baseline, then parent-owned verifier/reviews.

@@ -1,0 +1,84 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "78ad2f679d38dc3244e716c586332417e610089c",
+  "base_fingerprint": "7485c95543aeee40682e26a7f6c00ed83f0183feed878ee68c6abb51377e58ba",
+  "complexity": "standard",
+  "created_at": "2026-09-03T10:50:15+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "integration",
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "integration"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=feature",
+    "domains=integration,api",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "c893098ede04",
+  "schema_version": 1,
+  "session_id": "stable-synthesis-20260903",
+  "status": "routed",
+  "task": "Implement feature: add stable workflow governance synthesis and a scheduled weekly read-only GitHub upstream monitor for Superpowers, BMAD, and Spec Kit, with deterministic typed state, provenance pins, bounded convergence, tests, and strict one-writer and exact-SHA trust invariants. Network reads only; no remote writes or automatic source changes.",
+  "task_domains": [
+    "integration"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "enterprise-integration"
+  ],
+  "write_agent": "integration_implementer"
+}

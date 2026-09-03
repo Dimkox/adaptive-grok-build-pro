@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "interval_seconds": 604800,
+  "request_timeout_seconds": 10,
+  "run_timeout_seconds": 90,
+  "max_body_bytes": 1048576,
+  "max_candidates_per_source": 20,
+  "sources": [
+    {"id":"bmad_method","repository":"bmad-code-org/BMAD-METHOD","repository_url":"https://github.com/bmad-code-org/BMAD-METHOD","stable_tag":"v6.11.0","tag_object_sha":"178414679b11a171ca1597b0ebc1723ed488fc73","peeled_commit_sha":"9ce3c397c9b238de96f7365da8019f6f66b059da","release_url":"https://github.com/bmad-code-org/BMAD-METHOD/releases/tag/v6.11.0","commit_url":"https://github.com/bmad-code-org/BMAD-METHOD/commit/9ce3c397c9b238de96f7365da8019f6f66b059da","license":"MIT","license_holder":"BMad Code LLC (2025)","license_url":"https://github.com/bmad-code-org/BMAD-METHOD/blob/9ce3c397c9b238de96f7365da8019f6f66b059da/LICENSE"},
+    {"id":"spec_kit","repository":"github/spec-kit","repository_url":"https://github.com/github/spec-kit","stable_tag":"v1.0.4","tag_object_sha":"98d9fe5010aa7d857264e19d439782e186bf641a","peeled_commit_sha":"cb610277fdea781fcfa83d20522c2db37c94068d","release_url":"https://github.com/github/spec-kit/releases/tag/v1.0.4","commit_url":"https://github.com/github/spec-kit/commit/cb610277fdea781fcfa83d20522c2db37c94068d","license":"MIT","license_holder":"GitHub Inc. (2025)","license_url":"https://github.com/github/spec-kit/blob/cb610277fdea781fcfa83d20522c2db37c94068d/LICENSE"},
+    {"id":"superpowers","repository":"obra/superpowers","repository_url":"https://github.com/obra/superpowers","stable_tag":"v6.3.0","tag_object_sha":"86babb696875227929e85420f287d6309374b93f","peeled_commit_sha":"b36e0829c6d0140e93cfef2ca599b1b07d4a7797","release_url":"https://github.com/obra/superpowers/releases/tag/v6.3.0","commit_url":"https://github.com/obra/superpowers/commit/b36e0829c6d0140e93cfef2ca599b1b07d4a7797","license":"MIT","license_holder":"Jesse Vincent (2025)","license_url":"https://github.com/obra/superpowers/blob/b36e0829c6d0140e93cfef2ca599b1b07d4a7797/LICENSE"}
+  ]
+}
