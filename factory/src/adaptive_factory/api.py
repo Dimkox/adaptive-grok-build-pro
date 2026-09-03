@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, is_dataclass
+from dataclasses import fields, is_dataclass
 from datetime import datetime, timezone
 import hashlib
 import hmac
@@ -28,7 +28,7 @@ def _json(value: Any) -> Any:
     if isinstance(value, datetime):
         return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
     if is_dataclass(value):
-        return _json(asdict(value))
+        return {field.name: _json(getattr(value, field.name)) for field in fields(value)}
     if isinstance(value, Mapping):
         return {key: _json(item) for key, item in value.items()}
     if isinstance(value, (list, tuple, set, frozenset)):

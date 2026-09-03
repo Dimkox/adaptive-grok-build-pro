@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 
 from .models import FailureClass, TaskStatus
 
@@ -33,6 +34,7 @@ TRANSITIONS = {
         TaskStatus.LEASED,
         TaskStatus.CANCELLED,
         TaskStatus.SUPERSEDED,
+        TaskStatus.NEEDS_HUMAN,
         TaskStatus.DEAD,
     },
     TaskStatus.LEASED: {
@@ -79,10 +81,24 @@ TRANSITIONS = {
 }
 
 
+class TransitionOperation(StrEnum):
+    CLAIM = "claim"
+    RETRY_EXHAUSTED = "retry_exhausted"
+    PHASE = "phase"
+    RELEASE_COMPLETED = "release_completed"
+    RELEASE_FAILURE = "release_failure"
+    CANCEL = "cancel"
+    SUPERSEDE = "supersede"
+    RECONCILE_EXPIRED = "reconcile_expired"
+    RECONCILE_DEADLINE = "reconcile_deadline"
+    OPERATOR_REQUEUE = "operator_requeue"
+
+
 @dataclass(frozen=True)
 class TransitionCommand:
     actor_kind: str
     target: TaskStatus
+    operation: TransitionOperation
     operator_decision_id: str | None = None
 
 
@@ -102,24 +118,94 @@ class RetryDecision:
 def authorize_transition(current: TaskStatus, target: TaskStatus, command: TransitionCommand) -> TransitionDecision:
     if command.actor_kind not in {"control_plane", "operator", "worker"}:
         return TransitionDecision("forbidden", "untrusted actor cannot select state")
-    if current in TERMINAL or target not in TRANSITIONS.get(current, set()):
+    if target is not command.target:
+        return TransitionDecision("forbidden", "command target does not match requested state")
+    if current in TERMINAL:
         return TransitionDecision("forbidden", "transition is not in the closed M4 graph")
-    if current is TaskStatus.NEEDS_HUMAN and target is TaskStatus.QUEUED:
+
+    if command.operation is TransitionOperation.PHASE:
+        phase_edges = {
+            TaskStatus.LEASED: TaskStatus.ANALYZING,
+            TaskStatus.ANALYZING: TaskStatus.IMPLEMENTING,
+            TaskStatus.IMPLEMENTING: TaskStatus.VERIFYING,
+            TaskStatus.VERIFYING: TaskStatus.REVIEWING,
+        }
+        if command.actor_kind == "worker" and phase_edges.get(current) is target:
+            return TransitionDecision("allowed", "next fenced worker phase authorized")
+        return TransitionDecision("forbidden", "phase operation permits only the next worker phase")
+
+    if command.operation is TransitionOperation.RELEASE_COMPLETED:
+        if command.actor_kind != "worker" or target is not TaskStatus.READY_FOR_HUMAN:
+            return TransitionDecision("forbidden", "completed release requires a worker completion target")
+        if current is TaskStatus.LEASED:
+            return TransitionDecision("allowed", "legacy completed-release compatibility")
+        if current is TaskStatus.REVIEWING:
+            return TransitionDecision("allowed", "reviewed completion authorized")
+        return TransitionDecision("forbidden", "completed release requires leased compatibility or reviewing")
+
+    permitted = {
+        TransitionOperation.CLAIM: (
+            "control_plane",
+            {TaskStatus.QUEUED, TaskStatus.RETRY},
+            {TaskStatus.LEASED},
+        ),
+        TransitionOperation.RETRY_EXHAUSTED: (
+            "control_plane",
+            {TaskStatus.QUEUED, TaskStatus.RETRY},
+            {TaskStatus.DEAD},
+        ),
+        TransitionOperation.RELEASE_FAILURE: (
+            "worker",
+            {
+                TaskStatus.LEASED,
+                TaskStatus.ANALYZING,
+                TaskStatus.IMPLEMENTING,
+                TaskStatus.VERIFYING,
+                TaskStatus.REVIEWING,
+            },
+            {TaskStatus.RETRY, TaskStatus.NEEDS_HUMAN, TaskStatus.DEAD},
+        ),
+        TransitionOperation.CANCEL: (
+            "control_plane",
+            set(TRANSITIONS),
+            {TaskStatus.CANCELLED},
+        ),
+        TransitionOperation.SUPERSEDE: (
+            "control_plane",
+            set(TRANSITIONS),
+            {TaskStatus.SUPERSEDED},
+        ),
+        TransitionOperation.RECONCILE_EXPIRED: (
+            "control_plane",
+            {
+                TaskStatus.LEASED,
+                TaskStatus.ANALYZING,
+                TaskStatus.IMPLEMENTING,
+                TaskStatus.VERIFYING,
+                TaskStatus.REVIEWING,
+            },
+            {TaskStatus.RETRY, TaskStatus.NEEDS_HUMAN, TaskStatus.DEAD},
+        ),
+        TransitionOperation.RECONCILE_DEADLINE: (
+            "control_plane",
+            {TaskStatus.QUEUED, TaskStatus.RETRY},
+            {TaskStatus.NEEDS_HUMAN, TaskStatus.DEAD},
+        ),
+    }
+    if command.operation is TransitionOperation.OPERATOR_REQUEUE:
+        if current is not TaskStatus.NEEDS_HUMAN or target is not TaskStatus.QUEUED:
+            return TransitionDecision("forbidden", "operator requeue applies only to needs_human")
         if command.actor_kind != "operator" or not command.operator_decision_id:
             return TransitionDecision("needs_human", "persisted operator decision required")
-    if (
-        current
-        in {
-            TaskStatus.LEASED,
-            TaskStatus.ANALYZING,
-            TaskStatus.IMPLEMENTING,
-            TaskStatus.VERIFYING,
-            TaskStatus.REVIEWING,
-        }
-        and command.actor_kind == "operator"
-        and target not in {TaskStatus.CANCELLED, TaskStatus.NEEDS_HUMAN}
-    ):
-        return TransitionDecision("forbidden", "leased phases are worker/control-plane guarded")
+        return TransitionDecision("allowed", "persisted operator decision authorized")
+    rule = permitted.get(command.operation)
+    if rule is None:
+        return TransitionDecision("forbidden", "unknown transition operation")
+    actor_kind, sources, targets = rule
+    if command.actor_kind != actor_kind or current not in sources or target not in targets:
+        return TransitionDecision("forbidden", "transition is outside operation policy")
+    if target not in TRANSITIONS.get(current, set()):
+        return TransitionDecision("forbidden", "transition is not in the closed M4 graph")
     return TransitionDecision("allowed", "closed transition authorized")
 
 
