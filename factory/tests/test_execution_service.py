@@ -2,11 +2,17 @@ from datetime import datetime, timezone
 import unittest
 
 from adaptive_factory.adapters import AdapterConformance, AdapterRegistry, TrustedExecutionProfile
+from adaptive_factory.contracts import canonical_digest
 from adaptive_factory.execution_contracts import ExecutionContractError, ExecutionSelectionV1, WorkspaceResultV1
 from adaptive_factory.models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskStatus
-from adaptive_factory.service import AuthorizationError, FactoryService
+from adaptive_factory.service import (
+    AuthorizationError,
+    FactoryService,
+    SnapshotBrokerIntegrityError,
+    SnapshotBrokerUnavailable,
+)
 from adaptive_factory.brokers import ProposalContext
-from adaptive_factory.store import StoreError
+from adaptive_factory.store import FenceError, StoreError
 from adaptive_factory.workspace import (
     ArtifactAttestationUnavailable,
     ArtifactAttestationV1,
@@ -73,6 +79,7 @@ class FakeExecutionStore:
         self.calls = []
         self.finalized = {}
         self.proposal_commands = {}
+        self.terminal_commands = {}
         self.grant = grant
         self.start_error = start_error
 
@@ -142,6 +149,38 @@ class FakeExecutionStore:
             raise StoreError("idempotency key reused with different command")
         return proposal
 
+    def begin_execution_terminal_composite(
+        self,
+        grant,
+        event,
+        actor,
+        *,
+        proposal_key,
+        finalize_key,
+        idempotency_key,
+        correlation_id,
+    ):
+        self.calls.append(
+            (
+                "terminal_begin",
+                grant,
+                event,
+                actor,
+                proposal_key,
+                finalize_key,
+                idempotency_key,
+                correlation_id,
+            )
+        )
+        marker = (event.to_dict(), proposal_key, finalize_key)
+        prior = self.terminal_commands.get(idempotency_key)
+        if prior is not None and prior != marker:
+            raise StoreError("idempotency key reused with different command")
+        self.terminal_commands[idempotency_key] = marker
+
+    def record_fence_rejection(self):
+        self.calls.append(("fence_rejection",))
+
     def finalize_execution(self, grant, packet_digest, snapshot, actor, **kwargs):
         self.calls.append(("finalize", grant, packet_digest, snapshot, actor, kwargs))
         value = valid_workspace_result()
@@ -173,18 +212,25 @@ class FakeExecutionStore:
 
 
 class UnavailableSnapshotBroker:
-    def snapshot(self, _request):
+    def snapshot(self, _request, *, timeout_seconds):
         return WorkspaceSnapshotUnavailable()
 
 
 class TrustedTestSnapshotBroker:
     def __init__(self):
         self.calls = 0
+        self.timeouts = []
+        self.available = True
+        self.repository_id = None
 
-    def snapshot(self, request):
+    def snapshot(self, request, *, timeout_seconds):
         self.calls += 1
+        self.timeouts.append(timeout_seconds)
+        if not self.available:
+            return WorkspaceSnapshotUnavailable()
         return WorkspaceSnapshotV1.from_facts({
-            "contract_version": 1, "repository_id": request.repository_id,
+            "contract_version": 1,
+            "repository_id": self.repository_id or request.repository_id,
             "workspace_handle": request.workspace_handle,
             "input_head_sha": request.input_head_sha, "result_head_sha": "f" * 40,
             "diff_digest": "e" * 64, "diff_lines": 12, "source": "trusted_git_broker",
@@ -344,13 +390,30 @@ class ExecutionServiceTests(unittest.TestCase):
                 service.advance_execution(GRANT, packet_digest="d" * 64, stage=stage, actor=WORKER)
 
     def test_finalize_requires_trusted_snapshot_and_returns_factual_result(self):
+        missing_store = FakeExecutionStore()
+        with self.assertRaises(SnapshotBrokerUnavailable):
+            FactoryService(missing_store).finalize_execution(
+                GRANT,
+                packet_digest="d" * 64,
+                actor=WORKER,
+                idempotency_key="0" * 64,
+            )
+        self.assertEqual(
+            tuple(item[0] for item in missing_store.calls),
+            ("finalization_replay", "finalization_replay"),
+        )
         store = FakeExecutionStore()
         service = FactoryService(store, snapshot_broker=UnavailableSnapshotBroker())
-        with self.assertRaisesRegex(ExecutionContractError, "workspace_snapshot_unavailable"):
+        with self.assertRaisesRegex(
+            SnapshotBrokerUnavailable, "trusted workspace snapshot unavailable"
+        ):
             service.finalize_execution(
                 GRANT, packet_digest="d" * 64, actor=WORKER,
             )
-        self.assertEqual(tuple(item[0] for item in store.calls), ("finalization_replay", "snapshot_request"))
+        self.assertEqual(
+            tuple(item[0] for item in store.calls),
+            ("finalization_replay", "snapshot_request", "finalization_replay"),
+        )
         broker = TrustedTestSnapshotBroker()
         service = FactoryService(store, snapshot_broker=broker)
         result = service.finalize_execution(
@@ -364,7 +427,8 @@ class ExecutionServiceTests(unittest.TestCase):
         self.assertEqual(result.exact_head_sha, "f" * 40)
         self.assertEqual(replay.workspace_result_digest, result.workspace_result_digest)
         self.assertEqual(tuple(item[0] for item in store.calls), (
-            "finalization_replay", "snapshot_request", "finalization_replay", "snapshot_request", "finalize",
+            "finalization_replay", "snapshot_request", "finalization_replay",
+            "finalization_replay", "snapshot_request", "finalize",
             "finalization_replay",
         ))
         self.assertEqual(broker.calls, 1)
@@ -372,6 +436,173 @@ class ExecutionServiceTests(unittest.TestCase):
             service.finalize_execution(
                 GRANT, packet_digest="d" * 64, snapshot=WorkspaceSnapshotUnavailable(), actor=WORKER,
             )
+
+    def test_terminal_composite_derives_phase_keys_and_replays_without_snapshot(self):
+        store = FakeExecutionStore()
+        broker = TrustedTestSnapshotBroker()
+        service = FactoryService(store, snapshot_broker=broker)
+        outer_key = "b" * 64
+        payload = {"summary": "complete"}
+
+        first = service.commit_terminal_and_finalize(
+            GRANT,
+            packet_digest="d" * 64,
+            sequence=1,
+            event_type="run.completed",
+            payload=payload,
+            actor=WORKER,
+            idempotency_key=outer_key,
+            correlation_id="terminal-001",
+        )
+        replay = service.commit_terminal_and_finalize(
+            GRANT,
+            packet_digest="d" * 64,
+            sequence=1,
+            event_type="run.completed",
+            payload=dict(payload),
+            actor=WORKER,
+            idempotency_key=outer_key,
+            correlation_id="terminal-001",
+        )
+
+        proposal_key = canonical_digest(
+            {
+                "contract": "adaptive-factory.execution-terminal-phase/v1",
+                "command": outer_key,
+                "phase": "proposal",
+            }
+        )
+        finalize_key = canonical_digest(
+            {
+                "contract": "adaptive-factory.execution-terminal-phase/v1",
+                "command": outer_key,
+                "phase": "finalize",
+            }
+        )
+        self.assertNotEqual(proposal_key, finalize_key)
+        self.assertEqual(first.proposal, replay.proposal)
+        self.assertEqual(first.result, replay.result)
+        self.assertEqual(broker.calls, 1)
+        self.assertEqual(broker.timeouts, [5.0])
+        self.assertIn(proposal_key, store.proposal_commands)
+        self.assertIn(finalize_key, store.finalized)
+        self.assertEqual(
+            tuple(item[0] for item in store.calls),
+            (
+                "terminal_begin",
+                "proposal_replay",
+                "proposal_context",
+                "proposal",
+                "finalization_replay",
+                "snapshot_request",
+                "finalize",
+                "terminal_begin",
+                "proposal_replay",
+                "finalization_replay",
+            ),
+        )
+
+    def test_terminal_composite_records_stale_outer_marker_fence_before_broker(self):
+        store = FakeExecutionStore()
+        broker = TrustedTestSnapshotBroker()
+        service = FactoryService(store, snapshot_broker=broker)
+
+        def stale(*args, **kwargs):
+            raise FenceError("stale execution fence")
+
+        store.begin_execution_terminal_composite = stale
+        with self.assertRaisesRegex(FenceError, "stale execution fence"):
+            service.commit_terminal_and_finalize(
+                GRANT,
+                packet_digest="d" * 64,
+                sequence=1,
+                event_type="run.completed",
+                payload={"summary": "complete"},
+                actor=WORKER,
+                idempotency_key="9" * 64,
+                correlation_id="terminal-stale",
+            )
+
+        self.assertEqual(store.calls, [("fence_rejection",)])
+        self.assertEqual(broker.calls, 0)
+
+    def test_terminal_composite_resumes_after_snapshot_failure_and_conflicts_before_broker(self):
+        store = FakeExecutionStore()
+        broker = TrustedTestSnapshotBroker()
+        broker.available = False
+        service = FactoryService(store, snapshot_broker=broker)
+        outer_key = "c" * 64
+        arguments = {
+            "packet_digest": "d" * 64,
+            "sequence": 1,
+            "event_type": "run.failed",
+            "payload": {"failure_class": "validation", "diagnostic": "bounded"},
+            "actor": WORKER,
+            "idempotency_key": outer_key,
+            "correlation_id": "terminal-resume",
+        }
+
+        with self.assertRaisesRegex(
+            SnapshotBrokerUnavailable, "trusted workspace snapshot unavailable"
+        ):
+            service.commit_terminal_and_finalize(GRANT, **arguments)
+        self.assertEqual((len(store.proposal_commands), len(store.finalized)), (1, 0))
+        with self.assertRaisesRegex(StoreError, "different command"):
+            service.commit_terminal_and_finalize(
+                GRANT,
+                **{
+                    **arguments,
+                    "payload": {
+                        "failure_class": "validation",
+                        "diagnostic": "changed",
+                    },
+                },
+            )
+        self.assertEqual(broker.calls, 1)
+
+        broker.available = True
+        completed = service.commit_terminal_and_finalize(GRANT, **arguments)
+        replay = service.commit_terminal_and_finalize(GRANT, **arguments)
+        self.assertEqual(completed, replay)
+        self.assertEqual((broker.calls, len(store.proposal_commands), len(store.finalized)), (2, 1, 1))
+
+    def test_terminal_composite_rejects_mismatched_snapshot_then_resumes_all_variants(self):
+        variants = (
+            ("run.completed", {"summary": "complete"}),
+            (
+                "run.failed",
+                {"failure_class": "validation", "diagnostic": "bounded"},
+            ),
+            (
+                "run.needs_human",
+                {"reason": "review", "diagnostic": "bounded"},
+            ),
+        )
+        for index, (event_type, payload) in enumerate(variants):
+            with self.subTest(event_type=event_type):
+                store = FakeExecutionStore()
+                broker = TrustedTestSnapshotBroker()
+                broker.repository_id = "other/repository"
+                service = FactoryService(store, snapshot_broker=broker)
+                arguments = {
+                    "packet_digest": "d" * 64,
+                    "sequence": 1,
+                    "event_type": event_type,
+                    "payload": payload,
+                    "actor": WORKER,
+                    "idempotency_key": f"{index + 1:x}" * 64,
+                    "correlation_id": f"terminal-variant-{index}",
+                }
+                with self.assertRaisesRegex(
+                    SnapshotBrokerIntegrityError,
+                    "trusted workspace snapshot binding mismatch",
+                ):
+                    service.commit_terminal_and_finalize(GRANT, **arguments)
+                self.assertEqual(len(store.finalized), 0)
+                broker.repository_id = None
+                completion = service.commit_terminal_and_finalize(GRANT, **arguments)
+                self.assertEqual(completion.proposal.terminal_type, event_type)
+                self.assertIsInstance(completion.result, WorkspaceResultV1)
 
     def test_workspace_result_query_requires_read_scope_and_repository(self):
         service = FactoryService(FakeExecutionStore())

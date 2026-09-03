@@ -16,6 +16,7 @@ from adaptive_factory.workspace import (
     WorkspaceError,
     WorkspaceHandle,
     WorkspacePolicy,
+    WorkspaceReleaseOutcome,
 )
 
 
@@ -58,8 +59,14 @@ class WorkspaceTests(unittest.TestCase):
         broker = FakeWorkspaceBroker()
         broker.register(handle(), policy())
         git = FakeGitBroker(broker)
-        self.assertEqual(broker.release(handle()), "fake_released")
-        self.assertEqual(broker.release(handle()), "fake_absent")
+        self.assertEqual(
+            broker.release(handle(), timeout_seconds=5),
+            WorkspaceReleaseOutcome("released"),
+        )
+        self.assertEqual(
+            broker.release(handle(), timeout_seconds=5),
+            WorkspaceReleaseOutcome("already_absent"),
+        )
         operations = (
             lambda: broker.authorize(handle(), operation="read", path="factory/src/a.py"),
             lambda: broker.sanitize_environment(handle(), {"LANG": "C.UTF-8"}),
@@ -133,7 +140,7 @@ class WorkspaceTests(unittest.TestCase):
     def test_fake_git_broker_reports_snapshot_unavailable_without_claiming_git_evidence(self):
         broker = FakeWorkspaceBroker()
         broker.register(handle(), policy())
-        result = FakeGitBroker(broker).snapshot(handle())
+        result = FakeGitBroker(broker).snapshot(handle(), timeout_seconds=5.0)
         self.assertIsInstance(result, WorkspaceSnapshotUnavailable)
         self.assertEqual((result.status, result.disposition), ("unavailable", "needs_human"))
         self.assertFalse(hasattr(result, "result_head_sha"))

@@ -193,6 +193,10 @@ class ArchitectureModelTests(unittest.TestCase):
             self.assertEqual(node["trust_domain"], "TD-FACTORY-CONTROL")
             self.assertEqual(node["runtime"]["network"], "none")
             self.assertEqual(node["secrets"], [])
+        self.assertIn(
+            "factory/src/adaptive_factory/recovery.py",
+            nodes["NODE-FACTORY-CONTROL"]["repository_paths"],
+        )
 
         edges = {edge["id"]: edge for edge in snapshot.system["edges"]}
         workspace_edges = {
@@ -1152,7 +1156,7 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 11)
+        self.assertEqual(len(records), 12)
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
@@ -2813,6 +2817,10 @@ class ArchitectureModelTests(unittest.TestCase):
         expected = {
             "CONTRACT-FACTORY-EXECUTION-OPENAPI": (
                 "openapi", "factory/contracts/openapi/factory-execution.v1.json",
+                "bidirectional", "bidirectional", "NODE-FACTORY-LOCAL-API",
+            ),
+            "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2": (
+                "openapi", "factory/contracts/openapi/factory-execution.v2.json",
                 "bidirectional", "bidirectional", "NODE-FACTORY-LOCAL-API",
             ),
             "CONTRACT-FACTORY-TASK-PACKET": (

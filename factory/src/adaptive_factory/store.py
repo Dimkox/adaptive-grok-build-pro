@@ -5,6 +5,7 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import datetime
 import json
+import math
 import uuid
 
 from .contracts import HEX64, TaskIntakeV1, canonical_digest
@@ -22,6 +23,13 @@ from .execution_contracts import RunManifestV1, TaskPacketV1, WorkspaceResultV1,
 from .migrations import discover_migrations
 from .models import Actor, ExecutionGrant, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskProjection, TaskStatus
 from .protocol import CanonicalEvent, PROTOCOL_VERSION
+from .recovery import (
+    ExecutionRecoveryCandidate,
+    ExecutionRecoveryClaim,
+    ExecutionRecoveryCursor,
+    ExecutionRecoveryNotDue,
+    ExecutionRecoveryPage,
+)
 from .state import classify_retry
 from .workspace import (
     ArtifactAttestationUnavailable,
@@ -101,11 +109,19 @@ def _validate_capability_session(cursor, capability_role: str, label: str) -> No
             or tuple(capability[7]) != expected_config:
         raise StoreError(f"{label} capability role is not isolated")
     cursor.execute(
-        """SELECT EXISTS(SELECT 1 FROM pg_auth_members m
-        JOIN pg_roles member ON member.oid=m.member WHERE member.rolname=%s)""",
-        (capability_role,),
+        """SELECT
+        EXISTS(SELECT 1 FROM pg_auth_members membership
+          JOIN pg_roles member ON member.oid=membership.member
+          WHERE member.rolname=%s),
+        ARRAY(SELECT member.rolname FROM pg_auth_members membership
+          JOIN pg_roles role ON role.oid=membership.roleid
+          JOIN pg_roles member ON member.oid=membership.member
+          WHERE role.rolname=%s ORDER BY member.rolname),
+        session_user""",
+        (capability_role, capability_role),
     )
-    if cursor.fetchone()[0]:
+    outbound_membership, inbound_members, session_user = cursor.fetchone()
+    if outbound_membership or tuple(inbound_members) != (session_user,):
         raise StoreError(f"{label} capability role is not isolated")
     cursor.execute(
         """WITH login AS (SELECT oid FROM pg_roles WHERE rolname=session_user)
@@ -244,6 +260,7 @@ class PostgresFactoryStore:
         connect_timeout: int | None = None,
         lock_timeout: str | None = None,
         statement_timeout: str | None = None,
+        transaction_timeout: str | None = None,
     ):
         import psycopg
 
@@ -252,11 +269,23 @@ class PostgresFactoryStore:
         statement_timeout = statement_timeout or self._MUTATION_STATEMENT_TIMEOUT
         connection = None
         try:
+            options = (
+                f"-c lock_timeout={lock_timeout} "
+                f"-c statement_timeout={statement_timeout}"
+            )
             connection = psycopg.connect(
                 self.database_url,
                 connect_timeout=connect_timeout,
-                options=f"-c lock_timeout={lock_timeout} -c statement_timeout={statement_timeout}",
+                options=options,
             )
+            if transaction_timeout is not None:
+                if connection.info.server_version < 170000:
+                    raise StoreError("execution recovery requires PostgreSQL 17")
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT set_config('transaction_timeout',%s,false)",
+                        (transaction_timeout,),
+                    )
             with connection.cursor() as cursor:
                 cursor.execute("SET search_path=pg_catalog")
                 _validate_capability_session(cursor, "factory_runtime", "runtime")
@@ -270,6 +299,7 @@ class PostgresFactoryStore:
             psycopg.OperationalError,
             psycopg.errors.LockNotAvailable,
             psycopg.errors.QueryCanceled,
+            psycopg.errors.TransactionTimeout,
         ) as exc:
             if connection is not None:
                 connection.close()
@@ -286,14 +316,25 @@ class PostgresFactoryStore:
         *,
         lock_timeout: str | None = None,
         statement_timeout: str | None = None,
+        transaction_timeout: str | None = None,
     ) -> None:
-        cursor.execute(
-            "SELECT set_config('lock_timeout',%s,true),set_config('statement_timeout',%s,true)",
-            (
-                lock_timeout or self._MUTATION_LOCK_TIMEOUT,
-                statement_timeout or self._MUTATION_STATEMENT_TIMEOUT,
-            ),
+        bounds = (
+            lock_timeout or self._MUTATION_LOCK_TIMEOUT,
+            statement_timeout or self._MUTATION_STATEMENT_TIMEOUT,
         )
+        if transaction_timeout is None:
+            cursor.execute(
+                "SELECT set_config('lock_timeout',%s,true),"
+                "set_config('statement_timeout',%s,true)",
+                bounds,
+            )
+        else:
+            cursor.execute(
+                "SELECT set_config('lock_timeout',%s,true),"
+                "set_config('statement_timeout',%s,true),"
+                "set_config('transaction_timeout',%s,true)",
+                (*bounds, transaction_timeout),
+            )
 
     @contextmanager
     def _transaction(
@@ -302,6 +343,7 @@ class PostgresFactoryStore:
         connect_timeout: int | None = None,
         lock_timeout: str | None = None,
         statement_timeout: str | None = None,
+        transaction_timeout: str | None = None,
     ):
         import psycopg
 
@@ -310,12 +352,14 @@ class PostgresFactoryStore:
                 connect_timeout=connect_timeout,
                 lock_timeout=lock_timeout,
                 statement_timeout=statement_timeout,
+                transaction_timeout=transaction_timeout,
             ) as connection:
                 with connection.transaction(), connection.cursor() as cursor:
                     self._set_transaction_bounds(
                         cursor,
                         lock_timeout=lock_timeout,
                         statement_timeout=statement_timeout,
+                        transaction_timeout=transaction_timeout,
                     )
                     yield cursor
         except (StoreUnavailable, IntegrityError):
@@ -327,6 +371,7 @@ class PostgresFactoryStore:
             psycopg.OperationalError,
             psycopg.errors.LockNotAvailable,
             psycopg.errors.QueryCanceled,
+            psycopg.errors.TransactionTimeout,
         ) as exc:
             raise StoreUnavailable("database unavailable") from exc
 
@@ -347,6 +392,402 @@ class PostgresFactoryStore:
                 "capacity_consistent": capacity_consistent,
                 "accounting_consistent": accounting_consistent,
             }
+
+    @staticmethod
+    def _require_recovery_actor(actor: Actor) -> None:
+        if (
+            not isinstance(actor, Actor)
+            or actor.kind != "operator"
+            or "factory:reconcile" not in actor.scopes
+            or "*" not in actor.repositories
+        ):
+            raise AuthorityError("global recovery authority is required")
+
+    @staticmethod
+    def _recovery_timeouts(timeout_seconds: float) -> tuple[int, str, str, str]:
+        if (
+            isinstance(timeout_seconds, bool)
+            or not isinstance(timeout_seconds, (int, float))
+            or not math.isfinite(timeout_seconds)
+            or timeout_seconds < 3.0
+        ):
+            raise StoreError("invalid execution recovery timeout")
+        bounded_seconds = min(5.0, float(timeout_seconds))
+        connect_timeout = 2
+        statement_milliseconds = max(
+            1, int((bounded_seconds - connect_timeout) * 1000)
+        )
+        lock_milliseconds = min(500, statement_milliseconds)
+        return (
+            connect_timeout,
+            f"{lock_milliseconds}ms",
+            f"{statement_milliseconds}ms",
+            f"{statement_milliseconds}ms",
+        )
+
+    def _require_single_host_recovery_url(self) -> None:
+        from psycopg.conninfo import conninfo_to_dict
+
+        try:
+            values = conninfo_to_dict(self.database_url)
+        except Exception as exc:
+            raise StoreError("invalid execution recovery database URL") from exc
+        if values.get("service") or not (
+            values.get("host") or values.get("hostaddr")
+        ) or any(
+            value and "," in value
+            for value in (
+                values.get("host", ""),
+                values.get("hostaddr", ""),
+                values.get("port", ""),
+            )
+        ):
+            raise StoreError("execution recovery requires a single database host")
+
+    @staticmethod
+    def _recovery_candidate(value) -> ExecutionRecoveryCandidate:
+        expected = {
+            "task_id",
+            "run_id",
+            "manifest_digest",
+            "workspace_handle",
+            "updated_at",
+            "source",
+        }
+        if not isinstance(value, dict) or set(value) != expected:
+            raise IntegrityError("database recovery candidate shape is invalid")
+        return ExecutionRecoveryCandidate(
+            value["task_id"],
+            value["run_id"],
+            value["manifest_digest"].strip(),
+            value["workspace_handle"],
+            datetime.fromisoformat(value["updated_at"].replace("Z", "+00:00")),
+            value["source"],
+        )
+
+    @classmethod
+    def _recovery_claim(cls, value) -> ExecutionRecoveryClaim:
+        if isinstance(value, str):
+            value = json.loads(value)
+        expected_keys = {
+            "task_id",
+            "run_id",
+            "manifest_digest",
+            "workspace_handle",
+            "updated_at",
+            "claim_token",
+            "claim_fence",
+            "claim_expires_at",
+            "transition",
+            "advances_discovery_cursor",
+            "source",
+        }
+        if not isinstance(value, dict) or set(value) != expected_keys:
+            raise IntegrityError("database recovery claim shape is invalid")
+        candidate = ExecutionRecoveryCandidate(
+            value["task_id"],
+            value["run_id"],
+            value["manifest_digest"],
+            value["workspace_handle"],
+            datetime.fromisoformat(value["updated_at"].replace("Z", "+00:00")),
+            value["source"],
+        )
+        return ExecutionRecoveryClaim(
+            candidate,
+            value["claim_token"],
+            value["claim_fence"],
+            datetime.fromisoformat(
+                value["claim_expires_at"].replace("Z", "+00:00")
+            ),
+            value["transition"],
+            value["advances_discovery_cursor"],
+        )
+
+    def execution_recovery_candidates(
+        self, *, limit: int, cursor: ExecutionRecoveryCursor | None
+    ) -> ExecutionRecoveryPage:
+        if type(limit) is not int or not 2 <= limit <= 100:
+            raise StoreError("invalid execution recovery limit")
+        if cursor is not None and not isinstance(cursor, ExecutionRecoveryCursor):
+            raise StoreError("invalid execution recovery cursor")
+        self._require_single_host_recovery_url()
+        with self._transaction(
+            connect_timeout=2,
+            lock_timeout="500ms",
+            statement_timeout="3s",
+            transaction_timeout="3s",
+        ) as db:
+            db.execute(
+                "SELECT factory.execution_recovery_candidates(%s,%s,%s)",
+                (
+                    limit,
+                    None if cursor is None else cursor.updated_at,
+                    None if cursor is None else cursor.run_id,
+                ),
+            )
+            value = db.fetchone()[0]
+            if isinstance(value, str):
+                value = json.loads(value)
+            if not isinstance(value, dict) or set(value) != {
+                "candidates",
+                "scanned_through",
+                "exhausted",
+            }:
+                raise IntegrityError("database recovery page shape is invalid")
+            raw_cursor = value["scanned_through"]
+            scanned_through = None
+            if raw_cursor is not None:
+                if not isinstance(raw_cursor, dict) or set(raw_cursor) != {
+                    "updated_at",
+                    "run_id",
+                }:
+                    raise IntegrityError("database recovery cursor shape is invalid")
+                scanned_through = ExecutionRecoveryCursor(
+                    datetime.fromisoformat(
+                        raw_cursor["updated_at"].replace("Z", "+00:00")
+                    ),
+                    raw_cursor["run_id"],
+                )
+            if (
+                not isinstance(value["candidates"], list)
+                or len(value["candidates"]) > limit
+                or type(value["exhausted"]) is not bool
+            ):
+                raise IntegrityError("database recovery candidates are invalid")
+            candidates = tuple(
+                self._recovery_candidate(candidate)
+                for candidate in value["candidates"]
+            )
+            if (
+                len({candidate.run_id for candidate in candidates})
+                != len(candidates)
+                or len({candidate.manifest_digest for candidate in candidates})
+                != len(candidates)
+            ):
+                raise IntegrityError("database recovery candidates are duplicated")
+            fresh_cursors = tuple(
+                candidate.cursor
+                for candidate in candidates
+                if candidate.source == "fresh"
+            )
+            if fresh_cursors != tuple(sorted(fresh_cursors)) or (
+                cursor is not None
+                and any(candidate_cursor <= cursor for candidate_cursor in fresh_cursors)
+            ):
+                raise IntegrityError("database recovery candidates are unordered")
+            return ExecutionRecoveryPage(
+                candidates,
+                scanned_through,
+                value["exhausted"],
+            )
+
+    def claim_execution_recovery(
+        self,
+        candidate: ExecutionRecoveryCandidate,
+        actor: Actor,
+        *,
+        timeout_seconds: float = 5.0,
+    ) -> ExecutionRecoveryClaim | ExecutionRecoveryNotDue | None:
+        if not isinstance(candidate, ExecutionRecoveryCandidate):
+            raise StoreError("invalid execution recovery candidate")
+        self._require_recovery_actor(actor)
+        self._require_single_host_recovery_url()
+        (
+            connect_timeout,
+            lock_timeout,
+            statement_timeout,
+            transaction_timeout,
+        ) = self._recovery_timeouts(timeout_seconds)
+        released_here = False
+        with self._transaction(
+            connect_timeout=connect_timeout,
+            lock_timeout=lock_timeout,
+            statement_timeout=statement_timeout,
+            transaction_timeout=transaction_timeout,
+        ) as db:
+            db.execute(
+                "SELECT factory.execution_recovery_context(%s,%s,%s,%s,%s)",
+                (
+                    candidate.task_id,
+                    candidate.run_id,
+                    candidate.manifest_digest,
+                    candidate.workspace_handle,
+                    candidate.updated_at,
+                ),
+            )
+            context = db.fetchone()[0]
+            if context is None:
+                return None
+            if isinstance(context, str):
+                context = json.loads(context)
+            if context in ({"released": True}, {"existing_job": True}):
+                context = None
+            expected_context = {
+                "task_state",
+                "current_run_id",
+                "current_fence",
+                "repair_count",
+                "repair_limit",
+                "owner",
+                "role",
+                "fence",
+                "expires_at",
+                "packet_digest",
+                "run_state",
+                "run_released",
+                "allocation_released",
+                "recovery_due",
+                "released",
+            }
+            if context is not None and (
+                not isinstance(context, dict) or set(context) != expected_context
+            ):
+                raise IntegrityError("database recovery context shape is invalid")
+            if context is not None and (
+                context["released"]
+                or context["run_released"]
+                or context["allocation_released"]
+            ):
+                raise IntegrityError("execution recovery release state is inconsistent")
+            if context is not None:
+                if (
+                    context["task_state"] != "leased"
+                    or context["current_run_id"] != candidate.run_id
+                    or context["current_fence"] != context["fence"]
+                    or context["run_state"] != "leased"
+                ):
+                    return None
+                if not context["recovery_due"]:
+                    if candidate.source != "fresh":
+                        return None
+                    return ExecutionRecoveryNotDue(candidate)
+                grant = LeaseGrant(
+                    candidate.task_id,
+                    candidate.run_id,
+                    context["owner"],
+                    RunRole(context["role"]),
+                    context["fence"],
+                    datetime.fromisoformat(
+                        context["expires_at"].replace("Z", "+00:00")
+                    ),
+                    context["packet_digest"].strip(),
+                )
+                failure = (
+                    FailureClass.PROVIDER_QUALITY
+                    if context["repair_count"] >= context["repair_limit"]
+                    else FailureClass.WORKER_LOST
+                )
+                self._release_locked(
+                    db,
+                    grant,
+                    failure,
+                    actor,
+                    allow_expired=True,
+                )
+                db.execute(
+                    "UPDATE factory.runs SET state='expired' WHERE run_id=%s",
+                    (candidate.run_id,),
+                )
+                if context["repair_count"] < context["repair_limit"]:
+                    db.execute(
+                        "UPDATE factory.tasks SET repair_count=repair_count+1 WHERE task_id=%s",
+                        (candidate.task_id,),
+                    )
+                released_here = True
+            db.execute(
+                "SELECT factory.execution_recovery_claim(%s,%s,%s,%s,%s,%s)",
+                (
+                    candidate.task_id,
+                    candidate.run_id,
+                    candidate.manifest_digest,
+                    candidate.workspace_handle,
+                    candidate.updated_at,
+                    30,
+                ),
+            )
+            value = db.fetchone()[0]
+            if value is None:
+                if released_here:
+                    raise StoreError("recovery claim lost after canonical release")
+                return None
+            claim = self._recovery_claim(value)
+            if claim.candidate != candidate:
+                raise IntegrityError("database recovery authority mismatch")
+            return claim
+
+    def record_execution_cleanup_success(
+        self, claim: ExecutionRecoveryClaim, *, timeout_seconds: float = 5.0
+    ) -> None:
+        if not isinstance(claim, ExecutionRecoveryClaim):
+            raise StoreError("invalid execution recovery claim")
+        self._require_single_host_recovery_url()
+        (
+            connect_timeout,
+            lock_timeout,
+            statement_timeout,
+            transaction_timeout,
+        ) = self._recovery_timeouts(timeout_seconds)
+        with self._transaction(
+            connect_timeout=connect_timeout,
+            lock_timeout=lock_timeout,
+            statement_timeout=statement_timeout,
+            transaction_timeout=transaction_timeout,
+        ) as db:
+            db.execute(
+                "SELECT factory.execution_recovery_cleanup_succeeded("
+                "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    claim.candidate.task_id,
+                    claim.candidate.run_id,
+                    claim.candidate.manifest_digest,
+                    claim.candidate.workspace_handle,
+                    claim.candidate.updated_at,
+                    claim.candidate.source,
+                    claim.claim_token,
+                    claim.claim_fence,
+                    claim.transition,
+                    claim.advances_discovery_cursor,
+                ),
+            )
+            if not db.fetchone()[0]:
+                raise FenceError("stale execution cleanup claim")
+
+    def record_execution_cleanup_failure(
+        self, claim: ExecutionRecoveryClaim, *, timeout_seconds: float = 5.0
+    ) -> None:
+        if not isinstance(claim, ExecutionRecoveryClaim):
+            raise StoreError("invalid execution recovery claim")
+        self._require_single_host_recovery_url()
+        (
+            connect_timeout,
+            lock_timeout,
+            statement_timeout,
+            transaction_timeout,
+        ) = self._recovery_timeouts(timeout_seconds)
+        with self._transaction(
+            connect_timeout=connect_timeout,
+            lock_timeout=lock_timeout,
+            statement_timeout=statement_timeout,
+            transaction_timeout=transaction_timeout,
+        ) as db:
+            db.execute(
+                "SELECT factory.execution_recovery_cleanup_failed("
+                "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    claim.candidate.task_id,
+                    claim.candidate.run_id,
+                    claim.candidate.manifest_digest,
+                    claim.candidate.workspace_handle,
+                    claim.candidate.updated_at,
+                    claim.candidate.source,
+                    claim.claim_token,
+                    claim.claim_fence,
+                    claim.transition,
+                    claim.advances_discovery_cursor,
+                ),
+            )
+            if not db.fetchone()[0]:
+                raise FenceError("stale execution cleanup claim")
 
     @staticmethod
     def _accounting_consistent(cursor) -> bool:
@@ -382,20 +823,81 @@ class PostgresFactoryStore:
 
     def metrics(self) -> dict[str, dict[str, int]]:
         try:
-            with self._connect() as connection, connection.cursor() as cursor:
+            with self._connect(
+                connect_timeout=2,
+                lock_timeout="500ms",
+                statement_timeout="3s",
+                transaction_timeout="3s",
+            ) as connection, connection.cursor() as cursor:
                 cursor.execute("SET LOCAL statement_timeout='5s'")
                 cursor.execute("SET LOCAL lock_timeout='500ms'")
-                cursor.execute("SELECT * FROM factory.read_metrics_snapshot()")
-                row = cursor.fetchone()
+                cursor.execute("SET LOCAL transaction_timeout='3s'")
+                cursor.execute("SELECT factory.read_combined_metrics_snapshot()")
+                snapshot = cursor.fetchone()[0]
+                legacy = snapshot["legacy"]
+                execution = snapshot["execution"]
+                if set(legacy) != {
+                    "singleton", "accepted", "superseded", "queued", "retry", "dead",
+                    "transition_events", "live_leases", "reclaimed", "fence_rejected",
+                    "active_capacity", "cost_reserved_micros", "cost_observed_micros",
+                    "tokens_reserved", "tokens_observed", "wall_reserved_seconds",
+                    "output_observed_bytes", "accounting_blocked", "active_kills",
+                    "reconciliation_runs", "reconciliation_candidates", "repaired",
+                } or set(execution) != {
+                    "singleton", "execution_claimed", "stage_prepared", "stage_running",
+                    "stage_collecting", "stage_completed", "stage_failed",
+                    "stage_needs_human", "stage_cancelled", "stage_orphaned",
+                    "proposal_note", "proposal_artifact", "proposal_usage",
+                    "proposal_terminal", "recovery_claimed", "recovery_orphaned",
+                    "recovery_cancelled", "cleanup_succeeded", "cleanup_failed",
+                }:
+                    raise ValueError("metrics snapshot shape is invalid")
         except Exception as exc:
             raise MetricsUnavailable("metrics snapshot unavailable") from exc
-        (
-            _singleton, intake, superseded, queued, retry, dead, transition_events,
-            live_leases, reclaimed, fence_rejected, active_capacity,
-            reserved_cost, observed_cost, reserved_tokens, observed_tokens, reserved_wall,
-            observed_output, blocked, kills, reconciliation_runs,
-            reconciliation_candidates, repaired,
-        ) = row
+        intake, superseded, queued, retry, dead = (
+            legacy["accepted"], legacy["superseded"], legacy["queued"],
+            legacy["retry"], legacy["dead"],
+        )
+        transition_events = legacy["transition_events"]
+        live_leases, reclaimed, fence_rejected = (
+            legacy["live_leases"], legacy["reclaimed"], legacy["fence_rejected"],
+        )
+        active_capacity = legacy["active_capacity"]
+        reserved_cost, observed_cost = (
+            legacy["cost_reserved_micros"], legacy["cost_observed_micros"],
+        )
+        reserved_tokens, observed_tokens = (
+            legacy["tokens_reserved"], legacy["tokens_observed"],
+        )
+        reserved_wall = legacy["wall_reserved_seconds"]
+        observed_output = legacy["output_observed_bytes"]
+        blocked, kills = legacy["accounting_blocked"], legacy["active_kills"]
+        reconciliation_runs = legacy["reconciliation_runs"]
+        reconciliation_candidates = legacy["reconciliation_candidates"]
+        repaired = legacy["repaired"]
+        execution_claimed = execution["execution_claimed"]
+        stage_prepared, stage_running = execution["stage_prepared"], execution["stage_running"]
+        stage_collecting, stage_completed = (
+            execution["stage_collecting"], execution["stage_completed"],
+        )
+        stage_failed = execution["stage_failed"]
+        stage_needs_human = execution["stage_needs_human"]
+        stage_cancelled, stage_orphaned = (
+            execution["stage_cancelled"], execution["stage_orphaned"],
+        )
+        proposal_note, proposal_artifact = (
+            execution["proposal_note"], execution["proposal_artifact"],
+        )
+        proposal_usage, proposal_terminal = (
+            execution["proposal_usage"], execution["proposal_terminal"],
+        )
+        recovery_claimed, recovery_orphaned, recovery_cancelled = (
+            execution["recovery_claimed"], execution["recovery_orphaned"],
+            execution["recovery_cancelled"],
+        )
+        cleanup_succeeded, cleanup_failed = (
+            execution["cleanup_succeeded"], execution["cleanup_failed"],
+        )
         return {
             "factory_intake_and_rejection_outcomes_total": {
                 "accepted": intake, "superseded": superseded, "queued": queued, "retry": retry,
@@ -411,6 +913,30 @@ class PostgresFactoryStore:
                 "output_observed_bytes": observed_output, "accounting_blocked": blocked,
                 "active_kills": kills, "reconciliation_runs": reconciliation_runs,
                 "reconciliation_candidates": reconciliation_candidates, "repaired": repaired,
+            },
+            "factory_execution_claim_and_stage_outcomes_total": {
+                "claimed": execution_claimed,
+                "prepared": stage_prepared,
+                "running": stage_running,
+                "collecting": stage_collecting,
+                "completed": stage_completed,
+                "failed": stage_failed,
+                "needs_human": stage_needs_human,
+                "cancelled": stage_cancelled,
+                "orphaned": stage_orphaned,
+            },
+            "factory_execution_protocol_and_proposal_outcomes_total": {
+                "note": proposal_note,
+                "artifact": proposal_artifact,
+                "usage": proposal_usage,
+                "terminal": proposal_terminal,
+            },
+            "factory_execution_orphan_and_cleanup_outcomes_total": {
+                "claimed": recovery_claimed,
+                "orphaned": recovery_orphaned,
+                "cancelled": recovery_cancelled,
+                "workspace_released": cleanup_succeeded,
+                "cleanup_failed": cleanup_failed,
             },
         }
 
@@ -605,6 +1131,18 @@ class PostgresFactoryStore:
                 changed = self._terminalize_task(cursor, old_id, TaskStatus.SUPERSEDED)
                 if not changed:
                     continue
+                cursor.execute("SET LOCAL lock_timeout='500ms'")
+                cursor.execute("SET LOCAL transaction_timeout='3s'")
+                cursor.execute(
+                    "SELECT factory.execution_recovery_cancel_task(%s)", (old_id,)
+                )
+                execution_projection = cursor.fetchone()[0]
+                if execution_projection not in {
+                    "cancelled",
+                    "no_execution",
+                    "already_terminal",
+                }:
+                    raise StoreError("execution supersede projection failed")
                 key = canonical_digest({"action": "superseded", "replacement": intake.intent_digest})
                 self._event(
                     cursor, old_id, actor, "superseded", key,
@@ -1256,6 +1794,87 @@ class PostgresFactoryStore:
             self._proposal_context(cursor, grant, event.packet_digest)
             return None
 
+    def begin_execution_terminal_composite(
+        self,
+        grant: LeaseGrant,
+        event: CanonicalEvent,
+        actor: Actor,
+        *,
+        proposal_key: str,
+        finalize_key: str,
+        idempotency_key: str,
+        correlation_id: str | None = None,
+    ) -> None:
+        if (
+            actor.kind != "worker"
+            or actor.actor_id != grant.owner
+            or "task:execute" not in actor.scopes
+            or not isinstance(idempotency_key, str)
+            or not HEX64.fullmatch(idempotency_key)
+            or event.protocol_version != PROTOCOL_VERSION
+            or event.task_id != grant.task_id
+            or event.run_id != grant.run_id
+            or self._proposal_kind(event.event_type) != "terminal"
+        ):
+            raise StoreError("invalid execution terminal composite command")
+        expected_keys = {
+            phase: canonical_digest(
+                {
+                    "contract": "adaptive-factory.execution-terminal-phase/v1",
+                    "command": idempotency_key,
+                    "phase": phase,
+                }
+            )
+            for phase in ("proposal", "finalize")
+        }
+        if (
+            proposal_key != expected_keys["proposal"]
+            or finalize_key != expected_keys["finalize"]
+            or proposal_key == finalize_key
+        ):
+            raise StoreError("invalid execution terminal phase keys")
+        command = {
+            "contract": "adaptive-factory.execution-terminal-composite-command/v1",
+            "proposal_command": self._execution_proposal_command(grant, event),
+            "proposal_key": proposal_key,
+            "finalize_key": finalize_key,
+        }
+        marker = {"proposal_key": proposal_key, "finalize_key": finalize_key}
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            replay, prior, request_digest = self._command_replay(
+                cursor,
+                idempotency_key,
+                actor,
+                "execution_terminal_composite",
+                command,
+            )
+            if replay:
+                if prior != marker:
+                    raise IntegrityError("persisted terminal composite marker is corrupt")
+                return
+            context = self._proposal_context(cursor, grant, event.packet_digest)
+            try:
+                proposal = ProposalBroker().accept(
+                    event,
+                    context,
+                    owner=grant.owner,
+                    fence=grant.fence,
+                )
+            except BrokerError as exc:
+                raise StoreError("execution terminal command semantics are invalid") from exc
+            if not isinstance(proposal, TerminalProposal):
+                raise StoreError("execution terminal command is not terminal")
+            self._record_command(
+                cursor,
+                idempotency_key,
+                actor,
+                "execution_terminal_composite",
+                request_digest,
+                correlation_id,
+                marker,
+            )
+
     def commit_execution_proposal(
         self,
         grant: LeaseGrant,
@@ -1719,8 +2338,9 @@ class PostgresFactoryStore:
             AND r.fence=%s AND r.packet_digest=%s
             AND r.state='leased' AND r.released_at IS NULL
             AND a.released_at IS NULL
-            AND (%s OR r.lease_expires_at>clock_timestamp())
-            AND t.current_run_id=r.run_id AND t.current_fence=r.fence AND t.state='leased' AND t.deadline_at>clock_timestamp()
+            AND (%s OR (r.lease_expires_at>clock_timestamp()
+              AND t.deadline_at>clock_timestamp()))
+            AND t.current_run_id=r.run_id AND t.current_fence=r.fence AND t.state='leased'
             FOR UPDATE OF r,t""",
             (
                 grant.run_id,
@@ -2152,6 +2772,18 @@ class PostgresFactoryStore:
             if replay:
                 return self._get_task(cursor, task_id)
             if self._terminalize_task(cursor, task_id, TaskStatus.CANCELLED):
+                cursor.execute("SET LOCAL lock_timeout='500ms'")
+                cursor.execute("SET LOCAL transaction_timeout='3s'")
+                cursor.execute(
+                    "SELECT factory.execution_recovery_cancel_task(%s)", (task_id,)
+                )
+                execution_projection = cursor.fetchone()[0]
+                if execution_projection not in {
+                    "cancelled",
+                    "no_execution",
+                    "already_terminal",
+                }:
+                    raise StoreError("execution cancellation projection failed")
                 self._event(
                     cursor, task_id, actor, "cancelled", key, {"reason": reason}, mandatory_cleanup=True
                 )

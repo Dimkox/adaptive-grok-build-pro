@@ -1,9 +1,10 @@
 from dataclasses import asdict, replace
-from datetime import timedelta
+from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 import threading
+import time
 import unittest
 import uuid
 
@@ -15,18 +16,36 @@ from adaptive_factory.migrations import (
     RoleSafetyError,
     discover_migrations,
 )
-from adaptive_factory.models import ExecutionStage, RunRole
-from adaptive_factory.service import ClaimRequest, FactoryService
+from adaptive_factory.models import Actor, ExecutionStage, FailureClass, RunRole
+from adaptive_factory.service import (
+    AuthorizationError,
+    ClaimRequest,
+    FactoryService,
+    SnapshotBrokerUnavailable,
+)
 from adaptive_factory.store import (
     FenceError,
     IntegrityError,
     PostgresArtifactAttestationStore,
     PostgresFactoryStore,
     StoreError,
+    StoreUnavailable,
 )
 from adaptive_factory.protocol import CanonicalEvent
-from adaptive_factory.workspace import ArtifactAttestationV1
-from adaptive_factory.workspace import WorkspaceSnapshotV1
+from adaptive_factory.recovery import (
+    ExecutionRecovery,
+    ExecutionRecoveryCandidate,
+    ExecutionRecoveryNotDue,
+)
+from adaptive_factory.workspace import (
+    ArtifactAttestationV1,
+    FakeWorkspaceBroker,
+    WorkspaceHandle,
+    WorkspacePolicy,
+    WorkspaceReleaseOutcome,
+    WorkspaceSnapshotUnavailable,
+    WorkspaceSnapshotV1,
+)
 from factory.tests.test_contracts import valid_intake
 from factory.tests.test_execution_contracts import valid_packet
 from factory.tests.test_execution_service import trusted_registry
@@ -45,7 +64,42 @@ class TrustedArtifactBroker:
 
 
 class TrustedSnapshotBroker:
-    def snapshot(self, request):
+    def snapshot(self, request, *, timeout_seconds=5.0):
+        if timeout_seconds != 5.0:
+            raise AssertionError("snapshot timeout must stay bounded")
+        return WorkspaceSnapshotV1.from_facts(
+            {
+                "contract_version": 1,
+                "repository_id": request.repository_id,
+                "workspace_handle": request.workspace_handle,
+                "input_head_sha": request.input_head_sha,
+                "result_head_sha": "f" * 40,
+                "diff_digest": "e" * 64,
+                "diff_lines": 1,
+                "source": "trusted_git_broker",
+            }
+        )
+
+
+class RecordingSnapshotBroker:
+    def __init__(self, *, unavailable_once=False, rendezvous=1):
+        self.calls = 0
+        self.unavailable_once = unavailable_once
+        self._lock = threading.Lock()
+        self._rendezvous = (
+            threading.Barrier(rendezvous) if rendezvous > 1 else None
+        )
+
+    def snapshot(self, request, *, timeout_seconds):
+        if timeout_seconds != 5.0:
+            raise AssertionError("snapshot timeout must stay bounded")
+        with self._lock:
+            self.calls += 1
+            call = self.calls
+        if self._rendezvous is not None:
+            self._rendezvous.wait(timeout=5)
+        if self.unavailable_once and call == 1:
+            return WorkspaceSnapshotUnavailable()
         return WorkspaceSnapshotV1.from_facts(
             {
                 "contract_version": 1,
@@ -138,7 +192,10 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.workspace_results, factory.execution_artifact_attestations, "
+                "TRUNCATE factory.execution_recovery_outcomes, "
+                "factory.execution_recovery_claims, factory.execution_recovery_jobs, "
+                "factory.workspace_results, "
+                "factory.execution_artifact_attestations, "
                 "factory.execution_proposals, "
                 "factory.execution_stage_events, factory.execution_manifests, "
                 "factory.execution_packets, factory.audit_log, factory.audit_heads, "
@@ -155,6 +212,14 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 cursor.execute("TRUNCATE factory.kill_switch_heads")
                 cursor.execute("INSERT INTO factory.metric_counters(singleton) VALUES (true)")
             cursor.execute("UPDATE factory.capacity_counters SET active_count=0")
+            cursor.execute(
+                "UPDATE factory.execution_metric_counters SET "
+                "execution_claimed=0,stage_prepared=0,stage_running=0,stage_collecting=0,"
+                "stage_completed=0,stage_failed=0,stage_needs_human=0,stage_cancelled=0,"
+                "stage_orphaned=0,proposal_note=0,proposal_artifact=0,proposal_usage=0,"
+                "proposal_terminal=0,recovery_claimed=0,recovery_orphaned=0,"
+                "recovery_cancelled=0,cleanup_succeeded=0,cleanup_failed=0"
+            )
             cursor.execute(
                 """INSERT INTO factory.m0_authority_observations
                 (observation_id,observed_at,check_name,exact_head_sha,issuer,
@@ -188,7 +253,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             )
         database_url = make_conninfo(**{**connection_values, "dbname": database})
         migrations = tuple(PostgresMigrator(DATABASE_URL).status())
-        self.assertEqual(len(migrations), 16)
+        self.assertEqual(len(migrations), 17)
         from adaptive_factory.migrations import discover_migrations
 
         packaged = discover_migrations()
@@ -1102,6 +1167,83 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 ("factory_artifact_attestor", True, False, False, False, False),
             )
 
+    def test_capability_roles_reject_a_second_inbound_login_member(self):
+        import psycopg
+        from psycopg import sql
+        from psycopg.conninfo import conninfo_to_dict, make_conninfo
+
+        extra_login = f"factory_exec_extra_{os.getpid()}"
+        with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
+            connection.execute(
+                sql.SQL("CREATE ROLE {} LOGIN NOINHERIT PASSWORD {}").format(
+                    sql.Identifier(extra_login),
+                    sql.Literal("local-extra-capability-password"),
+                )
+            )
+        try:
+            for role, readiness in (
+                ("factory_runtime", self.runtime_store().readiness),
+                (
+                    "factory_artifact_attestor",
+                    self.attestor_store().readiness,
+                ),
+            ):
+                with self.subTest(role=role), psycopg.connect(
+                    DATABASE_URL, autocommit=True
+                ) as connection:
+                    connection.execute(
+                        sql.SQL("GRANT {} TO {}").format(
+                            sql.Identifier(role), sql.Identifier(extra_login)
+                        )
+                    )
+                try:
+                    extra_url = make_conninfo(
+                        **{
+                            **conninfo_to_dict(DATABASE_URL),
+                            "user": extra_login,
+                            "password": "local-extra-capability-password",
+                        }
+                    )
+                    attacker_readiness = (
+                        PostgresFactoryStore(extra_url).readiness
+                        if role == "factory_runtime"
+                        else PostgresArtifactAttestationStore(extra_url).readiness
+                    )
+                    for rejected in (readiness, attacker_readiness):
+                        with self.assertRaisesRegex(
+                            StoreError, "capability role is not isolated"
+                        ):
+                            rejected()
+                finally:
+                    with psycopg.connect(
+                        DATABASE_URL, autocommit=True
+                    ) as connection:
+                        connection.execute(
+                            sql.SQL("REVOKE {} FROM {}").format(
+                                sql.Identifier(role), sql.Identifier(extra_login)
+                            )
+                        )
+                self.assertEqual(
+                    readiness()["database_role"], role
+                )
+            with psycopg.connect(
+                DATABASE_URL
+            ) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT
+                    (SELECT count(*) FROM factory.command_results),
+                    (SELECT count(*) FROM factory.execution_artifact_attestations),
+                    (SELECT count(*) FROM factory.execution_recovery_jobs)"""
+                )
+                self.assertEqual(cursor.fetchone(), (0, 0, 0))
+        finally:
+            with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
+                connection.execute(
+                    sql.SQL("DROP ROLE IF EXISTS {}").format(
+                        sql.Identifier(extra_login)
+                    )
+                )
+
     def test_existing_attestor_role_cannot_gain_login_or_membership(self):
         import psycopg
         from psycopg import sql
@@ -1148,7 +1290,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             artifact_attestor_url=self.attestor_url,
         )
         self.assertEqual(readiness["database_role"], "factory_runtime")
-        self.assertEqual(readiness["schema_version"], 16)
+        self.assertEqual(readiness["schema_version"], 17)
         self.assertEqual(
             readiness["artifact_attestor_database_role"],
             "factory_artifact_attestor",
@@ -1345,6 +1487,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 [
                     (15, "015_execution_canonical_persistence.sql"),
                     (16, "016_contract_execution_canonical_persistence.sql"),
+                    (17, "017_execution_recovery_topology.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -1354,10 +1497,16 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (SELECT count(*) FROM factory.execution_manifests),
                     (SELECT count(*) FROM factory.execution_proposals),
                     to_regprocedure('factory.execution_record_artifact_attestation(jsonb)')
-                      IS NOT NULL
+                      IS NOT NULL,
+                    (SELECT count(*) FROM factory.execution_metric_counters),
+                    (SELECT execution_claimed=0 AND stage_prepared=0
+                       AND proposal_note=0 AND recovery_claimed=0
+                     FROM factory.execution_metric_counters WHERE singleton)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (16, 1, 1, 1, True))
+                self.assertEqual(
+                    cursor.fetchone(), (17, 1, 1, 1, True, 1, True)
+                )
                 self.assertEqual(
                     self.replaced_execution_function_metadata(cursor),
                     before_functions,
@@ -1428,6 +1577,138 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 "notes", [note.idempotency_key]
             ))
             self.assertEqual(store.get_task(task.task_id).status.value, "needs_human")
+            with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT proposal_terminal,stage_needs_human
+                    FROM factory.execution_metric_counters WHERE singleton"""
+                )
+                self.assertEqual(cursor.fetchone(), (1, 1))
+        finally:
+            self.drop_disposable_database(database_url, admin_url)
+
+    def test_schema14_upgrade_rejects_rogue_inbound_capability_member_atomically(self):
+        import psycopg
+        from psycopg import sql
+
+        database_url, admin_url = self.create_schema14_database(
+            "rogue_inbound_member"
+        )
+        rogue_login = f"factory_upgrade_rogue_{os.getpid()}"
+        try:
+            _task, _execution, _note, _store = self.populate_schema14_execution(
+                database_url, proposal_kind="note"
+            )
+            with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
+                connection.execute(
+                    sql.SQL("CREATE ROLE {} LOGIN NOINHERIT PASSWORD {}").format(
+                        sql.Identifier(rogue_login),
+                        sql.Literal("local-upgrade-rogue-password"),
+                    )
+                )
+                connection.execute(
+                    sql.SQL("GRANT factory_runtime TO {}").format(
+                        sql.Identifier(rogue_login)
+                    )
+                )
+            try:
+                with self.assertRaisesRegex(
+                    RoleSafetyError, "role membership boundary is unsafe"
+                ):
+                    self.migrate(database_url)
+                with psycopg.connect(
+                    database_url
+                ) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """SELECT max(version),
+                        to_regclass('factory.execution_recovery_jobs'),
+                        (SELECT count(*) FROM factory.execution_packets),
+                        (SELECT count(*) FROM factory.execution_manifests),
+                        (SELECT count(*) FROM factory.execution_proposals)
+                        FROM factory.schema_migrations"""
+                    )
+                    self.assertEqual(cursor.fetchone(), (14, None, 1, 1, 1))
+            finally:
+                with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
+                    connection.execute(
+                        sql.SQL("REVOKE factory_runtime FROM {}").format(
+                            sql.Identifier(rogue_login)
+                        )
+                    )
+                    connection.execute(
+                        sql.SQL("DROP ROLE IF EXISTS {}").format(
+                            sql.Identifier(rogue_login)
+                        )
+                    )
+            self.assertEqual(
+                [item.version for item in self.migrate(database_url)],
+                [15, 16, 17],
+            )
+        finally:
+            with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
+                connection.execute(
+                    sql.SQL("DROP ROLE IF EXISTS {}").format(
+                        sql.Identifier(rogue_login)
+                    )
+                )
+            self.drop_disposable_database(database_url, admin_url)
+
+    def test_populated_schema16_to_17_is_atomic_zero_epoch_and_forward_only(self):
+        import psycopg
+
+        database_url, admin_url = self.create_schema14_database("schema16_recovery")
+        try:
+            _task, _execution, _note, _store = self.populate_schema14_execution(
+                database_url, proposal_kind="note"
+            )
+            packaged = discover_migrations()
+            with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+                for migration in packaged[14:16]:
+                    cursor.execute(migration.sql)
+                    cursor.execute(
+                        "INSERT INTO factory.schema_migrations(version,name,sha256) "
+                        "VALUES (%s,%s,%s)",
+                        (migration.version, migration.name, migration.sha256),
+                    )
+                cursor.execute(
+                    "CREATE TABLE factory.execution_metric_counters "
+                    "(singleton boolean PRIMARY KEY)"
+                )
+            with self.assertRaises(psycopg.errors.DuplicateTable):
+                self.migrate(database_url)
+            with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT max(version),
+                    to_regclass('factory.execution_recovery_jobs'),
+                    to_regclass('factory.execution_recovery_claims'),
+                    to_regclass('factory.execution_recovery_outcomes'),
+                    to_regclass('factory.execution_metric_counters') IS NOT NULL,
+                    (SELECT count(*) FROM factory.execution_packets),
+                    (SELECT count(*) FROM factory.execution_manifests),
+                    (SELECT count(*) FROM factory.execution_proposals)
+                    FROM factory.schema_migrations"""
+                )
+                self.assertEqual(
+                    cursor.fetchone(), (16, None, None, None, True, 1, 1, 1)
+                )
+                cursor.execute("DROP TABLE factory.execution_metric_counters")
+            applied = self.migrate(database_url)
+            self.assertEqual(
+                [(item.version, item.name) for item in applied],
+                [(17, "017_execution_recovery_topology.sql")],
+            )
+            with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT max(version),
+                    (SELECT count(*) FROM factory.execution_packets),
+                    (SELECT count(*) FROM factory.execution_manifests),
+                    (SELECT count(*) FROM factory.execution_proposals),
+                    (SELECT count(*) FROM factory.execution_metric_counters),
+                    (SELECT execution_claimed=0 AND stage_prepared=0
+                       AND proposal_note=0 AND recovery_claimed=0
+                     FROM factory.execution_metric_counters WHERE singleton)
+                    FROM factory.schema_migrations"""
+                )
+                self.assertEqual(cursor.fetchone(), (17, 1, 1, 1, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -1518,6 +1799,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 [
                     (15, "015_execution_canonical_persistence.sql"),
                     (16, "016_contract_execution_canonical_persistence.sql"),
+                    (17, "017_execution_recovery_topology.sql"),
                 ],
             )
             result = FactoryService(
@@ -1542,7 +1824,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                       FROM factory.workspace_results)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (16, 1, True))
+                self.assertEqual(cursor.fetchone(), (17, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -1729,6 +2011,420 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             )
         with self.assertRaises(StoreError):
             self.store.workspace_result(task.task_id, result.workspace_result_digest)
+
+    def test_terminal_composite_persists_and_replays_all_outcomes_with_one_finalization(self):
+        import psycopg
+
+        variants = (
+            (
+                "completed",
+                "run.completed",
+                {"summary": "complete"},
+                "ready_for_human",
+                "completed",
+                None,
+                None,
+            ),
+            (
+                "failed",
+                "run.failed",
+                {"failure_class": "validation", "diagnostic": "invalid output"},
+                "needs_human",
+                "failed",
+                "validation",
+                "invalid output",
+            ),
+            (
+                "needs_human",
+                "run.needs_human",
+                {"reason": "review required", "diagnostic": "bounded detail"},
+                "needs_human",
+                "failed",
+                None,
+                "review required",
+            ),
+        )
+        for index, (
+            terminal_stage,
+            event_type,
+            payload,
+            m4_status,
+            run_state,
+            failure_class,
+            failure_reason,
+        ) in enumerate(variants):
+            with self.subTest(event_type=event_type):
+                task, execution = self.claim_execution(
+                    f"terminal-composite-{index}",
+                    capabilities=(
+                        ["structured_output", "usage"]
+                        if terminal_stage == "completed"
+                        else ["structured_output"]
+                    ),
+                )
+                if terminal_stage == "completed":
+                    usage_payload = {
+                        "provider_call_id": f"terminal-composite-call-{index}",
+                        "price_table_digest": "d" * 64,
+                        "input_tokens": 10,
+                        "output_tokens": 5,
+                        "reasoning_tokens": 0,
+                        "cost_usd_micros": 25,
+                        "output_bytes": 20,
+                    }
+                    self.service.commit_execution_proposal(
+                        execution.lease,
+                        packet_digest=execution.packet_digest,
+                        sequence=1,
+                        event_type="usage.reported",
+                        payload=usage_payload,
+                        actor=WORKER,
+                        idempotency_key=canonical_digest(
+                            {"terminal-composite-usage-proposal": index}
+                        ),
+                    )
+                    self.service.observe_usage(
+                        execution.lease,
+                        provider_call_id=usage_payload["provider_call_id"],
+                        price_table_digest=usage_payload["price_table_digest"],
+                        cost_usd_micros=usage_payload["cost_usd_micros"],
+                        token_units=(
+                            usage_payload["input_tokens"]
+                            + usage_payload["output_tokens"]
+                            + usage_payload["reasoning_tokens"]
+                        ),
+                        output_bytes=usage_payload["output_bytes"],
+                        actor=WORKER,
+                        idempotency_key=canonical_digest(
+                            {"terminal-composite-usage": index}
+                        ),
+                    )
+                    self.service.advance_execution(
+                        execution.lease,
+                        packet_digest=execution.packet_digest,
+                        stage=ExecutionStage.RUNNING,
+                        actor=WORKER,
+                        idempotency_key=canonical_digest(
+                            {"terminal-composite-stage": index, "stage": "running"}
+                        ),
+                    )
+                    self.service.advance_execution(
+                        execution.lease,
+                        packet_digest=execution.packet_digest,
+                        stage=ExecutionStage.COLLECTING,
+                        actor=WORKER,
+                        idempotency_key=canonical_digest(
+                            {"terminal-composite-stage": index, "stage": "collecting"}
+                        ),
+                    )
+                outer_key = canonical_digest({"terminal-composite": index})
+                broker = RecordingSnapshotBroker(
+                    unavailable_once=terminal_stage == "failed",
+                    rendezvous=2 if terminal_stage == "completed" else 1,
+                )
+                service = FactoryService(self.store, snapshot_broker=broker)
+                arguments = {
+                    "packet_digest": execution.packet_digest,
+                    "sequence": 2 if terminal_stage == "completed" else 1,
+                    "event_type": event_type,
+                    "payload": payload,
+                    "actor": WORKER,
+                    "idempotency_key": outer_key,
+                    "correlation_id": f"terminal-composite-{index}",
+                }
+                if terminal_stage == "completed":
+                    with ThreadPoolExecutor(max_workers=2) as executor:
+                        futures = (
+                            executor.submit(
+                                service.commit_terminal_and_finalize,
+                                execution.lease,
+                                **arguments,
+                            ),
+                            executor.submit(
+                                service.commit_terminal_and_finalize,
+                                execution.lease,
+                                **arguments,
+                            ),
+                        )
+                        completions = tuple(
+                            future.result(timeout=10) for future in futures
+                        )
+                    self.assertEqual(completions[0], completions[1])
+                    completion = completions[0]
+                    expected_broker_calls = 2
+                else:
+                    if terminal_stage == "failed":
+                        with self.assertRaises(SnapshotBrokerUnavailable):
+                            service.commit_terminal_and_finalize(
+                                execution.lease, **arguments
+                            )
+                        with psycopg.connect(
+                            DATABASE_URL
+                        ) as connection, connection.cursor() as cursor:
+                            cursor.execute(
+                                "SELECT count(*) FROM factory.execution_proposals "
+                                "WHERE run_id=%s AND proposal_kind='terminal'",
+                                (execution.lease.run_id,),
+                            )
+                            self.assertEqual(cursor.fetchone()[0], 1)
+                            cursor.execute(
+                                "SELECT count(*) FROM factory.workspace_results WHERE run_id=%s",
+                                (execution.lease.run_id,),
+                            )
+                            self.assertEqual(cursor.fetchone()[0], 0)
+                        calls = broker.calls
+                        with self.assertRaises(StoreError):
+                            service.commit_terminal_and_finalize(
+                                replace(
+                                    execution.lease,
+                                    fence=execution.lease.fence + 1,
+                                ),
+                                **arguments,
+                            )
+                        foreign = Actor(
+                            "foreign-worker",
+                            "worker",
+                            WORKER.scopes,
+                            WORKER.repositories,
+                        )
+                        with self.assertRaises(AuthorizationError):
+                            service.commit_terminal_and_finalize(
+                                execution.lease,
+                                **{**arguments, "actor": foreign},
+                            )
+                        self.assertEqual(broker.calls, calls)
+                    completion = service.commit_terminal_and_finalize(
+                        execution.lease, **arguments
+                    )
+                    expected_broker_calls = 2 if terminal_stage == "failed" else 1
+                replay = service.commit_terminal_and_finalize(
+                    execution.lease, **arguments
+                )
+                self.assertEqual(replay, completion)
+                self.assertEqual(broker.calls, expected_broker_calls)
+                self.assertEqual(
+                    (
+                        completion.proposal.terminal_type,
+                        completion.result.terminal_stage,
+                        completion.result.m4_status,
+                        completion.result.failure_class,
+                        completion.result.failure_reason,
+                    ),
+                    (
+                        event_type,
+                        terminal_stage,
+                        m4_status,
+                        failure_class,
+                        failure_reason,
+                    ),
+                )
+                proposal_key = canonical_digest(
+                    {
+                        "contract": "adaptive-factory.execution-terminal-phase/v1",
+                        "command": outer_key,
+                        "phase": "proposal",
+                    }
+                )
+                finalize_key = canonical_digest(
+                    {
+                        "contract": "adaptive-factory.execution-terminal-phase/v1",
+                        "command": outer_key,
+                        "phase": "finalize",
+                    }
+                )
+                with psycopg.connect(
+                    DATABASE_URL
+                ) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """SELECT task.state,run.state,run.released_at IS NOT NULL,
+                        allocation.released_at IS NOT NULL,manifest.stage,
+                        result.terminal_stage,result.m4_status,result.failure_class,
+                        result.failure_reason,
+                        (SELECT count(*) FROM factory.execution_proposals proposal
+                         WHERE proposal.run_id=run.run_id AND proposal.proposal_kind='terminal'),
+                        (SELECT count(*) FROM factory.workspace_results workspace
+                         WHERE workspace.run_id=run.run_id),
+                        (SELECT count(*) FROM factory.execution_stage_events event
+                         WHERE event.manifest_digest=manifest.manifest_digest
+                           AND event.stage=%s),
+                        (SELECT count(*) FROM factory.task_events event
+                         WHERE event.task_id=task.task_id AND event.action='released'),
+                        (SELECT count(*) FROM factory.audit_log audit
+                         WHERE audit.run_id=run.run_id
+                           AND audit.action='execution_finalize')
+                        FROM factory.tasks task
+                        JOIN factory.runs run ON run.task_id=task.task_id
+                        JOIN factory.capacity_allocations allocation
+                          ON allocation.run_id=run.run_id
+                        JOIN factory.execution_manifests manifest
+                          ON manifest.run_id=run.run_id
+                        JOIN factory.workspace_results result ON result.run_id=run.run_id
+                        WHERE task.task_id=%s""",
+                        (terminal_stage, task.task_id),
+                    )
+                    self.assertEqual(
+                        cursor.fetchone(),
+                        (
+                            m4_status,
+                            run_state,
+                            True,
+                            True,
+                            terminal_stage,
+                            terminal_stage,
+                            m4_status,
+                            failure_class,
+                            failure_reason,
+                            1,
+                            1,
+                            1,
+                            1,
+                            1,
+                        ),
+                    )
+                    cursor.execute(
+                        "SELECT idempotency_key,action FROM factory.command_results "
+                        "WHERE idempotency_key=ANY(%s) ORDER BY idempotency_key",
+                        ([outer_key, proposal_key, finalize_key],),
+                    )
+                    self.assertEqual(
+                        {row[0].strip(): row[1] for row in cursor.fetchall()},
+                        {
+                            outer_key: "execution_terminal_composite",
+                            proposal_key: "execution_propose",
+                            finalize_key: "execution_finalize",
+                        },
+                    )
+
+    def test_terminal_outer_command_key_blocks_cross_route_reuse_and_corrupt_marker(self):
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "terminal-outer-note-first", capabilities=["notes", "structured_output"]
+        )
+        outer_key = canonical_digest({"terminal-outer-key": "note-first"})
+        self.service.commit_execution_proposal(
+            execution.lease,
+            packet_digest=execution.packet_digest,
+            sequence=1,
+            event_type="note.proposed",
+            payload={"note_type": "finding", "body": "safe", "evidence": []},
+            actor=WORKER,
+            idempotency_key=outer_key,
+        )
+        broker = RecordingSnapshotBroker()
+        service = FactoryService(self.store, snapshot_broker=broker)
+        with self.assertRaises(StoreError):
+            service.commit_terminal_and_finalize(
+                execution.lease,
+                packet_digest=execution.packet_digest,
+                sequence=2,
+                event_type="run.completed",
+                payload={"summary": "complete"},
+                actor=WORKER,
+                idempotency_key=outer_key,
+            )
+        self.assertEqual(broker.calls, 0)
+        self.service.cancel(
+            task.task_id,
+            reason="release note-first collision fixture",
+            idempotency_key=canonical_digest(
+                {"terminal-outer-key": "note-first-cleanup"}
+            ),
+            actor=OPERATOR,
+            now=NOW,
+        )
+
+        _task, execution = self.claim_execution(
+            "terminal-outer-terminal-first", capabilities=["notes", "structured_output"]
+        )
+        outer_key = canonical_digest({"terminal-outer-key": "terminal-first"})
+        unavailable = RecordingSnapshotBroker(unavailable_once=True)
+        service = FactoryService(self.store, snapshot_broker=unavailable)
+        terminal_arguments = {
+            "packet_digest": execution.packet_digest,
+            "sequence": 1,
+            "event_type": "run.failed",
+            "payload": {"failure_class": "validation", "diagnostic": "invalid"},
+            "actor": WORKER,
+            "idempotency_key": outer_key,
+        }
+        with self.assertRaises(SnapshotBrokerUnavailable):
+            service.commit_terminal_and_finalize(execution.lease, **terminal_arguments)
+        with self.assertRaises(StoreError):
+            self.service.commit_execution_proposal(
+                execution.lease,
+                packet_digest=execution.packet_digest,
+                sequence=2,
+                event_type="note.proposed",
+                payload={"note_type": "finding", "body": "late", "evidence": []},
+                actor=WORKER,
+                idempotency_key=outer_key,
+            )
+        self.assertEqual(unavailable.calls, 1)
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.command_results SET result='{}'::jsonb "
+                "WHERE idempotency_key=%s",
+                (outer_key,),
+            )
+        with self.assertRaises(IntegrityError):
+            service.commit_terminal_and_finalize(execution.lease, **terminal_arguments)
+        self.assertEqual(unavailable.calls, 1)
+
+    def test_terminal_outer_marker_stale_fence_is_counted_before_any_mutation(self):
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "terminal-outer-stale-fence", capabilities=["structured_output"]
+        )
+        broker = RecordingSnapshotBroker()
+        service = FactoryService(self.store, snapshot_broker=broker)
+        outer_key = canonical_digest({"terminal-outer-key": "stale-fence"})
+        with psycopg.connect(DATABASE_URL) as connection:
+            before_fence = connection.execute(
+                "SELECT fence_rejected FROM factory.metric_counters"
+            ).fetchone()[0]
+        try:
+            with self.assertRaises(FenceError):
+                service.commit_terminal_and_finalize(
+                    replace(
+                        execution.lease,
+                        fence=execution.lease.fence + 1,
+                    ),
+                    packet_digest=execution.packet_digest,
+                    sequence=1,
+                    event_type="run.completed",
+                    payload={"summary": "complete"},
+                    actor=WORKER,
+                    idempotency_key=outer_key,
+                    correlation_id="terminal-outer-stale-fence",
+                )
+            with psycopg.connect(
+                DATABASE_URL
+            ) as connection, connection.cursor() as cursor:
+                cursor.execute(
+                    """SELECT fence_rejected,
+                    (SELECT count(*) FROM factory.command_results
+                     WHERE idempotency_key=%s),
+                    (SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s),
+                    (SELECT count(*) FROM factory.workspace_results WHERE run_id=%s)
+                    FROM factory.metric_counters""",
+                    (outer_key, execution.lease.run_id, execution.lease.run_id),
+                )
+                self.assertEqual(
+                    cursor.fetchone(), (before_fence + 1, 0, 0, 0)
+                )
+            self.assertEqual(broker.calls, 0)
+        finally:
+            self.service.cancel(
+                task.task_id,
+                reason="release stale-fence fixture",
+                idempotency_key=canonical_digest(
+                    {"terminal-outer-key": "stale-fence-cleanup"}
+                ),
+                actor=OPERATOR,
+                now=NOW,
+            )
 
     def test_direct_forged_finalize_and_injected_audit_failure_roll_back_everything(self):
         import psycopg
@@ -2951,6 +3647,1729 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             self.assertEqual(cursor.fetchone(), (before_fence, 0, 0))
 
 
+    def test_recovery_claim_atomically_orphans_expired_execution_and_denies_late_work(self):
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "recovery-atomic-expired", capabilities=["notes", "structured_output"]
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+
+        import psycopg
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SET LOCAL transaction_timeout='3s'; "
+                "SET LOCAL statement_timeout='5s'; SET LOCAL lock_timeout='500ms'"
+            )
+            cursor.execute(
+                "SELECT factory.execution_recovery_candidates(%s,%s,%s)",
+                (10, None, None),
+            )
+            page = cursor.fetchone()[0]
+            candidates = page["candidates"]
+            self.assertEqual(len(candidates), 1)
+            self.assertEqual(
+                tuple(
+                    candidates[0][name].strip()
+                    for name in (
+                        "task_id",
+                        "run_id",
+                        "manifest_digest",
+                        "workspace_handle",
+                    )
+                ),
+                (
+                    task.task_id,
+                    execution.lease.run_id,
+                    execution.manifest_digest,
+                    execution.workspace_handle,
+                ),
+            )
+            cursor.execute(
+                "SELECT factory.execution_recovery_claim(%s,%s,%s,%s,%s,%s)",
+                (
+                    task.task_id,
+                    execution.lease.run_id,
+                    execution.manifest_digest,
+                    execution.workspace_handle,
+                    candidates[0]["updated_at"],
+                    30,
+                ),
+            )
+            self.assertIsNone(cursor.fetchone()[0])
+
+        candidate = ExecutionRecoveryCandidate(
+            task.task_id,
+            execution.lease.run_id,
+            execution.manifest_digest,
+            execution.workspace_handle,
+            datetime.fromisoformat(
+                candidates[0]["updated_at"].replace("Z", "+00:00")
+            ),
+        )
+        claim = self.store.claim_execution_recovery(candidate, OPERATOR)
+        self.assertIsNotNone(claim)
+        self.assertEqual(claim.transition, "orphaned")
+        self.assertEqual(claim.claim_fence, 1)
+        self.assertEqual(claim.candidate, candidate)
+        self.assertIsNone(self.store.claim_execution_recovery(candidate, OPERATOR))
+
+        with self.store._transaction() as cursor:
+            cursor.execute(
+                "SELECT factory.execution_advance(%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    task.task_id,
+                    execution.lease.run_id,
+                    execution.lease.owner,
+                    execution.lease.fence,
+                    execution.lease.packet_digest,
+                    execution.packet_digest,
+                    "running",
+                ),
+            )
+            self.assertFalse(cursor.fetchone()[0])
+            cursor.execute(
+                "SELECT factory.execution_finalize_context(%s,%s,%s,%s,%s,%s)",
+                (
+                    task.task_id,
+                    execution.lease.run_id,
+                    execution.lease.owner,
+                    execution.lease.fence,
+                    execution.lease.packet_digest,
+                    execution.packet_digest,
+                ),
+            )
+            self.assertIsNone(cursor.fetchone()[0])
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT t.state,t.current_run_id,t.current_fence,t.repair_count,
+                r.state,r.released_at IS NOT NULL,
+                a.released_at IS NOT NULL,m.stage,m.terminal_at IS NOT NULL,
+                (SELECT count(*) FROM factory.execution_stage_events e
+                 WHERE e.manifest_digest=m.manifest_digest AND e.stage='orphaned'),
+                (SELECT count(*) FROM factory.execution_recovery_jobs j
+                 WHERE j.run_id=r.run_id AND j.status='claimed'),
+                (SELECT count(*) FROM factory.execution_proposals p WHERE p.run_id=r.run_id),
+                (SELECT count(*) FROM factory.workspace_results w WHERE w.run_id=r.run_id)
+                FROM factory.tasks t
+                JOIN factory.runs r ON r.task_id=t.task_id
+                JOIN factory.capacity_allocations a ON a.run_id=r.run_id
+                JOIN factory.execution_manifests m ON m.run_id=r.run_id
+                WHERE t.task_id=%s""",
+                (task.task_id,),
+            )
+            row = cursor.fetchone()
+            self.assertEqual(row[:4], ("retry", None, None, 1))
+            self.assertEqual(row[4], "expired")
+            self.assertEqual(row[5:], (True, True, "orphaned", True, 1, 1, 0, 0))
+            cursor.execute(
+                """SELECT attempt.failure_class,attempt.failure_code,
+                attempt.failure_digest IS NOT NULL,attempt.finished_at IS NOT NULL,
+                (SELECT count(*) FROM factory.task_events event
+                 WHERE event.task_id=attempt.task_id AND event.action='released'),
+                (SELECT count(*) FROM factory.audit_log audit
+                 WHERE audit.task_id=attempt.task_id AND audit.run_id=attempt.run_id
+                   AND audit.action='release' AND audit.reason='retry')
+                FROM factory.attempts attempt WHERE attempt.run_id=%s""",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(
+                cursor.fetchone(), ("worker_lost", "worker_lost", True, True, 1, 1)
+            )
+            cursor.execute(
+                "SELECT active_count FROM factory.capacity_counters "
+                "WHERE scope_key='global:writer'"
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+        self.assertTrue(self.store.verify_audit_chain(task.task_id))
+
+    def test_cancel_projects_execution_before_cleanup_and_first_claim_is_cancelled(self):
+        task, execution = self.claim_execution(
+            "recovery-cancelled", capabilities=["notes", "structured_output"]
+        )
+        cancelled = self.service.cancel(
+            task.task_id,
+            reason="operator cancellation",
+            idempotency_key="8" * 64,
+            actor=OPERATOR,
+            now=NOW,
+        )
+        self.assertEqual(cancelled.status.value, "cancelled")
+        candidates = self.store.execution_recovery_candidates(
+            limit=10, cursor=None
+        ).candidates
+        self.assertEqual(len(candidates), 1)
+        claim = self.store.claim_execution_recovery(candidates[0], OPERATOR)
+        self.assertIsNotNone(claim)
+        self.assertEqual(claim.transition, "cancelled")
+        self.assertFalse(claim.advances_discovery_cursor)
+        import psycopg
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT manifest.stage,manifest.terminal_at IS NOT NULL,
+                job.terminal_stage,job.status,job.attempt_count,
+                (SELECT count(*) FROM factory.execution_proposals proposal
+                 WHERE proposal.run_id=job.run_id),
+                (SELECT count(*) FROM factory.workspace_results result
+                 WHERE result.run_id=job.run_id)
+                FROM factory.execution_manifests manifest
+                JOIN factory.execution_recovery_jobs job
+                  ON job.manifest_digest=manifest.manifest_digest
+                WHERE manifest.run_id=%s""",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("cancelled", True, "cancelled", "claimed", 1, 0, 0),
+            )
+
+    def test_supersede_projection_is_atomic_then_queues_exact_cleanup(self):
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "recovery-superseded", capabilities=["notes", "structured_output"]
+        )
+        replacement = valid_intake()
+        replacement["source_id"] = "recovery-superseded"
+        replacement["source_digest"] = "8" * 64
+        replacement["m0_authority"]["observed_at"] = NOW.isoformat()
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                """CREATE FUNCTION factory.test_supersede_recovery_failure()
+                RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+                  RAISE EXCEPTION 'injected supersede recovery failure';
+                END $$"""
+            )
+            connection.execute(
+                """CREATE TRIGGER test_supersede_recovery_failure
+                BEFORE INSERT ON factory.execution_recovery_jobs
+                FOR EACH ROW EXECUTE FUNCTION factory.test_supersede_recovery_failure()"""
+            )
+        try:
+            with self.assertRaisesRegex(Exception, "injected supersede recovery failure"):
+                self.service.intake(replacement, actor=OPERATOR, now=NOW)
+        finally:
+            with psycopg.connect(DATABASE_URL) as connection:
+                connection.execute(
+                    "DROP TRIGGER test_supersede_recovery_failure "
+                    "ON factory.execution_recovery_jobs"
+                )
+                connection.execute(
+                    "DROP FUNCTION factory.test_supersede_recovery_failure()"
+                )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT task.state,run.state,run.released_at IS NULL,
+                allocation.released_at IS NULL,manifest.stage,
+                manifest.terminal_at IS NULL,
+                (SELECT count(*) FROM factory.execution_recovery_jobs),
+                (SELECT count(*) FROM factory.tasks candidate
+                 WHERE candidate.repository_id=task.repository_id
+                   AND candidate.source_type=task.source_type
+                   AND candidate.source_id=task.source_id)
+                FROM factory.tasks task JOIN factory.runs run ON run.task_id=task.task_id
+                JOIN factory.capacity_allocations allocation ON allocation.run_id=run.run_id
+                JOIN factory.execution_manifests manifest ON manifest.run_id=run.run_id
+                WHERE task.task_id=%s""",
+                (task.task_id,),
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("leased", "leased", True, True, "prepared", True, 0, 1),
+            )
+
+        created = self.service.intake(replacement, actor=OPERATOR, now=NOW)
+        self.assertTrue(created.created)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT old.state,new.state,run.state,
+                run.released_at IS NOT NULL,allocation.released_at IS NOT NULL,
+                manifest.stage,manifest.terminal_at IS NOT NULL,
+                job.terminal_stage,job.status,
+                (SELECT count(*) FROM factory.execution_proposals proposal
+                 WHERE proposal.run_id=run.run_id),
+                (SELECT count(*) FROM factory.workspace_results result
+                 WHERE result.run_id=run.run_id)
+                FROM factory.tasks old JOIN factory.runs run ON run.task_id=old.task_id
+                JOIN factory.capacity_allocations allocation ON allocation.run_id=run.run_id
+                JOIN factory.execution_manifests manifest ON manifest.run_id=run.run_id
+                JOIN factory.execution_recovery_jobs job ON job.run_id=run.run_id
+                JOIN factory.tasks new ON new.task_id=%s WHERE old.task_id=%s""",
+                (created.task.task_id, task.task_id),
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                (
+                    "superseded",
+                    "queued",
+                    "released",
+                    True,
+                    True,
+                    "cancelled",
+                    True,
+                    "cancelled",
+                    "pending",
+                    0,
+                    0,
+                ),
+            )
+
+    def test_recovery_candidate_hints_cannot_redirect_authoritative_cleanup(self):
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "recovery-forged-hints", capabilities=["notes", "structured_output"]
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+        candidate = next(
+            value
+            for value in self.store.execution_recovery_candidates(
+                limit=10, cursor=None
+            ).candidates
+            if value.run_id == execution.lease.run_id
+        )
+        forged_values = (
+            replace(candidate, task_id=str(uuid.uuid4())),
+            replace(candidate, run_id=str(uuid.uuid4())),
+            replace(candidate, manifest_digest="f" * 64),
+            replace(candidate, workspace_handle="workspace:" + "0" * 64),
+            replace(candidate, updated_at=candidate.updated_at + timedelta(seconds=1)),
+        )
+        for forged in forged_values:
+            with self.subTest(forged=forged):
+                self.assertIsNone(
+                    self.store.claim_execution_recovery(forged, OPERATOR)
+                )
+        with self.assertRaises(IntegrityError):
+            self.store.claim_execution_recovery(
+                replace(candidate, source="cleanup_retry"), OPERATOR
+            )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT task.state,run.state,run.released_at IS NULL,
+                allocation.released_at IS NULL,manifest.terminal_at IS NULL,
+                (SELECT count(*) FROM factory.execution_recovery_jobs)
+                FROM factory.tasks task JOIN factory.runs run ON run.task_id=task.task_id
+                JOIN factory.capacity_allocations allocation ON allocation.run_id=run.run_id
+                JOIN factory.execution_manifests manifest ON manifest.run_id=run.run_id
+                WHERE task.task_id=%s""",
+                (task.task_id,),
+            )
+            self.assertEqual(
+                cursor.fetchone(), ("leased", "leased", True, True, True, 0)
+            )
+
+    def test_cleanup_outcomes_require_the_complete_authoritative_claim(self):
+        import psycopg
+
+        _task, execution = self.claim_execution(
+            "recovery-forged-outcome", capabilities=["notes", "structured_output"]
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET "
+                "lease_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+        candidate = next(
+            value
+            for value in self.store.execution_recovery_candidates(
+                limit=10, cursor=None
+            ).candidates
+            if value.run_id == execution.lease.run_id
+        )
+        claim = self.store.claim_execution_recovery(candidate, OPERATOR)
+        self.assertIsNotNone(claim)
+        forged_claims = (
+            replace(claim, candidate=replace(candidate, task_id=str(uuid.uuid4()))),
+            replace(claim, candidate=replace(candidate, run_id=str(uuid.uuid4()))),
+            replace(
+                claim,
+                candidate=replace(candidate, manifest_digest="f" * 64),
+            ),
+            replace(
+                claim,
+                candidate=replace(
+                    candidate, workspace_handle="workspace:" + "0" * 64
+                ),
+            ),
+            replace(
+                claim,
+                candidate=replace(
+                    candidate,
+                    updated_at=candidate.updated_at + timedelta(seconds=1),
+                ),
+            ),
+            replace(
+                claim,
+                candidate=replace(candidate, source="cleanup_retry"),
+            ),
+            replace(claim, transition="cleanup_retry"),
+            replace(claim, advances_discovery_cursor=False),
+        )
+        for forged in forged_claims:
+            for recorder in (
+                self.store.record_execution_cleanup_success,
+                self.store.record_execution_cleanup_failure,
+            ):
+                with self.subTest(
+                    forged=forged, recorder=recorder.__name__
+                ), self.assertRaises(FenceError):
+                    recorder(forged)
+        self.store.record_execution_cleanup_failure(claim)
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.execution_recovery_jobs SET "
+                "next_claim_at=clock_timestamp()-interval '1 second' "
+                "WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+        retry_candidate = next(
+            value
+            for value in self.store.execution_recovery_candidates(
+                limit=10, cursor=None
+            ).candidates
+            if value.run_id == execution.lease.run_id
+        )
+        with self.assertRaises(IntegrityError):
+            self.store.claim_execution_recovery(
+                replace(retry_candidate, source="fresh"), OPERATOR
+            )
+        retry_claim = self.store.claim_execution_recovery(retry_candidate, OPERATOR)
+        self.assertIsNotNone(retry_claim)
+        forged_retry = replace(
+            retry_claim,
+            candidate=replace(retry_candidate, source="fresh"),
+        )
+        for recorder in (
+            self.store.record_execution_cleanup_success,
+            self.store.record_execution_cleanup_failure,
+        ):
+            with self.subTest(
+                retry_recorder=recorder.__name__
+            ), self.assertRaises(FenceError):
+                recorder(forged_retry)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT job.status,job.claim_fence,job.attempt_count,
+                (SELECT array_agg(outcome.claim_fence ORDER BY outcome.claim_fence)
+                 FROM factory.execution_recovery_outcomes outcome
+                 WHERE outcome.run_id=job.run_id),
+                metrics.cleanup_succeeded,metrics.cleanup_failed
+                FROM factory.execution_recovery_jobs job
+                CROSS JOIN factory.execution_metric_counters metrics
+                WHERE job.run_id=%s""",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone(), ("claimed", 2, 2, [1], 0, 1))
+
+    def test_recovery_job_insert_failure_rolls_back_canonical_release_atomically(self):
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "recovery-rollback", capabilities=["notes", "structured_output"]
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            connection.execute(
+                """CREATE FUNCTION factory.test_recovery_job_failure() RETURNS trigger
+                LANGUAGE plpgsql AS $$ BEGIN
+                  RAISE EXCEPTION 'injected recovery job failure';
+                END $$"""
+            )
+            connection.execute(
+                """CREATE TRIGGER test_recovery_job_failure
+                BEFORE INSERT ON factory.execution_recovery_jobs
+                FOR EACH ROW EXECUTE FUNCTION factory.test_recovery_job_failure()"""
+            )
+        candidate = next(
+            value
+            for value in self.store.execution_recovery_candidates(
+                limit=10, cursor=None
+            ).candidates
+            if value.run_id == execution.lease.run_id
+        )
+        try:
+            with self.assertRaisesRegex(Exception, "injected recovery job failure"):
+                self.store.claim_execution_recovery(candidate, OPERATOR)
+        finally:
+            with psycopg.connect(DATABASE_URL) as connection:
+                connection.execute(
+                    "DROP TRIGGER test_recovery_job_failure ON factory.execution_recovery_jobs"
+                )
+                connection.execute("DROP FUNCTION factory.test_recovery_job_failure()")
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT task.state,task.current_run_id=run.run_id,
+                task.current_fence=run.fence,task.repair_count,
+                run.state,run.released_at IS NULL,allocation.released_at IS NULL,
+                attempt.finished_at IS NULL,manifest.stage,manifest.terminal_at IS NULL,
+                (SELECT count(*) FROM factory.execution_recovery_jobs),
+                (SELECT count(*) FROM factory.task_events event
+                 WHERE event.task_id=task.task_id AND event.action='released'),
+                (SELECT count(*) FROM factory.audit_log audit
+                 WHERE audit.task_id=task.task_id AND audit.action='release'),
+                metrics.recovery_claimed,metrics.recovery_orphaned,
+                metrics.stage_orphaned
+                FROM factory.tasks task JOIN factory.runs run ON run.task_id=task.task_id
+                JOIN factory.capacity_allocations allocation ON allocation.run_id=run.run_id
+                JOIN factory.attempts attempt ON attempt.run_id=run.run_id
+                JOIN factory.execution_manifests manifest ON manifest.run_id=run.run_id
+                CROSS JOIN factory.execution_metric_counters metrics
+                WHERE task.task_id=%s""",
+                (task.task_id,),
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                (
+                    "leased",
+                    True,
+                    True,
+                    0,
+                    "leased",
+                    True,
+                    True,
+                    True,
+                    "prepared",
+                    True,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                ),
+            )
+
+    def test_recovery_failure_history_survives_reclaim_and_success(self):
+        import psycopg
+
+        _task, execution = self.claim_execution(
+            "recovery-history", capabilities=["notes", "structured_output"]
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+        candidate = next(
+            value
+            for value in self.store.execution_recovery_candidates(
+                limit=10, cursor=None
+            ).candidates
+            if value.run_id == execution.lease.run_id
+        )
+        first = self.store.claim_execution_recovery(candidate, OPERATOR)
+        self.assertIsNotNone(first)
+        self.store.record_execution_cleanup_failure(first)
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.execution_recovery_jobs "
+                "SET next_claim_at=clock_timestamp()-interval '1 second' WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+        restarted_store = self.runtime_store()
+        retry_candidate = next(
+            value
+            for value in restarted_store.execution_recovery_candidates(
+                limit=10, cursor=None
+            ).candidates
+            if value.run_id == execution.lease.run_id
+        )
+        second = restarted_store.claim_execution_recovery(retry_candidate, OPERATOR)
+        self.assertIsNotNone(second)
+        self.assertEqual(second.transition, "cleanup_retry")
+        self.assertEqual(second.claim_fence, 2)
+        self.assertFalse(second.advances_discovery_cursor)
+        with self.assertRaises(FenceError):
+            restarted_store.record_execution_cleanup_success(first)
+        restarted_store.record_execution_cleanup_success(second)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT status,attempt_count,failure_count,last_failure_code,
+                last_failed_at IS NOT NULL,completed_at IS NOT NULL
+                FROM factory.execution_recovery_jobs WHERE run_id=%s""",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("succeeded", 2, 1, "workspace_cleanup_failed", True, True),
+            )
+            cursor.execute(
+                """SELECT claim.claim_fence,claim.transition,outcome.outcome,
+                outcome.failure_code
+                FROM factory.execution_recovery_claims claim
+                JOIN factory.execution_recovery_outcomes outcome
+                  USING(run_id,claim_fence)
+                WHERE claim.run_id=%s ORDER BY claim.claim_fence""",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(
+                cursor.fetchall(),
+                [
+                    (1, "orphaned", "failed", "workspace_cleanup_failed"),
+                    (2, "cleanup_retry", "succeeded", None),
+                ],
+            )
+            cursor.execute(
+                """SELECT recovery_claimed,recovery_orphaned,cleanup_failed,
+                cleanup_succeeded FROM factory.execution_metric_counters"""
+            )
+            self.assertEqual(cursor.fetchone(), (2, 1, 1, 1))
+        self.assertFalse(
+            any(
+                value.run_id == execution.lease.run_id
+                for value in restarted_store.execution_recovery_candidates(
+                    limit=10, cursor=None
+                ).candidates
+            )
+        )
+
+    def test_expired_cleanup_claim_is_at_least_once_but_durably_fenced(self):
+        import psycopg
+
+        _task, execution = self.claim_execution(
+            "recovery-claim-ttl", capabilities=["notes", "structured_output"]
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+        candidate = next(
+            value
+            for value in self.store.execution_recovery_candidates(
+                limit=10, cursor=None
+            ).candidates
+            if value.run_id == execution.lease.run_id
+        )
+        first = self.store.claim_execution_recovery(candidate, OPERATOR)
+        self.assertIsNotNone(first)
+        delegate = FakeWorkspaceBroker()
+        handle = WorkspaceHandle(
+            candidate.task_id, candidate.run_id, candidate.workspace_handle
+        )
+        delegate.register(
+            handle,
+            WorkspacePolicy(("factory/src",), ("read", "write"), ("LANG",), ()),
+        )
+        entered = threading.Event()
+        resume = threading.Event()
+
+        class DelayedFirstBroker:
+            def __init__(self):
+                self.calls = 0
+                self.lock = threading.Lock()
+
+            def release(self, target, *, timeout_seconds):
+                with self.lock:
+                    self.calls += 1
+                    call = self.calls
+                if call == 1:
+                    entered.set()
+                    if not resume.wait(timeout=3):
+                        raise RuntimeError("cleanup overlap barrier timed out")
+                return delegate.release(target, timeout_seconds=timeout_seconds)
+
+        broker = DelayedFirstBroker()
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            older = executor.submit(
+                broker.release, handle, timeout_seconds=5
+            )
+            self.assertTrue(entered.wait(timeout=3))
+            with psycopg.connect(DATABASE_URL) as connection:
+                connection.execute(
+                    "UPDATE factory.execution_recovery_jobs SET "
+                    "claim_expires_at=clock_timestamp()-interval '1 second',"
+                    "next_claim_at=clock_timestamp()-interval '1 second' "
+                    "WHERE run_id=%s",
+                    (execution.lease.run_id,),
+                )
+            retry = next(
+                value
+                for value in self.store.execution_recovery_candidates(
+                    limit=10, cursor=None
+                ).candidates
+                if value.run_id == execution.lease.run_id
+            )
+            second = self.store.claim_execution_recovery(retry, OPERATOR)
+            self.assertIsNotNone(second)
+            self.assertEqual(second.claim_fence, 2)
+            newer_outcome = broker.release(handle, timeout_seconds=5)
+            resume.set()
+            older_outcome = older.result(timeout=3)
+        self.assertEqual(newer_outcome, WorkspaceReleaseOutcome("released"))
+        self.assertEqual(
+            older_outcome, WorkspaceReleaseOutcome("already_absent")
+        )
+        self.store.record_execution_cleanup_success(second)
+        with self.assertRaises(FenceError):
+            self.store.record_execution_cleanup_success(first)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT job.status,job.claim_fence,job.attempt_count,
+                (SELECT array_agg(claim.claim_fence ORDER BY claim.claim_fence)
+                 FROM factory.execution_recovery_claims claim
+                 WHERE claim.run_id=job.run_id),
+                (SELECT array_agg(outcome.claim_fence ORDER BY outcome.claim_fence)
+                 FROM factory.execution_recovery_outcomes outcome
+                 WHERE outcome.run_id=job.run_id),
+                (SELECT count(*) FROM factory.execution_recovery_outcomes outcome
+                 WHERE outcome.run_id=job.run_id AND outcome.outcome='succeeded')
+                FROM factory.execution_recovery_jobs job WHERE job.run_id=%s""",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(
+                cursor.fetchone(), ("succeeded", 2, 2, [1, 2], [2], 1)
+            )
+
+    def test_recovery_page_is_work_conserving_and_fair_in_both_directions(self):
+        import psycopg
+
+        retry_runs = []
+        for index in range(10):
+            task, execution = self.claim_execution(
+                f"recovery-page-retry-{index}",
+                capabilities=["notes", "structured_output"],
+            )
+            self.service.cancel(
+                task.task_id,
+                reason="page fixture",
+                idempotency_key=f"{index + 1:064x}",
+                actor=OPERATOR,
+                now=NOW,
+            )
+            retry_runs.append(execution.lease.run_id)
+        fresh_runs = []
+        for index in range(10):
+            _task, execution = self.claim_execution(
+                f"recovery-page-fresh-{index}",
+                capabilities=["notes", "structured_output"],
+            )
+            self.service.release(
+                execution.lease,
+                outcome=FailureClass.WORKER_LOST,
+                actor=WORKER,
+                now=NOW,
+            )
+            fresh_runs.append(execution.lease.run_id)
+
+        balanced = self.store.execution_recovery_candidates(limit=10, cursor=None)
+        self.assertEqual(len(balanced.candidates), 10)
+        self.assertEqual(
+            [value.source for value in balanced.candidates[:2]],
+            ["fresh", "cleanup_retry"],
+        )
+        self.assertEqual(
+            {source: sum(value.source == source for value in balanced.candidates)
+             for source in ("fresh", "cleanup_retry")},
+            {"fresh": 5, "cleanup_retry": 5},
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                """UPDATE factory.execution_recovery_jobs SET status='succeeded',
+                next_claim_at=NULL,completed_at=clock_timestamp()
+                WHERE run_id=ANY(%s) AND run_id<>%s""",
+                (retry_runs, retry_runs[0]),
+            )
+        retry_short = self.store.execution_recovery_candidates(limit=10, cursor=None)
+        self.assertEqual(len(retry_short.candidates), 10)
+        self.assertEqual(
+            sum(value.source == "cleanup_retry" for value in retry_short.candidates),
+            1,
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                """UPDATE factory.execution_recovery_jobs SET status='pending',
+                next_claim_at=clock_timestamp(),completed_at=NULL
+                WHERE run_id=ANY(%s)""",
+                (retry_runs,),
+            )
+            connection.execute(
+                """UPDATE factory.execution_manifests SET stage='cancelled',
+                terminal_at=clock_timestamp(),updated_at=clock_timestamp()
+                WHERE run_id=ANY(%s) AND run_id<>%s""",
+                (fresh_runs, fresh_runs[0]),
+            )
+        fresh_short = self.store.execution_recovery_candidates(limit=10, cursor=None)
+        self.assertEqual(len(fresh_short.candidates), 10)
+        self.assertEqual(
+            sum(value.source == "fresh" for value in fresh_short.candidates), 1
+        )
+
+    def test_recovery_raw_page_caps_at_100_then_empty_page_wraps(self):
+        runs = []
+        for index in range(101):
+            _task, execution = self.claim_execution(
+                f"recovery-raw-page-{index}",
+                capabilities=["notes", "structured_output"],
+            )
+            self.service.release(
+                execution.lease,
+                outcome=FailureClass.WORKER_LOST,
+                actor=WORKER,
+                now=NOW,
+            )
+            runs.append(execution.lease.run_id)
+        first = self.store.execution_recovery_candidates(limit=100, cursor=None)
+        self.assertEqual((len(first.candidates), first.exhausted), (100, False))
+        self.assertEqual(
+            {value.source for value in first.candidates}, {"fresh"}
+        )
+        second = self.store.execution_recovery_candidates(
+            limit=100, cursor=first.scanned_through
+        )
+        self.assertEqual((len(second.candidates), second.exhausted), (1, True))
+        self.assertEqual(
+            {value.run_id for value in first.candidates + second.candidates},
+            set(runs),
+        )
+        empty = self.store.execution_recovery_candidates(
+            limit=100, cursor=second.scanned_through
+        )
+        self.assertEqual((empty.candidates, empty.scanned_through, empty.exhausted),
+                         ((), None, True))
+        wrapped = self.store.execution_recovery_candidates(limit=100, cursor=None)
+        self.assertEqual(
+            {value.run_id for value in wrapped.candidates},
+            {value.run_id for value in first.candidates},
+        )
+
+    def test_recovery_cursor_advances_over_healthy_prefix_then_revisits_expiry(self):
+        import psycopg
+
+        executions = []
+        selection = self.selection(capabilities=["cancellation"])
+        selection["capability_policy"]["allowed_tools"] = ["read_file"]
+        selection["capability_policy"]["artifact_classes"] = ["report"]
+        execution_service = FactoryService(
+            self.store, execution_registry=trusted_registry(selection)
+        )
+        for index in range(3):
+            task = self.submit(f"recovery-healthy-prefix-{index}")
+            execution = execution_service.claim_execution(
+                owner=WORKER.actor_id,
+                role=RunRole.READER,
+                repositories=(task.repository_id,),
+                lease_seconds=60,
+                selection=selection,
+                actor=WORKER,
+                now=NOW,
+            )
+            self.assertIsNotNone(execution)
+            executions.append(execution)
+        stale = executions[-1]
+        self.service.release(
+            stale.lease,
+            outcome=FailureClass.WORKER_LOST,
+            actor=WORKER,
+            now=NOW,
+        )
+        broker = FakeWorkspaceBroker()
+        for execution in (stale, executions[0]):
+            broker.register(
+                WorkspaceHandle(
+                    execution.lease.task_id,
+                    execution.lease.run_id,
+                    execution.workspace_handle,
+                ),
+                WorkspacePolicy(
+                    ("factory/src",), ("read", "write"), ("LANG",), ()
+                ),
+            )
+        recovery = ExecutionRecovery(self.runtime_store(), broker, OPERATOR)
+        first = recovery.reconcile(limit=2)
+        self.assertEqual(
+            (first.candidates, first.orphaned, first.terminalize_failed),
+            (2, 0, 0),
+        )
+        self.assertIsNotNone(first.cursor)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT count(*) FILTER (WHERE manifest.stage='prepared'
+                  AND manifest.terminal_at IS NULL),
+                (SELECT count(*) FROM factory.execution_recovery_jobs)
+                FROM factory.execution_manifests manifest
+                WHERE manifest.run_id=ANY(%s)""",
+                ([value.lease.run_id for value in executions[:2]],),
+            )
+            self.assertEqual(cursor.fetchone(), (2, 0))
+        second = recovery.reconcile(limit=2, cursor=first.cursor)
+        self.assertEqual((second.candidates, second.orphaned), (1, 1))
+        self.assertIsNone(second.cursor)
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET "
+                "lease_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE run_id=%s",
+                (executions[0].lease.run_id,),
+            )
+        revisited = recovery.reconcile(limit=2, cursor=second.cursor)
+        self.assertEqual((revisited.candidates, revisited.orphaned), (2, 1))
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT manifest.run_id,manifest.stage,
+                EXISTS(SELECT 1 FROM factory.execution_recovery_jobs job
+                  WHERE job.run_id=manifest.run_id)
+                FROM factory.execution_manifests manifest
+                WHERE manifest.run_id=ANY(%s) ORDER BY manifest.run_id""",
+                ([value.lease.run_id for value in executions],),
+            )
+            stages = {str(run_id): (stage, has_job)
+                      for run_id, stage, has_job in cursor.fetchall()}
+            self.assertEqual(
+                stages[executions[0].lease.run_id], ("orphaned", True)
+            )
+            self.assertEqual(
+                stages[executions[1].lease.run_id], ("prepared", False)
+            )
+            self.assertEqual(stages[stale.lease.run_id], ("orphaned", True))
+
+    def test_recovery_uses_db_deadline_and_m4_retry_limits_zero_one_two(self):
+        import psycopg
+
+        for retry_limit in (0, 1, 2):
+            with self.subTest(retry_limit=retry_limit):
+                payload = valid_intake()
+                payload["source_id"] = f"recovery-retry-limit-{retry_limit}"
+                payload["m0_authority"]["observed_at"] = NOW.isoformat()
+                payload["limits"]["infrastructure_retries"] = retry_limit
+                task = self.service.intake(payload, actor=OPERATOR, now=NOW).task
+                selection = self.selection(
+                    capabilities=["notes", "structured_output"]
+                )
+                execution = FactoryService(
+                    self.store, execution_registry=trusted_registry(selection)
+                ).claim_execution(
+                    owner=WORKER.actor_id,
+                    role=RunRole.WRITER,
+                    repositories=(task.repository_id,),
+                    lease_seconds=60,
+                    selection=selection,
+                    actor=WORKER,
+                    now=NOW,
+                )
+                self.assertIsNotNone(execution)
+                with psycopg.connect(DATABASE_URL) as connection:
+                    connection.execute(
+                        "UPDATE factory.tasks SET deadline_at=clock_timestamp()-interval '1 second' "
+                        "WHERE task_id=%s",
+                        (task.task_id,),
+                    )
+                    connection.execute(
+                        "UPDATE factory.runs SET lease_expires_at=clock_timestamp()+interval '30 seconds' "
+                        "WHERE run_id=%s",
+                        (execution.lease.run_id,),
+                    )
+                candidate = next(
+                    value
+                    for value in self.store.execution_recovery_candidates(
+                        limit=10, cursor=None
+                    ).candidates
+                    if value.run_id == execution.lease.run_id
+                )
+                claim = self.store.claim_execution_recovery(candidate, OPERATOR)
+                self.assertIsNotNone(claim)
+                self.store.record_execution_cleanup_success(claim)
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """SELECT task.state,task.repair_count,run.state,
+                        attempt.failure_class,attempt.failure_code
+                        FROM factory.tasks task
+                        JOIN factory.runs run ON run.task_id=task.task_id
+                        JOIN factory.attempts attempt ON attempt.run_id=run.run_id
+                        WHERE task.task_id=%s""",
+                        (task.task_id,),
+                    )
+                    expected_state = "dead" if retry_limit == 0 else "retry"
+                    self.assertEqual(
+                        cursor.fetchone(),
+                        (
+                            expected_state,
+                            1,
+                            "expired",
+                            "worker_lost",
+                            "worker_lost",
+                        ),
+                    )
+
+    def test_historical_expiry_stays_orphaned_when_new_run_is_cancelled(self):
+        import psycopg
+
+        task, first = self.claim_execution(
+            "recovery-two-runs", capabilities=["notes", "structured_output"]
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE run_id=%s",
+                (first.lease.run_id,),
+            )
+        reconciled = self.store.reconcile(OPERATOR, NOW, 10, None)
+        self.assertEqual(reconciled.repaired, 1)
+        selection = self.selection(capabilities=["notes", "structured_output"])
+        second = FactoryService(
+            self.store, execution_registry=trusted_registry(selection)
+        ).claim_execution(
+            owner=WORKER.actor_id,
+            role=RunRole.WRITER,
+            repositories=(task.repository_id,),
+            lease_seconds=60,
+            selection=selection,
+            actor=WORKER,
+            now=NOW,
+        )
+        self.assertIsNotNone(second)
+        self.service.cancel(
+            task.task_id,
+            reason="cancel second run",
+            idempotency_key="9" * 64,
+            actor=OPERATOR,
+            now=NOW,
+        )
+        candidates = self.store.execution_recovery_candidates(
+            limit=10, cursor=None
+        ).candidates
+        self.assertEqual({value.run_id for value in candidates}, {
+            first.lease.run_id,
+            second.lease.run_id,
+        })
+        claims = {
+            value.run_id: self.store.claim_execution_recovery(value, OPERATOR)
+            for value in candidates
+        }
+        self.assertEqual(claims[first.lease.run_id].transition, "orphaned")
+        self.assertEqual(claims[second.lease.run_id].transition, "cancelled")
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT manifest.run_id,manifest.stage,
+                count(event.stage_event_id) FILTER (
+                  WHERE event.stage IN ('orphaned','cancelled')),
+                count(DISTINCT job.run_id)
+                FROM factory.execution_manifests manifest
+                JOIN factory.execution_stage_events event
+                  ON event.manifest_digest=manifest.manifest_digest
+                JOIN factory.execution_recovery_jobs job ON job.run_id=manifest.run_id
+                WHERE manifest.run_id=ANY(%s)
+                GROUP BY manifest.run_id,manifest.stage ORDER BY manifest.run_id""",
+                ([first.lease.run_id, second.lease.run_id],),
+            )
+            rows = cursor.fetchall()
+            self.assertEqual({row[1] for row in rows}, {"orphaned", "cancelled"})
+            self.assertTrue(all(row[2:] == (1, 1) for row in rows))
+
+    def test_accounting_blocked_recovery_is_never_requeued(self):
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "recovery-accounting-blocked",
+            capabilities=["notes", "structured_output"],
+        )
+        self.store.reserve_budget(
+            execution.lease,
+            1,
+            1,
+            1,
+            "a" * 64,
+            "b" * 64,
+            WORKER,
+        )
+        with self.assertRaises(Exception):
+            self.store.observe_usage(
+                execution.lease,
+                "provider-overrun",
+                "c" * 64,
+                25_000_001,
+                1,
+                0,
+                WORKER,
+            )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+        candidate = next(
+            value
+            for value in self.store.execution_recovery_candidates(
+                limit=10, cursor=None
+            ).candidates
+            if value.run_id == execution.lease.run_id
+        )
+        claim = self.store.claim_execution_recovery(candidate, OPERATOR)
+        self.assertIsNotNone(claim)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT state,accounting_blocked,current_run_id,current_fence,
+                cost_reserved_micros,tokens_reserved,wall_reserved_seconds
+                FROM factory.tasks WHERE task_id=%s""",
+                (task.task_id,),
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("needs_human", True, None, None, 0, 0, 0),
+            )
+        self.assertIsNone(
+            self.service.claim(
+                owner=WORKER.actor_id,
+                role=RunRole.WRITER,
+                repositories=(task.repository_id,),
+                lease_seconds=60,
+                actor=WORKER,
+                now=NOW,
+            )
+        )
+
+    def test_two_reconcilers_create_one_terminal_stage_and_cleanup_claim(self):
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "recovery-concurrent", capabilities=["notes", "structured_output"]
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+        candidate = next(
+            value
+            for value in self.store.execution_recovery_candidates(
+                limit=10, cursor=None
+            ).candidates
+            if value.run_id == execution.lease.run_id
+        )
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = tuple(
+                executor.map(
+                    lambda _index: self.runtime_store().claim_execution_recovery(
+                        candidate, OPERATOR
+                    ),
+                    range(2),
+                )
+            )
+        self.assertEqual(sum(value is not None for value in results), 1)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT
+                (SELECT count(*) FROM factory.execution_stage_events event
+                 WHERE event.manifest_digest=%s AND event.stage='orphaned'),
+                (SELECT count(*) FROM factory.execution_recovery_jobs job
+                 WHERE job.run_id=%s),
+                (SELECT count(*) FROM factory.execution_recovery_claims claim
+                 WHERE claim.run_id=%s),
+                (SELECT count(*) FROM factory.task_events event
+                 WHERE event.task_id=%s AND event.action='released'),
+                (SELECT count(*) FROM factory.audit_log audit
+                 WHERE audit.task_id=%s AND audit.action='release')""",
+                (
+                    execution.manifest_digest,
+                    execution.lease.run_id,
+                    execution.lease.run_id,
+                    task.task_id,
+                    task.task_id,
+                ),
+            )
+            self.assertEqual(cursor.fetchone(), (1, 1, 1, 1, 1))
+
+    def test_heartbeat_winner_revalidation_prevents_recovery_mutation(self):
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "recovery-heartbeat-race", capabilities=["notes", "structured_output"]
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()+interval '500 milliseconds' "
+                "WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+        locked = threading.Event()
+        resume = threading.Event()
+
+        def heartbeat_winner():
+            with self.runtime_store()._transaction() as cursor:
+                cursor.execute(
+                    """SELECT run.run_id FROM factory.tasks task
+                    JOIN factory.runs run ON run.run_id=task.current_run_id
+                    WHERE task.task_id=%s AND run.run_id=%s
+                      AND run.lease_expires_at>clock_timestamp()
+                    FOR UPDATE OF task,run""",
+                    (task.task_id, execution.lease.run_id),
+                )
+                self.assertIsNotNone(cursor.fetchone())
+                locked.set()
+                self.assertTrue(resume.wait(timeout=3))
+                cursor.execute(
+                    "UPDATE factory.runs SET lease_expires_at=clock_timestamp()+interval '30 seconds' "
+                    "WHERE run_id=%s",
+                    (execution.lease.run_id,),
+                )
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            heartbeat = executor.submit(heartbeat_winner)
+            self.assertTrue(locked.wait(timeout=3))
+            time.sleep(0.7)
+            candidate = next(
+                value
+                for value in self.store.execution_recovery_candidates(
+                    limit=10, cursor=None
+                ).candidates
+                if value.run_id == execution.lease.run_id
+            )
+            recovery = executor.submit(
+                self.runtime_store().claim_execution_recovery,
+                candidate,
+                OPERATOR,
+            )
+            time.sleep(0.1)
+            resume.set()
+            heartbeat.result(timeout=3)
+            self.assertIsInstance(
+                recovery.result(timeout=3), ExecutionRecoveryNotDue
+            )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT task.state,run.state,run.released_at IS NULL,
+                run.lease_expires_at>clock_timestamp(),allocation.released_at IS NULL,
+                manifest.stage,manifest.terminal_at IS NULL,
+                (SELECT count(*) FROM factory.execution_recovery_jobs),
+                (SELECT count(*) FROM factory.task_events event
+                 WHERE event.task_id=task.task_id AND event.action='released'),
+                (SELECT count(*) FROM factory.audit_log audit
+                 WHERE audit.task_id=task.task_id AND audit.action='release')
+                FROM factory.tasks task JOIN factory.runs run ON run.task_id=task.task_id
+                JOIN factory.capacity_allocations allocation ON allocation.run_id=run.run_id
+                JOIN factory.execution_manifests manifest ON manifest.run_id=run.run_id
+                WHERE task.task_id=%s""",
+                (task.task_id,),
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("leased", "leased", True, True, True, "prepared", True, 0, 0, 0),
+            )
+
+    def test_recovery_contention_stops_fresh_cursor_but_cleanup_lane_continues(self):
+        import psycopg
+
+        retry_task, retry_execution = self.claim_execution(
+            "recovery-contention-retry",
+            capabilities=["notes", "structured_output"],
+        )
+        self.service.cancel(
+            retry_task.task_id,
+            reason="contention retry fixture",
+            idempotency_key="d" * 64,
+            actor=OPERATOR,
+            now=NOW,
+        )
+        blocked_task, blocked_execution = self.claim_execution(
+            "recovery-contention-fresh",
+            capabilities=["notes", "structured_output"],
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET "
+                "lease_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE run_id=%s",
+                (blocked_execution.lease.run_id,),
+            )
+        page = self.store.execution_recovery_candidates(limit=2, cursor=None)
+        blocked_candidate = next(
+            value
+            for value in page.candidates
+            if value.run_id == blocked_execution.lease.run_id
+        )
+        retry_candidate = next(
+            value
+            for value in page.candidates
+            if value.run_id == retry_execution.lease.run_id
+        )
+        broker = FakeWorkspaceBroker()
+        broker.register(
+            WorkspaceHandle(
+                retry_candidate.task_id,
+                retry_candidate.run_id,
+                retry_candidate.workspace_handle,
+            ),
+            WorkspacePolicy(("factory/src",), ("read", "write"), ("LANG",), ()),
+        )
+        with psycopg.connect(DATABASE_URL) as blocker:
+            blocker.execute(
+                "SELECT task_id FROM factory.tasks WHERE task_id=%s FOR UPDATE",
+                (blocked_task.task_id,),
+            )
+            started = time.monotonic()
+            with self.assertRaises(StoreUnavailable):
+                self.runtime_store().claim_execution_recovery(
+                    blocked_candidate,
+                    OPERATOR,
+                    timeout_seconds=3.0,
+                )
+            self.assertLess(time.monotonic() - started, 3.0)
+            result = ExecutionRecovery(
+                self.runtime_store(), broker, OPERATOR
+            ).reconcile(limit=2)
+            self.assertEqual(
+                (
+                    result.candidates,
+                    result.terminalize_failed,
+                    result.cancelled,
+                    result.cursor,
+                ),
+                (2, 1, 1, None),
+            )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT task.state,run.state,allocation.released_at IS NULL,
+                manifest.stage,manifest.terminal_at IS NULL,
+                (SELECT count(*) FROM factory.execution_recovery_jobs job
+                 WHERE job.run_id=run.run_id)
+                FROM factory.tasks task
+                JOIN factory.runs run ON run.run_id=task.current_run_id
+                JOIN factory.capacity_allocations allocation ON allocation.run_id=run.run_id
+                JOIN factory.execution_manifests manifest ON manifest.run_id=run.run_id
+                WHERE task.task_id=%s""",
+                (blocked_task.task_id,),
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("leased", "leased", True, "prepared", True, 0),
+            )
+            cursor.execute(
+                "SELECT status,attempt_count FROM factory.execution_recovery_jobs "
+                "WHERE run_id=%s",
+                (retry_execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone(), ("succeeded", 1))
+
+    def test_cancel_and_fresh_recovery_race_is_bounded_and_single_terminal(self):
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "recovery-cancel-race", capabilities=["notes", "structured_output"]
+        )
+        with psycopg.connect(DATABASE_URL) as connection:
+            connection.execute(
+                "UPDATE factory.runs SET "
+                "lease_expires_at=clock_timestamp()-interval '1 second' "
+                "WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+        candidate = next(
+            value
+            for value in self.store.execution_recovery_candidates(
+                limit=2, cursor=None
+            ).candidates
+            if value.run_id == execution.lease.run_id
+        )
+        advisory_key = 707_017
+        with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
+            connection.execute(
+                """CREATE FUNCTION factory.test_cancel_recovery_barrier()
+                RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+                  IF NEW.stage='cancelled' THEN
+                    PERFORM pg_advisory_xact_lock(707017);
+                  END IF;
+                  RETURN NEW;
+                END $$"""
+            )
+            connection.execute(
+                """CREATE TRIGGER test_cancel_recovery_barrier
+                BEFORE UPDATE ON factory.execution_manifests
+                FOR EACH ROW EXECUTE FUNCTION factory.test_cancel_recovery_barrier()"""
+            )
+        blocker = psycopg.connect(DATABASE_URL, autocommit=True)
+        blocker.execute("SELECT pg_advisory_lock(%s)", (advisory_key,))
+        try:
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                cancelled = executor.submit(
+                    self.service.cancel,
+                    task.task_id,
+                    reason="cancel wins bounded recovery race",
+                    idempotency_key="c" * 64,
+                    actor=OPERATOR,
+                    now=NOW,
+                )
+                waiting = False
+                for _attempt in range(200):
+                    with psycopg.connect(
+                        DATABASE_URL
+                    ) as observer, observer.cursor() as cursor:
+                        cursor.execute(
+                            "SELECT EXISTS(SELECT 1 FROM pg_locks "
+                            "WHERE locktype='advisory' AND NOT granted)"
+                        )
+                        waiting = cursor.fetchone()[0]
+                    if waiting:
+                        break
+                    time.sleep(0.01)
+                self.assertTrue(waiting, "cancel did not reach recovery barrier")
+                started = time.monotonic()
+                recovery = executor.submit(
+                    self.runtime_store().claim_execution_recovery,
+                    candidate,
+                    OPERATOR,
+                    timeout_seconds=3.0,
+                )
+                time.sleep(0.1)
+                blocker.execute("SELECT pg_advisory_unlock(%s)", (advisory_key,))
+                projection = cancelled.result(timeout=3)
+                race_result = recovery.result(timeout=3)
+                self.assertIsNone(race_result)
+                self.assertLess(time.monotonic() - started, 3.0)
+                self.assertEqual(projection.status.value, "cancelled")
+        finally:
+            try:
+                blocker.execute("SELECT pg_advisory_unlock(%s)", (advisory_key,))
+            finally:
+                blocker.close()
+            with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
+                connection.execute(
+                    "DROP TRIGGER IF EXISTS test_cancel_recovery_barrier "
+                    "ON factory.execution_manifests"
+                )
+                connection.execute(
+                    "DROP FUNCTION IF EXISTS factory.test_cancel_recovery_barrier()"
+                )
+        replay = self.service.cancel(
+            task.task_id,
+            reason="cancel wins bounded recovery race",
+            idempotency_key="c" * 64,
+            actor=OPERATOR,
+            now=NOW,
+        )
+        self.assertEqual(replay.status.value, "cancelled")
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT task.state,run.state,run.released_at IS NOT NULL,
+                allocation.released_at IS NOT NULL,manifest.stage,
+                manifest.terminal_at IS NOT NULL,
+                (SELECT count(*) FROM factory.execution_stage_events event
+                 WHERE event.manifest_digest=manifest.manifest_digest
+                   AND event.stage='cancelled'),
+                (SELECT count(*) FROM factory.execution_recovery_jobs job
+                 WHERE job.run_id=run.run_id),
+                (SELECT count(*) FROM factory.execution_proposals proposal
+                 WHERE proposal.run_id=run.run_id),
+                (SELECT count(*) FROM factory.workspace_results result
+                 WHERE result.run_id=run.run_id)
+                FROM factory.tasks task JOIN factory.runs run ON run.task_id=task.task_id
+                JOIN factory.capacity_allocations allocation ON allocation.run_id=run.run_id
+                JOIN factory.execution_manifests manifest ON manifest.run_id=run.run_id
+                WHERE task.task_id=%s""",
+                (task.task_id,),
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("cancelled", "released", True, True, "cancelled", True, 1, 1, 0, 0),
+            )
+
+    def test_recovery_definers_reject_unbounded_runtime_sessions(self):
+        import psycopg
+
+        calls = (
+            "SELECT factory.execution_recovery_candidates(2,NULL,NULL)",
+            "SELECT factory.execution_recovery_context(NULL::uuid,NULL::uuid,"
+            "NULL::char(64),NULL::text,NULL::timestamptz)",
+            "SELECT factory.execution_recovery_claim(NULL::uuid,NULL::uuid,"
+            "NULL::char(64),NULL::text,NULL::timestamptz,NULL::integer)",
+            "SELECT factory.execution_recovery_cancel_task(NULL::uuid)",
+            "SELECT factory.execution_recovery_cleanup_succeeded("
+            "NULL::uuid,NULL::uuid,NULL::char(64),NULL::text,NULL::timestamptz,"
+            "NULL::text,NULL::uuid,NULL::bigint,NULL::text,NULL::boolean)",
+            "SELECT factory.execution_recovery_cleanup_failed("
+            "NULL::uuid,NULL::uuid,NULL::char(64),NULL::text,NULL::timestamptz,"
+            "NULL::text,NULL::uuid,NULL::bigint,NULL::text,NULL::boolean)",
+            "SELECT factory.read_combined_metrics_snapshot()",
+        )
+        for statement_timeout, lock_timeout, transaction_timeout in (
+            ("0", "500ms", "3s"),
+            ("6s", "500ms", "3s"),
+            ("5s", "0", "3s"),
+            ("5s", "501ms", "3s"),
+            ("5s", "500ms", "0"),
+            ("5s", "500ms", "4s"),
+        ):
+            with self.subTest(
+                statement_timeout=statement_timeout,
+                lock_timeout=lock_timeout,
+                transaction_timeout=transaction_timeout,
+            ), psycopg.connect(self.runtime_url, autocommit=True) as connection:
+                connection.execute("SET ROLE factory_runtime")
+                connection.execute(f"SET statement_timeout='{statement_timeout}'")
+                connection.execute(f"SET lock_timeout='{lock_timeout}'")
+                connection.execute(f"SET transaction_timeout='{transaction_timeout}'")
+                for statement in calls:
+                    with self.subTest(statement=statement), self.assertRaisesRegex(
+                        psycopg.errors.RaiseException, "bounded"
+                    ):
+                        connection.execute(statement)
+        with psycopg.connect(self.runtime_url, autocommit=True) as connection:
+            connection.execute("SET ROLE factory_runtime")
+            connection.execute("SET statement_timeout='5s'")
+            connection.execute("SET lock_timeout='500ms'")
+            connection.execute("SET transaction_timeout='3s'")
+            self.assertIsInstance(connection.execute(calls[0]).fetchone()[0], dict)
+            self.assertIsNone(connection.execute(calls[1]).fetchone()[0])
+            self.assertIsNone(connection.execute(calls[2]).fetchone()[0])
+            self.assertEqual(connection.execute(calls[3]).fetchone()[0], "not_eligible")
+            self.assertFalse(connection.execute(calls[4]).fetchone()[0])
+            self.assertFalse(connection.execute(calls[5]).fetchone()[0])
+            self.assertIsInstance(connection.execute(calls[6]).fetchone()[0], dict)
+        started = time.monotonic()
+        with self.assertRaises(StoreUnavailable):
+            with self.runtime_store()._transaction(
+                connect_timeout=2,
+                lock_timeout="500ms",
+                statement_timeout="900ms",
+                transaction_timeout="1s",
+            ) as cursor:
+                cursor.execute("SELECT pg_sleep(0.6)")
+                cursor.execute("SELECT pg_sleep(0.6)")
+        self.assertLess(time.monotonic() - started, 3.0)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT
+                (SELECT count(*) FROM factory.execution_recovery_jobs),
+                (SELECT count(*) FROM factory.execution_recovery_claims),
+                (SELECT count(*) FROM factory.execution_recovery_outcomes)"""
+            )
+            self.assertEqual(cursor.fetchone(), (0, 0, 0))
+
+    def test_execution_metrics_are_fixed_bounded_atomic_and_least_privilege(self):
+        import psycopg
+
+        initial = self.store.metrics()
+        self.assertEqual(
+            set(initial),
+            {
+                "factory_intake_and_rejection_outcomes_total",
+                "factory_lease_reclaim_and_fence_rejection_total",
+                "factory_capacity_budget_kill_and_reconcile_outcomes_total",
+                "factory_execution_claim_and_stage_outcomes_total",
+                "factory_execution_protocol_and_proposal_outcomes_total",
+                "factory_execution_orphan_and_cleanup_outcomes_total",
+            },
+        )
+        self.assertEqual(
+            initial["factory_execution_claim_and_stage_outcomes_total"],
+            {
+                "claimed": 0,
+                "prepared": 0,
+                "running": 0,
+                "collecting": 0,
+                "completed": 0,
+                "failed": 0,
+                "needs_human": 0,
+                "cancelled": 0,
+                "orphaned": 0,
+            },
+        )
+        _task, execution = self.claim_execution(
+            "execution-metrics", capabilities=["notes", "structured_output"]
+        )
+        updated = self.store.metrics()
+        self.assertEqual(
+            (
+                updated["factory_execution_claim_and_stage_outcomes_total"]["claimed"],
+                updated["factory_execution_claim_and_stage_outcomes_total"]["prepared"],
+            ),
+            (1, 1),
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT function.provolatile,function.prosecdef,function.proconfig,
+                has_function_privilege(
+                  'factory_runtime','factory.read_combined_metrics_snapshot()','EXECUTE'),
+                has_function_privilege(
+                  'factory_artifact_attestor',
+                  'factory.read_combined_metrics_snapshot()','EXECUTE'),
+                EXISTS(
+                  SELECT 1 FROM aclexplode(
+                    COALESCE(function.proacl,acldefault('f',function.proowner))) acl
+                  WHERE acl.grantee=0 AND acl.privilege_type='EXECUTE')
+                FROM pg_proc function
+                WHERE function.oid='factory.read_combined_metrics_snapshot()'::regprocedure"""
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("s", True, ["search_path=pg_catalog, factory"], True, False, False),
+            )
+            cursor.execute(
+                """SELECT column_name FROM information_schema.columns
+                WHERE table_schema='factory'
+                  AND table_name='execution_metric_counters'
+                ORDER BY ordinal_position"""
+            )
+            columns = [row[0] for row in cursor.fetchall()]
+            self.assertEqual(len(columns), 19)
+            self.assertEqual(columns[0], "singleton")
+            cursor.execute(
+                """SELECT
+                has_table_privilege(
+                  'factory_runtime','factory.execution_metric_counters',
+                  'SELECT,INSERT,UPDATE,DELETE'),
+                has_table_privilege(
+                  'factory_runtime','factory.execution_recovery_jobs',
+                  'SELECT,INSERT,UPDATE,DELETE'),
+                has_table_privilege(
+                  'factory_artifact_attestor','factory.execution_recovery_claims',
+                  'SELECT,INSERT,UPDATE,DELETE')"""
+            )
+            self.assertEqual(cursor.fetchone(), (False, False, False))
+            capability_names = (
+                "execution_recovery_candidates",
+                "execution_recovery_context",
+                "execution_recovery_claim",
+                "execution_recovery_cancel_task",
+                "execution_recovery_cleanup_succeeded",
+                "execution_recovery_cleanup_failed",
+                "read_combined_metrics_snapshot",
+                "execution_recovery_require_bounds",
+                "execution_metric_increment",
+                "execution_metric_row_delta",
+            )
+            cursor.execute(
+                """SELECT function.proname,
+                has_function_privilege('factory_runtime',function.oid,'EXECUTE'),
+                has_function_privilege(
+                  'factory_artifact_attestor',function.oid,'EXECUTE'),
+                EXISTS(SELECT 1 FROM aclexplode(COALESCE(
+                  function.proacl,acldefault('f',function.proowner))) acl
+                  WHERE acl.grantee=0 AND acl.privilege_type='EXECUTE')
+                FROM pg_proc function JOIN pg_namespace namespace
+                  ON namespace.oid=function.pronamespace
+                WHERE namespace.nspname='factory' AND function.proname=ANY(%s)
+                ORDER BY function.proname""",
+                (list(capability_names),),
+            )
+            function_acl = {
+                name: (runtime, attestor, public)
+                for name, runtime, attestor, public in cursor.fetchall()
+            }
+            self.assertEqual(set(function_acl), set(capability_names))
+            for name in capability_names[:7]:
+                self.assertEqual(function_acl[name], (True, False, False))
+            for name in capability_names[7:]:
+                self.assertEqual(function_acl[name], (False, False, False))
+            cursor.execute(
+                """SELECT relation.relname,
+                has_table_privilege('factory_runtime',relation.oid,
+                  'SELECT,INSERT,UPDATE,DELETE'),
+                has_table_privilege('factory_artifact_attestor',relation.oid,
+                  'SELECT,INSERT,UPDATE,DELETE'),
+                EXISTS(SELECT 1 FROM aclexplode(COALESCE(
+                  relation.relacl,acldefault('r',relation.relowner))) acl
+                  WHERE acl.grantee=0 AND acl.privilege_type=ANY(
+                    ARRAY['SELECT','INSERT','UPDATE','DELETE']))
+                FROM pg_class relation JOIN pg_namespace namespace
+                  ON namespace.oid=relation.relnamespace
+                WHERE namespace.nspname='factory' AND relation.relname=ANY(%s)
+                ORDER BY relation.relname""",
+                (
+                    [
+                        "execution_recovery_jobs",
+                        "execution_recovery_claims",
+                        "execution_recovery_outcomes",
+                        "execution_metric_counters",
+                    ],
+                ),
+            )
+            self.assertEqual(
+                cursor.fetchall(),
+                [
+                    ("execution_metric_counters", False, False, False),
+                    ("execution_recovery_claims", False, False, False),
+                    ("execution_recovery_jobs", False, False, False),
+                    ("execution_recovery_outcomes", False, False, False),
+                ],
+            )
+            cursor.execute(
+                "SET LOCAL plan_cache_mode=force_generic_plan; "
+                "SET LOCAL enable_seqscan=off; SET LOCAL enable_bitmapscan=off"
+            )
+            cursor.execute(
+                """PREPARE recovery_retry_plan(timestamptz,integer) AS
+                SELECT job.run_id FROM factory.execution_recovery_jobs job
+                WHERE job.status<>'succeeded' AND job.next_claim_at<=$1
+                  AND (job.status<>'claimed' OR job.claim_expires_at<=$1)
+                ORDER BY job.next_claim_at,job.updated_at,job.run_id LIMIT $2"""
+            )
+            cursor.execute(
+                "EXPLAIN (FORMAT TEXT) EXECUTE recovery_retry_plan("
+                "'2026-09-02T00:00:00Z'::timestamptz,50)"
+            )
+            retry_plan = "\n".join(row[0] for row in cursor.fetchall()).lower()
+            self.assertIn("execution_recovery_jobs_claimable", retry_plan)
+            self.assertIn("index cond", retry_plan)
+            self.assertIn("next_claim_at", retry_plan)
+            cursor.execute(
+                """PREPARE recovery_fresh_start(integer) AS
+                SELECT manifest.run_id FROM factory.execution_manifests manifest
+                WHERE manifest.terminal_at IS NULL AND NOT EXISTS(
+                  SELECT 1 FROM factory.execution_recovery_jobs job
+                  WHERE job.run_id=manifest.run_id)
+                ORDER BY manifest.updated_at,manifest.run_id LIMIT $1"""
+            )
+            cursor.execute(
+                "EXPLAIN (FORMAT TEXT) EXECUTE recovery_fresh_start(50)"
+            )
+            fresh_start_plan = "\n".join(
+                row[0] for row in cursor.fetchall()
+            ).lower()
+            self.assertIn("execution_manifests_recovery", fresh_start_plan)
+            cursor.execute(
+                """PREPARE recovery_fresh_after(timestamptz,uuid,integer) AS
+                SELECT manifest.run_id FROM factory.execution_manifests manifest
+                WHERE manifest.terminal_at IS NULL
+                  AND (manifest.updated_at,manifest.run_id)>($1,$2)
+                  AND NOT EXISTS(
+                    SELECT 1 FROM factory.execution_recovery_jobs job
+                    WHERE job.run_id=manifest.run_id)
+                ORDER BY manifest.updated_at,manifest.run_id LIMIT $3"""
+            )
+            cursor.execute(
+                "EXPLAIN (FORMAT TEXT) EXECUTE recovery_fresh_after("
+                "'2026-09-02T00:00:00Z'::timestamptz,"
+                "'00000000-0000-0000-0000-000000000000'::uuid,50)"
+            )
+            fresh_after_plan = "\n".join(
+                row[0] for row in cursor.fetchall()
+            ).lower()
+            self.assertIn("execution_manifests_recovery", fresh_after_plan)
+            self.assertIn("index cond", fresh_after_plan)
+            self.assertIn("updated_at", fresh_after_plan)
+            self.assertIn("run_id", fresh_after_plan)
+        with psycopg.connect(self.runtime_url, autocommit=True) as connection:
+            connection.execute("SET ROLE factory_runtime")
+            with self.assertRaisesRegex(Exception, "bounded combined metrics"):
+                connection.execute("SELECT factory.read_combined_metrics_snapshot()")
+        self.assertEqual(execution.stage.value, "prepared")
+
+
 FRESH_CLUSTER_DATABASE_URL = os.environ.get("FACTORY_FRESH_CLUSTER_DATABASE_URL")
 
 
@@ -2964,8 +5383,8 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
         import psycopg
 
         migrations = discover_migrations()
-        if len(migrations) != 16:
-            raise AssertionError("fresh-cluster test requires migrations 001..016")
+        if len(migrations) != 17:
+            raise AssertionError("fresh-cluster test requires migrations 001..017")
         with psycopg.connect(FRESH_CLUSTER_DATABASE_URL) as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT to_regnamespace('factory'),to_regrole('factory_artifact_attestor')")
@@ -3031,6 +5450,7 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
             [
                 (15, "015_execution_canonical_persistence.sql"),
                 (16, "016_contract_execution_canonical_persistence.sql"),
+                (17, "017_execution_recovery_topology.sql"),
             ],
         )
         self.assertEqual(PostgresMigrator(FRESH_CLUSTER_DATABASE_URL).apply(), ())
@@ -3091,7 +5511,7 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
                     {connection.info.user, "factory_artifact_attestor"},
                 )
                 cursor.execute("SELECT max(version) FROM factory.schema_migrations")
-                self.assertEqual(cursor.fetchone()[0], 16)
+                self.assertEqual(cursor.fetchone()[0], 17)
 
 
 if __name__ == "__main__":

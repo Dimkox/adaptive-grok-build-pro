@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 import re
-from typing import Callable, Mapping, Protocol
+from typing import Callable, Literal, Mapping, Protocol
 
 from .contracts import canonical_digest
 from .protocol import MAX_DURABLE_PATH_BYTES, contains_structural_secret
@@ -28,6 +28,18 @@ class WorkspaceHandle:
     task_id: str
     run_id: str
     value: str
+
+
+@dataclass(frozen=True)
+class WorkspaceReleaseOutcome:
+    status: Literal["released", "already_absent"]
+
+    def __post_init__(self) -> None:
+        if type(self.status) is not str or self.status not in {
+            "released",
+            "already_absent",
+        }:
+            raise WorkspaceError("workspace_release_outcome")
 
 
 @dataclass(frozen=True)
@@ -294,10 +306,18 @@ class FakeWorkspaceBroker:
             raise WorkspaceError("network_forbidden")
         self._policies[handle] = policy
 
-    def release(self, handle: WorkspaceHandle) -> str:
+    def release(
+        self, handle: WorkspaceHandle, *, timeout_seconds: float
+    ) -> WorkspaceReleaseOutcome:
+        if (
+            isinstance(timeout_seconds, bool)
+            or not isinstance(timeout_seconds, (int, float))
+            or not 0 < timeout_seconds < 30
+        ):
+            raise WorkspaceError("workspace_release_timeout")
         if self._policies.pop(handle, None) is None:
-            return "fake_absent"
-        return "fake_released"
+            return WorkspaceReleaseOutcome("already_absent")
+        return WorkspaceReleaseOutcome("released")
 
     def _policy(self, handle: WorkspaceHandle) -> WorkspacePolicy:
         try:
@@ -363,7 +383,18 @@ class FakeGitBroker:
             raise WorkspaceError("git_operation_forbidden")
         return WorkspaceDecision(True, "allowed")
 
-    def snapshot(self, request: WorkspaceSnapshotRequest | WorkspaceHandle) -> WorkspaceSnapshotUnavailable:
+    def snapshot(
+        self,
+        request: WorkspaceSnapshotRequest | WorkspaceHandle,
+        *,
+        timeout_seconds: float,
+    ) -> WorkspaceSnapshotUnavailable:
+        if (
+            isinstance(timeout_seconds, bool)
+            or not isinstance(timeout_seconds, (int, float))
+            or not 0 < timeout_seconds <= 5
+        ):
+            raise WorkspaceError("snapshot_timeout")
         if isinstance(request, WorkspaceHandle):
             self.workspace._policy(request)
         return WorkspaceSnapshotUnavailable()
