@@ -1,8 +1,8 @@
 # Architecture budget amendment proposal
 
-> **PENDING HUMAN `scope_and_design_approval` — NOT IMPLEMENTED — NO AUTHORITY**
+> **HISTORICAL PRE-DECISION PROPOSAL — APPROVED AND IMPLEMENTED LOCALLY — NO ACCEPTANCE OR DELIVERY AUTHORITY**
 >
-> This document is analysis for a bounded amendment. It does not approve or change an architecture rule, route, change state, package, acceptance decision, external operation, migration, pull request, or release. If the named human gate is not explicitly granted for this exact design, the existing rule remains authoritative and its failure remains fail-closed.
+> This document was authored as conditional analysis for a bounded amendment; at that point it did not approve or change an architecture rule, route, change state, package, acceptance decision, external operation, migration, pull request, or release. The later exact-scope decision is recorded in [`architecture-budget-approval.md`](architecture-budget-approval.md), and implementation is local only. The original analysis and conditional authority boundary below are preserved: approval did not confer package, acceptance, external-operation, pull-request, merge or release authority.
 
 ## Exact evidence boundary
 

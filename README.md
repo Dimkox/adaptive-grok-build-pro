@@ -5,7 +5,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 ## Current state
 
 - Fresh-agent bootstrap: start with [`START_HERE.md`](START_HERE.md), then [`PROJECT_STATE.json`](PROJECT_STATE.json). A clean clone must be sufficient to understand the current milestone without chat history.
-- Identity: **2.0.13** (`VERSION`, README H1). The tracked local package candidate is `packages/adaptive-grok-build-pro-v2.0.13.zip`; the most recently published GitHub Release remains `v2.0.12`, and no `v2.0.13` tag or release is claimed.
+- Identity: **2.0.13** (`VERSION`, README H1). The tracked stale local artifact is `packages/adaptive-grok-build-pro-v2.0.13.zip`; it is not the current candidate and must be rebuilt from the clean source/docs freeze. The most recently published GitHub Release remains `v2.0.12`, and no `v2.0.13` tag or release is claimed.
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
 - Independent Trust CI: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**

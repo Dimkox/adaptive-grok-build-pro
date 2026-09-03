@@ -4,7 +4,7 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 ## Current project state
 
-- Product source identity is `2.0.13`; its tracked zip is a local candidate only. The most recently published GitHub Release remains `v2.0.12`, and no `v2.0.13` tag or publication is claimed.
+- Product source identity is `2.0.13`; its tracked ZIP is a stale local artifact, not the current candidate, and must be rebuilt from the clean source/docs freeze. The most recently published GitHub Release remains `v2.0.12`, and no `v2.0.13` tag or publication is claimed.
 - M0 (Live Trust Authority) is delivered to `main`.
 - M0 runtime repair and policy-loop fixes are also merged into `main` through PR #7 and PR #6.
 - The current integration base is protected `origin/main` `78ad2f679d38dc3244e716c586332417e610089c`; it requires `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114` on the exact up-to-date pull-request head.

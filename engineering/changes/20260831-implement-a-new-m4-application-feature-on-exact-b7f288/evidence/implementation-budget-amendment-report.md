@@ -82,7 +82,7 @@ M5, M6 and M7 enter only after their predecessor is accepted. M8 has no determin
 - Governance validation/projection checks: PASS; governance digest `dfb263...` at that checkpoint.
 - Typed change spec: PASS, 5/5 criteria mapped; digest `1eb08251a013ea7cc5797cf5c7963f6aa07c6f953e8375c73fa8798c7012d10b`, fingerprint `8964e17efea521f918c69bc111d23761cf8cd3890bebfe1a4edb2abe6b43bfaa` before final report edits.
 - Factory migration unit tests: 6/6 PASS; exact migration object/composite checks independently report `001..013` and the frozen digest.
-- Changed-tree secret scan: PASS, zero potential secrets across 24 files.
+- Changed-tree secret scan: PASS, zero potential secrets across 25 files.
 - JSON parsing and `git diff --check`: PASS and rerun after this final evidence edit before commit.
 
 ## Changed surfaces

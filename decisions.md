@@ -404,3 +404,7 @@ Restore the original six-prefix M2 budget unchanged and enforce separate finite 
 ## 2026-09-03 — Anchor the remaining milestones to accepted predecessors
 
 Define T0 only when an exact M4 SHA earns separately authorized PR delivery, external exact-SHA gates and protected acceptance, then sequence M5-M9 from accepted predecessors rather than missed calendar promises. This keeps M8 cohort duration and M9 signed-artifact/environment/recovery entry conditions truthful; 2026-09-08 remains superseded history, never a waiver.
+
+## 2026-09-03 — Keep final evidence outside the package fingerprint
+
+Build the artifact-only final HEAD first, then store exact-head review reports under the locally ignored `engineering/changes/<active>/evidence/final-runtime-<sha>/` so the active change package retains them without changing Git package inventory or the final tree fingerprint. Runtime receipts bind that unchanged fingerprint; this workflow evidence is not merge authority.
