@@ -55,6 +55,10 @@ class RecordingStore:
         self.calls.append(("release", outcome))
         return TaskStatus.RETRY
 
+    def transition_phase(self, grant, target, actor, now, **_kwargs):
+        self.calls.append(("transition", grant.run_id, target, actor.actor_id))
+        return target
+
     def reconcile(self, *args, **kwargs):
         self.calls.append(("reconcile", args, kwargs))
         return "reconciled"
@@ -253,6 +257,69 @@ class ServiceTests(unittest.TestCase):
         ):
             with self.assertRaises(AuthorizationError):
                 read()
+
+    def test_phase_transition_is_worker_scoped_fenced_and_closed(self):
+        store = RecordingStore()
+        service = FactoryService(store)
+        worker = Actor(
+            "worker",
+            "worker",
+            frozenset({"task:release"}),
+            frozenset({"owner/repository"}),
+        )
+        grant = LeaseGrant(
+            "task-1", "run-1", "worker", RunRole.READER, 1, NOW, "b" * 64
+        )
+        result = service.transition_phase(
+            grant,
+            target=TaskStatus.ANALYZING,
+            actor=worker,
+            now=NOW,
+            idempotency_key="c" * 64,
+            correlation_id="phase-correlation",
+        )
+        self.assertEqual(result, TaskStatus.ANALYZING)
+        self.assertEqual(
+            store.calls[-1],
+            ("transition", "run-1", TaskStatus.ANALYZING, "worker"),
+        )
+        with self.assertRaises(ValueError):
+            service.transition_phase(
+                grant,
+                target=TaskStatus.READY_FOR_HUMAN,
+                actor=worker,
+                now=NOW,
+            )
+        self.assertEqual(len([call for call in store.calls if call[0] == "transition"]), 1)
+
+    def test_store_has_one_task_state_update_owner(self):
+        import ast
+        from pathlib import Path
+
+        from adaptive_factory import store as store_module
+
+        tree = ast.parse(Path(store_module.__file__).read_text(encoding="utf-8"))
+        owners = []
+
+        class StateUpdateVisitor(ast.NodeVisitor):
+            def __init__(self):
+                self.functions = []
+
+            def visit_FunctionDef(self, node):
+                self.functions.append(node.name)
+                self.generic_visit(node)
+                self.functions.pop()
+
+            def visit_Constant(self, node):
+                if (
+                    isinstance(node.value, str)
+                    and "UPDATE factory.tasks SET state" in node.value
+                ):
+                    owners.append(self.functions[-1] if self.functions else None)
+
+        StateUpdateVisitor().visit(tree)
+        self.assertTrue(owners)
+        self.assertEqual(set(owners), {"_apply_task_transition"})
 
 
 if __name__ == "__main__":

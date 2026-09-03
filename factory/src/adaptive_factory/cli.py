@@ -53,6 +53,11 @@ def main(argv: list[str] | None = None) -> int:
     claim.add_argument("--lease-seconds", type=int, default=30)
     heartbeat = sub.add_parser("heartbeat")
     heartbeat.add_argument("grant_file")
+    transition = sub.add_parser("transition")
+    transition.add_argument("grant_file")
+    transition.add_argument(
+        "target", choices=("analyzing", "implementing", "verifying", "reviewing")
+    )
     proposal = sub.add_parser("proposal")
     proposal.add_argument("grant_file")
     proposal.add_argument("outcome")
@@ -118,6 +123,12 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.command == "heartbeat":
             response = client.post("/v1/heartbeats", headers=headers, json=_load(args.grant_file))
+        elif args.command == "transition":
+            response = client.post(
+                "/v1/transitions",
+                headers=headers,
+                json={"grant": _load(args.grant_file), "target": args.target},
+            )
         elif args.command == "proposal":
             response = client.post(
                 "/v1/proposals", headers=headers, json={"grant": _load(args.grant_file), "outcome": args.outcome}

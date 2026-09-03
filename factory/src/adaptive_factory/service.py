@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Iterable
 
 from .contracts import TaskIntakeV1
-from .models import Actor, FailureClass, LeaseGrant, RunRole
+from .models import Actor, FailureClass, LeaseGrant, RunRole, TaskStatus
 from .store import FenceError
 
 
@@ -133,6 +133,35 @@ class FactoryService:
         return self._fenced(
             lambda: self.store.release(
                 grant, outcome, actor, now, idempotency_key=idempotency_key, correlation_id=correlation_id
+            )
+        )
+
+    def transition_phase(
+        self,
+        grant: LeaseGrant,
+        *,
+        target: TaskStatus,
+        actor: Actor,
+        now: datetime,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ) -> TaskStatus:
+        self._require_grant_actor(grant, actor, "task:release")
+        if not isinstance(target, TaskStatus) or target not in {
+            TaskStatus.ANALYZING,
+            TaskStatus.IMPLEMENTING,
+            TaskStatus.VERIFYING,
+            TaskStatus.REVIEWING,
+        }:
+            raise ValueError("target must be the next worker phase")
+        return self._fenced(
+            lambda: self.store.transition_phase(
+                grant,
+                target,
+                actor,
+                now,
+                idempotency_key=idempotency_key,
+                correlation_id=correlation_id,
             )
         )
 

@@ -420,3 +420,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The disposable PostgreSQL restart probe lost the migrated cluster and failed at `SET ROLE factory_runtime` after restart.
 **Root cause:** PGDATA was mounted as tmpfs, whose contents do not survive a container restart; restart durability probes require an explicitly named disposable volume that is removed after evidence collection.
+
+## 2026-09-03 — Reused a claim queue across matrix cases
+
+**Symptom:** Later phase-policy cases received a grant for an earlier queued/retry task and reported misleading transition failures.
+**Root cause:** The test matrix reused one repository while intentionally leaving claimable rows behind; each independent claim case must use an isolated repository (or explicitly remove prior eligibility).

@@ -380,3 +380,7 @@ Keep `intent_digest` over the complete normalized intake as the immutable stored
 ## 2026-09-03 — Keep history cursors public but order by durable keys
 
 Expose a task-bound run UUID cursor while resolving it to the run's immutable fence, and use event sequence directly for event pages. Selecting and validating a `limit+1` window before slicing preserves stable pagination and makes malformed lookahead evidence fail closed without changing schema or `LeaseGrant` v1.
+
+## 2026-09-03 — Centralize task transitions without changing lock ownership
+
+Apply every task-state update through one operation-scoped, lock-neutral policy primitive after the caller acquires its required locks. This preserves capacity-before-task ordering in cleanup paths and makes any policy or evidence failure roll back the full mutation transaction.

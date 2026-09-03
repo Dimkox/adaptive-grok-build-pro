@@ -28,7 +28,7 @@ from adaptive_factory.models import (
 )
 from adaptive_factory.service import FactoryService
 from adaptive_factory.settings import SettingsError, read_token_file
-from adaptive_factory.store import IntakeResult, StoreError
+from adaptive_factory.store import IntakeResult, StoreError, TransitionError
 from factory.tests.test_contracts import valid_intake
 
 
@@ -114,6 +114,10 @@ class FakeService:
     def reconcile(self, **kwargs):
         self.calls.append(("reconcile", kwargs))
         return {"candidates": 0, "repaired": 0, "cursor": None}
+
+    def transition_phase(self, grant, *, target, actor, now, idempotency_key, correlation_id):
+        self.calls.append(("transition", grant, target, actor, idempotency_key, correlation_id))
+        return target
 
     def metrics(self, *, actor=None):
         self.calls.append(("metrics", actor))
@@ -207,6 +211,60 @@ class ApiTests(unittest.TestCase):
         for path, expected in cases:
             with self.subTest(path=path):
                 self.assertEqual(self.client.get(path, headers=headers).status_code, expected)
+
+    def test_phase_transition_endpoint_is_closed_and_uses_release_scope(self):
+        token = "phase-worker-token"
+        worker = Actor(
+            "worker-1",
+            "worker",
+            frozenset({"task:release"}),
+            frozenset({"owner/repository"}),
+        )
+        client = TestClient(create_app(self.service, Authenticator({token: worker})))
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Idempotency-Key": "phase-command",
+            "X-Correlation-ID": "phase-correlation",
+        }
+        grant = {
+            "task_id": "00000000-0000-0000-0000-000000000001",
+            "run_id": "00000000-0000-0000-0000-000000000002",
+            "owner": "worker-1",
+            "role": "reader",
+            "fence": 1,
+            "expires_at": "2026-09-03T12:00:00Z",
+            "packet_digest": "b" * 64,
+        }
+        response = client.post(
+            "/v1/transitions",
+            headers=headers,
+            json={"grant": grant, "target": "analyzing"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "analyzing"})
+        self.assertEqual(response.headers["X-Correlation-ID"], "phase-correlation")
+        self.service.transition_phase = mock.Mock(
+            side_effect=TransitionError("internal transition policy detail")
+        )
+        conflict = client.post(
+            "/v1/transitions",
+            headers={**headers, "Idempotency-Key": "phase-conflict"},
+            json={"grant": grant, "target": "implementing"},
+        )
+        self.assertEqual(
+            (conflict.status_code, conflict.json()),
+            (409, {"error": "conflict", "code": "invalid_transition"}),
+        )
+        self.assertNotIn("internal transition policy detail", conflict.text)
+        for payload in (
+            {"grant": grant, "target": "ready_for_human"},
+            {"grant": grant, "target": "analyzing", "skip": True},
+        ):
+            with self.subTest(payload=payload):
+                self.assertEqual(
+                    client.post("/v1/transitions", headers=headers, json=payload).status_code,
+                    422,
+                )
 
     def test_body_over_one_mebibyte_is_rejected_without_parsing(self):
         response = self.client.post(
@@ -430,6 +488,7 @@ class ApiTests(unittest.TestCase):
             "reconcile",
             "runs",
             "events",
+            "transition",
         ):
             self.assertIn(command, output.getvalue())
 

@@ -13,9 +13,17 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from .contracts import ContractError, canonical_digest
-from .models import Actor, LeaseGrant, RunRole
+from .models import Actor, LeaseGrant, RunRole, TaskStatus
 from .service import AuthorizationError
-from .store import AuthorityError, BudgetError, FenceError, MetricsUnavailable, StoreError, StoreUnavailable
+from .store import (
+    AuthorityError,
+    BudgetError,
+    FenceError,
+    MetricsUnavailable,
+    StoreError,
+    StoreUnavailable,
+    TransitionError,
+)
 
 
 MAX_BODY_BYTES = 1_048_576
@@ -170,6 +178,12 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
     @app.exception_handler(BudgetError)
     async def budget_error(_request: Request, _error: BudgetError):
         return JSONResponse({"error": "stopped", "code": "budget"}, status_code=409)
+
+    @app.exception_handler(TransitionError)
+    async def transition_error(_request: Request, _error: TransitionError):
+        return JSONResponse(
+            {"error": "conflict", "code": "invalid_transition"}, status_code=409
+        )
 
     @app.exception_handler(StoreUnavailable)
     async def store_unavailable(_request: Request, _error: StoreUnavailable):
@@ -381,6 +395,40 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         return JSONResponse(
             _json(service.heartbeat(_grant(payload), actor=actor, now=datetime.now(timezone.utc), idempotency_key=key, correlation_id=correlation)),
             headers={"X-Correlation-ID": correlation},
+        )
+
+    @app.post("/v1/transitions", tags=["worker"])
+    def transition_phase(
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:release")
+        key = _command_key(idempotency_key)
+        correlation = _request_id(x_correlation_id, "X-Correlation-ID")
+        payload = _closed(payload, {"grant", "target"})
+        try:
+            target = TaskStatus(payload["target"])
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(422, "invalid phase target") from exc
+        if target not in {
+            TaskStatus.ANALYZING,
+            TaskStatus.IMPLEMENTING,
+            TaskStatus.VERIFYING,
+            TaskStatus.REVIEWING,
+        }:
+            raise HTTPException(422, "invalid phase target")
+        status = service.transition_phase(
+            _grant(payload["grant"]),
+            target=target,
+            actor=actor,
+            now=datetime.now(timezone.utc),
+            idempotency_key=key,
+            correlation_id=correlation,
+        )
+        return JSONResponse(
+            _json({"status": status}), headers={"X-Correlation-ID": correlation}
         )
 
     @app.post("/v1/proposals", tags=["worker"])

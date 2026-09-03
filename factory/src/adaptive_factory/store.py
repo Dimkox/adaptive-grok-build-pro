@@ -25,7 +25,12 @@ from .models import (
     TaskProjection,
     TaskStatus,
 )
-from .state import classify_retry
+from .state import (
+    TransitionCommand,
+    TransitionOperation,
+    authorize_transition,
+    classify_retry,
+)
 
 
 class StoreError(RuntimeError):
@@ -52,6 +57,10 @@ class StoreUnavailable(StoreError):
     pass
 
 
+class TransitionError(StoreError):
+    pass
+
+
 @dataclass(frozen=True)
 class IntakeResult:
     task: TaskProjection
@@ -75,6 +84,8 @@ class UsageResult:
 class TerminalizationResult:
     changed: bool
     accounting_quarantined: bool
+    from_state: TaskStatus | None = None
+    operation: TransitionOperation | None = None
 
 
 class PostgresFactoryStore:
@@ -83,6 +94,64 @@ class PostgresFactoryStore:
     _MUTATION_STATEMENT_TIMEOUT = "5s"
     _RECONCILIATION_TIMEOUT_SECONDS = 5.0
     _RECONCILIATION_COMMIT_RESERVE_SECONDS = 0.1
+
+    @staticmethod
+    def _apply_task_transition(
+        cursor,
+        task_id: str,
+        current: TaskStatus,
+        target: TaskStatus,
+        command: TransitionCommand,
+        *,
+        clear_current: bool = False,
+        current_run_id: str | None = None,
+        current_fence: int | None = None,
+        terminal: bool = False,
+        accounting_blocked: bool | None = None,
+    ) -> TaskStatus:
+        """Authorize and mutate a task row already locked by the caller.
+
+        Lease-closing callers must keep the global capacity-to-task lock order, so
+        this primitive deliberately does not acquire a lock of its own.
+        """
+        set_current = current_run_id is not None or current_fence is not None
+        if clear_current and set_current:
+            raise StoreError("task transition cannot clear and set a lease")
+        if set_current and (current_run_id is None or current_fence is None):
+            raise StoreError("task transition requires a complete lease pointer")
+        decision = authorize_transition(current, target, command)
+        if decision.code != "allowed":
+            raise TransitionError("task transition denied")
+        update_accounting = accounting_blocked is not None
+        cursor.execute(
+            """UPDATE factory.tasks SET state=%s,
+            current_run_id=CASE WHEN %s::boolean THEN NULL::uuid
+              WHEN %s::boolean THEN %s::uuid ELSE current_run_id END,
+            current_fence=CASE WHEN %s::boolean THEN NULL::bigint
+              WHEN %s::boolean THEN %s::bigint ELSE current_fence END,
+            terminal_at=CASE WHEN %s::boolean THEN clock_timestamp() ELSE terminal_at END,
+            accounting_blocked=CASE WHEN %s::boolean THEN %s::boolean ELSE accounting_blocked END,
+            updated_at=clock_timestamp()
+            WHERE task_id=%s AND state=%s RETURNING state""",
+            (
+                target.value,
+                clear_current,
+                set_current,
+                current_run_id,
+                clear_current,
+                set_current,
+                current_fence,
+                terminal,
+                update_accounting,
+                accounting_blocked if accounting_blocked is not None else False,
+                task_id,
+                current.value,
+            ),
+        )
+        row = cursor.fetchone()
+        if row is None:
+            raise StoreError("locked task state changed during transition")
+        return current
 
     def __init__(self, database_url: str) -> None:
         if not database_url:
@@ -536,6 +605,9 @@ class PostgresFactoryStore:
                 metadata = {
                     "replacement_intent_digest": intake.intent_digest,
                     "accounting_quarantined": terminalization.accounting_quarantined,
+                    "from_state": terminalization.from_state.value,
+                    "target": TaskStatus.SUPERSEDED.value,
+                    "operation": terminalization.operation.value,
                 }
                 self._event(
                     cursor, old_id, actor, "superseded", key,
@@ -973,7 +1045,7 @@ class PostgresFactoryStore:
             if not eligible_repositories:
                 return no_grant()
             cursor.execute(
-                """SELECT t.task_id,t.repository_id,t.packet_digest,t.deadline_at,t.infrastructure_retries
+                """SELECT t.task_id,t.repository_id,t.packet_digest,t.deadline_at,t.infrastructure_retries,t.state
                 FROM factory.tasks t WHERE t.state IN ('queued','retry') AND t.repository_id=ANY(%s)
                 AND t.deadline_at>clock_timestamp() AND NOT t.accounting_blocked
                 AND t.cost_reserved_micros=0 AND t.tokens_reserved=0 AND t.wall_reserved_seconds=0
@@ -985,7 +1057,8 @@ class PostgresFactoryStore:
             row = cursor.fetchone()
             if not row:
                 return no_grant()
-            task_id, repository_id, packet_digest, deadline, infrastructure_retries = row
+            task_id, repository_id, packet_digest, deadline, infrastructure_retries, task_state = row
+            current = TaskStatus(task_state)
             cursor.execute("SELECT COALESCE(max(attempt_no),0)+1 FROM factory.attempts WHERE task_id=%s", (task_id,))
             attempt_no = cursor.fetchone()[0]
             if attempt_no > infrastructure_retries + 1:
@@ -993,6 +1066,9 @@ class PostgresFactoryStore:
                 evidence = {
                     "attempts": completed_attempts,
                     "infrastructure_retries": infrastructure_retries,
+                    "from_state": current.value,
+                    "target": TaskStatus.DEAD.value,
+                    "operation": TransitionOperation.RETRY_EXHAUSTED.value,
                 }
                 key = canonical_digest(
                     {
@@ -1001,9 +1077,17 @@ class PostgresFactoryStore:
                         **evidence,
                     }
                 )
-                cursor.execute(
-                    "UPDATE factory.tasks SET state='dead',terminal_at=clock_timestamp(),updated_at=clock_timestamp() WHERE task_id=%s",
-                    (task_id,),
+                self._apply_task_transition(
+                    cursor,
+                    str(task_id),
+                    current,
+                    TaskStatus.DEAD,
+                    TransitionCommand(
+                        "control_plane",
+                        TaskStatus.DEAD,
+                        TransitionOperation.RETRY_EXHAUSTED,
+                    ),
+                    terminal=True,
                 )
                 self._event(
                     cursor,
@@ -1049,21 +1133,44 @@ class PostgresFactoryStore:
             )
             if not cursor.fetchone()[0]:
                 raise StoreError("capacity changed during claim")
-            cursor.execute(
-                "UPDATE factory.tasks SET state='leased',current_run_id=%s,current_fence=%s,updated_at=clock_timestamp() WHERE task_id=%s",
-                (run_id, fence, task_id),
+            self._apply_task_transition(
+                cursor,
+                str(task_id),
+                current,
+                TaskStatus.LEASED,
+                TransitionCommand(
+                    "control_plane", TaskStatus.LEASED, TransitionOperation.CLAIM
+                ),
+                current_run_id=str(run_id),
+                current_fence=fence,
             )
             key = canonical_digest({"action": "claim", "run_id": str(run_id), "fence": fence})
+            metadata = {
+                "from_state": current.value,
+                "target": TaskStatus.LEASED.value,
+                "operation": TransitionOperation.CLAIM.value,
+                "run_id": str(run_id),
+                "fence": fence,
+                "role": request.role.value,
+            }
             self._event(
                 cursor,
                 str(task_id),
                 actor,
                 "claimed",
                 key,
-                {"run_id": str(run_id), "fence": fence, "role": request.role.value},
+                metadata,
             )
             self._audit(
-                cursor, str(task_id), actor, "claim", f"run:{run_id}", "scheduled", key, {"fence": fence}, str(run_id)
+                cursor,
+                str(task_id),
+                actor,
+                "claim",
+                f"run:{run_id}",
+                "scheduled",
+                correlation_id or idempotency_key or key,
+                metadata,
+                str(run_id),
             )
             grant = LeaseGrant(
                 str(task_id), str(run_id), request.owner, request.role, fence, expires, packet_digest.strip()
@@ -1125,23 +1232,44 @@ class PostgresFactoryStore:
         if target not in {TaskStatus.CANCELLED, TaskStatus.SUPERSEDED}:
             raise StoreError("unsupported terminal transition")
         terminal = tuple(status.value for status in (TaskStatus.READY_FOR_HUMAN, TaskStatus.DEAD, TaskStatus.CANCELLED, TaskStatus.SUPERSEDED))
+        operation = (
+            TransitionOperation.CANCEL
+            if target is TaskStatus.CANCELLED
+            else TransitionOperation.SUPERSEDE
+        )
         for _attempt in range(3):
             self._close_active_lease(cursor, task_id)
             cursor.execute(
-                """UPDATE factory.tasks SET state=%s,terminal_at=clock_timestamp(),updated_at=clock_timestamp(),
-                current_run_id=NULL,current_fence=NULL,
-                accounting_blocked=accounting_blocked OR cost_reserved_micros<>0
+                """SELECT state,accounting_blocked OR cost_reserved_micros<>0
                   OR tokens_reserved<>0 OR wall_reserved_seconds<>0 OR EXISTS (
                     SELECT 1 FROM factory.budget_reservations b
                     WHERE b.task_id=tasks.task_id AND b.released_at IS NULL
                   )
+                FROM factory.tasks
                 WHERE task_id=%s AND current_run_id IS NULL
-                AND state<>ALL(%s) RETURNING accounting_blocked""",
-                (target.value, task_id, list(terminal)),
+                AND state<>ALL(%s) FOR UPDATE""",
+                (task_id, list(terminal)),
             )
-            changed = cursor.fetchone()
-            if changed is not None:
-                return TerminalizationResult(True, bool(changed[0]))
+            locked = cursor.fetchone()
+            if locked is not None:
+                current = TaskStatus(locked[0])
+                accounting_quarantined = bool(locked[1])
+                self._apply_task_transition(
+                    cursor,
+                    task_id,
+                    current,
+                    target,
+                    TransitionCommand("control_plane", target, operation),
+                    clear_current=True,
+                    terminal=True,
+                    accounting_blocked=accounting_quarantined,
+                )
+                return TerminalizationResult(
+                    True,
+                    accounting_quarantined,
+                    current,
+                    operation,
+                )
             cursor.execute(
                 "SELECT state,current_run_id,accounting_blocked FROM factory.tasks WHERE task_id=%s",
                 (task_id,),
@@ -1208,17 +1336,16 @@ class PostgresFactoryStore:
         ):
             return False
         target = TaskStatus.NEEDS_HUMAN if accounting_quarantined else TaskStatus.DEAD
-        cursor.execute(
-            """UPDATE factory.tasks SET state=%s,accounting_blocked=%s,
-            current_run_id=NULL,current_fence=NULL,updated_at=clock_timestamp(),
-            terminal_at=CASE WHEN %s THEN clock_timestamp() ELSE terminal_at END
-            WHERE task_id=%s""",
-            (
-                target.value,
-                accounting_quarantined,
-                target is TaskStatus.DEAD,
-                task_id,
-            ),
+        operation = TransitionOperation.RECONCILE_DEADLINE
+        self._apply_task_transition(
+            cursor,
+            task_id,
+            TaskStatus(state),
+            target,
+            TransitionCommand("control_plane", target, operation),
+            clear_current=True,
+            terminal=target is TaskStatus.DEAD,
+            accounting_blocked=bool(accounting_quarantined),
         )
         key = canonical_digest(
             {
@@ -1231,6 +1358,7 @@ class PostgresFactoryStore:
         metadata = {
             "from_state": state,
             "target": target.value,
+            "operation": operation.value,
             "accounting_quarantined": bool(accounting_quarantined),
         }
         self._event(
@@ -1256,21 +1384,24 @@ class PostgresFactoryStore:
 
     def _lock_grant(self, cursor, grant: LeaseGrant, *, allow_expired: bool = False):
         cursor.execute(
-            """SELECT r.task_id,r.role,a.repository_id,at.attempt_no,t.infrastructure_retries
+            """SELECT r.task_id,r.role,a.repository_id,at.attempt_no,t.infrastructure_retries,t.state
             FROM factory.runs r JOIN factory.tasks t ON t.task_id=r.task_id
             JOIN factory.capacity_allocations a ON a.run_id=r.run_id
             JOIN factory.attempts at ON at.run_id=r.run_id
-            WHERE r.run_id=%s AND r.task_id=%s AND r.owner_id=%s AND r.fence=%s AND r.packet_digest=%s
+            WHERE r.run_id=%s AND r.task_id=%s AND r.owner_id=%s AND r.role=%s
+            AND r.fence=%s AND r.packet_digest=%s
             AND r.state='leased' AND r.released_at IS NULL
             AND a.released_at IS NULL
             AND (%s OR r.lease_expires_at>clock_timestamp())
-            AND t.current_run_id=r.run_id AND t.current_fence=r.fence AND t.state='leased'
+            AND t.current_run_id=r.run_id AND t.current_fence=r.fence
+            AND t.state IN ('leased','analyzing','implementing','verifying','reviewing')
             AND (%s OR t.deadline_at>clock_timestamp())
             FOR UPDATE OF r,t""",
             (
                 grant.run_id,
                 grant.task_id,
                 grant.owner,
+                grant.role.value,
                 grant.fence,
                 grant.packet_digest,
                 allow_expired,
@@ -1300,6 +1431,91 @@ class PostgresFactoryStore:
             self._record_command(cursor, idempotency_key, actor, "heartbeat", request_digest, correlation_id, {"expires_at": expires.isoformat().replace("+00:00", "Z")})
             return result
 
+    def transition_phase(
+        self,
+        grant: LeaseGrant,
+        target: TaskStatus,
+        actor: Actor,
+        now: datetime,
+        *,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ) -> TaskStatus:
+        del now
+        with self._transaction() as cursor:
+            command = {
+                "grant": {
+                    "task_id": grant.task_id,
+                    "run_id": grant.run_id,
+                    "owner": grant.owner,
+                    "role": grant.role.value,
+                    "fence": grant.fence,
+                    "packet_digest": grant.packet_digest,
+                },
+                "target": target.value,
+            }
+            replay, prior, request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "transition_phase", command
+            )
+            if replay:
+                return TaskStatus(prior["status"])
+            task_id, _role, _repository_id, _attempt_no, _retries, task_state = self._lock_grant(
+                cursor, grant
+            )
+            current = TaskStatus(task_state)
+            operation = TransitionOperation.PHASE
+            self._apply_task_transition(
+                cursor,
+                str(task_id),
+                current,
+                target,
+                TransitionCommand("worker", target, operation),
+            )
+            metadata = {
+                "from_state": current.value,
+                "target": target.value,
+                "operation": operation.value,
+                "run_id": grant.run_id,
+                "fence": grant.fence,
+            }
+            event_key = canonical_digest(
+                {
+                    "action": "phase_transitioned",
+                    "run_id": grant.run_id,
+                    "fence": grant.fence,
+                    "target": target.value,
+                }
+            )
+            self._event(
+                cursor,
+                str(task_id),
+                actor,
+                "phase_transitioned",
+                event_key,
+                metadata,
+            )
+            self._audit(
+                cursor,
+                str(task_id),
+                actor,
+                "phase_transition",
+                f"run:{grant.run_id}",
+                target.value,
+                correlation_id or idempotency_key or event_key,
+                metadata,
+                grant.run_id,
+            )
+            self._record_command(
+                cursor,
+                idempotency_key,
+                actor,
+                "transition_phase",
+                request_digest,
+                correlation_id,
+                {"status": target.value},
+            )
+            return target
+
     def _release_locked(
         self, cursor, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, *, allow_expired: bool = False,
         deadline_expired: bool = False, correlation_id: str | None = None
@@ -1310,9 +1526,10 @@ class PostgresFactoryStore:
             raise FenceError("stale or expired fence")
         if not self._lock_capacity_for_run(cursor, grant.run_id):
             raise FenceError("stale or expired fence")
-        task_id, _role, _repository_id, attempt_no, infrastructure_retries = self._lock_grant(
+        task_id, _role, _repository_id, attempt_no, infrastructure_retries, task_state = self._lock_grant(
             cursor, grant, allow_expired=allow_expired
         )
+        current = TaskStatus(task_state)
         accounting_quarantined = False
         if isinstance(outcome, FailureClass):
             if deadline_expired:
@@ -1344,9 +1561,6 @@ class PostgresFactoryStore:
                 failure_code = outcome.value
             if accounting_quarantined:
                 target = TaskStatus.NEEDS_HUMAN
-                cursor.execute(
-                    "UPDATE factory.tasks SET accounting_blocked=true WHERE task_id=%s", (grant.task_id,)
-                )
             cursor.execute(
                 "UPDATE factory.attempts SET failure_class=%s,failure_code=%s,failure_digest=%s,finished_at=clock_timestamp() WHERE run_id=%s",
                 (
@@ -1382,9 +1596,25 @@ class PostgresFactoryStore:
         if not cursor.fetchone()[0]:
             raise StoreError("lease capacity was not released")
         terminal = target in {TaskStatus.DEAD, TaskStatus.READY_FOR_HUMAN}
-        cursor.execute(
-            "UPDATE factory.tasks SET state=%s,current_run_id=NULL,current_fence=NULL,updated_at=clock_timestamp(),terminal_at=CASE WHEN %s THEN clock_timestamp() ELSE terminal_at END WHERE task_id=%s",
-            (target.value, terminal, task_id),
+        operation = (
+            TransitionOperation.RECONCILE_EXPIRED
+            if allow_expired
+            else (
+                TransitionOperation.RELEASE_FAILURE
+                if isinstance(outcome, FailureClass)
+                else TransitionOperation.RELEASE_COMPLETED
+            )
+        )
+        actor_kind = "control_plane" if allow_expired else "worker"
+        self._apply_task_transition(
+            cursor,
+            str(task_id),
+            current,
+            target,
+            TransitionCommand(actor_kind, target, operation),
+            clear_current=True,
+            terminal=terminal,
+            accounting_blocked=True if accounting_quarantined else None,
         )
         release_identity = {
             "action": "release",
@@ -1395,8 +1625,13 @@ class PostgresFactoryStore:
         if deadline_expired:
             release_identity["reason"] = "deadline_expired"
         key = canonical_digest(release_identity)
-        event_metadata = {"target": target.value}
-        audit_metadata = {"fence": grant.fence}
+        event_metadata = {
+            "from_state": current.value,
+            "target": target.value,
+            "operation": operation.value,
+            "run_id": grant.run_id,
+            "fence": grant.fence,
+        }
         audit_reason = target.value
         if deadline_expired:
             event_metadata.update(
@@ -1405,7 +1640,6 @@ class PostgresFactoryStore:
                     "accounting_quarantined": accounting_quarantined,
                 }
             )
-            audit_metadata["accounting_quarantined"] = accounting_quarantined
             audit_reason = "deadline_expired"
         self._event(
             cursor, str(task_id), actor, "released", key, event_metadata, mandatory_cleanup=True
@@ -1418,7 +1652,7 @@ class PostgresFactoryStore:
             f"run:{grant.run_id}",
             audit_reason,
             correlation_id or key,
-            audit_metadata,
+            event_metadata,
             grant.run_id,
         )
         return target
@@ -1771,7 +2005,18 @@ class PostgresFactoryStore:
                             if task_deadline_expired or repair_count < repair_limit
                             else FailureClass.PROVIDER_QUALITY
                         )
-                        if state == "leased" and str(current_run_id) == str(run_id) and current_fence == fence:
+                        if (
+                            state
+                            in {
+                                TaskStatus.LEASED.value,
+                                TaskStatus.ANALYZING.value,
+                                TaskStatus.IMPLEMENTING.value,
+                                TaskStatus.VERIFYING.value,
+                                TaskStatus.REVIEWING.value,
+                            }
+                            and str(current_run_id) == str(run_id)
+                            and current_fence == fence
+                        ):
                             self._release_locked(
                                 cursor,
                                 grant,
@@ -1838,6 +2083,9 @@ class PostgresFactoryStore:
                 metadata = {
                     "reason": reason,
                     "accounting_quarantined": terminalization.accounting_quarantined,
+                    "from_state": terminalization.from_state.value,
+                    "target": TaskStatus.CANCELLED.value,
+                    "operation": terminalization.operation.value,
                 }
                 self._event(
                     cursor, task_id, actor, "cancelled", key, metadata, mandatory_cleanup=True

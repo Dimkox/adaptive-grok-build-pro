@@ -1,17 +1,20 @@
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
+from dataclasses import fields, replace
 from datetime import datetime, timedelta, timezone
 from functools import partial
 import os
 import threading
 import time
 import unittest
+from unittest import mock
 import uuid
 
 from adaptive_factory.migrations import PostgresMigrator, discover_migrations
 from adaptive_factory.api import Authenticator, create_app
 from adaptive_factory.contracts import TaskIntakeV1, canonical_digest
-from adaptive_factory.models import Actor, FailureClass, RunRole, TaskStatus
+from adaptive_factory.models import Actor, FailureClass, LeaseGrant, RunRole, TaskStatus
 from adaptive_factory.service import AuthorizationError, FactoryService
+from adaptive_factory.state import TransitionDecision
 from adaptive_factory.store import (
     BudgetError,
     FenceError,
@@ -97,6 +100,25 @@ class PostgresFactoryTests(unittest.TestCase):
 
     def submit(self, repository="owner/repository", source=None):
         return self.service.intake(self.payload(repository, source), actor=OPERATOR, now=NOW)
+
+    def advance_to_phase(self, grant, target: TaskStatus) -> None:
+        ordered = (
+            TaskStatus.ANALYZING,
+            TaskStatus.IMPLEMENTING,
+            TaskStatus.VERIFYING,
+            TaskStatus.REVIEWING,
+        )
+        for phase in ordered[: ordered.index(target) + 1]:
+            self.service.transition_phase(
+                grant,
+                target=phase,
+                actor=WORKER,
+                now=NOW,
+                idempotency_key=canonical_digest(
+                    {"test": "advance", "run_id": grant.run_id, "target": phase.value}
+                ),
+                correlation_id=f"advance-{phase.value}",
+            )
 
     def _assert_claim_terminal_race_releases_capacity(self, action: str) -> None:
         import psycopg
@@ -325,6 +347,689 @@ class PostgresFactoryTests(unittest.TestCase):
             self.service.list_task_runs(task.task_id, limit=1, cursor=None, actor=denied)
         with self.assertRaises(AuthorizationError):
             self.service.list_task_events(task.task_id, limit=1, cursor=None, actor=denied)
+
+    def test_phase_transition_is_concurrent_replay_safe_fenced_and_audited(self):
+        import psycopg
+
+        task = self.submit(source="phase-concurrent-replay").task
+        grant = self.service.claim(
+            owner=WORKER.actor_id,
+            role=RunRole.READER,
+            repositories=(task.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        wrong_role_key = "0" * 64
+        with self.assertRaises(FenceError):
+            self.service.transition_phase(
+                replace(grant, role=RunRole.WRITER),
+                target=TaskStatus.ANALYZING,
+                actor=WORKER,
+                now=NOW,
+                idempotency_key=wrong_role_key,
+            )
+        key = "a" * 64
+        call = partial(
+            self.service.transition_phase,
+            grant,
+            target=TaskStatus.ANALYZING,
+            actor=WORKER,
+            now=NOW,
+            idempotency_key=key,
+            correlation_id="phase-replay-correlation",
+        )
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = tuple(pool.map(lambda _index: call(), range(2)))
+        self.assertEqual(results, (TaskStatus.ANALYZING, TaskStatus.ANALYZING))
+
+        replay = self.service.transition_phase(
+            grant,
+            target=TaskStatus.ANALYZING,
+            actor=WORKER,
+            now=NOW,
+            idempotency_key=key,
+            correlation_id="phase-replay-correlation",
+        )
+        self.assertEqual(replay, TaskStatus.ANALYZING)
+        self.assertEqual(
+            tuple(field.name for field in fields(LeaseGrant)),
+            (
+                "task_id",
+                "run_id",
+                "owner",
+                "role",
+                "fence",
+                "expires_at",
+                "packet_digest",
+            ),
+        )
+        with self.assertRaises(StoreError):
+            self.service.transition_phase(
+                replace(grant, packet_digest="c" * 64),
+                target=TaskStatus.ANALYZING,
+                actor=WORKER,
+                now=NOW,
+                idempotency_key=key,
+                correlation_id="phase-replay-correlation",
+            )
+        with self.assertRaises(StoreError):
+            self.service.transition_phase(
+                grant,
+                target=TaskStatus.IMPLEMENTING,
+                actor=WORKER,
+                now=NOW,
+                idempotency_key=key,
+                correlation_id="phase-replay-correlation",
+            )
+        skip_key = "b" * 64
+        with self.assertRaises(StoreError):
+            self.service.transition_phase(
+                grant,
+                target=TaskStatus.VERIFYING,
+                actor=WORKER,
+                now=NOW,
+                idempotency_key=skip_key,
+                correlation_id="phase-skip-correlation",
+            )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT t.state,r.state,a.released_at IS NULL,
+                (SELECT count(*) FROM factory.task_events
+                  WHERE task_id=t.task_id AND action='phase_transitioned'),
+                (SELECT count(*) FROM factory.audit_log
+                  WHERE task_id=t.task_id AND action='phase_transition'),
+                (SELECT count(*) FROM factory.command_results
+                  WHERE idempotency_key=%s),
+                (SELECT count(*) FROM factory.command_results
+                  WHERE idempotency_key=%s),
+                (SELECT count(*) FROM factory.command_results
+                  WHERE idempotency_key=%s)
+                FROM factory.tasks t JOIN factory.runs r ON r.run_id=t.current_run_id
+                JOIN factory.capacity_allocations a ON a.run_id=r.run_id
+                WHERE t.task_id=%s""",
+                (key, skip_key, wrong_role_key, task.task_id),
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                ("analyzing", "leased", True, 1, 1, 1, 0, 0),
+            )
+            cursor.execute(
+                """SELECT e.metadata,a.metadata,a.correlation_id
+                FROM factory.task_events e JOIN factory.audit_log a
+                  ON a.task_id=e.task_id AND a.action='phase_transition'
+                WHERE e.task_id=%s AND e.action='phase_transitioned'""",
+                (task.task_id,),
+            )
+            event_metadata, audit_metadata, correlation = cursor.fetchone()
+            expected = {
+                "from_state": "leased",
+                "target": "analyzing",
+                "operation": "phase",
+                "run_id": grant.run_id,
+                "fence": grant.fence,
+            }
+            self.assertEqual(event_metadata, expected)
+            self.assertEqual(audit_metadata, expected)
+            self.assertEqual(correlation, "phase-replay-correlation")
+
+        heartbeat = self.service.heartbeat(
+            grant,
+            actor=WORKER,
+            now=NOW,
+            idempotency_key="c" * 64,
+        )
+        self.assertEqual(
+            tuple(field.name for field in fields(heartbeat)),
+            tuple(field.name for field in fields(LeaseGrant)),
+        )
+        self.assertEqual(
+            self.service.release(
+                grant,
+                outcome=FailureClass.WORKER_LOST,
+                actor=WORKER,
+                now=NOW,
+            ),
+            TaskStatus.RETRY,
+        )
+        stale_key = "d" * 64
+        with self.assertRaises(FenceError):
+            self.service.transition_phase(
+                grant,
+                target=TaskStatus.IMPLEMENTING,
+                actor=WORKER,
+                now=NOW,
+                idempotency_key=stale_key,
+            )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT
+                (SELECT count(*) FROM factory.task_events
+                  WHERE task_id=%s AND action='phase_transitioned'),
+                (SELECT count(*) FROM factory.audit_log
+                  WHERE task_id=%s AND action='phase_transition'),
+                (SELECT count(*) FROM factory.command_results
+                  WHERE idempotency_key=%s)""",
+                (task.task_id, task.task_id, stale_key),
+            )
+            self.assertEqual(cursor.fetchone(), (1, 1, 0))
+
+    def test_phase_transition_rolls_back_when_post_mutation_evidence_fails(self):
+        import psycopg
+
+        class FailingPhaseAuditStore(PostgresFactoryStore):
+            def _audit(self, cursor, task_id, actor, action, resource, reason, correlation_id, metadata=None, run_id=None):
+                if action == "phase_transition":
+                    raise StoreError("injected post-mutation audit failure")
+                return super()._audit(
+                    cursor,
+                    task_id,
+                    actor,
+                    action,
+                    resource,
+                    reason,
+                    correlation_id,
+                    metadata,
+                    run_id,
+                )
+
+        task = self.submit(source="phase-post-mutation-rollback").task
+        grant = self.service.claim(
+            owner=WORKER.actor_id,
+            role=RunRole.READER,
+            repositories=(task.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        key = "e" * 64
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT transition_events FROM factory.metric_counters"
+            )
+            transition_events_before = cursor.fetchone()[0]
+
+        failing_service = FactoryService(FailingPhaseAuditStore(DATABASE_URL))
+        with self.assertRaisesRegex(StoreError, "post-mutation"):
+            failing_service.transition_phase(
+                grant,
+                target=TaskStatus.ANALYZING,
+                actor=WORKER,
+                now=NOW,
+                idempotency_key=key,
+                correlation_id="phase-rollback-correlation",
+            )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT t.state,r.state,r.released_at IS NULL,a.released_at IS NULL,
+                (SELECT count(*) FROM factory.task_events
+                  WHERE task_id=t.task_id AND action='phase_transitioned'),
+                (SELECT count(*) FROM factory.audit_log
+                  WHERE task_id=t.task_id AND action='phase_transition'),
+                (SELECT count(*) FROM factory.command_results
+                  WHERE idempotency_key=%s),
+                (SELECT transition_events FROM factory.metric_counters)
+                FROM factory.tasks t JOIN factory.runs r ON r.run_id=t.current_run_id
+                JOIN factory.capacity_allocations a ON a.run_id=r.run_id
+                WHERE t.task_id=%s""",
+                (key, task.task_id),
+            )
+            self.assertEqual(
+                cursor.fetchone(),
+                (
+                    "leased",
+                    "leased",
+                    True,
+                    True,
+                    0,
+                    0,
+                    0,
+                    transition_events_before,
+                ),
+            )
+
+    def test_phase_sequence_and_completed_release_edges_are_exact(self):
+        import psycopg
+
+        reviewed = self.submit(source="phase-reviewed-completion").task
+        reviewed_grant = self.service.claim(
+            owner=WORKER.actor_id,
+            role=RunRole.READER,
+            repositories=(reviewed.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        self.advance_to_phase(reviewed_grant, TaskStatus.REVIEWING)
+        self.service.observe_usage(
+            reviewed_grant,
+            provider_call_id="phase-reviewed-usage",
+            price_table_digest="2" * 64,
+            cost_usd_micros=0,
+            token_units=0,
+            output_bytes=0,
+            actor=WORKER,
+        )
+        self.assertEqual(
+            self.service.release(
+                reviewed_grant, outcome="completed", actor=WORKER, now=NOW
+            ),
+            TaskStatus.READY_FOR_HUMAN,
+        )
+
+        compatible = self.submit(source="phase-leased-compatibility").task
+        compatible_grant = self.service.claim(
+            owner=WORKER.actor_id,
+            role=RunRole.READER,
+            repositories=(compatible.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        self.service.observe_usage(
+            compatible_grant,
+            provider_call_id="phase-compatible-usage",
+            price_table_digest="2" * 64,
+            cost_usd_micros=0,
+            token_units=0,
+            output_bytes=0,
+            actor=WORKER,
+        )
+        self.assertEqual(
+            self.service.release(
+                compatible_grant, outcome="completed", actor=WORKER, now=NOW
+            ),
+            TaskStatus.READY_FOR_HUMAN,
+        )
+
+        for phase in (
+            TaskStatus.ANALYZING,
+            TaskStatus.IMPLEMENTING,
+            TaskStatus.VERIFYING,
+        ):
+            with self.subTest(phase=phase.value):
+                repository = f"phase/completion-denied/{phase.value}"
+                task = self.submit(
+                    repository=repository,
+                    source=f"phase-completion-denied-{phase.value}",
+                ).task
+                grant = self.service.claim(
+                    owner=WORKER.actor_id,
+                    role=RunRole.READER,
+                    repositories=(task.repository_id,),
+                    lease_seconds=60,
+                    actor=WORKER,
+                    now=NOW,
+                )
+                self.advance_to_phase(grant, phase)
+                self.service.observe_usage(
+                    grant,
+                    provider_call_id=f"phase-denied-{phase.value}",
+                    price_table_digest="2" * 64,
+                    cost_usd_micros=0,
+                    token_units=0,
+                    output_bytes=0,
+                    actor=WORKER,
+                )
+                key = canonical_digest(
+                    {"test": "completed-denied", "phase": phase.value}
+                )
+                with self.assertRaises(StoreError):
+                    self.service.release(
+                        grant,
+                        outcome="completed",
+                        actor=WORKER,
+                        now=NOW,
+                        idempotency_key=key,
+                    )
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """SELECT t.state,r.state,r.released_at IS NULL,
+                        a.released_at IS NULL,at.finished_at IS NULL,
+                        (SELECT count(*) FROM factory.command_results WHERE idempotency_key=%s)
+                        FROM factory.tasks t JOIN factory.runs r ON r.run_id=t.current_run_id
+                        JOIN factory.capacity_allocations a ON a.run_id=r.run_id
+                        JOIN factory.attempts at ON at.run_id=r.run_id
+                        WHERE t.task_id=%s""",
+                        (key, task.task_id),
+                    )
+                    self.assertEqual(
+                        cursor.fetchone(),
+                        (phase.value, "leased", True, True, True, 0),
+                    )
+                self.service.release(
+                    grant,
+                    outcome=FailureClass.WORKER_LOST,
+                    actor=WORKER,
+                    now=NOW,
+                )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT action,metadata FROM factory.task_events
+                WHERE task_id=%s AND action IN ('claimed','phase_transitioned','released')
+                ORDER BY event_sequence""",
+                (reviewed.task_id,),
+            )
+            events = cursor.fetchall()
+            self.assertEqual(len(events), 6)
+            for _action, metadata in events:
+                self.assertEqual(
+                    set(("from_state", "target", "operation")) - set(metadata),
+                    set(),
+                )
+
+    def test_every_active_phase_accepts_lease_operations_and_reconciliation(self):
+        import psycopg
+
+        active = (
+            TaskStatus.LEASED,
+            TaskStatus.ANALYZING,
+            TaskStatus.IMPLEMENTING,
+            TaskStatus.VERIFYING,
+            TaskStatus.REVIEWING,
+        )
+        for phase in active:
+            with self.subTest(phase=phase.value):
+                repository = f"active/operations/{phase.value}"
+                task = self.submit(
+                    repository=repository,
+                    source=f"active-operations-{phase.value}",
+                ).task
+                grant = self.service.claim(
+                    owner=WORKER.actor_id,
+                    role=RunRole.READER,
+                    repositories=(task.repository_id,),
+                    lease_seconds=60,
+                    actor=WORKER,
+                    now=NOW,
+                )
+                if phase is not TaskStatus.LEASED:
+                    self.advance_to_phase(grant, phase)
+                self.service.heartbeat(
+                    grant,
+                    actor=WORKER,
+                    now=NOW,
+                    idempotency_key=canonical_digest(
+                        {"test": "heartbeat-phase", "phase": phase.value}
+                    ),
+                )
+                self.service.reserve_budget(
+                    grant,
+                    cost_usd_micros=0,
+                    token_units=0,
+                    wall_seconds=1,
+                    reason_digest="3" * 64,
+                    idempotency_key=canonical_digest(
+                        {"test": "reserve-phase", "phase": phase.value}
+                    ),
+                    actor=WORKER,
+                )
+                self.service.observe_usage(
+                    grant,
+                    provider_call_id=f"usage-{phase.value}",
+                    price_table_digest="2" * 64,
+                    cost_usd_micros=0,
+                    token_units=0,
+                    output_bytes=0,
+                    actor=WORKER,
+                    idempotency_key=canonical_digest(
+                        {"test": "usage-phase", "phase": phase.value}
+                    ),
+                )
+                self.assertEqual(
+                    self.service.release(
+                        grant,
+                        outcome=FailureClass.WORKER_LOST,
+                        actor=WORKER,
+                        now=NOW,
+                    ),
+                    TaskStatus.RETRY,
+                )
+
+        reconcile_grants = []
+        for phase in active:
+            repository = f"active/reconcile/{phase.value}"
+            task = self.submit(
+                repository=repository,
+                source=f"active-reconcile-{phase.value}",
+            ).task
+            grant = self.service.claim(
+                owner=WORKER.actor_id,
+                role=RunRole.READER,
+                repositories=(task.repository_id,),
+                lease_seconds=60,
+                actor=WORKER,
+                now=NOW,
+            )
+            if phase is not TaskStatus.LEASED:
+                self.advance_to_phase(grant, phase)
+            reconcile_grants.append((phase, task, grant))
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE factory.runs
+                SET lease_expires_at=clock_timestamp()-interval '1 second'
+                WHERE run_id=ANY(%s)""",
+                ([grant.run_id for _phase, _task, grant in reconcile_grants],),
+            )
+        result = self.service.reconcile(actor=OPERATOR, now=NOW)
+        self.assertEqual(result.repaired, len(active))
+        for _phase, task, grant in reconcile_grants:
+            self.assertEqual(self.store.get_task(task.task_id).status, TaskStatus.RETRY)
+            with self.assertRaises(FenceError):
+                self.service.heartbeat(grant, actor=WORKER, now=NOW)
+
+    def test_transition_policy_denials_roll_back_all_mutation_classes(self):
+        import psycopg
+
+        denied = TransitionDecision("forbidden", "injected policy denial")
+
+        claim_task = self.submit(
+            repository="policy/denial/claim", source="policy-denial-claim"
+        ).task
+        claim_key = "1" * 64
+        with mock.patch("adaptive_factory.store.authorize_transition", return_value=denied):
+            with self.assertRaises(StoreError):
+                self.service.claim(
+                    owner=WORKER.actor_id,
+                    role=RunRole.READER,
+                    repositories=(claim_task.repository_id,),
+                    lease_seconds=60,
+                    actor=WORKER,
+                    now=NOW,
+                    idempotency_key=claim_key,
+                )
+
+        release_task = self.submit(
+            repository="policy/denial/release", source="policy-denial-release"
+        ).task
+        release_grant = self.service.claim(
+            owner=WORKER.actor_id,
+            role=RunRole.READER,
+            repositories=(release_task.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        release_key = "2" * 64
+        with mock.patch("adaptive_factory.store.authorize_transition", return_value=denied):
+            with self.assertRaises(StoreError):
+                self.service.release(
+                    release_grant,
+                    outcome=FailureClass.WORKER_LOST,
+                    actor=WORKER,
+                    now=NOW,
+                    idempotency_key=release_key,
+                )
+
+        cancel_task = self.submit(
+            repository="policy/denial/cancel", source="policy-denial-cancel"
+        ).task
+        cancel_grant = self.service.claim(
+            owner=WORKER.actor_id,
+            role=RunRole.READER,
+            repositories=(cancel_task.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        cancel_key = "3" * 64
+        with mock.patch("adaptive_factory.store.authorize_transition", return_value=denied):
+            with self.assertRaises(StoreError):
+                self.service.cancel(
+                    cancel_task.task_id,
+                    reason="injected",
+                    idempotency_key=cancel_key,
+                    actor=OPERATOR,
+                    now=NOW,
+                )
+
+        superseded = self.submit(
+            repository="policy/denial/supersede",
+            source="policy-denial-supersede",
+        ).task
+        replacement = self.payload(
+            repository="policy/denial/supersede",
+            source="policy-denial-supersede",
+        )
+        replacement["source_digest"] = "8" * 64
+        with mock.patch("adaptive_factory.store.authorize_transition", return_value=denied):
+            with self.assertRaises(StoreError):
+                self.service.intake(replacement, actor=OPERATOR, now=NOW)
+
+        reconcile_task = self.submit(
+            repository="policy/denial/reconcile", source="policy-denial-reconcile"
+        ).task
+        reconcile_grant = self.service.claim(
+            owner=WORKER.actor_id,
+            role=RunRole.READER,
+            repositories=(reconcile_task.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        deadline_task = self.submit(
+            repository="policy/denial/deadline", source="policy-denial-deadline"
+        ).task
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE factory.runs
+                SET lease_expires_at=clock_timestamp()-interval '1 second'
+                WHERE run_id=%s""",
+                (reconcile_grant.run_id,),
+            )
+            cursor.execute(
+                """UPDATE factory.tasks
+                SET deadline_at=clock_timestamp()-interval '1 second'
+                WHERE task_id=%s""",
+                (deadline_task.task_id,),
+            )
+        with mock.patch("adaptive_factory.store.authorize_transition", return_value=denied):
+            with self.assertRaises(StoreError):
+                self.service.reconcile(actor=OPERATOR, now=NOW)
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT state,current_run_id FROM factory.tasks
+                WHERE task_id=ANY(%s) ORDER BY task_id""",
+                ([claim_task.task_id, release_task.task_id, cancel_task.task_id],),
+            )
+            by_task = {}
+            cursor.execute(
+                """SELECT task_id,state,current_run_id FROM factory.tasks
+                WHERE task_id=ANY(%s)""",
+                ([
+                    claim_task.task_id,
+                    release_task.task_id,
+                    cancel_task.task_id,
+                    superseded.task_id,
+                    reconcile_task.task_id,
+                    deadline_task.task_id,
+                ],),
+            )
+            by_task = {str(row[0]): row[1:] for row in cursor.fetchall()}
+            self.assertEqual(by_task[claim_task.task_id], ("queued", None))
+            for task, grant in (
+                (release_task, release_grant),
+                (cancel_task, cancel_grant),
+                (reconcile_task, reconcile_grant),
+            ):
+                self.assertEqual(by_task[task.task_id], ("leased", uuid.UUID(grant.run_id)))
+            self.assertEqual(by_task[superseded.task_id], ("queued", None))
+            self.assertEqual(by_task[deadline_task.task_id], ("queued", None))
+            cursor.execute(
+                """SELECT count(*) FROM factory.tasks
+                WHERE source_id='policy-denial-supersede'"""
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+            cursor.execute(
+                """SELECT count(*) FROM factory.command_results
+                WHERE idempotency_key=ANY(%s)""",
+                ([claim_key, release_key, cancel_key],),
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+            cursor.execute("SELECT count(*) FROM factory.reconciliation_runs")
+            self.assertEqual(cursor.fetchone()[0], 0)
+
+    def test_retry_exhaustion_policy_denial_rolls_back_terminalization(self):
+        import psycopg
+
+        task = self.submit(
+            repository="policy/denial/retry-exhausted",
+            source="policy-denial-retry-exhausted",
+        ).task
+        run_id = str(uuid.uuid4())
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.tasks SET infrastructure_retries=0 WHERE task_id=%s",
+                (task.task_id,),
+            )
+            cursor.execute(
+                """INSERT INTO factory.runs
+                (run_id,task_id,owner_id,role,packet_digest,fence,state,
+                 lease_expires_at,deadline_at,released_at)
+                SELECT %s,task_id,'prior-worker','reader',packet_digest,1,'failed',
+                  clock_timestamp()-interval '1 minute',deadline_at,clock_timestamp()
+                FROM factory.tasks WHERE task_id=%s""",
+                (run_id, task.task_id),
+            )
+            cursor.execute(
+                """INSERT INTO factory.attempts
+                (attempt_id,task_id,run_id,attempt_no,failure_class,failure_code,
+                 failure_digest,finished_at)
+                VALUES (%s,%s,%s,1,'worker_lost','worker_lost',%s,clock_timestamp())""",
+                (uuid.uuid4(), task.task_id, run_id, "f" * 64),
+            )
+
+        denied = TransitionDecision("forbidden", "injected retry-exhaustion denial")
+        key = "9" * 64
+        with mock.patch("adaptive_factory.store.authorize_transition", return_value=denied):
+            with self.assertRaises(StoreError):
+                self.service.claim(
+                    owner=WORKER.actor_id,
+                    role=RunRole.READER,
+                    repositories=(task.repository_id,),
+                    lease_seconds=60,
+                    actor=WORKER,
+                    now=NOW,
+                    idempotency_key=key,
+                )
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT state,terminal_at IS NULL,
+                (SELECT count(*) FROM factory.lease_sequences WHERE task_id=t.task_id),
+                (SELECT count(*) FROM factory.task_events
+                  WHERE task_id=t.task_id AND action='retry_exhausted'),
+                (SELECT count(*) FROM factory.audit_log
+                  WHERE task_id=t.task_id AND reason='retry_exhausted'),
+                (SELECT count(*) FROM factory.command_results WHERE idempotency_key=%s)
+                FROM factory.tasks t WHERE task_id=%s""",
+                (key, task.task_id),
+            )
+            self.assertEqual(cursor.fetchone(), ("queued", True, 0, 0, 0, 0))
 
     def test_run_history_cursor_is_task_bound_and_cardinality_fails_closed(self):
         import psycopg
@@ -2296,9 +3001,25 @@ class PostgresFactoryTests(unittest.TestCase):
             self.assertEqual(
                 evidence[settled_task.task_id],
                 (
-                    {"target": "dead", "reason": "deadline_expired", "accounting_quarantined": False},
+                    {
+                        "from_state": "leased",
+                        "target": "dead",
+                        "operation": "reconcile_expired",
+                        "run_id": settled_grant.run_id,
+                        "fence": settled_grant.fence,
+                        "reason": "deadline_expired",
+                        "accounting_quarantined": False,
+                    },
                     "deadline_expired",
-                    {"fence": settled_grant.fence, "accounting_quarantined": False},
+                    {
+                        "from_state": "leased",
+                        "target": "dead",
+                        "operation": "reconcile_expired",
+                        "run_id": settled_grant.run_id,
+                        "fence": settled_grant.fence,
+                        "reason": "deadline_expired",
+                        "accounting_quarantined": False,
+                    },
                     "worker_lost",
                     "deadline_expired",
                     "expired",
@@ -2309,9 +3030,25 @@ class PostgresFactoryTests(unittest.TestCase):
             self.assertEqual(
                 evidence[unsettled_task.task_id],
                 (
-                    {"target": "needs_human", "reason": "deadline_expired", "accounting_quarantined": True},
+                    {
+                        "from_state": "leased",
+                        "target": "needs_human",
+                        "operation": "reconcile_expired",
+                        "run_id": unsettled_grant.run_id,
+                        "fence": unsettled_grant.fence,
+                        "reason": "deadline_expired",
+                        "accounting_quarantined": True,
+                    },
                     "deadline_expired",
-                    {"fence": unsettled_grant.fence, "accounting_quarantined": True},
+                    {
+                        "from_state": "leased",
+                        "target": "needs_human",
+                        "operation": "reconcile_expired",
+                        "run_id": unsettled_grant.run_id,
+                        "fence": unsettled_grant.fence,
+                        "reason": "deadline_expired",
+                        "accounting_quarantined": True,
+                    },
                     "worker_lost",
                     "deadline_expired",
                     "expired",
@@ -2781,6 +3518,9 @@ class PostgresFactoryTests(unittest.TestCase):
                                 {
                                     "attempts": attempt_count,
                                     "infrastructure_retries": infrastructure_retries,
+                                    "from_state": "retry",
+                                    "target": "dead",
+                                    "operation": "retry_exhausted",
                                 },
                             ),
                         )
@@ -2800,6 +3540,9 @@ class PostgresFactoryTests(unittest.TestCase):
                                 {
                                     "attempts": attempt_count,
                                     "infrastructure_retries": infrastructure_retries,
+                                    "from_state": "retry",
+                                    "target": "dead",
+                                    "operation": "retry_exhausted",
                                 },
                                 2,
                             ),
