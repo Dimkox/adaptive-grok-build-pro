@@ -450,3 +450,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The first post-rule budget run passed behavior but failed one exact-object assertion on list order.
 **Root cause:** The test compared authoring order even though the established loader canonically sorts stable-ID arrays; compare exact objects by stable ID and assert the loader's documented canonical order separately.
+
+## 2026-09-03 — Inherited an unsafe clone-directory umask for packaging
+
+**Root cause:** Ambient umask `0002` created clone and output-parent directories with mode `0775`, violating the packager's ancestor-authority boundary before publication.
+**Prevention:** Set an explicit secure umask before clone/build and stat-check both the output parent and its ancestor chain before invoking the packager.
