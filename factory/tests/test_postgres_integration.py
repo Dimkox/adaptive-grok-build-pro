@@ -447,6 +447,292 @@ class PostgresFactoryTests(unittest.TestCase):
             result = self.service.reconcile(actor=OPERATOR, now=NOW)
             self.assertEqual(result.repaired, 0)
 
+    def test_cancel_and_supersede_quarantine_unresolved_accounting_for_both_roles(self):
+        import psycopg
+
+        expected_reserved_cost = 0
+        expected_reserved_tokens = 0
+        expected_reserved_wall = 0
+        expected_blocked = 0
+        cases = [
+            (action, role, with_reservation)
+            for action in ("cancel", "supersede")
+            for role in (RunRole.READER, RunRole.WRITER)
+            for with_reservation in (False, True)
+        ]
+        for index, (action, role, with_reservation) in enumerate(cases, start=1):
+            with self.subTest(action=action, role=role.value, with_reservation=with_reservation):
+                source = f"terminal-accounting-{action}-{role.value}-{with_reservation}"
+                repository = f"terminal/accounting/{action}/{role.value}/{with_reservation}"
+                task = self.submit(repository=repository, source=source).task
+                grant = self.service.claim(
+                    owner="ignored-terminal-owner",
+                    role=role,
+                    repositories=(repository,),
+                    lease_seconds=60,
+                    actor=WORKER,
+                    now=NOW,
+                )
+                cost = 100 + index
+                tokens = 200 + index
+                wall = 10 + index
+                if with_reservation:
+                    self.service.reserve_budget(
+                        grant,
+                        cost_usd_micros=cost,
+                        token_units=tokens,
+                        wall_seconds=wall,
+                        reason_digest="a" * 64,
+                        idempotency_key=f"{index:064x}",
+                        actor=WORKER,
+                    )
+                    expected_reserved_cost += cost
+                    expected_reserved_tokens += tokens
+                    expected_reserved_wall += wall
+                    expected_blocked += 1
+
+                if action == "cancel":
+                    command_key = f"{index + 100:064x}"
+                    first = self.service.cancel(
+                        task.task_id,
+                        reason="operator-accounting-terminal",
+                        idempotency_key=command_key,
+                        actor=OPERATOR,
+                        now=NOW,
+                    )
+                    replay = self.service.cancel(
+                        task.task_id,
+                        reason="operator-accounting-terminal",
+                        idempotency_key=command_key,
+                        actor=OPERATOR,
+                        now=NOW,
+                    )
+                    self.assertEqual((first.status, replay.status), (TaskStatus.CANCELLED, TaskStatus.CANCELLED))
+                    terminal_state = "cancelled"
+                    event_action = "cancelled"
+                    audit_action = "cancel"
+                else:
+                    replacement = self.payload(repository=repository, source=source)
+                    replacement["source_digest"] = "e" * 64
+                    first = self.service.intake(replacement, actor=OPERATOR, now=NOW)
+                    replay = self.service.intake(replacement, actor=OPERATOR, now=NOW)
+                    self.assertTrue(first.created)
+                    self.assertFalse(replay.created)
+                    self.assertEqual(first.task.task_id, replay.task.task_id)
+                    terminal_state = "superseded"
+                    event_action = "superseded"
+                    audit_action = "superseded"
+
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """SELECT state,accounting_blocked,cost_reserved_micros,tokens_reserved,
+                        wall_reserved_seconds,current_run_id,current_fence,
+                        (SELECT count(*) FROM factory.budget_reservations b
+                          WHERE b.task_id=t.task_id AND b.released_at IS NULL),
+                        (SELECT metadata FROM factory.task_events e
+                          WHERE e.task_id=t.task_id AND e.action=%s ORDER BY event_sequence DESC LIMIT 1),
+                        (SELECT metadata FROM factory.audit_log a
+                          WHERE a.task_id=t.task_id AND a.action=%s ORDER BY audit_id DESC LIMIT 1)
+                        FROM factory.tasks t WHERE task_id=%s""",
+                        (event_action, audit_action, task.task_id),
+                    )
+                    row = cursor.fetchone()
+                    self.assertEqual(
+                        row[:8],
+                        (
+                            terminal_state,
+                            with_reservation,
+                            cost if with_reservation else 0,
+                            tokens if with_reservation else 0,
+                            wall if with_reservation else 0,
+                            None,
+                            None,
+                            1 if with_reservation else 0,
+                        ),
+                    )
+                    self.assertEqual(row[8]["accounting_quarantined"], with_reservation)
+                    self.assertEqual(row[9]["accounting_quarantined"], with_reservation)
+                    cursor.execute(
+                        "SELECT count(*) FROM factory.capacity_allocations WHERE run_id=%s AND released_at IS NULL",
+                        (grant.run_id,),
+                    )
+                    self.assertEqual(cursor.fetchone()[0], 0)
+                self.assertTrue(self.store.verify_audit_chain(task.task_id))
+
+        readiness = self.store.readiness()
+        self.assertEqual(
+            (readiness["status"], readiness["capacity_consistent"], readiness["accounting_consistent"]),
+            ("ready", True, True),
+        )
+        metrics = self.store.metrics()["factory_capacity_budget_kill_and_reconcile_outcomes_total"]
+        self.assertEqual(metrics["active_capacity"], 0)
+        self.assertEqual(metrics["cost_reserved_micros"], expected_reserved_cost)
+        self.assertEqual(metrics["tokens_reserved"], expected_reserved_tokens)
+        self.assertEqual(metrics["wall_reserved_seconds"], expected_reserved_wall)
+        self.assertEqual(metrics["accounting_blocked"], expected_blocked)
+
+    def test_terminal_accounting_requires_an_explicit_quarantine_marker_for_readiness(self):
+        import psycopg
+
+        for state in ("cancelled", "dead", "needs_human"):
+            with self.subTest(state=state):
+                task = self.submit(source=f"readiness-terminal-accounting-{state}").task
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        """UPDATE factory.tasks SET state=%s,cost_reserved_micros=1,
+                        accounting_blocked=false,current_run_id=NULL,current_fence=NULL
+                        WHERE task_id=%s""",
+                        (state, task.task_id),
+                    )
+                readiness = self.store.readiness()
+                self.assertEqual((readiness["status"], readiness["accounting_consistent"]), ("not_ready", False))
+                with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                    cursor.execute(
+                        "UPDATE factory.tasks SET accounting_blocked=true WHERE task_id=%s",
+                        (task.task_id,),
+                    )
+                readiness = self.store.readiness()
+                self.assertEqual((readiness["status"], readiness["accounting_consistent"]), ("ready", True))
+
+    def test_reservation_and_terminalization_race_is_quarantined_or_fenced(self):
+        import psycopg
+
+        class PausingReserveStore(PostgresFactoryStore):
+            def __init__(self, database_url):
+                super().__init__(database_url)
+                self.reservation_written = threading.Event()
+                self.resume_reservation = threading.Event()
+                self._pause_once = True
+
+            def _record_command(self, cursor, key, actor, action, digest, correlation, result):
+                super()._record_command(cursor, key, actor, action, digest, correlation, result)
+                if action == "reserve_budget" and self._pause_once:
+                    self._pause_once = False
+                    self.reservation_written.set()
+                    if not self.resume_reservation.wait(timeout=5):
+                        raise RuntimeError("reservation barrier timed out")
+
+        reservation_first = self.submit(
+            repository="terminal/race/reservation-first",
+            source="reservation-first",
+        ).task
+        reservation_first_grant = self.service.claim(
+            owner="reservation-race-worker",
+            role=RunRole.READER,
+            repositories=(reservation_first.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        pausing_reserve_store = PausingReserveStore(DATABASE_URL)
+        pausing_reserve_service = FactoryService(pausing_reserve_store)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            reservation_future = pool.submit(
+                pausing_reserve_service.reserve_budget,
+                reservation_first_grant,
+                cost_usd_micros=101,
+                token_units=202,
+                wall_seconds=11,
+                reason_digest="a" * 64,
+                idempotency_key="1" * 64,
+                actor=WORKER,
+            )
+            self.assertTrue(pausing_reserve_store.reservation_written.wait(timeout=5))
+            terminal_future = pool.submit(
+                self.service.cancel,
+                reservation_first.task_id,
+                reason="reservation-race",
+                idempotency_key="2" * 64,
+                actor=OPERATOR,
+                now=NOW,
+            )
+            try:
+                with self.assertRaises(FutureTimeout):
+                    terminal_future.result(timeout=0.2)
+            finally:
+                pausing_reserve_store.resume_reservation.set()
+            reservation_future.result(timeout=5)
+            self.assertEqual(terminal_future.result(timeout=5).status, TaskStatus.CANCELLED)
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT state,accounting_blocked,cost_reserved_micros,
+                (SELECT count(*) FROM factory.budget_reservations b
+                  WHERE b.task_id=t.task_id AND b.released_at IS NULL)
+                FROM factory.tasks t WHERE task_id=%s""",
+                (reservation_first.task_id,),
+            )
+            self.assertEqual(cursor.fetchone(), ("cancelled", True, 101, 1))
+
+        class PausingTerminalStore(PostgresFactoryStore):
+            def __init__(self, database_url):
+                super().__init__(database_url)
+                self.lease_closed = threading.Event()
+                self.resume_terminal = threading.Event()
+                self._pause_once = True
+
+            def _close_active_lease(self, cursor, task_id):
+                super()._close_active_lease(cursor, task_id)
+                if self._pause_once:
+                    self._pause_once = False
+                    self.lease_closed.set()
+                    if not self.resume_terminal.wait(timeout=5):
+                        raise RuntimeError("terminal barrier timed out")
+
+        terminal_first = self.submit(
+            repository="terminal/race/terminal-first",
+            source="terminal-first",
+        ).task
+        terminal_first_grant = self.service.claim(
+            owner="reservation-race-worker",
+            role=RunRole.READER,
+            repositories=(terminal_first.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        pausing_terminal_store = PausingTerminalStore(DATABASE_URL)
+        pausing_terminal_service = FactoryService(pausing_terminal_store)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            terminal_future = pool.submit(
+                pausing_terminal_service.cancel,
+                terminal_first.task_id,
+                reason="terminal-race",
+                idempotency_key="3" * 64,
+                actor=OPERATOR,
+                now=NOW,
+            )
+            self.assertTrue(pausing_terminal_store.lease_closed.wait(timeout=5))
+            reservation_future = pool.submit(
+                self.service.reserve_budget,
+                terminal_first_grant,
+                cost_usd_micros=101,
+                token_units=202,
+                wall_seconds=11,
+                reason_digest="a" * 64,
+                idempotency_key="4" * 64,
+                actor=WORKER,
+            )
+            try:
+                with self.assertRaises(FutureTimeout):
+                    reservation_future.result(timeout=0.2)
+            finally:
+                pausing_terminal_store.resume_terminal.set()
+            self.assertEqual(terminal_future.result(timeout=5).status, TaskStatus.CANCELLED)
+            with self.assertRaises(FenceError):
+                reservation_future.result(timeout=5)
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT state,accounting_blocked,cost_reserved_micros,
+                (SELECT count(*) FROM factory.budget_reservations b
+                  WHERE b.task_id=t.task_id AND b.released_at IS NULL)
+                FROM factory.tasks t WHERE task_id=%s""",
+                (terminal_first.task_id,),
+            )
+            self.assertEqual(cursor.fetchone(), ("cancelled", False, 0, 0))
+        self.assertTrue(self.store.readiness()["accounting_consistent"])
+
     def test_cancel_racing_claim_releases_reader_and_writer_capacity(self):
         self._assert_claim_terminal_race_releases_capacity("cancel")
 
@@ -1454,6 +1740,348 @@ class PostgresFactoryTests(unittest.TestCase):
         with self.assertRaises(FenceError):
             self.service.heartbeat(live_grant, actor=WORKER, now=NOW)
 
+    def test_reconcile_terminalizes_deadline_expired_leases_without_starving_the_page(self):
+        import psycopg
+
+        settled_task = self.submit(source="deadline-reconcile-settled").task
+        unsettled_task = self.submit(source="deadline-reconcile-unsettled").task
+        settled_grant = self.service.claim(
+            owner="deadline-worker",
+            role=RunRole.READER,
+            repositories=(settled_task.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        unsettled_grant = self.service.claim(
+            owner="deadline-worker",
+            role=RunRole.READER,
+            repositories=(unsettled_task.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        self.service.reserve_budget(
+            unsettled_grant,
+            cost_usd_micros=101,
+            token_units=202,
+            wall_seconds=11,
+            reason_digest="a" * 64,
+            idempotency_key="b" * 64,
+            actor=WORKER,
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second'
+                WHERE run_id=ANY(%s)""",
+                ([settled_grant.run_id, unsettled_grant.run_id],),
+            )
+            cursor.execute(
+                """UPDATE factory.tasks SET deadline_at=clock_timestamp()-interval '1 second'
+                WHERE task_id=ANY(%s)""",
+                ([settled_task.task_id, unsettled_task.task_id],),
+            )
+            cursor.execute(
+                "UPDATE factory.tasks SET repair_count=repair_limit WHERE task_id=%s",
+                (settled_task.task_id,),
+            )
+
+        first = self.service.reconcile(actor=OPERATOR, now=NOW)
+        replay = self.service.reconcile(actor=OPERATOR, now=NOW)
+        self.assertEqual((first.candidates, first.repaired, replay.repaired), (2, 2, 0))
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT task_id,state,accounting_blocked,current_run_id,current_fence,repair_count,
+                cost_reserved_micros,tokens_reserved,wall_reserved_seconds,
+                (SELECT count(*) FROM factory.budget_reservations b
+                  WHERE b.task_id=t.task_id AND b.released_at IS NULL)
+                FROM factory.tasks t WHERE task_id=ANY(%s) ORDER BY task_id""",
+                ([settled_task.task_id, unsettled_task.task_id],),
+            )
+            rows = {str(row[0]): row[1:] for row in cursor.fetchall()}
+            self.assertEqual(rows[settled_task.task_id], ("dead", False, None, None, 3, 0, 0, 0, 0))
+            self.assertEqual(
+                rows[unsettled_task.task_id],
+                ("needs_human", True, None, None, 0, 101, 202, 11, 1),
+            )
+            cursor.execute(
+                """SELECT t.task_id,e.metadata,a.reason,a.metadata,at.failure_class,at.failure_code,
+                r.state,r.released_at IS NOT NULL,ca.released_at IS NOT NULL
+                FROM factory.tasks t
+                JOIN factory.runs r ON r.task_id=t.task_id
+                JOIN factory.attempts at ON at.run_id=r.run_id
+                JOIN factory.capacity_allocations ca ON ca.run_id=r.run_id
+                JOIN LATERAL (SELECT metadata FROM factory.task_events
+                  WHERE task_id=t.task_id AND action='released' ORDER BY event_sequence DESC LIMIT 1) e ON true
+                JOIN LATERAL (SELECT reason,metadata FROM factory.audit_log
+                  WHERE task_id=t.task_id AND action='release' ORDER BY audit_id DESC LIMIT 1) a ON true
+                WHERE t.task_id=ANY(%s) ORDER BY t.task_id""",
+                ([settled_task.task_id, unsettled_task.task_id],),
+            )
+            evidence = {str(row[0]): row[1:] for row in cursor.fetchall()}
+            self.assertEqual(
+                evidence[settled_task.task_id],
+                (
+                    {"target": "dead", "reason": "deadline_expired", "accounting_quarantined": False},
+                    "deadline_expired",
+                    {"fence": settled_grant.fence, "accounting_quarantined": False},
+                    "worker_lost",
+                    "deadline_expired",
+                    "expired",
+                    True,
+                    True,
+                ),
+            )
+            self.assertEqual(
+                evidence[unsettled_task.task_id],
+                (
+                    {"target": "needs_human", "reason": "deadline_expired", "accounting_quarantined": True},
+                    "deadline_expired",
+                    {"fence": unsettled_grant.fence, "accounting_quarantined": True},
+                    "worker_lost",
+                    "deadline_expired",
+                    "expired",
+                    True,
+                    True,
+                ),
+            )
+            cursor.execute("SELECT active_count FROM factory.capacity_counters WHERE scope_key='global:reader'")
+            self.assertEqual(cursor.fetchone()[0], 0)
+
+        for task, grant in ((settled_task, settled_grant), (unsettled_task, unsettled_grant)):
+            self.assertTrue(self.store.verify_audit_chain(task.task_id))
+            with self.assertRaises(FenceError):
+                self.service.heartbeat(grant, actor=WORKER, now=NOW)
+        readiness = self.store.readiness()
+        self.assertEqual(
+            (readiness["status"], readiness["capacity_consistent"], readiness["accounting_consistent"]),
+            ("ready", True, True),
+        )
+        metrics = self.store.metrics()
+        self.assertEqual(metrics["factory_lease_reclaim_and_fence_rejection_total"]["live_leases"], 0)
+        self.assertEqual(metrics["factory_lease_reclaim_and_fence_rejection_total"]["reclaimed"], 2)
+        self.assertEqual(
+            metrics["factory_capacity_budget_kill_and_reconcile_outcomes_total"]["active_capacity"], 0
+        )
+        self.assertEqual(
+            metrics["factory_capacity_budget_kill_and_reconcile_outcomes_total"]["accounting_blocked"], 1
+        )
+
+    def test_reconcile_uses_one_deadline_for_the_whole_candidate_page(self):
+        import psycopg
+
+        class ShortReconciliationStore(PostgresFactoryStore):
+            _RECONCILIATION_TIMEOUT_SECONDS = 0.24
+            _RECONCILIATION_COMMIT_RESERVE_SECONDS = 0.06
+
+        tasks = [self.submit(source=f"bounded-total-reconcile-{index}").task for index in range(4)]
+        grants = [
+            self.service.claim(
+                owner="bounded-total-worker",
+                role=RunRole.READER,
+                repositories=(task.repository_id,),
+                lease_seconds=60,
+                actor=WORKER,
+                now=NOW,
+            )
+            for task in tasks
+        ]
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=ANY(%s)",
+                ([grant.run_id for grant in grants],),
+            )
+            cursor.execute(
+                """CREATE FUNCTION factory.delay_reconcile_release() RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN PERFORM pg_sleep(0.075); RETURN NEW; END $$"""
+            )
+            cursor.execute(
+                """CREATE TRIGGER delay_reconcile_release BEFORE UPDATE ON factory.runs
+                FOR EACH ROW WHEN (OLD.released_at IS NULL AND NEW.released_at IS NOT NULL)
+                EXECUTE FUNCTION factory.delay_reconcile_release()"""
+            )
+        try:
+            first = FactoryService(ShortReconciliationStore(DATABASE_URL)).reconcile(actor=OPERATOR, now=NOW)
+        finally:
+            with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+                cursor.execute("DROP TRIGGER delay_reconcile_release ON factory.runs")
+                cursor.execute("DROP FUNCTION factory.delay_reconcile_release()")
+        self.assertEqual(first.candidates, 4)
+        self.assertGreater(first.repaired, 0)
+        self.assertLess(first.repaired, first.candidates)
+        second = FactoryService(ShortReconciliationStore(DATABASE_URL)).reconcile(
+            actor=OPERATOR,
+            now=NOW,
+            cursor=first.cursor,
+        )
+        self.assertEqual(first.repaired + second.repaired, 4)
+        self.assertEqual(self.service.reconcile(actor=OPERATOR, now=NOW).repaired, 0)
+
+    def test_reconcile_transaction_timeout_rolls_back_the_whole_partial_batch(self):
+        import psycopg
+
+        class ExpiringTransactionStore(PostgresFactoryStore):
+            _RECONCILIATION_TIMEOUT_SECONDS = 0.2
+            _RECONCILIATION_COMMIT_RESERVE_SECONDS = 0.02
+
+            def __init__(self, database_url):
+                super().__init__(database_url)
+                self._delay_once = True
+
+            def _set_reconciliation_statement_timeout(self, cursor, deadline, *, reserve_seconds=0.0):
+                configured = super()._set_reconciliation_statement_timeout(
+                    cursor,
+                    deadline,
+                    reserve_seconds=reserve_seconds,
+                )
+                if configured and reserve_seconds and self._delay_once:
+                    self._delay_once = False
+                    time.sleep(0.3)
+                return configured
+
+        tasks = [self.submit(source=f"transaction-timeout-{index}").task for index in range(2)]
+        grants = [
+            self.service.claim(
+                owner="transaction-timeout-worker",
+                role=RunRole.READER,
+                repositories=(task.repository_id,),
+                lease_seconds=60,
+                actor=WORKER,
+                now=NOW,
+            )
+            for task in tasks
+        ]
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE run_id=ANY(%s)",
+                ([grant.run_id for grant in grants],),
+            )
+        with self.assertRaisesRegex(StoreError, "database unavailable"):
+            FactoryService(ExpiringTransactionStore(DATABASE_URL)).reconcile(actor=OPERATOR, now=NOW)
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT
+                (SELECT count(*) FROM factory.runs WHERE run_id=ANY(%s) AND released_at IS NULL),
+                (SELECT count(*) FROM factory.capacity_allocations WHERE run_id=ANY(%s) AND released_at IS NULL),
+                (SELECT count(*) FROM factory.reconciliation_runs)""",
+                ([grant.run_id for grant in grants], [grant.run_id for grant in grants]),
+            )
+            self.assertEqual(cursor.fetchone(), (2, 2, 0))
+        self.assertTrue(self.store.readiness()["capacity_consistent"])
+
+    def test_reconcile_terminalizes_expired_queued_and_retry_tasks_without_runs(self):
+        import psycopg
+
+        retry_task = self.submit(source="deadline-unleased-retry").task
+        queued_task = self.submit(source="deadline-unleased-queued").task
+        blocked_task = self.submit(source="deadline-unleased-blocked").task
+        orphaned_task = self.submit(
+            repository="deadline/unleased/orphaned",
+            source="deadline-unleased-orphaned",
+        ).task
+        retry_grant = self.service.claim(
+            owner="deadline-unleased-worker",
+            role=RunRole.READER,
+            repositories=(retry_task.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        self.assertEqual(retry_grant.task_id, retry_task.task_id)
+        self.assertEqual(
+            self.service.release(
+                retry_grant,
+                outcome=FailureClass.WORKER_LOST,
+                actor=WORKER,
+                now=NOW,
+            ),
+            TaskStatus.RETRY,
+        )
+        orphaned_grant = self.service.claim(
+            owner="deadline-unleased-worker",
+            role=RunRole.READER,
+            repositories=(orphaned_task.repository_id,),
+            lease_seconds=60,
+            actor=WORKER,
+            now=NOW,
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """UPDATE factory.tasks SET deadline_at=clock_timestamp()-interval '1 second'
+                WHERE task_id=ANY(%s)""",
+                ([retry_task.task_id, queued_task.task_id, blocked_task.task_id],),
+            )
+            cursor.execute(
+                """UPDATE factory.tasks SET cost_reserved_micros=1
+                WHERE task_id=%s""",
+                (blocked_task.task_id,),
+            )
+            cursor.execute(
+                """UPDATE factory.tasks SET state='queued',current_run_id=NULL,current_fence=NULL,
+                deadline_at=clock_timestamp()-interval '1 second' WHERE task_id=%s""",
+                (orphaned_task.task_id,),
+            )
+            cursor.execute(
+                """UPDATE factory.runs SET lease_expires_at=clock_timestamp()-interval '1 second'
+                WHERE run_id=%s""",
+                (orphaned_grant.run_id,),
+            )
+        first = self.service.reconcile(actor=OPERATOR, now=NOW)
+        orphan_deadline = self.service.reconcile(
+            actor=OPERATOR,
+            now=NOW,
+            cursor=first.cursor,
+        )
+        replay = self.service.reconcile(
+            actor=OPERATOR,
+            now=NOW,
+            cursor=orphan_deadline.cursor,
+        )
+        self.assertEqual(
+            (
+                first.candidates,
+                first.repaired,
+                orphan_deadline.candidates,
+                orphan_deadline.repaired,
+                replay.repaired,
+            ),
+            (4, 4, 0, 0, 0),
+        )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT task_id,state,accounting_blocked,current_run_id,current_fence,
+                repair_count,terminal_at IS NOT NULL
+                FROM factory.tasks WHERE task_id=ANY(%s) ORDER BY task_id""",
+                ([retry_task.task_id, queued_task.task_id, blocked_task.task_id, orphaned_task.task_id],),
+            )
+            states = {str(row[0]): row[1:] for row in cursor.fetchall()}
+            self.assertEqual(states[retry_task.task_id], ("dead", False, None, None, 0, True))
+            self.assertEqual(states[queued_task.task_id], ("dead", False, None, None, 0, True))
+            self.assertEqual(
+                states[blocked_task.task_id],
+                ("needs_human", True, None, None, 0, False),
+            )
+            self.assertEqual(states[orphaned_task.task_id], ("dead", False, None, None, 0, True))
+            cursor.execute(
+                """SELECT task_id,
+                (SELECT count(*) FROM factory.task_events e
+                  WHERE e.task_id=t.task_id AND e.action='deadline_expired' AND e.mandatory_cleanup),
+                (SELECT count(*) FROM factory.audit_log a
+                  WHERE a.task_id=t.task_id AND a.action='reconcile_deadline'
+                    AND a.reason='deadline_expired')
+                FROM factory.tasks t WHERE task_id=ANY(%s) ORDER BY task_id""",
+                ([retry_task.task_id, queued_task.task_id, blocked_task.task_id, orphaned_task.task_id],),
+            )
+            self.assertEqual({str(row[0]): row[1:] for row in cursor.fetchall()}, {
+                retry_task.task_id: (1, 1),
+                queued_task.task_id: (1, 1),
+                blocked_task.task_id: (1, 1),
+                orphaned_task.task_id: (1, 1),
+            })
+        for task in (retry_task, queued_task, blocked_task, orphaned_task):
+            self.assertTrue(self.store.verify_audit_chain(task.task_id))
+        self.assertEqual(self.store.readiness()["status"], "ready")
+
     def test_exhausted_event_budget_allows_reconcile_and_cancel_cleanup_once(self):
         import psycopg
 
@@ -2067,7 +2695,9 @@ class PostgresFactoryTests(unittest.TestCase):
             cursor.execute("UPDATE factory.capacity_counters SET active_count=101 WHERE scope_key IN ('global:reader','repository:owner/repository:reader')")
             cursor.execute(
                 """CREATE FUNCTION factory.assert_reconcile_timeout() RETURNS trigger LANGUAGE plpgsql AS $$
-                BEGIN IF current_setting('statement_timeout') <> '5s' THEN RAISE EXCEPTION 'unbounded reconciliation'; END IF; RETURN NEW; END $$"""
+                BEGIN IF current_setting('statement_timeout')::interval > interval '5 seconds'
+                  OR current_setting('statement_timeout')::interval <= interval '0 seconds'
+                  THEN RAISE EXCEPTION 'unbounded reconciliation'; END IF; RETURN NEW; END $$"""
             )
             cursor.execute(
                 "CREATE TRIGGER assert_reconcile_timeout BEFORE INSERT ON factory.reconciliation_runs FOR EACH ROW EXECUTE FUNCTION factory.assert_reconcile_timeout()"

@@ -410,3 +410,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** A Markdown PR comment was posted through a double-quoted shell argument, so backticks executed and mangled the text; the comment was immediately corrected with no repository or SHA impact.
 **Root cause:** The command ignored the exec escaping rule; GitHub comment bodies must use a structured payload or single-quoted literal so the shell cannot reinterpret Markdown.
+
+## 2026-09-03 — Let shell quoting reinterpret a search pattern
+
+**Symptom:** A read-only `rg` pattern containing Markdown backticks triggered shell command substitution and printed `013: command not found` before the intended search results.
+**Root cause:** The pattern was passed through double-quoted shell text instead of a literal-safe argument; repository searches containing backticks must use single-quoted shell literals or structured argv construction.

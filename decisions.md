@@ -360,3 +360,15 @@ Cancel and supersede may terminalize directly only while `current_run_id IS NULL
 ## 2026-09-03 — Scope Git ownership trust to the canonical package root
 
 Pass one command-local `safe.directory=<canonical-root>` entry only to repository Git reads while retaining the scrubbed config environment. This supports read-only runner mounts owned by another UID without trusting a wildcard, persisting configuration, or broadening non-repository commands.
+
+## 2026-09-03 — Preserve unresolved accounting as an explicit quarantine
+
+Cancel, supersession and deadline cleanup retain live reservation evidence and set `accounting_blocked` because absence of provider work cannot be proven. Mandatory event/audit metadata records the bounded quarantine decision, and readiness fails closed on equivalent unmarked terminal history.
+
+## 2026-09-03 — Use one cursor-stable deadline reconciliation candidate
+
+An orphan run releases capacity and terminalizes its already-expired queued/retry task in the same candidate savepoint. This prevents a newly eligible row with the same task UUID from falling behind the returned keyset cursor while keeping candidate kinds mutually exclusive.
+
+## 2026-09-03 — Keep the unaccepted repair schema-neutral on PostgreSQL 17
+
+No M4 candidate was accepted or authorized for persistent rollout, so the repair supports fresh PostgreSQL 17 schema `013` and does not invent an upgrade population or migration. Older candidate databases remain killed comparison evidence and are replaced fresh, while PostgreSQL 17 `transaction_timeout` plus decreasing statement timeouts enforces the whole reconciliation deadline. Leaving later migration numbers unused also avoids a compatibility collision with provisional M5 `014` through `017`.

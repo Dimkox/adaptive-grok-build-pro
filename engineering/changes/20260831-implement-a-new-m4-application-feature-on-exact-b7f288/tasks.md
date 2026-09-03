@@ -12,6 +12,8 @@
 - [x] Run disposable PostgreSQL/API/effective-role/actual-restart exit suite.
 - [x] Reproduce exact-head Bandit B110 and disposable PostgreSQL bootstrap/postmaster handoff failures.
 - [x] TDD explicit best-effort fence instrumentation and final-PID1 PostgreSQL readiness.
+- [x] TDD deadline-crossing reconciliation, queued/retry deadline cleanup, whole-page PostgreSQL 17 timeout and terminal accounting quarantine.
+- [x] Resolve Markdown checklist taxonomy against canonical typed acceptance and add the M4 local rollout/recovery runbook.
 - [ ] Run final exact-head verifier after current documentation and repair evidence are frozen.
 - [ ] Hand final fingerprint to all five independent reviewers.
 

@@ -5,6 +5,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 import json
+import time
 import uuid
 
 from .contracts import HEX64, TaskIntakeV1, canonical_digest
@@ -56,10 +57,18 @@ class UsageResult:
     created: bool
 
 
+@dataclass(frozen=True)
+class TerminalizationResult:
+    changed: bool
+    accounting_quarantined: bool
+
+
 class PostgresFactoryStore:
     _CONNECT_TIMEOUT_SECONDS = 5
     _MUTATION_LOCK_TIMEOUT = "5s"
     _MUTATION_STATEMENT_TIMEOUT = "5s"
+    _RECONCILIATION_TIMEOUT_SECONDS = 5.0
+    _RECONCILIATION_COMMIT_RESERVE_SECONDS = 0.1
 
     def __init__(self, database_url: str) -> None:
         if not database_url:
@@ -91,6 +100,7 @@ class PostgresFactoryStore:
             psycopg.OperationalError,
             psycopg.errors.LockNotAvailable,
             psycopg.errors.QueryCanceled,
+            psycopg.errors.TransactionTimeout,
         ) as exc:
             if connection is not None:
                 connection.close()
@@ -146,6 +156,7 @@ class PostgresFactoryStore:
             psycopg.OperationalError,
             psycopg.errors.LockNotAvailable,
             psycopg.errors.QueryCanceled,
+            psycopg.errors.TransactionTimeout,
         ) as exc:
             raise StoreUnavailable("database unavailable") from exc
 
@@ -169,9 +180,17 @@ class PostgresFactoryStore:
             """SELECT NOT EXISTS (
             SELECT 1 FROM factory.tasks t
             WHERE (
-              (t.state IN ('queued','retry','ready_for_human') OR
-               (t.state='superseded' AND NOT t.accounting_blocked)) AND (
+              t.state IN ('queued','retry','ready_for_human') AND (
                 t.accounting_blocked OR t.cost_reserved_micros<>0 OR t.tokens_reserved<>0
+                OR t.wall_reserved_seconds<>0 OR EXISTS (
+                  SELECT 1 FROM factory.budget_reservations b
+                  WHERE b.task_id=t.task_id AND b.released_at IS NULL
+                )
+              )
+            ) OR (
+              t.state IN ('superseded','cancelled','dead','needs_human')
+              AND NOT t.accounting_blocked AND (
+                t.cost_reserved_micros<>0 OR t.tokens_reserved<>0
                 OR t.wall_reserved_seconds<>0 OR EXISTS (
                   SELECT 1 FROM factory.budget_reservations b
                   WHERE b.task_id=t.task_id AND b.released_at IS NULL
@@ -417,13 +436,17 @@ class PostgresFactoryStore:
             )
             old_ids = [str(row[0]) for row in cursor.fetchall()]
             for old_id in old_ids:
-                changed = self._terminalize_task(cursor, old_id, TaskStatus.SUPERSEDED)
-                if not changed:
+                terminalization = self._terminalize_task(cursor, old_id, TaskStatus.SUPERSEDED)
+                if not terminalization.changed:
                     continue
                 key = canonical_digest({"action": "superseded", "replacement": intake.intent_digest})
+                metadata = {
+                    "replacement_intent_digest": intake.intent_digest,
+                    "accounting_quarantined": terminalization.accounting_quarantined,
+                }
                 self._event(
                     cursor, old_id, actor, "superseded", key,
-                    {"replacement_intent_digest": intake.intent_digest}, mandatory_cleanup=True,
+                    metadata, mandatory_cleanup=True,
                 )
                 self._audit(
                     cursor,
@@ -433,7 +456,7 @@ class PostgresFactoryStore:
                     f"task:{old_id}",
                     "frozen_input_changed",
                     intake.request_id,
-                    {"replacement_intent_digest": intake.intent_digest},
+                    metadata,
                 )
             cursor.execute(
                 "SELECT COALESCE(max(generation),0)+1 FROM factory.tasks WHERE repository_id=%s AND source_type=%s AND source_id=%s",
@@ -761,7 +784,12 @@ class PostgresFactoryStore:
             (task_id, run_id),
         )
 
-    def _terminalize_task(self, cursor, task_id: str, target: TaskStatus) -> bool:
+    def _terminalize_task(
+        self,
+        cursor,
+        task_id: str,
+        target: TaskStatus,
+    ) -> TerminalizationResult:
         if target not in {TaskStatus.CANCELLED, TaskStatus.SUPERSEDED}:
             raise StoreError("unsupported terminal transition")
         terminal = tuple(status.value for status in (TaskStatus.READY_FOR_HUMAN, TaskStatus.DEAD, TaskStatus.CANCELLED, TaskStatus.SUPERSEDED))
@@ -769,18 +797,28 @@ class PostgresFactoryStore:
             self._close_active_lease(cursor, task_id)
             cursor.execute(
                 """UPDATE factory.tasks SET state=%s,terminal_at=clock_timestamp(),updated_at=clock_timestamp(),
-                current_run_id=NULL,current_fence=NULL WHERE task_id=%s AND current_run_id IS NULL
-                AND state<>ALL(%s) RETURNING state""",
+                current_run_id=NULL,current_fence=NULL,
+                accounting_blocked=accounting_blocked OR cost_reserved_micros<>0
+                  OR tokens_reserved<>0 OR wall_reserved_seconds<>0 OR EXISTS (
+                    SELECT 1 FROM factory.budget_reservations b
+                    WHERE b.task_id=tasks.task_id AND b.released_at IS NULL
+                  )
+                WHERE task_id=%s AND current_run_id IS NULL
+                AND state<>ALL(%s) RETURNING accounting_blocked""",
                 (target.value, task_id, list(terminal)),
             )
-            if cursor.fetchone() is not None:
-                return True
-            cursor.execute("SELECT state,current_run_id FROM factory.tasks WHERE task_id=%s", (task_id,))
+            changed = cursor.fetchone()
+            if changed is not None:
+                return TerminalizationResult(True, bool(changed[0]))
+            cursor.execute(
+                "SELECT state,current_run_id,accounting_blocked FROM factory.tasks WHERE task_id=%s",
+                (task_id,),
+            )
             row = cursor.fetchone()
             if row is None:
                 raise KeyError(task_id)
             if row[0] in terminal:
-                return False
+                return TerminalizationResult(False, bool(row[2]))
         raise StoreError("terminal transition could not stabilize live lease")
 
     def _close_orphan_run(self, cursor, run_id: str, task_id: str, role: str, repository_id: str, actor: Actor) -> bool:
@@ -810,6 +848,80 @@ class PostgresFactoryStore:
         self._audit(cursor, task_id, actor, "reconcile_orphan", f"run:{run_id}", "orphaned_projection", key, run_id=run_id)
         return True
 
+    def _terminalize_expired_unleased_task(
+        self,
+        cursor,
+        task_id: str,
+        actor: Actor,
+        correlation_id: str | None,
+    ) -> bool:
+        cursor.execute(
+            """SELECT state,current_run_id,accounting_blocked
+            OR cost_reserved_micros<>0 OR tokens_reserved<>0
+            OR wall_reserved_seconds<>0 OR EXISTS (
+              SELECT 1 FROM factory.budget_reservations b
+              WHERE b.task_id=tasks.task_id AND b.released_at IS NULL
+            ),deadline_at<=clock_timestamp()
+            FROM factory.tasks WHERE task_id=%s FOR UPDATE""",
+            (task_id,),
+        )
+        task_row = cursor.fetchone()
+        if task_row is None:
+            raise StoreError("reconciliation task is missing")
+        state, current_run_id, accounting_quarantined, task_deadline_expired = task_row
+        if not (
+            state in {TaskStatus.QUEUED.value, TaskStatus.RETRY.value}
+            and current_run_id is None
+            and task_deadline_expired
+        ):
+            return False
+        target = TaskStatus.NEEDS_HUMAN if accounting_quarantined else TaskStatus.DEAD
+        cursor.execute(
+            """UPDATE factory.tasks SET state=%s,accounting_blocked=%s,
+            current_run_id=NULL,current_fence=NULL,updated_at=clock_timestamp(),
+            terminal_at=CASE WHEN %s THEN clock_timestamp() ELSE terminal_at END
+            WHERE task_id=%s""",
+            (
+                target.value,
+                accounting_quarantined,
+                target is TaskStatus.DEAD,
+                task_id,
+            ),
+        )
+        key = canonical_digest(
+            {
+                "action": "reconcile_deadline",
+                "task_id": str(task_id),
+                "from_state": state,
+                "target": target.value,
+            }
+        )
+        metadata = {
+            "from_state": state,
+            "target": target.value,
+            "accounting_quarantined": bool(accounting_quarantined),
+        }
+        self._event(
+            cursor,
+            task_id,
+            actor,
+            "deadline_expired",
+            key,
+            metadata,
+            mandatory_cleanup=True,
+        )
+        self._audit(
+            cursor,
+            task_id,
+            actor,
+            "reconcile_deadline",
+            f"task:{task_id}",
+            "deadline_expired",
+            correlation_id or key,
+            metadata,
+        )
+        return True
+
     def _lock_grant(self, cursor, grant: LeaseGrant, *, allow_expired: bool = False):
         cursor.execute(
             """SELECT r.task_id,r.role,a.repository_id,at.attempt_no,t.infrastructure_retries
@@ -820,9 +932,18 @@ class PostgresFactoryStore:
             AND r.state='leased' AND r.released_at IS NULL
             AND a.released_at IS NULL
             AND (%s OR r.lease_expires_at>clock_timestamp())
-            AND t.current_run_id=r.run_id AND t.current_fence=r.fence AND t.state='leased' AND t.deadline_at>clock_timestamp()
+            AND t.current_run_id=r.run_id AND t.current_fence=r.fence AND t.state='leased'
+            AND (%s OR t.deadline_at>clock_timestamp())
             FOR UPDATE OF r,t""",
-            (grant.run_id, grant.task_id, grant.owner, grant.fence, grant.packet_digest, allow_expired),
+            (
+                grant.run_id,
+                grant.task_id,
+                grant.owner,
+                grant.fence,
+                grant.packet_digest,
+                allow_expired,
+                allow_expired,
+            ),
         )
         row = cursor.fetchone()
         if not row:
@@ -849,7 +970,7 @@ class PostgresFactoryStore:
 
     def _release_locked(
         self, cursor, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, *, allow_expired: bool = False,
-        correlation_id: str | None = None
+        deadline_expired: bool = False, correlation_id: str | None = None
     ) -> TaskStatus:
         cursor.execute("SELECT repository_id FROM factory.tasks WHERE task_id=%s", (grant.task_id,))
         repository = cursor.fetchone()
@@ -860,25 +981,48 @@ class PostgresFactoryStore:
         task_id, _role, _repository_id, attempt_no, infrastructure_retries = self._lock_grant(
             cursor, grant, allow_expired=allow_expired
         )
+        accounting_quarantined = False
         if isinstance(outcome, FailureClass):
-            decision = classify_retry(
-                outcome,
-                attempt_no=attempt_no,
-                infrastructure_retries=infrastructure_retries,
-            )
-            target = TaskStatus.RETRY if decision.retry else (decision.terminal or TaskStatus.NEEDS_HUMAN)
-            cursor.execute(
-                "SELECT EXISTS(SELECT 1 FROM factory.budget_reservations WHERE task_id=%s AND run_id=%s AND released_at IS NULL)",
-                (grant.task_id, grant.run_id),
-            )
-            if cursor.fetchone()[0]:
+            if deadline_expired:
+                cursor.execute(
+                    """SELECT accounting_blocked OR cost_reserved_micros<>0 OR tokens_reserved<>0
+                    OR wall_reserved_seconds<>0 OR EXISTS (
+                      SELECT 1 FROM factory.budget_reservations
+                      WHERE task_id=%s AND released_at IS NULL
+                    ) FROM factory.tasks WHERE task_id=%s""",
+                    (grant.task_id, grant.task_id),
+                )
+            else:
+                cursor.execute(
+                    """SELECT EXISTS(SELECT 1 FROM factory.budget_reservations
+                    WHERE task_id=%s AND run_id=%s AND released_at IS NULL)""",
+                    (grant.task_id, grant.run_id),
+                )
+            accounting_quarantined = bool(cursor.fetchone()[0])
+            if deadline_expired:
+                target = TaskStatus.NEEDS_HUMAN if accounting_quarantined else TaskStatus.DEAD
+                failure_code = "deadline_expired"
+            else:
+                decision = classify_retry(
+                    outcome,
+                    attempt_no=attempt_no,
+                    infrastructure_retries=infrastructure_retries,
+                )
+                target = TaskStatus.RETRY if decision.retry else (decision.terminal or TaskStatus.NEEDS_HUMAN)
+                failure_code = outcome.value
+            if accounting_quarantined:
                 target = TaskStatus.NEEDS_HUMAN
                 cursor.execute(
                     "UPDATE factory.tasks SET accounting_blocked=true WHERE task_id=%s", (grant.task_id,)
                 )
             cursor.execute(
                 "UPDATE factory.attempts SET failure_class=%s,failure_code=%s,failure_digest=%s,finished_at=clock_timestamp() WHERE run_id=%s",
-                (outcome.value, outcome.value, canonical_digest({"failure": outcome.value}), grant.run_id),
+                (
+                    outcome.value,
+                    failure_code,
+                    canonical_digest({"failure": failure_code}),
+                    grant.run_id,
+                ),
             )
         elif outcome == "completed":
             cursor.execute(
@@ -910,11 +1054,29 @@ class PostgresFactoryStore:
             "UPDATE factory.tasks SET state=%s,current_run_id=NULL,current_fence=NULL,updated_at=clock_timestamp(),terminal_at=CASE WHEN %s THEN clock_timestamp() ELSE terminal_at END WHERE task_id=%s",
             (target.value, terminal, task_id),
         )
-        key = canonical_digest(
-            {"action": "release", "run_id": grant.run_id, "fence": grant.fence, "target": target.value}
-        )
+        release_identity = {
+            "action": "release",
+            "run_id": grant.run_id,
+            "fence": grant.fence,
+            "target": target.value,
+        }
+        if deadline_expired:
+            release_identity["reason"] = "deadline_expired"
+        key = canonical_digest(release_identity)
+        event_metadata = {"target": target.value}
+        audit_metadata = {"fence": grant.fence}
+        audit_reason = target.value
+        if deadline_expired:
+            event_metadata.update(
+                {
+                    "reason": "deadline_expired",
+                    "accounting_quarantined": accounting_quarantined,
+                }
+            )
+            audit_metadata["accounting_quarantined"] = accounting_quarantined
+            audit_reason = "deadline_expired"
         self._event(
-            cursor, str(task_id), actor, "released", key, {"target": target.value}, mandatory_cleanup=True
+            cursor, str(task_id), actor, "released", key, event_metadata, mandatory_cleanup=True
         )
         self._audit(
             cursor,
@@ -922,12 +1084,39 @@ class PostgresFactoryStore:
             actor,
             "release",
             f"run:{grant.run_id}",
-            target.value,
+            audit_reason,
             correlation_id or key,
-            {"fence": grant.fence},
+            audit_metadata,
             grant.run_id,
         )
         return target
+
+    def _set_reconciliation_statement_timeout(
+        self,
+        cursor,
+        deadline: float,
+        *,
+        reserve_seconds: float = 0.0,
+    ) -> bool:
+        remaining = deadline - time.monotonic() - reserve_seconds
+        if remaining <= 0:
+            return False
+        milliseconds = max(1, int(remaining * 1000))
+        cursor.execute(
+            "SELECT set_config('statement_timeout',%s,true)",
+            (f"{milliseconds}ms",),
+        )
+        return True
+
+    def _set_reconciliation_transaction_timeout(self, cursor, deadline: float) -> None:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise StoreUnavailable("reconciliation deadline exceeded")
+        milliseconds = max(1, int(remaining * 1000))
+        cursor.execute(
+            "SELECT set_config('transaction_timeout',%s,true)",
+            (f"{milliseconds}ms",),
+        )
 
     def release(self, grant: LeaseGrant, outcome: str | FailureClass, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> TaskStatus:
         with self._transaction() as cursor:
@@ -1164,9 +1353,15 @@ class PostgresFactoryStore:
             return actual
 
     def reconcile(self, actor: Actor, now: datetime, limit: int, cursor_id: str | None, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> ReconcileResult:
+        import psycopg
+
+        deadline = time.monotonic() + self._RECONCILIATION_TIMEOUT_SECONDS
         repaired = 0
         last = None
         with self._transaction() as cursor:
+            self._set_reconciliation_transaction_timeout(cursor, deadline)
+            if not self._set_reconciliation_statement_timeout(cursor, deadline):
+                raise StoreUnavailable("reconciliation deadline exceeded")
             if not self._capacity_consistent(cursor):
                 raise StoreError("capacity counters do not match live allocations")
             command = {"limit": limit, "cursor": cursor_id}
@@ -1174,10 +1369,29 @@ class PostgresFactoryStore:
             if replay:
                 return ReconcileResult(prior["candidates"], prior["repaired"], prior["cursor"])
             cursor.execute(
-                """SELECT r.run_id,r.task_id,r.owner_id,r.role,r.fence,r.lease_expires_at,r.packet_digest,a.repository_id
-                FROM factory.runs r JOIN factory.capacity_allocations a ON a.run_id=r.run_id
-                WHERE r.released_at IS NULL AND a.released_at IS NULL AND r.lease_expires_at<=clock_timestamp()
-                AND (%s::uuid IS NULL OR r.task_id>%s::uuid) ORDER BY r.task_id LIMIT %s""",
+                """WITH candidates AS (
+                  SELECT r.run_id,r.task_id,r.owner_id,r.role,r.fence,r.lease_expires_at,
+                    r.packet_digest,a.repository_id,'run'::text AS candidate_kind
+                  FROM factory.runs r JOIN factory.capacity_allocations a ON a.run_id=r.run_id
+                  WHERE r.released_at IS NULL AND a.released_at IS NULL
+                    AND r.lease_expires_at<=clock_timestamp()
+                  UNION ALL
+                  SELECT NULL::uuid,t.task_id,NULL::text,NULL::text,NULL::bigint,t.deadline_at,
+                    t.packet_digest,t.repository_id,'task_deadline'::text
+                  FROM factory.tasks t
+                  WHERE t.state IN ('queued','retry') AND t.current_run_id IS NULL
+                    AND t.deadline_at<=clock_timestamp()
+                    AND NOT EXISTS (
+                      SELECT 1 FROM factory.runs live_run
+                      JOIN factory.capacity_allocations live_allocation
+                        ON live_allocation.run_id=live_run.run_id
+                      WHERE live_run.task_id=t.task_id AND live_run.released_at IS NULL
+                        AND live_allocation.released_at IS NULL
+                    )
+                )
+                SELECT run_id,task_id,owner_id,role,fence,lease_expires_at,packet_digest,
+                  repository_id,candidate_kind FROM candidates
+                WHERE (%s::uuid IS NULL OR task_id>%s::uuid) ORDER BY task_id LIMIT %s""",
                 (cursor_id, cursor_id, limit),
             )
             rows = cursor.fetchall()
@@ -1187,25 +1401,79 @@ class PostgresFactoryStore:
                 (reconciliation_id, cursor_id, len(rows)),
             )
             for row in rows:
-                run_id, task_id, owner, role, fence, expires, packet, repository_id = row
-                if not self._lock_capacity_for_run(cursor, str(run_id)):
-                    continue
-                cursor.execute(
-                    "SELECT repair_count,repair_limit,state,current_run_id,current_fence FROM factory.tasks WHERE task_id=%s FOR UPDATE",
-                    (task_id,),
-                )
-                repair_count, repair_limit, state, current_run_id, current_fence = cursor.fetchone()
-                grant = LeaseGrant(str(task_id), str(run_id), owner, RunRole(role), fence, expires, packet.strip())
-                failure = FailureClass.PROVIDER_QUALITY if repair_count >= repair_limit else FailureClass.WORKER_LOST
-                if state == "leased" and str(current_run_id) == str(run_id) and current_fence == fence:
-                    self._release_locked(cursor, grant, failure, actor, allow_expired=True)
-                    cursor.execute("UPDATE factory.runs SET state='expired' WHERE run_id=%s", (run_id,))
-                    if repair_count < repair_limit:
-                        cursor.execute("UPDATE factory.tasks SET repair_count=repair_count+1 WHERE task_id=%s", (task_id,))
-                    repaired += 1
-                elif self._close_orphan_run(cursor, str(run_id), str(task_id), role, repository_id, actor):
-                    repaired += 1
-                last = str(task_id)
+                if not self._set_reconciliation_statement_timeout(
+                    cursor,
+                    deadline,
+                    reserve_seconds=self._RECONCILIATION_COMMIT_RESERVE_SECONDS,
+                ):
+                    break
+                run_id, task_id, owner, role, fence, expires, packet, repository_id, candidate_kind = row
+                cursor.execute("SAVEPOINT reconcile_candidate")
+                try:
+                    if candidate_kind == "task_deadline":
+                        if self._terminalize_expired_unleased_task(
+                            cursor,
+                            str(task_id),
+                            actor,
+                            correlation_id,
+                        ):
+                            repaired += 1
+                        last = str(task_id)
+                    elif not self._lock_capacity_for_run(cursor, str(run_id)):
+                        last = str(task_id)
+                    else:
+                        cursor.execute(
+                            """SELECT repair_count,repair_limit,state,current_run_id,current_fence,
+                            deadline_at<=clock_timestamp() FROM factory.tasks WHERE task_id=%s FOR UPDATE""",
+                            (task_id,),
+                        )
+                        task_row = cursor.fetchone()
+                        if task_row is None:
+                            raise StoreError("reconciliation task is missing")
+                        repair_count, repair_limit, state, current_run_id, current_fence, task_deadline_expired = task_row
+                        grant = LeaseGrant(
+                            str(task_id), str(run_id), owner, RunRole(role), fence, expires, packet.strip()
+                        )
+                        failure = (
+                            FailureClass.WORKER_LOST
+                            if task_deadline_expired or repair_count < repair_limit
+                            else FailureClass.PROVIDER_QUALITY
+                        )
+                        if state == "leased" and str(current_run_id) == str(run_id) and current_fence == fence:
+                            self._release_locked(
+                                cursor,
+                                grant,
+                                failure,
+                                actor,
+                                allow_expired=True,
+                                deadline_expired=task_deadline_expired,
+                            )
+                            cursor.execute("UPDATE factory.runs SET state='expired' WHERE run_id=%s", (run_id,))
+                            if not task_deadline_expired and repair_count < repair_limit:
+                                cursor.execute(
+                                    "UPDATE factory.tasks SET repair_count=repair_count+1 WHERE task_id=%s",
+                                    (task_id,),
+                                )
+                            repaired += 1
+                        elif self._close_orphan_run(
+                            cursor, str(run_id), str(task_id), role, repository_id, actor
+                        ):
+                            self._terminalize_expired_unleased_task(
+                                cursor,
+                                str(task_id),
+                                actor,
+                                correlation_id,
+                            )
+                            repaired += 1
+                        last = str(task_id)
+                except psycopg.errors.QueryCanceled:
+                    cursor.execute("ROLLBACK TO SAVEPOINT reconcile_candidate")
+                    cursor.execute("RELEASE SAVEPOINT reconcile_candidate")
+                    break
+                else:
+                    cursor.execute("RELEASE SAVEPOINT reconcile_candidate")
+            if not self._set_reconciliation_statement_timeout(cursor, deadline):
+                raise StoreUnavailable("reconciliation deadline exceeded")
             cursor.execute(
                 "UPDATE factory.reconciliation_runs SET status='completed',repaired=%s,finished_at=clock_timestamp(),cursor_task_id=%s WHERE reconciliation_id=%s",
                 (repaired, last, reconciliation_id),
@@ -1233,10 +1501,24 @@ class PostgresFactoryStore:
             replay, _prior, request_digest = self._command_replay(cursor, key, actor, "cancel", command)
             if replay:
                 return self._get_task(cursor, task_id)
-            if self._terminalize_task(cursor, task_id, TaskStatus.CANCELLED):
+            terminalization = self._terminalize_task(cursor, task_id, TaskStatus.CANCELLED)
+            if terminalization.changed:
+                metadata = {
+                    "reason": reason,
+                    "accounting_quarantined": terminalization.accounting_quarantined,
+                }
                 self._event(
-                    cursor, task_id, actor, "cancelled", key, {"reason": reason}, mandatory_cleanup=True
+                    cursor, task_id, actor, "cancelled", key, metadata, mandatory_cleanup=True
                 )
-                self._audit(cursor, task_id, actor, "cancel", f"task:{task_id}", reason, correlation_id or key)
+                self._audit(
+                    cursor,
+                    task_id,
+                    actor,
+                    "cancel",
+                    f"task:{task_id}",
+                    reason,
+                    correlation_id or key,
+                    metadata,
+                )
             self._record_command(cursor, key, actor, "cancel", request_digest, correlation_id, {"task_id": task_id})
             return self._get_task(cursor, task_id)

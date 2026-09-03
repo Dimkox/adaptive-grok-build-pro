@@ -9,6 +9,9 @@
 | P0 | runtime generic metric DML/function denial; fixed capability saturation/concurrency; one-row snapshot consistency, constant plan and bounded lock timeout | real disposable PostgreSQL role/concurrency/plan tests |
 | P0 | stale-fence metric lock/error preserves the original prompt `409 stale_fence`; schema-008 upgrade ignores forged legacy counters and replays idempotently | unit + real disposable PostgreSQL upgrade/API tests |
 | P0 | every runtime connection/read/mutation/readiness path is bounded and maps availability consistently; cancel authorization/replay/projection uses one transaction | real disposable PostgreSQL API connection/query contention |
+| P0 | cancellation and supersession racing reservation preserve unresolved evidence, release capacity exactly once, mark accounting quarantine and replay idempotently | real disposable PostgreSQL reader/writer race matrix |
+| P0 | deadline-crossing live leases and expired queued/retry tasks terminalize without page starvation; clean work becomes dead, unresolved accounting becomes needs-human/quarantined and late grants remain stale | real disposable PostgreSQL reconciliation |
+| P0 | reconciliation has one deterministic five-second operation deadline; statement timeout preserves committed candidate progress while PostgreSQL 17 transaction timeout rolls back the partial batch | real disposable PostgreSQL timeout injection |
 | P0 | tracked candidate ZIP exactly equals current included-source inventory, embedded manifest and per-member bytes; stale same-version archives fail | package regression + sidecar/archive verification |
 | P1 | duplicate intake and changed-authority supersession | service/PostgreSQL tests |
 | P1 | accepted infrastructure retry limits 0/1/2 persist and allow exactly 1/2/3 total attempts on release, reconciliation and restart; other failures never retry | state/store/real PostgreSQL restart tests |
@@ -18,4 +21,4 @@
 
 TDD sequence: contracts -> state -> migrations -> intake -> leases/capacity/fences -> retry/budgets/kills/reconcile -> API/CLI -> architecture/tooling/docs. Each production behavior begins with an observed failing test. Root verification runs after final product changes. Review agents run separately after implementation; the write owner does not self-review.
 
-Only `FACTORY_TEST_DATABASE_URL` pointing at a freshly created disposable database, or the package's fresh disposable Compose project, may be used. Never inspect `.env`, inherit Trust CI URLs, or clean an unverified target.
+Only `FACTORY_TEST_DATABASE_URL` pointing at a freshly created disposable PostgreSQL 17 database, or the package's fresh disposable Compose project, may be used. This repair candidate bootstraps fresh schema `013` only; an older unaccepted candidate database is preserved solely as a killed comparison database and is never upgraded in place. Never inspect `.env`, inherit Trust CI URLs, or clean an unverified target.
