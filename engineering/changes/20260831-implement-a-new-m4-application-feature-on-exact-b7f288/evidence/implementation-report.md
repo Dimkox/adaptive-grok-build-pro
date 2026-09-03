@@ -52,6 +52,7 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 - `5dac08e` — exact runtime/parser/configuration parity for the checked contract.
 - `1d837cb` — release archive modes derived only from exact Git tree identity.
 - `9017730` — explicit cross-checkout tree/mode/byte determinism proof.
+- `9da561a` — exact shipped-mode, executable-mismatch and Git-object filtering guards.
 
 ## Independent-review remediation
 
@@ -85,7 +86,7 @@ Focused PostgreSQL 17 evidence culminated in a 64/64 full integration pass in 57
 
 The final contract-parity pass binds every operation to its exact scope and correlation policy, canonical lowercase dashed UUIDs, closed redacted correlated 500 responses, strict actor/repository identifiers and PostgreSQL/Python integer bounds. Dependency-free factory discovery then ran 141 tests with 77 passes plus 64 expected PostgreSQL skips in 1.445 seconds; architecture-model, fitness and governance tests passed 150/150 in 139.751 seconds. This pass changed no database transaction or SQL path, so the already-green 64/64 PostgreSQL evidence remains the applicable data-path proof; final exact-head verification and independent reviews are still pending.
 
-The package freeze also exposed that release ZIP attributes retained ambient non-executable worktree modes even though the bytes, inventory and embedded manifest came from exact Git `HEAD`. Release-only archiving now uses canonical Git `100644`/`100755` member modes while retaining full opened-file identity for no-follow and replacement detection; a same-commit clone regression proves byte equality across `0600`/`0664` and `0700`/`0775` checkouts. The pre-build package module passed 52/53 with only the intentionally stale shipped-ZIP parity test failing; that test must pass after the artifact-only rebuild.
+The package freeze also exposed that release ZIP attributes retained ambient non-executable worktree modes even though the bytes, inventory and embedded manifest came from exact Git `HEAD`. Release-only archiving now uses canonical Git `100644`/`100755` member modes while retaining full opened-file identity for no-follow and replacement detection; a same-commit clone regression proves byte equality across `0600`/`0664` and `0700`/`0775` checkouts. Additional guards require exact canonical modes in the shipped ZIP, reject a Git-executable/worktree-nonexecutable mismatch even with `core.filemode=false`, and exclude symlink/gitlink object modes. The pre-build package module passed 52/53 with only the intentionally stale shipped-ZIP parity test failing; that test must pass after the artifact-only rebuild.
 
 ## Verification evidence
 
