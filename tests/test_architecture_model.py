@@ -169,6 +169,81 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertTrue(factory_edges)
         self.assertTrue(all(edge["network_policy"] in {"no_network", "local_only"} for edge in factory_edges))
 
+    def test_repository_code_budgets_restore_m2_and_bound_factory_independently(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        expected = {
+            rule["id"]: rule
+            for rule in [
+                {
+                    "id": "FIT-BOUNDED-ARCHITECTURE-CHANGE",
+                    "path_prefixes": [
+                        ".grok-stack/adaptive_grok",
+                        "architecture",
+                        "engineering/contracts",
+                        "governance",
+                        "schemas",
+                        "scripts",
+                    ],
+                    "max_changed_bytes": 1_000_000,
+                    "max_changed_lines": 10_820,
+                    "max_ast_complexity": 5_000,
+                    "severity": "error",
+                },
+                {
+                    "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+                    "path_prefixes": [
+                        ".grok-stack/adaptive_grok",
+                        "architecture",
+                        "engineering/contracts",
+                        "factory",
+                        "governance",
+                        "schemas",
+                        "scripts",
+                    ],
+                    "max_changed_bytes": 1_300_000,
+                    "max_changed_lines": 24_000,
+                    "max_ast_complexity": 5_000,
+                    "severity": "error",
+                },
+                {
+                    "id": "FIT-BOUNDED-FACTORY-CHANGE",
+                    "path_prefixes": ["factory"],
+                    "max_changed_bytes": 950_000,
+                    "max_changed_lines": 22_000,
+                    "max_ast_complexity": 1_000,
+                    "severity": "error",
+                },
+                {
+                    "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+                    "path_prefixes": ["factory/src"],
+                    "max_changed_bytes": 235_000,
+                    "max_changed_lines": 5_500,
+                    "max_ast_complexity": 650,
+                    "severity": "error",
+                },
+                {
+                    "id": "FIT-BOUNDED-FACTORY-CONTRACT-CHANGE",
+                    "path_prefixes": ["factory/contracts"],
+                    "max_changed_bytes": 285_000,
+                    "max_changed_lines": 8_500,
+                    "max_ast_complexity": 1,
+                    "severity": "error",
+                },
+                {
+                    "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+                    "path_prefixes": ["factory/tests"],
+                    "max_changed_bytes": 340_000,
+                    "max_changed_lines": 7_500,
+                    "max_ast_complexity": 350,
+                    "severity": "error",
+                },
+            ]
+        }
+        actual = {rule["id"]: rule for rule in snapshot.rules["code_budgets"]}
+
+        self.assertEqual(tuple(actual), tuple(sorted(expected)))
+        self.assertEqual(actual, expected)
+
     def _repo(self, system: dict | None = None, rules: dict | None = None):
         temp = tempfile.TemporaryDirectory()
         root = Path(temp.name)

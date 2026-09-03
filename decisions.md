@@ -396,3 +396,11 @@ Return one closed, redacted 500 envelope and establish correlation inside the ou
 ## 2026-09-03 — Derive release member modes from the Git tree
 
 Use exact Git `100644`/`100755` modes only for release ZIP attributes while retaining the full opened-file identity for no-follow and replacement checks. This makes exact-tree archives byte-stable across checkouts without weakening secure source or publication binding.
+
+## 2026-09-03 — Layer finite budgets instead of rewriting the M2 bound
+
+Restore the original six-prefix M2 budget unchanged and enforce separate finite error budgets over the governed aggregate, all factory files, source, contracts and tests. Independent overlaps preserve the historical M2 rationale while bounding the measured frozen M4 representation without minification, stacked-route partitioning or an exemption.
+
+## 2026-09-03 — Anchor the remaining milestones to accepted predecessors
+
+Define T0 only when an exact M4 SHA earns separately authorized PR delivery, external exact-SHA gates and protected acceptance, then sequence M5-M9 from accepted predecessors rather than missed calendar promises. This keeps M8 cohort duration and M9 signed-artifact/environment/recovery entry conditions truthful; 2026-09-08 remains superseded history, never a waiver.

@@ -14,6 +14,12 @@ frozen M1 + M2 + M3 + M0 evidence
 
 `factory/` is a nested local Python package. `contracts.py` owns closed immutable records and canonical digests; `state.py` owns pure transitions/retry decisions; `migrations.py` and packaged SQL own the factory-only schema; `store.py` owns SQL/transactions; `service.py` owns use cases; `api.py` and `cli.py` are thin local adapters. There is deliberately no outbox because M4 has no external publication.
 
+## Bounded architecture change policy
+
+The original M2 `FIT-BOUNDED-ARCHITECTURE-CHANGE` remains exactly the six-prefix, `1,000,000`-byte / `10,820`-line / `5,000`-AST error rule accepted on base `67714a1...`; `factory` is not folded into or used to reinterpret it. Five additional error rules independently bound the seven-prefix aggregate (`1,300,000` / `24,000` / `5,000`), all of `factory` (`950,000` / `22,000` / `1,000`), `factory/src` (`235,000` / `5,500` / `650`), `factory/contracts` (`285,000` / `8,500` / `1`) and `factory/tests` (`340,000` / `7,500` / `350`). A matching artifact must satisfy every enclosing rule; complete path-segment matching excludes siblings, and unknown line metrics fail closed.
+
+The amendment governs the exact-base aggregate instead of allowing minification or per-route partitioning to erase cumulative risk. Its implementation is representation-neutral: the complete factory, source, contract, test and migration trees remain byte-identical to the approved `5c5f111` freeze. The policy has no runtime, database, API, migration, external-operation or Trust CI effect.
+
 ## Integrity and concurrency
 
 Intake separates three immutable identities. `intent_digest` binds the complete normalized intake, including transport `request_id` and the entire M0 proof, and remains the opaque persisted/M5 packet digest. `adaptive-factory.work-identity/v1` excludes only those two transport/observation fields and controls logical-work deduplication, while `adaptive-factory.intake-command/v1` binds one request ID to one full request/result in `command_results`. A refreshed valid M0 proof with a new request ID therefore returns the existing task; reuse of one request ID with a changed body conflicts; a changed semantic work field supersedes the active generation atomically.

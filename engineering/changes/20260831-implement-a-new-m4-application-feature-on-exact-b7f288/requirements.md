@@ -2,7 +2,7 @@
 
 ## Non-authoritative decomposed requirements checklist
 
-The canonical typed acceptance criteria remain `AC-001` through `AC-004` in `change-spec.yaml`. The `RQ-*` items below decompose those criteria for implementation tracking; they do not create, replace or extend typed acceptance authority.
+The canonical typed acceptance criteria are `AC-001` through `AC-005` in `change-spec.yaml`. The `RQ-*` items below decompose those criteria for implementation tracking; they do not create, replace or extend typed acceptance authority.
 
 - [x] RQ-001 closed versioned intake validates frozen M1 spec, M2 architecture, M3 governance, exact source/base, policy, route/change, acceptance IDs, M0 observation/exception and hard ceilings.
 - [x] RQ-002 semantic duplicate intake returns one task across new request IDs and refreshed equivalent M0 proof; command replay binds one request ID to one full body/result, while changed semantic work atomically supersedes eligible nonterminal work without rewriting accepted intent.
@@ -18,6 +18,7 @@ The canonical typed acceptance criteria remain `AC-001` through `AC-004` in `cha
 - [x] RQ-012 real disposable PostgreSQL 17 proves concurrency, capacity, fencing, accepted 0/1/2 retry limits, budgets, kill, actual restart and reconciliation.
 - [x] RQ-013 architecture/diagrams, installer/verifier, README, release and rollback match the implemented candidate tree; final fingerprint-bound evidence remains `RQ-014`.
 - [ ] RQ-014 final verification plus fresh code/test/security/data/release reviews and receipts still must bind the current repair tree to one final fingerprint; no review acceptance, external Trust CI result or delivery is claimed.
+- [x] RQ-015 the exact original M2 six-prefix budget is restored unchanged and finite aggregate/factory/source/contract/test error budgets apply independently, use segment-safe prefixes and fail closed on unknown line statistics without changing the frozen factory representation.
 
 ## Crosswalk to typed acceptance
 
@@ -27,10 +28,12 @@ The canonical typed acceptance criteria remain `AC-001` through `AC-004` in `cha
 | `AC-002` | `RQ-004` through `RQ-009`, `RQ-012` |
 | `AC-003` | `RQ-010`, `RQ-011` |
 | `AC-004` | `RQ-013`, `RQ-014` |
+| `AC-005` | `RQ-015` |
 | `INV-001`, `FORBID-002` | `RQ-003` |
 | `INV-002` | `RQ-005` |
 | `INV-003` | `RQ-004`, `RQ-006`, `RQ-007`, `RQ-009`, `RQ-010` |
 | `INV-004` | `RQ-007` |
+| `INV-005`, `FORBID-004` | `RQ-015` |
 
 ## Failure and edge cases
 
@@ -38,4 +41,4 @@ Unknown fields/versions, invalid SHA/digest/NFC/bounds, unsorted acceptance IDs,
 
 ## Governance and non-functional constraints
 
-Canonical governance JSON remains independently reviewed authority. Factory records frozen producer handoffs but cannot activate governance or infer authority from Markdown, local receipts or caller claims. PostgreSQL is operational truth; fixed lock order, parameterized SQL, bounded pages/queries, low-cardinality redacted signals and separate least-privilege roles are mandatory.
+Canonical governance JSON remains independently reviewed authority. Factory records frozen producer handoffs but cannot activate governance or infer authority from Markdown, local receipts or caller claims. PostgreSQL is operational truth; fixed lock order, parameterized SQL, bounded pages/queries, low-cardinality redacted signals and separate least-privilege roles are mandatory. Architecture budgets are finite overlapping error rules over the exact cumulative base-to-head change; minification, route splitting, warnings or exemptions cannot substitute for satisfying them.

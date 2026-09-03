@@ -53,6 +53,10 @@ M4 is implemented as a separate local `factory/` package on accepted M3 base `67
 - `1d837cb` — release archive modes derived only from exact Git tree identity.
 - `9017730` — explicit cross-checkout tree/mode/byte determinism proof.
 - `9da561a` — exact shipped-mode, executable-mismatch and Git-object filtering guards.
+- `600486e` — clean pre-package source/documentation freeze.
+- `9f07c32` — tracked deterministic `2.0.13` package rebuild (later made stale by this amendment).
+- `5c5f111` — scanner-safe synthetic credential fixtures after the failed verifier.
+- `b5af3fe` — exact pending architecture-budget amendment analysis before human approval.
 
 ## Independent-review remediation
 
@@ -76,7 +80,7 @@ Every final application 401/403 now increments exactly once at the HTTP response
 
 The first exact verifier after wave six passed 12/14 gates but rejected two exit-harness details. Bandit B110 identified the silent best-effort exception handler, and the fresh disposable database accepted a temporary readiness probe before closing the first host connection during the official image's final-postmaster handoff. Product commit `4f75558` makes handling explicit while preserving the identical authoritative fence error, and proves the final PostgreSQL postmaster is PID 1 plus ready rather than trusting a fixed delay.
 
-Current documentation connects M4 control/evidence through the provisional M5 packet/execution result and M6 semantic verdict, then roadmap-only M7 ready-for-PR shadow bundle, M8 exact-profile cohort/demotion and M9 exact signed-artifact delivery/recovery. Each edge names digest/SHA binding, gate, invalidation, rollback and forbidden authority; the hard deadline is **2026-09-08 00:00 UTC+3**, M5 remains rootless-host blocked, current authority caps M8 at L2, and production promotion remains human-owned. None of these connections claims M4-M9 completion, push, external check, merge or deployment.
+Current documentation connects M4 control/evidence through the provisional M5 packet/execution result and M6 semantic verdict, then M7 shadow bundle, M8 exact-profile cohort/demotion and the provisional source-only M9 Task-1 delivery contracts. Each edge names digest/SHA binding, gate, invalidation, rollback and forbidden authority. The current 2026-09-03 work is M4's local-ready target, while T0 remains unknown until a separately authorized PR and external exact-SHA gates produce an accepted M4 SHA; M5-M7 then proceed only after predecessor acceptance, M8 remains calendar-indeterminate until its >=30 human-accepted task cohort, and M9 requires accepted M8 plus signed artifact/environment/recovery evidence. The former 2026-09-08 target is superseded and unachievable history, never a waiver; none of these connections claims M4-M9 completion, push, external check, merge or deployment.
 
 ## Resumed data and architecture repairs
 
@@ -87,6 +91,10 @@ Focused PostgreSQL 17 evidence culminated in a 64/64 full integration pass in 57
 The final contract-parity pass binds every operation to its exact scope and correlation policy, canonical lowercase dashed UUIDs, closed redacted correlated 500 responses, strict actor/repository identifiers and PostgreSQL/Python integer bounds. Dependency-free factory discovery then ran 141 tests with 77 passes plus 64 expected PostgreSQL skips in 1.445 seconds; architecture-model, fitness and governance tests passed 150/150 in 139.751 seconds. This pass changed no database transaction or SQL path, so the already-green 64/64 PostgreSQL evidence remains the applicable data-path proof; final exact-head verification and independent reviews are still pending.
 
 The package freeze also exposed that release ZIP attributes retained ambient non-executable worktree modes even though the bytes, inventory and embedded manifest came from exact Git `HEAD`. Release-only archiving now uses canonical Git `100644`/`100755` member modes while retaining full opened-file identity for no-follow and replacement detection; a same-commit clone regression proves byte equality across `0600`/`0664` and `0700`/`0775` checkouts. Additional guards require exact canonical modes in the shipped ZIP, reject a Git-executable/worktree-nonexecutable mismatch even with `core.filemode=false`, and exclude symlink/gitlink object modes. The pre-build package module passed 52/53 with only the intentionally stale shipped-ZIP parity test failing; that test must pass after the artifact-only rebuild.
+
+The user-approved architecture-budget amendment restores the exact original six-prefix M2 rule and adds independently overlapping aggregate, factory, source, contract and test error budgets. Focused policy tests were RED 6/6 before the rule edit and GREEN 6/6 afterward; the complete architecture-fitness module passes 90/90, and exact-base fitness reports all six finite rules passing with zero findings. Factory, source, contract, test, migration and OpenAPI objects remain byte-identical to `5c5f111`; no evaluator, schema, product, SQL, Trust CI or package artifact changed.
+
+The schedule is now dependency-relative instead of promising missed dates. T0 is intentionally null until an exact M4 SHA is externally accepted; provisional M5-M9 source does not start that clock, and the locally present `000301796ac19c518ede110b97b9de09dc077cbd` remains only an inactive, unaccepted M9 Task-1 contract slice. The 2026-09-08 date is retained only as a superseded and unachievable historical target.
 
 ## Verification evidence
 
@@ -103,6 +111,7 @@ The package freeze also exposed that release ZIP attributes retained ambient non
 - Observability-boundary focused evidence passed the real PostgreSQL migration/role/snapshot/fence-lock/upgrade/deadlock set 6/6 in 6.570s, exclusive snapshot-lock timeout 1/1, API/service regressions 2/2 and Ruff. The final named PostgreSQL suite passed 69/69 in 39.794s; the separately fresh disposable exit passed 69/69 in 39.993s plus actual restart, one repair, replay no-op, higher fence and late-holder rejection.
 - The root suite passed 488/488 in 305.256s on clean product commit `94fc5ad`; the exact changed-tree secret scan reports zero potential secrets. The final exact-tree verifier runs once after this evidence-only commit.
 - Exact verifier on `a3b8e87` passed 12/14 gates and failed only Bandit B110 plus the fresh image handoff described above; its root coverage gate passed 488/488 in 501.064s and source stability passed. After repair, focused tests passed 14/14, Bandit/Ruff and architecture validate/drift/diagram checks passed, and fresh disposable PostgreSQL exit passed 70/70 in 39.705s plus the full restart/reconciliation probe on product commit `4f75558`.
+- Approved-budget evidence: the exact six policy regressions passed 6/6 in 1.457s; architecture fitness passed 90/90 in 124.175s; governance/governance-fitness passed 63/63 in 21.692s; receipt/verifier-doctor passed 88/88 in 165.569s; the mixed model/state/spec/structure/installer group passed 130/130 in 8.758s. Worktree architecture validate, drift, diagrams, fitness, governance validation/projections and typed-spec validation all pass, and the dependency-relative schedule parity test passes 1/1 after its intentional RED.
 
 ## Disposable migration evidence and cleanup
 
@@ -114,4 +123,4 @@ Source rollout only: no service was activated and no migration was run outside d
 
 M5 branch `milestone/m5-isolated-execution-provisional-m4` (route `37b05f579320`) and M6 branch `milestone/m6-semantic-validation-provisional-m4` (route `82aac86a3bf9`) are provisional parallel work based on M4 product `94fc5ad`; both must restack onto their accepted predecessors. This is a repository-local dependency handoff, not a push, external check or delivery claim.
 
-Independent route reviews, PR delivery, the App-owned policy-epoch check on the exact PR head, signed approval scopes, merge and any deployment remain outside this implementation report and are not claimed here. The calendar deadline does not change the product runtime contract or bypass those gates.
+Independent route reviews, PR delivery, the App-owned policy-epoch check on the exact PR head, signed approval scopes, merge and any deployment remain outside this implementation report and are not claimed here. No calendar target changes the product runtime contract or bypasses those gates; T0 remains unknown.

@@ -20,7 +20,7 @@ M4_SOURCE_SHA = "460a8a01a6394cac710b4e3f9eea3d94d4beef89"
 M4_INTEGRATION_SHA = "da7ec8d7d40f52663aba1ff59bf03ccf209395b0"
 M4_SCANNER_REPAIR_SHA = "5a6cdfb7a129e02724c632f78c31de6406d6863a"
 M4_RELEASE_STATE_BASE_SHA = "56e12b2b394436ee227c66d78b1caba8f7317c78"
-M4_REPAIR_CHECKPOINT_SHA = "9da561aad818db73c0601e6d20f8c208f905fb07"
+M4_REPAIR_CHECKPOINT_SHA = "5c5f111ae64cb3aa4dbff8915a3914c3901e6b1c"
 M4_RELEASE_STATE_BASE_FINGERPRINT = "e27caec9d2de459ef26bea49b99b93b5b7326a9c84c89b97f4ec482c237d4add"
 M4_FAILED_VERIFY_SHA = "547ee628812fbf098f337a854f68edf660091ead"
 M4_FAILED_VERIFY_FINGERPRINT = "f0efa89e689dbe47c701a4d301e97361ee671e299ef2f32b5295b908e182e768"
@@ -258,7 +258,7 @@ class ProjectStateTests(unittest.TestCase):
         dimensions = self.state["active_delivery"]["m4_dimensions"]
         self.assertTrue(
             self.state["active_delivery"]["next_action"].startswith(
-                "Run local exact-head verification and all route-selected reviews"
+                "Rebuild and validate the tracked 2.0.13 archive and sidecar"
             )
         )
         self.assertEqual(
@@ -275,7 +275,7 @@ class ProjectStateTests(unittest.TestCase):
                     "sole_checked_closed_inline_17_operation_http_contract",
                     "authenticated_uds_api_cli_and_admin",
                     "disposable_postgresql_and_restart_tests",
-                    "rebuilt_tracked_2_0_13_candidate_from_preceding_clean_source_head",
+                    "restored_m2_and_nested_factory_architecture_budgets",
                 ],
             },
         )
@@ -302,6 +302,65 @@ class ProjectStateTests(unittest.TestCase):
             self.state["milestones"]["M5"]["implementation"]["status"],
             "provisional_source_complete",
         )
+
+    def test_delivery_schedule_is_dependency_relative_and_does_not_revive_missed_dates(self) -> None:
+        schedule = self.state["active_delivery"]["schedule"]
+        self.assertEqual(schedule["basis"], "dependency_relative")
+        self.assertEqual(schedule["m4_local_ready_target"], "2026-09-03")
+        self.assertEqual(
+            schedule["t0"],
+            {
+                "definition": "externally accepted exact M4 SHA",
+                "status": "unknown",
+                "sha": None,
+                "accepted_at": None,
+                "requires": [
+                    "separately_authorized_pull_request",
+                    "exact_sha_external_trust_ci",
+                    "protected_merge_and_acceptance_record",
+                ],
+            },
+        )
+        self.assertEqual(
+            schedule["sequential_acceptance_order"],
+            ["M4", "M5", "M6", "M7", "M8", "M9"],
+        )
+        self.assertEqual(schedule["m8_calendar"]["status"], "indeterminate")
+        self.assertEqual(schedule["m8_calendar"]["minimum_human_accepted_tasks"], 30)
+        self.assertEqual(
+            schedule["m9_entry_requires"],
+            [
+                "accepted_m8",
+                "signed_artifact",
+                "environment_evidence",
+                "recovery_evidence",
+            ],
+        )
+        self.assertEqual(
+            schedule["superseded_target"],
+            {
+                "at": "2026-09-08T00:00:00+03:00",
+                "status": "superseded_unachievable_historical_target",
+                "gate_waiver": False,
+            },
+        )
+
+        current_docs = [
+            ROOT / "README.md",
+            ROOT / "START_HERE.md",
+            ROOT / "DARK_FACTORY_ROADMAP.md",
+            ROOT / "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md",
+            ROOT / "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/brief.md",
+            ROOT / "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/release.md",
+            ROOT / "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/rollback.md",
+        ]
+        for path in current_docs:
+            text = path.read_text(encoding="utf-8")
+            self.assertNotRegex(text, r"(?i)(?:hard|superseding) (?:program )?deadline is \*\*2026-09-08")
+        canonical_schedule = current_docs[3].read_text(encoding="utf-8")
+        self.assertIn("T0", canonical_schedule)
+        self.assertIn("externally accepted exact M4 SHA", canonical_schedule)
+        self.assertIn("superseded and unachievable historical target", canonical_schedule)
 
     def test_local_git_objects_corrobate_durable_stack_proof_when_available(self) -> None:
         milestones = self.state["milestones"]

@@ -15,14 +15,15 @@ The positive M4 endpoint is `ready_for_human`. M4 has no provider, workspace, re
 
 ## Scope
 
-In scope: closed contracts; immutable accepted intent/task/run/attempt/event facts; separate full-intent, semantic-work and command replay identities; idempotent superseding intake; factory-only checksum migrations; `SKIP LOCKED` leases and monotonic fences; operation-scoped task transitions; 20/10/1 capacity; initial plus two infrastructure retries; four-hour/USD 25/token/output/event/repair ceilings; kill switches; hash-chained audit; bounded reconciliation; scoped Unix-socket API/CLI with bounded history; one checked closed inline OpenAPI contract and correlated errors; disposable PostgreSQL tests; architecture, verifier, installer, README and recovery documentation.
+In scope: closed contracts; immutable accepted intent/task/run/attempt/event facts; separate full-intent, semantic-work and command replay identities; idempotent superseding intake; factory-only checksum migrations; `SKIP LOCKED` leases and monotonic fences; operation-scoped task transitions; 20/10/1 capacity; initial plus two infrastructure retries; four-hour/USD 25/token/output/event/repair ceilings; kill switches; hash-chained audit; bounded reconciliation; scoped Unix-socket API/CLI with bounded history; one checked closed inline OpenAPI contract and correlated errors; disposable PostgreSQL tests; independently overlapping finite architecture budgets; architecture, verifier, installer, README and recovery documentation.
 
 Out of scope: M5 execution, M6 validation, M7 delivery, M8 autonomy, M9 deployment, `baby-bot`, TCP exposure, Trust CI state or credentials, external writes and production mutations.
 
 ## Approved rulings and gates
 
 - The user explicitly approved automatic execution and the existing M4 scope/design on 2026-08-31. This satisfies `scope_and_design_approval` only.
+- On 2026-09-03 the user separately granted `scope_and_design_approval` for the exact six-rule architecture-budget amendment frozen in `evidence/analysis-architecture-budget-amendment-proposal.md`. The approval restores the original M2 rule unchanged, adds finite aggregate and nested factory error rules, preserves the exact `5c5f111` factory representation, and grants no migration, external, release or merge authority.
 - The route was rebound before product code to accepted M3 merge `67714a1...`. The fingerprint was derived by the repository `tree_fingerprint` algorithm from that clean snapshot; the same bytes produce `17f8ca...`.
 - M1/M2/M3 intake identities are consumed from their own frozen producer artifacts. The implementation-base SHA is not substituted for producer exact-base/head pairs; historical SHAs are never fabricated into an intake handoff.
 - Migration permission is limited to a freshly created disposable local PostgreSQL test database. No existing, external, production, Trust CI, or shared database may be read or mutated.
-- Runtime deadline is 14,400 seconds per task. The 2026-09-08 calendar deadline is delivery planning only, never a product field or a gate waiver.
+- Runtime deadline is 14,400 seconds per task. The current 2026-09-03 work is the M4 local-ready target; T0, the external acceptance time of an exact M4 SHA after separately authorized PR and exact-SHA gates, is unknown. Later milestones are predecessor-acceptance-relative, and the former 2026-09-08 calendar target is superseded and unachievable historical planning, never a product field or gate waiver.

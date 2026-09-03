@@ -47,10 +47,65 @@
         ".grok-stack/adaptive_grok",
         "architecture",
         "engineering/contracts",
+        "governance",
+        "schemas",
+        "scripts"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+      "max_ast_complexity": 5000,
+      "max_changed_bytes": 1300000,
+      "max_changed_lines": 24000,
+      "path_prefixes": [
+        ".grok-stack/adaptive_grok",
+        "architecture",
+        "engineering/contracts",
         "factory",
         "governance",
         "schemas",
         "scripts"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "FIT-BOUNDED-FACTORY-CHANGE",
+      "max_ast_complexity": 1000,
+      "max_changed_bytes": 950000,
+      "max_changed_lines": 22000,
+      "path_prefixes": [
+        "factory"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+      "max_ast_complexity": 650,
+      "max_changed_bytes": 235000,
+      "max_changed_lines": 5500,
+      "path_prefixes": [
+        "factory/src"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "FIT-BOUNDED-FACTORY-CONTRACT-CHANGE",
+      "max_ast_complexity": 1,
+      "max_changed_bytes": 285000,
+      "max_changed_lines": 8500,
+      "path_prefixes": [
+        "factory/contracts"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+      "max_ast_complexity": 350,
+      "max_changed_bytes": 340000,
+      "max_changed_lines": 7500,
+      "path_prefixes": [
+        "factory/tests"
       ],
       "severity": "error"
     }

@@ -14,6 +14,8 @@
 | P0 | cancellation and supersession racing reservation preserve unresolved evidence, release capacity exactly once, mark accounting quarantine and replay idempotently | real disposable PostgreSQL reader/writer race matrix |
 | P0 | deadline-crossing live leases and expired queued/retry tasks terminalize without page starvation; clean work becomes dead, unresolved accounting becomes needs-human/quarantined and late grants remain stale | real disposable PostgreSQL reconciliation |
 | P0 | reconciliation has one deterministic five-second operation deadline; statement timeout preserves committed candidate progress while PostgreSQL 17 transaction timeout rolls back the partial batch | real disposable PostgreSQL timeout injection |
+| P0 | exact restored M2, aggregate and nested factory budgets remain finite error rules; overlaps evaluate independently, combined scopes cannot evade parents/union, prefix siblings do not match and unknown line statistics fail closed | architecture model + real fitness evaluator tests |
+| P0 | the approved budget-only amendment preserves exact factory/source/contract/test/migration tree and blob identities plus migrations `001`-`013` checksums | exact Git objects + migration manifest verification |
 | P0 | tracked candidate ZIP exactly equals current included-source inventory, embedded manifest and per-member bytes; stale same-version archives fail | package regression + sidecar/archive verification |
 | P1 | duplicate intake and changed-authority supersession | service/PostgreSQL tests |
 | P1 | complete intent digest remains opaque packet identity; semantic work identity excludes request ID/full M0 proof; namespaced command replay deduplicates refreshed proof and conflicts on same-request changed body | contract + real PostgreSQL HTTP tests |
@@ -24,6 +26,6 @@
 | P1 | budget/accounting and kill switches stop claims | service/PostgreSQL tests |
 | P1 | repeated restart reconciliation repairs exactly once | PostgreSQL restart probe |
 
-TDD sequence: contracts -> state -> migrations -> intake -> leases/capacity/fences -> retry/budgets/kills/reconcile -> API/CLI -> architecture/tooling/docs. Each production behavior begins with an observed failing test. Root verification runs after final product changes. Review agents run separately after implementation; the write owner does not self-review.
+TDD sequence: contracts -> state -> migrations -> intake -> leases/capacity/fences -> retry/budgets/kills/reconcile -> API/CLI -> architecture/tooling/docs. The approved budget amendment separately begins with an observed six-test RED against the old widened rule, then changes only the repository rule before documentation. Each production behavior begins with an observed failing test. Root verification runs after final product changes. Review agents run separately after implementation; the write owner does not self-review.
 
 Only `FACTORY_TEST_DATABASE_URL` pointing at a freshly created disposable PostgreSQL 17 database, or the package's fresh disposable Compose project, may be used. This repair candidate bootstraps fresh schema `013` only; an older unaccepted candidate database is preserved solely as a killed comparison database and is never upgraded in place. Never inspect `.env`, inherit Trust CI URLs, or clean an unverified target.

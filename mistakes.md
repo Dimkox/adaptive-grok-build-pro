@@ -445,3 +445,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** The repository secret heuristic flagged deterministic fake tokens in two test files.
 **Root cause:** New tests assigned long token literals directly despite the established scanner convention; construct synthetic credential fixtures from split literals so assignments do not look like committed credentials while preserving runtime behavior.
+
+## 2026-09-03 — Coupled an exact policy test to declaration order
+
+**Symptom:** The first post-rule budget run passed behavior but failed one exact-object assertion on list order.
+**Root cause:** The test compared authoring order even though the established loader canonically sorts stable-ID arrays; compare exact objects by stable ID and assert the loader's documented canonical order separately.

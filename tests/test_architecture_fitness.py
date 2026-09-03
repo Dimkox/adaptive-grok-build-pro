@@ -115,6 +115,15 @@ class ArchitectureFitnessTests(unittest.TestCase):
     def _results(report):
         return {result.category: result for result in report.results}
 
+    def _repository_code_budgets(self, *identities: str) -> list[dict]:
+        configured = {
+            rule["id"]: rule
+            for rule in ARCHITECTURE.load_architecture(ROOT).rules["code_budgets"]
+        }
+        missing = sorted(set(identities) - set(configured))
+        self.assertEqual(missing, [], "approved repository code budgets are not configured")
+        return [copy.deepcopy(configured[identity]) for identity in identities]
+
     def test_adoption_bootstrap_uses_only_the_frozen_base(self) -> None:
         head = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, encoding="utf-8"
@@ -3368,6 +3377,194 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertGreaterEqual(
                     FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
                 )
+
+    def test_overlapping_code_budgets_report_each_applicable_failure(self) -> None:
+        identities = (
+            "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+            "FIT-BOUNDED-FACTORY-CHANGE",
+            "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+        )
+        rules = _rules()
+        rules["code_budgets"] = self._repository_code_budgets(*identities)
+        for budget in rules["code_budgets"]:
+            budget.update(
+                max_changed_bytes=1,
+                max_changed_lines=100,
+                max_ast_complexity=100,
+            )
+        repo, base = self._repo(rules=rules)
+        repo.write_text("factory/src/app.txt", "two")
+        head = repo.commit("overlapping budget failures")
+
+        result = self._results(self._evaluate(repo, base, head))["code_budget"]
+
+        self.assertEqual(result.status, "fail")
+        self.assertEqual(
+            result.findings,
+            tuple(
+                f"{identity}: max_changed_bytes 3 exceeds 1"
+                for identity in identities
+            ),
+        )
+
+    def test_narrow_budget_can_fail_while_parent_budgets_pass(self) -> None:
+        identities = (
+            "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+            "FIT-BOUNDED-FACTORY-CHANGE",
+            "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+        )
+        rules = _rules()
+        rules["code_budgets"] = self._repository_code_budgets(*identities)
+        for budget in rules["code_budgets"]:
+            budget.update(
+                max_changed_bytes=1_000,
+                max_changed_lines=100,
+                max_ast_complexity=100,
+            )
+        rules["code_budgets"][2]["max_changed_bytes"] = 10
+        repo, base = self._repo(rules=rules)
+        repo.write_text("factory/src/app.txt", "01234567890")
+        head = repo.commit("source child alone exceeds budget")
+
+        result = self._results(self._evaluate(repo, base, head))["code_budget"]
+
+        self.assertEqual(result.status, "fail")
+        self.assertEqual(
+            result.findings,
+            (
+                "FIT-BOUNDED-FACTORY-SOURCE-CHANGE: "
+                "max_changed_bytes 11 exceeds 10",
+            ),
+        )
+
+    def test_combined_children_and_scopes_can_fail_parent_and_union_budgets(self) -> None:
+        parent_identities = (
+            "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+            "FIT-BOUNDED-FACTORY-CHANGE",
+            "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+            "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+        )
+        rules = _rules()
+        rules["code_budgets"] = self._repository_code_budgets(*parent_identities)
+        for budget in rules["code_budgets"]:
+            budget.update(
+                max_changed_bytes=1_000,
+                max_changed_lines=100,
+                max_ast_complexity=100,
+            )
+        rules["code_budgets"][1]["max_changed_bytes"] = 15
+        rules["code_budgets"][2]["max_changed_bytes"] = 10
+        rules["code_budgets"][3]["max_changed_bytes"] = 10
+        repo, base = self._repo(rules=rules)
+        repo.write_text("factory/src/app.txt", "12345678")
+        repo.write_text("factory/tests/test_app.txt", "abcdefgh")
+        head = repo.commit("children pass while parent fails")
+
+        result = self._results(self._evaluate(repo, base, head))["code_budget"]
+
+        self.assertEqual(result.status, "fail")
+        self.assertEqual(
+            result.findings,
+            ("FIT-BOUNDED-FACTORY-CHANGE: max_changed_bytes 16 exceeds 15",),
+        )
+
+        union_identities = (
+            "FIT-BOUNDED-ARCHITECTURE-CHANGE",
+            "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+            "FIT-BOUNDED-FACTORY-CHANGE",
+        )
+        rules = _rules()
+        rules["code_budgets"] = self._repository_code_budgets(*union_identities)
+        for budget in rules["code_budgets"]:
+            budget.update(
+                max_changed_bytes=10,
+                max_changed_lines=100,
+                max_ast_complexity=100,
+            )
+        rules["code_budgets"][1]["max_changed_bytes"] = 15
+        repo, base = self._repo(rules=rules)
+        repo.write_text("architecture/note.txt", "12345678")
+        repo.write_text("factory/note.txt", "abcdefgh")
+        head = repo.commit("scope parents pass while union fails")
+
+        result = self._results(self._evaluate(repo, base, head))["code_budget"]
+
+        self.assertEqual(result.status, "fail")
+        self.assertEqual(
+            result.findings,
+            ("FIT-BOUNDED-ALL-GOVERNED-CHANGE: max_changed_bytes 16 exceeds 15",),
+        )
+
+    def test_code_budget_prefixes_match_only_complete_path_segments(self) -> None:
+        identities = (
+            "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+            "FIT-BOUNDED-FACTORY-CHANGE",
+            "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+        )
+        rules = _rules()
+        rules["code_budgets"] = self._repository_code_budgets(*identities)
+        for budget in rules["code_budgets"]:
+            budget.update(
+                max_changed_bytes=1,
+                max_changed_lines=100,
+                max_ast_complexity=100,
+            )
+        repo, base = self._repo(rules=rules)
+        repo.write_text("factoryish/src/app.txt", "outside")
+        head = repo.commit("sibling outside factory")
+
+        result = self._results(self._evaluate(repo, base, head))["code_budget"]
+
+        self.assertEqual(result.status, "not_applicable")
+
+        repo, base = self._repo(rules=rules)
+        repo.write_text("factory/srcish/app.txt", "inside parent only")
+        head = repo.commit("source sibling inside factory")
+
+        result = self._results(self._evaluate(repo, base, head))["code_budget"]
+
+        self.assertEqual(result.status, "fail")
+        self.assertEqual(
+            result.findings,
+            (
+                "FIT-BOUNDED-ALL-GOVERNED-CHANGE: max_changed_bytes 18 exceeds 1",
+                "FIT-BOUNDED-FACTORY-CHANGE: max_changed_bytes 18 exceeds 1",
+            ),
+        )
+
+    def test_unknown_line_metrics_fail_closed_for_every_overlapping_budget(self) -> None:
+        identities = (
+            "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+            "FIT-BOUNDED-FACTORY-CHANGE",
+            "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+        )
+        rules = _rules()
+        rules["code_budgets"] = self._repository_code_budgets(*identities)
+        for budget in rules["code_budgets"]:
+            budget.update(
+                max_changed_bytes=1_000,
+                max_changed_lines=100,
+                max_ast_complexity=100,
+            )
+        repo, base = self._repo(rules=rules)
+        repo.write_bytes("factory/src/opaque.bin", b"line one\0\nline two\n")
+        head = repo.commit("unknown nested line metrics")
+
+        report = self._evaluate(repo, base, head, pre_risk="yellow")
+        result = self._results(report)["code_budget"]
+
+        self.assertEqual(result.status, "unsupported")
+        self.assertEqual(report.status, "fail")
+        self.assertEqual(
+            result.findings,
+            tuple(
+                f"{identity}: unknown line statistics for factory/src/opaque.bin"
+                for identity in identities
+            ),
+        )
+        self.assertGreaterEqual(
+            FIT.RISK_ORDER[report.post_risk], FIT.RISK_ORDER[report.pre_risk]
+        )
 
     def test_contract_compatibility_rejects_directional_break(self) -> None:
         system = _system()

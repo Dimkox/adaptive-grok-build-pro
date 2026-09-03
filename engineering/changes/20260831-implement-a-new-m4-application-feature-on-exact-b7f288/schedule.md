@@ -1,31 +1,23 @@
-# Dark Factory M0-M9 Calendar Implementation Plan
+# Dark Factory M0-M9 Dependency-Relative Implementation Plan
 
-All times are UTC+3. The superseding hard deadline is **2026-09-08 00:00 UTC+3**; normal work freezes at 2026-09-07 20:00 and the final four hours are reserved for exact-SHA gates, receipts, documentation parity and recovery evidence. The older 2026-09-15 deadline is retained only as superseded history.
+Calendar promises are replaced by dependency-relative gates. The M4 local-ready target is the current **2026-09-03** work: freeze the approved source/documentation, rebuild the tracked `2.0.13` candidate from that clean source HEAD, and obtain fresh local exact-head verifier and route-selected review evidence. Those local steps do not establish external acceptance.
 
-Current execution checkpoint: this M4 `2.0.13` production/documentation freeze is the direct input to the immediately following artifact-only rebuild. Release-state baseline `56e12b2b394436ee227c66d78b1caba8f7317c78` passed 14/14 local verifier gates at `2026-09-02T10:51:29Z`, but the data/identity/history/transition/API repair and rebuilt artifact supersede that fingerprint; exact-head verification and route-selected reviews must produce fresh receipts on the final artifact commit. PR #17 closed at `2026-09-02T10:08:38Z` as an exact duplicate of open source PR #21 at `460a8a01`; PR delivery, a new exact-SHA external Trust CI result, unresolved PR #21 GitGuardian FAILURE metadata and merge remain absent. PRs #12/#13 remain old-epoch `ACTION_REQUIRED`; PR #15's current-epoch Trust CI conclusion is `FAILURE` and GitGuardian is `SUCCESS`, with cause not inspected or inferred. Their unique scopes need clean successor extraction and no successor PR is claimed. M5 Tasks 1-6 are provisional at `141e51e75b2bb337fa3bb1544639c6c46c287309` and are the next accepted step after M4, with rootless host proof/restack/reviews pending. M6 Task 3 is provisional at `f3b2c0d07116686b27feab4b60166e8a7402d672`, with deterministic verdict persistence and local focused 67/67, legacy 40/40, PG17 1/1 and architecture PASS, but is quarantined behind accepted M5 and Task 4 is untouched. M7 `c8b450f494b3d44b580556c6a612b21a3a780368` is synthetic-only; M8 Task 1 is `5735e762b8d7571887f6fa4ac9cf10cd1fad1954`; M9 Task 1 is source-only at `000301796ac19c518ede110b97b9de09dc077cbd`. Parallel source work is not acceptance; restack, reviews, PR delivery and Trust CI remain dependency ordered M4 → M5 → M6 → M7 → M8 → M9.
+**T0** is the time at which an **externally accepted exact M4 SHA** is recorded. T0 is unknown now: no SHA or time may be assigned until a separately authorized successor pull request receives the App-owned exact-SHA Trust CI result, all required signed scopes, and protected merge/acceptance. PR #17 remains a closed exact duplicate of open source PR #21 at `460a8a01`; neither supplies T0 for this changed candidate, and PR #21's unresolved GitGuardian FAILURE metadata is preserved without inspecting or dismissing the finding.
 
-| Milestone | Start | Completion | Exit gate |
-| --- | ---: | ---: | --- |
-| M0/M1/M2 prerequisites | 2026-08-31 21:00 | 2026-09-01 06:00 | fresh M0 proof and accepted M1/M2 |
-| M3 controlled knowledge/debt | 2026-09-01 06:00 | 2026-09-01 14:00 | accepted exact-head M3 |
-| M4 durable control plane | 2026-09-01 14:00 | 2026-09-02 18:00 | real PostgreSQL, five reviews, exact-head Trust CI |
-| M5 isolated execution | 2026-09-02 18:00 | 2026-09-03 18:00 | isolation/capability/orphan proof |
-| M6 semantic validation/repair | 2026-09-03 18:00 | 2026-09-04 14:00 | independent validation and bounded repair |
-| M7 PR lifecycle/shadow | 2026-09-04 14:00 | 2026-09-05 12:00 | shadow PR lifecycle evidence |
-| M8 earned low-risk autonomy | 2026-09-05 12:00 | 2026-09-06 20:00 | one frozen docs-only class and >=30 human-accepted tasks |
-| M9 preview/canary/recovery | 2026-09-06 20:00 | 2026-09-07 20:00 | nonproduction recovery proof |
-| protected reserve | 2026-09-07 20:00 | 2026-09-08 00:00 | final exact-state release decision |
+Current reversible source context does not advance the acceptance clock. M5 Tasks 1-6 are provisional at `141e51e75b2bb337fa3bb1544639c6c46c287309`; M6 Task 3 is provisional at `f3b2c0d07116686b27feab4b60166e8a7402d672`; M7 `c8b450f494b3d44b580556c6a612b21a3a780368` is synthetic-only; M8 Task 1 is source-only at `5735e762b8d7571887f6fa4ac9cf10cd1fad1954`; and the locally verified commit `000301796ac19c518ede110b97b9de09dc077cbd` is an M9 source-only Task-1 contract slice. None is accepted or delivered, and M9 still lacks later tasks, real signed input, environment/recovery evidence and production authority.
 
-## M4 hourly window
+| Milestone | Earliest entry | Completion clock | Required exit gate |
+| --- | --- | --- | --- |
+| M4 local-ready candidate | Current 2026-09-03 work | local target only | clean source/docs freeze, direct deterministic package rebuild, fresh exact-head verifier and route-selected reviews |
+| M4 external acceptance / T0 | after separately authorized PR preparation | unknown until recorded | App-owned exact-SHA Trust CI, required signed scopes, protected merge and acceptance record |
+| M5 isolated execution | T0 | no fixed calendar date | restack on accepted M4, rootless host isolation/capability/orphan proof, reviews and exact-head acceptance |
+| M6 semantic validation/repair | only after accepted M5 | no fixed calendar date | restack/renumber, independent validation, bounded repair and exact-head acceptance |
+| M7 PR lifecycle/shadow | only after accepted M6 | no fixed calendar date | runtime and real-outcome shadow evidence, reviews and exact-head acceptance |
+| M8 earned low-risk autonomy | only after accepted M7 | indeterminate until the cohort exists | at least 30 human-accepted tasks for the exact class/profile tuple, complete metrics and accepted M8 |
+| M9 preview/canary/recovery | only after accepted M8 plus signed artifact, environment and recovery evidence | no fixed calendar date | reproducible environment proof, exercised recovery, human-owned production decision and accepted M9 |
 
-- 2026-09-01 14:00-15:00: bind accepted M1/M2/M3/M0 identities and route.
-- 15:00-20:00: contracts, state and checksum migrations from failing tests.
-- 20:00-02:00: intake, transitions, leases, fences, capacity and restart semantics.
-- 02:00-08:00: budgets, retry/dead, kills, audit, API/CLI and reconciliation.
-- 08:00-12:00: real disposable PostgreSQL concurrency/restart exit tests.
-- 12:00-15:00: current-main integration, state/README/roadmap coherence, exact-tree verifier and five reviews on one fingerprint.
-- 15:00-18:00: review fixes if any, receipts, PR preparation and external exact-head gate; branch push or PR mutation still requires exact delegated authority.
+The former **2026-09-08 00:00 UTC+3** deadline is a **superseded and unachievable historical target**, not a current promise and never a waiver. The still older 2026-09-15 date is also superseded history. Missing a former date cannot compress, reorder, skip or weaken an exit gate.
 
 ## Control protocol
 
-Milestones remain dependency-gated, not clock-triggered. Calendar time never waives App-owned exact-SHA Trust CI, signed human scopes, real PostgreSQL/security/review gates, the M8 cohort or M9 recovery proof. External writes require exact delegated grants; production mutation is outside this plan. If a gate misses its window, compress only non-exit scope and report the exact blocker rather than claim completion. Cross-links: [root current state](../../../README.md), [roadmap](../../../DARK_FACTORY_ROADMAP.md), [M4 package](../../../factory/README.md).
+Acceptance remains strictly ordered M4 → M5 → M6 → M7 → M8 → M9. Parallel local source work may be preserved as provisional evidence, but every milestone restacks after its predecessor's accepted exact SHA and earns fresh review/external evidence; no elapsed time converts provisional source into acceptance. External writes require exact delegated grants, and production mutation is outside this plan. Cross-links: [root current state](../../../README.md), [roadmap](../../../DARK_FACTORY_ROADMAP.md), [M4 package](../../../factory/README.md).
