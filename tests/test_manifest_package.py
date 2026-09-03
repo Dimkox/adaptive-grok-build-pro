@@ -759,10 +759,27 @@ module.main()
                 ['git', 'clone', '--no-local', '-q', str(root), str(clone)],
                 check=True,
             )
+            for revision in ('HEAD^{commit}', 'HEAD^{tree}'):
+                self.assertEqual(
+                    subprocess.check_output(['git', 'rev-parse', revision], cwd=root),
+                    subprocess.check_output(['git', 'rev-parse', revision], cwd=clone),
+                )
             (root / 'README.md').chmod(0o600)
             script.chmod(0o700)
             (clone / 'README.md').chmod(0o664)
             (clone / 'scripts/run.sh').chmod(0o775)
+            self.assertEqual(
+                subprocess.check_output(
+                    ['git', 'status', '--porcelain=v1'], cwd=root
+                ),
+                b'',
+            )
+            self.assertEqual(
+                subprocess.check_output(
+                    ['git', 'status', '--porcelain=v1'], cwd=clone
+                ),
+                b'',
+            )
             first = Path(tmp) / 'first.zip'
             second = Path(tmp) / 'second.zip'
 
