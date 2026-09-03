@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.local/contracts/external-observer-evidence.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "snapshot_kind", "milestones"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "snapshot_kind": {"const": "historical_claims"},
+    "project_state": {
+      "type": "object", "additionalProperties": false, "required": ["observed_main_sha", "observed_at"],
+      "properties": {"observed_main_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "observed_at": {"type": "string", "minLength": 1, "maxLength": 40}}
+    },
+    "candidate": {
+      "type": "object", "additionalProperties": false,
+      "required": ["implementation_sha", "reviewed_sha", "evidence_digest", "observed_at", "referenced_pr"],
+      "properties": {
+        "implementation_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "reviewed_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "evidence_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "observed_at": {"type": "string", "minLength": 1, "maxLength": 40},
+        "referenced_pr": {
+          "type": "object", "additionalProperties": false, "required": ["number", "state", "base_ref", "head_sha"],
+          "properties": {"number": {"type": "integer", "minimum": 1}, "state": {"enum": ["open", "closed"]}, "base_ref": {"type": "string", "minLength": 1, "maxLength": 100}, "head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}}
+        }
+      }
+    },
+    "milestones": {
+      "type": "array", "maxItems": 10, "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "claim_status"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^M[0-9]$"},
+          "claim_status": {"enum": ["evidence_claimed", "historical_evidence_claimed"]},
+          "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "reviewed_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "observed_at": {"type": "string", "minLength": 1, "maxLength": 40}
+        }
+      }
+    }
+  }
+}

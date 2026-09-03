@@ -1,0 +1,9 @@
+{
+  "default_branch": "main",
+  "expected_app_id": 1,
+  "expected_check_name": "CHECK_NAME",
+  "freshness_seconds": 900,
+  "pull_request_number": 1,
+  "repository": "OWNER/REPOSITORY",
+  "schema_version": 1
+}

@@ -19,4 +19,4 @@ Canonical change-spec v1 requires `AC-*` IDs, so `AC-001..AC-010` map positional
 
 Positive facts bind exact lowercase 40-hex SHA and canonical digest; no stage implies another; current observation never rewrites claim sources. Missing release, closed/draft PR, base mismatch, moving main/head, stale receipt, malformed compare, tag cycle, duplicate check, rate limit, timeout, redirect, oversize or corrupt cache yields bounded false/unknown/stale output.
 
-No network appears in tests. No version/package bump is planned in phase 1; no schema/data migration or backfill exists.
+No network appears in tests. No version/package bump, schema/data migration or backfill is included.

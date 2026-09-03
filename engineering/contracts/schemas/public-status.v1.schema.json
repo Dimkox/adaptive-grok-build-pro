@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.local/contracts/public-status.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "generated_at_epoch", "observation_epoch", "subject_digest", "snapshot_age_seconds", "main_sha", "current_delivery_pr", "pr_state", "pr_head_sha", "reviewed_sha", "trust_ci_check_name", "trust_ci_app_id", "trust_ci_sha", "trust_ci_status", "trust_ci_conclusion", "trust_ci_verdict", "trust_ci_failed_step", "release_sha", "evidence_freshness", "overall", "freshness", "implemented", "reviewed", "project_state", "reference", "check_verified", "delivered", "released", "attestation", "check_reference", "findings", "milestones", "observation", "digest"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "kind": {"const": "PUBLIC_STATUS.v1"},
+    "generated_at_epoch": {"type": "integer", "minimum": 0},
+    "observation_epoch": {"type": "integer", "minimum": 0},
+    "subject_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "snapshot_age_seconds": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+    "main_sha": {"type": ["string", "null"]},
+    "current_delivery_pr": {"type": ["integer", "null"]},
+    "pr_state": {"enum": ["open", "closed", "UNKNOWN"]},
+    "pr_head_sha": {"type": ["string", "null"]},
+    "reviewed_sha": {"type": ["string", "null"]},
+    "trust_ci_check_name": {"type": "string", "minLength": 1, "maxLength": 200},
+    "trust_ci_app_id": {"type": ["integer", "null"]},
+    "trust_ci_sha": {"type": ["string", "null"]},
+    "trust_ci_status": {"enum": ["queued", "in_progress", "completed", "UNKNOWN"]},
+    "trust_ci_conclusion": {"type": ["string", "null"]},
+    "trust_ci_verdict": {"enum": ["PASS", "FAIL", "PENDING", "UNKNOWN"]},
+    "trust_ci_failed_step": {"type": ["string", "null"]},
+    "release_sha": {"type": ["string", "null"]},
+    "evidence_freshness": {"enum": ["FRESH", "STALE"]},
+    "overall": {"enum": ["FRESH", "STALE", "UNAVAILABLE"]},
+    "freshness": {"enum": ["FRESH", "INCOHERENT", "STALE", "UNKNOWN"]},
+    "implemented": {"enum": ["EVIDENCE_CLAIMED", "STALE", "UNKNOWN"]},
+    "reviewed": {"enum": ["EVIDENCE_CLAIMED", "STALE", "UNKNOWN"]},
+    "project_state": {"enum": ["CLAIM_MATCH", "STALE_SNAPSHOT"]},
+    "reference": {"enum": ["CLAIM_MATCH", "STALE_REFERENCE"]},
+    "check_verified": {"enum": ["VERIFIED", "UNKNOWN"]},
+    "delivered": {"enum": ["DELIVERED", "UNKNOWN"]},
+    "released": {"enum": ["RELEASE_CURRENT", "RELEASE_BEHIND", "UNKNOWN"]},
+    "attestation": {"const": "ATTESTATION_UNOBSERVABLE"},
+    "check_reference": {"enum": ["REFERENCED_NOT_VERIFIED", "NONE"]},
+    "findings": {"type": "array", "maxItems": 8, "uniqueItems": true, "items": {"enum": ["snapshot_incoherent", "project_state_stale", "reference_stale", "check_unverified", "delivery_unproven", "release_unproven", "rate_limited", "timeout", "deadline", "github_unavailable", "observation_invalid"]}},
+    "milestones": {
+      "type": "array", "maxItems": 10,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "claim_status", "implemented", "reviewed", "delivery", "trust", "release", "freshness", "claimed_sha", "claimed_reviewed_sha", "evidence_digest"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^M[0-9]$"}, "claim_status": {"enum": ["evidence_claimed", "historical_evidence_claimed"]},
+          "implemented": {"enum": ["EVIDENCE_CLAIMED", "UNKNOWN"]}, "reviewed": {"enum": ["EVIDENCE_CLAIMED", "UNKNOWN"]}, "delivery": {"const": "UNKNOWN"}, "trust": {"const": "UNKNOWN"}, "release": {"const": "UNKNOWN"}, "freshness": {"const": "HISTORICAL"},
+          "claimed_sha": {"type": ["string", "null"]}, "claimed_reviewed_sha": {"type": ["string", "null"]}, "evidence_digest": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "observation": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "properties": {}},
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["subject_digest", "freshness_seconds", "opening_main", "closing_main", "opening_pr", "closing_pr", "check", "delivery_valid", "release_commit", "release_behind"],
+          "properties": {
+            "subject_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "freshness_seconds": {"type": "integer", "minimum": 60, "maximum": 86400},
+            "opening_main": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+            "closing_main": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+            "opening_pr": {
+              "type": "object", "additionalProperties": false,
+              "required": ["number", "state", "draft", "merged", "base_ref", "base_sha", "head_sha", "merge_commit_sha"],
+              "properties": {
+                "number": {"type": "integer", "minimum": 1}, "state": {"enum": ["open", "closed"]}, "draft": {"type": "boolean"}, "merged": {"type": "boolean"},
+                "base_ref": {"type": "string", "minLength": 1, "maxLength": 100}, "base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+                "merge_commit_sha": {"type": ["string", "null"]}
+              }
+            },
+            "closing_pr": {
+              "type": "object", "additionalProperties": false,
+              "required": ["number", "state", "draft", "merged", "base_ref", "base_sha", "head_sha", "merge_commit_sha"],
+              "properties": {
+                "number": {"type": "integer", "minimum": 1}, "state": {"enum": ["open", "closed"]}, "draft": {"type": "boolean"}, "merged": {"type": "boolean"},
+                "base_ref": {"type": "string", "minLength": 1, "maxLength": 100}, "base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "head_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+                "merge_commit_sha": {"type": ["string", "null"]}
+              }
+            },
+            "check": {
+              "type": "object", "additionalProperties": false, "required": ["name", "app_id", "status", "conclusion", "verdict", "sha", "referenced", "failed_step"],
+              "properties": {"name": {"type": "string", "minLength": 1, "maxLength": 200}, "app_id": {"type": ["integer", "null"]}, "status": {"enum": ["queued", "in_progress", "completed", "UNKNOWN"]}, "conclusion": {"type": ["string", "null"]}, "verdict": {"enum": ["PASS", "FAIL", "PENDING", "UNKNOWN"]}, "sha": {"type": ["string", "null"]}, "referenced": {"type": "boolean"}, "failed_step": {"type": ["string", "null"]}}
+            },
+            "delivery_valid": {"type": "boolean"},
+            "release_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+            "release_behind": {"type": "boolean"}
+          }
+        }
+      ]
+    },
+    "error": {"enum": ["rate_limited", "timeout", "deadline", "github_unavailable", "observation_invalid"]},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

@@ -4,13 +4,9 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 ## Current project state
 
-- M0 (Live Trust Authority) is delivered to `main`.
-- M0 runtime repair and policy-loop fixes are also merged into `main` through PR #7 and PR #6.
-- As observed on 2026-09-01 at protected `main` `8ab4e57038dec2e07f01aaa0b207813a387358f4`, the branch strictly requires `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114` on the exact up-to-date pull-request head.
-- M1 is implemented/reviewed in the accepted stack, but only its early slice and design/plan are on `main`; complete M1 delivery is partial. M2 and M3 are implemented/reviewed and merged into predecessor milestone branches by PRs #10 and #11, not delivered to `main`.
-- M4 is implemented locally, but PR #17 remains open with failed exact-head checks and its local branch is two commits ahead of the published head. Its latest local head therefore has stale review/external evidence.
-- M5-M9 are not started. The current work is consolidated delivery reconciliation for M1-M4; do not start M5 merely because a milestone branch exists.
-- PR #19 delivered the optional SEO side project to `main` as `8ab4e57038dec2e07f01aaa0b207813a387358f4`; it is non-milestone work and is no longer an open continuation item.
+- Mutable current SHA, PR, Check Run and delivery state are intentionally absent from this prose. Use the [External Observer runbook](engineering/runbooks/external-observer.md) for a coherent exact-subject `PUBLIC_STATUS.v1`; use the [latest release page](https://github.com/Dimkox/adaptive-grok-build-pro/releases/latest) for human discovery.
+- `PROJECT_STATE.json` is a historical claim snapshot. Its embedded facts and local receipts remain claims until exact equality and freshness are independently observed.
+- External Observer closeout precedes accepted M5; accepted M4 remains M5's delivery predecessor. The hard program deadline is 2026-09-04 23:59 UTC+3, but no schedule promotes provisional source into reviewed, delivered or released status.
 
 Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
 
@@ -24,8 +20,8 @@ Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
    - `mistakes.md`
    - `DARK_FACTORY_ROADMAP.md`
    - `README.md`
-2. Run `git fetch --all --prune` before reasoning about active branches or pull requests.
-3. Inspect `PROJECT_STATE.json`, then PRs #10, #11 and #17 with their exact base/head SHAs before continuing milestone delivery. Treat a merge into another milestone branch as stack integration, not delivery to `main`; do not start M5.
+2. Run the Observer with operator-owned config before reasoning about mutable branches or pull requests; do not copy a returned SHA back into prose as permanent current truth.
+3. Inspect `PROJECT_STATE.json` only as typed historical claims. Treat stack integration, protected-main delivery and release as separate stages; do not accept M5 before Observer closeout and accepted M4.
 4. If starting a different software-development task, create/resolve the local route first. `.grok-stack/runtime/active-route.json` is runtime state and may legitimately be absent in a fresh clone; do not fabricate it.
 5. Follow `AGENTS.md`: one write owner, route-selected analysis/review agents, local verification as evidence, pull-request-only delivery, and external Trust CI as merge authority.
 6. Never add GitHub Actions.
@@ -53,13 +49,13 @@ Before changing Trust CI behavior, read the current deployed-policy/holdout cons
 
 ## Current milestone delivery handoff
 
-Use one repository-level delivery ledger and one consolidated continuation route. Existing branches are evidence and integration inputs; their names, local `ready` files and GitHub `MERGED` labels do not prove protected-main delivery.
+Use the typed historical ledger as evidence input and the External Observer as the freshness projection. Branch names, local `ready` files, README prose and GitHub labels do not prove protected-main delivery.
 
-1. Preserve and deliver the accepted M2+M3 aggregate `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` through a clean current-main integration PR; this also carries the complete M1 source that is absent from `main`.
-2. Rebuild M4 as a clean successor from the delivered predecessor stack, using local `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06` only as source evidence. Do not claim PR #17 fixed or accepted: its published head is `8e6504168462bbabad359fec3d23838c87f5ba22` and its exact-head gates failed.
-3. Retain open PRs #12, #13, #15 and #17 plus the unresolved PR #14/local work identified in `PROJECT_STATE.json`; integrate, explicitly supersede or abandon them without silently losing unique work. PR #19 is already delivered and its predecessor staging path is archival.
-4. After every protected-main merge, fetch remote refs, update the one state model, and obtain fresh exact-head verification/approvals for any branch made stale by the base change.
-5. Begin M5 only after M1-M4 delivery state is reconciled and observable on `origin/main`. `milestone/a-plus-autopilot` is design input, not M8 implementation.
+1. Supply one operator-owned exact repository/main/current-PR/check/App configuration outside Git.
+2. Run `scripts/grok_observer.py observe`; retain `STALE`, `UNAVAILABLE`, `REFERENCED_NOT_VERIFIED` and `ATTESTATION_UNOBSERVABLE` exactly as emitted.
+3. Reconcile each historical claim against the returned exact subject without rewriting this bootstrap file with mutable values.
+4. After any head/main/check movement, rerun the Observer and obtain fresh exact-head Trust CI/approval evidence through the independently operated delivery path.
+5. Begin accepted M5 only after Observer closeout and accepted M4. Provisional source preparation remains non-acceptance.
 
 ## No chat dependency
 

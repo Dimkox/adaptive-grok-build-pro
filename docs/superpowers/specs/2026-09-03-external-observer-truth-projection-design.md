@@ -12,11 +12,11 @@ The repository ships a closed schema at `engineering/contracts/schemas/external-
 
 `PROJECT_STATE.json`, a future closed typed evidence manifest, and local verification/review receipts are claims, never remote facts or merge authority. Closed adapters normalize typed records; malformed, contradictory, stale, symlinked, oversized or SHA-mismatched claims become `mismatch`, `stale` or `unknown`, never success. Free-form README/START_HERE prose is not parsed as authority; during implementation their mutable current facts are replaced by observer links/run instructions, while any retained digest is informational only. `PROJECT_STATE.json` must label itself a historical claim/snapshot rather than current observation.
 
-All GitHub response strings are untrusted data. They are strict UTF-8 JSON with duplicate-key/non-finite rejection, closed types, bounded arrays/strings/body, normalized fixed errors and no raw-body persistence. Runtime state is ignored, regular-file/no-follow, atomically replaced under one lock, and contains only normalized public metadata, ETags if bounded, and digests.
+All GitHub response strings are untrusted data. They are strict UTF-8 JSON with duplicate-key/non-finite rejection, closed types, bounded arrays/strings/body, normalized fixed errors and no raw-body persistence. Runtime state is ignored, regular-file/no-follow, atomically replaced under one lock, and contains only normalized public metadata and digests.
 
 ## Read-only GitHub adapter
 
-The adapter accepts only HTTPS `api.github.com`, fixed repository-derived paths, `GET`, static public headers, no Authorization/cookies/userinfo/proxy, no redirects, no inline retry, 10 seconds per request, 90 seconds total, 1 MiB per body, four annotated-tag hops and at most 100 check runs/candidates. Allowed endpoint shapes are:
+The adapter accepts only HTTPS `api.github.com`, fixed repository-derived paths, `GET`, static public headers, no Authorization/cookies/userinfo/proxy, no redirects, no inline retry, at most 16 calls, 10 seconds per request, 90 seconds total, 1 MiB per body, four annotated-tag hops and at most 100 check runs/candidates. Allowed endpoint shapes are:
 
 - `/repos/{repo}/commits/{main}` and a final repeat of the same read;
 - `/repos/{repo}/pulls/{configured_number}` and a final repeat;
@@ -44,7 +44,7 @@ Implemented, reviewed, check-verified, delivered and released are independent ty
 
 ## Canonical output
 
-`PUBLIC_STATUS.v1` is a closed JSON object planned under `engineering/contracts/schemas/public-status.v1.schema.json`. It contains schema/version, configured subject digest, observation timestamps/age, snapshot status, remote main/PR/check/release identities and relations, typed claim projections, attestation visibility, source freshness, bounded fixed-code findings, and a canonical SHA-256 digest. Keys and arrays are sorted; the digest excludes itself and is computed over UTF-8 canonical JSON. The human renderer consumes the validated JSON object only, prints the digest and every stage independently, and cannot refetch or reinterpret facts.
+`PUBLIC_STATUS.v1` is a closed JSON object under `engineering/contracts/schemas/public-status.v1.schema.json`. It contains schema/version, configured subject digest, observation timestamps/age, snapshot status, remote main/PR/check/release identities and relations, typed claim projections, attestation visibility, source freshness, bounded fixed-code findings, and a canonical SHA-256 digest. Keys and arrays are sorted; the digest excludes itself and is computed over UTF-8 canonical JSON. The human renderer consumes the validated JSON object only, prints the digest and every stage independently, and cannot refetch or reinterpret facts.
 
 ## Failure, recovery and rollout
 

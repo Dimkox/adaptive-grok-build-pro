@@ -19,11 +19,17 @@
       "from": "scoped",
       "reason": "route has no named human gate; docs-first design and executable plan approved for later TDD",
       "to": "approved"
+    },
+    {
+      "at": "2026-09-03T13:58:16+00:00",
+      "from": "approved",
+      "reason": "docs-only contract frozen at 97c2144",
+      "to": "implementing"
     }
   ],
   "route_id": "b8592fb2815a",
   "schema_version": 1,
-  "status": "approved",
+  "status": "implementing",
   "title": "External Observer truth projection v1",
-  "updated_at": "2026-09-03T13:49:47+00:00"
+  "updated_at": "2026-09-03T13:58:16+00:00"
 }

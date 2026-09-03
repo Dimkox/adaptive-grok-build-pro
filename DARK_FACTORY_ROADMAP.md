@@ -196,7 +196,8 @@ M0 Live Trust Authority
 
 M1 + M2 + M3
  └──→ M4 Durable Factory Control Plane
-       └──→ M5 Isolated Execution Plane
+       └──→ External Observer / Truth Projection
+             └──→ M5 Isolated Execution Plane
              └──→ M6 Semantic Validation and Repair
                    └──→ M7 Automated PR Lifecycle and Shadow Mode
                          └──→ M8 Earned Low-Risk Autonomy
@@ -204,6 +205,8 @@ M1 + M2 + M3
 ```
 
 Milestones M1, M2, and M3 may be developed in parallel only after M0 has a live proof or an explicitly documented bootstrap exception approved by the user. M4 must consume their stable interfaces rather than inventing replacements.
+
+The Observer is a separate read-only truth projection, not Factory or Trust CI authority. Program deadline is **2026-09-04 23:59 UTC+3**; implementation, review, delivery, release and activation remain distinct even under the compressed schedule.
 
 ---
 

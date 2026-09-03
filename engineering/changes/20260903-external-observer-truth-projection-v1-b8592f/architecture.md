@@ -26,13 +26,15 @@ No edge to Factory, M5 execution, Trust CI mutation, approvals, signing, deploym
 
 1. Validate closed config and bounded local claims; compute their canonical digests.
 2. Acquire the observer lock before network/state work.
-3. Read main and the exact configured PR, then exact-head checks, newest qualifying release/tag chain and required compare relations.
+3. Use at most 16 fixed GET calls to read main and the exact configured PR, then exact-head checks, newest qualifying release/tag chain and required compare relations.
 4. Reread main and PR; any identity movement rejects coherent freshness.
 5. Compute independent stage projections and stable findings, validate `PUBLIC_STATUS.v1`, atomically persist normalized public state, and render text only from that validated object.
 
 Exact equality establishes claim identity; a compare fixture matching the real REST shape (`status`, counts, `base_commit`, `merge_base_commit`, bounded `commits`) establishes ancestry or `release_behind` against the requested base/head identities. The exact PR endpoint is delivery authority for the configured proposal; list endpoints cannot establish absence/delivery. Historical milestone records remain claimed evidence with freshness metadata.
 
-## Planned contracts
+The projection exposes main, configured PR/head, reviewed SHA, exact Check SHA/verdict, release SHA and evidence freshness as independent top-level axes. Stale local claims may make the overall projection stale but never erase a coherently observed public Check failure/pending verdict or PR state.
+
+## Contracts
 
 - `engineering/contracts/schemas/external-observer-config.v1.schema.json`: closed subject, identity and bounds.
 - `engineering/contracts/schemas/public-status.v1.schema.json`: closed projection, stages, remote identities, freshness, stable findings and digest.

@@ -65,3 +65,7 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 ## 2026-09-03 — Hand-authored mutable facts as current truth
 
 **Root cause:** Mutable PR, SHA and milestone facts were copied into current-state prose and JSON without a freshness invariant or coherent remote snapshot. Treat repository status surfaces as historical claims and derive current truth through the separate bounded Observer; never promote a claim by repetition.
+
+## 2026-09-03 — Planned time used as event evidence
+
+**Root cause:** A scheduled implementation time was manually copied into `state.json` as an observed transition timestamp without consulting the system clock. State transitions must use the actual current UTC emitted by the change CLI or checked immediately before an unavoidable manual edit.

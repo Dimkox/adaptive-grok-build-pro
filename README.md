@@ -4,19 +4,15 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## Current state
 
-- Fresh-agent bootstrap: start with [`START_HERE.md`](START_HERE.md), then [`PROJECT_STATE.json`](PROJECT_STATE.json). A clean clone must be sufficient to understand the current milestone without chat history.
-- Identity: **2.0.12** (`VERSION`, README H1). Published GitHub Release is `v2.0.12`.
+- Fresh-agent bootstrap starts with [`START_HERE.md`](START_HERE.md). [`PROJECT_STATE.json`](PROJECT_STATE.json) is explicitly a historical claim snapshot, not a live status feed.
+- Source identity: **2.0.12** (`VERSION`, README H1). Published-release truth is read from the [latest release endpoint](https://github.com/Dimkox/adaptive-grok-build-pro/releases/latest), not duplicated here.
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 - Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
 - Independent Trust CI: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
-- M0 Live Trust Authority is delivered on `main`. PR #7 repaired the Trust CI workspace/runtime path, PR #6 fixed target-aware shell policy/denial loops, and PR #5 delivered the milestone.
-- Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.12`. As observed on 2026-09-01 at protected `main` `8ab4e57038dec2e07f01aaa0b207813a387358f4`, the branch strictly requires `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`; the deployed full policy digest is `06ecf1c875bc12fa696956998983e04b102f28571a586bc3bb7a2fff5083fdb2`.
-- M1 is implemented and reviewed in the accepted stack, but only its early typed-spec slice and design/plan reached `main` through PRs #4 and #8. The full M1/M2 head passed the current-epoch gate and PR #10 merged it only into `milestone/m1-typed-intent-evidence`, so M1 delivery remains partial and M2 is not delivered to `main`.
-- M3 is implemented and reviewed; PR #11 merged it into `milestone/m2-executable-architecture`, not `main`. The accepted M2+M3 aggregate is `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` and still needs one current-main delivery path.
-- M4 is implemented locally through `cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06`, but its latest complete review set covers product head `f82134de35e531a8b3bbf235ad480254ba40f1fe`. Published PR #17 remains open at `8e6504168462bbabad359fec3d23838c87f5ba22` with failed Trust CI and GitGuardian checks; M4 is neither stack-merged nor delivered.
-- M5-M9 are roadmap-only and not started. Do not begin M5 until the accepted M1-M3 source and a clean M4 successor are delivered from current protected `main`; [`PROJECT_STATE.json`](PROJECT_STATE.json) inventories the active, open, unresolved, and superseded work.
+- Mutable main SHA, PR, Check Run and milestone delivery facts are deliberately not hand-authored here. Run the [External Observer](engineering/runbooks/external-observer.md) against an operator-owned exact subject, or inspect the [latest GitHub release](https://github.com/Dimkox/adaptive-grok-build-pro/releases/latest); treat local receipts and historical files as claims until the observer establishes freshness.
+- The Observer is the truth-projection gate ahead of accepted M5. The dependency remains accepted M4 → M5 → M6 → M7 → M8 → M9; the hard deadline is **2026-09-04 23:59 UTC+3**, but source preparation does not imply review, delivery, release or activation.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
-- Optional SEO side project: PR #19 delivered it to `main` as `8ab4e57038dec2e07f01aaa0b207813a387358f4`; [`.agents/skills/seo-landing/`](.agents/skills/seo-landing/) provides repository-scoped `$seo-landing` generation/audit/fix modes, while [`side-projects/seo-landing-showcase/`](side-projects/seo-landing-showcase/) is its Russian static showcase and stays non-indexable until a production origin is supplied. This is delivered non-milestone work, not M0-M9 progress.
+- Optional SEO side project source remains under [`.agents/skills/seo-landing/`](.agents/skills/seo-landing/) and [`side-projects/seo-landing-showcase/`](side-projects/seo-landing-showcase/); historical delivery claims live in `PROJECT_STATE.json`, not this current-state prose.
 
 ## Read first
 
@@ -94,6 +90,7 @@ graph TD
   Runner["isolated runner"]
   Holdout["external holdout"]
   GitHubApp["GitHub App Checks"]
+  Observer["External Observer"]
   Route --- Skills
   Route --- Agents
   Route --- Hooks
@@ -214,6 +211,22 @@ graph TD
   Runner --- Holdout
   Runner --- GitHubApp
   Holdout --- GitHubApp
+  Route --- Observer
+  Skills --- Observer
+  Agents --- Observer
+  Hooks --- Observer
+  Policy --- Observer
+  Verify --- Observer
+  Packages --- Observer
+  Contract --- Observer
+  Decisions --- Observer
+  Mistakes --- Observer
+  TrustAPI --- Observer
+  TrustWorker --- Observer
+  Postgres --- Observer
+  Runner --- Observer
+  Holdout --- Observer
+  GitHubApp --- Observer
 ```
 
 | Node | Role |
@@ -234,6 +247,7 @@ graph TD
 | Runner | Isolated no-network runner container; `policy.sandbox.image` must equal `TRUST_CI_RUNNER_IMAGE` |
 | Holdout | External digest-pinned bundle, outside the PR checkout |
 | GitHubApp | App-owned Checks `adaptive-trust-ci/verified@<policy-sha12>` bound to the App ID |
+| Observer | Separate read-only `scripts/grok_observer.py`; emits `PUBLIC_STATUS.v1`, never follows Check details or gains delivery authority |
 
 oneshots `migrate` / `runner-loader` reuse API/worker images; privileged rootless DinD is an execution edge of Runner.
 
@@ -311,6 +325,7 @@ Local loop: route → change → verify → independent reviews → `ready` → 
 | `scripts/grok_route.py` | Classify / show route |
 | `scripts/grok_change.py` | Start durable local change package |
 | `scripts/grok_status.py` | Local runtime status |
+| `scripts/grok_observer.py` | Read-only configured public-truth projection; see `engineering/runbooks/external-observer.md` |
 | `scripts/grok_verify.py` | Local verification preflight (unittest, Ruff, Bandit, measured coverage in `pr`/`release`) |
 | `scripts/grok_review.py` | Record local review receipt |
 | `scripts/grok_approve.py` | Delegated local action/resource grant bound to repository, route, change, exact HEAD and tree fingerprint; not accepted by Trust CI |

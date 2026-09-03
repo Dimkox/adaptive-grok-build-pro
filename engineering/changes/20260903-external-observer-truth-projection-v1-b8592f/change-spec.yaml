@@ -16,17 +16,17 @@ acceptance_criteria:
     statement: EO-001 closed operator subject and bounds config with placeholder-only repository example
     evidence:
       - kind: test
-        ref: tests/test_external_observer_contracts.py
+        ref: tests/test_external_observer.py
   - id: AC-002
     statement: EO-002 PROJECT_STATE typed manifest and receipts remain exact-bound claims while free-form README has no authority
     evidence:
       - kind: test
-        ref: tests/test_external_observer_claims.py
+        ref: tests/test_external_observer.py
   - id: AC-003
     statement: EO-003 PUBLIC_STATUS.v1 JSON digest and human rendering are closed canonical deterministic and stage-separated
     evidence:
       - kind: test
-        ref: tests/test_external_observer_contracts.py
+        ref: tests/test_external_observer.py
   - id: AC-004
     statement: EO-004 opening and closing main and configured PR identities must match for fresh exact-equality projection
     evidence:
@@ -46,22 +46,22 @@ acceptance_criteria:
     statement: EO-007 only exact configured PR merge plus merge-commit ancestry proves current delivery and historical milestones remain claims
     evidence:
       - kind: test
-        ref: tests/test_external_observer_claims.py
+        ref: tests/test_external_observer.py
   - id: AC-008
     statement: EO-008 transport is fixed HTTPS GitHub GET only with strict parsing body cardinality redirect proxy and deadline bounds
     evidence:
       - kind: test
-        ref: tests/test_external_observer_transport.py
+        ref: tests/test_external_observer.py
   - id: AC-009
     statement: EO-009 state is atomic locked no-follow bounded and first failure unavailable while later failure is stale
     evidence:
       - kind: test
-        ref: tests/test_external_observer_state.py
+        ref: tests/test_external_observer.py
   - id: AC-010
     statement: EO-010 observer is a separate nonprivileged read-only domain with no controller Factory Trust production or external-write edge and unobservable attestation remains explicit
     evidence:
       - kind: test
-        ref: tests/test_architecture_model.py
+        ref: tests/test_structure.py
       - kind: receipt
         ref: security_review
 invariants:
@@ -69,12 +69,12 @@ invariants:
     statement: No stage implies another and every positive fact binds exact SHA digest and freshness evidence
     evidence:
       - kind: test
-        ref: tests/test_external_observer_claims.py
+        ref: tests/test_external_observer.py
   - id: INV-002
     statement: Tests use fake transport only and runtime never performs GitHub write Git subprocess credential read or raw-body persistence
     evidence:
       - kind: test
-        ref: tests/test_external_observer_transport.py
+        ref: tests/test_external_observer.py
       - kind: receipt
         ref: security_review
   - id: INV-003
@@ -92,18 +92,19 @@ forbidden_outcomes:
     statement: SHA inequality list discovery README prose or local receipt alone is reported as fresh delivered released or signature verified
     evidence:
       - kind: test
-        ref: tests/test_external_observer_claims.py
+        ref: tests/test_external_observer.py
   - id: FORBID-003
     statement: GitHub Actions arbitrary URLs unbounded payloads secrets raw external text or tracked automatic state mutation enter the tree or output
     evidence:
       - kind: test
-        ref: tests/test_external_observer_transport.py
+        ref: tests/test_external_observer.py
       - kind: receipt
         ref: code_review
 contracts:
   openapi: []
   json_schema:
     - engineering/contracts/schemas/external-observer-config.v1.schema.json
+    - engineering/contracts/schemas/external-observer-evidence.v1.schema.json
     - engineering/contracts/schemas/public-status.v1.schema.json
   events: []
 observability:

@@ -1,0 +1,10 @@
+{
+  "milestones": [
+    {
+      "claim_status": "historical_evidence_claimed",
+      "id": "M0"
+    }
+  ],
+  "schema_version": 1,
+  "snapshot_kind": "historical_claims"
+}

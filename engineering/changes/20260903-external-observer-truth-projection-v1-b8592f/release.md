@@ -2,7 +2,7 @@
 
 ## Rollout boundary
 
-Phase 1 delivers only reviewed documentation on an isolated branch. Future implementation is source-first: fake tests, manual local CLI, optional inert service source, then a separately authorized operator installation. No automatic install/enable, external write, PR/push/merge/release, Factory/M5 activation, Trust CI or production action is included.
+The local implementation candidate contains fake-only tests, a manual local CLI, closed contracts and an inert operator runbook. It is not yet full-verifier/review complete, externally accepted or activated. No automatic install/enable, external write, PR/push/merge/release, Factory/M5 activation, Trust CI or production action is included.
 
 V1 anonymous GitHub reads are best-effort and not enterprise-reliable: the shared-IP quota is currently exhausted at 60/60, so rate limiting must emit `rate_limited` plus unavailable/stale truth. A future authenticated adapter is Phase 2+ and requires separate security review: only a separately provisioned Observer read-only credential/App with metadata/contents/pull_requests/checks read scopes, server-mounted outside the repository. It must never reuse the Trust CI checks-write token or gain write scopes.
 

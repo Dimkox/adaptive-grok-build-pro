@@ -19,6 +19,7 @@ CANONICAL_GRAPH_NODES = {
     "Route", "Skills", "Agents", "Hooks", "Policy", "Verify", "Packages", "Contract",
     "Decisions", "Mistakes", "TrustAPI", "TrustWorker", "Postgres", "Runner", "Holdout",
     "GitHubApp",
+    "Observer",
 }
 
 
@@ -43,8 +44,9 @@ def _assert_readme_graph(test: unittest.TestCase, readme: str) -> None:
     expected = {tuple(sorted(pair)) for pair in itertools.combinations(CANONICAL_GRAPH_NODES, 2)}
     test.assertEqual(role_nodes, CANONICAL_GRAPH_NODES)
     test.assertEqual(nodes, role_nodes)
-    test.assertEqual(len(edges), 120)
-    test.assertEqual(len(set(edges)), 120)
+    expected_count = len(list(itertools.combinations(CANONICAL_GRAPH_NODES, 2)))
+    test.assertEqual(len(edges), expected_count)
+    test.assertEqual(len(set(edges)), expected_count)
     test.assertEqual(set(edges), expected)
 
 
@@ -208,7 +210,7 @@ class ProjectStateTests(unittest.TestCase):
             ],
         )
 
-    def test_current_epoch_and_app_are_consistent_in_handoff_documents(self) -> None:
+    def test_mutable_epoch_and_app_remain_historical_not_current_prose(self) -> None:
         trust = self.state["trust_ci"]
         self.assertEqual(trust["required_check"], CURRENT_CHECK)
         self.assertEqual(trust["github_app_id"], CURRENT_APP_ID)
@@ -217,15 +219,15 @@ class ProjectStateTests(unittest.TestCase):
             _section((ROOT / "START_HERE.md").read_text(encoding="utf-8"), "Current project state"),
         )
         for section in current_sections:
-            self.assertIn(CURRENT_CHECK, section)
-            self.assertIn(str(CURRENT_APP_ID), section)
-            self.assertIn(CURRENT_MAIN_SHA, section)
+            self.assertNotIn(CURRENT_CHECK, section)
+            self.assertNotIn(str(CURRENT_APP_ID), section)
+            self.assertNotIn(CURRENT_MAIN_SHA, section)
+            self.assertIn("Observer", section)
             self.assertNotIn("adaptive-trust-ci/verified@6737355947c2", section)
 
         start_here = (ROOT / "START_HERE.md").read_text(encoding="utf-8")
-        self.assertIn("PR #19", start_here)
-        self.assertIn("delivered", start_here)
-        self.assertNotRegex(start_here, r"open PRs[^.;\n]*#19")
+        self.assertIn("historical claim snapshot", start_here)
+        self.assertIn("scripts/grok_observer.py", start_here)
 
     def test_work_inventory_preserves_open_and_unresolved_continuation_work(self) -> None:
         inventory = self.state["work_inventory"]
