@@ -39,3 +39,15 @@ Focused GREEN command:
 `python3 -m unittest tests.test_hooks tests.test_policy tests.test_pre_tool_circuit_breaker tests.test_protected_write_hook tests.test_policy_shell_targets -v`
 
 Result: 55/55 passed in 20.588 seconds. State remains `verifying`; no package, factory, documentation or external state changed in this source-only follow-up. The prior artifact pair must be rebuilt from the resulting source commit before final exact-head review and verification.
+
+## Execution-wrapper composition follow-up
+
+Targeted parser audit of artifact head `3a10376928f18eb57454ffed584382930ebb84b4` found another classifier/root-composition gap: production executables behind option-bearing execution wrappers were neither classified nor marked as ambiguous root evidence. Initial hook-level RED recorded 15 unsafe `allow` results: eight no-grant production forms using `nice -n`, `time -p`, `nohup --`, `command --`, `timeout`, `setsid`, `xargs -a` and `chroot`, plus seven wrapper-hidden cross-root `git -C` forms that borrowed repository A's grant. The seven benign wrapped `git status` controls remained allowed.
+
+The minimal repair introduces one bounded literal wrapper grammar shared by classification and root resolution. Cwd-neutral `nice`, `time`, `nohup`, `command`, `timeout` and `setsid` forms expose the underlying executable, so production classification and `git -C` binding both apply. Unsupported wrapper options, root-changing unknown prefixes and displaced sensitive executables become explicit ambiguous command evidence. `xargs` is deliberately not authority-transparent because arguments loaded from stdin or `-a` can change the Git push action; even a same-root branch-push grant cannot authorize it. A strengthened grant-bearing `chroot` regression likewise proves an unknown root-changing prefix cannot borrow the session repository's grant. Ordinary supported wrapped reads remain soft.
+
+Focused GREEN command:
+
+`python3 -m unittest tests.test_hooks tests.test_policy tests.test_pre_tool_circuit_breaker tests.test_protected_write_hook tests.test_policy_shell_targets -v`
+
+Result: 57/57 passed in 23.593 seconds. The active state remains `verifying`; this follow-up changes only hook/policy source, focused tests and this report. Package ZIP/sidecar, factory, delivery state and external systems were not changed. The tracked package must be rebuilt from the resulting source commit before final exact-head review and verification.

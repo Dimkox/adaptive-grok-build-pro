@@ -15,6 +15,10 @@ STACK = REPO_CANDIDATE / '.grok-stack'
 if str(STACK) not in sys.path:
     sys.path.insert(0, str(STACK))
 
+from adaptive_grok._policy_legacy import (
+    _contains_embedded_sensitive_command,
+    _unwrap_execution_wrappers,
+)
 from adaptive_grok.util import find_root
 
 TOOL_ALIASES = {
@@ -130,8 +134,17 @@ def _command_directory_aliases(command: str, *, depth: int = 0) -> dict[str, str
             aliases['command.wrapper-options'] = '<ambiguous>'
             return aliases
         words = words[1:]
-    while words and words[0].lower() in {'command', 'time', 'nohup', 'nice'}:
-        words = words[1:]
+    words, ambiguous_wrapper = _unwrap_execution_wrappers(words)
+    if ambiguous_wrapper:
+        aliases['command.wrapper-options'] = '<ambiguous>'
+        return aliases
+    if _contains_embedded_sensitive_command(words) and (
+        not words
+        or Path(words[0]).name.lower()
+        not in {'cd', 'pushd', 'git', 'gh', 'docker', 'npm', 'curl', 'wget'}
+    ):
+        aliases['command.displaced-sensitive-executable'] = '<ambiguous>'
+        return aliases
     if any(word in {'eval', 'source', '.'} for word in words):
         aliases['command.dynamic-shell'] = '<ambiguous>'
         return aliases

@@ -408,6 +408,77 @@ class HookTests(unittest.TestCase):
                 })
                 self.assertEqual(data['decision'], 'allow', (command, error, data))
 
+    def test_execution_wrappers_cannot_hide_production_actions(self) -> None:
+        with project_copy(git=True) as session_root:
+            commands = (
+                'nice -n 10 git push origin feature',
+                'time -p git push origin feature',
+                'nohup -- git push origin feature',
+                'command -- git push origin feature',
+                'timeout 10 git push origin feature',
+                'setsid git push origin feature',
+                'xargs -a commands.txt git push origin feature',
+                'chroot / git push origin feature',
+            )
+            for index, command in enumerate(commands):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                        'cwd': str(session_root),
+                        'session_id': f'execution-wrapper-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'deny', (command, error, data))
+
+    def test_execution_wrappers_preserve_root_binding_and_benign_reads(self) -> None:
+        with project_copy(git=True) as session_root, project_copy(git=True) as other_root:
+            self._grant(session_root, 'production', actions=['git-push-branch'])
+            for index, command in enumerate((
+                f'nice -n 10 git -C {other_root} push origin feature',
+                f'time -p git -C {other_root} push origin feature',
+                f'nohup -- git -C {other_root} push origin feature',
+                f'command -- git -C {other_root} push origin feature',
+                f'timeout 10 git -C {other_root} push origin feature',
+                f'setsid git -C {other_root} push origin feature',
+                f'xargs -a commands.txt git -C {other_root} push origin feature',
+                f'chroot {other_root} git push origin feature',
+            )):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                        'cwd': str(session_root),
+                        'session_id': f'wrapped-cross-root-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'deny', (command, error, data))
+
+            _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                'cwd': str(session_root),
+                'session_id': 'xargs-same-root-grant',
+                'tool_name': 'Bash',
+                'tool_input': {'command': 'xargs -a commands.txt git push origin feature'},
+            })
+            self.assertEqual(data['decision'], 'deny', (error, data))
+            self.assertIn('ambiguous-sensitive-shell', data['reason'])
+
+            for index, command in enumerate((
+                'nice -n 10 git status --short',
+                'time -p git status --short',
+                'nohup -- git status --short',
+                'command -- git status --short',
+                'timeout 10 git status --short',
+                'setsid git status --short',
+                'xargs -a commands.txt git status --short',
+            )):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                        'cwd': str(session_root),
+                        'session_id': f'wrapped-read-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'allow', (command, error, data))
+
     def test_subagent_lifecycle_is_recorded(self) -> None:
         with project_copy() as root:
             route = build_route(root, 'Исправить PHP баг', 's1').to_dict()

@@ -46,6 +46,7 @@ DESTRUCTIVE_COMMANDS = [
 ]
 _COMMAND_SPLIT = re.compile(r'(?:&&|\|\||[;|\n])')
 _WRAPPERS = {'sudo', 'doas', 'command', 'time', 'nohup', 'nice'}
+_EXECUTION_WRAPPERS = {'command', 'nice', 'nohup', 'setsid', 'time', 'timeout'}
 _UNWRAP_SHELL = re.compile(
     r'''^\s*(?:(?:sudo|doas)\s+)?(?:/(?:usr/)?bin/)?(?:bash|sh|zsh|dash|ksh)\s+-\S*c\S*\s+(?P<rest>.+?)\s*$''',
     re.IGNORECASE | re.VERBOSE | re.DOTALL,
@@ -167,6 +168,55 @@ def _command_chunks(command: str) -> list[str]:
     return [part for part in _COMMAND_SPLIT.split(command) if part.strip()]
 
 
+def _unwrap_execution_wrappers(tokens: list[str]) -> tuple[list[str], bool]:
+    """Return a command behind a small literal wrapper grammar, or flag unsafe syntax."""
+    remaining = list(tokens)
+    for _depth in range(8):
+        if not remaining:
+            return [], True
+        wrapper = Path(remaining[0]).name.lower()
+        if wrapper not in _EXECUTION_WRAPPERS:
+            return remaining, False
+        index = 1
+        if wrapper == 'nice':
+            while index < len(remaining):
+                option = remaining[index]
+                if option == '--':
+                    index += 1
+                    break
+                if option in {'-n', '--adjustment'}:
+                    if index + 1 >= len(remaining):
+                        return [], True
+                    index += 2
+                    continue
+                if option.startswith('--adjustment='):
+                    index += 1
+                    continue
+                if option.startswith('-'):
+                    return [], True
+                break
+        elif wrapper == 'time':
+            while index < len(remaining) and remaining[index] == '-p':
+                index += 1
+            if index < len(remaining) and remaining[index] == '--':
+                index += 1
+            elif index < len(remaining) and remaining[index].startswith('-'):
+                return [], True
+        elif wrapper in {'command', 'nohup', 'setsid'}:
+            if index < len(remaining) and remaining[index] == '--':
+                index += 1
+            elif index < len(remaining) and remaining[index].startswith('-'):
+                return [], True
+        elif wrapper == 'timeout':
+            if index < len(remaining) and remaining[index] == '--':
+                index += 1
+            if index >= len(remaining) or remaining[index].startswith('-'):
+                return [], True
+            index += 1  # duration
+        remaining = remaining[index:]
+    return [], True
+
+
 def _leading_argv(chunk: str) -> list[str]:
     stripped = chunk.split('#', 1)[0].strip()
     try:
@@ -183,8 +233,9 @@ def _leading_argv(chunk: str) -> list[str]:
         )
         if command_index is not None:
             tokens = tokens[command_index:]
-    while tokens and tokens[0].lower() in _WRAPPERS:
-        tokens = tokens[1:]
+    tokens, ambiguous_wrapper = _unwrap_execution_wrappers(tokens)
+    if ambiguous_wrapper:
+        return []
     if tokens:
         tokens[0] = Path(tokens[0]).name
     return [token.lower() for token in tokens]
@@ -273,6 +324,18 @@ def _http_write_resource(command: str) -> str | None:
         return None
     match = _HTTP_URL.search(command)
     return match.group(0) if match else 'direct-http-write'
+
+
+def _contains_embedded_sensitive_command(tokens: list[str]) -> bool:
+    """Conservatively detect a sensitive executable displaced by an unknown prefix."""
+    for index, token in enumerate(tokens):
+        executable = Path(token).name.lower()
+        suffix = [executable, *[item.lower() for item in tokens[index + 1:]]]
+        if executable in {'git', 'gh', 'docker', 'npm'} and _production_action(suffix):
+            return True
+        if executable in {'curl', 'wget', 'gh'} and _http_write_resource(shlex.join(tokens[index:])):
+            return True
+    return False
 
 
 def _agent_type(tool_input: Any) -> str | None:
