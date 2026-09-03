@@ -2,7 +2,7 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-03T08:41:53Z",
+  "observed_at": "2026-09-03T09:49:36Z",
   "observed_main_sha": "78ad2f679d38dc3244e716c586332417e610089c",
   "product_version": "2.0.13",
   "latest_published_release": "v2.0.12",
@@ -25,11 +25,11 @@
     "route_id": "37b05f579320",
     "branch": "milestone/m5-successor-05-runtime-recovery",
     "change_package": "engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f",
-    "status": "m5_successor_05_runtime_in_progress",
+    "status": "m5_successor_05_restart_proof_passed_source_in_progress",
     "highest_implemented_milestone": "M4",
     "current_provisional_milestone": "M5",
     "next_roadmap_milestone": "M5",
-    "next_action": "Finish and independently verify successor 05 runtime recovery/v2 on exact predecessor 27b0ae6, then put inert systemd/installer/final documentation in bounded successor 06 if required by the change budget. Keep every successor stacked on its immediate predecessor. Bring M4 documentation/package parity into a final descendant, verify and review that exact descendant, and only then consider a separately authorized PR update and fresh external exact-head Trust CI result; no M4 or M5 delivery is claimed.",
+    "next_action": "Run final exact-head successor-05 verification/reviews on product checkpoint 3940267 and preserve it on exact predecessor 27b0ae6; then put inert systemd/installer/configuration/final documentation in bounded successor 06. Keep every successor stacked on its immediate predecessor. Bring M4 documentation/package parity into a final descendant, verify and review that exact descendant, and only then consider a separately authorized PR update and fresh external exact-head Trust CI result; no M4 or M5 delivery is claimed.",
     "m4_dimensions": {
       "implementation_source": {
         "status": "local_hotfix_candidate_unpublished",
@@ -74,7 +74,7 @@
       "current_slice": {
         "index": 5,
         "total": 6,
-        "status": "runtime_recovery_v2_in_progress",
+        "status": "runtime_recovery_v2_restart_proof_passed_final_verification_pending",
         "scope": [
           "additive_execution_openapi_v2",
           "atomic_resumable_terminal_completion",
@@ -83,9 +83,9 @@
         ],
         "predecessor_head": "27b0ae619cacf0d9ddeed15c60212800ff6009ca",
         "predecessor_tree": "1a4e3f87da8a12e173a81e66b53f5fc21cb241c6",
-        "implementation_checkpoint": "5073fc05013d1d40c99f22d48db5dd3d4d8c4b87",
-        "implementation_tree": "54c2d08310b03504528e24331c39a94161ae0136",
-        "worktree_status": "clean_runtime_checkpoint_pending_restart_probe",
+        "implementation_checkpoint": "3940267ac5754ad07a047894102015d33eb759b1",
+        "implementation_tree": "4646582a7c5ff6f08ee7e8462687da400459b08d",
+        "worktree_status": "product_checkpoint_committed_with_documentation_rebind",
         "package_status": "not_created_for_source_slice"
       },
       "local_verification": {
@@ -93,18 +93,21 @@
         "architecture": "validate_drift_and_diagram_parity_passed",
         "architecture_tests": "60/60 passed",
         "architecture_fitness_tests": "88/88 passed",
-        "runtime_pure_factory_tests": "263 discovered: 149 passed and 114 PostgreSQL skips",
+        "runtime_pure_factory_tests": "historical 5073fc0 checkpoint: 263 discovered, 149 passed and 114 PostgreSQL skips",
         "runtime_structure_tests": "17/17 passed",
-        "notes": "Successor 04 is clean and independently reviewed. Successor 05 remains work in progress: its new PostgreSQL restart proof, systemd source topology, final exact-head verification and completion reviews are not yet complete."
+        "runtime_disposable_postgresql_17": "273 tests run: 272 passed and 1 expected fresh-cluster test skipped in 221.516 seconds; two actual restarts and the M5 recovery probe passed",
+        "restart_harness_session_feedback": "session-level test and security reviewers reported no open P0/P1 on the frozen harness and live run, but no repository report or route receipt binds successor-05 completion",
+        "notes": "Successor 04 is clean and its local tests/fitness pass, but session-level reviewer feedback has no checked-in report or route receipt. Successor 05 has an exact committed two-restart source proof at 3940267, but final exact-head grok verification and repository-bound completion reviews/receipts are not yet recorded; systemd/configuration/installer work remains successor 06 scope."
       },
       "successor_map": [
         "successor_04_contract_enrollment_and_bounded_comparator_frozen_at_27b0ae6",
-        "successor_05_runtime_recovery_and_additive_v2_in_progress_on_27b0ae6",
-        "successor_06_inert_systemd_installer_and_final_docs_if_required_by_budget"
+        "successor_05_runtime_recovery_additive_v2_and_restart_proof_at_3940267_on_27b0ae6",
+        "successor_06_inert_systemd_installer_configuration_and_final_docs_pending"
       ],
       "blocked_final_gates": [
         "m4_current_candidate_external_exact_head_recheck",
-        "m5_actual_postgresql_restart_recovery_probe",
+        "m5_successor_05_final_exact_head_verifier_and_completion_reviews",
+        "m5_inert_systemd_installer_and_configuration_parity",
         "trusted_rootless_workspace_snapshot_broker",
         "live_os_credential_and_egress_isolation"
       ],
@@ -323,19 +326,19 @@
     },
     "M5": {
       "implementation": {
-        "status": "provisional_successor_05_runtime_in_progress",
-        "commit": "5073fc05013d1d40c99f22d48db5dd3d4d8c4b87",
-        "tree": "54c2d08310b03504528e24331c39a94161ae0136",
+        "status": "provisional_successor_05_restart_proof_passed",
+        "commit": "3940267ac5754ad07a047894102015d33eb759b1",
+        "tree": "4646582a7c5ff6f08ee7e8462687da400459b08d",
         "evidence": "milestone/m5-successor-05-runtime-recovery",
         "frozen_predecessor": "27b0ae619cacf0d9ddeed15c60212800ff6009ca",
         "frozen_predecessor_tree": "1a4e3f87da8a12e173a81e66b53f5fc21cb241c6",
-        "notes": "Successor 04 contract enrollment/comparator is clean and frozen. Successor 05 has a coherent runtime checkpoint with additive v2, recovery migration 017 and terminal completion; the actual M5 restart probe and inert systemd source topology remain open."
+        "notes": "Successor 04 contract enrollment/comparator is clean and frozen. Successor 05 now has additive v2, recovery migration 017, atomic terminal completion and a committed self-contained PostgreSQL-17 two-restart recovery proof. Final exact-head verification/receipts and successor-06 inert systemd/installer/configuration parity remain open."
       },
       "review": {
-        "status": "successor_04_pass_runtime_in_progress",
-        "commit": "27b0ae619cacf0d9ddeed15c60212800ff6009ca",
+        "status": "successor_05_exact_head_review_pending",
+        "commit": null,
         "evidence": [],
-        "notes": "Independent successor-04 comparator/security review passed at 2026-09-03 11:02:56 UTC+3. Successor 05 has partial focused review only and no final fingerprint-bound completion receipts."
+        "notes": "Session-level comparator/security feedback exists for successor 04 and test/security feedback reported no open P0/P1 on the successor-05 restart harness and live run. Neither successor has a checked-in review report or route receipt; exact-head completion review remains pending."
       },
       "stack_integration": {
         "status": "bounded_stacked_successors_in_progress",
@@ -345,8 +348,8 @@
         "merge_commit": null,
         "successors": [
           "04 contract enrollment/comparator: frozen 27b0ae6",
-          "05 runtime recovery/additive v2: in progress on 27b0ae6",
-          "06 inert systemd/installer/final docs: pending if budget split is required"
+          "05 runtime recovery/additive v2/two-restart proof: committed 3940267 on 27b0ae6; final exact-head verification pending",
+          "06 inert systemd/installer/configuration/final docs: pending"
         ],
         "notes": "Every successor must use its immediate predecessor as PR base. Cumulative 9727bc3 to 27b0ae6 fails only bounded architecture change size (1,146,419 bytes and 16,007 lines), so a squash/cumulative PR is prohibited."
       },
@@ -359,29 +362,29 @@
       }
     },
     "M6": {
-      "implementation": {"status": "provisional_task3_source", "commit": "f3b2c0d07116686b27feab4b60166e8a7402d672", "task1_head": "3def83eb915ca68e66379269526ffa64822a1104", "task2_head": "a8ca0f3afffbd9ef5584825252f9a669a324d2a5", "evidence": "milestone/m6-semantic-validation-provisional-m4", "required_first_migration": "018", "local_evidence": {"task2": {"tests_passed": 209, "tests_total": 209, "actual_restart": "passed"}, "task3": {"focused_passed": 67, "focused_total": 67, "legacy_passed": 40, "legacy_total": 40, "postgresql17_passed": 1, "postgresql17_total": 1, "architecture_checks": "passed"}}, "notes": "Provisional Task 3 persists deterministic semantic verdicts on its old migration/publish/read source. It is quarantined until accepted-M5 restack, where its first migration must become 018 after M5 recovery migration 017, with fresh checksum/upgrade/restart evidence; Task 4 is untouched and pending."},
-      "review": {"status": "not_started", "commit": null, "evidence": [], "notes": "Final restack and reviews wait for accepted M5."},
-      "stack_integration": {"status": "blocked_on_m5_acceptance", "base_branch": "milestone/m5-isolated-execution-provisional-m4", "pull_request": null, "merge_commit": null},
+      "implementation": {"status": "provisional_repair_lifecycle_source", "commit": "2d2360cd6f2a19ad3328d468073a52927691b112", "tree": "5ee89e86b7e8f03ff78c644713e449b0fb9064d8", "prior_task3_head": "f3b2c0d07116686b27feab4b60166e8a7402d672", "evidence": "milestone/m6-successor-02-repair-lifecycle", "required_first_migration": "018", "local_evidence": {"status": "historical_component_checks_only", "notes": "Earlier Task-2/Task-3 and repair-lifecycle checks exist, but no exact-2d2360c final verifier or complete review receipt is claimed."}, "notes": "Provisional semantic repair-lifecycle and hardening source now reaches 2d2360c. A provisional Phase-A alignment exists, but accepted dependency integration has not begun: migration 014 must become 018 after accepted M5 migration 017, temporary predecessor adapters must be removed, and fresh checksum/upgrade/restart/verification/review evidence is required."},
+      "review": {"status": "not_started_exact_head", "commit": null, "evidence": [], "notes": "No exact-2d2360c final verification or review set exists; accepted-M5 restack remains a prerequisite."},
+      "stack_integration": {"status": "blocked_on_m5_acceptance", "base_branch": "milestone/m5-successor-05-runtime-recovery", "pull_request": null, "merge_commit": null},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
       "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null, "notes": "No external gate is eligible before accepted M4 and M5 predecessors."}
     },
     "M7": {
-      "implementation": {"status": "provisional_algorithm_source", "commit": "c8b450f494b3d44b580556c6a612b21a3a780368", "evidence": "milestone/m7-shadow-handoff-provisional-m4", "notes": "Clean provisional source has synthetic algorithm evidence only; it proves no runtime or real outcomes."},
-      "review": {"status": "not_started", "commit": null, "evidence": [], "notes": "Final reviews require accepted-M6 restack plus runtime and real-outcome evidence."},
-      "stack_integration": {"status": "blocked_on_m6_acceptance", "base_branch": "milestone/m6-semantic-validation-provisional-m4", "pull_request": null, "merge_commit": null},
+      "implementation": {"status": "provisional_shadow_bundle_source", "commit": "4df2516fa3a137fa730d08733fb9e338768232fb", "tree": "8dbe6e4436998e9a4dbc3e2fe9ec694bf71ba7c2", "evidence": "milestone/m7-shadow-handoff-provisional-m4", "local_evidence": {"focused": "30/30 passed", "factory": "100 tests run: 70 passed and 30 expected PostgreSQL skips", "receipt": "prior PR preflight interrupted; no exact-head receipt"}, "notes": "Provisional source has six schemas, corrected typed producer/head bindings and aggregate recomputation. It remains blocked_pending_durable_lookup and proves no accepted-M6 integration or real shadow outcomes."},
+      "review": {"status": "not_started_exact_head", "commit": null, "evidence": [], "notes": "Final reviews require accepted-M6 restack, durable lookup, runtime and real-outcome evidence."},
+      "stack_integration": {"status": "blocked_on_m6_acceptance", "base_branch": "milestone/m6-successor-02-repair-lifecycle", "pull_request": null, "merge_commit": null},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
       "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
     },
     "M8": {
-      "implementation": {"status": "provisional_evaluator_source", "commit": "5499c582d403c6955324b935cbb8799b38257f5f", "tree": "ef49d8016d0cff15e0b06d8db4201e22656d7c04", "starting_head": "46a6c8eba6b5bd8e4654f3041e52061cdd1a15d6", "evidence": "milestone/m8-earned-autonomy-provisional-m4", "local_evidence": {"focused": "23/23 passed", "factory": "93 passed with 30 expected PostgreSQL skips", "fitness_and_budget": "passed"}, "notes": "Clean provisional source contains closed contracts, a pure evaluator and demotion behavior. It is not accepted: factual accepted-M7 restack, at least 30 real eligible human acceptances, profile acceptance and activation remain absent."},
-      "review": {"status": "not_started", "commit": null, "evidence": [], "notes": "No factual trust profile, 30-real-task cohort, activation or acceptance exists."},
+      "implementation": {"status": "provisional_typed_m7_wire_source", "commit": "2cee9b93c161b6c76f4fee877e6d19eacee5a271", "tree": "e88baebf8297007474e8c65d2314fea7e7226faa", "starting_head": "46a6c8eba6b5bd8e4654f3041e52061cdd1a15d6", "evidence": "milestone/m8-earned-autonomy-provisional-m4", "local_evidence": {"status": "historical_pre_correction_counts_only", "notes": "The older 5499c58 test totals do not bind current 2cee9b9 and no final exact-head receipt exists."}, "notes": "Provisional source contains the full typed M7 wire, a pure evaluator, demotion behavior and a temporary predecessor reader that must be deleted on accepted-M7 restack. It is recommendation-only at L2; at least 30 eligible real human outcomes, profile acceptance and activation remain absent."},
+      "review": {"status": "not_started_exact_head", "commit": null, "evidence": [], "notes": "No exact-2cee9b9 review, factual trust profile, 30-real-task cohort, activation or acceptance exists."},
       "stack_integration": {"status": "blocked_on_m7_acceptance", "base_branch": "milestone/m7-shadow-handoff-provisional-m4", "pull_request": null, "merge_commit": null},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
       "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
     },
     "M9": {
-      "implementation": {"status": "provisional_task1_source", "commit": "000301796ac19c518ede110b97b9de09dc077cbd", "prior_design_head": "055051e26e26bf08fa85376523ba6632afcca747", "evidence": "milestone/m9-staged-recovery-provisional-m4", "notes": "A source-only Task-1 frozen-contract slice exists, but later tasks, real signed input, environment/recovery proof and production authority remain absent."},
-      "review": {"status": "not_started", "commit": null, "evidence": []},
+      "implementation": {"status": "provisional_tasks1_4_source", "commit": "6b42ba6d6c1ab02fe5c1c7a2ecfd762014a4d420", "tree": "48213591aa3c8e8dc0ce4137438b081bbc83988b", "prior_design_head": "055051e26e26bf08fa85376523ba6632afcca747", "evidence": "milestone/m9-staged-recovery-provisional-m4", "local_evidence": {"status": "historical_component_checks_only", "notes": "Initial 67-test and controller 31-test runs predate the current head; no final exact-head receipt exists."}, "notes": "Provisional Tasks 1-4 source includes contracts, evaluator, recovery and a lock-serialized dry-run controller plus a temporary typed-M8 boundary. Task 5, accepted predecessors, real signed inputs, a delivery environment, recovery exercise and human production authority remain blocked or absent."},
+      "review": {"status": "not_started_exact_head", "commit": null, "evidence": [], "notes": "No exact-6b42ba6 final verification or review set exists."},
       "stack_integration": {"status": "blocked_on_m8_acceptance", "base_branch": "milestone/m8-earned-autonomy-provisional-m4", "pull_request": null, "merge_commit": null},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
       "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
@@ -404,51 +407,52 @@
         "head": "27b0ae619cacf0d9ddeed15c60212800ff6009ca",
         "tree": "1a4e3f87da8a12e173a81e66b53f5fc21cb241c6",
         "base": "8a7be8a32132a6e6fb96a5ce730fdb5513c121cd",
-        "purpose": "Clean frozen contract enrollment and bounded comparator successor. Independent comparator/security review and exact-predecessor fitness pass; it has no PR or external gate."
+        "purpose": "Clean frozen contract enrollment and bounded comparator successor. Exact-predecessor fitness passes; session-level comparator/security feedback is not a checked-in report or route receipt, and it has no PR or external gate."
       },
       {
         "route_id": "37b05f579320",
         "branch": "milestone/m5-successor-05-runtime-recovery",
-        "head": "5073fc05013d1d40c99f22d48db5dd3d4d8c4b87",
-        "tree": "54c2d08310b03504528e24331c39a94161ae0136",
+        "head": "3940267ac5754ad07a047894102015d33eb759b1",
+        "tree": "4646582a7c5ff6f08ee7e8462687da400459b08d",
         "base": "27b0ae619cacf0d9ddeed15c60212800ff6009ca",
-        "worktree": "clean_at_runtime_checkpoint",
-        "purpose": "Runtime recovery and additive-v2 successor in progress. Migration 017, atomic terminal behavior and route-identity-safe v2 projection exist in provisional source; actual M5 restart proof and inert systemd topology remain open."
+        "worktree": "product_checkpoint_committed_with_documentation_rebind",
+        "purpose": "Runtime recovery and additive-v2 successor source with migration 017, atomic terminal behavior, route-identity-safe v2 projection and a local two-restart PostgreSQL-17 recovery proof. Session feedback is not a repository report; final exact-head verification/reviews/receipts and successor-06 inert systemd/installer/configuration work remain open."
       },
       {
         "route_id": "82aac86a3bf9",
-        "branch": "milestone/m6-semantic-validation-provisional-m4",
-        "task1_head": "3def83eb915ca68e66379269526ffa64822a1104",
-        "task2_head": "a8ca0f3afffbd9ef5584825252f9a669a324d2a5",
-        "head": "f3b2c0d07116686b27feab4b60166e8a7402d672",
-        "purpose": "Task-3 deterministic verdict source is provisional and quarantined; after accepted M5 migration 017, renumber its first provisional migration to 018, regenerate checksum/upgrade/restart evidence, and continue with untouched Task 4."
+        "branch": "milestone/m6-successor-02-repair-lifecycle",
+        "head": "2d2360cd6f2a19ad3328d468073a52927691b112",
+        "tree": "5ee89e86b7e8f03ff78c644713e449b0fb9064d8",
+        "purpose": "Provisional semantic repair-lifecycle/hardening source with Phase-A alignment. Accepted-M5 dependency integration has not begun; migration 014 must become 018, temporary adapters must be removed, and exact-head verification/reviews are absent."
       },
       {
         "route_id": "e5911c3f8721",
         "branch": "milestone/m7-shadow-handoff-provisional-m4",
-        "head": "c8b450f494b3d44b580556c6a612b21a3a780368",
-        "purpose": "Synthetic algorithm source only; restack after accepted M6 and add runtime/real-outcome proof plus reviews."
+        "head": "4df2516fa3a137fa730d08733fb9e338768232fb",
+        "tree": "8dbe6e4436998e9a4dbc3e2fe9ec694bf71ba7c2",
+        "purpose": "Six-schema shadow-bundle source with typed producer/head bindings and aggregate recomputation. It is blocked_pending_durable_lookup and still lacks accepted-M6 integration, real outcomes and final review."
       },
       {
         "route_id": "670ffe5522e0",
         "branch": "milestone/m8-earned-autonomy-provisional-m4",
         "starting_head": "46a6c8eba6b5bd8e4654f3041e52061cdd1a15d6",
-        "head": "5499c582d403c6955324b935cbb8799b38257f5f",
-        "tree": "ef49d8016d0cff15e0b06d8db4201e22656d7c04",
-        "purpose": "Closed contracts, pure evaluator and demotion source are provisional. Accepted-M7 restack, at least 30 real eligible human acceptances, profile acceptance and activation remain absent."
+        "head": "2cee9b93c161b6c76f4fee877e6d19eacee5a271",
+        "tree": "e88baebf8297007474e8c65d2314fea7e7226faa",
+        "purpose": "Full typed-M7 wire, pure evaluator and demotion source are provisional; its temporary reader must be removed on restack. Accepted-M7 integration, at least 30 real eligible human acceptances, profile acceptance and activation remain absent."
       },
       {
         "route_id": "e376373492fe",
         "branch": "milestone/m9-staged-recovery-provisional-m4",
         "prior_design_head": "055051e26e26bf08fa85376523ba6632afcca747",
-        "head": "000301796ac19c518ede110b97b9de09dc077cbd",
-        "purpose": "Task-1 frozen contracts are source-only; later tasks, real signed input, environment/recovery proof and production authority remain absent."
+        "head": "6b42ba6d6c1ab02fe5c1c7a2ecfd762014a4d420",
+        "tree": "48213591aa3c8e8dc0ce4137438b081bbc83988b",
+        "purpose": "Provisional Tasks 1-4 contracts/evaluator/recovery/lock-serialized dry-run controller source with a temporary typed-M8 boundary. Task 5, accepted predecessors, real signed input, environment/recovery proof and production authority remain absent."
       }
     ],
     "open_pull_requests": [
-      {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Lazy CLI imports and tests are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
-      {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Repository-scoped Trust CI profiles are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
-      {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "Investor demo and packaging hardening are absent from main.", "disposition": "Wholesale merge is superseded; extract the unique scope into a clean successor. No successor PR exists."},
+      {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Command-local lazy Trust CI CLI imports and their missing regression test are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
+      {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "PolicyCatalog repository-policy binding plus fail-closed profile/holdout validation and tests are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
+      {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "The investor demo is absent from main; its packaging-stage hardening is superseded by the stronger current M4 package tests.", "disposition": "Wholesale merge is superseded; extract only the investor-demo scope into a clean successor. No successor PR exists."},
       {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": "571cad7877431ac5ab5779b53fe9f7effd6859ce", "status": "open_trust_ci_failed_root_unittest", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "failed_check": "root-unittest", "gitguardian_conclusion": "FAILURE", "gitguardian_finding": "not inspected or inferred", "disposition": "The local 9727bc3 hotfix is not on the PR and will be superseded by a documentation/package-parity descendant. Preserve the failed exact-head results; verify and review the final descendant before any separately authorized PR update and new App-owned exact-head check."}
     ],
     "retained_unresolved": [

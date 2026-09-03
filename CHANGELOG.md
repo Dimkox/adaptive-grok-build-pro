@@ -9,7 +9,10 @@ M4 control-plane repair candidate and exact current-state release artifact.
 - Audits legacy schema-12 retry exhaustion without advancing a fence or creating a lease, and makes release packaging derive inventory and bytes from filtered, clean, exact Git `HEAD` while independent shipped-artifact tests reject ambient ignored/untracked members
 - Records the current PR/milestone inventory without claiming review, external Trust CI acceptance, merge, deployment, tag, or GitHub Release publication
 - Tracked local artifact: `packages/adaptive-grok-build-pro-v2.0.13.zip` with its SHA-256 sidecar
-- The `aa12e7c` 14/14 verifier receipt is historical and stale for this follow-up after release rereview exposed ambient files in its archive; fresh exact-head verification and review remain required
+- PR #21 head `571cad7` later failed App-owned Trust CI `root-unittest` under a differently owned UID-10001 checkout; GitGuardian separately reports FAILURE, with finding contents not inferred
+- Local command-scoped `safe.directory` source fix `3b1f9a5` and rebuilt package candidate `9727bc3` (archive SHA-256 `57e6e00a…`) passed verifier 14/14, root 537/537 and focused different-owner/package checks, but remain unpushed and externally unchecked
+- Current documentation/package parity will supersede `9727bc3`; the resulting exact descendant still needs a rebuilt archive where inventory changes, fresh verifier/reviews, a separately authorized PR update and App-owned exact-head success before any merge/tag/release claim
+- M5 successor-05 product/restart checkpoint `3940267` remains source-only and creates no `2.0.14` artifact; its local two-restart PostgreSQL-17 proof is not M4 release authority
 
 ## 2.0.12 — 2026-08-23
 

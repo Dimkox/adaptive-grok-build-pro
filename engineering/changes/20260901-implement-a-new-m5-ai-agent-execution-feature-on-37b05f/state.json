@@ -30,6 +30,6 @@
   "route_id": "37b05f579320",
   "schema_version": 1,
   "status": "implementing",
-  "title": "Materialize M5 as bounded stacked successors: successor 04 contract enrollment/comparator is frozen at 27b0ae6; successor 05 runtime recovery and additive v2 is provisional on that exact base; successor 06 systemd/installer/docs remains pending. Local source only; no live provider calls, secrets, package publication, operational activation or delivery authority.",
-  "updated_at": "2026-09-03T08:41:53+00:00"
+  "title": "Materialize M5 as bounded stacked successors: successor 04 contract enrollment/comparator is frozen at 27b0ae6; successor 05 runtime recovery, additive v2 and its two-restart proof are provisional at 3940267 on that exact base; final exact-head verification and successor 06 systemd/installer/configuration/docs remain pending. Local source only; no live provider calls, secrets, package publication, operational activation or delivery authority.",
+  "updated_at": "2026-09-03T09:49:36+00:00"
 }

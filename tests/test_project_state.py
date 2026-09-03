@@ -29,17 +29,18 @@ M4_FAILED_VERIFY_SHA = "547ee628812fbf098f337a854f68edf660091ead"
 M4_FAILED_VERIFY_FINGERPRINT = "f0efa89e689dbe47c701a4d301e97361ee671e299ef2f32b5295b908e182e768"
 M5_ENROLLMENT_SHA = "27b0ae619cacf0d9ddeed15c60212800ff6009ca"
 M5_ENROLLMENT_TREE = "1a4e3f87da8a12e173a81e66b53f5fc21cb241c6"
-M5_RUNTIME_CHECKPOINT = "5073fc05013d1d40c99f22d48db5dd3d4d8c4b87"
-M5_RUNTIME_TREE = "54c2d08310b03504528e24331c39a94161ae0136"
-M6_TASK1_SHA = "3def83eb915ca68e66379269526ffa64822a1104"
-M6_TASK2_SHA = "a8ca0f3afffbd9ef5584825252f9a669a324d2a5"
-M6_PROVISIONAL_SHA = "f3b2c0d07116686b27feab4b60166e8a7402d672"
-M7_PROVISIONAL_SHA = "c8b450f494b3d44b580556c6a612b21a3a780368"
+M5_RUNTIME_CHECKPOINT = "3940267ac5754ad07a047894102015d33eb759b1"
+M5_RUNTIME_TREE = "4646582a7c5ff6f08ee7e8462687da400459b08d"
+M6_PROVISIONAL_SHA = "2d2360cd6f2a19ad3328d468073a52927691b112"
+M6_PROVISIONAL_TREE = "5ee89e86b7e8f03ff78c644713e449b0fb9064d8"
+M7_PROVISIONAL_SHA = "4df2516fa3a137fa730d08733fb9e338768232fb"
+M7_PROVISIONAL_TREE = "8dbe6e4436998e9a4dbc3e2fe9ec694bf71ba7c2"
 M8_STARTING_SHA = "46a6c8eba6b5bd8e4654f3041e52061cdd1a15d6"
-M8_PROVISIONAL_SHA = "5499c582d403c6955324b935cbb8799b38257f5f"
-M8_PROVISIONAL_TREE = "ef49d8016d0cff15e0b06d8db4201e22656d7c04"
+M8_PROVISIONAL_SHA = "2cee9b93c161b6c76f4fee877e6d19eacee5a271"
+M8_PROVISIONAL_TREE = "e88baebf8297007474e8c65d2314fea7e7226faa"
 M9_DESIGN_SHA = "055051e26e26bf08fa85376523ba6632afcca747"
-M9_PROVISIONAL_SHA = "000301796ac19c518ede110b97b9de09dc077cbd"
+M9_PROVISIONAL_SHA = "6b42ba6d6c1ab02fe5c1c7a2ecfd762014a4d420"
+M9_PROVISIONAL_TREE = "48213591aa3c8e8dc0ce4137438b081bbc83988b"
 MILESTONES = {f"M{number}" for number in range(10)}
 AXES = ("implementation", "review", "stack_integration", "main_delivery", "external_gate")
 CANONICAL_GRAPH_NODES = {
@@ -98,11 +99,11 @@ class ProjectStateTests(unittest.TestCase):
             "M2": ("complete", "passed", "merged", "not_delivered", "success"),
             "M3": ("complete", "passed", "merged", "not_delivered", "success"),
             "M4": ("local_hotfix_candidate", "refresh_pending_after_hotfix", "local_hotfix_rebuilt_after_external_failure", "not_delivered", "not_run_current_candidate"),
-            "M5": ("provisional_successor_05_runtime_in_progress", "successor_04_pass_runtime_in_progress", "bounded_stacked_successors_in_progress", "not_delivered", "not_run"),
-            "M6": ("provisional_task3_source", "not_started", "blocked_on_m5_acceptance", "not_delivered", "not_run"),
-            "M7": ("provisional_algorithm_source", "not_started", "blocked_on_m6_acceptance", "not_delivered", "not_run"),
-            "M8": ("provisional_evaluator_source", "not_started", "blocked_on_m7_acceptance", "not_delivered", "not_run"),
-            "M9": ("provisional_task1_source", "not_started", "blocked_on_m8_acceptance", "not_delivered", "not_run"),
+            "M5": ("provisional_successor_05_restart_proof_passed", "successor_05_exact_head_review_pending", "bounded_stacked_successors_in_progress", "not_delivered", "not_run"),
+            "M6": ("provisional_repair_lifecycle_source", "not_started_exact_head", "blocked_on_m5_acceptance", "not_delivered", "not_run"),
+            "M7": ("provisional_shadow_bundle_source", "not_started_exact_head", "blocked_on_m6_acceptance", "not_delivered", "not_run"),
+            "M8": ("provisional_typed_m7_wire_source", "not_started_exact_head", "blocked_on_m7_acceptance", "not_delivered", "not_run"),
+            "M9": ("provisional_tasks1_4_source", "not_started_exact_head", "blocked_on_m8_acceptance", "not_delivered", "not_run"),
         }
         for milestone, statuses in expected.items():
             actual = self.state["milestones"][milestone]
@@ -202,31 +203,39 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(m5["implementation"]["tree"], M5_RUNTIME_TREE)
         self.assertEqual(m5["implementation"]["frozen_predecessor"], M5_ENROLLMENT_SHA)
         self.assertEqual(m5["stack_integration"]["base_commit"], M5_ENROLLMENT_SHA)
+        self.assertEqual(
+            state["active_delivery"]["m5_dimensions"]["local_verification"]["runtime_disposable_postgresql_17"],
+            "273 tests run: 272 passed and 1 expected fresh-cluster test skipped in 221.516 seconds; two actual restarts and the M5 recovery probe passed",
+        )
+        self.assertIn(
+            "m5_inert_systemd_installer_and_configuration_parity",
+            state["active_delivery"]["m5_dimensions"]["blocked_final_gates"],
+        )
         self.assertIn("immediate predecessor", m5["stack_integration"]["notes"])
         self.assertIsNone(m5["main_delivery"]["merge_commit"])
         m6 = state["milestones"]["M6"]
         self.assertEqual(m6["implementation"]["commit"], M6_PROVISIONAL_SHA)
-        self.assertEqual(m6["implementation"]["task1_head"], M6_TASK1_SHA)
-        self.assertEqual(m6["implementation"]["task2_head"], M6_TASK2_SHA)
+        self.assertEqual(m6["implementation"]["tree"], M6_PROVISIONAL_TREE)
         self.assertEqual(m6["implementation"]["required_first_migration"], "018")
         self.assertEqual(
             m6["implementation"]["local_evidence"],
             {
-                "task2": {"tests_passed": 209, "tests_total": 209, "actual_restart": "passed"},
-                "task3": {
-                    "focused_passed": 67,
-                    "focused_total": 67,
-                    "legacy_passed": 40,
-                    "legacy_total": 40,
-                    "postgresql17_passed": 1,
-                    "postgresql17_total": 1,
-                    "architecture_checks": "passed",
-                },
+                "status": "historical_component_checks_only",
+                "notes": "Earlier Task-2/Task-3 and repair-lifecycle checks exist, but no exact-2d2360c final verifier or complete review receipt is claimed.",
             },
         )
         self.assertIsNone(m6["main_delivery"]["merge_commit"])
         m7 = state["milestones"]["M7"]
         self.assertEqual(m7["implementation"]["commit"], M7_PROVISIONAL_SHA)
+        self.assertEqual(m7["implementation"]["tree"], M7_PROVISIONAL_TREE)
+        self.assertEqual(
+            m7["implementation"]["local_evidence"],
+            {
+                "focused": "30/30 passed",
+                "factory": "100 tests run: 70 passed and 30 expected PostgreSQL skips",
+                "receipt": "prior PR preflight interrupted; no exact-head receipt",
+            },
+        )
         m8 = state["milestones"]["M8"]
         self.assertEqual(m8["implementation"]["starting_head"], M8_STARTING_SHA)
         self.assertEqual(m8["implementation"]["commit"], M8_PROVISIONAL_SHA)
@@ -234,18 +243,18 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(
             m8["implementation"]["local_evidence"],
             {
-                "focused": "23/23 passed",
-                "factory": "93 passed with 30 expected PostgreSQL skips",
-                "fitness_and_budget": "passed",
+                "status": "historical_pre_correction_counts_only",
+                "notes": "The older 5499c58 test totals do not bind current 2cee9b9 and no final exact-head receipt exists.",
             },
         )
         m9 = state["milestones"]["M9"]
         self.assertEqual(m9["implementation"]["prior_design_head"], M9_DESIGN_SHA)
         self.assertEqual(m9["implementation"]["commit"], M9_PROVISIONAL_SHA)
+        self.assertEqual(m9["implementation"]["tree"], M9_PROVISIONAL_TREE)
 
     def test_m4_source_implementation_is_distinct_from_verification_review_and_delivery(self) -> None:
         dimensions = self.state["active_delivery"]["m4_dimensions"]
-        self.assertIn("successor 05", self.state["active_delivery"]["next_action"])
+        self.assertIn("successor-05", self.state["active_delivery"]["next_action"])
         self.assertIn("fresh external exact-head Trust CI", self.state["active_delivery"]["next_action"])
         self.assertEqual(
             dimensions["implementation_source"],
@@ -297,7 +306,7 @@ class ProjectStateTests(unittest.TestCase):
         )
         self.assertEqual(
             self.state["milestones"]["M5"]["implementation"]["status"],
-            "provisional_successor_05_runtime_in_progress",
+            "provisional_successor_05_restart_proof_passed",
         )
 
     def test_local_git_objects_corrobate_durable_stack_proof_when_available(self) -> None:
@@ -337,6 +346,218 @@ class ProjectStateTests(unittest.TestCase):
                 capture_output=True,
             )
             self.assertEqual(result.returncode, 1, f"stack merge unexpectedly reached main: {integration['merge_commit']}")
+
+    def test_provisional_m5_m9_git_heads_and_trees_are_correlated_when_available(self) -> None:
+        facts = (
+            (M5_RUNTIME_CHECKPOINT, M5_RUNTIME_TREE, "milestone/m5-successor-05-runtime-recovery", True),
+            (M6_PROVISIONAL_SHA, M6_PROVISIONAL_TREE, "milestone/m6-successor-02-repair-lifecycle", False),
+            (M7_PROVISIONAL_SHA, M7_PROVISIONAL_TREE, "milestone/m7-shadow-handoff-provisional-m4", False),
+            (M8_PROVISIONAL_SHA, M8_PROVISIONAL_TREE, "milestone/m8-earned-autonomy-provisional-m4", False),
+            (M9_PROVISIONAL_SHA, M9_PROVISIONAL_TREE, "milestone/m9-staged-recovery-provisional-m4", False),
+        )
+        declared = {
+            item["branch"]: item["head"]
+            for item in self.state["work_inventory"]["active"]
+            if item["branch"].startswith("milestone/m")
+        }
+        self.assertEqual(
+            {branch: commit for commit, _tree, branch, _may_be_ancestor in facts},
+            {branch: declared[branch] for _commit, _tree, branch, _may_be_ancestor in facts},
+        )
+        self.assertEqual(
+            subprocess.run(
+                ["git", "cat-file", "-e", f"{M5_ENROLLMENT_SHA}^{{commit}}"],
+                cwd=ROOT,
+                check=False,
+                capture_output=True,
+            ).returncode,
+            0,
+        )
+        for commit, tree, branch, may_be_ancestor in facts:
+            with self.subTest(branch=branch):
+                ref = f"refs/heads/{branch}"
+                self.assertEqual(
+                    subprocess.run(
+                        ["git", "cat-file", "-e", f"{commit}^{{commit}}"],
+                        cwd=ROOT,
+                        check=False,
+                        capture_output=True,
+                    ).returncode,
+                    0,
+                )
+                self.assertEqual(
+                    subprocess.run(
+                        ["git", "show-ref", "--verify", "--quiet", ref],
+                        cwd=ROOT,
+                        check=False,
+                        capture_output=True,
+                    ).returncode,
+                    0,
+                )
+                actual_tree = subprocess.run(
+                    ["git", "show", "-s", "--format=%T", commit],
+                    cwd=ROOT,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip()
+                self.assertEqual(actual_tree, tree)
+                if may_be_ancestor:
+                    self.assertEqual(
+                        subprocess.run(
+                            ["git", "merge-base", "--is-ancestor", M5_ENROLLMENT_SHA, commit],
+                            cwd=ROOT,
+                            check=False,
+                            capture_output=True,
+                        ).returncode,
+                        0,
+                    )
+                    returncode = subprocess.run(
+                        ["git", "merge-base", "--is-ancestor", commit, ref],
+                        cwd=ROOT,
+                        check=False,
+                        capture_output=True,
+                    ).returncode
+                    self.assertEqual(returncode, 0)
+                else:
+                    actual_head = subprocess.run(
+                        ["git", "rev-parse", ref],
+                        cwd=ROOT,
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    ).stdout.strip()
+                    self.assertEqual(actual_head, commit)
+
+    def test_current_status_surfaces_bind_checkpoint_and_pending_review_scope(self) -> None:
+        central_paths = (
+            "README.md",
+            "START_HERE.md",
+            "DARK_FACTORY_ROADMAP.md",
+            "PROJECT_STATE.json",
+        )
+        central_text = {
+            relative: (ROOT / relative).read_text(encoding="utf-8")
+            for relative in central_paths
+        }
+        stale_current_patterns = (
+            r"(?im)^Current M7\b[^\n]*c8b450f494b3d44b580556c6a612b21a3a780368",
+            r"Current status: clean provisional source `c8b450f494b3d44b580556c6a612b21a3a780368`",
+            r"Current status: clean provisional Task-1 head `000301796ac19c518ede110b97b9de09dc077cbd`",
+            r"with coherent runtime checkpoint `5073fc05013d1d40c99f22d48db5dd3d4d8c4b87`",
+            r"has Task-3 source at `f3b2c0d07116686b27feab4b60166e8a7402d672`",
+            r"now has clean provisional contracts, a pure evaluator and demotion behavior at head `5499c582d403c6955324b935cbb8799b38257f5f`",
+        )
+        stale_checkpoint_by_milestone = {
+            "M5": ("5073fc05013d1d40c99f22d48db5dd3d4d8c4b87",),
+            "M6": ("f3b2c0d07116686b27feab4b60166e8a7402d672",),
+            "M7": ("c8b450f494b3d44b580556c6a612b21a3a780368",),
+            "M8": ("5499c582d403c6955324b935cbb8799b38257f5f",),
+            "M9": ("000301796ac19c518ede110b97b9de09dc077cbd",),
+        }
+        current_identity = re.compile(
+            r"(?i)\bcurrent(?:[ \t]+[a-z0-9_-]+){0,3}[ \t]+"
+            r"(?:head|checkpoint|source|status|commit|sha)\b"
+        )
+        unbound_review_pass = (
+            r"(?i)\b(?:independent(?:ly)?(?:[ \t]+[a-z0-9_/-]+){0,8}[ \t]+)?"
+            r"review(?:s|ed)?\b[ \t,:;-]*(?:(?:has|have|is|are|was|were|and)[ \t]+){0,2}"
+            r"(?:pass(?:ed)?|green)\b"
+        )
+
+        def assert_no_unbound_review_pass(relative: str, text: str) -> None:
+            for line in text.splitlines():
+                if re.search(r"(?i)\b(?:M5|successor[- ]?0?5|3940267|two[- ]restart)\b", line):
+                    self.assertNotRegex(
+                        line,
+                        unbound_review_pass,
+                        f"{relative} claims an exact-head review pass without repository evidence",
+                    )
+
+        def assert_no_stale_current_identity(relative: str, text: str) -> None:
+            for line in text.splitlines():
+                for milestone, stale_checkpoints in stale_checkpoint_by_milestone.items():
+                    if not re.search(rf"(?i)\b{milestone}\b", line) or not current_identity.search(line):
+                        continue
+                    for stale in stale_checkpoints:
+                        self.assertNotIn(
+                            stale,
+                            line,
+                            f"{relative} presents stale {milestone} checkpoint as current",
+                        )
+
+        def assert_current_status(text_by_path: dict[str, str]) -> None:
+            for relative, text in text_by_path.items():
+                for current in ("3940267", "2d2360c", "4df2516", "2cee9b9", "6b42ba6"):
+                    self.assertIn(current, text, f"{relative} omits current checkpoint {current}")
+                self.assertNotRegex(
+                    text,
+                    r"actual two-restart M5 probe (?:remains|is) (?:open|pending|legacy)",
+                    f"{relative} revives the completed restart-proof task",
+                )
+                for pattern in stale_current_patterns:
+                    self.assertNotRegex(text, pattern, f"{relative} revives stale current status")
+                assert_no_stale_current_identity(relative, text)
+                assert_no_unbound_review_pass(relative, text)
+
+        assert_current_status(central_text)
+        adversarial = dict(central_text)
+        adversarial["README.md"] += (
+            "\nCurrent M7 source is c8b450f494b3d44b580556c6a612b21a3a780368.\n"
+        )
+        with self.assertRaises(AssertionError):
+            assert_current_status(adversarial)
+        adversarial_current_heads = dict(central_text)
+        adversarial_current_heads["README.md"] += (
+            "\nM5 current head is 5073fc05013d1d40c99f22d48db5dd3d4d8c4b87.\n"
+            "M7 current head is c8b450f494b3d44b580556c6a612b21a3a780368.\n"
+        )
+        with self.assertRaises(AssertionError):
+            assert_current_status(adversarial_current_heads)
+        adversarial_review = dict(central_text)
+        adversarial_review["README.md"] += (
+            "\nSuccessor 05 3940267 exact-head review PASSED after the two-restart proof.\n"
+        )
+        with self.assertRaises(AssertionError):
+            assert_current_status(adversarial_review)
+        adversarial_independent_review = dict(central_text)
+        adversarial_independent_review["README.md"] += (
+            "\nSuccessor 05 exact head 3940267: independent test and security review PASSED.\n"
+        )
+        with self.assertRaises(AssertionError):
+            assert_current_status(adversarial_independent_review)
+
+        m5_paths = (
+            "factory/README.md",
+            "packages/README.md",
+            "docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md",
+            "docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md",
+            "engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/brief.md",
+            "engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/architecture.md",
+            "engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/release.md",
+            "engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/schedule.md",
+            "engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/tasks.md",
+            "engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/test-plan.md",
+            "engineering/changes/20260901-implement-a-new-m5-ai-agent-execution-feature-on-37b05f/evidence/README.md",
+        )
+        for relative in m5_paths:
+            with self.subTest(path=relative):
+                text = (ROOT / relative).read_text(encoding="utf-8")
+                self.assertIn("3940267", text)
+                assert_no_stale_current_identity(relative, text)
+                assert_no_unbound_review_pass(relative, text)
+
+        m5_review = self.state["milestones"]["M5"]["review"]
+        self.assertEqual(m5_review["evidence"], [])
+        self.assertIsNone(m5_review["commit"])
+        self.assertNotRegex(m5_review["status"], r"pass|reviewed")
+        self.assertIn("pending", m5_review["status"])
+        self.assertFalse((ROOT / "factory/systemd").exists())
+        self.assertFalse((ROOT / "factory/tests/test_systemd_units.py").exists())
+        plan = (ROOT / "docs/superpowers/plans/2026-09-01-m5-isolated-provider-execution.md").read_text(encoding="utf-8")
+        design = (ROOT / "docs/superpowers/specs/2026-09-01-m5-isolated-provider-execution-design.md").read_text(encoding="utf-8")
+        self.assertIn("planned successor 06", plan)
+        self.assertIn("planned successor-06", design)
 
     def test_m2_m3_stack_merge_parent_proof_is_self_contained(self) -> None:
         milestones = self.state["milestones"]
@@ -443,9 +664,9 @@ class ProjectStateTests(unittest.TestCase):
     def test_work_inventory_preserves_open_and_unresolved_continuation_work(self) -> None:
         inventory = self.state["work_inventory"]
         expected_open = [
-            {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Lazy CLI imports and tests are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
-            {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Repository-scoped Trust CI profiles are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
-            {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": CURRENT_CHECK, "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "Investor demo and packaging hardening are absent from main.", "disposition": "Wholesale merge is superseded; extract the unique scope into a clean successor. No successor PR exists."},
+            {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Command-local lazy Trust CI CLI imports and their missing regression test are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
+            {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "PolicyCatalog repository-policy binding plus fail-closed profile/holdout validation and tests are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
+            {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": CURRENT_CHECK, "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "The investor demo is absent from main; its packaging-stage hardening is superseded by the stronger current M4 package tests.", "disposition": "Wholesale merge is superseded; extract only the investor-demo scope into a clean successor. No successor PR exists."},
             {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": M4_FAILED_EXTERNAL_SHA, "status": "open_trust_ci_failed_root_unittest", "observed_check": CURRENT_CHECK, "observed_check_conclusion": "FAILURE", "failed_check": "root-unittest", "gitguardian_conclusion": "FAILURE", "gitguardian_finding": "not inspected or inferred", "disposition": "The local 9727bc3 hotfix is not on the PR and will be superseded by a documentation/package-parity descendant. Preserve the failed exact-head results; verify and review the final descendant before any separately authorized PR update and new App-owned exact-head check."},
         ]
         self.assertEqual(inventory["open_pull_requests"], expected_open)
@@ -468,7 +689,7 @@ class ProjectStateTests(unittest.TestCase):
                 ("b7f288f1e81e", "integration/m4-main-20260902"),
                 ("37b05f579320", "milestone/m5-successor-04-contract-enrollment"),
                 ("37b05f579320", "milestone/m5-successor-05-runtime-recovery"),
-                ("82aac86a3bf9", "milestone/m6-semantic-validation-provisional-m4"),
+                ("82aac86a3bf9", "milestone/m6-successor-02-repair-lifecycle"),
                 ("e5911c3f8721", "milestone/m7-shadow-handoff-provisional-m4"),
                 ("670ffe5522e0", "milestone/m8-earned-autonomy-provisional-m4"),
                 ("e376373492fe", "milestone/m9-staged-recovery-provisional-m4"),
@@ -482,16 +703,17 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(inventory["active"][1]["tree"], M5_ENROLLMENT_TREE)
         self.assertEqual(inventory["active"][2]["head"], M5_RUNTIME_CHECKPOINT)
         self.assertEqual(inventory["active"][2]["tree"], M5_RUNTIME_TREE)
-        self.assertEqual(inventory["active"][2]["worktree"], "clean_at_runtime_checkpoint")
-        self.assertEqual(inventory["active"][3]["task1_head"], M6_TASK1_SHA)
-        self.assertEqual(inventory["active"][3]["task2_head"], M6_TASK2_SHA)
+        self.assertEqual(inventory["active"][2]["worktree"], "product_checkpoint_committed_with_documentation_rebind")
         self.assertEqual(inventory["active"][3]["head"], M6_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][3]["tree"], M6_PROVISIONAL_TREE)
         self.assertEqual(inventory["active"][4]["head"], M7_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][4]["tree"], M7_PROVISIONAL_TREE)
         self.assertEqual(inventory["active"][5]["starting_head"], M8_STARTING_SHA)
         self.assertEqual(inventory["active"][5]["head"], M8_PROVISIONAL_SHA)
         self.assertEqual(inventory["active"][5]["tree"], M8_PROVISIONAL_TREE)
         self.assertEqual(inventory["active"][6]["prior_design_head"], M9_DESIGN_SHA)
         self.assertEqual(inventory["active"][6]["head"], M9_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][6]["tree"], M9_PROVISIONAL_TREE)
         self.assertIn(1, {item.get("pull_request") for item in inventory["superseded"]})
         self.assertIn(
             {

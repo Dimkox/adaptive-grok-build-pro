@@ -375,7 +375,7 @@ Apply the WorkspaceResult NFC, C0-control and 4096-byte rules to `run.failed` di
 
 ## 2026-09-02 — Harden provisional execution persistence forward-only
 
-Keep slice-02 migration `014` byte-identical; express canonical proposal, attestation and result enforcement as non-destructive expand migration `015`, then retire only superseded constraints in DROP-only contract migration `016` within the same migrator transaction. Because `014` was never accepted or published, rollout quiesces old finalizers and the expand gate preserves compatible live non-final evidence but fails atomically before DDL or mutation for any legacy workspace result or unattested artifact proposal, rather than inventing trust. This is a bounded release invariant, not a universal production-upgrade claim; integrated M6 starts at `017`.
+Keep slice-02 migration `014` byte-identical; express canonical proposal, attestation and result enforcement as non-destructive expand migration `015`, then retire only superseded constraints in DROP-only contract migration `016` within the same migrator transaction. Because `014` was never accepted or published, rollout quiesces old finalizers and the expand gate preserves compatible live non-final evidence but fails atomically before DDL or mutation for any legacy workspace result or unattested artifact proposal, rather than inventing trust. This bounded ruling was later superseded when M5 recovery took unpublished migration `017`; integrated M6 now starts at `018`.
 
 ## 2026-09-02 — Keep artifact verification retry-safe and read-only
 
@@ -396,3 +396,11 @@ Keep the enrolled execution-v1 bytes and response projection stable, but make it
 ## 2026-09-03 — Make recovery PostgreSQL-17-bounded and cleanup at-least-once
 
 Require PostgreSQL 17 `transaction_timeout` for integrated recovery so connection setup, validation and mutations share a transaction-wide bound. Treat workspace release as exact-handle deterministic/idempotent and at-least-once after TTL/crash, with `already_absent` success and stale outcome fences denied.
+
+## 2026-09-03 — Bind restart proof to a disposable cluster and rebuilt capabilities
+
+Validate a randomly labelled PostgreSQL-17 container by immutable container ID, loopback port, database identity and system identifier before any mutation, then rebuild distinct runtime and attestor sessions after each restart. This made the two-restart recovery proof both destructive-target-safe and capable of detecting stale credentials, fabricated terminal evidence, cleanup-fence drift and post-restart state loss.
+
+## 2026-09-03 — Extract only unique work from stale pull requests
+
+Preserve PR #12's lazy command-local Trust CI CLI imports/tests, PR #13's `PolicyCatalog` repository-policy binding and fail-closed profile/holdout validation, and only PR #15's investor-demo commit as clean successor candidates. PR #15's packaging-stage hardening is superseded by the stronger current M4 package tests, so reviving its aggregate would add obsolete scope.
