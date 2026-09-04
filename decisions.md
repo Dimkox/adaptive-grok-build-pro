@@ -412,3 +412,7 @@ Build the artifact-only final HEAD first, then store exact-head review reports u
 ## 2026-09-04 — Make historical and published provenance clone-independent
 
 Preserve the frozen M2 architecture inputs as manifest-bound text fixtures and exercise Git base selection in synthetic repositories. Bind the already-published 2.0.13 ZIP to `PROJECT_STATE.json` and its immutable release tag instead of requiring parity with later documentation-only HEADs.
+
+## 2026-09-04 — Dogfood landing generation without overwriting prior evidence
+
+Preserve the tracked showcase bytes and generate candidates only in an add-only domain path inside disposable exact-SHA workspaces. Fixed command-provider ports with a sealed fixture keep the local flow executable, while unavailable defaults and a disabled publisher keep provider and production claims fail-closed until external authority exists.

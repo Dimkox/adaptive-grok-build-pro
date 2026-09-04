@@ -1,0 +1,162 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Each of the five allowlisted media kinds is accepted only when its bounded byte shape and declared type agree, then produces one tenant-bound content identity without exposing raw bytes to Git, logs, durable evidence, or caller-selected paths.",
+      "evidence": [
+        {"attestation": "planned-test-landing-intake"},
+        {"attestation": "planned-test-landing-contracts"}
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "A fixed trusted command-provider port accepts canonical input and returns one closed StaticLandingSpecV1; the sealed fixture is deterministic and the default unavailable profile performs no command or network call and has no fallback.",
+      "evidence": [
+        {"attestation": "planned-test-landing-provider"},
+        {"receipt": "security_review"}
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "The trusted renderer and independent evaluator use fresh disposable exact-SHA workspaces, modify only the add-only landing domain path, preserve the existing showcase, and make a fourth candidate attempt unrepresentable.",
+      "evidence": [
+        {"attestation": "planned-test-landing-coordinator"},
+        {"attestation": "planned-test-landing-renderer"}
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "The selected exact candidate SHA produces a byte-deterministic sorted ZIP and SHA-256 sidecar whose manifest binds every member, canonical mode, source/candidate tree, input, provider, renderer, evaluator, and policy identity.",
+      "evidence": [
+        {"attestation": "planned-test-landing-artifact"},
+        {"receipt": "verification"}
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "The additive API reports closed local outcomes while its default provider and production publisher remain unavailable; no local fixture, route receipt, or artifact may yield a live URL or production-success claim.",
+      "evidence": [
+        {"attestation": "planned-test-landing-api"},
+        {"attestation": "planned-test-landing-publisher"},
+        {"receipt": "release_review"}
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "Existing M0-M9 contracts, migrations 001-018, published product artifacts, and side-projects/seo-landing-showcase remain byte-identical, and no stale branch commit is imported.",
+      "evidence": [
+        {"test": "tests/test_structure.py"},
+        {"receipt": "code_review"}
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": ["scope_and_design_approval"]
+  },
+  "change_id": "20260904-l5-multimodal-landing-dogfood-9f67ef",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Untrusted input, provider output, evaluator output, or caller data selects an executable, command argument, path, origin, capability, policy, credential, provider, or authority.",
+      "evidence": [
+        {"attestation": "planned-test-landing-provider"},
+        {"receipt": "security_review"}
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "A fourth candidate attempt, provider fallback, accumulated hidden-evaluator context, or writer self-selection occurs.",
+      "evidence": [
+        {"attestation": "planned-test-landing-coordinator"},
+        {"receipt": "test_review"}
+      ]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "Generation overwrites the existing showcase, any live-site path, an existing release artifact, or a path outside the add-only domain output root.",
+      "evidence": [
+        {"attestation": "planned-test-landing-renderer"},
+        {"attestation": "planned-test-landing-artifact"}
+      ]
+    },
+    {
+      "id": "FORBID-004",
+      "statement": "Repository source performs or claims a live provider call, Trust CI acceptance, signed artifact authority, publication, deployment, HTTPS observation, indexing, or operational L5 autonomy.",
+      "evidence": [
+        {"attestation": "planned-test-landing-publisher"},
+        {"receipt": "release_review"}
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Every structured record is closed, versioned, canonically digested, tenant/repository-bound, and rejects unknown fields, duplicate keys, non-finite values, stale identities, and digest mismatch.",
+      "evidence": [
+        {"attestation": "planned-test-landing-contracts"}
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Only trusted fixed command-provider configuration can name an executable; the sealed fixture and unavailable default have no network, repository write, credential, or authority capability.",
+      "evidence": [
+        {"attestation": "planned-test-landing-provider"}
+      ]
+    },
+    {
+      "id": "INV-003",
+      "statement": "Rendering is deterministic from the closed spec and verified repair projection, evaluation is read-only and independently identified, and the attempt chain is append-only with ordinals one through three.",
+      "evidence": [
+        {"attestation": "planned-test-landing-coordinator"},
+        {"attestation": "planned-test-landing-renderer"}
+      ]
+    },
+    {
+      "id": "INV-004",
+      "statement": "Artifact identity is exact-SHA and content-addressed; repeated packaging of one sealed candidate yields identical ZIP bytes and sidecar content without mutating product release packages.",
+      "evidence": [
+        {"attestation": "planned-test-landing-artifact"}
+      ]
+    },
+    {
+      "id": "INV-005",
+      "statement": "Production publication is disabled and fail-closed until separately supplied source snapshot, operational provider, Trust CI, signed artifact, hosting configuration, recovery evidence, and explicit external authority all agree.",
+      "evidence": [
+        {"attestation": "planned-test-landing-publisher"},
+        {"receipt": "security_review"}
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Implement a repository-local L5 Landing Dogfood vertical that accepts bounded text, audio, image, PDF, or DOCX; normalizes through a fixed provider-neutral command port; deterministically renders and independently evaluates at most three isolated candidates; and emits an exact-SHA deterministic ZIP plus sidecar while preserving all current product and showcase bytes and keeping provider and production capabilities unavailable by default.",
+    "success_metric": "All focused contract, intake, provider, renderer, coordinator, artifact, API, publisher-boundary, and structure tests pass once on the frozen source tree; identical inputs and sealed identities reproduce identical candidate and package digests; zero external calls or production claims occur.",
+    "target": "offline_exact_sha_multimodal_landing_candidate_artifact_with_disabled_production"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Closed local result records expose input, provider-profile, spec, attempt-chain, candidate-tree, evaluator, ZIP, sidecar, terminal-disposition, and denial-reason digests without raw input or secrets.",
+      "proves": ["OBJ-001"]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "Attempt count is one through three, command and workspace cleanup outcomes are explicit, and unavailable provider or publisher outcomes record zero calls and zero external effects.",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "risk": {
+    "domains": ["ai", "api", "frontend", "security"],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 2,
+    "strategy": "feature_flag"
+  },
+  "schema_version": 2
+}

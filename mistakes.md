@@ -561,3 +561,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The clone-independent test repair deleted the final uses of two imports, but its targeted preflight exercised unittest only and omitted static lint for the modified Python files.
 **Prevention:** Run targeted Ruff on every modified Python file before push, even when its focused unit tests pass.
+
+## 2026-09-04 — Inferred indexing from incomplete automation visibility
+
+**Root cause:** We inferred non-indexing from one search and an anti-bot-limited origin observation, conflating current automation visibility with search-engine indexing; the user's SERP proves observed indexing.
+**Prevention:** Record indexing evidence separately from the ability of an automated client to observe current origin content, and never let one substitute for the other.

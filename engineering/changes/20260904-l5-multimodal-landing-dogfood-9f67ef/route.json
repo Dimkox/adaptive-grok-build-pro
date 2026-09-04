@@ -1,0 +1,99 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "ai_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "integration_architect"
+  ],
+  "base_commit": "ad6d23cc30c11e5ea51c388213f5ebdfe306fb56",
+  "base_fingerprint": "9074c99bd78f2428c1e2a80dbf67902722ed9444ce3d57364b56f2faa5914074",
+  "complexity": "high-risk",
+  "created_at": "2026-09-04T10:15:48+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "frontend",
+    "security",
+    "ai",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "frontend",
+    "contracts",
+    "ai"
+  ],
+  "rationale": [
+    "high-risk signal: auth, secret",
+    "intent=feature",
+    "domains=frontend,security,ai,api",
+    "repository=generic",
+    "write-owner=ai_implementer",
+    "analysis-wave=6/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "9f67efd2575c",
+  "schema_version": 1,
+  "session_id": "l5-landing-dogfood-20260904",
+  "status": "routed",
+  "task": "Implement a feature named L5 Landing Dogfood. Accept untrusted text, audio, image, PDF and DOCX through a versioned API; use a pinned AI pipeline to normalize every input into a closed static-landing specification; autonomously generate frontend HTML and CSS in an isolated disposable workspace; permit at most three bounded attempts selected by an independent hidden evaluator; after exact-SHA attestation produce an immutable artifact and reversible HTTPS site materialization for therealaidarkfactory.online. Return the live URL and signed evidence without a human authoring generated source. Limit scope to the existing Adaptive Grok Build Pro landing and SEO showcase, add no framework, preserve the current site, enforce security, auth, secret isolation, and deny out-of-scope external writes.",
+  "task_domains": [
+    "frontend",
+    "security",
+    "ai",
+    "api"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "frontend-change",
+    "ai-rag-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "ai_implementer"
+}
