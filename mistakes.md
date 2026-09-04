@@ -561,3 +561,88 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The clone-independent test repair deleted the final uses of two imports, but its targeted preflight exercised unittest only and omitted static lint for the modified Python files.
 **Prevention:** Run targeted Ruff on every modified Python file before push, even when its focused unit tests pass.
+
+## 2026-09-04 — Inferred indexing from incomplete automation visibility
+
+**Root cause:** We inferred non-indexing from one search and an anti-bot-limited origin observation, conflating current automation visibility with search-engine indexing; the user's SERP proves observed indexing.
+**Prevention:** Record indexing evidence separately from the ability of an automated client to observe current origin content, and never let one substitute for the other.
+
+## 2026-09-04 — Applied a preview indexing policy to a deployable candidate contract
+
+**Root cause:** Task 1 copied the showcase's `noindex` safety posture into `StaticLandingSpecV1` before the exact indexed target repository was bound, giving provider output authority to contradict source indexing.
+**Prevention:** Provider output carries only `preserve_source`; the trusted renderer derives robots, canonical, and hreflang facts from the verified exact target baseline.
+
+## 2026-09-04 — Resolved a Git multicall executable before invocation
+
+**Root cause:** The local clone boundary resolved the `git-upload-pack` symlink to `/usr/bin/git`, changing its multicall `argv[0]` identity and making every no-local clone fail before checkout.
+**Prevention:** Resolve the primary Git executable, but preserve the absolute symlink path for Git helper multicall commands and cover the exact clone argv with the focused real-target test.
+
+## 2026-09-04 — Used an empty exception handler in stream cleanup
+
+**Root cause:** The landing stream cleanup used `except Exception: pass` to preserve the original request failure, which made the intended suppression opaque to the security gate.
+**Prevention:** Express deliberate cleanup-only suppression with `contextlib.suppress` and run targeted Bandit on every modified production Python path before source freeze.
+
+## 2026-09-04 — Left predecessor tests bound to incomplete global fixtures
+
+**Root cause:** The L5 schema addition did not update one exact global schema inventory, while a long PostgreSQL method compared a module-frozen authority proof with the later wall clock instead of its fixture clock.
+**Prevention:** Update every exact inventory with additive contracts and keep fixture-bound authority parsing on the same explicit test clock so suite duration cannot alter semantics.
+
+## 2026-09-04 — Let implementation signals outrun the declared L5 boundary
+
+**Root cause:** A transient stdlib queue and a direct socket import in a denial test advertised capabilities the MVP does not own, while new contracts were incorrectly self-compared against a nonexistent predecessor and pre-L5 AST ceilings were not remeasured.
+**Prevention:** Use one bounded awaited intake call, patch denial sentinels by string target, treat an absent contract baseline as vacuous while keeping later changes fail closed, and record finite measured budgets with explicit optimization debt.
+
+## 2026-09-04 — Patched a lookalike instead of the traceback location
+
+**Root cause:** The first deterministic-clock repair matched an earlier near-identical intake call instead of the traceback line inside the failing long-running method, and the isolated method completed before the stale-proof window exposed the miss.
+**Prevention:** Bind a repair to the traceback line and enclosing method, then inspect every same-pattern occurrence in that method before rerunning the smallest failed target.
+
+## 2026-09-04 — Treated surface signatures as proof of bounded content
+
+**Root cause:** Landing intake and navigation checks trusted magic prefixes, raw byte substrings, and permissive path parsing instead of establishing canonical path, XML relationship, and media-duration semantics.
+**Prevention:** Test adversarial serializations and ambiguous paths, parse only the bounded supported formats, and reject any input whose safety-relevant meaning or duration cannot be established.
+
+## 2026-09-04 — Modeled local resources only across uninterrupted execution
+
+**Root cause:** Accepted jobs, quarantined blobs, and the content-addressed artifact pair had happy-path cleanup but lacked persisted terminal failure, enforced expiry after restart, and exact orphan-pair recovery.
+**Prevention:** Define and test every lifecycle at failure, expiry, replay, crash, and restart boundaries before claiming bounded retention or recoverable publication.
+
+## 2026-09-04 — Mistook `nohup` for session detachment
+
+**Root cause:** The long verifier was launched with `nohup` but remained in the exec session, so the command boundary killed PID 3343961 before test stages while its status incorrectly remained `running`.
+**Prevention:** Launch long verification through `setsid` or an equivalent detached session, then prove the recorded PID survives a separate command boundary before reporting it as detached.
+
+## 2026-09-04 — Added an untrusted XML parser without its security gate
+
+**Root cause:** The DOCX hardening introduced `xml.etree.ElementTree` while focused functional checks omitted targeted Bandit; the exact verifier correctly caught B405 and B314.
+**Prevention:** Run targeted Bandit whenever a modified path parses untrusted formats, and prefer a bounded fail-closed lexical subset when no approved hardened parser dependency exists.
+
+## 2026-09-04 — Validated relationship targets without their source-part context
+
+**Root cause:** The lexical DOCX validator allowed any leading `../` sequence but discarded the `.rels` entry path, so it could not distinguish a legitimate parent reference from traversal above the OPC package root.
+**Prevention:** Bind every internal target to its relationship source part and reject it when normalized parent depth exceeds that source directory's package-root depth.
+
+## 2026-09-04 — Invoked an unresolved unittest selector
+
+**Root cause:** The initial targeted validation named a nonexistent unittest class because the exact class and method were not resolved in source before invocation, producing a loader `AttributeError` and executing no test.
+**Prevention:** Confirm every targeted selector with `rg` or a source listing before invocation, and treat any loader error as zero verification evidence.
+
+## 2026-09-04 — Used prefix matching for prohibited package members
+
+**Root cause:** The first packaging diagnostic used prefix matching, so allowed `.gitignore`, `.env.example`, and `.gitkeep` files were misclassified as `.git`, exact `.env`, and runtime-state members.
+**Prevention:** Use anchored path-component and exact-file predicates, explicitly allow templates and `.gitkeep`, and classify every match before declaring an artifact failure.
+
+## 2026-09-04 — Verified an artifact sidecar from the wrong directory
+
+**Root cause:** The checksum command ran from repository/root context while the sidecar deliberately names only the ZIP basename, so `sha256sum -c` reported that no file was verified despite identical correct archives.
+**Prevention:** Run checksum verification from each artifact's `dist` directory, or resolve the sidecar member relative to the sidecar's own directory.
+
+## 2026-09-04 — Reused a release merge as the live main identity
+
+**Root cause:** The immutable `v2.0.13` merge identity was reused as live `origin/main` after later commits because a fetch-and-compare was not a final packaging precondition.
+**Prevention:** Before packaging, fetch and bind live claims to `refs/remotes/origin/main` while storing the release merge as a separate historical identity.
+
+## 2026-09-04 — Allowed Markdown backticks to reach Bash substitution
+
+**Root cause:** A read-only `rg` invocation placed Markdown backticks inside a double-quoted Bash pattern, causing unintended command substitution (`main: command not found` and `origin/main: No such file`) even though later checks completed.
+**Prevention:** Single-quote literal patterns or pass fixed strings without shell metacharacters, as required by the command-escaping rule.

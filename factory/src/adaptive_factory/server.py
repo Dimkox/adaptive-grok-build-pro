@@ -9,6 +9,9 @@ import stat
 import uvicorn
 
 from .api import TEXT_ID, Authenticator, create_app
+from .landing_intake import PrivateLandingBlobStore
+from .landing_provider import UnavailableLandingProvider, unavailable_landing_profile
+from .landing_service import InMemoryLandingJobStore, LandingApplicationService
 from .migrations import discover_migrations
 from .models import Actor
 from .service import FactoryService
@@ -126,6 +129,7 @@ def build_app(
     execution_registry=None,
     artifact_broker=None,
     snapshot_broker=None,
+    landing_service=None,
 ):
     if settings.execution_enabled and (
         execution_registry is None
@@ -176,6 +180,21 @@ def build_app(
         ):
             raise ServerError("database capabilities are not ready")
 
+    if landing_service is None and settings.landing_quarantine_path is not None:
+        profile = unavailable_landing_profile()
+        try:
+            landing_service = LandingApplicationService(
+                InMemoryLandingJobStore(),
+                PrivateLandingBlobStore(
+                    settings.landing_quarantine_path,
+                    repository_root=Path(__file__).resolve().parents[3],
+                ),
+                UnavailableLandingProvider(profile),
+                profile_digest=profile.profile_digest,
+            )
+        except Exception as exc:
+            raise ServerError("landing composition is unavailable") from exc
+
     return create_app(
         FactoryService(
             store,
@@ -189,6 +208,7 @@ def build_app(
         ),
         Authenticator(load_actors(settings.actors_file)),
         execution_enabled=settings.execution_enabled,
+        landing_service=landing_service,
     )
 
 
@@ -197,6 +217,7 @@ def main(
     execution_registry=None,
     artifact_broker=None,
     snapshot_broker=None,
+    landing_service=None,
 ) -> int:
     settings = FactorySettings.from_environment()
     app = build_app(
@@ -204,6 +225,7 @@ def main(
         execution_registry=execution_registry,
         artifact_broker=artifact_broker,
         snapshot_broker=snapshot_broker,
+        landing_service=landing_service,
     )
     listener = prepare_unix_socket(settings.socket_path)
     try:

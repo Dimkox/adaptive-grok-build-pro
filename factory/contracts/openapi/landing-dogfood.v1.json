@@ -1,0 +1,100 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Adaptive Factory L5 Landing Dogfood API",
+    "version": "1.0.0",
+    "description": "Additive local landing intake API. Repository identity and exact base SHA/tree must match trusted server configuration; the default provider and publisher are unavailable."
+  },
+  "paths": {
+    "/v1/landing-inputs": {
+      "post": {
+        "operationId": "submitLandingInput",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/Authorization"},
+          {"$ref": "#/components/parameters/IdempotencyKey"},
+          {"$ref": "#/components/parameters/CorrelationId"},
+          {"$ref": "#/components/parameters/RepositoryId"},
+          {"$ref": "#/components/parameters/ExactBaseSha"},
+          {"$ref": "#/components/parameters/ExactBaseTree"}
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "One bounded raw body. Runtime byte/shape limits depend on the exact media type.",
+          "content": {
+            "text/plain": {"schema": {"type": "string", "format": "binary"}},
+            "audio/wav": {"schema": {"type": "string", "format": "binary"}},
+            "audio/mpeg": {"schema": {"type": "string", "format": "binary"}},
+            "audio/ogg": {"schema": {"type": "string", "format": "binary"}},
+            "image/png": {"schema": {"type": "string", "format": "binary"}},
+            "image/jpeg": {"schema": {"type": "string", "format": "binary"}},
+            "image/webp": {"schema": {"type": "string", "format": "binary"}},
+            "application/pdf": {"schema": {"type": "string", "format": "binary"}},
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {"schema": {"type": "string", "format": "binary"}}
+          }
+        },
+        "responses": {
+          "202": {"$ref": "#/components/responses/Accepted"},
+          "400": {"$ref": "#/components/responses/Error"},
+          "401": {"$ref": "#/components/responses/Error"},
+          "403": {"$ref": "#/components/responses/Error"},
+          "409": {"$ref": "#/components/responses/Error"},
+          "413": {"$ref": "#/components/responses/Error"},
+          "415": {"$ref": "#/components/responses/Error"},
+          "422": {"$ref": "#/components/responses/Error"},
+          "429": {"$ref": "#/components/responses/Error"},
+          "500": {"$ref": "#/components/responses/Error"},
+          "503": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/v1/landing-jobs/{job_id}": {
+      "get": {
+        "operationId": "getLandingJob",
+        "security": [{"bearerAuth": []}],
+        "parameters": [{"$ref": "#/components/parameters/Authorization"}, {"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/RepositoryId"}, {"$ref": "#/components/parameters/JobId"}],
+        "responses": {"200": {"$ref": "#/components/responses/Job"}, "401": {"$ref": "#/components/responses/Error"}, "403": {"$ref": "#/components/responses/Error"}, "404": {"$ref": "#/components/responses/Error"}, "500": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/v1/landing-jobs/{job_id}/cancel": {
+      "post": {
+        "operationId": "cancelLandingJob",
+        "security": [{"bearerAuth": []}],
+        "parameters": [{"$ref": "#/components/parameters/Authorization"}, {"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/RepositoryId"}, {"$ref": "#/components/parameters/JobId"}],
+        "responses": {"200": {"$ref": "#/components/responses/Job"}, "401": {"$ref": "#/components/responses/Error"}, "403": {"$ref": "#/components/responses/Error"}, "404": {"$ref": "#/components/responses/Error"}, "409": {"$ref": "#/components/responses/Error"}, "500": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/v1/landing-jobs/{job_id}/result": {
+      "get": {
+        "operationId": "getLandingResult",
+        "security": [{"bearerAuth": []}],
+        "parameters": [{"$ref": "#/components/parameters/Authorization"}, {"$ref": "#/components/parameters/CorrelationId"}, {"$ref": "#/components/parameters/RepositoryId"}, {"$ref": "#/components/parameters/JobId"}],
+        "responses": {"200": {"$ref": "#/components/responses/Result"}, "401": {"$ref": "#/components/responses/Error"}, "403": {"$ref": "#/components/responses/Error"}, "404": {"$ref": "#/components/responses/Error"}, "409": {"$ref": "#/components/responses/Error"}, "500": {"$ref": "#/components/responses/Error"}, "503": {"$ref": "#/components/responses/Error"}}
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {"bearerAuth": {"type": "http", "scheme": "bearer"}},
+    "parameters": {
+      "Authorization": {"name": "Authorization", "in": "header", "required": true, "schema": {"type": "string", "pattern": "^Bearer .+$"}},
+      "IdempotencyKey": {"name": "Idempotency-Key", "in": "header", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}},
+      "CorrelationId": {"name": "X-Correlation-ID", "in": "header", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}},
+      "RepositoryId": {"name": "X-Repository-ID", "in": "header", "required": true, "description": "Must exactly match trusted repository configuration.", "schema": {"type": "string", "const": "github.com/Dimkox/ai-dark-factory-landing"}},
+      "ExactBaseSha": {"name": "X-Exact-Base-SHA", "in": "header", "required": true, "description": "Must exactly match trusted base configuration.", "schema": {"type": "string", "const": "176efcaab931c2482781ff163c621b10aa05dee9"}},
+      "ExactBaseTree": {"name": "X-Exact-Base-Tree", "in": "header", "required": true, "description": "Must exactly match trusted base tree configuration.", "schema": {"type": "string", "const": "f2bdcecc6dbe9ecc82007610d398ca12bd75e07f"}},
+      "JobId": {"name": "job_id", "in": "path", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}}
+    },
+    "schemas": {
+      "Job": {"type": "object", "additionalProperties": false, "required": ["schema_version", "job_id", "state", "input_digest"], "properties": {"schema_version": {"const": 1}, "job_id": {"type": "string"}, "state": {"enum": ["accepted", "normalizing", "generating", "evaluating", "artifact_ready", "provider_unavailable", "rejected", "cancelled", "needs_human"]}, "input_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}},
+      "Result": {"type": "object", "additionalProperties": false, "required": ["schema_version", "job_id", "state", "artifact_digest", "live_url"], "properties": {"schema_version": {"const": 1}, "job_id": {"type": "string"}, "state": {"enum": ["artifact_ready", "provider_unavailable", "rejected", "cancelled", "needs_human"]}, "artifact_digest": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}, "live_url": {"type": "null"}}},
+      "Error": {"type": "object", "additionalProperties": false, "required": ["error", "code", "detail"], "properties": {"error": {"type": "string", "minLength": 1, "maxLength": 128}, "code": {"type": "string", "minLength": 1, "maxLength": 128}, "detail": {"type": "string", "minLength": 1, "maxLength": 160}}}
+    },
+    "headers": {"CorrelationId": {"required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128}}},
+    "responses": {
+      "Accepted": {"description": "Input accepted for local processing.", "headers": {"X-Correlation-ID": {"$ref": "#/components/headers/CorrelationId"}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Job"}}}},
+      "Job": {"description": "Closed local job projection.", "headers": {"X-Correlation-ID": {"$ref": "#/components/headers/CorrelationId"}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Job"}}}},
+      "Result": {"description": "Closed local result; live_url is always null in this contract version.", "headers": {"X-Correlation-ID": {"$ref": "#/components/headers/CorrelationId"}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Result"}}}},
+      "Error": {"description": "Closed redacted error.", "headers": {"X-Correlation-ID": {"$ref": "#/components/headers/CorrelationId"}}, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}
+    }
+  }
+}

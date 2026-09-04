@@ -1,10 +1,12 @@
-# Adaptive Factory M4-M8 control and evaluation source
+# Adaptive Factory M4-M8 control/evaluation and offline L5 landing source
 
 This nested Python package is a source-only, local control plane. It validates immutable M1/M2/M3/M0-bound intake, stores operational truth in an isolated PostgreSQL `factory` schema, schedules work with database leases and monotonic fences, enforces 20 global readers / 10 readers per repository / one writer, bounds retries and budgets, retains hash-chained audit, and performs restart-safe reconciliation.
 
 It does not make a live provider call, execute repository commands, access Git/GitHub or Trust CI credentials, activate systemd, deploy, publish, or perform an external/production write. `ready_for_human` remains M4's positive terminal state. M5 adds immutable execution packets/manifests, closed provider-neutral protocols and APIs, offline ineligible adapters, trusted proposal/workspace boundaries, atomic terminal finalization, and bounded factual recovery. Shipped execution remains disabled by default.
 
 Current status is bounded by the [root current-state summary](../README.md), [program roadmap](../DARK_FACTORY_ROADMAP.md), and milestone change packages. This M4-M8 source was delivered to `main` by PR #22 and published in `v2.0.13`; the checked head was `b5eba759c309a92f92f4d4003d025795c7f8a1f9` and the merge was `8599d45f4f28285381b05a53feb3059de92eb2a8`. Repository delivery does not authorize deployment, live-provider action, persistent database mutation, M8 activation, or production acceptance.
+
+The local unpublished `2.0.14` source candidate adds a separate L5 landing state/store and four authenticated routes for bounded multimodal intake, status, cancellation and local artifact results. The route-specific streaming path accepts only the declared 1–25 MiB media ceilings without raising the existing 1 MiB JSON middleware limit; the default provider stops before blob access/process launch, the only publisher has no transport, and every result keeps `live_url` null. An explicit sealed fixture can prove `artifact_ready` against the read-only exact landing source, but it cannot call a provider, mutate the target, deploy, publish, or claim indexing.
 
 ## Local disposable verification
 

@@ -78,6 +78,7 @@ class FactorySettings:
     semantic_coordinator_database_url: str | None = None
     semantic_validator_database_url: str | None = None
     semantic_adjudicator_database_url: str | None = None
+    landing_quarantine_path: Path | None = None
 
     @classmethod
     def from_environment(cls) -> "FactorySettings":
@@ -98,6 +99,10 @@ class FactorySettings:
         semantic_adjudicator_database_url = os.environ.get(
             "FACTORY_SEMANTIC_ADJUDICATOR_DATABASE_URL"
         ) or None
+        landing_quarantine_raw = os.environ.get("FACTORY_LANDING_QUARANTINE_PATH")
+        landing_quarantine_path = (
+            Path(landing_quarantine_raw) if landing_quarantine_raw else None
+        )
         actors_file = os.environ.get("FACTORY_ACTORS_FILE", "")
         socket_path = Path(os.environ.get("FACTORY_SOCKET_PATH", "/run/adaptive-factory/control.sock"))
         if (
@@ -116,6 +121,13 @@ class FactorySettings:
             raise SettingsError(
                 "enabled execution requires a separate artifact attestor database URL"
             )
+        if landing_quarantine_path is not None and (
+            not landing_quarantine_path.is_absolute()
+            or ".." in landing_quarantine_path.parts
+        ):
+            raise SettingsError(
+                "FACTORY_LANDING_QUARANTINE_PATH must be absolute and normalized"
+            )
         return cls(
             database_url=database_url,
             socket_path=socket_path,
@@ -125,4 +137,5 @@ class FactorySettings:
             semantic_coordinator_database_url=semantic_coordinator_database_url,
             semantic_validator_database_url=semantic_validator_database_url,
             semantic_adjudicator_database_url=semantic_adjudicator_database_url,
+            landing_quarantine_path=landing_quarantine_path,
         )

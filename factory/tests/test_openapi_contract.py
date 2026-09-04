@@ -20,6 +20,10 @@ EXECUTION_CONTRACTS = tuple(
     Path(__file__).resolve().parents[1] / f"contracts/openapi/{name}"
     for name in ("factory-execution.v1.json", "factory-execution.v2.json")
 )
+LANDING_CONTRACT = (
+    Path(__file__).resolve().parents[1]
+    / "contracts/openapi/landing-dogfood.v1.json"
+)
 
 
 EXPECTED_CONTROL_OPERATIONS = {
@@ -50,6 +54,12 @@ EXPECTED_SEMANTIC_OPERATIONS = {
     ("/v1/semantic/subjects/{subject_digest}/verdict", "get"): "getSemanticVerdict",
 }
 EXPECTED_OPERATIONS = EXPECTED_CONTROL_OPERATIONS | EXPECTED_SEMANTIC_OPERATIONS
+EXPECTED_LANDING_OPERATIONS = {
+    ("/v1/landing-inputs", "post"): "submitLandingInput",
+    ("/v1/landing-jobs/{job_id}", "get"): "getLandingJob",
+    ("/v1/landing-jobs/{job_id}/cancel", "post"): "cancelLandingJob",
+    ("/v1/landing-jobs/{job_id}/result", "get"): "getLandingResult",
+}
 
 EXPECTED_SCOPES = {
     "getLiveHealth": None,
@@ -181,6 +191,9 @@ class CheckedOpenApiContractTests(unittest.TestCase):
             json.loads(path.read_text(encoding="utf-8"))
             for path in EXECUTION_CONTRACTS
         )
+        cls.landing_document = json.loads(
+            LANDING_CONTRACT.read_text(encoding="utf-8")
+        )
         cls.documents = (cls.document, cls.semantic_document)
 
     def test_exact_runtime_operation_inventory_has_stable_unique_ids(self):
@@ -224,9 +237,41 @@ class CheckedOpenApiContractTests(unittest.TestCase):
         self.assertEqual(
             runtime,
             set(EXPECTED_OPERATIONS).union(
+                set(EXPECTED_LANDING_OPERATIONS),
                 *(set(items) for items in execution_operations)
             ),
         )
+
+    def test_landing_openapi_operation_ids_match_the_always_visible_runtime_routes(self):
+        contract = {
+            (path, method): operation["operationId"]
+            for path, path_item in self.landing_document["paths"].items()
+            for method, operation in path_item.items()
+        }
+        self.assertEqual(contract, EXPECTED_LANDING_OPERATIONS)
+        app = create_app(
+            object(),
+            Authenticator(
+                {
+                    "landing-contract-token": Actor(
+                        "landing-contract",
+                        "client",
+                        frozenset(),
+                        frozenset(),
+                    )
+                }
+            ),
+        )
+        runtime = {
+            (route.path, method.lower()): route.operation_id
+            for route in app.routes
+            if route.path.startswith("/v1/landing-")
+            for method in route.methods
+        }
+        self.assertEqual(runtime, EXPECTED_LANDING_OPERATIONS)
+        error = self.landing_document["components"]["schemas"]["Error"]
+        self.assertEqual(set(error["required"]), {"error", "code", "detail"})
+        self.assertFalse(error["additionalProperties"])
 
     def test_contract_uses_only_inline_closed_object_schemas(self):
         self.assertNotIn("schemas", self.document.get("components", {}))

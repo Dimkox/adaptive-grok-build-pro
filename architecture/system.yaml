@@ -208,6 +208,62 @@
       "path": "factory/contracts/jsonschema/shadow-task-evidence.v1.schema.json",
       "role": "consumer",
       "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
+      "kind": "openapi",
+      "path": "factory/contracts/openapi/landing-dogfood.v1.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-LANDING-INPUT-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/landing-input.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-LANDING-SPEC-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/static-landing-spec.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/landing-provider-evidence.v1.schema.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-LANDING-ATTEMPT-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/landing-attempt.v1.schema.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-LANDING-EVALUATION-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/landing-evaluation.v1.schema.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-LANDING-SITE-ARTIFACT-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/landing-site-artifact.v1.schema.json",
+      "role": "producer",
+      "version": "1"
     }
   ],
   "data_classifications": [
@@ -285,6 +341,12 @@
     },
     {
       "classification": "restricted",
+      "contains_secret": false,
+      "id": "DATA-FACTORY-LANDING-INPUT",
+      "tenant_scoped": true
+    },
+    {
+      "classification": "restricted",
       "contains_secret": true,
       "id": "DATA-TRUST-MATERIAL",
       "tenant_scoped": false
@@ -313,6 +375,29 @@
       "protocol": "unix_http",
       "sync_or_async": "synchronous",
       "to": "NODE-FACTORY-CONTROL",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-LANDING-INPUT"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 300000
+      },
+      "from": "NODE-FACTORY-LOCAL-API",
+      "id": "EDGE-FACTORY-API-LANDING-DOGFOOD",
+      "network_policy": "no_network",
+      "protocol": "python_import",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-LANDING-DOGFOOD",
       "type": "control"
     },
     {
@@ -935,6 +1020,7 @@
         "CONTRACT-FACTORY-CONTROL-OPENAPI",
         "CONTRACT-FACTORY-EXECUTION-OPENAPI",
         "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2",
+        "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
         "CONTRACT-FACTORY-SEMANTIC-OPENAPI"
       ],
       "repository_paths": [
@@ -1479,6 +1565,44 @@
       "repository_paths": [
         "factory/src/adaptive_factory/autonomy.py",
         "factory/src/adaptive_factory/m7_autonomy_bridge.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-FACTORY-LANDING-INPUT",
+      "id": "NODE-FACTORY-LANDING-DOGFOOD",
+      "owner": "local factory operators",
+      "public_contracts": [
+        "CONTRACT-FACTORY-LANDING-ATTEMPT-V1",
+        "CONTRACT-FACTORY-LANDING-EVALUATION-V1",
+        "CONTRACT-FACTORY-LANDING-INPUT-V1",
+        "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V1",
+        "CONTRACT-FACTORY-LANDING-SITE-ARTIFACT-V1",
+        "CONTRACT-FACTORY-LANDING-SPEC-V1"
+      ],
+      "repository_paths": [
+        "factory/contracts/jsonschema/landing-attempt.v1.schema.json",
+        "factory/contracts/jsonschema/landing-evaluation.v1.schema.json",
+        "factory/contracts/jsonschema/landing-input.v1.schema.json",
+        "factory/contracts/jsonschema/landing-provider-evidence.v1.schema.json",
+        "factory/contracts/jsonschema/landing-site-artifact.v1.schema.json",
+        "factory/contracts/jsonschema/static-landing-spec.v1.schema.json",
+        "factory/src/adaptive_factory/landing_artifact.py",
+        "factory/src/adaptive_factory/landing_contracts.py",
+        "factory/src/adaptive_factory/landing_coordinator.py",
+        "factory/src/adaptive_factory/landing_evaluation.py",
+        "factory/src/adaptive_factory/landing_intake.py",
+        "factory/src/adaptive_factory/landing_provider.py",
+        "factory/src/adaptive_factory/landing_renderer.py",
+        "factory/src/adaptive_factory/landing_service.py"
       ],
       "runtime": {
         "evidence": "source_described",

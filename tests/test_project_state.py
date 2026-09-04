@@ -13,7 +13,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
-CURRENT_MAIN_SHA = "8599d45f4f28285381b05a53feb3059de92eb2a8"
+CURRENT_MAIN_SHA = "ad6d23cc30c11e5ea51c388213f5ebdfe306fb56"
+RELEASE_MERGE_SHA = "8599d45f4f28285381b05a53feb3059de92eb2a8"
 HISTORICAL_M4_BASE_SHA = "78ad2f679d38dc3244e716c586332417e610089c"
 RELEASE_HEAD_SHA = "b5eba759c309a92f92f4d4003d025795c7f8a1f9"
 RELEASE_TREE = "03e122a30fb2dbb59907f4c4c28e17f93cbf0751"
@@ -79,7 +80,7 @@ class ProjectStateTests(unittest.TestCase):
     def test_project_state_has_independent_milestone_axes_and_truthful_facts(self) -> None:
         state = self.state
         self.assertEqual(state["schema_version"], 2)
-        self.assertEqual(state["product_version"], "2.0.13")
+        self.assertEqual(state["product_version"], "2.0.14")
         self.assertEqual(state["latest_published_release"], "v2.0.13")
         self.assertEqual(state["observed_main_sha"], CURRENT_MAIN_SHA)
         self.assertRegex(state["observed_at"], r"^2026-09-04T\d{2}:\d{2}:\d{2}Z$")
@@ -127,7 +128,7 @@ class ProjectStateTests(unittest.TestCase):
                 "stack_pr": 10,
                 "stack_merge": "c23fd49f80c7d1c74ca3393b6079a74f251a72d8",
                 "gate_head": "022411b05924618cfde0cb97b8c8aff4955e6013",
-                "main_merge": CURRENT_MAIN_SHA,
+                "main_merge": RELEASE_MERGE_SHA,
             },
             "M2": {
                 "implementation": "022411b05924618cfde0cb97b8c8aff4955e6013",
@@ -136,7 +137,7 @@ class ProjectStateTests(unittest.TestCase):
                 "stack_pr": 10,
                 "stack_merge": "c23fd49f80c7d1c74ca3393b6079a74f251a72d8",
                 "gate_head": "022411b05924618cfde0cb97b8c8aff4955e6013",
-                "main_merge": CURRENT_MAIN_SHA,
+                "main_merge": RELEASE_MERGE_SHA,
             },
             "M3": {
                 "implementation": "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
@@ -145,7 +146,7 @@ class ProjectStateTests(unittest.TestCase):
                 "stack_pr": 11,
                 "stack_merge": "67714a1f1b87effcfabe55d5ca2770d0a68d17c1",
                 "gate_head": "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
-                "main_merge": CURRENT_MAIN_SHA,
+                "main_merge": RELEASE_MERGE_SHA,
             },
             "M4": {
                 "implementation": M4_PRODUCT_SHA,
@@ -229,7 +230,7 @@ class ProjectStateTests(unittest.TestCase):
                 "notes": "Exact baseline receipt only; the current follow-up changes source and package bytes, so the receipt does not transfer.",
             },
         )
-        self.assertEqual(m4["stack_integration"]["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(m4["stack_integration"]["merge_commit"], RELEASE_MERGE_SHA)
         self.assertEqual(m4["external_gate"]["pull_request"], 22)
         self.assertEqual(m4["external_gate"]["head_sha"], RELEASE_HEAD_SHA)
         self.assertEqual(m4["external_gate"]["check_run_id"], 100955508827)
@@ -243,10 +244,10 @@ class ProjectStateTests(unittest.TestCase):
         m5 = state["milestones"]["M5"]
         self.assertEqual(m5["implementation"]["commit"], M5_PROVISIONAL_SHA)
         self.assertEqual(m5["stack_integration"]["base_commit"], M4_PRODUCT_SHA)
-        self.assertEqual(m5["main_delivery"]["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(m5["main_delivery"]["merge_commit"], RELEASE_MERGE_SHA)
         m6 = state["milestones"]["M6"]
         self.assertEqual(m6["implementation"]["commit"], M6_PROVISIONAL_SHA)
-        self.assertEqual(m6["main_delivery"]["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(m6["main_delivery"]["merge_commit"], RELEASE_MERGE_SHA)
         m7 = state["milestones"]["M7"]
         self.assertEqual(m7["implementation"]["commit"], M7_PROVISIONAL_SHA)
         m8 = state["milestones"]["M8"]
@@ -255,25 +256,65 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(m9["implementation"]["commit"], M9_PROVISIONAL_SHA)
         self.assertEqual(m9["stack_integration"]["base_commit"], M8_PROVISIONAL_SHA)
         self.assertEqual(m9["main_delivery"]["pull_request"], 22)
-        self.assertEqual(m9["main_delivery"]["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(m9["main_delivery"]["merge_commit"], RELEASE_MERGE_SHA)
 
         published = state["published_release"]
         self.assertEqual(published["tag"], "v2.0.13")
         self.assertEqual(published["checked_head"], RELEASE_HEAD_SHA)
-        self.assertEqual(published["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(published["merge_commit"], RELEASE_MERGE_SHA)
         self.assertEqual(published["tree"], RELEASE_TREE)
         self.assertEqual(published["artifact"]["sha256"], RELEASE_ZIP_SHA256)
+        self.assertEqual(
+            state["local_candidate"],
+            {
+                "version": "2.0.14",
+                "status": "source_ready",
+                "route_id": "9f67efd2575c",
+                "branch": "feature/l5-multimodal-landing-factory",
+                "change_package": "engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef",
+                "source_base": "b10a5c474883e30dcaf781d104cbb804f031b52f",
+                "reviewed_product_head": "5f47508f3c0d52b71a3c866969cc28b6476a9d99",
+                "reviewed_product_tree": "0ae72773d73a294b88a398cec9926f6fca2f5555",
+                "reviewed_policy_head": "58c9caed5d2c8f9febba297430a0782438505d82",
+                "reviewed_policy_tree": "975bf7a21784bf91279a684bdeb5f5394fb715a1",
+                "source_gate_status": "passed_composite",
+                "review_status": "four_route_selected_reviews_passed",
+                "artifact_status": "pending_at_ready_state_checkpoint_R",
+                "artifact_child": {
+                    "identity": "A",
+                    "source_parent": "ready_state_checkpoint_R",
+                    "delta_paths": [
+                        "packages/adaptive-grok-build-pro-v2.0.14.zip",
+                        "packages/adaptive-grok-build-pro-v2.0.14.zip.sha256",
+                    ],
+                    "authoritative_when": "both_paths_are_tracked_and_sidecar_matches_zip",
+                },
+                "published": False,
+                "external_effect": False,
+                "notes": "The offline L5 landing source is locally ready. Checkpoint R is the package source parent; R has no 2.0.14 product pair, while child A is exactly R plus the two declared paths and their tracked presence and sidecar binding are authoritative. Provider and publisher defaults remain unavailable, with no operational provider or hosting authority.",
+            },
+        )
 
     def test_m4_source_implementation_is_distinct_from_verification_review_and_delivery(self) -> None:
         dimensions = self.state["active_delivery"]["m4_dimensions"]
         self.assertEqual(
             self.state["active_delivery"]["status"],
-            "v2.0.13_published_to_main",
+            "local_2.0.14_source_ready",
         )
         self.assertTrue(
             self.state["active_delivery"]["next_action"].startswith(
-                "Collect the factual M8 30-task human-accepted cohort"
+                "If the declared 2.0.14 pair is absent"
             )
+        )
+        source_gate = self.state["active_delivery"]["local_source_gate"]
+        self.assertEqual(source_gate["status"], "passed_composite")
+        self.assertEqual(source_gate["product_head"], "5f47508f3c0d52b71a3c866969cc28b6476a9d99")
+        self.assertEqual(source_gate["policy_head"], "58c9caed5d2c8f9febba297430a0782438505d82")
+        self.assertEqual(source_gate["reviews"], "four_route_selected_reviews_passed")
+        self.assertEqual(self.state["active_delivery"]["route_id"], "9f67efd2575c")
+        self.assertEqual(
+            self.state["active_delivery"]["branch"],
+            "feature/l5-multimodal-landing-factory",
         )
         self.assertEqual(
             dimensions["implementation_source"],
@@ -571,6 +612,7 @@ class ProjectStateTests(unittest.TestCase):
                 ("03b8e24f06e9", "integration/m7-m6-final-20260904"),
                 ("3ec8b3357363", "repair/m8-contract-boundary-20260904"),
                 ("331ca7021cc0", "integration/m9-m8-final-20260904"),
+                ("9f67efd2575c", "feature/l5-multimodal-landing-factory"),
             ],
         )
         self.assertEqual(inventory["active"][0]["source_head"], M4_PRODUCT_SHA)
@@ -587,6 +629,11 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(inventory["active"][5]["head"], RELEASE_HEAD_SHA)
         self.assertEqual(inventory["active"][5]["source_checkpoint"], M9_PROVISIONAL_SHA)
         self.assertEqual(inventory["active"][5]["pull_request"], 22)
+        self.assertEqual(inventory["active"][6]["status"], "verifying")
+        self.assertEqual(
+            inventory["active"][6]["current_candidate_identity"],
+            "v2.0.14-source",
+        )
         self.assertIn(1, {item.get("pull_request") for item in inventory["superseded"]})
         self.assertIn(
             {

@@ -2,6 +2,8 @@
 
 Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). `adaptive-grok-build-pro-v2.0.13.zip` is the artifact published with tag `v2.0.13` at `2026-09-04T08:33:19Z`; its SHA-256 is `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`. The release is bound to immutable tag target `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`, rather than every later documentation-only HEAD.
 
+Product source is now the local unpublished, source-ready `2.0.14` candidate. Ready checkpoint `R` is the package source parent and contains no `adaptive-grok-build-pro-v2.0.14.zip` pair. Artifact child `A` is exactly `R` plus `adaptive-grok-build-pro-v2.0.14.zip` and `adaptive-grok-build-pro-v2.0.14.zip.sha256`; when both are tracked, the matching sidecar is authoritative. If the pair is absent, the next step is two reproducible private no-local builds from `R`; if present, the tree is `A` and proceeds to its artifact-bound gate.
+
 | File | Version |
 | --- | --- |
 | `adaptive-grok-build-pro-v2.0.0.zip` | 2.0.0 |
@@ -22,7 +24,7 @@ Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). `adaptiv
 Each zip has a sibling `.sha256`. Build a future candidate with:
 
 ```bash
-python3 scripts/package_stack.py --output packages/adaptive-grok-build-pro-v2.0.13.zip
+python3 scripts/package_stack.py --output packages/adaptive-grok-build-pro-v2.0.14.zip
 ```
 
 Production rebuilds package only the filtered regular-file inventory, blob bytes and canonical `0644`/`0755` member modes of a clean Git `HEAD`; ignored/untracked files and ambient non-executable permission bits are excluded even when present locally. Direct tracked output is published atomically with its sidecar, so no ad-hoc copy step may separate artifact provenance. The earlier artifact-head `9f07c32` failure is historical and was superseded; PR #22 checked head `b5eba759c309a92f92f4d4003d025795c7f8a1f9` earned the App-owned check before the same tree was merged and tagged.

@@ -340,6 +340,7 @@ class ServerTests(unittest.TestCase):
             True,
         )
         registry, artifact, snapshot = self.execution_dependencies()
+        landing = object()
         order = []
         listener = Mock()
         listener.close = Mock(side_effect=lambda: order.append("close"))
@@ -374,6 +375,7 @@ class ServerTests(unittest.TestCase):
                     execution_registry=registry,
                     artifact_broker=artifact,
                     snapshot_broker=snapshot,
+                    landing_service=landing,
                 ),
                 0,
             )
@@ -383,6 +385,7 @@ class ServerTests(unittest.TestCase):
             execution_registry=registry,
             artifact_broker=artifact,
             snapshot_broker=snapshot,
+            landing_service=landing,
         )
         uvicorn_server.return_value.run.assert_called_once_with(sockets=[listener])
 
@@ -490,6 +493,38 @@ class ServerTests(unittest.TestCase):
             settings = FactorySettings.from_environment()
         self.assertFalse(settings.execution_enabled)
         self.assertIsNone(settings.artifact_attestor_database_url)
+
+    def test_landing_quarantine_setting_is_optional_absolute_and_append_only(self):
+        base = {
+            "FACTORY_DATABASE_URL": "postgresql://runtime",
+            "FACTORY_ACTORS_FILE": "/run/actors.json",
+            "FACTORY_SOCKET_PATH": "/run/factory.sock",
+        }
+        with patch.dict(os.environ, base, clear=True):
+            settings = FactorySettings.from_environment()
+        self.assertIsNone(settings.landing_quarantine_path)
+        self.assertEqual(
+            tuple(FactorySettings.__dataclass_fields__)[-1],
+            "landing_quarantine_path",
+        )
+
+        with patch.dict(
+            os.environ,
+            {**base, "FACTORY_LANDING_QUARANTINE_PATH": "/var/tmp/factory-landing"},
+            clear=True,
+        ):
+            configured = FactorySettings.from_environment()
+        self.assertEqual(
+            configured.landing_quarantine_path,
+            Path("/var/tmp/factory-landing"),
+        )
+
+        with patch.dict(
+            os.environ,
+            {**base, "FACTORY_LANDING_QUARANTINE_PATH": "relative/landing"},
+            clear=True,
+        ), self.assertRaisesRegex(SettingsError, "absolute and normalized"):
+            FactorySettings.from_environment()
 
     def test_authenticated_request_reaches_real_unix_socket(self):
         class Service:

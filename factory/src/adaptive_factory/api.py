@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Callable, Iterable
 from dataclasses import fields, is_dataclass
 from datetime import datetime, timezone
 import hashlib
@@ -17,6 +19,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from .brokers import BrokerError, secret_free_identity
 from .contracts import ContractError, canonical_digest
 from .execution_contracts import ExecutionContractError
+from .landing_contracts import MAX_INPUT_BYTES, MEDIA_TYPES
+from .landing_service import LandingApplicationService, LandingServiceError
 from .models import Actor, ExecutionStage, LeaseGrant, RunRole, TaskStatus
 from .service import (
     AuthorizationError,
@@ -40,6 +44,7 @@ HEADER_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 TEXT_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
 HEX64_TEXT = re.compile(r"^[0-9a-f]{64}$")
 BODY_BEARING_METHODS = frozenset({"POST", "PUT", "PATCH"})
+LANDING_SUBMIT_PATH = "/v1/landing-inputs"
 
 
 def _json(value: Any) -> Any:
@@ -219,8 +224,50 @@ def _http_error(status_code: int, detail: Any) -> tuple[str, str, str]:
     return "invalid", "invalid_request", safe_detail
 
 
+def _landing_media(content_type: str | None) -> tuple[str, int]:
+    if not isinstance(content_type, str):
+        raise HTTPException(415, "landing media type required")
+    media_type = content_type.split(";", 1)[0].strip().lower()
+    for kind, allowed in MEDIA_TYPES.items():
+        if media_type in allowed:
+            return media_type, MAX_INPUT_BYTES[kind]
+    raise HTTPException(415, "landing media type unsupported")
+
+
+def _landing_content_length(value: str | None, maximum: int) -> None:
+    if value is None:
+        return
+    try:
+        declared = int(value)
+    except ValueError as exc:
+        raise HTTPException(400, "invalid content length") from exc
+    if declared < 0:
+        raise HTTPException(400, "invalid content length")
+    if declared > maximum:
+        raise HTTPException(413, "request body too large")
+
+
+async def _stream_landing_body(
+    request: Request,
+    maximum: int,
+    submit: Callable[[Iterable[bytes]], Any],
+) -> Any:
+    body = bytearray()
+    async for chunk in request.stream():
+        if len(body) + len(chunk) > maximum:
+            raise LandingServiceError(
+                "input_too_large", 413, "landing input too large"
+            )
+        body.extend(chunk)
+    return await asyncio.to_thread(submit, (bytes(body),))
+
+
 def create_app(
-    service, authenticator: Authenticator, *, execution_enabled: bool = True
+    service,
+    authenticator: Authenticator,
+    *,
+    execution_enabled: bool = True,
+    landing_service: LandingApplicationService | None = None,
 ) -> FastAPI:
     app = FastAPI(
         title="Adaptive Factory Local Control API",
@@ -260,6 +307,16 @@ def create_app(
     @app.exception_handler(BrokerError)
     async def broker_error(_request: Request, error: BrokerError):
         return JSONResponse({"error": "invalid", "code": error.code}, status_code=422)
+
+    @app.exception_handler(LandingServiceError)
+    async def landing_service_error(_request: Request, error: LandingServiceError):
+        category, _, _ = _http_error(error.status_code, error.detail)
+        return _error_response(
+            category,
+            error.code,
+            error.detail,
+            error.status_code,
+        )
 
     @app.exception_handler(AuthorizationError)
     async def authorization_error(_request: Request, _error: AuthorizationError):
@@ -355,7 +412,10 @@ def create_app(
         )
         request.state.correlation_id = correlation
 
-        if request.method in BODY_BEARING_METHODS:
+        landing_stream = (
+            request.method == "POST" and request.url.path == LANDING_SUBMIT_PATH
+        )
+        if request.method in BODY_BEARING_METHODS and not landing_stream:
             length = request.headers.get("content-length")
             if length:
                 try:
@@ -413,6 +473,148 @@ def create_app(
         family["auth_rejected"] = authenticator.rejection_count()
         result["factory_capacity_budget_kill_and_reconcile_outcomes_total"] = family
         return result
+
+    @app.post(
+        LANDING_SUBMIT_PATH,
+        tags=["landing"],
+        operation_id="submitLandingInput",
+        status_code=202,
+    )
+    async def submit_landing_input(
+        request: Request,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+        x_repository_id: str | None = Header(None),
+        x_exact_base_sha: str | None = Header(None),
+        x_exact_base_tree: str | None = Header(None),
+        content_type: str | None = Header(None),
+        content_length: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "landing:submit")
+        job_id = _request_id(idempotency_key, "Idempotency-Key")
+        correlation = _request_id(x_correlation_id, "X-Correlation-ID")
+        repository_id = _text(
+            x_repository_id, "X-Repository-ID", maximum=128, identifier=True
+        )
+        exact_base_sha = _text(
+            x_exact_base_sha, "X-Exact-Base-SHA", maximum=40
+        )
+        exact_base_tree = _text(
+            x_exact_base_tree, "X-Exact-Base-Tree", maximum=40
+        )
+        media_type, maximum = _landing_media(content_type)
+        _landing_content_length(content_length, maximum)
+        if landing_service is None:
+            raise LandingServiceError(
+                "provider_unavailable", 503, "landing composition unavailable"
+            )
+
+        result = await _stream_landing_body(
+            request,
+            maximum,
+            lambda chunks: landing_service.submit(
+                job_id=job_id,
+                repository_id=repository_id,
+                exact_base_sha=exact_base_sha,
+                exact_base_tree=exact_base_tree,
+                media_type=media_type,
+                chunks=chunks,
+                actor=actor,
+            ),
+        )
+        return JSONResponse(
+            result.job.job_view(),
+            status_code=202,
+            headers={"X-Correlation-ID": correlation},
+        )
+
+    @app.get(
+        "/v1/landing-jobs/{job_id}",
+        tags=["landing"],
+        operation_id="getLandingJob",
+    )
+    def get_landing_job(
+        job_id: str,
+        authorization: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+        x_repository_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "landing:read")
+        job_id = _request_id(job_id, "job_id")
+        correlation = _request_id(x_correlation_id, "X-Correlation-ID")
+        repository_id = _text(
+            x_repository_id, "X-Repository-ID", maximum=128, identifier=True
+        )
+        if landing_service is None:
+            raise LandingServiceError(
+                "provider_unavailable", 503, "landing composition unavailable"
+            )
+        record = landing_service.get(job_id, repository_id=repository_id, actor=actor)
+        return JSONResponse(
+            record.job_view(), headers={"X-Correlation-ID": correlation}
+        )
+
+    @app.post(
+        "/v1/landing-jobs/{job_id}/cancel",
+        tags=["landing"],
+        operation_id="cancelLandingJob",
+    )
+    def cancel_landing_job(
+        job_id: str,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+        x_repository_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "landing:cancel")
+        job_id = _request_id(job_id, "job_id")
+        key = _request_id(idempotency_key, "Idempotency-Key")
+        correlation = _request_id(x_correlation_id, "X-Correlation-ID")
+        repository_id = _text(
+            x_repository_id, "X-Repository-ID", maximum=128, identifier=True
+        )
+        if landing_service is None:
+            raise LandingServiceError(
+                "provider_unavailable", 503, "landing composition unavailable"
+            )
+        record = landing_service.cancel(
+            job_id,
+            repository_id=repository_id,
+            idempotency_key=key,
+            actor=actor,
+        )
+        return JSONResponse(
+            record.job_view(), headers={"X-Correlation-ID": correlation}
+        )
+
+    @app.get(
+        "/v1/landing-jobs/{job_id}/result",
+        tags=["landing"],
+        operation_id="getLandingResult",
+    )
+    def get_landing_result(
+        job_id: str,
+        authorization: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+        x_repository_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "landing:read")
+        job_id = _request_id(job_id, "job_id")
+        correlation = _request_id(x_correlation_id, "X-Correlation-ID")
+        repository_id = _text(
+            x_repository_id, "X-Repository-ID", maximum=128, identifier=True
+        )
+        if landing_service is None:
+            raise LandingServiceError(
+                "provider_unavailable", 503, "landing composition unavailable"
+            )
+        record = landing_service.result(
+            job_id, repository_id=repository_id, actor=actor
+        )
+        return JSONResponse(
+            record.result_view(), headers={"X-Correlation-ID": correlation}
+        )
 
     @app.post("/v1/tasks", tags=["tasks"])
     def submit(

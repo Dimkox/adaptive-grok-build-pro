@@ -412,3 +412,11 @@ Build the artifact-only final HEAD first, then store exact-head review reports u
 ## 2026-09-04 — Make historical and published provenance clone-independent
 
 Preserve the frozen M2 architecture inputs as manifest-bound text fixtures and exercise Git base selection in synthetic repositories. Bind the already-published 2.0.13 ZIP to `PROJECT_STATE.json` and its immutable release tag instead of requiring parity with later documentation-only HEADs.
+
+## 2026-09-04 — Dogfood landing generation without overwriting prior evidence
+
+Preserve the tracked showcase and the read-only private target, generating candidates only from its exact SHA/tree in independent disposable workspaces where root `index.html` and `content.css` are the complete write allowlist. Fixed command-provider ports with a sealed fixture keep the local flow executable, while unavailable defaults and a disabled publisher keep provider and production claims fail-closed until external authority exists.
+
+## 2026-09-04 — Amend finite budgets for mandatory safety repairs
+
+Raise only the measured factory-total AST ceiling to 1,450, factory-source AST ceiling to 1,010, and factory-test byte ceiling to 510,000 after required review repairs measured 1,404 total AST units, 1,005 source AST units, and 503,232 test bytes. Keeping test AST and every other ceiling unchanged makes the safety work explicit without moving files or deleting checks to game fitness.

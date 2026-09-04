@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:landing-site-artifact:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "site_id", "canonical_origin", "source_sha", "source_tree", "candidate_sha", "candidate_tree", "input_digest", "spec_digest", "profile_digest", "attempt_digest", "evaluation_digest", "manifest_digest", "zip_sha256", "sidecar_sha256", "member_count", "byte_length", "disposition", "artifact_digest"],
+  "$defs": {
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "site_id": {"const": "therealaidarkfactory.online"},
+    "canonical_origin": {"const": "https://therealaidarkfactory.online/"},
+    "source_sha": {"$ref": "#/$defs/sha"},
+    "source_tree": {"$ref": "#/$defs/sha"},
+    "candidate_sha": {"$ref": "#/$defs/sha"},
+    "candidate_tree": {"$ref": "#/$defs/sha"},
+    "input_digest": {"$ref": "#/$defs/digest"},
+    "spec_digest": {"$ref": "#/$defs/digest"},
+    "profile_digest": {"$ref": "#/$defs/digest"},
+    "attempt_digest": {"$ref": "#/$defs/digest"},
+    "evaluation_digest": {"$ref": "#/$defs/digest"},
+    "manifest_digest": {"$ref": "#/$defs/digest"},
+    "zip_sha256": {"$ref": "#/$defs/digest"},
+    "sidecar_sha256": {"$ref": "#/$defs/digest"},
+    "member_count": {"type": "integer", "minimum": 1, "maximum": 1024},
+    "byte_length": {"type": "integer", "minimum": 1, "maximum": 104857600},
+    "disposition": {"const": "artifact_ready"},
+    "artifact_digest": {"$ref": "#/$defs/digest"}
+  }
+}

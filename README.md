@@ -1,21 +1,22 @@
-# Adaptive Grok Build Pro v2.0.13
+# Adaptive Grok Build Pro v2.0.14
 
 A commercial-grade product for **Grok Build** — free of charge, public, and MIT-licensed.
 
 ## Current state
 
 - Fresh-agent bootstrap: start with [`START_HERE.md`](START_HERE.md), then [`PROJECT_STATE.json`](PROJECT_STATE.json). A clean clone must be sufficient to understand the current milestone without chat history.
-- Identity: **2.0.13** (`VERSION`, README H1). GitHub Release `v2.0.13` was published at `2026-09-04T08:33:19Z`; its ZIP SHA-256 is `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`. The published artifact is bound to the immutable `v2.0.13` tag, not to later documentation-only HEADs, so this state synchronization does not restack the ZIP.
+- Identity: **2.0.14** (`VERSION`, README H1) is the local unpublished source-ready candidate. Ready-state checkpoint `R` (this bookkeeping commit) is the package source parent and contains no `2.0.14` product pair. Artifact child `A` is exactly `R` plus [`packages/adaptive-grok-build-pro-v2.0.14.zip`](packages/adaptive-grok-build-pro-v2.0.14.zip) and its `.sha256` sidecar; in `A`, the tracked pair and matching sidecar are authoritative. GitHub Release `v2.0.13` remains the latest published release, with immutable tag-bound ZIP SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`.
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
-- Local quality gate: `python3 scripts/grok_verify.py --mode pr` plus route-selected reviews. These are preflight evidence, not merge authority.
+- Local quality gate: the exact `5f47508f3c0d52b71a3c866969cc28b6476a9d99` product verifier passed every heavy/product gate and found only the source-AST policy ceiling; exact `58c9caed5d2c8f9febba297430a0782438505d82` changes only that policy, its mirrored fixture and rationale, and its exact route fitness passes. All four route-selected reviews pass; this composite source gate remains local preflight evidence, not merge authority, and `A` still requires its artifact-bound gate.
 - Independent Trust CI: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
 - M0 Live Trust Authority is delivered on `main`. PR #7 repaired the Trust CI workspace/runtime path, PR #6 fixed target-aware shell policy/denial loops, and PR #5 delivered the milestone.
-- Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.13`. Protected `main` is `8599d45f4f28285381b05a53feb3059de92eb2a8`; the required App-owned check remains `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`, with deployed policy digest `06ecf1c875bc12fa696956998983e04b102f28571a586bc3bb7a2fff5083fdb2`.
+- Trust CI service identity is **2.1.0** (`trust-ci/pyproject.toml`); it is not product `2.0.14`. Protected `main` is currently `ad6d23cc30c11e5ea51c388213f5ebdfe306fb56`; the historical PR #22 / `v2.0.13` merge remains `8599d45f4f28285381b05a53feb3059de92eb2a8`. The required App-owned check remains `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`, with deployed policy digest `06ecf1c875bc12fa696956998983e04b102f28571a586bc3bb7a2fff5083fdb2`.
 - M1-M3 are implemented, reviewed and delivered to `main` through PR #22. Their earlier stack history remains intact: PRs #4 and #8 delivered the first M1 slices, PR #10 accepted the full M1/M2 head into `milestone/m1-typed-intent-evidence`, and PR #11 accepted M3 aggregate `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` into `milestone/m2-executable-architecture`; those exact sources are ancestors of the checked PR #22 release head.
 - PR #22 delivered the complete M1-M9 repository product to `main`, including M4 durable control, M5 bounded execution, M6 semantic validation, M7 shadow handoff, M8 earned-autonomy evaluation, and M9 deterministic preview/staging/bounded-canary plus least-authority recovery. Migrations `001`-`018` are preserved; execution and delivery remain disabled by default and no operational provider, credential, persistent deployment, systemd activation, or production capability is introduced.
 - PRs #12 and #13 remain stale old-epoch `ACTION_REQUIRED` work: their unique lazy CLI import/tests and repository-scoped Trust CI profiles, respectively, are absent from `main` and require clean successor extraction. PR #15's current-epoch `adaptive-trust-ci/verified@06ecf1c875bc` conclusion is `FAILURE` while GitGuardian is `SUCCESS`; the failure cause was not inspected or inferred. PR #21 remains open at `571cad7877431ac5ab5779b53fe9f7effd6859ce`, with both Trust CI and GitGuardian reporting `FAILURE`; neither failure is diagnosed or dismissed here.
 - Exact source checkpoints remain M4 `67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4` → M5 `85cd4343143915ce9342634e7fe81886b6394871` → M6 `c6d48ffd8594b3baab1a575021452ea5dfa2a98b` → M7 `00e0e4f9a6f50844bf9e0ffc7139d3283dda889f` → corrected M8 `a937ac8d200a4e143c295fabd482b19bc8cc4286` → M9 checkpoint `64b10689ce78a0464a494440f3fa981e18789687`. PR #22 checked head `b5eba759c309a92f92f4d4003d025795c7f8a1f9` earned App check `adaptive-trust-ci/verified@06ecf1c875bc` (`SUCCESS`, check run `100955508827`, attestation `74f1bbb2-3098-4d35-a42f-d49351d81c4a`) and was merged at `2026-09-04T08:31:49Z` as `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`.
 - Repository delivery is distinct from operational activation. M8 still lacks a factual cohort of at least 30 human-accepted tasks and activation; M9 still lacks real signed input, an operational environment/provider deployment, exercised recovery proof, and production authority.
+- The locally source-ready `2.0.14` candidate adds an offline L5 multimodal landing dogfood vertical under [`factory/`](factory/) and an unavailable publication port under [`delivery/`](delivery/). It accepts bounded text/audio/image/PDF/DOCX through four authenticated local API operations, uses an explicit fixed command-provider fixture or the default unavailable profile, renders and evaluates at most three fresh exact-SHA candidates, and seals a deterministic 19-member site artifact; the publisher has no transport and `live_url` is always null. The authoritative landing repository remains read-only at exact SHA `176efcaab931c2482781ff163c621b10aa05dee9`; no provider call, network access, target mutation, deployment, live/indexed claim, or production authority is present.
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
 - Optional SEO side project: PR #19 delivered it to `main` as `8ab4e57038dec2e07f01aaa0b207813a387358f4`; [`.agents/skills/seo-landing/`](.agents/skills/seo-landing/) provides repository-scoped `$seo-landing` generation/audit/fix modes, while [`side-projects/seo-landing-showcase/`](side-projects/seo-landing-showcase/) is its Russian static showcase and stays non-indexable until a production origin is supplied. This is delivered non-milestone work, not M0-M9 progress.
 
@@ -31,7 +32,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 8. [QUICKSTART.md](QUICKSTART.md)
 9. [`trust-ci/README.md`](trust-ci/README.md)
 10. [`factory/README.md`](factory/README.md)
-11. [active M9 change package](engineering/changes/20260904-m9-staged-delivery-on-exact-m8-f53275d-331ca7/README.md)
+11. [active L5 landing change package](engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef/brief.md)
 12. `.grok-stack/runtime/active-route.json` if present (machine-local route; it may be absent in a clean clone and is not merge authority)
 13. This README’s stack graph and map
 
@@ -81,8 +82,8 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - [`scripts/grok_doctor.py`](scripts/grok_doctor.py)
 - [`scripts/install_into.py`](scripts/install_into.py)
 - [`trust-ci/`](trust-ci/) — external merge trust, deployed independently
-- [`factory/`](factory/) — repository-delivered M4-M8 control/evaluation source; runtime execution remains disabled by default and has no merge authority
-- [`delivery/`](delivery/) — repository-delivered M9 staged-delivery/recovery source; sealed in-memory environment only and no production authority
+- [`factory/`](factory/) — delivered M4-M8 control/evaluation source plus the local-only L5 landing candidate; runtime execution and operational landing providers remain disabled by default
+- [`delivery/`](delivery/) — delivered M9 staged-delivery/recovery source plus the transport-free unavailable landing publisher; no production authority
 - [`DARK_FACTORY_ROADMAP.md`](DARK_FACTORY_ROADMAP.md) — dependency-ordered M0-M9 program status and acceptance-relative schedule
 - [`engineering/runbooks/`](engineering/runbooks/)
 - [`packages/`](packages/)
@@ -100,7 +101,7 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - Strict executable architecture with deterministic digests, exact-state diff, drift, fitness, and projection-only diagrams
 - Controlled governance with candidate-only agent input, reviewed lifecycle, exact evidence digests, canonical examples, and intentional-debt records
 - Separate durable local factory control with immutable handoffs, fenced PostgreSQL scheduling, bounded recovery and Unix-socket administration
-- Integrated M5 execution, M6 validation, M7 shadow, and M8 autonomy boundaries under `factory/`, plus local-only M9 staged delivery under `delivery/`
+- Integrated M5 execution, M6 validation, M7 shadow, and M8 autonomy boundaries under `factory/`, local-only M9 staged delivery under `delivery/`, and the offline L5 landing dogfood source candidate
 - Local verification / review receipts via `scripts/grok_*.py`
 - Multi-agent discipline described in `AGENTS.md`
 - `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`
@@ -122,7 +123,7 @@ graph TD
   Runner["isolated runner"]
   Holdout["external holdout"]
   GitHubApp["GitHub App Checks"]
-  Factory["local factory control"]
+  Factory["local factory + L5 landing"]
   M5Execution["M5 isolated execution"]
   M6Semantic["M6 semantic validation"]
   M7Shadow["M7 shadow PR bundle"]
@@ -379,12 +380,12 @@ graph TD
 | Runner | Isolated no-network runner container; `policy.sandbox.image` must equal `TRUST_CI_RUNNER_IMAGE` |
 | Holdout | External digest-pinned bundle, outside the PR checkout |
 | GitHubApp | App-owned Checks `adaptive-trust-ci/verified@<policy-sha12>` bound to the App ID |
-| Factory | Integrated local M4 control API/store under `factory/`; no external write, deployment or merge authority |
+| Factory | Integrated local M4-M8 control/evaluation plus offline L5 landing intake/render/evaluation/artifact source under `factory/`; no operational provider, external write, deployment or merge authority |
 | M5Execution | Integrated bounded execution packet/result, offline adapter, broker and workspace boundary; disabled by default and no live provider capability |
 | M6Semantic | Integrated independent semantic verdict, artifact validation and bounded-repair boundary; cannot self-approve implementation |
 | M7Shadow | Integrated deterministic shadow bundle/outcome/cohort boundary; human merge remains mandatory |
 | M8Autonomy | Integrated earned-autonomy profile/recommendation boundary over actual M7 records; no factual cohort or activation and authority is capped at L2 |
-| M9Delivery | Integrated immutable staged-delivery/recovery source over actual M8 records; sealed local environment only, with no signed real input, operational adapter or production authority |
+| M9Delivery | Integrated immutable staged-delivery/recovery source plus an unavailable landing publisher; sealed local environment only, with no transport, signed real input, operational adapter or production authority |
 
 oneshots `migrate` / `runner-loader` reuse API/worker images; privileged rootless DinD is an execution edge of Runner.
 
