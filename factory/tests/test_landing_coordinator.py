@@ -1,4 +1,4 @@
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
@@ -109,6 +109,30 @@ class LandingCoordinatorTests(unittest.TestCase):
         self.assertTrue(all(not path.exists() for path in observed))
         with self.assertRaises(FrozenInstanceError):
             result.disposition = "needs_human"
+
+    def test_evaluator_rejects_tampered_generated_cta(self):
+        observed = []
+        spec = landing_spec()
+        evaluator = DeterministicLandingEvaluator(clock=TickClock())
+        with sealed_target() as (target, _sha, _tree), tempfile.TemporaryDirectory() as scratch:
+            result = coordinator(target, scratch, evaluator, observed).run(
+                spec, profile_digest="7" * 64
+            )
+        candidate = result.candidate
+        self.assertIsNotNone(candidate)
+        tampered = replace(
+            candidate,
+            index_html=candidate.index_html.replace(
+                b'class="l5-action" href="/roadmap.html"',
+                b'class="l5-action" href="/\\\\attacker.example/collect"',
+                1,
+            ),
+        )
+
+        evaluation = evaluator.evaluate(result.attempts[-1], spec, tampered)
+
+        self.assertEqual("needs_human", evaluation.decision)
+        self.assertIn("active_content", evaluation.reason_codes)
 
     def test_three_repairs_stop_needs_human_with_fresh_base_and_exact_prior_chain(self):
         observed = []

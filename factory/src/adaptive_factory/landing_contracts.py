@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 import json
-from pathlib import PurePosixPath
 import re
 import unicodedata
 from typing import Any, ClassVar, Mapping, Self
@@ -38,6 +37,14 @@ _PROHIBITED_CONTENT = re.compile(
     r"(?i)(?:<|>|javascript:|data:|shell\.exec|git\s+push|system\s+prompt|use\s+tool|credential|password)"
 )
 _SECTION_KINDS = frozenset({"hero", "proof", "features", "workflow", "faq", "cta", "footer", "roadmap"})
+_ROOT_RELATIVE_PATH = re.compile(
+    r"^(?:|/|/(?:[A-Za-z0-9_~-]+(?:\.[A-Za-z0-9_~-]+)*/)*"
+    r"[A-Za-z0-9_~-]+(?:\.[A-Za-z0-9_~-]+)*/?)(?![\s\S])"
+)
+_ASSET_PATH = re.compile(
+    r"^assets/(?:[A-Za-z0-9_~-]+(?:\.[A-Za-z0-9_~-]+)*/)*"
+    r"[A-Za-z0-9_~-]+(?:\.[A-Za-z0-9_~-]+)*(?![\s\S])"
+)
 
 
 class LandingContractError(ValueError):
@@ -87,6 +94,13 @@ def _identifier(value: Any, name: str) -> str:
     if not _IDENTIFIER.fullmatch(value):
         raise LandingContractError("invalid_identifier", name)
     return value
+
+
+def same_origin_root_path(value: Any) -> str:
+    path = _text(value, "cta_path", 256, allow_empty=True)
+    if not _ROOT_RELATIVE_PATH.fullmatch(path):
+        raise LandingContractError("cta_path")
+    return path
 
 
 def _hex(value: Any, name: str, pattern: re.Pattern[str]) -> str:
@@ -280,9 +294,7 @@ class LandingSectionV1:
             raise LandingContractError("section_kind")
         items = _sorted_unique(data["items"], "section_items", lambda item: _plain(item, "item", 512), maximum=12)
         cta_label = _plain(data["cta_label"], "cta_label", 128, allow_empty=True)
-        cta_path = _text(data["cta_path"], "cta_path", 256, allow_empty=True)
-        if cta_path and (not cta_path.startswith("/") or cta_path.startswith("//") or ".." in PurePosixPath(cta_path).parts):
-            raise LandingContractError("cta_path")
+        cta_path = same_origin_root_path(data["cta_path"])
         return cls(
             kind,
             _plain(data["heading"], "heading", 256),
@@ -309,8 +321,7 @@ class LandingAssetV1:
         data = _object(data, "landing_asset")
         _closed(data, set(cls.__dataclass_fields__))
         path = _text(data["path"], "asset_path", 256)
-        candidate = PurePosixPath(path)
-        if candidate.is_absolute() or ".." in candidate.parts or str(candidate) != path or not path.startswith("assets/"):
+        if not _ASSET_PATH.fullmatch(path):
             raise LandingContractError("asset_path")
         media_type = data["media_type"]
         if media_type not in MEDIA_TYPES["image"]:

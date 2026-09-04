@@ -8,9 +8,11 @@ from typing import Protocol
 
 from .landing_contracts import (
     LandingAttemptV1,
+    LandingContractError,
     LandingEvaluationV1,
     StaticLandingSpecV1,
     landing_digest,
+    same_origin_root_path,
 )
 from .landing_renderer import (
     LANDING_WRITE_PATHS,
@@ -192,6 +194,25 @@ class DeterministicLandingEvaluator:
             or "@import" in rendered_css.lower()
             or "url(http" in rendered_css.lower()
         ):
+            reasons.add("active_content")
+        generated_hrefs = tuple(
+            html.unescape(value)
+            for value in re.findall(
+                r'<a class="l5-action" href="([^"]*)">', rendered_html
+            )
+        )
+        try:
+            expected_hrefs = tuple(
+                same_origin_root_path(section.cta_path)
+                for section in spec.sections
+                if section.cta_label
+            )
+            if (
+                generated_hrefs != expected_hrefs
+                or any(same_origin_root_path(value) != value for value in generated_hrefs)
+            ):
+                reasons.add("active_content")
+        except LandingContractError:
             reasons.add("active_content")
         required_text = [html.escape(spec.title), html.escape(spec.description)]
         required_text.extend(html.escape(section.heading) for section in spec.sections)

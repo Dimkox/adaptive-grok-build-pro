@@ -26,7 +26,7 @@ if (
 ):
     raise SystemExit(32)
 profile = request["profile"]
-if profile["output_schema_digest"] != "36d9eb29b2728a59a13835aa84875c2e5e886fff7dd8578133e38c3e5ed638f8":
+if profile["output_schema_digest"] != "a7cc2c092e1411341d8b4a0bdc51cb4d8577d6e57c2572e4903f64a58aa33dec":
     raise SystemExit(33)
 ready = {
     "protocol_version": "adaptive-factory.landing-provider/v1",

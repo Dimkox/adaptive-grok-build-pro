@@ -193,8 +193,12 @@ class LandingApplicationService:
 
             accepted = LandingJobRecord(source, "accepted", None, None)
             self._store.put(accepted)
-            final = self._process(accepted)
+            try:
+                final = self._process(accepted)
+            except Exception:
+                final = replace(accepted, state="needs_human")
             self._store.put(final)
+            self._purge(source, "normalized")
             return LandingSubmitResult(final, True)
 
     def get(self, job_id: str, *, repository_id: str, actor: Actor) -> LandingJobRecord:
@@ -268,10 +272,13 @@ class LandingApplicationService:
                 artifact=artifact,
                 provider_evidence_digest=outcome.evidence.provider_evidence_digest,
             )
-        except LandingProviderError as exc:
-            raise LandingServiceError("provider_failed", 503, "landing provider failed") from exc
-        finally:
-            self._purge(source, "normalized")
+        except LandingProviderError:
+            return replace(
+                accepted,
+                state="provider_unavailable",
+                artifact=None,
+                provider_evidence_digest=None,
+            )
 
     @staticmethod
     def _validate_artifact(

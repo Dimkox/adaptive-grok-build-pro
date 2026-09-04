@@ -13,7 +13,12 @@ import subprocess
 import tempfile
 from typing import Protocol
 
-from .landing_contracts import StaticLandingSpecV1, landing_digest
+from .landing_contracts import (
+    LandingContractError,
+    StaticLandingSpecV1,
+    landing_digest,
+    same_origin_root_path,
+)
 
 
 TARGET_REPOSITORY_ID = "github.com/Dimkox/ai-dark-factory-landing"
@@ -240,6 +245,10 @@ def _render_main(spec: StaticLandingSpecV1, repairs: tuple[str, ...]) -> str:
         "    </section>",
     ]
     for index, section in enumerate(spec.sections, 1):
+        try:
+            cta_path = same_origin_root_path(section.cta_path)
+        except LandingContractError as exc:
+            raise LandingRenderError("cta_path") from exc
         lines.extend(
             [
                 f'    <section class="l5-section" id="section-{index}">',
@@ -254,7 +263,7 @@ def _render_main(spec: StaticLandingSpecV1, repairs: tuple[str, ...]) -> str:
             lines.append("      </ul>")
         if section.cta_label:
             lines.append(
-                f'      <a class="l5-action" href="{html.escape(section.cta_path, quote=True)}">'
+                f'      <a class="l5-action" href="{html.escape(cta_path, quote=True)}">'
                 f"{html.escape(section.cta_label)}</a>"
             )
         lines.append("    </section>")

@@ -15,6 +15,7 @@ from adaptive_factory.landing_contracts import SiteArtifactV1
 from adaptive_factory.landing_intake import PrivateLandingBlobStore
 from adaptive_factory.landing_provider import (
     FixedCommandLandingProvider,
+    LandingProviderError,
     UnavailableLandingProvider,
     unavailable_landing_profile,
 )
@@ -40,7 +41,7 @@ TOKEN_B = "landing-tenant-b-credential"
 
 class CountingBlobStore(PrivateLandingBlobStore):
     def __init__(self, root: Path, *, repository_root: Path) -> None:
-        super().__init__(root, repository_root=repository_root)
+        super().__init__(root, repository_root=repository_root, clock=lambda: NOW)
         self.reads = 0
 
     def read(self, *args, **kwargs):
@@ -72,6 +73,16 @@ class BoundArtifactBuilder:
                 "disposition": "artifact_ready",
             }
         )
+
+
+class FailingLandingProvider:
+    def __init__(self):
+        self.calls = 0
+
+    def normalize(self, request, read_blob):
+        self.calls += 1
+        read_blob()
+        raise LandingProviderError("provider_timeout")
 
 
 class LandingApiTests(unittest.TestCase):
@@ -256,9 +267,43 @@ class LandingApiTests(unittest.TestCase):
             ),
         )
 
+    def test_provider_exception_persists_terminal_state_before_idempotent_replay(self):
+        profile_digest = "9" * 64
+        provider = FailingLandingProvider()
+        client = self.client(
+            provider=provider, profile_digest=profile_digest
+        )
+        headers = self.submit_headers(key="landing-provider-failure")
+
+        first = client.post(
+            "/v1/landing-inputs", headers=headers, content=b"provider failure"
+        )
+        replay = client.post(
+            "/v1/landing-inputs", headers=headers, content=b"provider failure"
+        )
+        result = client.get(
+            "/v1/landing-jobs/landing-provider-failure/result",
+            headers=self.read_headers(correlation="provider-failure-result"),
+        )
+
+        self.assertEqual((202, 202, 200), (first.status_code, replay.status_code, result.status_code))
+        self.assertEqual("provider_unavailable", first.json()["state"])
+        self.assertEqual(first.json(), replay.json())
+        self.assertEqual("provider_unavailable", result.json()["state"])
+        self.assertEqual(1, provider.calls)
+        self.assertEqual([], list((Path(self.temporary.name) / "blobs").glob("*.blob")))
+
     def test_landing_streams_above_global_limit_without_raising_task_limit(self):
         client = self.client()
-        payload = b"ID3" + b"a" * (1_048_576 + 32)
+        header = (
+            (0x7FF << 21)
+            | (3 << 19)
+            | (1 << 17)
+            | (1 << 16)
+            | (14 << 12)
+            | (2 << 10)
+        ).to_bytes(4, "big")
+        payload = (header + b"\x00" * 1_436) * 729
         landing = client.post(
             "/v1/landing-inputs",
             headers=self.submit_headers(

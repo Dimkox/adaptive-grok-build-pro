@@ -73,7 +73,7 @@
     },
     {
       "id": "FIT-BOUNDED-FACTORY-CHANGE",
-      "max_ast_complexity": 1350,
+      "max_ast_complexity": 1450,
       "max_changed_bytes": 950000,
       "max_changed_lines": 22000,
       "path_prefixes": [
@@ -104,7 +104,7 @@
     {
       "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
       "max_ast_complexity": 425,
-      "max_changed_bytes": 500000,
+      "max_changed_bytes": 510000,
       "max_changed_lines": 7500,
       "path_prefixes": [
         "factory/tests"

@@ -214,8 +214,13 @@ class LandingArtifactTests(unittest.TestCase):
                 packager = LandingArtifactPackager(ExactGitLandingArtifactSource(target))
                 result = packager.seal(candidate, attempt, evaluation, Path(output))
                 original = (result.zip_path.read_bytes(), result.sidecar_path.read_bytes())
-                with self.assertRaisesRegex(LandingArtifactError, "artifact_exists"):
-                    packager.seal(candidate, attempt, evaluation, Path(output))
+                inodes = (result.zip_path.stat().st_ino, result.sidecar_path.stat().st_ino)
+                replay = packager.seal(candidate, attempt, evaluation, Path(output))
+                self.assertEqual(result.artifact, replay.artifact)
+                self.assertEqual(
+                    inodes,
+                    (replay.zip_path.stat().st_ino, replay.sidecar_path.stat().st_ino),
+                )
                 self.assertEqual(original[0], result.zip_path.read_bytes())
                 self.assertEqual(original[1], result.sidecar_path.read_bytes())
                 self.assertEqual([], list(Path(output).glob(".landing-*")))
@@ -223,6 +228,33 @@ class LandingArtifactTests(unittest.TestCase):
             product_before,
             {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in product_paths},
         )
+
+    def test_exact_orphan_zip_is_completed_on_retry_without_replacement(self):
+        with candidate_fixture() as (target, candidate, attempt, evaluation):
+            with tempfile.TemporaryDirectory() as output:
+                packager = LandingArtifactPackager(
+                    ExactGitLandingArtifactSource(target)
+                )
+                first = packager.seal(candidate, attempt, evaluation, Path(output))
+                zip_bytes = first.zip_path.read_bytes()
+                sidecar_bytes = first.sidecar_path.read_bytes()
+                zip_inode = first.zip_path.stat().st_ino
+                first.sidecar_path.unlink()
+
+                recovered = packager.seal(
+                    candidate, attempt, evaluation, Path(output)
+                )
+
+                self.assertEqual(recovered.zip_path.read_bytes(), zip_bytes)
+                self.assertEqual(recovered.sidecar_path.read_bytes(), sidecar_bytes)
+                self.assertEqual(recovered.artifact, first.artifact)
+                self.assertEqual(zip_inode, recovered.zip_path.stat().st_ino)
+                replay = packager.seal(candidate, attempt, evaluation, Path(output))
+                self.assertEqual(recovered.artifact, replay.artifact)
+                recovered.sidecar_path.write_bytes(b"mismatch\n")
+                with self.assertRaisesRegex(LandingArtifactError, "artifact_exists"):
+                    packager.seal(candidate, attempt, evaluation, Path(output))
+                self.assertEqual(zip_bytes, recovered.zip_path.read_bytes())
 
     def test_artifact_rejects_nonpassing_or_unbound_evaluation(self):
         with candidate_fixture() as (target, candidate, attempt, evaluation):

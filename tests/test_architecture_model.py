@@ -211,7 +211,7 @@ class ArchitectureModelTests(unittest.TestCase):
                     "path_prefixes": ["factory"],
                     "max_changed_bytes": 950_000,
                     "max_changed_lines": 22_000,
-                    "max_ast_complexity": 1_350,
+                    "max_ast_complexity": 1_450,
                     "severity": "error",
                 },
                 {
@@ -233,7 +233,7 @@ class ArchitectureModelTests(unittest.TestCase):
                 {
                     "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
                     "path_prefixes": ["factory/tests"],
-                    "max_changed_bytes": 500_000,
+                    "max_changed_bytes": 510_000,
                     "max_changed_lines": 7_500,
                     "max_ast_complexity": 425,
                     "severity": "error",

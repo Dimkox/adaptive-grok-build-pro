@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
+from fractions import Fraction
 import hashlib
 import io
 import os
 from pathlib import Path, PurePosixPath
 import re
+import stat
 import struct
 import tempfile
-from typing import Iterable
+from typing import Callable, Iterable
+from xml.etree import ElementTree
 import zipfile
 
 from .landing_contracts import (
@@ -26,14 +29,33 @@ MAX_IMAGE_PIXELS = 40_000_000
 MAX_PDF_PAGES = 100
 MAX_DOCX_EXPANDED_BYTES = 50 * 1_048_576
 MAX_DOCX_ENTRIES = 2_000
+MAX_QUARANTINE_ENTRIES = 4_096
 _PURGE_REASONS = frozenset({"cancelled", "normalized", "rejected", "expired"})
 _PDF_PAGE = re.compile(rb"/Type\s*/Page(?!s)\b")
+_QUARANTINE_BLOB = re.compile(r"^[0-9a-f]{64}\.blob$")
+_QUARANTINE_TEMP = re.compile(r"^\.landing-[A-Za-z0-9_.-]+\.tmp$")
+_MP3_BITRATES_MPEG1 = {
+    1: (32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448),
+    2: (32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384),
+    3: (32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320),
+}
+_MP3_BITRATES_MPEG2 = {
+    1: (32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256),
+    2: (8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160),
+    3: (8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160),
+}
 
 
 class PrivateLandingBlobStore:
     """Process-local, tenant-bound quarantine used by the offline landing vertical."""
 
-    def __init__(self, root: Path, *, repository_root: Path) -> None:
+    def __init__(
+        self,
+        root: Path,
+        *,
+        repository_root: Path,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
         root = Path(root)
         repository = Path(repository_root).resolve(strict=True)
         if root.is_symlink():
@@ -51,6 +73,8 @@ class PrivateLandingBlobStore:
         os.chmod(root, 0o700)
         self._root = root.resolve(strict=True)
         self._records: dict[tuple[str, str, str], LandingInputV1] = {}
+        self._clock = clock or (lambda: datetime.now(timezone.utc))
+        self._sweep_startup_orphans()
 
     def accept(
         self,
@@ -69,6 +93,10 @@ class PrivateLandingBlobStore:
     ) -> LandingInputV1:
         if media_kind not in MEDIA_TYPES or media_type not in MEDIA_TYPES[media_kind]:
             raise LandingContractError("media_type")
+        self._sweep_expired(self._now())
+        key = (tenant_id, repository_id, job_id)
+        if key not in self._records and len(self._records) >= MAX_QUARANTINE_ENTRIES:
+            raise LandingContractError("quarantine_capacity")
         maximum = MAX_INPUT_BYTES[media_kind]
         descriptor, temporary_name = tempfile.mkstemp(prefix=".landing-", suffix=".tmp", dir=self._root)
         temporary = Path(temporary_name)
@@ -125,7 +153,6 @@ class PrivateLandingBlobStore:
                 "expires_at": self._format_time(expires_at),
             }
             record = LandingInputV1.from_facts(facts)
-            key = (tenant_id, repository_id, job_id)
             existing = self._records.get(key)
             if existing is not None:
                 if existing != record:
@@ -162,6 +189,11 @@ class PrivateLandingBlobStore:
         existing = self._records.get(key)
         if existing != record:
             raise LandingContractError("blob_unavailable")
+        now = self._now()
+        if record.expires_at <= now:
+            self.purge(record, reason="expired")
+            raise LandingContractError("blob_expired")
+        self._sweep_expired(now)
         path = self._root / f"{record.quarantine_ref_digest}.blob"
         if path.is_symlink() or not path.is_file():
             raise LandingContractError("blob_unavailable")
@@ -200,6 +232,53 @@ class PrivateLandingBlobStore:
             os.fsync(descriptor)
         finally:
             os.close(descriptor)
+
+    def _now(self) -> datetime:
+        value = self._clock()
+        if not isinstance(value, datetime) or value.tzinfo is None:
+            raise LandingContractError("invalid_time")
+        return value.astimezone(timezone.utc)
+
+    def _sweep_expired(self, now: datetime) -> None:
+        expired = tuple(
+            record for record in self._records.values() if record.expires_at <= now
+        )
+        for record in expired:
+            self.purge(record, reason="expired")
+
+    def _sweep_startup_orphans(self) -> None:
+        entries = []
+        with os.scandir(self._root) as iterator:
+            for entry in iterator:
+                entries.append(entry.name)
+                if len(entries) > MAX_QUARANTINE_ENTRIES:
+                    raise LandingContractError("quarantine_capacity")
+        directory = os.open(
+            self._root,
+            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
+        )
+        removed = False
+        try:
+            for name in entries:
+                if not (_QUARANTINE_BLOB.fullmatch(name) or _QUARANTINE_TEMP.fullmatch(name)):
+                    continue
+                try:
+                    metadata = os.stat(name, dir_fd=directory, follow_symlinks=False)
+                except FileNotFoundError:
+                    continue
+                owned = metadata.st_uid == os.geteuid()
+                safe_regular = (
+                    stat.S_ISREG(metadata.st_mode)
+                    and metadata.st_nlink == 1
+                    and stat.S_IMODE(metadata.st_mode) == 0o600
+                )
+                if owned and (safe_regular or stat.S_ISLNK(metadata.st_mode)):
+                    os.unlink(name, dir_fd=directory)
+                    removed = True
+            if removed:
+                os.fsync(directory)
+        finally:
+            os.close(directory)
 
     @classmethod
     def _validate_shape(cls, media_kind: str, media_type: str, payload: bytes) -> None:
@@ -250,11 +329,111 @@ class PrivateLandingBlobStore:
             if not byte_rate or data_size is None or data_size / byte_rate > MAX_AUDIO_SECONDS:
                 raise LandingContractError("audio_duration")
             return
-        if media_type == "audio/mpeg" and (payload.startswith(b"ID3") or payload[:1] == b"\xff"):
+        if media_type == "audio/mpeg":
+            PrivateLandingBlobStore._validate_mp3(payload)
             return
-        if media_type == "audio/ogg" and payload.startswith(b"OggS"):
+        if media_type == "audio/ogg":
+            PrivateLandingBlobStore._validate_ogg(payload)
             return
         raise LandingContractError("media_signature")
+
+    @staticmethod
+    def _validate_mp3(payload: bytes) -> None:
+        offset = 0
+        if payload.startswith(b"ID3"):
+            if len(payload) < 10 or any(value & 0x80 for value in payload[6:10]):
+                raise LandingContractError("audio_shape")
+            tag_size = sum(value << shift for value, shift in zip(payload[6:10], (21, 14, 7, 0)))
+            offset = 10 + tag_size + (10 if payload[5] & 0x10 else 0)
+        duration = Fraction(0)
+        frames = 0
+        while offset < len(payload):
+            if len(payload) - offset == 128 and payload[offset : offset + 3] == b"TAG":
+                offset = len(payload)
+                break
+            if offset + 4 > len(payload):
+                raise LandingContractError("audio_shape")
+            header = int.from_bytes(payload[offset : offset + 4], "big")
+            version = (header >> 19) & 0x3
+            layer_bits = (header >> 17) & 0x3
+            bitrate_index = (header >> 12) & 0xF
+            sample_index = (header >> 10) & 0x3
+            if (
+                header >> 21 != 0x7FF
+                or version == 1
+                or layer_bits == 0
+                or bitrate_index in {0, 15}
+                or sample_index == 3
+            ):
+                raise LandingContractError("audio_shape")
+            layer = 4 - layer_bits
+            rates = (44_100, 48_000, 32_000)
+            sample_rate = rates[sample_index] // (1 if version == 3 else 2 if version == 2 else 4)
+            table = _MP3_BITRATES_MPEG1 if version == 3 else _MP3_BITRATES_MPEG2
+            bitrate = table[layer][bitrate_index - 1] * 1_000
+            padding = (header >> 9) & 1
+            if layer == 1:
+                frame_size, samples = ((12 * bitrate // sample_rate) + padding) * 4, 384
+            elif layer == 3 and version != 3:
+                frame_size, samples = 72 * bitrate // sample_rate + padding, 576
+            else:
+                frame_size, samples = 144 * bitrate // sample_rate + padding, 1_152
+            if frame_size < 4 or offset + frame_size > len(payload):
+                raise LandingContractError("audio_shape")
+            duration += Fraction(samples, sample_rate)
+            if duration > MAX_AUDIO_SECONDS:
+                raise LandingContractError("audio_duration")
+            frames += 1
+            offset += frame_size
+        if frames == 0 or offset != len(payload):
+            raise LandingContractError("audio_duration")
+
+    @staticmethod
+    def _validate_ogg(payload: bytes) -> None:
+        offset = 0
+        serial = None
+        sequence = 0
+        sample_rate = None
+        granule = None
+        saw_end = False
+        while offset < len(payload):
+            if offset + 27 > len(payload) or payload[offset : offset + 5] != b"OggS\x00":
+                raise LandingContractError("audio_shape")
+            header_type = payload[offset + 5]
+            page_granule, page_serial, page_sequence = struct.unpack_from(
+                "<QII", payload, offset + 6
+            )
+            segments = payload[offset + 26]
+            table_end = offset + 27 + segments
+            if table_end > len(payload):
+                raise LandingContractError("audio_shape")
+            body_end = table_end + sum(payload[offset + 27 : table_end])
+            if body_end > len(payload) or page_sequence != sequence:
+                raise LandingContractError("audio_shape")
+            if serial is None:
+                if not header_type & 0x02 or header_type & 0x01:
+                    raise LandingContractError("audio_shape")
+                serial = page_serial
+                body = payload[table_end:body_end]
+                if body.startswith(b"\x01vorbis") and len(body) >= 16:
+                    sample_rate = struct.unpack_from("<I", body, 12)[0]
+                elif body.startswith(b"OpusHead") and len(body) >= 19:
+                    sample_rate = 48_000
+                else:
+                    raise LandingContractError("audio_shape")
+            elif page_serial != serial or header_type & 0x02:
+                raise LandingContractError("audio_shape")
+            if page_granule != 0xFFFFFFFFFFFFFFFF:
+                if granule is not None and page_granule < granule:
+                    raise LandingContractError("audio_shape")
+                granule = page_granule
+            saw_end = bool(header_type & 0x04)
+            sequence += 1
+            offset = body_end
+        if not saw_end or not sample_rate or granule is None:
+            raise LandingContractError("audio_duration")
+        if granule / sample_rate > MAX_AUDIO_SECONDS:
+            raise LandingContractError("audio_duration")
 
     @classmethod
     def _validate_image(cls, media_type: str, payload: bytes) -> None:
@@ -339,10 +518,28 @@ class PrivateLandingBlobStore:
                     if expanded > MAX_DOCX_EXPANDED_BYTES:
                         raise LandingContractError("docx_expanded")
                     lowered = entry.filename.lower()
-                    if lowered.endswith(("vbaproject.bin", ".exe", ".dll", ".js", ".vbs")):
+                    if (
+                        lowered.endswith((".bin", ".exe", ".dll", ".js", ".vbs"))
+                        or "embeddings" in tuple(part.casefold() for part in path.parts)
+                    ):
                         raise LandingContractError("docx_active_content")
-                    if lowered.endswith(".rels") and b'TargetMode="External"' in archive.read(entry):
-                        raise LandingContractError("docx_external_relationship")
+                    if lowered.endswith(".rels"):
+                        relationships = archive.read(entry)
+                        if b"<!doctype" in relationships.lower() or b"<!entity" in relationships.lower():
+                            raise LandingContractError("docx_external_relationship")
+                        try:
+                            root = ElementTree.fromstring(relationships)
+                        except ElementTree.ParseError as exc:
+                            raise LandingContractError("docx_relationships") from exc
+                        for element in root.iter():
+                            if element.tag.rsplit("}", 1)[-1].casefold() != "relationship":
+                                continue
+                            attributes = {
+                                name.rsplit("}", 1)[-1].casefold(): value
+                                for name, value in element.attrib.items()
+                            }
+                            if attributes.get("targetmode", "").strip().casefold() == "external":
+                                raise LandingContractError("docx_external_relationship")
         except LandingContractError:
             raise
         except (OSError, zipfile.BadZipFile, RuntimeError) as exc:

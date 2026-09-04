@@ -36,7 +36,42 @@ def wav(seconds=1):
     )
 
 
-def docx(*, macro=False, traversal=False):
+def mp3_frames(count, *, high_bitrate=False):
+    if high_bitrate:
+        version, bitrate_index, sample_index, frame_size = 3, 14, 2, 1_440
+    else:
+        version, bitrate_index, sample_index, frame_size = 0, 1, 2, 72
+    header = (
+        (0x7FF << 21)
+        | (version << 19)
+        | (1 << 17)
+        | (1 << 16)
+        | (bitrate_index << 12)
+        | (sample_index << 10)
+    ).to_bytes(4, "big")
+    return (header + b"\x00" * (frame_size - 4)) * count
+
+
+def ogg_vorbis(granule, *, sample_rate=8_000):
+    identification = (
+        b"\x01vorbis"
+        + struct.pack("<I", 0)
+        + b"\x01"
+        + struct.pack("<I", sample_rate)
+        + b"\x00" * 13
+        + b"\x01"
+    )
+    return (
+        b"OggS\x00\x06"
+        + struct.pack("<QII", granule, 1, 0)
+        + b"\x00" * 4
+        + b"\x01"
+        + bytes((len(identification),))
+        + identification
+    )
+
+
+def docx(*, macro=False, traversal=False, relationship_xml=None, embedded=False):
     stream = io.BytesIO()
     with zipfile.ZipFile(stream, "w", compression=zipfile.ZIP_STORED) as archive:
         archive.writestr("[Content_Types].xml", "<Types/>")
@@ -45,6 +80,10 @@ def docx(*, macro=False, traversal=False):
             archive.writestr("word/vbaProject.bin", b"macro")
         if traversal:
             archive.writestr("../escape.txt", b"escape")
+        if relationship_xml is not None:
+            archive.writestr("word/_rels/document.xml.rels", relationship_xml)
+        if embedded:
+            archive.writestr("word/embeddings/oleObject1.bin", b"embedded")
     return stream.getvalue()
 
 
@@ -52,12 +91,26 @@ class LandingIntakeTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name) / "quarantine"
-        self.store = PrivateLandingBlobStore(self.root, repository_root=Path(__file__).resolve().parents[2])
+        self.store = PrivateLandingBlobStore(
+            self.root,
+            repository_root=Path(__file__).resolve().parents[2],
+            clock=lambda: NOW,
+        )
 
     def tearDown(self):
         self.temp.cleanup()
 
-    def accept(self, kind, media_type, data, *, job_id="job-1", chunks=None):
+    def accept(
+        self,
+        kind,
+        media_type,
+        data,
+        *,
+        job_id="job-1",
+        chunks=None,
+        received_at=NOW,
+        expires_at=NOW + timedelta(hours=24),
+    ):
         return self.store.accept(
             job_id=job_id,
             tenant_id="tenant-1",
@@ -68,8 +121,8 @@ class LandingIntakeTests(unittest.TestCase):
             media_kind=kind,
             media_type=media_type,
             chunks=chunks if chunks is not None else [data],
-            received_at=NOW,
-            expires_at=NOW + timedelta(hours=24),
+            received_at=received_at,
+            expires_at=expires_at,
         )
 
     def test_all_five_media_kinds_stream_to_private_tenant_bound_records(self):
@@ -135,6 +188,94 @@ class LandingIntakeTests(unittest.TestCase):
             with self.subTest(code=code), self.assertRaisesRegex(LandingContractError, code):
                 self.accept(kind, media_type, data, job_id=f"invalid-{index}")
         self.assertEqual(list(self.root.rglob("*.blob")), [])
+
+    def test_docx_relationship_serialization_and_embedded_packages_fail_closed(self):
+        external_relationships = (
+            b"<Relationships><Relationship TargetMode = 'External'/></Relationships>",
+            b'<Relationships><Relationship targetmode=" external "/></Relationships>',
+        )
+        for index, relationships in enumerate(external_relationships, 1):
+            with self.subTest(relationships=relationships), self.assertRaisesRegex(
+                LandingContractError, "docx_external_relationship"
+            ):
+                self.accept(
+                    "docx",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    docx(relationship_xml=relationships),
+                    job_id=f"external-{index}",
+                )
+        with self.assertRaisesRegex(LandingContractError, "docx_active_content"):
+            self.accept(
+                "docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                docx(embedded=True),
+                job_id="embedded-package",
+            )
+        self.assertEqual(list(self.root.rglob("*.blob")), [])
+
+    def test_mp3_and_ogg_duration_is_bounded_and_unknown_duration_fails_closed(self):
+        valid = (
+            ("audio/mpeg", mp3_frames(12_500), "mp3-valid"),
+            ("audio/ogg", ogg_vorbis(8_000 * 900), "ogg-valid"),
+        )
+        for media_type, payload, job_id in valid:
+            with self.subTest(media_type=media_type):
+                self.assertEqual(
+                    self.accept("audio", media_type, payload, job_id=job_id).media_type,
+                    media_type,
+                )
+        invalid = (
+            ("audio/mpeg", mp3_frames(12_501), "mp3-long"),
+            ("audio/mpeg", b"\xffinvalid", "mp3-unknown"),
+            ("audio/ogg", ogg_vorbis(8_000 * 900 + 1), "ogg-long"),
+            ("audio/ogg", b"OggSunknown", "ogg-unknown"),
+        )
+        for media_type, payload, job_id in invalid:
+            with self.subTest(job_id=job_id), self.assertRaisesRegex(
+                LandingContractError, "audio_(?:duration|shape)"
+            ):
+                self.accept("audio", media_type, payload, job_id=job_id)
+
+    def test_expired_reads_and_restarted_orphans_are_removed_without_following_links(self):
+        past = datetime(2020, 1, 1, tzinfo=timezone.utc)
+        expired = self.accept(
+            "text",
+            "text/plain",
+            b"expired",
+            job_id="expired",
+            received_at=past,
+            expires_at=past + timedelta(hours=1),
+        )
+        with self.assertRaisesRegex(LandingContractError, "blob_expired"):
+            self.store.read(
+                expired,
+                tenant_id="tenant-1",
+                repository_id=REPOSITORY_ID,
+                job_id="expired",
+            )
+        self.assertFalse((self.root / f"{expired.quarantine_ref_digest}.blob").exists())
+
+        orphan = self.accept("text", "text/plain", b"orphan", job_id="orphan")
+        outside = Path(self.temp.name) / "outside"
+        outside.write_bytes(b"do not follow")
+        link = self.root / ("f" * 64 + ".blob")
+        link.symlink_to(outside)
+        restarted = PrivateLandingBlobStore(
+            self.root,
+            repository_root=Path(__file__).resolve().parents[2],
+            clock=lambda: NOW,
+        )
+        self.assertFalse((self.root / f"{orphan.quarantine_ref_digest}.blob").exists())
+        self.assertFalse(link.exists())
+        self.assertFalse(link.is_symlink())
+        self.assertEqual(outside.read_bytes(), b"do not follow")
+        with self.assertRaisesRegex(LandingContractError, "blob_unavailable"):
+            restarted.read(
+                orphan,
+                tenant_id="tenant-1",
+                repository_id=REPOSITORY_ID,
+                job_id="orphan",
+            )
 
     def test_purge_is_bounded_idempotent_and_makes_blob_unavailable(self):
         record = self.accept("text", "text/plain", b"purge me")

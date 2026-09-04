@@ -17,7 +17,7 @@
         "body": {"$ref": "#/$defs/safe_text"},
         "items": {"type": "array", "maxItems": 12, "uniqueItems": true, "items": {"$ref": "#/$defs/safe_text"}},
         "cta_label": {"type": "string", "maxLength": 128, "pattern": "^[^<>]*$"},
-        "cta_path": {"type": "string", "maxLength": 256, "pattern": "^(|/(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^<>]*)$"}
+        "cta_path": {"type": "string", "maxLength": 256, "pattern": "^(?:|/|/(?:[A-Za-z0-9_~-]+(?:\\.[A-Za-z0-9_~-]+)*/)*[A-Za-z0-9_~-]+(?:\\.[A-Za-z0-9_~-]+)*/?)(?![\\s\\S])"}
       }
     },
     "asset": {
@@ -25,7 +25,7 @@
       "additionalProperties": false,
       "required": ["path", "media_type", "alt_text", "sha256", "rights_ref"],
       "properties": {
-        "path": {"type": "string", "maxLength": 256, "pattern": "^assets/(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"},
+        "path": {"type": "string", "maxLength": 256, "pattern": "^assets/(?:[A-Za-z0-9_~-]+(?:\\.[A-Za-z0-9_~-]+)*/)*[A-Za-z0-9_~-]+(?:\\.[A-Za-z0-9_~-]+)*(?![\\s\\S])"},
         "media_type": {"enum": ["image/png", "image/jpeg", "image/webp"]},
         "alt_text": {"type": "string", "minLength": 1, "maxLength": 512, "pattern": "^[^<>]*$"},
         "sha256": {"$ref": "#/$defs/digest"},

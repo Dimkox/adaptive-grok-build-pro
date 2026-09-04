@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 import inspect
 import os
 from pathlib import Path
@@ -270,6 +270,23 @@ class LandingRendererTests(unittest.TestCase):
         self.assertTrue(snapshot.content_css.startswith(snapshot.source_content_css))
         with self.assertRaises(FrozenInstanceError):
             snapshot.candidate_sha = "0" * 40
+
+    def test_renderer_revalidates_forged_cta_before_emission(self):
+        spec = landing_spec()
+        forged = replace(
+            spec,
+            sections=(
+                replace(spec.sections[0], cta_path="/\\attacker.example/collect"),
+                *spec.sections[1:],
+            ),
+        )
+        with self.assertRaisesRegex(LandingRenderError, "cta_path"):
+            DeterministicLandingRenderer().render(
+                SOURCE_INDEX.encode(),
+                b":root { color-scheme: dark; }\n",
+                forged,
+                repair_codes=(),
+            )
 
     def test_wrong_repository_identity_fails_before_workspace_creation(self):
         observed = []

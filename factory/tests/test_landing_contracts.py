@@ -1,6 +1,7 @@
 from copy import deepcopy
 import json
 from pathlib import Path
+import re
 import unittest
 
 from adaptive_factory.landing_contracts import (
@@ -204,6 +205,80 @@ class LandingContractTests(unittest.TestCase):
         for payload in hostile:
             with self.subTest(payload=payload), self.assertRaises(LandingContractError):
                 StaticLandingSpecV1.from_facts(payload)
+
+    def test_spec_cta_paths_have_one_same_origin_root_relative_interpretation(self):
+        schema = json.loads(
+            (SCHEMAS / "static-landing-spec.v1.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        pattern = re.compile(
+            schema["$defs"]["section"]["properties"]["cta_path"]["pattern"]
+        )
+        hostile = (
+            "/\\attacker.example/collect",
+            "/\\\\attacker.example/collect",
+            "/\n/attacker.example/collect",
+            "/\t/attacker.example/collect",
+            "//attacker.example/collect",
+            "/%2f%2fattacker.example/collect",
+            "/%5c%5cattacker.example/collect",
+            "/https:attacker.example/collect",
+            "/safe//attacker.example",
+            "/safe/../collect",
+        )
+        for cta_path in hostile:
+            payload = spec_facts(
+                sections=[
+                    {**spec_facts()["sections"][0], "cta_path": cta_path}
+                ]
+            )
+            with self.subTest(cta_path=repr(cta_path)):
+                with self.assertRaisesRegex(LandingContractError, "cta_path"):
+                    StaticLandingSpecV1.from_facts(payload)
+                self.assertIsNone(pattern.fullmatch(cta_path))
+
+        for cta_path in ("", "/", "/roadmap.html", "/roadmap/", "/km/"):
+            payload = spec_facts(
+                sections=[
+                    {**spec_facts()["sections"][0], "cta_path": cta_path}
+                ]
+            )
+            with self.subTest(cta_path=cta_path):
+                record = StaticLandingSpecV1.from_facts(payload)
+                self.assertEqual(record.sections[0].cta_path, cta_path)
+                self.assertIsNotNone(pattern.fullmatch(cta_path))
+
+    def test_asset_paths_are_unambiguous_site_relative_paths(self):
+        schema = json.loads(
+            (SCHEMAS / "static-landing-spec.v1.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        pattern = re.compile(schema["$defs"]["asset"]["properties"]["path"]["pattern"])
+        asset = {
+            "path": "assets/proof-card.png",
+            "media_type": "image/png",
+            "alt_text": "Proof card",
+            "sha256": "2" * 64,
+            "rights_ref": "source:input-1",
+        }
+        for path in (
+            "assets/\\\\attacker.example/pixel.png",
+            "assets/safe//pixel.png",
+            "assets/../pixel.png",
+            "assets/pixel.png\nignored",
+            "assets/%2f%2fattacker.example/pixel.png",
+        ):
+            with self.subTest(path=repr(path)):
+                with self.assertRaisesRegex(LandingContractError, "asset_path"):
+                    StaticLandingSpecV1.from_facts(
+                        spec_facts(assets=[{**asset, "path": path}])
+                    )
+                self.assertIsNone(pattern.fullmatch(path))
+        record = StaticLandingSpecV1.from_facts(spec_facts(assets=[asset]))
+        self.assertEqual("assets/proof-card.png", record.assets[0].path)
+        self.assertIsNotNone(pattern.fullmatch(record.assets[0].path))
 
     def test_spec_preserves_source_indexing_policy_without_provider_authority(self):
         record = StaticLandingSpecV1.from_facts(

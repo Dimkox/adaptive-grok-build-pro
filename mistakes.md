@@ -596,3 +596,13 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The first deterministic-clock repair matched an earlier near-identical intake call instead of the traceback line inside the failing long-running method, and the isolated method completed before the stale-proof window exposed the miss.
 **Prevention:** Bind a repair to the traceback line and enclosing method, then inspect every same-pattern occurrence in that method before rerunning the smallest failed target.
+
+## 2026-09-04 — Treated surface signatures as proof of bounded content
+
+**Root cause:** Landing intake and navigation checks trusted magic prefixes, raw byte substrings, and permissive path parsing instead of establishing canonical path, XML relationship, and media-duration semantics.
+**Prevention:** Test adversarial serializations and ambiguous paths, parse only the bounded supported formats, and reject any input whose safety-relevant meaning or duration cannot be established.
+
+## 2026-09-04 — Modeled local resources only across uninterrupted execution
+
+**Root cause:** Accepted jobs, quarantined blobs, and the content-addressed artifact pair had happy-path cleanup but lacked persisted terminal failure, enforced expiry after restart, and exact orphan-pair recovery.
+**Prevention:** Define and test every lifecycle at failure, expiry, replay, crash, and restart boundaries before claiming bounded retention or recoverable publication.

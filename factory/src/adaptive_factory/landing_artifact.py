@@ -511,17 +511,23 @@ class LandingArtifactPackager:
             zip_name = f"therealaidarkfactory.online-{zip_digest}.zip"
             zip_path = output / zip_name
             sidecar_path = output / f"{zip_name}.sha256"
-            if zip_path.exists() or sidecar_path.exists():
-                raise LandingArtifactError("artifact_exists")
-            _install_noreplace(temporary_zip, zip_path)
-            installed_zip = zip_path
-            _fsync_directory(output)
             sidecar_bytes = f"{zip_digest.upper()}  {zip_name}\n".encode("ascii")
             temporary_sidecar = _temporary_file(output, ".landing-sidecar-")
             _write_fsync(temporary_sidecar, sidecar_bytes)
-            _install_noreplace(temporary_sidecar, sidecar_path)
-            installed_sidecar = sidecar_path
-            _fsync_directory(output)
+            zip_present = _existing_exact_file(
+                zip_path, digest=zip_digest, maximum=MAX_ARCHIVE_BYTES
+            )
+            sidecar_present = _existing_exact_file(
+                sidecar_path, value=sidecar_bytes, maximum=1_024
+            )
+            if not zip_present:
+                _install_noreplace(temporary_zip, zip_path)
+                installed_zip = zip_path
+                _fsync_directory(output)
+            if not sidecar_present:
+                _install_noreplace(temporary_sidecar, sidecar_path)
+                installed_sidecar = sidecar_path
+                _fsync_directory(output)
             artifact = SiteArtifactV1.from_facts(
                 {
                     "schema_version": 1,
@@ -802,6 +808,51 @@ def _install_noreplace(source: Path, destination: Path) -> None:
         if exc.errno == errno.EEXIST:
             raise LandingArtifactError("artifact_exists") from exc
         raise LandingArtifactError("artifact_install") from exc
+
+
+def _existing_exact_file(
+    path: Path,
+    *,
+    digest: str | None = None,
+    value: bytes | None = None,
+    maximum: int,
+) -> bool:
+    if (digest is None) == (value is None):
+        raise LandingArtifactError("artifact_recovery")
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        raise LandingArtifactError("artifact_exists") from exc
+    if (
+        not stat.S_ISREG(metadata.st_mode)
+        or stat.S_ISLNK(metadata.st_mode)
+        or metadata.st_uid != os.geteuid()
+        or metadata.st_nlink != 1
+        or stat.S_IMODE(metadata.st_mode) != 0o600
+        or not 0 < metadata.st_size <= maximum
+    ):
+        raise LandingArtifactError("artifact_exists")
+    try:
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        try:
+            body = bytearray()
+            while chunk := os.read(descriptor, min(1_048_576, maximum + 1)):
+                body.extend(chunk)
+                if len(body) > maximum:
+                    raise LandingArtifactError("artifact_exists")
+        finally:
+            os.close(descriptor)
+    except OSError as exc:
+        raise LandingArtifactError("artifact_exists") from exc
+    if value is not None:
+        matches = bytes(body) == value
+    else:
+        matches = hashlib.sha256(body).hexdigest() == digest
+    if not matches:
+        raise LandingArtifactError("artifact_exists")
+    return True
 
 
 def _sha256_file(path: Path) -> str:
