@@ -2,11 +2,11 @@
 
 ## Deployment
 
-No deployment is authorized. This phase produces a repository-local provisional M6 source checkpoint only.
+No deployment is authorized. This phase produces a repository-local bounded M6 source checkpoint only.
 
 ## Feature flags / staged rollout
 
-Semantic composition remains disabled unless all coordinator, validator, adjudicator, store, and repair-broker dependencies are explicitly injected and ready. No live provider or application-write capability is shipped.
+M5 execution remains disabled by default. Each semantic database capability is constructed only from its explicit capability DSN; automated repair-child handoff additionally requires an explicitly injected broker. No live provider or application-write capability is shipped.
 
 ## Metrics and alerts
 

@@ -19,11 +19,23 @@
       "from": "scoped",
       "reason": "The route has no named human gate and the user explicitly authorized repository-local M6 implementation plus disposable local PostgreSQL only; network, provider, persistent database, delivery, external, and production actions remain unauthorized.",
       "to": "approved"
+    },
+    {
+      "at": "2026-09-04T02:59:33+00:00",
+      "from": "approved",
+      "reason": "Approved bounded M6 source, migration 018, six semantic operations, disjoint capability composition, and exact-M5 graft are implemented in repository-local commits.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-04T02:59:39+00:00",
+      "from": "implementing",
+      "reason": "Pure semantic, focused seam, architecture, and three selected disposable PostgreSQL methods pass; full exact-head verifier, independent reviews, receipts, restart, packaging, and delivery remain deferred by this phase.",
+      "to": "verifying"
     }
   ],
   "route_id": "e323f21f2dfc",
   "schema_version": 1,
-  "status": "approved",
+  "status": "verifying",
   "title": "M6 bounded semantic validation on exact M5 85cd434",
-  "updated_at": "2026-09-04T02:30:25+00:00"
+  "updated_at": "2026-09-04T02:59:39+00:00"
 }
