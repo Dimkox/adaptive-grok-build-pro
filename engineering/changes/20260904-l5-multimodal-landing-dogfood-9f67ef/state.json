@@ -19,11 +19,17 @@
       "from": "scoped",
       "reason": "The recorded user statements approve this exact repository-local L5 landing design and later source implementation; provider calls, data transfer, push, PR, merge, release, hosting, deployment, and all external or production writes remain excluded.",
       "to": "approved"
+    },
+    {
+      "at": "2026-09-04T11:02:53+00:00",
+      "from": "approved",
+      "reason": "Task 1 RED proved the additive landing modules absent; 12 focused contract/intake tests and the exact schema inventory are now green with the authoritative repository SHA/tree bound and no external effect.",
+      "to": "implementing"
     }
   ],
   "route_id": "9f67efd2575c",
   "schema_version": 1,
-  "status": "approved",
+  "status": "implementing",
   "title": "L5 multimodal landing dogfood",
-  "updated_at": "2026-09-04T10:45:47+00:00"
+  "updated_at": "2026-09-04T11:02:53+00:00"
 }

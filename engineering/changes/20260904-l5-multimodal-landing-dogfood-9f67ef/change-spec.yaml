@@ -4,8 +4,8 @@
       "id": "AC-001",
       "statement": "Each of the five allowlisted media kinds is accepted only when its bounded byte shape and declared type agree, then produces one tenant-bound content identity without exposing raw bytes to Git, logs, durable evidence, or caller-selected paths.",
       "evidence": [
-        {"attestation": "planned-test-landing-intake"},
-        {"attestation": "planned-test-landing-contracts"}
+        {"test": "factory/tests/test_landing_intake.py"},
+        {"test": "factory/tests/test_landing_contracts.py"}
       ]
     },
     {
@@ -56,8 +56,15 @@
   "change_id": "20260904-l5-multimodal-landing-dogfood-9f67ef",
   "contracts": {
     "events": [],
-    "json_schema": [],
-    "openapi": []
+    "json_schema": [
+      "factory/contracts/jsonschema/landing-attempt.v1.schema.json",
+      "factory/contracts/jsonschema/landing-evaluation.v1.schema.json",
+      "factory/contracts/jsonschema/landing-input.v1.schema.json",
+      "factory/contracts/jsonschema/landing-provider-evidence.v1.schema.json",
+      "factory/contracts/jsonschema/landing-site-artifact.v1.schema.json",
+      "factory/contracts/jsonschema/static-landing-spec.v1.schema.json"
+    ],
+    "openapi": ["factory/contracts/openapi/landing-dogfood.v1.json"]
   },
   "forbidden_outcomes": [
     {
@@ -98,7 +105,7 @@
       "id": "INV-001",
       "statement": "Every structured record is closed, versioned, canonically digested, tenant/repository-bound, and rejects unknown fields, duplicate keys, non-finite values, stale identities, and digest mismatch.",
       "evidence": [
-        {"attestation": "planned-test-landing-contracts"}
+        {"test": "factory/tests/test_landing_contracts.py"}
       ]
     },
     {

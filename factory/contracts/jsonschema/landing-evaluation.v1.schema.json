@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:landing-evaluation:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "attempt_digest", "candidate_head_sha", "evaluator_id", "context_digest", "policy_digest", "rubric_digest", "decision", "reason_codes", "requirement_digests", "finding_digests", "created_at", "evaluation_digest"],
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,127}$"},
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "attempt_digest": {"$ref": "#/$defs/digest"},
+    "candidate_head_sha": {"$ref": "#/$defs/sha"},
+    "evaluator_id": {"$ref": "#/$defs/id"},
+    "context_digest": {"$ref": "#/$defs/digest"},
+    "policy_digest": {"$ref": "#/$defs/digest"},
+    "rubric_digest": {"$ref": "#/$defs/digest"},
+    "decision": {"enum": ["pass", "repair", "needs_human"]},
+    "reason_codes": {"type": "array", "maxItems": 32, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+    "requirement_digests": {"type": "array", "maxItems": 32, "uniqueItems": true, "items": {"$ref": "#/$defs/digest"}},
+    "finding_digests": {"type": "array", "maxItems": 32, "uniqueItems": true, "items": {"$ref": "#/$defs/digest"}},
+    "created_at": {"type": "string", "format": "date-time"},
+    "evaluation_digest": {"$ref": "#/$defs/digest"}
+  }
+}

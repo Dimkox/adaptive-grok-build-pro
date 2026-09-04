@@ -1,4 +1,3 @@
-from copy import deepcopy
 import json
 from pathlib import Path
 import unittest
@@ -113,6 +112,11 @@ class SemanticContractTests(unittest.TestCase):
         }
         names = semantic_names | {
             "earned-autonomy.v1.schema.json",
+            "landing-attempt.v1.schema.json",
+            "landing-evaluation.v1.schema.json",
+            "landing-input.v1.schema.json",
+            "landing-provider-evidence.v1.schema.json",
+            "landing-site-artifact.v1.schema.json",
             "m7-autonomy-bridge.v1.schema.json",
             "m7-predecessor-bridges.v1.schema.json",
             "operator-handoff-proposal.v1.schema.json",
@@ -120,6 +124,7 @@ class SemanticContractTests(unittest.TestCase):
             "shadow-cohort.v1.schema.json",
             "shadow-outcome.v1.schema.json",
             "shadow-task-evidence.v1.schema.json",
+            "static-landing-spec.v1.schema.json",
         }
         self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, names)
         for name in semantic_names:
