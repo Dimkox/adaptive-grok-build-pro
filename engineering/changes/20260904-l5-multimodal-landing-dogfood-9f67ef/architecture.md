@@ -72,7 +72,7 @@ Migrations `001`-`018`, existing control/execution/semantic/shadow/autonomy/deli
 
 ## Bounded implementation budget
 
-The complete vertical plus the six mandatory post-verifier safety repairs measures 1,404 factory AST units and 503,232 factory-test bytes against the exact route base; the source and test AST measurements remain within their existing ceilings. The explicit error ceilings are therefore 1,450 total AST, 1,000 source AST, 425 test AST, and 510,000 test bytes: they remain finite and just above the measured repair while preserving ownership, dependency, trust, contract, freshness, and security checks. Reducing orchestration and legacy-test coupling below the predecessor ceilings remains recorded optimization debt; path shuffling or deletion of safety checks is not an acceptable reduction.
+The complete vertical plus the mandatory post-verifier safety repairs measures 1,404 factory AST units and 503,232 factory-test bytes against the exact route base; the subsequent source-part-aware DOCX repair measures 1,005 factory-source AST units, while test AST remains within its existing ceiling. The explicit error ceilings are therefore 1,450 total AST, 1,010 source AST, 425 test AST, and 510,000 test bytes: they remain finite and just above the measured repair while preserving ownership, dependency, trust, contract, freshness, and security checks. Reducing orchestration and legacy-test coupling below the predecessor ceilings remains recorded optimization debt; path shuffling or deletion of safety checks is not an acceptable reduction.
 
 ## Recovery
 

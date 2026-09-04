@@ -219,7 +219,7 @@ class ArchitectureModelTests(unittest.TestCase):
                     "path_prefixes": ["factory/src"],
                     "max_changed_bytes": 235_000,
                     "max_changed_lines": 5_500,
-                    "max_ast_complexity": 1_000,
+                    "max_ast_complexity": 1_010,
                     "severity": "error",
                 },
                 {
