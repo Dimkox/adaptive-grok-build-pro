@@ -782,16 +782,20 @@ def _contract_compatibility(snapshot: ArchitectureSnapshot, diff: ArchitectureDi
     predicate = "declared contract policy intersects an added, removed, or changed contract"
     if not rules:
         return _not_applicable("contract_compatibility", predicate, (), "no_declared_rules")
-    changed_ids = {item.id for item in diff.changes if item.kind == "contract"}
-    if not changed_ids:
+    directly_changed_ids = {
+        item.id for item in diff.changes if item.kind == "contract"
+    }
+    if not directly_changed_ids:
         return _not_applicable(
             "contract_compatibility", predicate, (), "contracts_unchanged", (rule["id"] for rule in rules)
         )
     before = {item.id: item for item in (diff._base_state.contracts if diff._base_state else ())}
     after = {item.id: item for item in diff._head_state.contracts}
+    changed_ids = directly_changed_ids | (set(before) & set(after))
     findings: list[str] = []
     unsupported: list[str] = []
     used_rules: set[str] = set()
+    comparison_budget = [0]
     for identity in sorted(changed_ids):
         old, new = before.get(identity), after.get(identity)
         record = new if new is not None else old
@@ -804,7 +808,14 @@ def _contract_compatibility(snapshot: ArchitectureSnapshot, diff: ArchitectureDi
             unsupported.append(f"{identity}: no compatibility policy for {kind}")
         elif old is None:
             for rule in matching:
-                result = compare_contracts(new, new, rule["compatibility"])
+                result = compare_contracts(
+                    new,
+                    new,
+                    rule["compatibility"],
+                    base_inventory=tuple(after.values()),
+                    head_inventory=tuple(after.values()),
+                    _work_budget=comparison_budget,
+                )
                 if result.status == "unsupported":
                     unsupported.append(
                         f"{identity}: unsupported added-contract baseline semantics"
@@ -813,7 +824,14 @@ def _contract_compatibility(snapshot: ArchitectureSnapshot, diff: ArchitectureDi
             findings.append(f"{identity}: declared contract removed")
         else:
             for rule in matching:
-                result = compare_contracts(old, new, rule["compatibility"])
+                result = compare_contracts(
+                    old,
+                    new,
+                    rule["compatibility"],
+                    base_inventory=tuple(before.values()),
+                    head_inventory=tuple(after.values()),
+                    _work_budget=comparison_budget,
+                )
                 if result.status == "unsupported":
                     unsupported.append(f"{identity}: unsupported compatibility semantics")
                 elif result.status != "compatible":

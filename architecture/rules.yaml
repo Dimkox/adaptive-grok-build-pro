@@ -272,6 +272,112 @@
       "source_prefixes": [
         "factory"
       ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.brokers",
+        "adaptive_factory.migrations",
+        "adaptive_factory.store",
+        "adaptive_factory.workspace",
+        "brokers",
+        "migrations",
+        "store",
+        "workspace",
+        "psycopg",
+        "celery",
+        "rq",
+        "git",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-ADAPTER-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/adapters"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.brokers",
+        "adaptive_factory.migrations",
+        "adaptive_factory.store",
+        "adaptive_factory.workspace",
+        "adapters",
+        "brokers",
+        "migrations",
+        "store",
+        "workspace",
+        "psycopg",
+        "celery",
+        "rq",
+        "git",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-EXECUTION-CORE-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/execution_contracts.py",
+        "factory/src/adaptive_factory/protocol.py"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.migrations",
+        "adaptive_factory.store",
+        "adaptive_factory.workspace",
+        "adapters",
+        "migrations",
+        "store",
+        "workspace",
+        "psycopg",
+        "celery",
+        "rq",
+        "git",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-PROPOSAL-BROKER-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/brokers.py"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.brokers",
+        "adaptive_factory.migrations",
+        "adaptive_factory.store",
+        "adapters",
+        "brokers",
+        "migrations",
+        "store",
+        "psycopg",
+        "celery",
+        "rq",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-WORKSPACE-BROKER-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/workspace.py"
+      ]
     }
   ],
   "risk_escalations": [

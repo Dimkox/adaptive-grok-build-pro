@@ -48,6 +48,54 @@
       "path": "factory/contracts/openapi/factory-control.v1.json",
       "role": "bidirectional",
       "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-EXECUTION-OPENAPI",
+      "kind": "openapi",
+      "path": "factory/contracts/openapi/factory-execution.v1.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2",
+      "kind": "openapi",
+      "path": "factory/contracts/openapi/factory-execution.v2.json",
+      "role": "bidirectional",
+      "version": "2"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-EXECUTION-EVENT",
+      "kind": "event",
+      "path": "factory/contracts/schemas/execution-event.v1.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-EXECUTION-INVOCATION",
+      "kind": "json_schema",
+      "path": "factory/contracts/schemas/execution-invocation.v1.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-TASK-PACKET",
+      "kind": "json_schema",
+      "path": "factory/contracts/schemas/task-packet.v1.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-WORKSPACE-RESULT",
+      "kind": "json_schema",
+      "path": "factory/contracts/schemas/workspace-result.v1.json",
+      "role": "producer",
+      "version": "1"
     }
   ],
   "data_classifications": [
@@ -178,6 +226,148 @@
       "protocol": "postgresql",
       "sync_or_async": "synchronous",
       "to": "NODE-FACTORY-POSTGRES",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-INTENT",
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-CONTROL",
+      "id": "EDGE-FACTORY-CONTROL-EXECUTION-CORE",
+      "network_policy": "no_network",
+      "protocol": "python_import",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-EXECUTION-CORE",
+      "type": "dependency"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-INTENT",
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-PROVIDER-ADAPTERS",
+      "id": "EDGE-FACTORY-ADAPTERS-EXECUTION-CORE",
+      "network_policy": "no_network",
+      "protocol": "jsonl",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-EXECUTION-CORE",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-CONTROL",
+      "id": "EDGE-FACTORY-CONTROL-PROPOSAL-BROKER",
+      "network_policy": "no_network",
+      "protocol": "python_call",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-PROPOSAL-BROKER",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-PROPOSAL-BROKER",
+      "id": "EDGE-FACTORY-PROPOSAL-BROKER-EXECUTION-CORE",
+      "network_policy": "no_network",
+      "protocol": "python_import",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-EXECUTION-CORE",
+      "type": "dependency"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-INTENT",
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-CONTROL",
+      "id": "EDGE-FACTORY-CONTROL-WORKSPACE",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-WORKSPACE-BROKER",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-STATE",
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-WORKSPACE-BROKER",
+      "id": "EDGE-FACTORY-WORKSPACE-CONTROL",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-CONTROL",
       "type": "data_flow"
     },
     {
@@ -537,7 +727,9 @@
       "id": "NODE-FACTORY-LOCAL-API",
       "owner": "local factory operators",
       "public_contracts": [
-        "CONTRACT-FACTORY-CONTROL-OPENAPI"
+        "CONTRACT-FACTORY-CONTROL-OPENAPI",
+        "CONTRACT-FACTORY-EXECUTION-OPENAPI",
+        "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2"
       ],
       "repository_paths": [
         "factory/.env.example",
@@ -574,6 +766,7 @@
         "factory/src/adaptive_factory/contracts.py",
         "factory/src/adaptive_factory/migrations.py",
         "factory/src/adaptive_factory/models.py",
+        "factory/src/adaptive_factory/recovery.py",
         "factory/src/adaptive_factory/service.py",
         "factory/src/adaptive_factory/state.py",
         "factory/src/adaptive_factory/store.py",
@@ -611,6 +804,88 @@
       ],
       "trust_domain": "TD-FACTORY-CONTROL",
       "type": "datastore"
+    },
+    {
+      "data_classification": "DATA-FACTORY-INTENT",
+      "id": "NODE-FACTORY-EXECUTION-CORE",
+      "owner": "local factory operators",
+      "public_contracts": [
+        "CONTRACT-FACTORY-EXECUTION-EVENT",
+        "CONTRACT-FACTORY-EXECUTION-INVOCATION",
+        "CONTRACT-FACTORY-TASK-PACKET",
+        "CONTRACT-FACTORY-WORKSPACE-RESULT"
+      ],
+      "repository_paths": [
+        "factory/contracts/schemas",
+        "factory/src/adaptive_factory/execution_contracts.py",
+        "factory/src/adaptive_factory/protocol.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-FACTORY-STATE",
+      "id": "NODE-FACTORY-PROVIDER-ADAPTERS",
+      "owner": "local factory operators",
+      "public_contracts": [],
+      "repository_paths": [
+        "factory/src/adaptive_factory/adapters/__init__.py",
+        "factory/src/adaptive_factory/adapters/base.py",
+        "factory/src/adaptive_factory/adapters/codex.py",
+        "factory/src/adaptive_factory/adapters/grok.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-FACTORY-STATE",
+      "id": "NODE-FACTORY-PROPOSAL-BROKER",
+      "owner": "local factory operators",
+      "public_contracts": [],
+      "repository_paths": [
+        "factory/src/adaptive_factory/brokers.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-REPOSITORY-SOURCE",
+      "id": "NODE-FACTORY-WORKSPACE-BROKER",
+      "owner": "local factory operators",
+      "public_contracts": [],
+      "repository_paths": [
+        "factory/src/adaptive_factory/workspace.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "local_component"
     },
     {
       "data_classification": "DATA-REPOSITORY-SOURCE",
