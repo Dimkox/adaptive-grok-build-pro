@@ -1,0 +1,29 @@
+{
+  "change_id": "20260904-m9-staged-delivery-on-exact-m8-f53275d-331ca7",
+  "created_at": "2026-09-04T03:24:24+00:00",
+  "history": [
+    {
+      "at": "2026-09-04T03:24:24+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-04T03:27:51+00:00",
+      "from": "draft",
+      "reason": "Closed M8 producer bridge, signed delivery records, one-step dry-run state machine, 128-entry limits, human production boundary, least-authority recovery, and zero operational capability are fixed.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-04T03:27:51+00:00",
+      "from": "scoped",
+      "reason": "The user explicitly approved repository-local M9 source implementation; the generic migration or external-write gate is not exercised because no migration, persistence, network, delivery, or external action is in scope.",
+      "to": "approved"
+    }
+  ],
+  "route_id": "331ca7021cc0",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "M9 staged delivery on exact M8 f53275d",
+  "updated_at": "2026-09-04T03:27:51+00:00"
+}

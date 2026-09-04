@@ -1,0 +1,104 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "data_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer",
+    "ai_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "data_architect",
+    "integration_architect"
+  ],
+  "base_commit": "78ad2f679d38dc3244e716c586332417e610089c",
+  "base_fingerprint": "f012b8046f6ab2e693346056e0e43410348df6f371e57ae4a87b8f8abad81532",
+  "complexity": "high-risk",
+  "created_at": "2026-09-04T03:24:18+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "ai",
+    "data",
+    "security",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval"
+  ],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data",
+    "ai"
+  ],
+  "rationale": [
+    "high-risk intent/domain: feature",
+    "intent=feature",
+    "domains=ai,data,security,api",
+    "repository=generic",
+    "write-owner=ai_implementer",
+    "analysis-wave=7/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "data_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "331ca7021cc0",
+  "schema_version": 1,
+  "session_id": "m9-final-local-20260904",
+  "status": "routed",
+  "task": "Implement feature M9 AI agent staged delivery and recovery control on exact M8 head f53275d5ed84022200419b399c799a995ed91a45. Add closed signed-artifact metadata, deterministic staged decisions, least-authority recovery, an in-memory dry-run adapter, and canonical M8 producer linkage. Preserve unchanged PostgreSQL migrations 001-018 and security isolation across M4-M8. Repository-local code only; operational actions remain unreachable.",
+  "task_domains": [
+    "ai",
+    "data",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "data-change",
+    "ai-rag-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "ai_implementer"
+}
