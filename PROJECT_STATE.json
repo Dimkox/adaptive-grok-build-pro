@@ -2,7 +2,7 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-04T12:14:39Z",
+  "observed_at": "2026-09-04T15:24:50Z",
   "observed_main_sha": "8599d45f4f28285381b05a53feb3059de92eb2a8",
   "product_version": "2.0.14",
   "latest_published_release": "v2.0.13",
@@ -33,15 +33,30 @@
   },
   "local_candidate": {
     "version": "2.0.14",
-    "status": "source_verifying",
+    "status": "source_ready",
     "route_id": "9f67efd2575c",
     "branch": "feature/l5-multimodal-landing-factory",
     "change_package": "engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef",
     "source_base": "b10a5c474883e30dcaf781d104cbb804f031b52f",
-    "artifact_status": "not_built",
+    "reviewed_product_head": "5f47508f3c0d52b71a3c866969cc28b6476a9d99",
+    "reviewed_product_tree": "0ae72773d73a294b88a398cec9926f6fca2f5555",
+    "reviewed_policy_head": "58c9caed5d2c8f9febba297430a0782438505d82",
+    "reviewed_policy_tree": "975bf7a21784bf91279a684bdeb5f5394fb715a1",
+    "source_gate_status": "passed_composite",
+    "review_status": "four_route_selected_reviews_passed",
+    "artifact_status": "pending_at_ready_state_checkpoint_R",
+    "artifact_child": {
+      "identity": "A",
+      "source_parent": "ready_state_checkpoint_R",
+      "delta_paths": [
+        "packages/adaptive-grok-build-pro-v2.0.14.zip",
+        "packages/adaptive-grok-build-pro-v2.0.14.zip.sha256"
+      ],
+      "authoritative_when": "both_paths_are_tracked_and_sidecar_matches_zip"
+    },
     "published": false,
     "external_effect": false,
-    "notes": "The offline L5 landing dogfood source is integrated for exact-head verification. It has an unavailable default provider and publisher, no operational provider or hosting authority, and no 2.0.14 product ZIP yet."
+    "notes": "The offline L5 landing source is locally ready. Checkpoint R is the package source parent; R has no 2.0.14 product pair, while child A is exactly R plus the two declared paths and their tracked presence and sidecar binding are authoritative. Provider and publisher defaults remain unavailable, with no operational provider or hosting authority."
   },
   "delivered_non_milestone_work": [
     {
@@ -58,11 +73,31 @@
     "branch": "feature/l5-multimodal-landing-factory",
     "pull_request": null,
     "change_package": "engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef",
-    "status": "local_2.0.14_source_verifying",
+    "status": "local_2.0.14_source_ready",
     "highest_implemented_milestone": "M9",
     "current_provisional_milestone": "L5 multimodal landing dogfood",
     "next_roadmap_milestone": null,
-    "next_action": "Run the single exact-source verification and four route-selected reviews for source-freeze F, record the state-only ready child R, then build the 2.0.14 package twice from exact R before the artifact-bound final gate wave. No push, publication, provider call, target mutation, hosting action, or production effect is authorized.",
+    "next_action": "If the declared 2.0.14 pair is absent, build it twice in private no-local clones from ready checkpoint R and create child A with exactly those two paths. If both paths are present, the tree is A and proceeds to its artifact-bound gate wave; GitHub delivery grants are materialized only for exact A, and no provider call, target mutation, hosting action, or production effect is authorized.",
+    "local_source_gate": {
+      "status": "passed_composite",
+      "product_head": "5f47508f3c0d52b71a3c866969cc28b6476a9d99",
+      "product_tree": "0ae72773d73a294b88a398cec9926f6fca2f5555",
+      "product_verification": "all_heavy_and_product_gates_passed_policy_ceiling_only",
+      "policy_head": "58c9caed5d2c8f9febba297430a0782438505d82",
+      "policy_tree": "975bf7a21784bf91279a684bdeb5f5394fb715a1",
+      "policy_verification": "exact_route_fitness_passed",
+      "reviews": "four_route_selected_reviews_passed",
+      "ready_state_checkpoint": "R_this_commit"
+    },
+    "package_handoff": {
+      "source_parent": "ready_state_checkpoint_R",
+      "artifact_child": "A",
+      "delta_paths": [
+        "packages/adaptive-grok-build-pro-v2.0.14.zip",
+        "packages/adaptive-grok-build-pro-v2.0.14.zip.sha256"
+      ],
+      "pair_presence_is_authoritative": true
+    },
     "integrated_stack": {
       "status": "delivered_to_main",
       "m4_head": "67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4",

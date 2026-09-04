@@ -1421,7 +1421,15 @@ module.main()
         candidate_version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
         self.assertEqual(candidate_version, '2.0.14')
         self.assertEqual(state['product_version'], candidate_version)
-        self.assertEqual(state['local_candidate']['artifact_status'], 'not_built')
+        self.assertEqual(
+            state['local_candidate']['artifact_status'],
+            'pending_at_ready_state_checkpoint_R',
+        )
+        candidate_pair = tuple(
+            ROOT / path
+            for path in state['local_candidate']['artifact_child']['delta_paths']
+        )
+        self.assertIn(len(tuple(path for path in candidate_pair if path.exists())), {0, 2})
         published_version = published['tag'].removeprefix('v')
         self.assertEqual(published_version, '2.0.13')
         self.assertEqual(state['latest_published_release'], published['tag'])

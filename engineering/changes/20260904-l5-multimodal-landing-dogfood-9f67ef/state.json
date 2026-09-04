@@ -31,11 +31,23 @@
       "from": "implementing",
       "reason": "Tasks 1-5 now provide the bounded offline landing vertical, additive API, unavailable publisher, architecture and truthful unpublished 2.0.14 source identity; focused TDD, compatibility, structure, architecture and exact-target injected smoke evidence pass, while full verification, reviews, the 2.0.14 product artifact and every external action remain pending.",
       "to": "verifying"
+    },
+    {
+      "at": "2026-09-04T15:24:50+00:00",
+      "from": "verifying",
+      "reason": "Exact 5f47508 product verification passed every heavy and product gate and found only the source-AST ceiling; 58c9cae changed only policy, its mirrored fixture and rationale, and exact route fitness now passes, completing the composite local source gate.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-04T15:24:50+00:00",
+      "from": "reviewing",
+      "reason": "All four route-selected reviews pass for the reviewed product and policy heads; the local 2.0.14 source is ready for artifact packaging, with two private no-local builds from checkpoint R next and every external gate remaining separate.",
+      "to": "ready"
     }
   ],
   "route_id": "9f67efd2575c",
   "schema_version": 1,
-  "status": "verifying",
+  "status": "ready",
   "title": "L5 multimodal landing dogfood",
-  "updated_at": "2026-09-04T12:24:48+00:00"
+  "updated_at": "2026-09-04T15:24:50+00:00"
 }

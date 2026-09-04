@@ -9,3 +9,7 @@ All five implementation tasks are sequential and owned by the route-selected `ai
 - [x] **5. API and disabled publication integration:** wire the additive API/server boundary, unavailable publisher, architecture/docs and unpublished version `2.0.14`, compatibility assertions, and state `verifying`; hand off source-freeze `F` with no product ZIP or external effect.
 
 Detailed file-level TDD steps and commit boundaries are fixed in [`docs/superpowers/plans/2026-09-04-l5-multimodal-landing-dogfood.md`](../../../docs/superpowers/plans/2026-09-04-l5-multimodal-landing-dogfood.md).
+
+## Finalization handoff
+
+Exact product head `5f47508f3c0d52b71a3c866969cc28b6476a9d99` passed every heavy/product verifier gate and exposed only the source-AST policy ceiling; policy head `58c9caed5d2c8f9febba297430a0782438505d82` changes only the bounded policy/fixture/rationale and passes exact route fitness. All four route-selected reviews pass. This bookkeeping commit is ready checkpoint `R`; artifact child `A` must differ from `R` only by `packages/adaptive-grok-build-pro-v2.0.14.zip` and `packages/adaptive-grok-build-pro-v2.0.14.zip.sha256`, produced by two matching private no-local builds before the artifact-bound final gate.

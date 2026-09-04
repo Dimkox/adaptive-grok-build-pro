@@ -4,7 +4,7 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 ## Current project state
 
-- Product source identity is the local unpublished candidate `2.0.14`; latest published release `v2.0.13` remains immutable at ZIP SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`. Source-freeze `F` contains no `2.0.14` product ZIP.
+- Product source identity is the local unpublished source-ready candidate `2.0.14`; latest published release `v2.0.13` remains immutable at ZIP SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`. Ready-state checkpoint `R` (this bookkeeping commit) is the package source parent and contains no `2.0.14` product pair; artifact child `A` is exactly `R` plus `packages/adaptive-grok-build-pro-v2.0.14.zip` and its `.sha256` sidecar, whose tracked presence and binding are authoritative in `A`.
 - M0 (Live Trust Authority) is delivered to `main`.
 - M0 runtime repair and policy-loop fixes are also merged into `main` through PR #7 and PR #6.
 - Protected `origin/main` is `8599d45f4f28285381b05a53feb3059de92eb2a8`; it requires `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114` on the exact up-to-date pull-request head.
@@ -13,7 +13,7 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 - PRs #12/#13 remain old-epoch `ACTION_REQUIRED`; their unique lazy CLI import/tests and repository-scoped Trust CI profiles are absent from `main`. PR #15's current-epoch Trust CI conclusion is `FAILURE` and GitGuardian is `SUCCESS`; the cause was not inspected or inferred. PR #21 remains open at `571cad7877431ac5ab5779b53fe9f7effd6859ce`, with Trust CI `FAILURE` and GitGuardian `FAILURE`; neither result is diagnosed or dismissed here.
 - PR #22 checked head `b5eba759c309a92f92f4d4003d025795c7f8a1f9` passed `adaptive-trust-ci/verified@06ecf1c875bc` as check run `100955508827` with attestation `74f1bbb2-3098-4d35-a42f-d49351d81c4a`, then merged at `2026-09-04T08:31:49Z` as main commit `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`.
 - PR #19 delivered the optional SEO side project to `main` as `8ab4e57038dec2e07f01aaa0b207813a387358f4`; it is non-milestone work and is no longer an open continuation item.
-- Current work is route `9f67efd2575c` on `feature/l5-multimodal-landing-factory`: freeze and verify the offline L5 landing source, record the state-only ready checkpoint, then build the `2.0.14` product package from that exact checkpoint. The provider and publisher are unavailable by default; no network, target mutation, hosting action, live/indexed claim, or production effect is authorized. M8 cohort/activation and real M9 operational qualification remain separate gaps.
+- Current work is route `9f67efd2575c` on `feature/l5-multimodal-landing-factory`: the composite local source gate and four route-selected reviews pass, and this commit records ready checkpoint `R`. If the declared pair is absent, next build it twice in private no-local clones from `R` and create child `A` with exactly those two paths; if present, the tree is `A` and proceeds to its artifact-bound gate. The provider and publisher are unavailable by default; no network, target mutation, hosting action, live/indexed claim, or production effect is authorized. M8 cohort/activation and real M9 operational qualification remain separate gaps.
 
 Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
 

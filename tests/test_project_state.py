@@ -267,15 +267,30 @@ class ProjectStateTests(unittest.TestCase):
             state["local_candidate"],
             {
                 "version": "2.0.14",
-                "status": "source_verifying",
+                "status": "source_ready",
                 "route_id": "9f67efd2575c",
                 "branch": "feature/l5-multimodal-landing-factory",
                 "change_package": "engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef",
                 "source_base": "b10a5c474883e30dcaf781d104cbb804f031b52f",
-                "artifact_status": "not_built",
+                "reviewed_product_head": "5f47508f3c0d52b71a3c866969cc28b6476a9d99",
+                "reviewed_product_tree": "0ae72773d73a294b88a398cec9926f6fca2f5555",
+                "reviewed_policy_head": "58c9caed5d2c8f9febba297430a0782438505d82",
+                "reviewed_policy_tree": "975bf7a21784bf91279a684bdeb5f5394fb715a1",
+                "source_gate_status": "passed_composite",
+                "review_status": "four_route_selected_reviews_passed",
+                "artifact_status": "pending_at_ready_state_checkpoint_R",
+                "artifact_child": {
+                    "identity": "A",
+                    "source_parent": "ready_state_checkpoint_R",
+                    "delta_paths": [
+                        "packages/adaptive-grok-build-pro-v2.0.14.zip",
+                        "packages/adaptive-grok-build-pro-v2.0.14.zip.sha256",
+                    ],
+                    "authoritative_when": "both_paths_are_tracked_and_sidecar_matches_zip",
+                },
                 "published": False,
                 "external_effect": False,
-                "notes": "The offline L5 landing dogfood source is integrated for exact-head verification. It has an unavailable default provider and publisher, no operational provider or hosting authority, and no 2.0.14 product ZIP yet.",
+                "notes": "The offline L5 landing source is locally ready. Checkpoint R is the package source parent; R has no 2.0.14 product pair, while child A is exactly R plus the two declared paths and their tracked presence and sidecar binding are authoritative. Provider and publisher defaults remain unavailable, with no operational provider or hosting authority.",
             },
         )
 
@@ -283,13 +298,18 @@ class ProjectStateTests(unittest.TestCase):
         dimensions = self.state["active_delivery"]["m4_dimensions"]
         self.assertEqual(
             self.state["active_delivery"]["status"],
-            "local_2.0.14_source_verifying",
+            "local_2.0.14_source_ready",
         )
         self.assertTrue(
             self.state["active_delivery"]["next_action"].startswith(
-                "Run the single exact-source verification"
+                "If the declared 2.0.14 pair is absent"
             )
         )
+        source_gate = self.state["active_delivery"]["local_source_gate"]
+        self.assertEqual(source_gate["status"], "passed_composite")
+        self.assertEqual(source_gate["product_head"], "5f47508f3c0d52b71a3c866969cc28b6476a9d99")
+        self.assertEqual(source_gate["policy_head"], "58c9caed5d2c8f9febba297430a0782438505d82")
+        self.assertEqual(source_gate["reviews"], "four_route_selected_reviews_passed")
         self.assertEqual(self.state["active_delivery"]["route_id"], "9f67efd2575c")
         self.assertEqual(
             self.state["active_delivery"]["branch"],

@@ -2,19 +2,20 @@
 
 ## Current deliverable
 
-This change produces unpublished local product candidate `2.0.14` and a deterministic site-candidate ZIP/sidecar while preserving published `v2.0.13` and its product ZIP as immutable history. Source-freeze `F` contains no `2.0.14` product ZIP; that pair is built twice only from ready-state child `R` and added alone in artifact child `A`. Nothing in this flow publishes the candidate, calls an operational provider, or claims a live/indexed site.
+This change produces unpublished local product candidate `2.0.14` and a deterministic site-candidate ZIP/sidecar while preserving published `v2.0.13` and its product ZIP as immutable history. Ready checkpoint `R` (this bookkeeping commit) is the package source parent and contains no `2.0.14` product pair; artifact child `A` is exactly `R` plus `packages/adaptive-grok-build-pro-v2.0.14.zip` and `packages/adaptive-grok-build-pro-v2.0.14.zip.sha256`, built reproducibly in two private no-local clones. Their tracked presence and matching sidecar identify `A`; nothing in this flow publishes the candidate, calls an operational provider, or claims a live/indexed site.
 
 ## Local go criteria
 
 - Typed spec, schemas, runtime inventory, and architecture are consistent and placeholder-free.
 - Focused contract/intake/provider/renderer/coordinator/artifact/API/publisher/compatibility tests pass once.
 - Existing showcase, migrations `001`-`018`, M0-M9 contracts, and published product artifacts are byte-identical.
-- One exact-head PR verifier passes and the four route-selected reviewers record no critical/core/authority/tenant/data-loss blocker against the same fingerprint.
+- The composite source gate is complete: product head `5f47508f3c0d52b71a3c866969cc28b6476a9d99` passed every heavy/product verifier gate except the source-AST policy ceiling, and policy head `58c9caed5d2c8f9febba297430a0782438505d82` changes only that bounded policy, its mirrored fixture and rationale and passes exact route fitness.
+- All four route-selected reviewers pass the exact reviewed product/policy source; child `A` still requires its artifact-bound final gate.
 - Default provider and publisher remain unavailable with proven zero external calls.
 
 ## Operational no-go boundary
 
-Push/PR/merge/release and any provider/data-transfer/hosting action require new exact authorization. Production additionally requires a current-site snapshot and restorable predecessor, pinned operational provider, real evaluator/Trust CI and signed artifact evidence, factual M8/M9 operational readiness, exact hosting/TLS configuration, staged recovery proof, and action/resource-bound grants. Until every item exists, the only release target is local source/artifact readiness.
+The user explicitly delegated later branch push, pull-request creation/merge, tag push and GitHub Release publication for `v2.0.14`; those operations remain unavailable at `R` and require action/resource-bound local grants materialized only against exact child `A`. External Trust CI on the exact PR head remains merge authority. No provider call, data transfer, credential use, landing-target mutation, hosting, DNS/TLS/WAF action, deployment, or production effect is authorized; production also requires a current-site snapshot and restorable predecessor, pinned operational provider, real evaluator/Trust CI and signed artifact evidence, factual M8/M9 operational readiness, exact hosting configuration and staged recovery proof.
 
 ## Future staged activation
 
