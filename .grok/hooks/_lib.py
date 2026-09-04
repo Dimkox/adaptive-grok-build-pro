@@ -16,10 +16,8 @@ if str(STACK) not in sys.path:
     sys.path.insert(0, str(STACK))
 
 from adaptive_grok._policy_legacy import (
-    _command_chunks,
-    _contains_embedded_sensitive_command,
-    _leading_argv,
     _unwrap_execution_wrappers,
+    analyze_command_authority,
 )
 from adaptive_grok.util import find_root
 
@@ -140,52 +138,6 @@ def _contains_nested_command_shell(words: list[str]) -> bool:
     return any(Path(token).name.lower() in shells for token in words)
 
 
-def _is_dynamic_authority_token(token: str) -> bool:
-    return '$' in token or '`' in token
-
-
-def _has_ambiguous_production_authority(command: str) -> bool:
-    for chunk in _command_chunks(command):
-        argv = _leading_argv(chunk)
-        if not argv:
-            continue
-        executable = Path(argv[0]).name.lower()
-        if executable == 'git':
-            index = 1
-            while index < len(argv):
-                token = argv[index]
-                if token in {'-c', '--git-dir', '--work-tree'}:
-                    index += 2
-                    continue
-                if token.startswith(('--git-dir=', '--work-tree=')):
-                    index += 1
-                    continue
-                break
-            if index >= len(argv):
-                continue
-            if _is_dynamic_authority_token(argv[index]):
-                return True
-            if argv[index] == 'push' and any(
-                _is_dynamic_authority_token(token) for token in argv[index + 1:]
-            ):
-                return True
-            continue
-        if executable in {'docker', 'npm'}:
-            if len(argv) > 1 and _is_dynamic_authority_token(argv[1]):
-                return True
-            continue
-        if executable == 'gh':
-            if len(argv) > 1 and _is_dynamic_authority_token(argv[1]):
-                return True
-            if (
-                len(argv) > 2
-                and argv[1] in {'pr', 'release', 'workflow'}
-                and _is_dynamic_authority_token(argv[2])
-            ):
-                return True
-    return False
-
-
 def _has_unsafe_dispatcher_composition(words: list[str]) -> bool:
     if not words:
         return False
@@ -264,18 +216,12 @@ def _command_directory_aliases(command: str, *, depth: int = 0) -> dict[str, str
     if ambiguous_wrapper:
         aliases['command.wrapper-options'] = '<ambiguous>'
         return aliases
-    if _has_ambiguous_production_authority(command):
-        aliases['command.dynamic-production-authority'] = '<ambiguous>'
+    authority = analyze_command_authority(command)
+    if authority.ambiguous or (authority.actions and not authority.context_proven):
+        aliases['command.production-authority'] = '<ambiguous>'
         return aliases
     if _has_unsafe_dispatcher_composition(words):
         aliases['command.dispatcher-composition'] = '<ambiguous>'
-        return aliases
-    if _contains_embedded_sensitive_command(words) and (
-        not words
-        or Path(words[0]).name.lower()
-        not in {'cd', 'pushd', 'git', 'gh', 'docker', 'npm', 'curl', 'wget'}
-    ):
-        aliases['command.displaced-sensitive-executable'] = '<ambiguous>'
         return aliases
     if any(word in {'eval', 'source', '.'} for word in words):
         aliases['command.dynamic-shell'] = '<ambiguous>'

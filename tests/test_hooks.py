@@ -632,6 +632,69 @@ class HookTests(unittest.TestCase):
                     })
                     self.assertEqual(data['decision'], 'allow', (command, error, data))
 
+    def test_authority_metacharacters_and_prefixed_cli_candidates_fail_closed(self) -> None:
+        with project_copy(git=True) as session_root, project_copy(git=True) as other_root:
+            selector_commands = (
+                'git p{u..u}sh origin feature',
+                "bash -lc 'git p{u..u}sh origin feature'",
+                'git p*sh origin feature',
+                'git p[u]sh origin feature',
+                'docker p{u..u}sh image',
+            )
+            for index, command in enumerate(selector_commands):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                        'cwd': str(session_root),
+                        'session_id': f'authority-metacharacter-selector-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'deny', (command, error, data))
+                    self.assertIn('ambiguous-sensitive-shell', data['reason'])
+
+            self._grant(
+                session_root,
+                'production',
+                actions=['git-push-branch', 'docker-push'],
+            )
+            grant_borrow_commands = (
+                f'chroot {other_root} git "$ACTION" origin feature',
+                f'unknown-dispatch --root {other_root} git "$ACTION" origin feature',
+                f'unknown-dispatch --root {other_root} docker "$ACTION" image',
+                'git push origin refs/{heads,tags}/feature',
+                'git push origin refs/*/feature',
+                'git push origin r[e]fs/tags/v1',
+            )
+            for index, command in enumerate(grant_borrow_commands):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                        'cwd': str(session_root),
+                        'session_id': f'authority-metacharacter-grant-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'deny', (command, error, data))
+
+            inert_or_fixed_commands = (
+                'echo git p{u..u}sh',
+                "printf '%s\\n' 'git p{u..u}sh'",
+                'xargs -a commands.txt echo git p{u..u}sh',
+                'git status "$PATH"',
+                "bash -lc 'git status \"$PATH\"'",
+                f'chroot {other_root} git status --short',
+                f'unknown-dispatch --root {other_root} docker inspect image',
+                'git push origin feature',
+            )
+            for index, command in enumerate(inert_or_fixed_commands):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(session_root, 'pre_tool_use.py', {
+                        'cwd': str(session_root),
+                        'session_id': f'authority-inert-or-fixed-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'allow', (command, error, data))
+
     def test_subagent_lifecycle_is_recorded(self) -> None:
         with project_copy() as root:
             route = build_route(root, 'Исправить PHP баг', 's1').to_dict()

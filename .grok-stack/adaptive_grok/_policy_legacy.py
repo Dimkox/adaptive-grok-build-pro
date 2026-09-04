@@ -3,6 +3,7 @@ from __future__ import annotations
 import fnmatch
 import re
 import shlex
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -295,14 +296,204 @@ def _production_action(argv: list[str]) -> str | None:
     return None
 
 
+@dataclass(frozen=True)
+class AuthorityAnalysis:
+    actions: tuple[str, ...]
+    ambiguous: bool
+    context_proven: bool
+
+
+_AUTHORITY_EXECUTABLES = {'git', 'gh', 'docker', 'npm'}
+_AUTHORITY_META = re.compile(r'[$`*?\[\]{}()]')
+_INERT_EXECUTABLES = {'echo', 'printf'}
+_SHELL_EXECUTABLES = {'bash', 'sh', 'zsh', 'dash', 'ksh'}
+
+
+def _authority_token_is_dynamic(token: str) -> bool:
+    return _AUTHORITY_META.search(token) is not None
+
+
+def _literal_xargs_target(tokens: list[str]) -> list[str] | None:
+    index = 1
+    while index < len(tokens):
+        token = tokens[index]
+        if token == '--':
+            return tokens[index + 1:]
+        if token in {'-a', '--arg-file'}:
+            if index + 1 >= len(tokens):
+                return None
+            index += 2
+            continue
+        if token.startswith('--arg-file='):
+            index += 1
+            continue
+        if token.startswith('-'):
+            return None
+        return tokens[index:]
+    return []
+
+
+def _git_selector_index(argv: list[str]) -> int:
+    index = 1
+    while index < len(argv):
+        token = argv[index]
+        if token in {'-C', '-c', '--git-dir', '--work-tree'}:
+            if index + 1 >= len(argv):
+                return len(argv)
+            index += 2
+            continue
+        if token.startswith(('--git-dir=', '--work-tree=')):
+            index += 1
+            continue
+        break
+    return index
+
+
+def _candidate_authority(argv: list[str]) -> tuple[str | None, bool]:
+    if not argv:
+        return None, False
+    executable = Path(argv[0]).name.lower()
+    normalized = [executable, *[token.lower() for token in argv[1:]]]
+    action = _production_action(normalized)
+    if executable == 'git':
+        selector_index = _git_selector_index(argv)
+        if selector_index >= len(argv):
+            return action, False
+        if _authority_token_is_dynamic(argv[selector_index]):
+            return action, True
+        if argv[selector_index].lower() == 'push' and any(
+            _authority_token_is_dynamic(token) for token in argv[selector_index + 1:]
+        ):
+            return action, True
+    elif executable in {'docker', 'npm'}:
+        if len(argv) > 1 and _authority_token_is_dynamic(argv[1]):
+            return action, True
+        if action and any(_authority_token_is_dynamic(token) for token in argv[2:]):
+            return action, True
+    elif executable == 'gh':
+        if len(argv) > 1 and _authority_token_is_dynamic(argv[1]):
+            return action, True
+        if len(argv) > 2 and argv[1].lower() in {'pr', 'release', 'workflow'}:
+            if _authority_token_is_dynamic(argv[2]):
+                return action, True
+            if action and any(_authority_token_is_dynamic(token) for token in argv[3:]):
+                return action, True
+    return action, False
+
+
+def _command_tokens(chunk: str) -> list[str] | None:
+    try:
+        tokens = shlex.split(chunk)
+    except ValueError:
+        return None
+    while tokens and re.match(r'^[A-Za-z_][A-Za-z0-9_]*=', tokens[0]):
+        tokens = tokens[1:]
+    return tokens
+
+
+def _bounded_command(tokens: list[str]) -> tuple[list[str], bool]:
+    remaining = list(tokens)
+    if remaining and Path(remaining[0]).name.lower() in {'sudo', 'doas'}:
+        if len(remaining) < 2 or remaining[1].startswith('-'):
+            return remaining, False
+        remaining = remaining[1:]
+    elif remaining and Path(remaining[0]).name.lower() == 'env':
+        return remaining, False
+    remaining, ambiguous_wrapper = _unwrap_execution_wrappers(remaining)
+    return remaining, not ambiguous_wrapper
+
+
+def _literal_shell_payload(tokens: list[str]) -> str | None:
+    if len(tokens) != 3 or Path(tokens[0]).name.lower() not in _SHELL_EXECUTABLES:
+        return None
+    if tokens[1] not in {'-c', '-lc'}:
+        return None
+    return tokens[2]
+
+
+def _analyze_authority_pieces(
+    raw_command: str,
+    *,
+    shell_depth: int = 0,
+) -> AuthorityAnalysis:
+    actions: list[str] = []
+    ambiguous = False
+    context_proven = True
+
+    def record(argv: list[str], *, proven: bool) -> None:
+        nonlocal ambiguous, context_proven
+        action, candidate_ambiguous = _candidate_authority(argv)
+        if action and action not in actions:
+            actions.append(action)
+        if candidate_ambiguous:
+            ambiguous = True
+        if (action or candidate_ambiguous) and not proven:
+            context_proven = False
+
+    for chunk in _command_chunks(raw_command):
+        raw_tokens = _command_tokens(chunk)
+        if raw_tokens is None:
+            if re.search(r'\b(?:git|gh|docker|npm)\b', chunk, re.IGNORECASE):
+                ambiguous = True
+                context_proven = False
+            continue
+        tokens, bounded = _bounded_command(raw_tokens)
+        if not tokens:
+            continue
+        outer = Path(tokens[0]).name.lower()
+        if outer in _INERT_EXECUTABLES:
+            continue
+        if outer == 'xargs':
+            target = _literal_xargs_target(tokens)
+            if target is None:
+                if any(Path(token).name.lower() in _AUTHORITY_EXECUTABLES for token in tokens[1:]):
+                    ambiguous = True
+                    context_proven = False
+                continue
+            target, target_bounded = _bounded_command(target)
+            if not target or Path(target[0]).name.lower() in _INERT_EXECUTABLES:
+                continue
+            if Path(target[0]).name.lower() in _AUTHORITY_EXECUTABLES:
+                record(target, proven=False)
+            elif any(Path(token).name.lower() in _AUTHORITY_EXECUTABLES for token in target):
+                for index, token in enumerate(target):
+                    if Path(token).name.lower() in _AUTHORITY_EXECUTABLES:
+                        record(target[index:], proven=False)
+            if not target_bounded:
+                context_proven = False
+            continue
+        if outer in _SHELL_EXECUTABLES:
+            payload = _literal_shell_payload(tokens)
+            if payload is None or shell_depth > 0:
+                continue
+            inner = _analyze_authority_pieces(payload, shell_depth=shell_depth + 1)
+            for action in inner.actions:
+                if action not in actions:
+                    actions.append(action)
+            ambiguous = ambiguous or inner.ambiguous
+            if (inner.actions or inner.ambiguous) and (not bounded or not inner.context_proven):
+                context_proven = False
+            continue
+        if outer in _AUTHORITY_EXECUTABLES:
+            record(tokens, proven=bounded)
+            continue
+        for index, token in enumerate(tokens[1:], 1):
+            if Path(token).name.lower() in _AUTHORITY_EXECUTABLES:
+                record(tokens[index:], proven=False)
+
+    return AuthorityAnalysis(tuple(actions), ambiguous, context_proven)
+
+
+def analyze_command_authority(raw_command: str) -> AuthorityAnalysis:
+    """Conservatively classify production authority without evaluating shell syntax."""
+    return _analyze_authority_pieces(raw_command)
+
+
 def production_action(command: str) -> str | None:
-    for chunk in _command_chunks(command):
-        inner = _unwrap_shell(chunk)
-        for piece in _command_chunks(inner):
-            action = _production_action(_leading_argv(piece))
-            if action:
-                return action
-    return None
+    analysis = analyze_command_authority(command)
+    if analysis.ambiguous or not analysis.context_proven:
+        return None
+    return analysis.actions[0] if analysis.actions else None
 
 
 def is_production_invocation(command: str) -> bool:
@@ -324,18 +515,6 @@ def _http_write_resource(command: str) -> str | None:
         return None
     match = _HTTP_URL.search(command)
     return match.group(0) if match else 'direct-http-write'
-
-
-def _contains_embedded_sensitive_command(tokens: list[str]) -> bool:
-    """Conservatively detect a sensitive executable displaced by an unknown prefix."""
-    for index, token in enumerate(tokens):
-        executable = Path(token).name.lower()
-        suffix = [executable, *[item.lower() for item in tokens[index + 1:]]]
-        if executable in {'git', 'gh', 'docker', 'npm'} and _production_action(suffix):
-            return True
-        if executable in {'curl', 'wget', 'gh'} and _http_write_resource(shlex.join(tokens[index:])):
-            return True
-    return False
 
 
 def _agent_type(tool_input: Any) -> str | None:
