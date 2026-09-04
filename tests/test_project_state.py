@@ -23,6 +23,8 @@ CURRENT_RELEASE_HEAD_SHA = "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57"
 CURRENT_RELEASE_TREE = "618df086920c92179aa0e22a8c8d4ad30ebd9230"
 CURRENT_RELEASE_ZIP_SHA256 = "b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264"
 CURRENT_RELEASE_SIDECAR_SHA256 = "1a961c35b8f12fa02579ec7888c889f0ae7ca8656b158eb731681ef8357caf3c"
+CURRENT_LANDING_SHA = "699010380f4f90a0193a9c22090c35e6aded7d2c"
+CURRENT_LANDING_TREE = "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4"
 PR21_HEAD_SHA = "571cad7877431ac5ab5779b53fe9f7effd6859ce"
 SEO_MERGE_SHA = "8ab4e57038dec2e07f01aaa0b207813a387358f4"
 M4_PRODUCT_SHA = "67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4"
@@ -118,6 +120,20 @@ class ProjectStateTests(unittest.TestCase):
             self.state["implemented_milestones"],
             ["M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9"],
         )
+        repair = state["current_unreleased_change"]
+        self.assertEqual(repair["route_id"], "eb3f80383d44")
+        self.assertEqual(repair["branch"], "feature/l5-current-landing-source")
+        self.assertEqual(repair["landing_source"]["commit"], CURRENT_LANDING_SHA)
+        self.assertEqual(repair["landing_source"]["tree"], CURRENT_LANDING_TREE)
+        self.assertTrue(repair["landing_source"]["read_only"])
+        self.assertEqual(repair["write_paths"], ["content.css", "index.html"])
+        self.assertEqual(repair["protected_source_member"], "index.css")
+        self.assertEqual(repair["deploy_member_count"], 20)
+        self.assertEqual(repair["focused_tests"], {"status": "passed", "count": 47})
+        self.assertEqual(repair["full_verifier"], "pending")
+        self.assertEqual(repair["independent_reviews"], "pending")
+        self.assertFalse(repair["package_rebuild"])
+        self.assertFalse(repair["external_effect"])
 
         exact_milestone_facts = {
             "M0": {

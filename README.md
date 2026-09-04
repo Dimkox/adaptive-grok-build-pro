@@ -6,6 +6,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 - Fresh-agent bootstrap: start with [`START_HERE.md`](START_HERE.md), then [`PROJECT_STATE.json`](PROJECT_STATE.json). A clean clone must be sufficient to understand the current milestone without chat history.
 - Identity: **2.0.14** (`VERSION`, README H1) is the latest published repository product release. Its tag-bound [`packages/adaptive-grok-build-pro-v2.0.14.zip`](packages/adaptive-grok-build-pro-v2.0.14.zip) has SHA-256 `b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264`; `v2.0.13` and its ZIP remain immutable historical release evidence.
+- Unreleased repair: route `eb3f80383d44` on `feature/l5-current-landing-source` binds offline L5 generation to the current read-only landing source `699010380f4f90a0193a9c22090c35e6aded7d2c` / tree `f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4`. Its renderer/OpenAPI identity is `1.0.1`; source-owned `index.css` is protected and included in the current 20-member deploy inventory, while generated writes remain exactly `index.html` and `content.css`. This source repair is not part of published `v2.0.14`, has no replacement product package yet, and grants no provider, publisher, target-mutation, deployment, or production authority.
 - Standing contract: [AGENTS.md](AGENTS.md) — first section is agent self-learning into [decisions.md](decisions.md) / [mistakes.md](mistakes.md); delivery is PR-only and merge trust comes from the App-owned policy-epoch check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 - Release evidence: PR #24 checked head `66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57` passed App-owned `adaptive-trust-ci/verified@06ecf1c875bc` (`SUCCESS`, check run `101099224099`, attestation `9defb556-f703-4a13-b20a-8b88aa6781b4`, signer `0519cf1d47436f2e`) and GitGuardian (`SUCCESS`), then merged as `1751b5855e46782b9a1bfceb6e1ab0102cba03b0` with reviewed tree `618df086920c92179aa0e22a8c8d4ad30ebd9230`. GitHub Release `v2.0.14` was published at `2026-09-04T16:58:48Z`.
 - Independent Trust CI: [`trust-ci/`](trust-ci/) — self-hosted API/worker, PostgreSQL durable jobs, Ed25519 approvals and attestations, external holdout validation, isolated no-network runner containers, GitHub App Checks API and app-bound branch protection. **No GitHub Actions.**
@@ -32,7 +33,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 8. [QUICKSTART.md](QUICKSTART.md)
 9. [`trust-ci/README.md`](trust-ci/README.md)
 10. [`factory/README.md`](factory/README.md)
-11. [active L5 landing change package](engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef/brief.md)
+11. [active L5 current-source repair package](engineering/changes/20260904-repair-l5-current-landing-source-binding-eb3f80/brief.md)
 12. `.grok-stack/runtime/active-route.json` if present (machine-local route; it may be absent in a clean clone and is not merge authority)
 13. This README’s stack graph and map
 

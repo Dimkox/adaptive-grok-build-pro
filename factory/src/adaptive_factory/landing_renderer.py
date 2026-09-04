@@ -22,12 +22,12 @@ from .landing_contracts import (
 
 
 TARGET_REPOSITORY_ID = "github.com/Dimkox/ai-dark-factory-landing"
-TARGET_BASE_SHA = "176efcaab931c2482781ff163c621b10aa05dee9"
-TARGET_BASE_TREE = "f2bdcecc6dbe9ecc82007610d398ca12bd75e07f"
+TARGET_BASE_SHA = "699010380f4f90a0193a9c22090c35e6aded7d2c"
+TARGET_BASE_TREE = "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4"
 TARGET_DEFAULT_BRANCH = "main"
 LANDING_WRITE_PATHS = frozenset({"index.html", "content.css"})
 MAX_LANDING_FILE_BYTES = 2 * 1_048_576
-RENDERER_VERSION = "1.0.0"
+RENDERER_VERSION = "1.0.1"
 FIXED_COMMIT_TIME = "2000-01-01T00:00:00Z"
 FIXED_COMMIT_NAME = "Adaptive Landing Renderer"
 FIXED_COMMIT_EMAIL = "landing-renderer@invalid.local"
@@ -52,7 +52,7 @@ class LandingSourceSurfaceFacts:
     robots_tag: str
     canonical_tag: str
     alternate_tags: tuple[str, ...]
-    inline_style_sha256: str
+    index_stylesheet_sha256: str
     jsonld_sha256: str
 
 
@@ -122,20 +122,40 @@ def source_surface_facts(html_text: str) -> LandingSourceSurfaceFacts:
     )
     if len(alternates) != 7 or len(set(alternates)) != len(alternates):
         raise LandingRenderError("source_hreflang")
-    styles = re.findall(r"<style>.*?</style>", html_text, re.DOTALL)
+    link_tags = re.findall(r"<link\b[^>]*>", html_text, re.IGNORECASE)
+    stylesheet_tags = tuple(
+        tag
+        for tag in link_tags
+        if "stylesheet" in tag.lower()
+    )
+    index_stylesheet = '<link rel="stylesheet" href="/index.css">'
+    content_stylesheet = '<link rel="stylesheet" href="/content.css">'
+    if (
+        stylesheet_tags.count(index_stylesheet) != 1
+        or stylesheet_tags.count(content_stylesheet) > 1
+        or any(
+            tag not in {index_stylesheet, content_stylesheet}
+            for tag in stylesheet_tags
+        )
+    ):
+        raise LandingRenderError("source_active_content")
     scripts = re.findall(r"<script(?:\s[^>]*)?>.*?</script>", html_text, re.DOTALL)
-    if len(styles) != 1 or len(scripts) != 1:
+    lowered = html_text.lower()
+    if (
+        re.search(r"<style\b", lowered)
+        or re.search(r"\sstyle\s*=", lowered)
+        or len(scripts) != 1
+    ):
         raise LandingRenderError("source_active_content")
     if not scripts[0].startswith('<script type="application/ld+json">'):
         raise LandingRenderError("source_active_content")
-    lowered = html_text.lower()
     if "<form" in lowered or "google-analytics" in lowered or "gtag(" in lowered:
         raise LandingRenderError("source_active_content")
     return LandingSourceSurfaceFacts(
         robots,
         canonical,
         alternates,
-        hashlib.sha256(styles[0].encode("utf-8")).hexdigest(),
+        hashlib.sha256(index_stylesheet.encode("utf-8")).hexdigest(),
         hashlib.sha256(scripts[0].encode("utf-8")).hexdigest(),
     )
 

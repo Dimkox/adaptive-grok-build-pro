@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Adaptive Factory L5 Landing Dogfood API",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Additive local landing intake API. Repository identity and exact base SHA/tree must match trusted server configuration; the default provider and publisher are unavailable."
   },
   "paths": {
@@ -80,8 +80,8 @@
       "IdempotencyKey": {"name": "Idempotency-Key", "in": "header", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}},
       "CorrelationId": {"name": "X-Correlation-ID", "in": "header", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}},
       "RepositoryId": {"name": "X-Repository-ID", "in": "header", "required": true, "description": "Must exactly match trusted repository configuration.", "schema": {"type": "string", "const": "github.com/Dimkox/ai-dark-factory-landing"}},
-      "ExactBaseSha": {"name": "X-Exact-Base-SHA", "in": "header", "required": true, "description": "Must exactly match trusted base configuration.", "schema": {"type": "string", "const": "176efcaab931c2482781ff163c621b10aa05dee9"}},
-      "ExactBaseTree": {"name": "X-Exact-Base-Tree", "in": "header", "required": true, "description": "Must exactly match trusted base tree configuration.", "schema": {"type": "string", "const": "f2bdcecc6dbe9ecc82007610d398ca12bd75e07f"}},
+      "ExactBaseSha": {"name": "X-Exact-Base-SHA", "in": "header", "required": true, "description": "Must exactly match trusted base configuration.", "schema": {"type": "string", "const": "699010380f4f90a0193a9c22090c35e6aded7d2c"}},
+      "ExactBaseTree": {"name": "X-Exact-Base-Tree", "in": "header", "required": true, "description": "Must exactly match trusted base tree configuration.", "schema": {"type": "string", "const": "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4"}},
       "JobId": {"name": "job_id", "in": "path", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"}}
     },
     "schemas": {

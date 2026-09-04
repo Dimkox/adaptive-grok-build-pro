@@ -27,8 +27,8 @@ STATIC_SPEC_SCHEMA = (
 )
 NOW = datetime(2026, 9, 4, 11, 0, tzinfo=timezone.utc)
 REPOSITORY_ID = "github.com/Dimkox/ai-dark-factory-landing"
-BASE_SHA = "176efcaab931c2482781ff163c621b10aa05dee9"
-BASE_TREE = "f2bdcecc6dbe9ecc82007610d398ca12bd75e07f"
+BASE_SHA = "699010380f4f90a0193a9c22090c35e6aded7d2c"
+BASE_TREE = "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4"
 
 
 def digest(value):

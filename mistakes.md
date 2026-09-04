@@ -656,3 +656,13 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** A no-local clone from a worktree did not receive a merge commit that existed only in that worktree's remote-tracking ref.
 **Prevention:** Post-merge rebuilds must clone the canonical origin or explicitly fetch the exact merge commit before checkout.
+
+## 2026-09-04 — Used deletion in a read-only baseline diagnostic
+
+**Root cause:** The first live-baseline diagnostic used `rm -f` to clean a `mktemp` file even though the task was read-only, triggering a policy denial that in-memory hashing avoided.
+**Prevention:** Keep read-only diagnostics free of cleanup mutations by streaming or hashing in memory; if temporary storage is essential, use an approved lifecycle rather than adding deletion to the command.
+
+## 2026-09-04 — Let opaque text trigger route substrings
+
+**Root cause:** Free-text classification matched `d7` inside an exact SHA and `rag` inside `coverage`, incorrectly selecting Bitrix and AI domains.
+**Prevention:** Inspect generated route output before dispatch and carry opaque identifiers in structured change data instead of classifier prose.

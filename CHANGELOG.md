@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Forward-repairs the offline L5 source binding to exact landing commit `699010380f4f90a0193a9c22090c35e6aded7d2c`, tree `f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4`, with renderer/OpenAPI patch identity `1.0.1`
+- Treats extracted `index.css` as a protected source-provenance member, preserves the exact `index.html`/`content.css` write set, and completes the deterministic current-source deploy inventory at 20 members
+- Does not rebuild or replace published `v2.0.14`, call a provider or publisher, mutate the landing repository, deploy, or grant production authority
+
 ## 2.0.14 — 2026-09-04
 
 Published repository release for the offline L5 multimodal landing dogfood vertical.

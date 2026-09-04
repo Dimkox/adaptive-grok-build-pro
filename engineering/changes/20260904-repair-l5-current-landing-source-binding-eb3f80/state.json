@@ -1,0 +1,41 @@
+{
+  "change_id": "20260904-repair-l5-current-landing-source-binding-eb3f80",
+  "created_at": "2026-09-04T18:29:22+00:00",
+  "history": [
+    {
+      "at": "2026-09-04T18:29:22+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-04T18:48:58+00:00",
+      "from": "draft",
+      "reason": "Five route-selected analyses converged; exact source, invariants, acceptance tests, rollback, and sequential handoff are frozen.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-04T18:48:58+00:00",
+      "from": "scoped",
+      "reason": "User explicitly approved the five-step order and step-1 design in this thread; route declares no additional human gate.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-04T19:00:48+00:00",
+      "from": "approved",
+      "reason": "Focused regression tests reproduced stale source identity, external-style rejection, and stale OpenAPI metadata; bounded implementation is underway.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-04T19:02:53+00:00",
+      "from": "implementing",
+      "reason": "Bounded source repair is implemented; 47 focused landing tests, current-state checks, static analysis, typed spec validation, and immutable source/package checks pass. Exact-head verifier and independent reviews remain pending.",
+      "to": "verifying"
+    }
+  ],
+  "route_id": "eb3f80383d44",
+  "schema_version": 1,
+  "status": "verifying",
+  "title": "Repair L5 current landing source binding",
+  "updated_at": "2026-09-04T19:02:53+00:00"
+}

@@ -424,3 +424,7 @@ Raise only the measured factory-total AST ceiling to 1,450, factory-source AST c
 ## 2026-09-04 — Bind publication to the protected merge tree
 
 Compare the protected merge tree with the checked artifact-child tree, then rebuild from the exact merged commit before pushing the tag and publishing the release. This proved the squash changed commit identity while preserving the reviewed bytes and kept the published archive bound to its immutable tag target.
+
+## 2026-09-04 — Preserve extracted source styles as protected provenance
+
+Bind `index.css` to the exact landing SHA/tree, keep it outside the generator write set, and include it as source provenance in the current deploy inventory. Treat the correction as an unreleased forward repair so published `v2.0.14` identities and its historical 19-member artifact remain unchanged.

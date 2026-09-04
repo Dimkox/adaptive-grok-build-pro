@@ -28,8 +28,8 @@ def input_facts(**changes):
         "job_id": "job-1",
         "tenant_id": "tenant-1",
         "repository_id": "github.com/Dimkox/ai-dark-factory-landing",
-        "exact_base_sha": "176efcaab931c2482781ff163c621b10aa05dee9",
-        "exact_base_tree": "f2bdcecc6dbe9ecc82007610d398ca12bd75e07f",
+        "exact_base_sha": "699010380f4f90a0193a9c22090c35e6aded7d2c",
+        "exact_base_tree": "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4",
         "site_id": "therealaidarkfactory.online",
         "media_kind": "text",
         "media_type": "text/plain",
@@ -167,8 +167,8 @@ class LandingContractTests(unittest.TestCase):
     def test_input_binds_the_authoritative_repository_sha_and_tree(self):
         record = LandingInputV1.from_facts(input_facts())
         self.assertEqual(record.repository_id, "github.com/Dimkox/ai-dark-factory-landing")
-        self.assertEqual(record.exact_base_sha, "176efcaab931c2482781ff163c621b10aa05dee9")
-        self.assertEqual(record.exact_base_tree, "f2bdcecc6dbe9ecc82007610d398ca12bd75e07f")
+        self.assertEqual(record.exact_base_sha, "699010380f4f90a0193a9c22090c35e6aded7d2c")
+        self.assertEqual(record.exact_base_tree, "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4")
 
     def test_all_six_records_are_closed_round_trip_and_digest_stable(self):
         cases = (
@@ -326,6 +326,7 @@ class LandingContractTests(unittest.TestCase):
                 self.assertEqual(schema["properties"]["schema_version"], {"const": 1})
         contract = json.loads(OPENAPI.read_text(encoding="utf-8"))
         self.assertEqual(contract["openapi"], "3.1.0")
+        self.assertEqual(contract["info"]["version"], "1.0.1")
         operations = {(method, path): body for path, item in contract["paths"].items() for method, body in item.items()}
         self.assertEqual(
             {key: value["operationId"] for key, value in operations.items()},
@@ -348,8 +349,8 @@ class LandingContractTests(unittest.TestCase):
         self.assertEqual(set(operations[("get", "/v1/landing-jobs/{job_id}/result")]["responses"]), {"200", "401", "403", "404", "409", "500", "503"})
         parameters = contract["components"]["parameters"]
         self.assertEqual(parameters["RepositoryId"]["schema"]["const"], "github.com/Dimkox/ai-dark-factory-landing")
-        self.assertEqual(parameters["ExactBaseSha"]["schema"]["const"], "176efcaab931c2482781ff163c621b10aa05dee9")
-        self.assertEqual(parameters["ExactBaseTree"]["schema"]["const"], "f2bdcecc6dbe9ecc82007610d398ca12bd75e07f")
+        self.assertEqual(parameters["ExactBaseSha"]["schema"]["const"], "699010380f4f90a0193a9c22090c35e6aded7d2c")
+        self.assertEqual(parameters["ExactBaseTree"]["schema"]["const"], "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4")
         error = contract["components"]["schemas"]["Error"]
         self.assertEqual(set(error["required"]), {"error", "code", "detail"})
         self.assertFalse(error["additionalProperties"])

@@ -19,11 +19,7 @@ from adaptive_factory.landing_provider import (
     UnavailableLandingProvider,
     unavailable_landing_profile,
 )
-from adaptive_factory.landing_renderer import (
-    TARGET_BASE_SHA,
-    TARGET_BASE_TREE,
-    TARGET_REPOSITORY_ID,
-)
+from adaptive_factory.landing_renderer import TARGET_REPOSITORY_ID
 from adaptive_factory.landing_service import (
     InMemoryLandingJobStore,
     LandingApplicationService,
@@ -37,6 +33,10 @@ from factory.tests.test_landing_provider import profile as fixture_profile
 NOW = datetime(2026, 9, 4, 12, 0, tzinfo=timezone.utc)
 TOKEN_A = "landing-tenant-a-credential"
 TOKEN_B = "landing-tenant-b-credential"
+CURRENT_BASE_SHA = "699010380f4f90a0193a9c22090c35e6aded7d2c"
+CURRENT_BASE_TREE = "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4"
+PRIOR_BASE_SHA = "176efcaab931c2482781ff163c621b10aa05dee9"
+PRIOR_BASE_TREE = "f2bdcecc6dbe9ecc82007610d398ca12bd75e07f"
 
 
 class CountingBlobStore(PrivateLandingBlobStore):
@@ -68,7 +68,7 @@ class BoundArtifactBuilder:
                 "manifest_digest": "e" * 64,
                 "zip_sha256": "f" * 64,
                 "sidecar_sha256": "1" * 64,
-                "member_count": 19,
+                "member_count": 20,
                 "byte_length": 4096,
                 "disposition": "artifact_ready",
             }
@@ -141,8 +141,8 @@ class LandingApiTests(unittest.TestCase):
             "Idempotency-Key": key,
             "X-Correlation-ID": f"correlation-{key}",
             "X-Repository-ID": TARGET_REPOSITORY_ID,
-            "X-Exact-Base-SHA": TARGET_BASE_SHA,
-            "X-Exact-Base-Tree": TARGET_BASE_TREE,
+            "X-Exact-Base-SHA": CURRENT_BASE_SHA,
+            "X-Exact-Base-Tree": CURRENT_BASE_TREE,
             "Content-Type": media_type,
         }
 
@@ -190,6 +190,30 @@ class LandingApiTests(unittest.TestCase):
             },
             result.json(),
         )
+
+    def test_prior_and_mixed_source_tuples_fail_before_provider_or_blob_work(self):
+        provider = FailingLandingProvider()
+        client = self.client(provider=provider, profile_digest="9" * 64)
+        cases = (
+            (PRIOR_BASE_SHA, PRIOR_BASE_TREE),
+            (PRIOR_BASE_SHA, CURRENT_BASE_TREE),
+            (CURRENT_BASE_SHA, PRIOR_BASE_TREE),
+        )
+        for index, (sha, tree) in enumerate(cases):
+            headers = {
+                **self.submit_headers(key=f"stale-source-{index}"),
+                "X-Exact-Base-SHA": sha,
+                "X-Exact-Base-Tree": tree,
+            }
+            response = client.post(
+                "/v1/landing-inputs", headers=headers, content=b"same"
+            )
+            with self.subTest(sha=sha, tree=tree):
+                self.assertEqual(409, response.status_code, response.text)
+                self.assertEqual("source_identity", response.json()["code"])
+        self.assertEqual(0, provider.calls)
+        self.assertEqual(0, self.blobs.reads)
+        self.assertEqual([], list((Path(self.temporary.name) / "blobs").glob("*.blob")))
 
     def test_auth_repository_tenant_and_idempotency_are_bound(self):
         client = self.client()

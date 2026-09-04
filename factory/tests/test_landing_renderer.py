@@ -13,12 +13,19 @@ from adaptive_factory.landing_contracts import StaticLandingSpecV1
 from adaptive_factory.landing_renderer import (
     DeterministicLandingRenderer,
     ExactGitLandingWorkspace,
+    LANDING_WRITE_PATHS,
     LandingRenderError,
+    RENDERER_VERSION,
+    TARGET_BASE_SHA,
+    TARGET_BASE_TREE,
     source_surface_facts,
 )
 
 
 WRITE_PATHS = frozenset({"index.html", "content.css"})
+CURRENT_BASE_SHA = "699010380f4f90a0193a9c22090c35e6aded7d2c"
+CURRENT_BASE_TREE = "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4"
+SOURCE_INDEX_CSS = "body { color: #fff; background: #07090d; }\n"
 
 
 SOURCE_INDEX = """<!doctype html>
@@ -34,7 +41,7 @@ SOURCE_INDEX = """<!doctype html>
   <link rel="alternate" hreflang="lv-LV" href="https://therealaidarkfactory.online/lv/">
   <link rel="alternate" hreflang="km-KH" href="https://therealaidarkfactory.online/km/">
   <link rel="alternate" hreflang="x-default" href="https://therealaidarkfactory.online/">
-  <style>body { color: #fff; background: #07090d; }</style>
+  <link rel="stylesheet" href="/index.css">
 </head>
 <body>
   <header><a href="/roadmap.html">Roadmap</a></header>
@@ -81,8 +88,9 @@ def sealed_target():
         _git(repository, "init", "--initial-branch=main")
         files = {
             ".gitattributes": "* text=auto eol=lf\n",
-            ".htaccess": "Header always set Content-Security-Policy \"default-src 'self'; script-src 'self' 'sha256-fixture'; style-src 'self' 'sha256-fixture'\"\n",
+            ".htaccess": "Header always set Content-Security-Policy \"default-src 'self'; script-src 'self' 'sha256-fixture'; style-src 'self'\"\n",
             "content.css": ":root { color-scheme: dark; }\nbody { margin: 0; }\n",
+            "index.css": SOURCE_INDEX_CSS,
             "index.html": SOURCE_INDEX,
             "robots.txt": "User-agent: *\nAllow: /\nSitemap: https://therealaidarkfactory.online/sitemap.xml\n",
             "sitemap.xml": "<urlset><url><loc>https://therealaidarkfactory.online/</loc></url></urlset>\n",
@@ -181,6 +189,39 @@ class FailingRenderer:
 
 
 class LandingRendererTests(unittest.TestCase):
+    def test_current_source_identity_and_external_stylesheet_contract_are_exact(self):
+        self.assertEqual(CURRENT_BASE_SHA, TARGET_BASE_SHA)
+        self.assertEqual(CURRENT_BASE_TREE, TARGET_BASE_TREE)
+        self.assertEqual("1.0.1", RENDERER_VERSION)
+        self.assertEqual(WRITE_PATHS, LANDING_WRITE_PATHS)
+
+        facts = source_surface_facts(SOURCE_INDEX)
+        self.assertRegex(facts.index_stylesheet_sha256, r"^[0-9a-f]{64}$")
+        hostile = (
+            SOURCE_INDEX.replace(
+                '  <link rel="stylesheet" href="/index.css">\n', ""
+            ),
+            SOURCE_INDEX.replace(
+                '  <link rel="stylesheet" href="/index.css">',
+                '  <link rel="stylesheet" href="/index.css">\n'
+                '  <link rel="stylesheet" href="/index.css">',
+            ),
+            SOURCE_INDEX.replace("/index.css", "https://evil.invalid/index.css"),
+            SOURCE_INDEX.replace(
+                '  <link rel="stylesheet" href="/index.css">',
+                '  <link rel="stylesheet" href="/other.css">',
+            ),
+            SOURCE_INDEX.replace(
+                "</head>", "  <link rel=stylesheet href=/other.css>\n</head>"
+            ),
+            SOURCE_INDEX.replace("</head>", "  <style>body{display:none}</style>\n</head>"),
+        )
+        for value in hostile:
+            with self.subTest(value=value[:80]), self.assertRaisesRegex(
+                LandingRenderError, "source_active_content"
+            ):
+                source_surface_facts(value)
+
     def test_exact_target_workspace_is_private_detached_independent_and_two_file_bounded(self):
         with sealed_target() as (target, target_sha, target_tree):
             source_before = (
@@ -227,6 +268,7 @@ class LandingRendererTests(unittest.TestCase):
         )
         for protected in (
             ".htaccess",
+            "index.css",
             "robots.txt",
             "sitemap.xml",
             "privacy.html",
@@ -256,6 +298,11 @@ class LandingRendererTests(unittest.TestCase):
         self.assertEqual(
             source_surface_facts(source_html), source_surface_facts(candidate_html)
         )
+        self.assertEqual(1, source_html.count('rel="stylesheet" href="/index.css"'))
+        self.assertEqual(0, source_html.count('rel="stylesheet" href="/content.css"'))
+        self.assertEqual(1, candidate_html.count('rel="stylesheet" href="/index.css"'))
+        self.assertEqual(1, candidate_html.count('rel="stylesheet" href="/content.css"'))
+        self.assertNotIn("<style", candidate_html.lower())
         self.assertIn("Trust &amp; &quot;proof&quot;", candidate_html)
         self.assertIn("Build &amp; verify", candidate_html)
         self.assertIn("Input &#x27;quoted&#x27; &amp; bounded.", candidate_html)

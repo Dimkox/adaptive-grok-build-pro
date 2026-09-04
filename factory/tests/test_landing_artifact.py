@@ -77,13 +77,15 @@ class LandingArtifactTests(unittest.TestCase):
                 )
                 first_zip_bytes = first_result.zip_path.read_bytes()
                 second_zip_bytes = second_result.zip_path.read_bytes()
+                source_index_css = target.joinpath("index.css").read_bytes()
 
         self.assertEqual(first_result.zip_path.name, second_result.zip_path.name)
         self.assertEqual(first_zip_bytes, second_zip_bytes)
         self.assertEqual(first_result.sidecar_bytes, second_result.sidecar_bytes)
         self.assertEqual(first_result.manifest_bytes, second_result.manifest_bytes)
         self.assertEqual(tuple(sorted(DEPLOY_MEMBERS)), first_result.member_names)
-        self.assertEqual(19, len(first_result.member_names))
+        self.assertEqual(20, len(first_result.member_names))
+        self.assertIn("index.css", first_result.member_names)
         self.assertTrue(PROHIBITED_MEMBERS.isdisjoint(first_result.member_names))
         self.assertEqual(
             f"{first_result.artifact.zip_sha256.upper()}  {first_result.zip_path.name}\n".encode(),
@@ -96,6 +98,7 @@ class LandingArtifactTests(unittest.TestCase):
 
         with zipfile.ZipFile(io.BytesIO(first_zip_bytes)) as archive:
             self.assertEqual(list(first_result.member_names), archive.namelist())
+            self.assertEqual(source_index_css, archive.read("index.css"))
             self.assertEqual(b"", archive.comment)
             for member in archive.infolist():
                 with self.subTest(member=member.filename):
@@ -128,6 +131,9 @@ class LandingArtifactTests(unittest.TestCase):
             ["content.css", "index.html"],
             [item["path"] for item in manifest["members"] if item["provenance"] == "candidate"],
         )
+        index_css = next(item for item in manifest["members"] if item["path"] == "index.css")
+        self.assertEqual("source", index_css["provenance"])
+        self.assertEqual(index_css["source_object_id"], index_css["candidate_object_id"])
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as archive:
             for item in manifest["members"]:
                 body = archive.read(item["path"])
