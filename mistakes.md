@@ -606,3 +606,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** Accepted jobs, quarantined blobs, and the content-addressed artifact pair had happy-path cleanup but lacked persisted terminal failure, enforced expiry after restart, and exact orphan-pair recovery.
 **Prevention:** Define and test every lifecycle at failure, expiry, replay, crash, and restart boundaries before claiming bounded retention or recoverable publication.
+
+## 2026-09-04 — Mistook `nohup` for session detachment
+
+**Root cause:** The long verifier was launched with `nohup` but remained in the exec session, so the command boundary killed PID 3343961 before test stages while its status incorrectly remained `running`.
+**Prevention:** Launch long verification through `setsid` or an equivalent detached session, then prove the recorded PID survives a separate command boundary before reporting it as detached.
