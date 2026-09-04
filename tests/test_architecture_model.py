@@ -1298,7 +1298,7 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 19)
+        self.assertEqual(len(records), 26)
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
@@ -1318,6 +1318,7 @@ class ArchitectureModelTests(unittest.TestCase):
                 "CONTRACT-FACTORY-EXECUTION-SEMANTIC-INPUTS-V1",
                 "CONTRACT-FACTORY-SEMANTIC-COVERAGE-V1",
                 "CONTRACT-FACTORY-SEMANTIC-FINDING-V1",
+                "CONTRACT-FACTORY-SEMANTIC-OPENAPI",
                 "CONTRACT-FACTORY-SEMANTIC-REPAIR-DIRECTIVE-V1",
                 "CONTRACT-FACTORY-SEMANTIC-SUBJECT-V1",
                 "CONTRACT-FACTORY-SEMANTIC-VERDICT-V1",
@@ -1330,7 +1331,12 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(
             set(semantic_node["public_contracts"]),
-            {key for key in semantic_records if key.startswith("CONTRACT-FACTORY-SEMANTIC-")},
+            {
+                key
+                for key, (kind, _role, _compatibility, _path) in semantic_records.items()
+                if key.startswith("CONTRACT-FACTORY-SEMANTIC-")
+                and kind == "json_schema"
+            },
         )
         governance_handoff = next(
             record

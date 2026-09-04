@@ -536,3 +536,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The disposable PostgreSQL runner retained a 300-second inner unittest timeout after the suite expanded to 457 tests, terminating healthy work and producing teardown cascades that resembled database failures.
 **Prevention:** Give the bounded unittest-discovery phase an explicit 480-second ceiling, preserving a 120-second margin inside the verifier's outer limit for startup, restart proof, and validated cleanup.
+
+## 2026-09-04 — Stored an executable verifier wrapper inside repository runtime state
+
+**Root cause:** Placing executable `runner.sh` under `.grok-stack/runtime/jobs` made the worktree architecture scanner classify it as an unowned source artifact and invalidated exact-head verification.
+**Prevention:** Keep detached executable wrappers outside the repository while retaining only ignored PID, log, and status data beneath `.grok-stack/runtime`.
