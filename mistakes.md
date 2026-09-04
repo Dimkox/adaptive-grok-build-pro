@@ -631,3 +631,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The first packaging diagnostic used prefix matching, so allowed `.gitignore`, `.env.example`, and `.gitkeep` files were misclassified as `.git`, exact `.env`, and runtime-state members.
 **Prevention:** Use anchored path-component and exact-file predicates, explicitly allow templates and `.gitkeep`, and classify every match before declaring an artifact failure.
+
+## 2026-09-04 — Verified an artifact sidecar from the wrong directory
+
+**Root cause:** The checksum command ran from repository/root context while the sidecar deliberately names only the ZIP basename, so `sha256sum -c` reported that no file was verified despite identical correct archives.
+**Prevention:** Run checksum verification from each artifact's `dist` directory, or resolve the sidecar member relative to the sidecar's own directory.
