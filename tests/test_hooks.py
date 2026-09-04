@@ -580,6 +580,58 @@ class HookTests(unittest.TestCase):
                     })
                     self.assertEqual(data['decision'], 'allow', (command, error, data))
 
+    def test_dynamic_production_selectors_and_newline_scope_fail_closed(self) -> None:
+        with project_copy(git=True) as root:
+            unsafe_selectors = (
+                'git "$ACTION" origin feature',
+                'git "${ACTION}" origin feature',
+                "bash -lc 'git \"$ACTION\" origin feature'",
+                "bash -lc 'git \"${ACTION}\" origin feature'",
+                'docker "$ACTION" image',
+                'npm "$ACTION"',
+                'gh "$GROUP" merge 1',
+                'gh pr "$ACTION" 1',
+            )
+            for index, command in enumerate(unsafe_selectors):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(root, 'pre_tool_use.py', {
+                        'cwd': str(root),
+                        'session_id': f'dynamic-production-selector-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'deny', (command, error, data))
+                    self.assertIn('ambiguous-sensitive-shell', data['reason'])
+
+            self._grant(root, 'production', actions=['git-push-branch'])
+            command = 'printf ok\ngit push origin "$REFS"'
+            _, data, error = run_hook(root, 'pre_tool_use.py', {
+                'cwd': str(root),
+                'session_id': 'newline-dynamic-push-scope',
+                'tool_name': 'Bash',
+                'tool_input': {'command': command},
+            })
+            self.assertEqual(data['decision'], 'deny', (command, error, data))
+
+            benign_reads = (
+                'git status "$PATH"',
+                "bash -lc 'git status \"$PATH\"'",
+                'printf ok\ngit status "$PATH"',
+                'gh pr view "$NUMBER"',
+                'docker inspect "$IMAGE"',
+                'npm view "$PACKAGE"',
+                'git push origin feature',
+            )
+            for index, command in enumerate(benign_reads):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(root, 'pre_tool_use.py', {
+                        'cwd': str(root),
+                        'session_id': f'fixed-read-or-granted-push-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'allow', (command, error, data))
+
     def test_subagent_lifecycle_is_recorded(self) -> None:
         with project_copy() as root:
             route = build_route(root, 'Исправить PHP баг', 's1').to_dict()
