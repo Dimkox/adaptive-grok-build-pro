@@ -459,6 +459,9 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
 
     def submit(self, source: str):
         payload = valid_intake()
+        payload["request_id"] = (
+            "request-" + canonical_digest({"execution_source": source})[:24]
+        )
         payload["source_id"] = source
         payload["m0_authority"]["observed_at"] = NOW.isoformat()
         return self.service.intake(payload, actor=OPERATOR, now=NOW).task
@@ -2812,6 +2815,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         ):
             with self.subTest(infrastructure_retries=retry_limit):
                 payload = valid_intake()
+                payload["request_id"] = f"request-finalize-retries-{retry_limit}"
                 payload["source_id"] = f"finalize-retries-{retry_limit}"
                 payload["m0_authority"]["observed_at"] = NOW.isoformat()
                 payload["limits"]["infrastructure_retries"] = retry_limit
@@ -2911,6 +2915,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 reserved=(reserved_cost, reserved_tokens, reserved_wall),
             ):
                 payload = valid_intake()
+                payload["request_id"] = f"request-finalize-accounting-{case_no}"
                 payload["source_id"] = f"finalize-accounting-recovery-{case_no}"
                 payload["m0_authority"]["observed_at"] = NOW.isoformat()
                 payload["limits"]["infrastructure_retries"] = retry_limit
@@ -3838,6 +3843,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             "recovery-superseded", capabilities=["notes", "structured_output"]
         )
         replacement = valid_intake()
+        replacement["request_id"] = "request-recovery-superseded-replacement"
         replacement["source_id"] = "recovery-superseded"
         replacement["source_digest"] = "8" * 64
         replacement["m0_authority"]["observed_at"] = NOW.isoformat()
@@ -4552,6 +4558,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         for retry_limit in (0, 1, 2):
             with self.subTest(retry_limit=retry_limit):
                 payload = valid_intake()
+                payload["request_id"] = f"request-recovery-retry-{retry_limit}"
                 payload["source_id"] = f"recovery-retry-limit-{retry_limit}"
                 payload["m0_authority"]["observed_at"] = NOW.isoformat()
                 payload["limits"]["infrastructure_retries"] = retry_limit

@@ -3109,21 +3109,14 @@ class PostgresFactoryStore:
         current = TaskStatus(task_state)
         accounting_quarantined = False
         if isinstance(outcome, FailureClass):
-            if deadline_expired:
-                cursor.execute(
-                    """SELECT accounting_blocked OR cost_reserved_micros<>0 OR tokens_reserved<>0
-                    OR wall_reserved_seconds<>0 OR EXISTS (
-                      SELECT 1 FROM factory.budget_reservations
-                      WHERE task_id=%s AND released_at IS NULL
-                    ) FROM factory.tasks WHERE task_id=%s""",
-                    (grant.task_id, grant.task_id),
-                )
-            else:
-                cursor.execute(
-                    """SELECT EXISTS(SELECT 1 FROM factory.budget_reservations
-                    WHERE task_id=%s AND run_id=%s AND released_at IS NULL)""",
-                    (grant.task_id, grant.run_id),
-                )
+            cursor.execute(
+                """SELECT accounting_blocked OR cost_reserved_micros<>0 OR tokens_reserved<>0
+                OR wall_reserved_seconds<>0 OR EXISTS (
+                  SELECT 1 FROM factory.budget_reservations
+                  WHERE task_id=%s AND released_at IS NULL
+                ) FROM factory.tasks WHERE task_id=%s""",
+                (grant.task_id, grant.task_id),
+            )
             accounting_quarantined = bool(cursor.fetchone()[0])
             if deadline_expired:
                 target = TaskStatus.NEEDS_HUMAN if accounting_quarantined else TaskStatus.DEAD

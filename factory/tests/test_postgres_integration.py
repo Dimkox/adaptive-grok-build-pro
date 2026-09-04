@@ -990,7 +990,7 @@ class PostgresFactoryTests(unittest.TestCase):
             )
             transition_events_before = cursor.fetchone()[0]
 
-        failing_service = FactoryService(FailingPhaseAuditStore(DATABASE_URL))
+        failing_service = FactoryService(FailingPhaseAuditStore(self.runtime_url))
         with self.assertRaisesRegex(StoreError, "post-mutation"):
             failing_service.transition_phase(
                 grant,
@@ -2274,7 +2274,7 @@ class PostgresFactoryTests(unittest.TestCase):
             actor=WORKER,
             now=NOW,
         )
-        pausing_reserve_store = PausingReserveStore(DATABASE_URL)
+        pausing_reserve_store = PausingReserveStore(self.runtime_url)
         pausing_reserve_service = FactoryService(pausing_reserve_store)
         with ThreadPoolExecutor(max_workers=2) as pool:
             reservation_future = pool.submit(
@@ -2341,7 +2341,7 @@ class PostgresFactoryTests(unittest.TestCase):
             actor=WORKER,
             now=NOW,
         )
-        pausing_terminal_store = PausingTerminalStore(DATABASE_URL)
+        pausing_terminal_store = PausingTerminalStore(self.runtime_url)
         pausing_terminal_service = FactoryService(pausing_terminal_store)
         with ThreadPoolExecutor(max_workers=2) as pool:
             terminal_future = pool.submit(
@@ -3616,7 +3616,7 @@ class PostgresFactoryTests(unittest.TestCase):
                 EXECUTE FUNCTION factory.delay_reconcile_release()"""
             )
         try:
-            first = FactoryService(ShortReconciliationStore(DATABASE_URL)).reconcile(actor=OPERATOR, now=NOW)
+            first = FactoryService(ShortReconciliationStore(self.runtime_url)).reconcile(actor=OPERATOR, now=NOW)
         finally:
             with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
                 cursor.execute("DROP TRIGGER delay_reconcile_release ON factory.runs")
@@ -3624,7 +3624,7 @@ class PostgresFactoryTests(unittest.TestCase):
         self.assertEqual(first.candidates, 4)
         self.assertGreater(first.repaired, 0)
         self.assertLess(first.repaired, first.candidates)
-        second = FactoryService(ShortReconciliationStore(DATABASE_URL)).reconcile(
+        second = FactoryService(ShortReconciliationStore(self.runtime_url)).reconcile(
             actor=OPERATOR,
             now=NOW,
             cursor=first.cursor,
@@ -3672,7 +3672,7 @@ class PostgresFactoryTests(unittest.TestCase):
                 ([grant.run_id for grant in grants],),
             )
         with self.assertRaisesRegex(StoreError, "database unavailable"):
-            FactoryService(ExpiringTransactionStore(DATABASE_URL)).reconcile(actor=OPERATOR, now=NOW)
+            FactoryService(ExpiringTransactionStore(self.runtime_url)).reconcile(actor=OPERATOR, now=NOW)
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
                 """SELECT
