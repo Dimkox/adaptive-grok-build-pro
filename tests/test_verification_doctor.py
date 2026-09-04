@@ -309,8 +309,28 @@ class VerificationTests(unittest.TestCase):
         ):
             shutil.copy2(ROOT / 'schemas' / name, root / 'schemas' / name)
 
-    def test_pr_git_diff_check_rejects_whitespace_only_visible_from_local_target(self) -> None:
+    def test_pr_git_diff_check_ignores_markdown_trailing_whitespace(self) -> None:
         with _divergent_pr_graph({'legacy.md': 'legacy  \n'}) as (
+            root, route_base, target, merge_base
+        ):
+            set_active_route(root, {
+                'route_id': 'markdown-pr-whitespace',
+                'base_commit': route_base,
+                'quality_profiles': ['base'],
+                'delivery_expected': False,
+            })
+            with patch(
+                'adaptive_grok.verification.command_exists',
+                side_effect=_which_only('git'),
+            ):
+                report = verify(root, mode='pr', record=False)
+            check = _check(report, 'git-diff-check')
+            self.assertIsNotNone(check)
+            self.assertEqual(check['status'], 'pass')
+            self.assertNotIn('legacy.md:1: trailing whitespace', check['stdout'])
+
+    def test_pr_git_diff_check_rejects_whitespace_only_visible_from_local_target(self) -> None:
+        with _divergent_pr_graph({'legacy.py': 'legacy  \n'}) as (
             root, route_base, target, merge_base
         ):
             set_active_route(root, {
@@ -337,7 +357,7 @@ class VerificationTests(unittest.TestCase):
             check = _check(report, 'git-diff-check')
             self.assertIsNotNone(check)
             self.assertEqual(check['status'], 'fail')
-            self.assertIn('legacy.md:1: trailing whitespace', check['stdout'])
+            self.assertIn('legacy.py:1: trailing whitespace', check['stdout'])
             checked = {
                 (item.get('kind'), item.get('base'), item.get('target'))
                 for item in check['details']
@@ -1251,6 +1271,15 @@ class TypedSpecVerificationTests(unittest.TestCase):
             self.assertTrue(docs_metadata['exempt'])
             self.assertEqual(code_check.status, 'fail')
             self.assertFalse(code_metadata['exempt'])
+
+    def test_paperwork_only_change_packages_are_exempt(self) -> None:
+        with project_copy(git=True) as root:
+            route = build_route(root, 'Добавить функцию', 's1').to_dict()
+            leftover = 'engineering/changes/20260904-leftover/change-spec.yaml'
+            check, metadata = _change_specs(root, [leftover], route, 'pr')
+            self.assertTrue(metadata['exempt'])
+            self.assertEqual(check.status, 'fail')
+            self.assertTrue(any(item['code'] == 'spec-missing' for item in check.details))
 
 
 class QualityContourTests(unittest.TestCase):

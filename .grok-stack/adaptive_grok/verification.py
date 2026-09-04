@@ -503,6 +503,14 @@ def _changed_file_inventory(
     }
 
 
+_DIFF_CHECK_PATHSPEC = (
+    '.',
+    ':(exclude)*.md',
+    ':(exclude)*.mdx',
+    ':(exclude)*.rst',
+)
+
+
 def _git_diff_check(
     root: Path,
     mode: str,
@@ -511,15 +519,22 @@ def _git_diff_check(
     if not command_exists('git'):
         return CheckResult('git-diff-check', 'skip', 'git not available')
     checks: list[tuple[str, list[str]]] = [
-        ('worktree', ['git', 'diff', '--check']),
-        ('index', ['git', 'diff', '--cached', '--check']),
+        ('worktree', ['git', 'diff', '--check', '--', *_DIFF_CHECK_PATHSPEC]),
+        ('index', ['git', 'diff', '--cached', '--check', '--', *_DIFF_CHECK_PATHSPEC]),
     ]
     details = list(selection.findings)
     if mode in {'pr', 'release'}:
         for selected in selection.bases:
             checks.append((
                 selected.kind,
-                ['git', 'diff', '--check', f'{selected.comparison_base_sha}..HEAD'],
+                [
+                    'git',
+                    'diff',
+                    '--check',
+                    f'{selected.comparison_base_sha}..HEAD',
+                    '--',
+                    *_DIFF_CHECK_PATHSPEC,
+                ],
             ))
             details.append({
                 'severity': 'info',
@@ -652,9 +667,11 @@ def _sql_safety(root: Path, files: list[str]) -> CheckResult:
 
 
 def _docs_micro_exempt(route: dict[str, object] | None, files: list[str]) -> bool:
+    product = [rel for rel in files if not rel.startswith('engineering/changes/')]
+    if files and not product:
+        return True
     if not route or route.get('complexity') != 'micro' or route.get('risk') != 'low':
         return False
-    product = [rel for rel in files if not rel.startswith('engineering/changes/')]
     return bool(product) and all(
         rel.startswith('docs/') or Path(rel).suffix.lower() in {'.md', '.txt', '.rst'}
         for rel in product

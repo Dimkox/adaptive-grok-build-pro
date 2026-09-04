@@ -14,6 +14,13 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-04 — PROJECT_STATE next_action ordered another ZIP rebuild after freeze
+
+**Symptom:** Codex kept cloning twice, rebuilding `2.0.13`, launching five reviewers (~40M tokens), and repeating after every `mistakes.md` / review receipt because `next_action` still said rebuild-then-review.
+**Root cause:** The machine-readable handoff treated packaging ritual as the next product step even after factory source was frozen; verify also failed closed on markdown trailing whitespace and leftover change-spec YAML, which are not factory defects.
+**Prevention:** `next_action` must say stop/restack-only-on-factory-bytes; `git diff --check` ignores Markdown; paperwork-only change packages are spec-exempt; repair ceiling is one ZIP, one verify, one review wave.
+
+
 ## 2026-08-31 — Ran the restack verifier with its inherited divergent route base
 
 **Symptom:** The first full verifier passed tests and coverage but failed architecture and governance because it compared the merge against unrelated `1c06299894279a88b881defa3f19b004fa742223`.
