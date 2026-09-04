@@ -2,38 +2,66 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-04T16:08:47Z",
-  "observed_main_sha": "ad6d23cc30c11e5ea51c388213f5ebdfe306fb56",
+  "observed_at": "2026-09-04T16:58:48Z",
+  "observed_main_sha": "1751b5855e46782b9a1bfceb6e1ab0102cba03b0",
   "product_version": "2.0.14",
-  "latest_published_release": "v2.0.13",
+  "latest_published_release": "v2.0.14",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
   "delivered_milestones_on_main": ["M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9"],
   "implemented_milestones": ["M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9"],
   "published_release": {
-    "tag": "v2.0.13",
-    "published_at": "2026-09-04T08:33:19Z",
-    "pull_request": 22,
-    "checked_head": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
-    "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8",
-    "tree": "03e122a30fb2dbb59907f4c4c28e17f93cbf0751",
+    "tag": "v2.0.14",
+    "published_at": "2026-09-04T16:58:48Z",
+    "pull_request": 24,
+    "checked_head": "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57",
+    "merge_commit": "1751b5855e46782b9a1bfceb6e1ab0102cba03b0",
+    "merged_at": "2026-09-04T16:56:37Z",
+    "tree": "618df086920c92179aa0e22a8c8d4ad30ebd9230",
     "artifact": {
-      "path": "packages/adaptive-grok-build-pro-v2.0.13.zip",
-      "sha256": "3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c",
+      "path": "packages/adaptive-grok-build-pro-v2.0.14.zip",
+      "sha256": "b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264",
+      "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.14.zip.sha256",
+      "sidecar_sha256": "1a961c35b8f12fa02579ec7888c889f0ae7ca8656b158eb731681ef8357caf3c",
       "binding": "immutable_release_tag"
     },
     "trust_ci": {
       "name": "adaptive-trust-ci/verified@06ecf1c875bc",
       "conclusion": "SUCCESS",
-      "check_run_id": 100955508827,
-      "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a"
+      "check_run_id": 101099224099,
+      "attestation_id": "9defb556-f703-4a13-b20a-8b88aa6781b4",
+      "signer": "0519cf1d47436f2e"
     },
-    "notes": "The artifact is bound to v2.0.13 and is not rebuilt for later documentation-only commits. Repository delivery does not establish M8 activation or an operational M9 deployment."
+    "gitguardian": {
+      "conclusion": "SUCCESS"
+    },
+    "notes": "The artifact is bound to the immutable v2.0.14 tag target. Repository publication does not establish an operational landing provider or host, M8 cohort/activation, or real M9 deployment."
   },
+  "prior_published_releases": [
+    {
+      "tag": "v2.0.13",
+      "published_at": "2026-09-04T08:33:19Z",
+      "pull_request": 22,
+      "checked_head": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+      "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8",
+      "tree": "03e122a30fb2dbb59907f4c4c28e17f93cbf0751",
+      "artifact": {
+        "path": "packages/adaptive-grok-build-pro-v2.0.13.zip",
+        "sha256": "3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c",
+        "binding": "immutable_release_tag"
+      },
+      "trust_ci": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "conclusion": "SUCCESS",
+        "check_run_id": 100955508827,
+        "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a"
+      }
+    }
+  ],
   "local_candidate": {
     "version": "2.0.14",
-    "status": "source_ready",
+    "status": "published",
     "route_id": "9f67efd2575c",
     "branch": "feature/l5-multimodal-landing-factory",
     "change_package": "engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef",
@@ -42,21 +70,33 @@
     "reviewed_product_tree": "0ae72773d73a294b88a398cec9926f6fca2f5555",
     "reviewed_policy_head": "58c9caed5d2c8f9febba297430a0782438505d82",
     "reviewed_policy_tree": "975bf7a21784bf91279a684bdeb5f5394fb715a1",
-    "source_gate_status": "passed_composite",
+    "source_gate_status": "passed_for_artifact_head",
     "review_status": "four_route_selected_reviews_passed",
-    "artifact_status": "pending_at_ready_state_checkpoint_R",
+    "checked_head": "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57",
+    "merge_commit": "1751b5855e46782b9a1bfceb6e1ab0102cba03b0",
+    "tree": "618df086920c92179aa0e22a8c8d4ad30ebd9230",
+    "pull_request": 24,
+    "artifact_status": "published_tag_bound",
     "artifact_child": {
       "identity": "A",
-      "source_parent": "ready_state_checkpoint_R",
+      "source_parent": "5b33a384e853ad6e1b945898f9ed5e54329dd2ad",
+      "source_parent_tree": "b4b0c5cc45469e57c7c8f5d1a4a4a31182c1dfce",
+      "commit": "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57",
+      "tree": "618df086920c92179aa0e22a8c8d4ad30ebd9230",
       "delta_paths": [
         "packages/adaptive-grok-build-pro-v2.0.14.zip",
         "packages/adaptive-grok-build-pro-v2.0.14.zip.sha256"
       ],
-      "authoritative_when": "both_paths_are_tracked_and_sidecar_matches_zip"
+      "zip_sha256": "b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264",
+      "sidecar_sha256": "1a961c35b8f12fa02579ec7888c889f0ae7ca8656b158eb731681ef8357caf3c",
+      "status": "published_as_v2.0.14"
     },
-    "published": false,
-    "external_effect": false,
-    "notes": "The offline L5 landing source is locally ready. Checkpoint R is the package source parent; R has no 2.0.14 product pair, while child A is exactly R plus the two declared paths and their tracked presence and sidecar binding are authoritative. Provider and publisher defaults remain unavailable, with no operational provider or hosting authority."
+    "published": true,
+    "published_at": "2026-09-04T16:58:48Z",
+    "external_effect": true,
+    "external_effect_scope": "github_repository_delivery_and_release_only",
+    "operational_activation": false,
+    "notes": "The L5 landing source and artifact are published as repository product v2.0.14. Provider and publisher defaults remain unavailable, with no operational provider, target mutation, hosting, indexing, deployment, M8 activation, or production authority."
   },
   "delivered_non_milestone_work": [
     {
@@ -66,20 +106,32 @@
       "source_head": "ecc85d903d0394f99a139fd4e74a7cc452e386c6",
       "merge_commit": "8ab4e57038dec2e07f01aaa0b207813a387358f4",
       "notes": "Optional repository-scoped SEO skill and non-indexable showcase; not M0-M9 progress."
+    },
+    {
+      "name": "L5 multimodal landing dogfood",
+      "status": "delivered",
+      "pull_request": 24,
+      "checked_head": "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57",
+      "merge_commit": "1751b5855e46782b9a1bfceb6e1ab0102cba03b0",
+      "tree": "618df086920c92179aa0e22a8c8d4ad30ebd9230",
+      "release": "v2.0.14",
+      "artifact_sha256": "b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264",
+      "operational_activation": false,
+      "notes": "Additive non-milestone repository delivery; operational provider, hosting, indexing and production authority remain absent."
     }
   ],
   "active_delivery": {
     "route_id": "9f67efd2575c",
     "branch": "feature/l5-multimodal-landing-factory",
-    "pull_request": null,
+    "pull_request": 24,
     "change_package": "engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef",
-    "status": "local_2.0.14_source_ready",
+    "status": "v2.0.14_published_repository_delivery_complete",
     "highest_implemented_milestone": "M9",
-    "current_provisional_milestone": "L5 multimodal landing dogfood",
+    "current_provisional_milestone": null,
     "next_roadmap_milestone": null,
-    "next_action": "If the declared 2.0.14 pair is absent, build it twice in private no-local clones from ready checkpoint R and create child A with exactly those two paths. If both paths are present, the tree is A and proceeds to its artifact-bound gate wave; GitHub delivery grants are materialized only for exact A, and no provider call, target mutation, hosting action, or production effect is authorized.",
+    "next_action": "No repository-release action remains for v2.0.14. Any operational landing provider, target mutation, hosting/indexing/deployment, factual M8 cohort/activation, or real M9 qualification requires a separate routed change, evidence, and explicit authority.",
     "local_source_gate": {
-      "status": "passed_composite",
+      "status": "passed_for_artifact_head",
       "product_head": "5f47508f3c0d52b71a3c866969cc28b6476a9d99",
       "product_tree": "0ae72773d73a294b88a398cec9926f6fca2f5555",
       "product_verification": "all_heavy_and_product_gates_passed_policy_ceiling_only",
@@ -87,16 +139,41 @@
       "policy_tree": "975bf7a21784bf91279a684bdeb5f5394fb715a1",
       "policy_verification": "exact_route_fitness_passed",
       "reviews": "four_route_selected_reviews_passed",
-      "ready_state_checkpoint": "R_this_commit"
+      "ready_state_checkpoint": "5b33a384e853ad6e1b945898f9ed5e54329dd2ad",
+      "artifact_head": "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57",
+      "artifact_tree": "618df086920c92179aa0e22a8c8d4ad30ebd9230",
+      "artifact_verification": "passed"
     },
     "package_handoff": {
-      "source_parent": "ready_state_checkpoint_R",
-      "artifact_child": "A",
+      "status": "published",
+      "source_parent": "5b33a384e853ad6e1b945898f9ed5e54329dd2ad",
+      "source_parent_tree": "b4b0c5cc45469e57c7c8f5d1a4a4a31182c1dfce",
+      "artifact_child": "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57",
+      "artifact_tree": "618df086920c92179aa0e22a8c8d4ad30ebd9230",
       "delta_paths": [
         "packages/adaptive-grok-build-pro-v2.0.14.zip",
         "packages/adaptive-grok-build-pro-v2.0.14.zip.sha256"
       ],
-      "pair_presence_is_authoritative": true
+      "zip_sha256": "b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264",
+      "sidecar_sha256": "1a961c35b8f12fa02579ec7888c889f0ae7ca8656b158eb731681ef8357caf3c",
+      "release": "v2.0.14",
+      "tag_target": "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"
+    },
+    "repository_delivery": {
+      "status": "published",
+      "pull_request": 24,
+      "checked_head": "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57",
+      "merge_commit": "1751b5855e46782b9a1bfceb6e1ab0102cba03b0",
+      "tree": "618df086920c92179aa0e22a8c8d4ad30ebd9230",
+      "merged_at": "2026-09-04T16:56:37Z",
+      "release": "v2.0.14",
+      "published_at": "2026-09-04T16:58:48Z",
+      "trust_ci": "adaptive-trust-ci/verified@06ecf1c875bc",
+      "check_run_id": 101099224099,
+      "attestation_id": "9defb556-f703-4a13-b20a-8b88aa6781b4",
+      "signer": "0519cf1d47436f2e",
+      "gitguardian": "SUCCESS",
+      "operational_activation": false
     },
     "integrated_stack": {
       "status": "delivered_to_main",
@@ -514,9 +591,13 @@
         "route_id": "9f67efd2575c",
         "branch": "feature/l5-multimodal-landing-factory",
         "source_base": "b10a5c474883e30dcaf781d104cbb804f031b52f",
-        "current_candidate_identity": "v2.0.14-source",
-        "status": "verifying",
-        "purpose": "Active offline L5 landing dogfood source; default provider and publisher are unavailable, the product ZIP is not built, and no target, network, hosting, or production write is authorized."
+        "head": "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57",
+        "pull_request": 24,
+        "merge_commit": "1751b5855e46782b9a1bfceb6e1ab0102cba03b0",
+        "tree": "618df086920c92179aa0e22a8c8d4ad30ebd9230",
+        "current_candidate_identity": "v2.0.14",
+        "status": "published",
+        "purpose": "Published offline L5 repository capability; default provider and publisher remain unavailable, and no target, hosting, indexing, deployment, or production authority exists."
       }
     ],
     "open_pull_requests": [
@@ -548,10 +629,11 @@
     "source_directory": "trust-ci",
     "operator_runbooks": "engineering/runbooks",
     "last_success": {
-      "pull_request": 22,
-      "head_sha": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
-      "check_run_id": 100955508827,
-      "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a",
+      "pull_request": 24,
+      "head_sha": "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57",
+      "check_run_id": 101099224099,
+      "attestation_id": "9defb556-f703-4a13-b20a-8b88aa6781b4",
+      "signer": "0519cf1d47436f2e",
       "conclusion": "SUCCESS"
     }
   },

@@ -2,12 +2,14 @@
 
 ## 2.0.14 — 2026-09-04
 
-Local unpublished source candidate for the offline L5 multimodal landing dogfood vertical.
+Published repository release for the offline L5 multimodal landing dogfood vertical.
 
 - Adds six closed landing records, bounded private text/audio/image/PDF/DOCX intake, a fixed command-provider boundary with an unavailable default and sealed fixture, exact-SHA deterministic rendering/evaluation with a three-attempt ceiling, and a deterministic 19-member site artifact
 - Adds four authenticated local landing operations with a route-specific bounded streaming body path; the existing 1 MiB JSON limit and all M0-M9 contracts/migrations remain unchanged
 - Adds only a transport-free `UnavailableLandingPublisher`; no operational provider, network path, credentials, target mutation, live/indexed result, hosting action, or production authority is present
-- Published `v2.0.13` and its ZIP remain immutable. The `2.0.14` product ZIP is intentionally absent from source-freeze `F` and is built only after exact-source verification/review and the ready-state checkpoint
+- PR #24 checked head `66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57` passed App-owned `adaptive-trust-ci/verified@06ecf1c875bc` (`SUCCESS`, check run `101099224099`, attestation `9defb556-f703-4a13-b20a-8b88aa6781b4`, signer `0519cf1d47436f2e`) and GitGuardian (`SUCCESS`), then merged at `2026-09-04T16:56:37Z` as `1751b5855e46782b9a1bfceb6e1ab0102cba03b0`, preserving reviewed tree `618df086920c92179aa0e22a8c8d4ad30ebd9230`
+- GitHub Release `v2.0.14` was published at `2026-09-04T16:58:48Z`; `packages/adaptive-grok-build-pro-v2.0.14.zip` has SHA-256 `b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264`, and its sidecar file has SHA-256 `1a961c35b8f12fa02579ec7888c889f0ae7ca8656b158eb731681ef8357caf3c`
+- Published `v2.0.13`, PR #22, merge `8599d45f4f28285381b05a53feb3059de92eb2a8`, and their artifact remain immutable historical facts; repository publication does not establish an operational provider, hosting, M8 cohort/activation, or production authority
 
 ## 2.0.13 — 2026-09-02
 

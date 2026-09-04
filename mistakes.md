@@ -646,3 +646,13 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** A read-only `rg` invocation placed Markdown backticks inside a double-quoted Bash pattern, causing unintended command substitution (`main: command not found` and `origin/main: No such file`) even though later checks completed.
 **Prevention:** Single-quote literal patterns or pass fixed strings without shell metacharacters, as required by the command-escaping rule.
+
+## 2026-09-04 — Assumed the configured GitHub merge method was effective
+
+**Root cause:** The effective GitHub mutation rejected `--merge` even though repository metadata reported `mergeCommitAllowed`, so the declared setting was treated as stronger than the mutation response and effective rules.
+**Prevention:** Treat the mutation response and effective rules as authority and make at most one fallback to another explicitly allowed merge method.
+
+## 2026-09-04 — Cloned a worktree without its remote-only merge object
+
+**Root cause:** A no-local clone from a worktree did not receive a merge commit that existed only in that worktree's remote-tracking ref.
+**Prevention:** Post-merge rebuilds must clone the canonical origin or explicitly fetch the exact merge commit before checkout.
