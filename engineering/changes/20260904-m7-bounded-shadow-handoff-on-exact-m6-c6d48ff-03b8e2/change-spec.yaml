@@ -1,0 +1,51 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"Six closed version-1 schemas and matching immutable Python values reject unknown fields, versions, malformed identities, non-canonical ordering, and unbounded collections.","evidence":[{"test":"factory/tests/test_shadow_contracts.py"}]},
+    {"id":"AC-002","statement":"M4 legacy intent and M5 task-packet identities remain separate; M5 input and result heads remain separate while every M4-M6 producer binding is recomputed and factually aligned.","evidence":[{"test":"factory/tests/test_shadow_contracts.py"}]},
+    {"id":"AC-003","statement":"The M6 pass verdict, verdict digest, envelope, bridge and nested evidence identities are recomputed locally and reject caller-supplied authority overrides or stale facts.","evidence":[{"test":"factory/tests/test_shadow_contracts.py"}]},
+    {"id":"AC-004","statement":"The immutable handoff bundle is fixed at blocked_pending_durable_lookup and contains only a subject-bound manual operator proposal with external_capability absent.","evidence":[{"test":"factory/tests/test_shadow_contracts.py"}]},
+    {"id":"AC-005","statement":"Cohort aggregation is deterministic, bounded to 10000 items, exact-tuple keyed, replay-safe, and accepts digest-only human outcomes without bodies or personal data.","evidence":[{"test":"factory/tests/test_shadow_evaluation.py"}]},
+    {"id":"AC-006","statement":"Evaluation recomputes its aggregate and returns only blocked or eligible_for_human_l2_review under the fixed sample, observation, quality, safety, budget, review-time, repair, and containment bounds.","evidence":[{"test":"factory/tests/test_shadow_evaluation.py"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260904-m7-bounded-shadow-handoff-on-exact-m6-c6d48ff-03b8e2",
+  "contracts": {
+    "events": [],
+    "json_schema": ["factory/contracts/jsonschema/m7-predecessor-bridges.v1.schema.json","factory/contracts/jsonschema/operator-handoff-proposal.v1.schema.json","factory/contracts/jsonschema/ready-for-pr-bundle.v1.schema.json","factory/contracts/jsonschema/shadow-cohort.v1.schema.json","factory/contracts/jsonschema/shadow-outcome.v1.schema.json","factory/contracts/jsonschema/shadow-task-evidence.v1.schema.json"],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"Modification or semantic weakening of any exact-M6 source, contract, migration, execution, semantic-validation, authority, accounting, or recovery behavior.","evidence":[{"attestation":"git-diff exact M6"},{"receipt":"code_review"}]},
+    {"id":"FORBID-002","statement":"Any provider call, credential, command, network or remote target, direct pull-request or merge action, or other operational capability in an M7 contract or implementation.","evidence":[{"test":"factory/tests/test_shadow_contracts.py"},{"receipt":"security_review"}]},
+    {"id":"FORBID-003","statement":"Treating synthetic fixtures, a pure bundle, or an evaluator recommendation as durable, real-outcome, M8-qualification, approval, delivery, or production evidence.","evidence":[{"test":"factory/tests/test_shadow_evaluation.py"},{"receipt":"test_review"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"M4, M5 and M6 remain the sole authorities for their control, execution and semantic facts; M7 derives immutable evidence and recommendations only.","evidence":[{"test":"factory/tests/test_shadow_contracts.py"}]},
+    {"id":"INV-002","statement":"Packet identities and input/result heads remain distinct and every cross-milestone binding is content-addressed and stale after a bound-field change.","evidence":[{"test":"factory/tests/test_shadow_contracts.py"}]},
+    {"id":"INV-003","statement":"A caller cannot submit a precomputed aggregate to influence eligibility; the evaluator recomputes it from one validated cohort.","evidence":[{"test":"factory/tests/test_shadow_evaluation.py"}]},
+    {"id":"INV-004","statement":"The strongest M7 result is an operator-owned recommendation for human level-2 review and never an executable authorization.","evidence":[{"test":"factory/tests/test_shadow_contracts.py"},{"test":"factory/tests/test_shadow_evaluation.py"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Implement the M7 AI agent shadow handoff feature on exact M6 head c6d48ffd8594b3baab1a575021452ea5dfa2a98b: immutable ready-for-human bundle, canonical M4-M6 producer bindings, deterministic shadow cohort evaluation, bounded failure and staleness handling, and an operator-owned proposal that carries no operational capability. Preserve all predecessor source and migrations. Repository-local implementation only; no live provider, remote action, delivery, or external write.",
+    "success_metric": "All 30 canonical shadow contract/evaluation tests and affected architecture checks pass on an exact-M6 descendant with no predecessor product path changed.",
+    "target": "repository_local_unwired_m7_shadow_source_with_zero_external_capability"
+  },
+  "observability": [
+    {"id":"OBS-001","signal":"deterministic aggregate digest, sorted failure codes, bounded counters and recommendation","success":"identical closed cohorts produce identical values","failure":"digest drift, unsorted or duplicate failure codes, or non-human recommendation"}
+  ],
+  "risk": {
+    "domains": [
+      "ai",
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

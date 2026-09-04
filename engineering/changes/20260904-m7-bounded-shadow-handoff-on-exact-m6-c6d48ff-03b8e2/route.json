@@ -1,0 +1,86 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "ai_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "integration_architect"
+  ],
+  "base_commit": "78ad2f679d38dc3244e716c586332417e610089c",
+  "base_fingerprint": "150a2694ff1ff0bd46e2fb3cec29de6203066ade1573f4c7af1dfe5b9824f253",
+  "complexity": "standard",
+  "created_at": "2026-09-04T03:01:26+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "ai",
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "ai"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=feature",
+    "domains=ai,api",
+    "repository=generic",
+    "write-owner=ai_implementer",
+    "analysis-wave=6/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "03b8e24f06e9",
+  "schema_version": 1,
+  "session_id": "m7-bounded-local-20260904",
+  "status": "routed",
+  "task": "Implement the M7 AI agent shadow handoff feature on exact M6 head c6d48ffd8594b3baab1a575021452ea5dfa2a98b: immutable ready-for-human bundle, canonical M4-M6 producer bindings, deterministic shadow cohort evaluation, bounded failure and staleness handling, and an operator-owned proposal that carries no operational capability. Preserve all predecessor source and migrations. Repository-local implementation only; no live provider, remote action, delivery, or external write.",
+  "task_domains": [
+    "ai"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "ai-rag-change"
+  ],
+  "write_agent": "ai_implementer"
+}

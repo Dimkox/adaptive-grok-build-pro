@@ -1,0 +1,29 @@
+{
+  "change_id": "20260904-m7-bounded-shadow-handoff-on-exact-m6-c6d48ff-03b8e2",
+  "created_at": "2026-09-04T03:01:40+00:00",
+  "history": [
+    {
+      "at": "2026-09-04T03:01:40+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-04T03:05:40+00:00",
+      "from": "draft",
+      "reason": "Six closed M7 contracts, exact-M6 producer bindings, deterministic cohort thresholds, human-only recommendation, focused evidence, rollback, and explicit deferred gates are fixed.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-04T03:05:44+00:00",
+      "from": "scoped",
+      "reason": "The route has no named human gate and the user explicitly authorized this repository-local M7 feature continuation; runtime, PostgreSQL, network, delivery, external, and production actions remain excluded.",
+      "to": "approved"
+    }
+  ],
+  "route_id": "03b8e24f06e9",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "M7 bounded shadow handoff on exact M6 c6d48ff",
+  "updated_at": "2026-09-04T03:05:44+00:00"
+}
