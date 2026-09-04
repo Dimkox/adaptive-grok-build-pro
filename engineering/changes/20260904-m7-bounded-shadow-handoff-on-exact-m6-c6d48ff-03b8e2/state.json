@@ -19,11 +19,23 @@
       "from": "scoped",
       "reason": "The route has no named human gate and the user explicitly authorized this repository-local M7 feature continuation; runtime, PostgreSQL, network, delivery, external, and production actions remain excluded.",
       "to": "approved"
+    },
+    {
+      "at": "2026-09-04T03:06:03+00:00",
+      "from": "approved",
+      "reason": "The two canonical shadow test modules fail only because the add-only shadow_contracts and shadow_evaluation modules are absent; implement the approved ten-path pure M7 slice.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-04T03:10:05+00:00",
+      "from": "implementing",
+      "reason": "The ten canonical add-only M7 product files are byte-identical, the focused shadow group passes 30 of 30 once, and additive architecture validation, drift, and diagram parity pass; full verifier, reviews, receipts, runtime, packaging, and delivery remain deferred.",
+      "to": "verifying"
     }
   ],
   "route_id": "03b8e24f06e9",
   "schema_version": 1,
-  "status": "approved",
+  "status": "verifying",
   "title": "M7 bounded shadow handoff on exact M6 c6d48ff",
-  "updated_at": "2026-09-04T03:05:44+00:00"
+  "updated_at": "2026-09-04T03:10:05+00:00"
 }
