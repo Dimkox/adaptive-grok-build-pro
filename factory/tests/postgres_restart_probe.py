@@ -302,7 +302,7 @@ def _assert_capability_roles(
             "status": "ready",
             "session_user": runtime_login,
             "database_role": "factory_runtime",
-            "schema_version": 17,
+            "schema_version": 18,
             "capacity_consistent": True,
             "accounting_consistent": True,
         },
@@ -345,7 +345,13 @@ def _reset_database(database_url: str, now: datetime) -> tuple[object, ...]:
     )
     with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
         cursor.execute(
-            "TRUNCATE factory.execution_recovery_outcomes, "
+            "TRUNCATE factory.semantic_recovery_records, "
+            "factory.semantic_escalations, factory.semantic_child_task_bindings, "
+            "factory.semantic_child_proposals, factory.semantic_directives, "
+            "factory.semantic_verdicts, factory.semantic_coverage, "
+            "factory.semantic_findings, factory.semantic_assignments, "
+            "factory.semantic_metric_events, factory.semantic_command_results, "
+            "factory.semantic_subjects, factory.execution_recovery_outcomes, "
             "factory.execution_recovery_claims, factory.execution_recovery_jobs, "
             "factory.workspace_results, factory.execution_artifact_attestations, "
             "factory.execution_proposals, factory.execution_stage_events, "

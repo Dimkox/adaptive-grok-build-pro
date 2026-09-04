@@ -96,6 +96,62 @@
       "path": "factory/contracts/schemas/workspace-result.v1.json",
       "role": "producer",
       "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-EXECUTION-SEMANTIC-BINDING-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/semantic-execution-binding.v1.schema.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-EXECUTION-SEMANTIC-INPUTS-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/semantic-validation-inputs.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-SEMANTIC-COVERAGE-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/semantic-coverage.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-SEMANTIC-FINDING-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/semantic-finding.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-SEMANTIC-REPAIR-DIRECTIVE-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/repair-directive.v1.schema.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-SEMANTIC-SUBJECT-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/semantic-subject.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-SEMANTIC-VERDICT-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/semantic-verdict.v1.schema.json",
+      "role": "producer",
+      "version": "1"
     }
   ],
   "data_classifications": [
@@ -719,6 +775,30 @@
       "sync_or_async": "batch",
       "to": "NODE-EXTERNAL-HOLDOUT",
       "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-INTENT",
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "none",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-EXECUTION-CORE",
+      "id": "EDGE-FACTORY-EXECUTION-SEMANTIC-VALIDATION",
+      "network_policy": "no_network",
+      "protocol": "json",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-SEMANTIC-VALIDATION",
+      "type": "data_flow"
     }
   ],
   "nodes": [
@@ -812,13 +892,16 @@
       "public_contracts": [
         "CONTRACT-FACTORY-EXECUTION-EVENT",
         "CONTRACT-FACTORY-EXECUTION-INVOCATION",
+        "CONTRACT-FACTORY-EXECUTION-SEMANTIC-BINDING-V1",
+        "CONTRACT-FACTORY-EXECUTION-SEMANTIC-INPUTS-V1",
         "CONTRACT-FACTORY-TASK-PACKET",
         "CONTRACT-FACTORY-WORKSPACE-RESULT"
       ],
       "repository_paths": [
         "factory/contracts/schemas",
         "factory/src/adaptive_factory/execution_contracts.py",
-        "factory/src/adaptive_factory/protocol.py"
+        "factory/src/adaptive_factory/protocol.py",
+        "factory/src/adaptive_factory/semantic_bridge.py"
       ],
       "runtime": {
         "evidence": "source_described",
@@ -1209,6 +1292,32 @@
       ],
       "trust_domain": "TD-PRODUCTION-TRUST",
       "type": "actor"
+    },
+    {
+      "data_classification": "DATA-FACTORY-STATE",
+      "id": "NODE-FACTORY-SEMANTIC-VALIDATION",
+      "owner": "independent local semantic validators",
+      "public_contracts": [
+        "CONTRACT-FACTORY-SEMANTIC-COVERAGE-V1",
+        "CONTRACT-FACTORY-SEMANTIC-FINDING-V1",
+        "CONTRACT-FACTORY-SEMANTIC-REPAIR-DIRECTIVE-V1",
+        "CONTRACT-FACTORY-SEMANTIC-SUBJECT-V1",
+        "CONTRACT-FACTORY-SEMANTIC-VERDICT-V1"
+      ],
+      "repository_paths": [
+        "factory/src/adaptive_factory/semantic_adjudication.py",
+        "factory/src/adaptive_factory/semantic_contracts.py",
+        "factory/src/adaptive_factory/semantic_repair.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "local_component"
     }
   ],
   "schema_version": 1,

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 import re
 import subprocess
 import tempfile
@@ -134,6 +135,10 @@ def main() -> int:
     password = f"local-{uuid.uuid4().hex}"
     environment = os.environ.copy()
     environment["FACTORY_TEST_POSTGRES_CONTAINER"] = name
+    import_roots = (str(Path.cwd() / "factory"), str(Path.cwd()))
+    environment["PYTHONPATH"] = os.pathsep.join(
+        (*import_roots, environment.get("PYTHONPATH", ""))
+    ).rstrip(os.pathsep)
     bound_container_id: str | None = None
     try:
         created = subprocess.run([

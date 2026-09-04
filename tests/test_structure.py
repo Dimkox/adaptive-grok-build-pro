@@ -172,6 +172,17 @@ class StructureTests(unittest.TestCase):
             "schemas/canonical-example.schema.json",
             "schemas/governance-handoff-v1.schema.json",
             "scripts/grok_governance.py",
+            "factory/src/adaptive_factory/semantic_contracts.py",
+            "factory/src/adaptive_factory/semantic_adjudication.py",
+            "factory/src/adaptive_factory/semantic_bridge.py",
+            "factory/src/adaptive_factory/semantic_repair.py",
+            "factory/contracts/jsonschema/repair-directive.v1.schema.json",
+            "factory/contracts/jsonschema/semantic-coverage.v1.schema.json",
+            "factory/contracts/jsonschema/semantic-execution-binding.v1.schema.json",
+            "factory/contracts/jsonschema/semantic-finding.v1.schema.json",
+            "factory/contracts/jsonschema/semantic-subject.v1.schema.json",
+            "factory/contracts/jsonschema/semantic-validation-inputs.v1.schema.json",
+            "factory/contracts/jsonschema/semantic-verdict.v1.schema.json",
         )
         for relative in required:
             self.assertTrue((ROOT / relative).exists(), relative)
@@ -607,6 +618,58 @@ class StructureTests(unittest.TestCase):
         for payload in invalid_terminal_payloads:
             with self.subTest(invalid=payload["terminal_type"]):
                 self.assertFalse(terminal_validator.is_valid(payload))
+
+    def test_m6_semantic_control_openapi_is_closed_additive(self) -> None:
+        document = json.loads(
+            (ROOT / "factory/contracts/openapi/factory-control.v1.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        operations = {
+            (method.upper(), path, operation.get("operationId"))
+            for path, path_item in document["paths"].items()
+            for method, operation in path_item.items()
+            if method in {"get", "post", "put", "patch", "delete"}
+        }
+        semantic = {
+            operation for operation in operations if operation[1].startswith("/v1/semantic/")
+        }
+        self.assertEqual(
+            semantic,
+            {
+                ("POST", "/v1/semantic/subjects", "publishSemanticSubject"),
+                ("GET", "/v1/semantic/subjects/{subject_digest}", "getSemanticSubject"),
+                (
+                    "POST",
+                    "/v1/semantic/subjects/{subject_digest}/assignments",
+                    "createSemanticAssignment",
+                ),
+                (
+                    "POST",
+                    "/v1/semantic/assignments/{assignment_digest}/evidence",
+                    "submitSemanticEvidence",
+                ),
+                (
+                    "POST",
+                    "/v1/semantic/subjects/{subject_digest}/adjudications",
+                    "adjudicateSemanticSubject",
+                ),
+                (
+                    "GET",
+                    "/v1/semantic/subjects/{subject_digest}/verdict",
+                    "getSemanticVerdict",
+                ),
+            },
+        )
+        self.assertEqual(len(operations), 23)
+        for method, path, operation_id in semantic:
+            operation = document["paths"][path][method.lower()]
+            self.assertEqual(operation.get("security"), [{"bearerAuth": []}], operation_id)
+            if method == "POST":
+                self.assertTrue(operation.get("requestBody", {}).get("required"), operation_id)
+            for status, response in operation["responses"].items():
+                self.assertRegex(status, r"^[1-5][0-9]{2}$")
+                self.assertIn("content", response, f"{operation_id}:{status}")
 
     def test_architecture_authority_and_manual_adoption_are_documented(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

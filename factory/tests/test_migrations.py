@@ -359,8 +359,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 18)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 17)
+        self.assertEqual([item.version for item in migrations], list(range(1, 19)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 18)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -514,6 +514,84 @@ class MigrationTests(unittest.TestCase):
             self.assertNotIn(forbidden, recovery_sql)
         self.assertNotIn("select count(*) from factory.execution_", recovery_sql)
         self.assertNotIn("create or replace function", recovery_sql)
+
+    def test_semantic_migration_is_additive_append_only_and_capability_shaped(self):
+        migration = discover_migrations()[-1]
+        self.assertEqual(migration.name, "018_semantic_validation_bridge.sql")
+        lowered = migration.sql.lower()
+        for forbidden in (
+            "drop ",
+            "cascade",
+            "alter table factory.workspace_results",
+            "grant all",
+        ):
+            self.assertNotIn(forbidden, lowered)
+        for marker in (
+            "factory_semantic_coordinator",
+            "factory_semantic_validator",
+            "factory_semantic_adjudicator",
+            "nologin noinherit",
+            "semantic_command_results",
+            "semantic_subjects",
+            "semantic_assignments",
+            "semantic_findings",
+            "semantic_coverage",
+            "semantic_verdicts",
+            "semantic_directives",
+            "semantic_child_proposals",
+            "semantic_child_task_bindings",
+            "intake_actor_kind",
+            "semantic_recovery_records",
+            "semantic_metric_events",
+            "semantic_execution_material",
+            "semantic_publish_subject",
+            "semantic_subject_by_digest",
+            "semantic_create_assignment",
+            "semantic_append_evidence",
+            "semantic_adjudication_material",
+            "semantic_append_verdict",
+            "semantic_verdict_by_subject",
+            "semantic_escalations",
+            "semantic_plan_repair",
+            "semantic_bind_repair_child",
+            "semantic_repair_intake_status",
+            "semantic_task_claimable",
+            "security definer set search_path=pg_catalog,factory",
+            "revoke insert, update, delete",
+            "revoke all",
+        ):
+            self.assertIn(marker, lowered)
+
+    def test_semantic_evidence_functions_are_reserved_to_distinct_capabilities(self):
+        migration = discover_migrations()[-1].sql.lower()
+        self.assertIn(
+            "grant execute on function factory.semantic_create_assignment",
+            migration,
+        )
+        self.assertIn(") to factory_semantic_coordinator;", migration)
+        self.assertIn(
+            "grant execute on function factory.semantic_append_evidence",
+            migration,
+        )
+        self.assertIn(") to factory_semantic_validator;", migration)
+        self.assertIn(
+            "grant execute on function factory.semantic_append_verdict",
+            migration,
+        )
+        self.assertIn(") to factory_semantic_adjudicator;", migration)
+        for forbidden in (
+            "semantic_append_evidence(\n  char,char,text,char,char,char,text\n) to factory_semantic_coordinator",
+            "semantic_append_verdict(\n  char,char,text,char,char,text,char,text\n) to factory_semantic_validator",
+            "semantic_append_verdict(\n  char,char,text,char,char,text,char,text\n) to factory_runtime",
+            "semantic_plan_repair(\n  char,char,text,uuid\n) to factory_semantic_validator",
+            "semantic_plan_repair(\n  char,char,text,uuid\n) to factory_semantic_adjudicator",
+            "semantic_plan_repair(\n  char,char,text,uuid\n) to factory_runtime",
+        ):
+            self.assertNotIn(forbidden, migration)
+        self.assertIn(
+            "grant execute on function factory.semantic_plan_repair",
+            migration,
+        )
 
 
 if __name__ == "__main__":

@@ -378,6 +378,70 @@
       "source_prefixes": [
         "factory/src/adaptive_factory/workspace.py"
       ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.api",
+        "adaptive_factory.migrations",
+        "adaptive_factory.service",
+        "adaptive_factory.store",
+        "adapters",
+        "api",
+        "migrations",
+        "service",
+        "store",
+        "psycopg",
+        "celery",
+        "rq",
+        "git",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-SEMANTIC-BRIDGE-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/semantic_bridge.py"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.api",
+        "adaptive_factory.brokers",
+        "adaptive_factory.execution_contracts",
+        "adaptive_factory.migrations",
+        "adaptive_factory.service",
+        "adaptive_factory.store",
+        "adaptive_factory.workspace",
+        "adapters",
+        "api",
+        "brokers",
+        "execution_contracts",
+        "migrations",
+        "service",
+        "store",
+        "workspace",
+        "psycopg",
+        "celery",
+        "rq",
+        "git",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-SEMANTIC-VALIDATION-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/semantic_adjudication.py",
+        "factory/src/adaptive_factory/semantic_contracts.py",
+        "factory/src/adaptive_factory/semantic_repair.py"
+      ]
     }
   ],
   "risk_escalations": [

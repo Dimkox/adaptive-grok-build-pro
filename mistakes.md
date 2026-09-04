@@ -491,3 +491,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 **Symptom:** The first targeted PostgreSQL run reported repeated intake-command collisions, owner-login rejections in test-only fault injectors, and retry dispositions for failed runs with residual accounting.
 **Root cause:** The semantic graft retained M4 transport replay and capability validation but imported older M5 fixtures that reused one request ID, while the manual release merge selected M4's current-run reservation check instead of the stricter task-wide accounting quarantine required by the combined lifecycle.
 **Prevention:** When grafting a successor onto a strengthened predecessor, adapt fixture transport identities and injected stores to the predecessor's capability boundary, then preserve the stricter invariant from either side at every overlap.
+
+## 2026-09-04 — Loaded a package module without its package context
+
+**Root cause:** A one-off diagram regeneration helper loaded `architecture.py` by file path, so its relative imports had no package parent and failed before writing any artifact.
+**Prevention:** Invoke repository package modules through their package name after adding the declared package root to `sys.path`; reserve file-path loading for standalone modules without relative imports.

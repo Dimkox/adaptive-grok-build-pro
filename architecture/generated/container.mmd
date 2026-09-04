@@ -9,6 +9,7 @@ flowchart LR
   node_a77de286f8308fd4["NODE-FACTORY-POSTGRES | datastore | local factory operators"]
   node_21b552fdfa11f1c2["NODE-FACTORY-PROPOSAL-BROKER | local_component | local factory operators"]
   node_fae11f6a95d982dc["NODE-FACTORY-PROVIDER-ADAPTERS | local_component | local factory operators"]
+  node_c10acb5d92ad0ee0["NODE-FACTORY-SEMANTIC-VALIDATION | local_component | independent local semantic validators"]
   node_23f89cd7152cc030["NODE-FACTORY-WORKSPACE-BROKER | local_component | local factory operators"]
   node_8b8a8cd21b180532["NODE-GITHUB | external_system | GitHub"]
   node_dfd1104494c6ab8f["NODE-GOVERNANCE-REGISTRIES | repository | repository engineering"]
@@ -30,6 +31,7 @@ flowchart LR
   node_a6c166e55f8e1784 -->|"EDGE-FACTORY-CONTROL-POSTGRES | data_flow | postgresql"| node_a77de286f8308fd4
   node_a6c166e55f8e1784 -->|"EDGE-FACTORY-CONTROL-PROPOSAL-BROKER | control | python_call"| node_21b552fdfa11f1c2
   node_a6c166e55f8e1784 -->|"EDGE-FACTORY-CONTROL-WORKSPACE | control | filesystem"| node_23f89cd7152cc030
+  node_0a087cfaed95a8ad -->|"EDGE-FACTORY-EXECUTION-SEMANTIC-VALIDATION | data_flow | json"| node_c10acb5d92ad0ee0
   node_21b552fdfa11f1c2 -->|"EDGE-FACTORY-PROPOSAL-BROKER-EXECUTION-CORE | dependency | python_import"| node_0a087cfaed95a8ad
   node_23f89cd7152cc030 -->|"EDGE-FACTORY-WORKSPACE-CONTROL | data_flow | filesystem"| node_a6c166e55f8e1784
   node_8b8a8cd21b180532 -->|"EDGE-GITHUB-TRUST-CI-API | data_flow | https"| node_d0e570b2fbe52f98

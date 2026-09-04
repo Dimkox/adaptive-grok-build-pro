@@ -252,6 +252,7 @@ class ArchitectureModelTests(unittest.TestCase):
                 "factory/contracts/schemas",
                 "factory/src/adaptive_factory/execution_contracts.py",
                 "factory/src/adaptive_factory/protocol.py",
+                "factory/src/adaptive_factory/semantic_bridge.py",
             },
             "NODE-FACTORY-PROVIDER-ADAPTERS": {
                 "factory/src/adaptive_factory/adapters/__init__.py",
@@ -308,6 +309,7 @@ class ArchitectureModelTests(unittest.TestCase):
         policies = {rule["id"]: rule for rule in snapshot.rules["path_boundaries"]}
         self.assertIn("FIT-FACTORY-ADAPTER-BOUNDARY", policies)
         self.assertIn("FIT-FACTORY-EXECUTION-CORE-BOUNDARY", policies)
+        self.assertIn("FIT-FACTORY-SEMANTIC-BRIDGE-BOUNDARY", policies)
         self.assertIn("FIT-FACTORY-PROPOSAL-BROKER-BOUNDARY", policies)
         self.assertIn("FIT-FACTORY-WORKSPACE-BROKER-BOUNDARY", policies)
         adapter_forbidden = set(policies["FIT-FACTORY-ADAPTER-BOUNDARY"]["forbidden_dependency_prefixes"])
@@ -342,6 +344,71 @@ class ArchitectureModelTests(unittest.TestCase):
                 or (edge["to"] in execution_nodes and edge["from"] in external_or_privileged)
                 for edge in snapshot.system["edges"]
             )
+        )
+
+    def test_factory_semantic_validation_is_inert_read_only_and_contract_closed(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        nodes = {node["id"]: node for node in snapshot.system["nodes"]}
+        semantic = nodes["NODE-FACTORY-SEMANTIC-VALIDATION"]
+        self.assertEqual(
+            set(semantic["repository_paths"]),
+            {
+                "factory/src/adaptive_factory/semantic_adjudication.py",
+                "factory/src/adaptive_factory/semantic_contracts.py",
+                "factory/src/adaptive_factory/semantic_repair.py",
+            },
+        )
+        self.assertEqual(semantic["runtime"]["network"], "none")
+        self.assertEqual(semantic["secrets"], [])
+        self.assertEqual(
+            set(semantic["public_contracts"]),
+            {
+                "CONTRACT-FACTORY-SEMANTIC-COVERAGE-V1",
+                "CONTRACT-FACTORY-SEMANTIC-FINDING-V1",
+                "CONTRACT-FACTORY-SEMANTIC-REPAIR-DIRECTIVE-V1",
+                "CONTRACT-FACTORY-SEMANTIC-SUBJECT-V1",
+                "CONTRACT-FACTORY-SEMANTIC-VERDICT-V1",
+            },
+        )
+        semantic_edges = [
+            edge
+            for edge in snapshot.system["edges"]
+            if semantic["id"] in {edge["from"], edge["to"]}
+        ]
+        self.assertEqual(
+            [(edge["from"], edge["to"]) for edge in semantic_edges],
+            [("NODE-FACTORY-EXECUTION-CORE", semantic["id"])],
+        )
+        self.assertEqual(semantic_edges[0]["network_policy"], "no_network")
+        self.assertEqual(semantic_edges[0]["failure_behavior"]["mode"], "fail_closed")
+        self.assertEqual(
+            semantic_edges[0]["failure_behavior"]["terminal_action"], "reject"
+        )
+        policies = {rule["id"]: rule for rule in snapshot.rules["path_boundaries"]}
+        forbidden = set(
+            policies["FIT-FACTORY-SEMANTIC-VALIDATION-BOUNDARY"][
+                "forbidden_dependency_prefixes"
+            ]
+        )
+        self.assertTrue(
+            {
+                "adaptive_factory.adapters",
+                "adaptive_factory.api",
+                "adaptive_factory.brokers",
+                "adaptive_factory.execution_contracts",
+                "adaptive_factory.migrations",
+                "adaptive_factory.service",
+                "adaptive_factory.store",
+                "adaptive_factory.workspace",
+                "psycopg",
+                "git",
+                "requests",
+                "httpx",
+                "urllib",
+                "socket",
+                "subprocess",
+            }
+            <= forbidden
         )
 
     def _repo(self, system: dict | None = None, rules: dict | None = None):
@@ -1231,7 +1298,7 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 12)
+        self.assertEqual(len(records), 19)
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
@@ -1239,6 +1306,32 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertEqual(factory_api.kind, "openapi")
         self.assertEqual(factory_api.role, "bidirectional")
         self.assertNotIn("/v1/providers/run", documents[factory_api.id]["paths"])
+        semantic_records = {
+            record.id: (record.kind, record.role, record.compatibility, record.path)
+            for record in records
+            if "SEMANTIC" in record.id
+        }
+        self.assertEqual(
+            set(semantic_records),
+            {
+                "CONTRACT-FACTORY-EXECUTION-SEMANTIC-BINDING-V1",
+                "CONTRACT-FACTORY-EXECUTION-SEMANTIC-INPUTS-V1",
+                "CONTRACT-FACTORY-SEMANTIC-COVERAGE-V1",
+                "CONTRACT-FACTORY-SEMANTIC-FINDING-V1",
+                "CONTRACT-FACTORY-SEMANTIC-REPAIR-DIRECTIVE-V1",
+                "CONTRACT-FACTORY-SEMANTIC-SUBJECT-V1",
+                "CONTRACT-FACTORY-SEMANTIC-VERDICT-V1",
+            },
+        )
+        semantic_node = next(
+            node
+            for node in snapshot.system["nodes"]
+            if node["id"] == "NODE-FACTORY-SEMANTIC-VALIDATION"
+        )
+        self.assertEqual(
+            set(semantic_node["public_contracts"]),
+            {key for key in semantic_records if key.startswith("CONTRACT-FACTORY-SEMANTIC-")},
+        )
         governance_handoff = next(
             record
             for record in records
@@ -3079,6 +3172,14 @@ class ArchitectureModelTests(unittest.TestCase):
             "CONTRACT-FACTORY-WORKSPACE-RESULT": (
                 "json_schema", "factory/contracts/schemas/workspace-result.v1.json",
                 "producer", "producer_accepted_by_old", "NODE-FACTORY-EXECUTION-CORE",
+            ),
+            "CONTRACT-FACTORY-EXECUTION-SEMANTIC-BINDING-V1": (
+                "json_schema", "factory/contracts/jsonschema/semantic-execution-binding.v1.schema.json",
+                "producer", "producer_accepted_by_old", "NODE-FACTORY-EXECUTION-CORE",
+            ),
+            "CONTRACT-FACTORY-EXECUTION-SEMANTIC-INPUTS-V1": (
+                "json_schema", "factory/contracts/jsonschema/semantic-validation-inputs.v1.schema.json",
+                "consumer", "consumer_accepts_old", "NODE-FACTORY-EXECUTION-CORE",
             ),
         }
         nodes = {node["id"]: node for node in snapshot.system["nodes"]}

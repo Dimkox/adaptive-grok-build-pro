@@ -12,6 +12,7 @@ from unittest.mock import Mock, patch
 import httpx
 import uvicorn
 
+from adaptive_factory import admin as admin_module
 from adaptive_factory.api import Authenticator, create_app
 from adaptive_factory.models import Actor
 from adaptive_factory.server import ServerError, build_app, load_actors, prepare_unix_socket
@@ -34,6 +35,125 @@ class ServerTests(unittest.TestCase):
                 return request
 
         return Registry(), ArtifactVerifier(), SnapshotBroker()
+
+    def test_semantic_login_provisioners_bind_distinct_capability_roles(self):
+        with patch("adaptive_factory.admin._provision_semantic_login") as provision:
+            admin_module.provision_semantic_validator_login(
+                "postgresql://owner", "validator_login", "bounded-validator-password"
+            )
+            admin_module.provision_semantic_adjudicator_login(
+                "postgresql://owner", "adjudicator_login", "bounded-adjudicator-password"
+            )
+        self.assertEqual(
+            provision.call_args_list,
+            [
+                unittest.mock.call(
+                    "postgresql://owner",
+                    "validator_login",
+                    "bounded-validator-password",
+                    role="factory_semantic_validator",
+                    label="semantic validator",
+                ),
+                unittest.mock.call(
+                    "postgresql://owner",
+                    "adjudicator_login",
+                    "bounded-adjudicator-password",
+                    role="factory_semantic_adjudicator",
+                    label="semantic adjudicator",
+                ),
+            ],
+        )
+
+    def test_semantic_dsn_wires_only_the_coordinator_capability(self):
+        settings = FactorySettings(
+            "postgresql://runtime",
+            Path("/run/factory.sock"),
+            Path("/run/actors.json"),
+            semantic_coordinator_database_url="postgresql://semantic-coordinator",
+        )
+        with (
+            patch("adaptive_factory.server.PostgresFactoryStore") as runtime_store,
+            patch("adaptive_factory.server.PostgresArtifactAttestationStore") as attestor,
+            patch("adaptive_factory.server.PostgresSemanticCoordinatorStore") as coordinator,
+            patch("adaptive_factory.server.PostgresSemanticValidatorStore") as validator,
+            patch("adaptive_factory.server.PostgresSemanticAdjudicatorStore") as adjudicator,
+            patch("adaptive_factory.server._runtime_readiness"),
+            patch("adaptive_factory.server.load_actors", return_value={}),
+            patch("adaptive_factory.server.Authenticator"),
+            patch(
+                "adaptive_factory.server.create_app",
+                side_effect=lambda service, _auth, **_options: service,
+            ),
+        ):
+            service = build_app(settings)
+        runtime_store.assert_called_once_with(settings.database_url)
+        coordinator.assert_called_once_with(settings.semantic_coordinator_database_url)
+        attestor.assert_not_called()
+        validator.assert_not_called()
+        adjudicator.assert_not_called()
+        self.assertIs(service.semantic_store, coordinator.return_value)
+        self.assertIsNone(service.semantic_validator_store)
+        self.assertIsNone(service.semantic_adjudicator_store)
+        self.assertIsNone(service.execution_registry)
+
+    def test_semantic_capability_dsns_wire_three_isolated_stores(self):
+        settings = FactorySettings(
+            "postgresql://runtime",
+            Path("/run/factory.sock"),
+            Path("/run/actors.json"),
+            semantic_coordinator_database_url="postgresql://semantic-coordinator",
+            semantic_validator_database_url="postgresql://semantic-validator",
+            semantic_adjudicator_database_url="postgresql://semantic-adjudicator",
+        )
+        with (
+            patch("adaptive_factory.server.PostgresFactoryStore"),
+            patch("adaptive_factory.server.PostgresSemanticCoordinatorStore") as coordinator,
+            patch("adaptive_factory.server.PostgresSemanticValidatorStore") as validator,
+            patch("adaptive_factory.server.PostgresSemanticAdjudicatorStore") as adjudicator,
+            patch("adaptive_factory.server._runtime_readiness"),
+            patch("adaptive_factory.server.load_actors", return_value={}),
+            patch("adaptive_factory.server.Authenticator"),
+            patch(
+                "adaptive_factory.server.create_app",
+                side_effect=lambda service, _auth, **_options: service,
+            ),
+        ):
+            service = build_app(settings)
+        coordinator.assert_called_once_with(settings.semantic_coordinator_database_url)
+        validator.assert_called_once_with(settings.semantic_validator_database_url)
+        adjudicator.assert_called_once_with(settings.semantic_adjudicator_database_url)
+        self.assertIs(service.semantic_store, coordinator.return_value)
+        self.assertIs(service.semantic_validator_store, validator.return_value)
+        self.assertIs(service.semantic_adjudicator_store, adjudicator.return_value)
+
+    def test_actor_config_accepts_only_named_semantic_capability_kinds(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            root.chmod(0o700)
+            records = []
+            for kind, scope in (
+                ("validator", "semantic:validate"),
+                ("adjudicator", "semantic:adjudicate"),
+            ):
+                token = root / f"{kind}.token"
+                token.write_text(f"bounded-{kind}-token-value\n", encoding="utf-8")
+                token.chmod(0o600)
+                records.append(
+                    {
+                        "actor_id": kind,
+                        "kind": kind,
+                        "scopes": [scope],
+                        "repositories": ["owner/repository"],
+                        "token_file": str(token),
+                    }
+                )
+            config = root / "actors.json"
+            config.write_text(json.dumps({"actors": records}), encoding="utf-8")
+            config.chmod(0o600)
+            actors = load_actors(config)
+        self.assertEqual(
+            {actor.kind for actor in actors.values()}, {"validator", "adjudicator"}
+        )
 
     def test_build_app_requires_distinct_ready_runtime_and_attestor_capabilities(self):
         settings = FactorySettings(
@@ -65,7 +185,7 @@ class ServerTests(unittest.TestCase):
                 "status": "ready",
                 "session_user": "factory_runtime_login",
                 "database_role": "factory_runtime",
-                "schema_version": 17,
+                "schema_version": 18,
                 "capacity_consistent": True,
                 "accounting_consistent": True,
             }
@@ -122,7 +242,7 @@ class ServerTests(unittest.TestCase):
                     "status": "ready",
                     "session_user": "factory_runtime_login",
                     "database_role": "factory_runtime",
-                    "schema_version": 17,
+                    "schema_version": 18,
                     "capacity_consistent": True,
                     "accounting_consistent": True,
                 },
@@ -136,7 +256,7 @@ class ServerTests(unittest.TestCase):
                     "status": "ready",
                     "session_user": "factory_runtime_login",
                     "database_role": "factory_artifact_attestor",
-                    "schema_version": 17,
+                    "schema_version": 18,
                     "capacity_consistent": True,
                     "accounting_consistent": True,
                 },
@@ -150,7 +270,7 @@ class ServerTests(unittest.TestCase):
                     "status": "ready",
                     "session_user": "same_login",
                     "database_role": "factory_runtime",
-                    "schema_version": 17,
+                    "schema_version": 18,
                     "capacity_consistent": True,
                     "accounting_consistent": True,
                 },
@@ -312,7 +432,7 @@ class ServerTests(unittest.TestCase):
                 "status": "ready",
                 "session_user": "factory_runtime_login",
                 "database_role": "factory_runtime",
-                "schema_version": 17,
+                "schema_version": 18,
                 "capacity_consistent": True,
                 "accounting_consistent": True,
             }
