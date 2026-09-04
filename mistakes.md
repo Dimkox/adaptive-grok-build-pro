@@ -616,3 +616,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The DOCX hardening introduced `xml.etree.ElementTree` while focused functional checks omitted targeted Bandit; the exact verifier correctly caught B405 and B314.
 **Prevention:** Run targeted Bandit whenever a modified path parses untrusted formats, and prefer a bounded fail-closed lexical subset when no approved hardened parser dependency exists.
+
+## 2026-09-04 — Validated relationship targets without their source-part context
+
+**Root cause:** The lexical DOCX validator allowed any leading `../` sequence but discarded the `.rels` entry path, so it could not distinguish a legitimate parent reference from traversal above the OPC package root.
+**Prevention:** Bind every internal target to its relationship source part and reject it when normalized parent depth exceeds that source directory's package-root depth.

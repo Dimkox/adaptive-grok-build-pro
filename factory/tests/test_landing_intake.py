@@ -71,7 +71,14 @@ def ogg_vorbis(granule, *, sample_rate=8_000):
     )
 
 
-def docx(*, macro=False, traversal=False, relationship_xml=None, embedded=False):
+def docx(
+    *,
+    macro=False,
+    traversal=False,
+    relationship_xml=None,
+    relationship_path="word/_rels/document.xml.rels",
+    embedded=False,
+):
     stream = io.BytesIO()
     with zipfile.ZipFile(stream, "w", compression=zipfile.ZIP_STORED) as archive:
         archive.writestr("[Content_Types].xml", "<Types/>")
@@ -81,7 +88,7 @@ def docx(*, macro=False, traversal=False, relationship_xml=None, embedded=False)
         if traversal:
             archive.writestr("../escape.txt", b"escape")
         if relationship_xml is not None:
-            archive.writestr("word/_rels/document.xml.rels", relationship_xml)
+            archive.writestr(relationship_path, relationship_xml)
         if embedded:
             archive.writestr("word/embeddings/oleObject1.bin", b"embedded")
     return stream.getvalue()
@@ -204,6 +211,42 @@ class LandingIntakeTests(unittest.TestCase):
         )
         self.assertEqual("docx", internal.media_kind)
         self.assertEqual(self.store.purge(internal, reason="normalized"), "purged")
+
+        relative_relationship = (
+            b"<Relationships>"
+            b'<Relationship Id="rId2" Type="customXml" Target="../customXml/item1.xml"/>'
+            b"</Relationships>"
+        )
+        relative = self.accept(
+            "docx",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            docx(relationship_xml=relative_relationship),
+            job_id="internal-parent-relationship",
+        )
+        self.assertEqual(self.store.purge(relative, reason="normalized"), "purged")
+
+        escaping_relationships = (
+            ("word/_rels/document.xml.rels", "../../outside.xml"),
+            ("_rels/.rels", "../outside.xml"),
+        )
+        for index, (relationship_path, target) in enumerate(escaping_relationships, 1):
+            relationships = (
+                "<Relationships>"
+                f'<Relationship Id="rId{index}" Type="officeDocument" Target="{target}"/>'
+                "</Relationships>"
+            ).encode("ascii")
+            with self.subTest(target=target), self.assertRaisesRegex(
+                LandingContractError, "docx_external_relationship"
+            ):
+                self.accept(
+                    "docx",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    docx(
+                        relationship_xml=relationships,
+                        relationship_path=relationship_path,
+                    ),
+                    job_id=f"escaping-relationship-{index}",
+                )
 
         external_relationships = (
             b"<Relationships><Relationship TargetMode = 'External'/></Relationships>",

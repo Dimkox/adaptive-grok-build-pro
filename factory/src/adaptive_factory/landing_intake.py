@@ -550,14 +550,26 @@ class PrivateLandingBlobStore:
                     ):
                         raise LandingContractError("docx_active_content")
                     if lowered.endswith(".rels"):
-                        _validate_relationships_xml(archive.read(entry))
+                        _validate_relationships_xml(archive.read(entry), entry.filename)
         except LandingContractError:
             raise
         except (OSError, zipfile.BadZipFile, RuntimeError) as exc:
             raise LandingContractError("media_signature") from exc
 
 
-def _validate_relationships_xml(payload: bytes) -> None:
+def _validate_relationships_xml(payload: bytes, relationship_path: str) -> None:
+    path_parts = PurePosixPath(relationship_path).parts
+    if path_parts == ("_rels", ".rels"):
+        source_directory_depth = 0
+    elif (
+        len(path_parts) >= 3
+        and path_parts[-2] == "_rels"
+        and path_parts[-1].endswith(".rels")
+        and path_parts[-1] != ".rels"
+    ):
+        source_directory_depth = len(path_parts) - 2
+    else:
+        raise LandingContractError("docx_relationships")
     try:
         text = payload.decode("utf-8", "strict").strip()
     except UnicodeDecodeError as exc:
@@ -603,7 +615,15 @@ def _validate_relationships_xml(payload: bytes) -> None:
             {"id", "type", "target", "targetmode"},
         ):
             raise LandingContractError("docx_relationships")
-        if not _INTERNAL_RELATIONSHIP_TARGET.fullmatch(attributes["target"]):
+        target = attributes["target"]
+        if not _INTERNAL_RELATIONSHIP_TARGET.fullmatch(target):
+            raise LandingContractError("docx_external_relationship")
+        target_parts = target.split("/")
+        parent_depth = next(
+            (index for index, part in enumerate(target_parts) if part != ".."),
+            len(target_parts),
+        )
+        if parent_depth > source_directory_depth:
             raise LandingContractError("docx_external_relationship")
         offset = tag.end()
     if body[offset:].strip():
