@@ -21,6 +21,7 @@
 - [x] Thread submit correlation header through service/store command and audit evidence during the closed OpenAPI/error-envelope repair.
 - [x] Record explicit human approval for the exact bounded architecture-budget amendment and return the durable change from reviewing to implementing.
 - [x] TDD the restored original M2 budget plus independently overlapping aggregate/factory/source/contract/test error rules, segment-safe matching and fail-closed unknown metrics without changing factory representation.
+- [x] Freeze the finite SEC-001 authority repair and tracked ready-source state at source checkpoint `47b1c0a`; this is source readiness only.
 - [ ] Validate exact shipped-package parity for `2.0.13`; after tracked mutation, rebuild a separate artifact-only child only if parity fails.
 - [ ] Run final exact-head verifier after current documentation and repair evidence are frozen.
 - [ ] Hand final fingerprint to all five independent reviewers.

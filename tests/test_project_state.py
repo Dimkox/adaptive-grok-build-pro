@@ -20,7 +20,7 @@ M4_SOURCE_SHA = "460a8a01a6394cac710b4e3f9eea3d94d4beef89"
 M4_INTEGRATION_SHA = "da7ec8d7d40f52663aba1ff59bf03ccf209395b0"
 M4_SCANNER_REPAIR_SHA = "5a6cdfb7a129e02724c632f78c31de6406d6863a"
 M4_RELEASE_STATE_BASE_SHA = "56e12b2b394436ee227c66d78b1caba8f7317c78"
-M4_REPAIR_CHECKPOINT_SHA = "5c5f111ae64cb3aa4dbff8915a3914c3901e6b1c"
+M4_REPAIR_CHECKPOINT_SHA = "47b1c0ab5f27bc946cd1b2682de68b4ca3c67a95"
 M4_RELEASE_STATE_BASE_FINGERPRINT = "e27caec9d2de459ef26bea49b99b93b5b7326a9c84c89b97f4ec482c237d4add"
 M4_FAILED_VERIFY_SHA = "547ee628812fbf098f337a854f68edf660091ead"
 M4_FAILED_VERIFY_FINGERPRINT = "f0efa89e689dbe47c701a4d301e97361ee671e299ef2f32b5295b908e182e768"
@@ -256,15 +256,19 @@ class ProjectStateTests(unittest.TestCase):
 
     def test_m4_source_implementation_is_distinct_from_verification_review_and_delivery(self) -> None:
         dimensions = self.state["active_delivery"]["m4_dimensions"]
+        self.assertEqual(
+            self.state["active_delivery"]["status"],
+            "local_m4_ready_source_pending_artifact_and_exact_head_gates",
+        )
         self.assertTrue(
             self.state["active_delivery"]["next_action"].startswith(
-                "Validate exact shipped-package parity for 2.0.13"
+                "Rebuild the 2.0.13 artifact-only child from ready source checkpoint"
             )
         )
         self.assertEqual(
             dimensions["implementation_source"],
             {
-                "status": "implemented_local_candidate",
+                "status": "ready_source_pending_artifact",
                 "components": [
                     "typed_intake_and_task_state",
                     "postgresql_migrations_001_013",
@@ -296,7 +300,7 @@ class ProjectStateTests(unittest.TestCase):
         )
         self.assertEqual(
             self.state["milestones"]["M4"]["implementation"]["source_status"],
-            "implemented_local_candidate",
+            "ready_source_pending_artifact",
         )
         self.assertEqual(
             self.state["milestones"]["M5"]["implementation"]["status"],

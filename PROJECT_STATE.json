@@ -25,11 +25,11 @@
     "route_id": "b7f288f1e81e",
     "branch": "integration/m4-main-20260902",
     "change_package": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288",
-    "status": "local_m4_followup_candidate_exact_head_gated",
+    "status": "local_m4_ready_source_pending_artifact_and_exact_head_gates",
     "highest_implemented_milestone": "M4",
     "current_provisional_milestone": "M9",
     "next_roadmap_milestone": null,
-    "next_action": "Validate exact shipped-package parity for 2.0.13 after the source/docs freeze; rebuild one artifact-only child only if parity fails. When parity passes, run local exact-head verification and all route-selected reviews/reports/receipts; only after those fresh local receipts prepare an authorized successor PR and require a new external exact-head gate. After M4 acceptance, restack M5 first, then M6 with renumbered migrations and fresh checksum/upgrade/restart evidence.",
+    "next_action": "Rebuild the 2.0.13 artifact-only child from ready source checkpoint 47b1c0ab5f27bc946cd1b2682de68b4ca3c67a95, then run local exact-head verification and all five route-selected reviews/reports/receipts on that artifact commit. Only after those fresh local gates may an authorized successor PR and new external exact-head gate be prepared; after M4 acceptance, restack M5 first, then M6 with renumbered migrations and fresh checksum/upgrade/restart evidence.",
     "schedule": {
       "basis": "dependency_relative",
       "m4_local_ready_target": "2026-09-03",
@@ -63,7 +63,7 @@
     },
     "m4_dimensions": {
       "implementation_source": {
-        "status": "implemented_local_candidate",
+        "status": "ready_source_pending_artifact",
         "components": [
           "typed_intake_and_task_state",
           "postgresql_migrations_001_013",
@@ -238,14 +238,14 @@
     "M4": {
       "implementation": {
         "status": "complete",
-        "source_status": "implemented_local_candidate",
+        "source_status": "ready_source_pending_artifact",
         "commit": "4f75558770f2f332b32b4a47fe6afa61fcc524ec",
         "source_evidence_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
         "integration_baseline": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "5c5f111ae64cb3aa4dbff8915a3914c3901e6b1c",
+        "latest_committed_repair_checkpoint": "47b1c0ab5f27bc946cd1b2682de68b4ca3c67a95",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "evidence": "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/evidence/implementation-report.md",
-        "notes": "Release-state baseline 56e12b2 passed 14/14 local verifier gates, but that receipt is stale. The frozen source repair adds cursor-stable deadline/accounting quarantine, separate complete-intent/semantic-work/transport identities, immutable bounded lifecycle history, operation-scoped fenced phases and a sole checked closed-inline 17-operation HTTP contract with correlated errors. The approved policy amendment restores the original M2 budget and adds independently enforced finite aggregate and nested factory budgets without changing factory bytes. Validate exact 2.0.13 shipped parity after tracked changes and rebuild only on failure; exact-head verification and independent review receipts must bind the parity-current artifact commit. This is not an accepted or delivered head."
+        "notes": "Release-state baseline 56e12b2 passed 14/14 local verifier gates, but that receipt is stale. Ready source checkpoint 47b1c0ab5f27bc946cd1b2682de68b4ca3c67a95 freezes the M4 source/state repair, including the finite authority-composition invariant, without changing factory bytes. The artifact-only child, exact-head verification and all five independent reviews remain pending. This is not an accepted or delivered head."
       },
       "review": {
         "status": "pending_refresh",
@@ -271,7 +271,7 @@
           "78ad2f679d38dc3244e716c586332417e610089c"
         ],
         "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "5c5f111ae64cb3aa4dbff8915a3914c3901e6b1c",
+        "latest_committed_repair_checkpoint": "47b1c0ab5f27bc946cd1b2682de68b4ca3c67a95",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
         "intermediate_local_verification": {
           "status": "passed",
@@ -303,7 +303,7 @@
         },
         "pull_request": null,
         "merge_commit": null,
-        "notes": "The candidate identity is the commit containing this state file; a commit cannot embed its own SHA. Frozen repair and approved budget-amendment source/docs supersede verified baseline 56e12b2; its receipt does not transfer. Validate exact shipped parity after tracked changes and rebuild an artifact-only child only if it fails; when parity passes, continue to exact-head local receipts before authorized PR delivery or an external exact-head check."
+        "notes": "The candidate identity is the commit containing this state file; a commit cannot embed its own SHA. Ready source checkpoint 47b1c0ab5f27bc946cd1b2682de68b4ca3c67a95 supersedes verified baseline 56e12b2, whose receipt does not transfer. Rebuild the artifact-only child next, then create exact-head local receipts before any authorized PR delivery or external exact-head check."
       },
       "main_delivery": {
         "status": "not_delivered",
@@ -366,9 +366,9 @@
         "source_head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
         "base_head": "78ad2f679d38dc3244e716c586332417e610089c",
         "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
-        "latest_committed_repair_checkpoint": "5c5f111ae64cb3aa4dbff8915a3914c3901e6b1c",
+        "latest_committed_repair_checkpoint": "47b1c0ab5f27bc946cd1b2682de68b4ca3c67a95",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
-        "purpose": "Freeze the approved bounded architecture amendment without changing factory representation, validate exact 2.0.13 shipped parity and rebuild an artifact-only child only on failure, then bind verification and route-selected reviews/reports/receipts to the parity-current artifact commit before any authorized PR-only delivery."
+        "purpose": "Ready source/state is frozen at repair checkpoint 47b1c0ab5f27bc946cd1b2682de68b4ca3c67a95 without changing factory representation. Rebuild the 2.0.13 artifact-only child, then bind exact-head verification and all five route-selected reviews/reports/receipts to that artifact commit before any authorized PR-only delivery."
       },
       {
         "route_id": "37b05f579320",
