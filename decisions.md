@@ -408,3 +408,7 @@ Define T0 only when an exact M4 SHA earns separately authorized PR delivery, ext
 ## 2026-09-03 — Keep final evidence outside the package fingerprint
 
 Build the artifact-only final HEAD first, then store exact-head review reports under the locally ignored `engineering/changes/<active>/evidence/final-runtime-<sha>/` so the active change package retains them without changing Git package inventory or the final tree fingerprint. Runtime receipts bind that unchanged fingerprint; this workflow evidence is not merge authority.
+
+## 2026-09-04 — Make historical and published provenance clone-independent
+
+Preserve the frozen M2 architecture inputs as manifest-bound text fixtures and exercise Git base selection in synthetic repositories. Bind the already-published 2.0.13 ZIP to `PROJECT_STATE.json` and its immutable release tag instead of requiring parity with later documentation-only HEADs.

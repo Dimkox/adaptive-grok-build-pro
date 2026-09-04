@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "source_commit": "635c9ddf2d63c1ea823074106976a8f3de6299a9",
+  "files": [
+    {
+      "path": "architecture/adoption.json",
+      "sha256": "af26761dc3c6657e576a1c699536e041d8a993e8da6597566e1ced23312600ab",
+      "git_blob_id": "6b624bf618caf7d4a0bb7631c531ddde59a32756"
+    },
+    {
+      "path": "architecture/rules.yaml",
+      "sha256": "78b90160a1a5ee48e0f1a88ee75fefd6a417497ab7e3a5cf2ca46030442c2d68",
+      "git_blob_id": "aa3e205879c0de4a65185531ac3bad62c6d42eee"
+    },
+    {
+      "path": "architecture/system.yaml",
+      "sha256": "97e196ebbd55508ca75ffa430ef211b7b168d513d270e22ba40a0ef9f28454de",
+      "git_blob_id": "4ba0e4a05cb826d7a27845da215ed7db074cf077"
+    },
+    {
+      "path": "engineering/contracts/openapi/trust-ci.v1.json",
+      "sha256": "5cc9c7dcfa2c737ba2fa555d9760c2219b7cf5705932dd25f122f182e884e5f4",
+      "git_blob_id": "95eed8477f031d3fb07b9ccb4a1e6d6db3a5fc8e"
+    },
+    {
+      "path": "engineering/contracts/schemas/github-pull-request-projection.v1.json",
+      "sha256": "2796de1418c7cf390b2d70affd1aa4e2f62d503f6e8ff67b23a60f8248962049",
+      "git_blob_id": "f818841a2af573aa473acbbd7d6c4ce132ad1cdc"
+    },
+    {
+      "path": "engineering/contracts/schemas/trust-ci-approval-envelope.v1.json",
+      "sha256": "5ee108450527132c2cc9642e49c25ce2b8c4df652754e7d73548f8de919dc6db",
+      "git_blob_id": "2fe70d9e67a9afe50957e641f735094f160493fc"
+    },
+    {
+      "path": "engineering/contracts/schemas/trust-ci-attestation-envelope.v1.json",
+      "sha256": "50758123b2843a896b421458dc0c0d3578b46b6df718c495c1c456a503558e01",
+      "git_blob_id": "c3727879bb4796090c09628d179dfa2965dfa4d1"
+    },
+    {
+      "path": "schemas/architecture-rules.schema.json",
+      "sha256": "6ea59dacf886263690a2eda800beca4f1fc9b0cdcb2a1e184481cccc7cef9ee2",
+      "git_blob_id": "4f703a7af55b4c8e4c8de7acdc45c17d96e7ff3a"
+    },
+    {
+      "path": "schemas/architecture-system.schema.json",
+      "sha256": "c5a34ffa61e53c3df43a8842da2b41644880aca3c8d75c07b2cb2b5902cf1045",
+      "git_blob_id": "9a8776db6ea4b4e4e22e829e755226946c6373d0"
+    }
+  ],
+  "summary_digests": {
+    "architecture_digest": "5ab48dfaac3b649b82c364f05351266979a104ef8420f58e62533d1322805290",
+    "system_digest": "da6453d9bbb291b297a393ff3d63fb68a0f3ec120107b6ed2cac4ee5a2d6e72b",
+    "rules_digest": "b47a0ed9f4f82894ad7b0e713749a349c4b98703cbc6f93f64e8a156d671a4e4",
+    "schema_digest": "c702531d97283ba01fdebe79081081b96095631a89cf91e4cf128cc2574456f0",
+    "contract_inventory_digest": "039feea9a076516e3dd414c8e59bc2a2eeb522e2ca19a9087438b7ec7314e017"
+  }
+}

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import json
 import os
+import re
 import stat
 import subprocess
 import sys
@@ -1413,56 +1415,86 @@ module.main()
             self.assertNotIn('build/adaptive-trust-ci-pin.env', rels)
             self.assertFalse(any('20260817-' in rel for rel in rels))
 
-    def test_shipped_zip_exactly_matches_filtered_tracked_head(self) -> None:
+    def test_published_zip_matches_immutable_release_record_and_embedded_manifest(self) -> None:
+        state = json.loads((ROOT / 'PROJECT_STATE.json').read_text(encoding='utf-8'))
+        published = state['published_release']
         version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
         self.assertEqual(version, '2.0.13')
-        sources = _head_release_sources(ROOT)
-        rels = list(sources)
-        self.assertFalse(any(rel.startswith('.github/workflows/') for rel in rels))
-        self.assertNotIn('.github/dependabot.yml', rels)
-        self.assertNotIn('.grok-stack/templates/ci/github-actions.yml', rels)
-        zip_path = ROOT / 'packages' / f'adaptive-grok-build-pro-v{version}.zip'
+        self.assertEqual(state['product_version'], version)
+        self.assertEqual(published['tag'], f'v{version}')
+        artifact = published['artifact']
+        self.assertEqual(artifact['binding'], 'immutable_release_tag')
+        expected_relative = f'packages/adaptive-grok-build-pro-v{version}.zip'
+        self.assertEqual(artifact['path'], expected_relative)
+        expected_digest = '3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c'
+        self.assertEqual(artifact['sha256'], expected_digest)
+
+        zip_path = ROOT / expected_relative
         sidecar_path = zip_path.with_suffix('.zip.sha256')
-        if (ROOT / '.git').exists():
-            self.assertTrue(zip_path.is_file())
-            self.assertTrue(sidecar_path.is_file())
-            digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
-            self.assertEqual(sidecar_path.read_text(encoding='utf-8'), f'{digest}  {zip_path.name}\n')
-            with zipfile.ZipFile(zip_path) as archive:
-                names = archive.namelist()
-                prefix = 'adaptive-grok-build-pro/'
-                source_members = {
-                    f'{prefix}{relative}': source
-                    for relative, source in sources.items()
-                }
-                manifest_member = f'{prefix}MANIFEST.sha256'
-                self.assertEqual(names, sorted([*source_members, manifest_member]))
-                expected_manifest = ''.join(
-                    f'{hashlib.sha256(content).hexdigest()}  {relative}\n'
-                    for relative, (content, _mode) in sources.items()
-                ).encode('utf-8')
+        self.assertTrue(zip_path.is_file())
+        self.assertTrue(sidecar_path.is_file())
+        digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+        self.assertEqual(digest, expected_digest)
+        self.assertEqual(
+            sidecar_path.read_text(encoding='ascii'),
+            f'{expected_digest}  {zip_path.name}\n',
+        )
+
+        with zipfile.ZipFile(zip_path) as archive:
+            self.assertIsNone(archive.testzip())
+            names = archive.namelist()
+            self.assertEqual(names, sorted(names))
+            self.assertEqual(len(names), len(set(names)))
+            prefix = 'adaptive-grok-build-pro/'
+            self.assertTrue(all(name.startswith(prefix) for name in names))
+            manifest_member = f'{prefix}MANIFEST.sha256'
+            self.assertIn(manifest_member, names)
+            manifest = archive.read(manifest_member).decode('utf-8')
+            self.assertTrue(manifest.endswith('\n'))
+            entries: list[tuple[str, str]] = []
+            for line in manifest.splitlines():
+                match = re.fullmatch(r'([0-9a-f]{64})  ([^\\\x00]+)', line)
+                self.assertIsNotNone(match, line)
+                assert match is not None
+                relative = match.group(2)
+                path = PurePosixPath(relative)
+                self.assertFalse(path.is_absolute())
+                self.assertNotIn('..', path.parts)
+                self.assertNotIn('.', path.parts)
+                self.assertNotEqual(relative, 'MANIFEST.sha256')
+                entries.append((relative, match.group(1)))
+            relative_names = [relative for relative, _digest in entries]
+            self.assertEqual(relative_names, sorted(relative_names))
+            self.assertEqual(len(relative_names), len(set(relative_names)))
+            self.assertEqual(
+                {f'{prefix}{relative}' for relative in relative_names},
+                set(names) - {manifest_member},
+            )
+            for relative, member_digest in entries:
+                member = f'{prefix}{relative}'
                 self.assertEqual(
-                    archive.read(manifest_member),
-                    expected_manifest,
+                    hashlib.sha256(archive.read(member)).hexdigest(),
+                    member_digest,
+                    relative,
                 )
-                for member, (content, mode) in source_members.items():
-                    self.assertTrue(
-                        archive.read(member) == content,
-                        f'archive member differs from exact HEAD source: {member.removeprefix(prefix)}',
-                    )
-                    archive_mode = archive.getinfo(member).external_attr >> 16
-                    self.assertEqual(
-                        archive_mode,
-                        stat.S_IFREG | (0o755 if mode & 0o111 else 0o644),
-                    )
-                self.assertEqual(
-                    archive.getinfo(manifest_member).external_attr >> 16,
-                    stat.S_IFREG | 0o644,
+            for info in archive.infolist():
+                self.assertEqual(info.create_system, 3, info.filename)
+                self.assertIn(
+                    info.external_attr >> 16,
+                    {stat.S_IFREG | 0o644, stat.S_IFREG | 0o755},
+                    info.filename,
                 )
-                self.assertEqual(archive.read(f'{prefix}VERSION').decode('utf-8').strip(), '2.0.13')
-                self.assertFalse(any('.github/workflows/' in name for name in names))
-                self.assertFalse(any(name.endswith('dependabot.yml') for name in names))
-                self.assertFalse(any(name.endswith('github-actions.yml') for name in names))
+            self.assertEqual(
+                archive.getinfo(manifest_member).external_attr >> 16,
+                stat.S_IFREG | 0o644,
+            )
+            self.assertEqual(
+                archive.read(f'{prefix}VERSION').decode('utf-8').strip(),
+                version,
+            )
+            self.assertFalse(any('.github/workflows/' in name for name in names))
+            self.assertNotIn(f'{prefix}.github/dependabot.yml', names)
+            self.assertNotIn(f'{prefix}.grok-stack/templates/ci/github-actions.yml', names)
 
     def test_write_archive_preserves_source_manifest_and_embeds_current_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
