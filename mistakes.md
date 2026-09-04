@@ -641,3 +641,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The immutable `v2.0.13` merge identity was reused as live `origin/main` after later commits because a fetch-and-compare was not a final packaging precondition.
 **Prevention:** Before packaging, fetch and bind live claims to `refs/remotes/origin/main` while storing the release merge as a separate historical identity.
+
+## 2026-09-04 — Allowed Markdown backticks to reach Bash substitution
+
+**Root cause:** A read-only `rg` invocation placed Markdown backticks inside a double-quoted Bash pattern, causing unintended command substitution (`main: command not found` and `origin/main: No such file`) even though later checks completed.
+**Prevention:** Single-quote literal patterns or pass fixed strings without shell metacharacters, as required by the command-escaping rule.
