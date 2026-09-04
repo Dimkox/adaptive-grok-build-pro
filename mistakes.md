@@ -556,3 +556,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** Historical architecture tests assumed old Git objects remained reachable after a single-branch squash clone, while the published-package test incorrectly compared the immutable release artifact with mutable documentation HEAD.
 **Prevention:** Carry digest-verified historical inputs as text fixtures, build synthetic Git histories for selector tests, and verify published artifacts against their tag-bound release record.
+
+## 2026-09-04 — Stopped at targeted unittest coverage after removing final imports
+
+**Root cause:** The clone-independent test repair deleted the final uses of two imports, but its targeted preflight exercised unittest only and omitted static lint for the modified Python files.
+**Prevention:** Run targeted Ruff on every modified Python file before push, even when its focused unit tests pass.
