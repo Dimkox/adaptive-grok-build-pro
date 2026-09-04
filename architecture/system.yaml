@@ -51,6 +51,14 @@
     },
     {
       "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-SEMANTIC-OPENAPI",
+      "kind": "openapi",
+      "path": "factory/contracts/openapi/factory-semantic.v1.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
       "id": "CONTRACT-FACTORY-EXECUTION-OPENAPI",
       "kind": "openapi",
       "path": "factory/contracts/openapi/factory-execution.v1.json",
@@ -199,22 +207,6 @@
       "kind": "json_schema",
       "path": "factory/contracts/jsonschema/shadow-task-evidence.v1.schema.json",
       "role": "consumer",
-      "version": "1"
-    },
-    {
-      "compatibility": "consumer_accepts_old",
-      "id": "CONTRACT-FACTORY-M8-M7-BRIDGE-V1",
-      "kind": "json_schema",
-      "path": "factory/contracts/jsonschema/m7-autonomy-bridge.v1.schema.json",
-      "role": "consumer",
-      "version": "1"
-    },
-    {
-      "compatibility": "producer_accepted_by_old",
-      "id": "CONTRACT-FACTORY-M8-EARNED-AUTONOMY-V1",
-      "kind": "json_schema",
-      "path": "factory/contracts/jsonschema/earned-autonomy.v1.schema.json",
-      "role": "producer",
       "version": "1"
     }
   ],
@@ -845,7 +837,7 @@
         "DATA-FACTORY-INTENT",
         "DATA-FACTORY-STATE"
       ],
-      "authentication": "none",
+      "authentication": "local_os",
       "direction": "from_to",
       "failure_behavior": {
         "correlation_id": "required",
@@ -942,7 +934,8 @@
       "public_contracts": [
         "CONTRACT-FACTORY-CONTROL-OPENAPI",
         "CONTRACT-FACTORY-EXECUTION-OPENAPI",
-        "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2"
+        "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2",
+        "CONTRACT-FACTORY-SEMANTIC-OPENAPI"
       ],
       "repository_paths": [
         "factory/.env.example",
@@ -1482,13 +1475,8 @@
       "data_classification": "DATA-FACTORY-STATE",
       "id": "NODE-FACTORY-EARNED-AUTONOMY",
       "owner": "local factory operators and human reviewers",
-      "public_contracts": [
-        "CONTRACT-FACTORY-M8-EARNED-AUTONOMY-V1",
-        "CONTRACT-FACTORY-M8-M7-BRIDGE-V1"
-      ],
+      "public_contracts": [],
       "repository_paths": [
-        "factory/contracts/jsonschema/earned-autonomy.v1.schema.json",
-        "factory/contracts/jsonschema/m7-autonomy-bridge.v1.schema.json",
         "factory/src/adaptive_factory/autonomy.py",
         "factory/src/adaptive_factory/m7_autonomy_bridge.py"
       ],

@@ -34,6 +34,7 @@ from .workspace import (
     ArtifactAttestationV1,
     WorkspaceError,
     WorkspaceSnapshotV1,
+    WorkspaceSnapshotUnavailable,
 )
 from .store import FenceError, StoreUnavailable
 

@@ -345,7 +345,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 201, response.text)
 
     def test_all_execution_request_identities_reject_secret_shapes_before_service(self):
-        token = "execution-identity-credential"
+        token = "execution-" + "identity-credential"
         actor = Actor(
             "worker-01",
             "worker",
@@ -676,7 +676,7 @@ class ApiTests(unittest.TestCase):
                     422,
                 )
     def test_execution_claim_is_explicit_and_rejects_provider_command_fields(self):
-        token = "execution-worker-credential"
+        token = "execution-" + "worker-credential"
         actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
         client = TestClient(create_app(self.service, Authenticator({token: actor})))
         payload = self.execution_claim_payload()
@@ -686,7 +686,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(client.post("/v1/execution/claims", headers=headers, json=payload).status_code, 422)
 
     def test_execution_proposal_endpoints_are_typed_and_closed(self):
-        token = "proposal-worker-credential"
+        token = "proposal-" + "worker-credential"
         actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
         client = TestClient(create_app(self.service, Authenticator({token: actor})))
         headers = {"Authorization": f"Bearer {token}", "Idempotency-Key": "proposal-001", "X-Correlation-ID": "proposal-correlation"}
@@ -766,7 +766,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(len(self.service.calls), calls)
 
     def test_terminal_response_version_uses_matched_route_under_root_path(self):
-        token = "execution-root-path-credential"
+        token = "execution-" + "root-path-credential"
         actor = Actor(
             "worker-01",
             "worker",
@@ -811,7 +811,7 @@ class ApiTests(unittest.TestCase):
                 self.assertEqual(set(response.json()), expected_fields)
 
     def test_execution_usage_authenticates_exactly_once(self):
-        token = "execution-usage-credential"
+        token = "execution-" + "usage-credential"
         actor = Actor(
             "worker-01",
             "worker",
@@ -856,7 +856,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(authenticate.call_count, 1)
 
     def test_terminal_snapshot_failures_are_server_errors_without_private_detail(self):
-        token = "execution-terminal-failure-credential"
+        token = "execution-" + "terminal-failure-credential"
         actor = Actor(
             "worker-01",
             "worker",

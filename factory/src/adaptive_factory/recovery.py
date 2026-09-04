@@ -333,7 +333,7 @@ class ExecutionRecovery:
                         claim, timeout_seconds=_RECOVERY_DB_TIMEOUT_SECONDS
                     )
                 except Exception:
-                    pass
+                    terminalize_failed += 1
                 continue
             try:
                 remaining = _RECOVERY_BUDGET_SECONDS - (

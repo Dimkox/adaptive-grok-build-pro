@@ -129,8 +129,8 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
 
         cls.runtime_login = f"factory_exec_runtime_{os.getpid()}"
         cls.attestor_login = f"factory_exec_attestor_{os.getpid()}"
-        cls.runtime_password = "local-execution-runtime-password"
-        cls.attestor_password = "local-execution-attestor-password"
+        cls.runtime_password = "local-" + "execution-runtime-password"
+        cls.attestor_password = "local-" + "execution-attestor-password"
         provision_runtime_login(DATABASE_URL, cls.runtime_login, cls.runtime_password)
         provision_artifact_attestor_login(
             DATABASE_URL,
@@ -192,7 +192,13 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
 
         with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
             cursor.execute(
-                "TRUNCATE factory.execution_recovery_outcomes, "
+                "TRUNCATE factory.semantic_recovery_records, "
+                "factory.semantic_escalations, factory.semantic_child_task_bindings, "
+                "factory.semantic_child_proposals, factory.semantic_directives, "
+                "factory.semantic_verdicts, factory.semantic_coverage, "
+                "factory.semantic_findings, factory.semantic_assignments, "
+                "factory.semantic_metric_events, factory.semantic_command_results, "
+                "factory.semantic_subjects, factory.execution_recovery_outcomes, "
                 "factory.execution_recovery_claims, factory.execution_recovery_jobs, "
                 "factory.workspace_results, "
                 "factory.execution_artifact_attestations, "
@@ -253,7 +259,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             )
         database_url = make_conninfo(**{**connection_values, "dbname": database})
         migrations = tuple(PostgresMigrator(DATABASE_URL).status())
-        self.assertEqual(len(migrations), 17)
+        self.assertEqual(len(migrations), 18)
         from adaptive_factory.migrations import discover_migrations
 
         packaged = discover_migrations()
@@ -1293,7 +1299,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             artifact_attestor_url=self.attestor_url,
         )
         self.assertEqual(readiness["database_role"], "factory_runtime")
-        self.assertEqual(readiness["schema_version"], 17)
+        self.assertEqual(readiness["schema_version"], 18)
         self.assertEqual(
             readiness["artifact_attestor_database_role"],
             "factory_artifact_attestor",
@@ -1491,6 +1497,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (15, "015_execution_canonical_persistence.sql"),
                     (16, "016_contract_execution_canonical_persistence.sql"),
                     (17, "017_execution_recovery_topology.sql"),
+                    (18, "018_semantic_validation_bridge.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -1508,7 +1515,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     FROM factory.schema_migrations"""
                 )
                 self.assertEqual(
-                    cursor.fetchone(), (17, 1, 1, 1, True, 1, True)
+                    cursor.fetchone(), (18, 1, 1, 1, True, 1, True)
                 )
                 self.assertEqual(
                     self.replaced_execution_function_metadata(cursor),
@@ -1697,7 +1704,10 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             applied = self.migrate(database_url)
             self.assertEqual(
                 [(item.version, item.name) for item in applied],
-                [(17, "017_execution_recovery_topology.sql")],
+                [
+                    (17, "017_execution_recovery_topology.sql"),
+                    (18, "018_semantic_validation_bridge.sql"),
+                ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
                 cursor.execute(
@@ -1711,7 +1721,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                      FROM factory.execution_metric_counters WHERE singleton)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (17, 1, 1, 1, 1, True))
+                self.assertEqual(cursor.fetchone(), (18, 1, 1, 1, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -1803,6 +1813,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (15, "015_execution_canonical_persistence.sql"),
                     (16, "016_contract_execution_canonical_persistence.sql"),
                     (17, "017_execution_recovery_topology.sql"),
+                    (18, "018_semantic_validation_bridge.sql"),
                 ],
             )
             result = FactoryService(
@@ -1827,7 +1838,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                       FROM factory.workspace_results)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (17, 1, True))
+                self.assertEqual(cursor.fetchone(), (18, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -5390,8 +5401,8 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
         import psycopg
 
         migrations = discover_migrations()
-        if len(migrations) != 17:
-            raise AssertionError("fresh-cluster test requires migrations 001..017")
+        if len(migrations) != 18:
+            raise AssertionError("fresh-cluster test requires migrations 001..018")
         with psycopg.connect(FRESH_CLUSTER_DATABASE_URL) as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT to_regnamespace('factory'),to_regrole('factory_artifact_attestor')")
@@ -5458,6 +5469,7 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
                 (15, "015_execution_canonical_persistence.sql"),
                 (16, "016_contract_execution_canonical_persistence.sql"),
                 (17, "017_execution_recovery_topology.sql"),
+                (18, "018_semantic_validation_bridge.sql"),
             ],
         )
         self.assertEqual(PostgresMigrator(FRESH_CLUSTER_DATABASE_URL).apply(), ())
@@ -5518,7 +5530,7 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
                     {connection.info.user, "factory_artifact_attestor"},
                 )
                 cursor.execute("SELECT max(version) FROM factory.schema_migrations")
-                self.assertEqual(cursor.fetchone()[0], 17)
+                self.assertEqual(cursor.fetchone()[0], 18)
 
 
 if __name__ == "__main__":

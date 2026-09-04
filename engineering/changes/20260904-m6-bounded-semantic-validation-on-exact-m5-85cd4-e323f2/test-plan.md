@@ -13,7 +13,7 @@
 
 - Unit: `test_semantic_contracts`, `test_semantic_adjudication`, `test_semantic_bridge`, `test_semantic_repair`.
 - Integration: `test_semantic_persistence`, `test_semantic_store_runtime`, `test_semantic_service_api`, `test_semantic_repair_lifecycle`.
-- Contract: seven JSON Schemas plus six additive semantic operations in the existing control OpenAPI.
+- Contract: seven JSON Schemas plus six additive operations in the separate semantic OpenAPI; the M4 control OpenAPI remains byte-identical.
 - E2E: one disposable PostgreSQL 17 schema-17 upgrade, replay/role/repair proof; no live provider.
 - Static analysis: syntax, JSON/spec validation, migration/architecture inventories, and diff checks only.
 

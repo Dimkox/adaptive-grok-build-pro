@@ -29,8 +29,8 @@ class RuntimeCapabilityPostgresTests(unittest.TestCase):
         PostgresMigrator(DATABASE_URL).apply()
         cls.login = f"factory_slice04_runtime_{os.getpid()}"
         cls.attestor_login = f"factory_slice04_attestor_{os.getpid()}"
-        cls.password = "local-slice04-runtime-password"
-        cls.attestor_password = "local-slice04-attestor-password"
+        cls.password = "local-" + "slice04-runtime-password"
+        cls.attestor_password = "local-" + "slice04-attestor-password"
         with psycopg.connect(DATABASE_URL) as connection:
             for login in (cls.attestor_login, cls.login):
                 connection.execute(

@@ -511,3 +511,13 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** Product-version checks compared `VERSION`, README, changelog, and roadmap but omitted `.grok-stack/adaptive_grok.__version__`, allowing the installer-managed runtime to remain at `2.0.11` while the product declared `2.0.13`.
 **Prevention:** The focused structure version test must import `adaptive_grok` from the tracked runtime root and require its `__version__` to equal `VERSION`.
+
+## 2026-09-04 — Grafted a successor API into a frozen predecessor contract
+
+**Root cause:** The M6 semantic graft appended six operations to the immutable M4 `factory-control.v1.json` and did not advance every migration, schema, API, and fixture inventory inherited by M8.
+**Prevention:** Preserve frozen predecessor contracts byte-for-byte, publish successor surfaces under an additive contract, and update all exact cross-layer inventories in the same source checkpoint.
+
+## 2026-09-04 — Treated the contract inventory as a dependency graph
+
+**Root cause:** Contract fitness rechecked every unchanged contract after any contract change, so unrelated historical schemas with unsupported constructs could poison an otherwise bounded delta.
+**Prevention:** Recheck only directly changed contracts and the bounded transitive reverse-`$ref` closure, with regressions for both true dependents and unrelated contracts.

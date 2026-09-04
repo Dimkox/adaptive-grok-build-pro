@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch
 import subprocess
+from urllib.parse import urlsplit
 
 from adaptive_factory.migrations import AppliedMigration, MigrationError, discover_migrations, plan_migrations
 from factory.tests import postgres_restart_probe, run_disposable_exit
@@ -124,10 +125,8 @@ class MigrationTests(unittest.TestCase):
         self.assertEqual(validate.call_count, 2)
         self.assertEqual(validate.call_args_list[0].args, (owner, name, container_id, nonce))
         self.assertEqual(validate.call_args_list[1].args[1:], (name, container_id, nonce))
-        from psycopg.conninfo import conninfo_to_dict
-
         self.assertEqual(
-            tuple(conninfo_to_dict(value)["port"] for value in moved),
+            tuple(str(urlsplit(value).port) for value in moved),
             ("6543", "6543", "6543"),
         )
 
@@ -305,11 +304,9 @@ class MigrationTests(unittest.TestCase):
             for value in (owner, runtime, attestor)
         )
 
-        from psycopg.conninfo import conninfo_to_dict
-
-        parsed = tuple(conninfo_to_dict(value) for value in moved)
+        parsed = tuple(urlsplit(value) for value in moved)
         self.assertEqual(
-            tuple((value["user"], value["port"]) for value in parsed),
+            tuple((value.username, str(value.port)) for value in parsed),
             (
                 ("owner", "6543"),
                 ("factory_probe_runtime", "6543"),
@@ -317,7 +314,7 @@ class MigrationTests(unittest.TestCase):
             ),
         )
         self.assertEqual(
-            tuple(value["host"] for value in parsed),
+            tuple(value.hostname for value in parsed),
             ("127.0.0.1",) * 3,
         )
 
