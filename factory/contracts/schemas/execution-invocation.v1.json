@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.invalid/factory/execution-invocation.v1.json",
+  "title": "Adaptive Factory Execution Invocation V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "message_type", "packet"],
+  "properties": {
+    "protocol_version": {"const": "adaptive-factory.execution/v1"},
+    "message_type": {"const": "invoke"},
+    "packet": {"$ref": "task-packet.v1.json"}
+  }
+}
