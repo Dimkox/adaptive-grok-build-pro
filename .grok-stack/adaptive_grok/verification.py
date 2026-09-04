@@ -510,6 +510,32 @@ _DIFF_CHECK_PATHSPEC = (
     ':(exclude)*.rst',
 )
 
+_PAPERWORK_NAMES = {
+    'AGENTS.md',
+    'README.md',
+    'START_HERE.md',
+    'CHANGELOG.md',
+    'decisions.md',
+    'mistakes.md',
+    'PROJECT_STATE.json',
+    'DARK_FACTORY_ROADMAP.md',
+}
+
+
+def _paperwork_only(files: list[str]) -> bool:
+    if not files:
+        return False
+    for rel in files:
+        if rel.startswith('engineering/changes/'):
+            continue
+        name = Path(rel).name
+        suffix = Path(rel).suffix.lower()
+        if rel in _PAPERWORK_NAMES or name in _PAPERWORK_NAMES or suffix in {'.md', '.rst', '.mdx'}:
+            continue
+        return False
+    return True
+
+
 
 def _git_diff_check(
     root: Path,
@@ -963,7 +989,13 @@ def verify(root: Path, mode: str = 'pr', profiles: list[str] | None = None, reco
     trivy = _trivy_config(root)
     if trivy is not None:
         results.append(trivy)
-    results.extend(_python(root, mode))
+    if _paperwork_only(files):
+        results.append(CheckResult('python-unittest', 'skip', 'paperwork-only tree; skip product suite'))
+        results.append(CheckResult('coverage', 'skip', 'paperwork-only tree; skip product suite'))
+        results.append(CheckResult('factory-unit', 'skip', 'paperwork-only tree; skip product suite'))
+        results.append(CheckResult('factory-postgres-exit', 'skip', 'paperwork-only tree; skip product suite'))
+    else:
+        results.extend(_python(root, mode))
 
     final_fingerprint = tree_fingerprint(root)
     source_stable = final_fingerprint == checked_fingerprint
