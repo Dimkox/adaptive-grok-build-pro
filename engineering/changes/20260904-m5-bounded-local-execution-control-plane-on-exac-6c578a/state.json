@@ -1,0 +1,29 @@
+{
+  "change_id": "20260904-m5-bounded-local-execution-control-plane-on-exac-6c578a",
+  "created_at": "2026-09-04T01:25:19+00:00",
+  "history": [
+    {
+      "at": "2026-09-04T01:25:19+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-04T01:46:50+00:00",
+      "from": "draft",
+      "reason": "Finite M5 scope, nine acceptance criteria, architecture, contracts, migration sequence 014-017, recovery model, test plan, and explicit non-goals recorded for exact predecessor 67dc4dd; route base 78ad2f remains delivery-comparison only.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-04T01:46:50+00:00",
+      "from": "scoped",
+      "reason": "User explicitly approved repository-local implementation, authoring additive unpublished migrations 014-017, and isolated disposable PostgreSQL evidence; shared or persistent database mutation, provider/network use, service activation, delivery, external writes, and production actions remain unauthorized.",
+      "to": "approved"
+    }
+  ],
+  "route_id": "6c578a9933b3",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "M5 bounded local execution control plane on exact M4 67dc4dd",
+  "updated_at": "2026-09-04T01:46:50+00:00"
+}
