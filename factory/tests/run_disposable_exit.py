@@ -188,7 +188,22 @@ def main() -> int:
                 ],
                 environment=environment,
             )
-            _run([*uv, "python", "-m", "unittest", "discover", "-s", "factory/tests", "-t", ".", "-v"], environment=environment)
+            _run(
+                [
+                    *uv,
+                    "python",
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "factory/tests",
+                    "-t",
+                    ".",
+                    "-v",
+                ],
+                environment=environment,
+                timeout=480,
+            )
             _run([*uv, "python", "factory/tests/postgres_restart_probe.py"], environment=environment)
         print("PASS: disposable PostgreSQL + API + effective roles + actual restart/reconciliation")
         return 0

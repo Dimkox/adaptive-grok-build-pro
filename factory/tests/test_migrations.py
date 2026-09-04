@@ -51,6 +51,7 @@ class MigrationTests(unittest.TestCase):
         commands = [call.args[0] for call in run.call_args_list]
         self.assertIn("--preflight-only", commands[0])
         self.assertIn("unittest", commands[1])
+        self.assertEqual(run.call_args_list[1].kwargs["timeout"], 480)
         self.assertNotIn("--preflight-only", commands[2])
         self.assertEqual(remove.call_args.args[0], container_id)
         printed.assert_called_once_with(

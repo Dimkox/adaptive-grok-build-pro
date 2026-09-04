@@ -526,3 +526,13 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The M9 route stored protected `main` as `base_commit` while its fingerprint and implementation scope were bound to the exact M8 predecessor, conflating PR-target comparison with stacked architecture fitness.
 **Prevention:** Bind stacked route commit and fingerprint to the corrected exact predecessor, and keep the independent protected-main diff as a separate verifier check.
+
+## 2026-09-04 — Used the current store against a historical migration fixture
+
+**Root cause:** Schema-14 upgrade fixtures invoked the M6 store after that store began requiring migration-018 intake columns and claim policy, so the fixture failed before exercising the intended upgrade.
+**Prevention:** Construct historical rows through a bounded disposable compatibility shim, remove it before migration, and test the real forward migration sequence unchanged.
+
+## 2026-09-04 — Kept a fixed database-suite timeout as the suite grew
+
+**Root cause:** The disposable PostgreSQL runner retained a 300-second inner unittest timeout after the suite expanded to 457 tests, terminating healthy work and producing teardown cascades that resembled database failures.
+**Prevention:** Give the bounded unittest-discovery phase an explicit 480-second ceiling, preserving a 120-second margin inside the verifier's outer limit for startup, restart proof, and validated cleanup.

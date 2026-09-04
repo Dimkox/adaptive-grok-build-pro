@@ -303,6 +303,21 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         import psycopg
 
         with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
+            # Current M6 store calls require the two intake columns and claim
+            # predicate introduced by migration 018. Install a disposable
+            # compatibility shim only while constructing the historical M5
+            # row set, then remove it so the actual 015..018 upgrade remains
+            # the subject under test.
+            cursor.execute(
+                "ALTER TABLE factory.tasks "
+                "ADD COLUMN intake_actor_kind text, "
+                "ADD COLUMN intake_actor_id text"
+            )
+            cursor.execute(
+                """CREATE FUNCTION factory.semantic_task_claimable(
+                uuid,uuid,text,text,text,text) RETURNS boolean
+                LANGUAGE sql STABLE AS $$ SELECT true $$"""
+            )
             cursor.execute(
                 """INSERT INTO factory.m0_authority_observations
                 (observation_id,observed_at,check_name,exact_head_sha,issuer,
@@ -393,6 +408,15 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 ),
             )
             self.assertTrue(cursor.fetchone()[0])
+            cursor.execute("RESET ROLE")
+            cursor.execute(
+                "DROP FUNCTION factory.semantic_task_claimable(uuid,uuid,text,text,text,text)"
+            )
+            cursor.execute(
+                "ALTER TABLE factory.tasks "
+                "DROP COLUMN intake_actor_kind, "
+                "DROP COLUMN intake_actor_id"
+            )
         return task, execution, proposal, store
 
     @staticmethod
@@ -1651,7 +1675,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     )
             self.assertEqual(
                 [item.version for item in self.migrate(database_url)],
-                [15, 16, 17],
+                [15, 16, 17, 18],
             )
         finally:
             with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
