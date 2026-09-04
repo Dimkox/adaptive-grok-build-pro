@@ -2737,7 +2737,7 @@ class ArchitectureModelTests(unittest.TestCase):
         removed_header["paths"]["/items"]["get"]["responses"]["200"].pop("headers")
         for head, reason in (
             (changed_component, "widened_producer_output"),
-            (changed_header, "widened_producer_output"),
+            (changed_header, "changed_response_header_requirement"),
             (removed_header, "removed_response_header"),
         ):
             result = ARCH.compare_contracts(
