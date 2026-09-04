@@ -18,7 +18,6 @@ from unittest.mock import patch
 from tests.test_architecture_model import _json_schema, _rules, _system
 
 ROOT = Path(__file__).resolve().parents[1]
-ADOPTION_BASE = "25bfbe59ea188d9687b20a9caad19e7db3d031f8"
 sys.path.insert(0, str(ROOT / ".grok-stack"))
 
 
@@ -100,6 +99,14 @@ class ArchitectureFitnessTests(unittest.TestCase):
         base = repo.commit("base")
         return repo, base
 
+    def _bootstrap_repo(self) -> tuple[GitArchitectureRepo, str, str]:
+        repo = GitArchitectureRepo(self)
+        repo.write_text("README.md", "before architecture adoption\n")
+        frozen_base = repo.commit("frozen pre-adoption base")
+        repo.model(_system(), _rules())
+        head = repo.commit("adopt architecture")
+        return repo, frozen_base, head
+
     def _evaluate(self, repo: GitArchitectureRepo, base: str, head: str, pre_risk="green"):
         diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
         snapshot = FIT.load_architecture(repo.root)
@@ -125,16 +132,15 @@ class ArchitectureFitnessTests(unittest.TestCase):
         return [copy.deepcopy(configured[identity]) for identity in identities]
 
     def test_adoption_bootstrap_uses_only_the_frozen_base(self) -> None:
-        head = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, encoding="utf-8"
-        ).strip()
-        diff = FIT.diff_architecture(ROOT, base_sha=ADOPTION_BASE, head_sha=head)
-        self.assertTrue(diff.baseline_introduced)
-        self.assertEqual(diff.base_sha, ADOPTION_BASE)
-        self.assertEqual(diff.head_sha, head)
-        self.assertIn(("node", "NODE-LOCAL-ROUTE-POLICY", "added"), {
-            (change.kind, change.id, change.change) for change in diff.changes
-        })
+        repo, frozen_base, head = self._bootstrap_repo()
+        with patch.object(DIFF, "ADOPTION_BASE_SHA", frozen_base):
+            diff = FIT.diff_architecture(repo.root, base_sha=frozen_base, head_sha=head)
+            self.assertTrue(diff.baseline_introduced)
+            self.assertEqual(diff.base_sha, frozen_base)
+            self.assertEqual(diff.head_sha, head)
+            self.assertIn(("node", "NODE-A", "added"), {
+                (change.kind, change.id, change.change) for change in diff.changes
+            })
 
         repo = GitArchitectureRepo(self)
         repo.write_text("README.md", "before architecture\n")
@@ -378,12 +384,12 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertIn("architecture", report.required_scopes)
 
     def test_all_mandatory_categories_emit_typed_applicability(self) -> None:
-        head = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, encoding="utf-8"
-        ).strip()
-        diff = FIT.diff_architecture(ROOT, base_sha=ADOPTION_BASE, head_sha=head)
+        repo, base = self._repo()
+        repo.write_text("README.md", "head\n")
+        head = repo.commit("head")
+        diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
         report = FIT.evaluate_fitness(
-            ROOT,
+            repo.root,
             diff._head_state.snapshot,
             diff,
             diff.changed_paths,
@@ -412,7 +418,9 @@ class ArchitectureFitnessTests(unittest.TestCase):
             if result.status == "not_applicable":
                 self.assertTrue(result.applicability.reason_code)
                 self.assertIsInstance(result.applicability.scanned_scope, tuple)
-        self.assertEqual(self._results(report)["governance_promotion"].status, "pass")
+        governance = self._results(report)["governance_promotion"]
+        self.assertEqual(governance.status, "not_applicable")
+        self.assertEqual(governance.applicability.reason_code, "governance_paths_unchanged")
 
     def test_model_rule_categories_fail_on_real_semantic_violations(self) -> None:
         cases = []
@@ -4794,18 +4802,18 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertIn("architecture", report.required_scopes)
 
     def test_evidence_core_and_digest_are_deterministic(self) -> None:
-        head = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, encoding="utf-8"
-        ).strip()
+        repo, base = self._repo()
+        repo.write_text("README.md", "head\n")
+        head = repo.commit("head")
         first = FIT.architecture_evidence(
-            ROOT, base_sha=ADOPTION_BASE, head_sha=head, pre_risk="yellow"
+            repo.root, base_sha=base, head_sha=head, pre_risk="yellow"
         )
         second = FIT.architecture_evidence(
-            ROOT, base_sha=ADOPTION_BASE, head_sha=head, pre_risk="yellow"
+            repo.root, base_sha=base, head_sha=head, pre_risk="yellow"
         )
         self.assertEqual(first, second)
         self.assertEqual(first["architecture_contract_version"], 1)
-        self.assertEqual(first["exact_base_sha"], ADOPTION_BASE)
+        self.assertEqual(first["exact_base_sha"], base)
         self.assertEqual(first["exact_head_sha"], head)
         self.assertRegex(first["architecture_evidence_digest"], r"^[0-9a-f]{64}$")
         self.assertNotIn("timestamp", first)
@@ -4911,7 +4919,7 @@ class ArchitectureFitnessTests(unittest.TestCase):
             self.assertEqual(outside_file.read_text(encoding="utf-8"), "outside\n")
 
     def test_architecture_cli_invalid_model_is_nonzero_and_bootstrap_is_explicit(self) -> None:
-        repo, _base = self._repo()
+        repo, base = self._repo()
         repo.write_text("architecture/system.yaml", "{}\n")
         invalid = subprocess.run(
             [sys.executable, str(ROOT / "scripts/grok_architecture.py"), "--root", str(repo.root), "validate", "--json"],
@@ -4920,15 +4928,23 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertNotEqual(invalid.returncode, 0)
         self.assertFalse(json.loads(invalid.stdout)["ok"])
 
-        head = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, encoding="utf-8"
-        ).strip()
-        bootstrap = subprocess.run(
-            [sys.executable, str(ROOT / "scripts/grok_architecture.py"), "--root", str(ROOT), "diff", "--base", ADOPTION_BASE, "--head", head, "--json"],
+        unavailable = subprocess.run(
+            [sys.executable, str(ROOT / "scripts/grok_architecture.py"), "--root", str(repo.root), "diff", "--base", "f" * 40, "--head", base, "--json"],
             cwd=ROOT, text=True, capture_output=True, check=False,
         )
-        self.assertEqual(bootstrap.returncode, 0, bootstrap.stderr)
-        self.assertTrue(json.loads(bootstrap.stdout)["baseline_introduced"])
+        self.assertNotEqual(unavailable.returncode, 0)
+        self.assertIn("not an available commit object", unavailable.stdout + unavailable.stderr)
+
+        bootstrap_repo, frozen_base, adopted = self._bootstrap_repo()
+        with patch.object(DIFF, "ADOPTION_BASE_SHA", frozen_base):
+            bootstrap = FIT.diff_architecture(
+                bootstrap_repo.root,
+                base_sha=frozen_base,
+                head_sha=adopted,
+            )
+        self.assertTrue(bootstrap.baseline_introduced)
+        self.assertEqual(bootstrap.base_sha, frozen_base)
+        self.assertEqual(bootstrap.head_sha, adopted)
 
     def test_exact_cli_diff_and_fitness_ignore_mutable_worktree_models(self) -> None:
         repo, base = self._repo()

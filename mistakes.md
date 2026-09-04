@@ -551,3 +551,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** `tests/test_structure.py` imported third-party `jsonschema` even though the root test environment did not declare it, so host verification masked the import failure in the exact pinned Trust CI runner.
 **Prevention:** Keep root tests dependency-free where practical and verify import/dependency parity in the exact pinned runner before push.
+
+## 2026-09-04 — Bound release regressions to incidental local Git history
+
+**Root cause:** Historical architecture tests assumed old Git objects remained reachable after a single-branch squash clone, while the published-package test incorrectly compared the immutable release artifact with mutable documentation HEAD.
+**Prevention:** Carry digest-verified historical inputs as text fixtures, build synthetic Git histories for selector tests, and verify published artifacts against their tag-bound release record.

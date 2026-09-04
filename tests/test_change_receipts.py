@@ -8,11 +8,13 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / '.grok-stack'))
 
 from adaptive_grok.change import start_change, transition
+from adaptive_grok import architecture_diff as ARCHITECTURE_DIFF
 from adaptive_grok.architecture import architecture_fingerprint, contract_inventory, load_architecture
 from adaptive_grok.architecture_diagrams import render_diagrams
 from adaptive_grok.architecture_diff import (
@@ -41,11 +43,6 @@ _PASSING_UNITTEST = (
     '    def test_ok(self) -> None:\n'
     '        self.assertTrue(True)\n'
 )
-
-_ADOPTION_BASE = '25bfbe59ea188d9687b20a9caad19e7db3d031f8'
-_PRE_ADOPTION_ROUTE_BASE = '069fe8226addb8a1922dde3db4e753434baa3a3d'
-_ALTERNATE_PRE_ADOPTION_ROUTE_BASE = 'd17e95d9a99db2495c81f66053f0eebc7ae47d8d'
-
 
 class ChangeTests(unittest.TestCase):
     def test_start_requires_route(self) -> None:
@@ -182,6 +179,54 @@ class ReceiptTests(unittest.TestCase):
         for name, artifact in render_diagrams(load_architecture(root)).items():
             (generated / f'{name}.mmd').write_text(artifact, encoding='utf-8')
         return base
+
+    @staticmethod
+    def _frozen_adoption_history(root: Path) -> tuple[str, str, str]:
+        subprocess.run(['git', 'init', '-q', '-b', 'main'], cwd=root, check=True)
+        subprocess.run(['git', 'config', 'user.name', 'Test'], cwd=root, check=True)
+        subprocess.run(
+            ['git', 'config', 'user.email', 'test@example.com'], cwd=root, check=True
+        )
+        schemas = root / 'schemas'
+        schemas.mkdir()
+        for name in ('architecture-system.schema.json', 'architecture-rules.schema.json'):
+            shutil.copy2(ROOT / 'schemas' / name, schemas / name)
+        (root / 'route-base.txt').write_text('route base\n', encoding='utf-8')
+        subprocess.run(['git', 'add', '-A'], cwd=root, check=True)
+        subprocess.run(['git', 'commit', '-qm', 'route pre-adoption base'], cwd=root, check=True)
+        route_base = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+        ).strip()
+        (root / 'alternate-base.txt').write_text('alternate route base\n', encoding='utf-8')
+        subprocess.run(['git', 'add', '-A'], cwd=root, check=True)
+        subprocess.run(['git', 'commit', '-qm', 'alternate pre-adoption base'], cwd=root, check=True)
+        alternate_route_base = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+        ).strip()
+        (root / 'frozen-base.txt').write_text('frozen adoption base\n', encoding='utf-8')
+        subprocess.run(['git', 'add', '-A'], cwd=root, check=True)
+        subprocess.run(['git', 'commit', '-qm', 'frozen pre-adoption base'], cwd=root, check=True)
+        frozen_base = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=root, text=True, encoding='utf-8'
+        ).strip()
+
+        architecture = root / 'architecture'
+        architecture.mkdir()
+        (architecture / 'system.yaml').write_text(
+            json.dumps(_system(), sort_keys=True, indent=2) + '\n', encoding='utf-8'
+        )
+        (architecture / 'rules.yaml').write_text(
+            json.dumps(_rules(), sort_keys=True, indent=2) + '\n', encoding='utf-8'
+        )
+        (architecture / 'adoption.json').write_text(
+            '{\n  "architecture_id": "ARCH-TEST",\n  "schema_version": 1,\n  "state": "adopted"\n}\n',
+            encoding='utf-8',
+        )
+        generated = architecture / 'generated'
+        generated.mkdir()
+        for name, artifact in render_diagrams(load_architecture(root)).items():
+            (generated / f'{name}.mmd').write_text(artifact, encoding='utf-8')
+        return route_base, alternate_route_base, frozen_base
 
     def test_receipt_binds_active_spec_and_declared_criteria(self) -> None:
         with project_copy(git=True) as root:
@@ -357,38 +402,45 @@ class ReceiptTests(unittest.TestCase):
             )
 
     def test_pre_adoption_route_base_uses_one_architecture_comparison_base(self) -> None:
-        route = {'base_commit': _PRE_ADOPTION_ROUTE_BASE}
-        binding = active_architecture_binding(ROOT, route)
-        self.assertIsNotNone(binding)
-        assert binding is not None
+        with tempfile.TemporaryDirectory(prefix='adaptive-grok-frozen-receipt-') as tmp:
+            root = Path(tmp)
+            route_base, _alternate, frozen_base = self._frozen_adoption_history(root)
+            route = {'base_commit': route_base}
+            with patch.object(ARCHITECTURE_DIFF, 'ADOPTION_BASE_SHA', frozen_base):
+                selection = select_architecture_comparison_base(root, route)
+                binding = active_architecture_binding(root, route)
+                self.assertIsNotNone(binding)
+                assert binding is not None
+                result, evidence = _architecture_check(root, route)
 
-        result, evidence = _architecture_check(ROOT, route)
-        self.assertEqual(binding['architecture_base_sha'], _ADOPTION_BASE)
-        self.assertEqual(evidence['exact_base_sha'], _ADOPTION_BASE)
-        self.assertEqual(evidence['architecture_fingerprint'], binding['architecture_fingerprint'])
-        self.assertEqual(binding['architecture_route_base_sha'], _PRE_ADOPTION_ROUTE_BASE)
-        self.assertEqual(binding['architecture_base_kind'], 'frozen_adoption')
-        self.assertEqual(
-            evidence['architecture_base_kind'], binding['architecture_base_kind']
-        )
-        self.assertTrue(binding['architecture_bootstrap_baseline'])
-        self.assertEqual(
-            evidence['architecture_bootstrap_baseline'],
-            binding['architecture_bootstrap_baseline'],
-        )
-        self.assertTrue(evidence['baseline_introduced'])
+            self.assertEqual(selection.comparison_base_sha, frozen_base)
+            self.assertEqual(selection.route_base_sha, route_base)
+            self.assertEqual(selection.base_kind, 'frozen_adoption')
+            self.assertEqual(binding['architecture_base_sha'], selection.comparison_base_sha)
+            self.assertEqual(evidence['exact_base_sha'], selection.comparison_base_sha)
+            self.assertEqual(evidence['architecture_fingerprint'], binding['architecture_fingerprint'])
+            self.assertEqual(binding['architecture_route_base_sha'], selection.route_base_sha)
+            self.assertEqual(binding['architecture_base_kind'], selection.base_kind)
+            self.assertEqual(evidence['architecture_base_kind'], selection.base_kind)
+            self.assertTrue(selection.bootstrap_baseline)
+            self.assertTrue(binding['architecture_bootstrap_baseline'])
+            self.assertEqual(
+                evidence['architecture_bootstrap_baseline'],
+                binding['architecture_bootstrap_baseline'],
+            )
+            self.assertTrue(evidence['baseline_introduced'])
 
-        snapshot = load_architecture(ROOT)
-        records = contract_inventory(ROOT, snapshot)
-        expected_fingerprint = architecture_fingerprint(
-            ROOT,
-            snapshot,
-            base_sha=_ADOPTION_BASE,
-            head_sha=f"worktree:{binding['architecture_head_commit']}",
-            contract_digests={record.path: record.digest for record in records},
-        )
-        self.assertEqual(binding['architecture_fingerprint'], expected_fingerprint)
-        self.assertRegex(evidence['architecture_evidence_digest'], r'^[0-9a-f]{64}$')
+            snapshot = load_architecture(root)
+            records = contract_inventory(root, snapshot)
+            expected_fingerprint = architecture_fingerprint(
+                root,
+                snapshot,
+                base_sha=selection.comparison_base_sha,
+                head_sha=f"worktree:{binding['architecture_head_commit']}",
+                contract_digests={record.path: record.digest for record in records},
+            )
+            self.assertEqual(binding['architecture_fingerprint'], expected_fingerprint)
+            self.assertRegex(evidence['architecture_evidence_digest'], r'^[0-9a-f]{64}$')
 
     def test_unrelated_consumer_bootstrap_is_explicit_and_end_to_end(self) -> None:
         with tempfile.TemporaryDirectory(prefix='adaptive-grok-consumer-bootstrap-') as tmp:
@@ -402,7 +454,7 @@ class ReceiptTests(unittest.TestCase):
             set_active_route(root, route)
             self.assertNotEqual(
                 subprocess.run(
-                    ['git', 'cat-file', '-e', _ADOPTION_BASE + '^{commit}'],
+                    ['git', 'cat-file', '-e', ARCHITECTURE_DIFF.ADOPTION_BASE_SHA + '^{commit}'],
                     cwd=root,
                     check=False,
                     stdout=subprocess.DEVNULL,
@@ -460,70 +512,48 @@ class ReceiptTests(unittest.TestCase):
 
     def test_route_base_remains_a_separate_architecture_staleness_binding(self) -> None:
         with tempfile.TemporaryDirectory(prefix='adaptive-grok-receipt-base-') as tmp:
-            root = Path(tmp) / 'project'
-            git_config = Path(tmp) / 'gitconfig'
-            isolated_environment = {
-                'PATH': os.environ.get('PATH', '/usr/local/bin:/usr/bin:/bin'),
-                'HOME': tmp,
-                'LANG': 'C',
-                'LC_ALL': 'C',
-                'GIT_CONFIG_NOSYSTEM': '1',
-                'GIT_CONFIG_GLOBAL': os.devnull,
-                'GIT_TERMINAL_PROMPT': '0',
-            }
-            subprocess.run(
-                [
-                    'git', 'config', '--file', str(git_config), '--add',
-                    'safe.directory', str(ROOT / '.git'),
-                ],
-                check=True,
-                env=isolated_environment,
-            )
-            clone_environment = {
-                **isolated_environment,
-                'GIT_CONFIG_GLOBAL': str(git_config),
-            }
-            subprocess.run(
-                ['git', 'clone', '-q', '--no-local', str(ROOT), str(root)],
-                check=True,
-                env=clone_environment,
-            )
+            root = Path(tmp)
+            route_base, alternate_route_base, frozen_base = self._frozen_adoption_history(root)
             route = {
-                'base_commit': _PRE_ADOPTION_ROUTE_BASE,
+                'base_commit': route_base,
                 'required_evidence': ['verification'],
                 'route_id': 'receipt-base-regression',
             }
             set_active_route(root, route)
-            receipt = json.loads(
-                write_receipt(root, 'verification', 'pass').read_text(encoding='utf-8')
-            )
-            result, evidence = _architecture_check(root, route)
+            with patch.object(ARCHITECTURE_DIFF, 'ADOPTION_BASE_SHA', frozen_base):
+                selection = select_architecture_comparison_base(root, route)
+                receipt = json.loads(
+                    write_receipt(root, 'verification', 'pass').read_text(encoding='utf-8')
+                )
+                result, evidence = _architecture_check(root, route)
             self.assertEqual(result.name, 'architecture')
             self.assertTrue(evidence['configured'])
-            self.assertEqual(evidence['exact_base_sha'], _ADOPTION_BASE)
+            self.assertEqual(evidence['exact_base_sha'], selection.comparison_base_sha)
             self.assertEqual(
-                evidence['architecture_route_base_sha'], _PRE_ADOPTION_ROUTE_BASE
+                evidence['architecture_route_base_sha'], selection.route_base_sha
             )
-            self.assertEqual(receipt['architecture_base_sha'], _ADOPTION_BASE)
+            self.assertEqual(receipt['architecture_base_sha'], selection.comparison_base_sha)
             self.assertEqual(receipt['architecture_base_sha'], evidence['exact_base_sha'])
             self.assertEqual(
                 receipt['architecture_fingerprint'], evidence['architecture_fingerprint']
             )
-            self.assertEqual(receipt['architecture_route_base_sha'], _PRE_ADOPTION_ROUTE_BASE)
+            self.assertEqual(receipt['architecture_route_base_sha'], selection.route_base_sha)
 
-            route['base_commit'] = _ALTERNATE_PRE_ADOPTION_ROUTE_BASE
+            route['base_commit'] = alternate_route_base
             set_active_route(root, route)
-            current = active_architecture_binding(root, route)
+            with patch.object(ARCHITECTURE_DIFF, 'ADOPTION_BASE_SHA', frozen_base):
+                current = active_architecture_binding(root, route)
+                gaps = validate_evidence(root, route)
             self.assertIsNotNone(current)
             assert current is not None
-            self.assertEqual(current['architecture_base_sha'], _ADOPTION_BASE)
+            self.assertEqual(current['architecture_base_sha'], frozen_base)
             self.assertEqual(
                 current['architecture_fingerprint'], receipt['architecture_fingerprint']
             )
             self.assertTrue(
                 any(
                     'architecture binding stale' in gap
-                    for gap in validate_evidence(root, route)
+                    for gap in gaps
                 )
             )
 

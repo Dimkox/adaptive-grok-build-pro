@@ -80,58 +80,79 @@ class StructureTests(unittest.TestCase):
         )
 
     def test_frozen_m2_handoff_digests_match_canonical_summary(self) -> None:
-        base = '635c9ddf2d63c1ea823074106976a8f3de6299a9'
-        with tempfile.TemporaryDirectory(prefix='adaptive-grok-frozen-m2-') as tmp:
-            archive = subprocess.Popen(
-                ['git', 'archive', base],
-                cwd=ROOT,
-                stdout=subprocess.PIPE,
+        frozen = ROOT / 'tests/fixtures/frozen-m2-635c9dd'
+        manifest = json.loads((frozen / 'manifest.json').read_text(encoding='utf-8'))
+        self.assertEqual(
+            set(manifest),
+            {'schema_version', 'source_commit', 'files', 'summary_digests'},
+        )
+        self.assertEqual(manifest['schema_version'], 1)
+        self.assertEqual(
+            manifest['source_commit'],
+            '635c9ddf2d63c1ea823074106976a8f3de6299a9',
+        )
+        expected_paths = {
+            'architecture/adoption.json',
+            'architecture/rules.yaml',
+            'architecture/system.yaml',
+            'schemas/architecture-rules.schema.json',
+            'schemas/architecture-system.schema.json',
+            'engineering/contracts/openapi/trust-ci.v1.json',
+            'engineering/contracts/schemas/github-pull-request-projection.v1.json',
+            'engineering/contracts/schemas/trust-ci-approval-envelope.v1.json',
+            'engineering/contracts/schemas/trust-ci-attestation-envelope.v1.json',
+        }
+        records = manifest['files']
+        self.assertIsInstance(records, list)
+        self.assertEqual([record['path'] for record in records], sorted(expected_paths))
+        for record in records:
+            self.assertEqual(set(record), {'path', 'sha256', 'git_blob_id'})
+            relative = record['path']
+            path = Path(relative)
+            self.assertFalse(path.is_absolute())
+            self.assertNotIn('..', path.parts)
+            raw = (frozen / path).read_bytes()
+            self.assertEqual(hashlib.sha256(raw).hexdigest(), record['sha256'], relative)
+            git_blob = b'blob ' + str(len(raw)).encode('ascii') + b'\0' + raw
+            self.assertEqual(
+                hashlib.sha1(git_blob, usedforsecurity=False).hexdigest(),
+                record['git_blob_id'],
+                relative,
             )
-            extracted = subprocess.run(
-                ['tar', '-x', '-C', tmp],
-                stdin=archive.stdout,
-                check=True,
-            )
-            self.assertEqual(extracted.returncode, 0)
-            assert archive.stdout is not None
-            archive.stdout.close()
-            self.assertEqual(archive.wait(), 0)
-            result = subprocess.run(
-                [
-                    'python3',
-                    'scripts/grok_architecture.py',
-                    '--root',
-                    tmp,
-                    'summary',
-                    '--json',
-                ],
-                cwd=ROOT,
-                text=True,
-                capture_output=True,
-                check=True,
-            )
-        summary = json.loads(result.stdout)
-        requirements = subprocess.check_output(
+
+        expected_digests = manifest['summary_digests']
+        self.assertEqual(
+            set(expected_digests),
+            {
+                'architecture_digest',
+                'system_digest',
+                'rules_digest',
+                'schema_digest',
+                'contract_inventory_digest',
+            },
+        )
+        self.assertTrue(
+            all(re.fullmatch(r'[0-9a-f]{64}', value) for value in expected_digests.values())
+        )
+        result = subprocess.run(
             [
-                'git',
-                'show',
-                f'{base}:engineering/changes/20260826-m2-executable-architecture-015603/requirements.md',
+                sys.executable,
+                str(ROOT / 'scripts/grok_architecture.py'),
+                '--root',
+                str(frozen),
+                'summary',
+                '--json',
             ],
             cwd=ROOT,
             text=True,
-            encoding='utf-8',
+            capture_output=True,
+            check=True,
         )
-        labels = {
-            'architecture_digest': 'Composite architecture digest',
-            'system_digest': 'System digest',
-            'rules_digest': 'Rules digest',
-            'schema_digest': 'Composite schema digest',
-            'contract_inventory_digest': 'Contract inventory digest',
-        }
-        for field, label in labels.items():
-            matches = re.findall(rf'^- {re.escape(label)}: `([0-9a-f]{{64}})`\.$', requirements, re.M)
-            self.assertEqual(len(matches), 1, label)
-            self.assertEqual(matches[0], summary[field], label)
+        summary = json.loads(result.stdout)
+        self.assertEqual(
+            {field: summary[field] for field in expected_digests},
+            expected_digests,
+        )
 
     def test_core_product_files_exist(self) -> None:
         required = (
