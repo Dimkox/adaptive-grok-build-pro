@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Iterable
 
 from .brokers import ProposalBroker
-from .contracts import TaskIntakeV1, canonical_digest
+from .contracts import HEX64, TaskIntakeV1, canonical_digest
 from .execution_contracts import (
     ExecutionContractError,
     ExecutionSelectionV1,
@@ -15,11 +15,24 @@ from .execution_contracts import (
 )
 from .models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskStatus
 from .protocol import CanonicalEvent
+from .semantic_adjudication import adjudicate
+from .semantic_bridge import SemanticValidationInputsV1, build_semantic_subject
+from .semantic_contracts import (
+    MAX_ITEMS,
+    SemanticCoverageV1,
+    SemanticFindingV1,
+    SemanticSubjectV1,
+    ValidatorIdentityV1,
+)
+from .semantic_repair import (
+    RepairChildTaskBindingV1,
+    RepairLifecycleResult,
+    SemanticRepairRequestV1,
+)
 from .workspace import (
     ArtifactAttestationRequest,
     ArtifactAttestationV1,
     WorkspaceError,
-    WorkspaceSnapshotUnavailable,
     WorkspaceSnapshotV1,
 )
 from .store import FenceError, StoreUnavailable
@@ -35,6 +48,10 @@ class SnapshotBrokerUnavailable(RuntimeError):
 
 class SnapshotBrokerIntegrityError(RuntimeError):
     pass
+
+
+REPAIR_CHILD_BROKER_ACTOR_KIND = "repair_broker"
+REPAIR_CHILD_BROKER_ACTOR_ID = "semantic-repair-child-broker"
 
 
 @dataclass(frozen=True)
@@ -60,12 +77,20 @@ class FactoryService:
         artifact_broker=None,
         artifact_attestation_store=None,
         execution_registry=None,
+        semantic_store=None,
+        semantic_validator_store=None,
+        semantic_adjudicator_store=None,
+        repair_child_broker=None,
     ) -> None:
         self.store = store
         self.snapshot_broker = snapshot_broker
         self.artifact_broker = artifact_broker
         self.artifact_attestation_store = artifact_attestation_store
         self.execution_registry = execution_registry
+        self.semantic_store = semantic_store
+        self.semantic_validator_store = semantic_validator_store
+        self.semantic_adjudicator_store = semantic_adjudicator_store
+        self.repair_child_broker = repair_child_broker
 
     def readiness(self):
         return self.store.readiness()
@@ -93,6 +118,24 @@ class FactoryService:
     ):
         intake = TaskIntakeV1.from_dict(payload, now=now) if not isinstance(payload, TaskIntakeV1) else payload
         self._require(actor, "task:submit", intake.repository_id)
+        reserved_broker_identity = (
+            actor.kind == REPAIR_CHILD_BROKER_ACTOR_KIND
+            or actor.actor_id == REPAIR_CHILD_BROKER_ACTOR_ID
+        )
+        if reserved_broker_identity:
+            if (
+                actor.kind != REPAIR_CHILD_BROKER_ACTOR_KIND
+                or actor.actor_id != REPAIR_CHILD_BROKER_ACTOR_ID
+            ):
+                raise AuthorizationError("repair child broker identity is invalid")
+            if (
+                intake.source_type != "api"
+                or intake.source_id != intake.source_digest
+                or HEX64.fullmatch(intake.source_id) is None
+            ):
+                raise AuthorizationError(
+                    "repair child broker intake requires an exact proposal source"
+                )
         return self.store.intake(
             intake, actor, now, correlation_id=correlation_id
         )
@@ -108,6 +151,226 @@ class FactoryService:
         task = self.store.get_task(task_id)
         self._require(actor, "task:read", task.repository_id)
         return self.store.workspace_result(task_id, workspace_result_digest)
+
+    def publish_semantic_subject(
+        self,
+        task_id: str,
+        workspace_result_digest: str,
+        validation_inputs,
+        *,
+        actor: Actor,
+        idempotency_key: str,
+        correlation_id: str | None = None,
+    ):
+        self._require(actor, "semantic:publish")
+        if actor.kind != "operator":
+            raise AuthorizationError("semantic publication requires coordinator actor")
+        task = self.store.get_task(task_id)
+        self._require(actor, "semantic:publish", task.repository_id)
+        if self.semantic_store is None:
+            raise AuthorizationError("semantic coordinator capability unavailable")
+        inputs = (
+            validation_inputs
+            if isinstance(validation_inputs, SemanticValidationInputsV1)
+            else SemanticValidationInputsV1.from_dict(validation_inputs)
+        )
+        if inputs.workspace_result_digest != workspace_result_digest:
+            raise ExecutionContractError("semantic_result_digest_mismatch")
+        material = self.semantic_store.execution_material(
+            task_id, workspace_result_digest
+        )
+        packet = material.get("packet")
+        if not isinstance(packet, TaskPacketV1) or packet.repository_id != task.repository_id:
+            raise ExecutionContractError("semantic_repository_mismatch")
+        record = build_semantic_subject(**material, validation_inputs=inputs)
+        return self.semantic_store.publish_subject(
+            material, record, idempotency_key=idempotency_key
+        )
+
+    def get_semantic_subject(
+        self, task_id: str, subject_digest: str, *, actor: Actor
+    ):
+        self._require(actor, "semantic:read")
+        task = self.store.get_task(task_id)
+        self._require(actor, "semantic:read", task.repository_id)
+        if self.semantic_store is None:
+            raise AuthorizationError("semantic coordinator capability unavailable")
+        return self.semantic_store.subject_by_digest(task_id, subject_digest)
+
+    def create_semantic_assignment(
+        self,
+        task_id: str,
+        subject_digest: str,
+        validator,
+        *,
+        actor: Actor,
+        idempotency_key: str,
+        correlation_id: str | None = None,
+    ):
+        self._require(actor, "semantic:assign")
+        if actor.kind != "operator":
+            raise AuthorizationError("semantic assignment requires coordinator actor")
+        task = self.store.get_task(task_id)
+        self._require(actor, "semantic:assign", task.repository_id)
+        if self.semantic_store is None:
+            raise AuthorizationError("semantic coordinator capability unavailable")
+        record = self.semantic_store.subject_by_digest(task_id, subject_digest)
+        root = getattr(record, "subject", None)
+        if not isinstance(root, SemanticSubjectV1) or root.digest != subject_digest:
+            raise ExecutionContractError("semantic_subject_digest_mismatch")
+        proof = (
+            validator
+            if isinstance(validator, ValidatorIdentityV1)
+            else ValidatorIdentityV1.from_dict(validator)
+        )
+        proof.validate_for(root)
+        return self.semantic_store.create_assignment(
+            root, proof, idempotency_key=idempotency_key
+        )
+
+    def submit_semantic_evidence(
+        self,
+        task_id: str,
+        subject_digest: str,
+        assignment_digest: str,
+        findings,
+        coverage,
+        *,
+        actor: Actor,
+        idempotency_key: str,
+        correlation_id: str | None = None,
+    ):
+        self._require(actor, "semantic:validate")
+        if actor.kind != "validator":
+            raise AuthorizationError("semantic evidence requires validator actor")
+        task = self.store.get_task(task_id)
+        self._require(actor, "semantic:validate", task.repository_id)
+        if self.semantic_validator_store is None:
+            raise AuthorizationError("semantic validator capability unavailable")
+        if not isinstance(findings, (list, tuple)) or len(findings) > MAX_ITEMS:
+            raise ExecutionContractError("semantic_findings_invalid")
+        finding_values = tuple(
+            value
+            if isinstance(value, SemanticFindingV1)
+            else SemanticFindingV1.from_dict(value)
+            for value in findings
+        )
+        coverage_value = (
+            coverage
+            if isinstance(coverage, SemanticCoverageV1)
+            else SemanticCoverageV1.from_dict(coverage)
+        )
+        if (
+            coverage_value.subject_digest != subject_digest
+            or coverage_value.validator.validator_id != actor.actor_id
+            or any(
+                value.subject_digest != subject_digest
+                or value.validator != coverage_value.validator
+                for value in finding_values
+            )
+        ):
+            raise AuthorizationError("semantic evidence identity mismatch")
+        return self.semantic_validator_store.append_evidence(
+            subject_digest,
+            assignment_digest,
+            finding_values,
+            coverage_value,
+            idempotency_key=idempotency_key,
+        )
+
+    def adjudicate_semantic_subject(
+        self,
+        task_id: str,
+        subject_digest: str,
+        *,
+        actor: Actor,
+        idempotency_key: str,
+        correlation_id: str | None = None,
+    ):
+        self._require(actor, "semantic:adjudicate")
+        if actor.kind != "adjudicator":
+            raise AuthorizationError("semantic adjudication requires adjudicator actor")
+        task = self.store.get_task(task_id)
+        self._require(actor, "semantic:adjudicate", task.repository_id)
+        if self.semantic_adjudicator_store is None:
+            raise AuthorizationError("semantic adjudicator capability unavailable")
+        material = self.semantic_adjudicator_store.adjudication_material(
+            task_id, subject_digest
+        )
+        root = material.get("subject")
+        findings = material.get("findings")
+        coverages = material.get("coverages")
+        if (
+            not isinstance(root, SemanticSubjectV1)
+            or root.digest != subject_digest
+            or not isinstance(findings, tuple)
+            or not isinstance(coverages, tuple)
+        ):
+            raise ExecutionContractError("semantic_adjudication_material_mismatch")
+        verdict = adjudicate(root, findings, coverages)
+        return self.semantic_adjudicator_store.append_verdict(
+            material, verdict, idempotency_key=idempotency_key
+        )
+
+    def get_semantic_verdict(
+        self, task_id: str, subject_digest: str, *, actor: Actor
+    ):
+        self._require(actor, "semantic:read")
+        task = self.store.get_task(task_id)
+        self._require(actor, "semantic:read", task.repository_id)
+        if self.semantic_store is None:
+            raise AuthorizationError("semantic coordinator capability unavailable")
+        return self.semantic_store.verdict_by_subject(task_id, subject_digest)
+
+    def request_semantic_repair(
+        self,
+        task_id: str,
+        repair_request,
+        *,
+        actor: Actor,
+        idempotency_key: str,
+        correlation_id: str | None = None,
+    ) -> RepairLifecycleResult:
+        self._require(actor, "semantic:repair")
+        if actor.kind != "operator":
+            raise AuthorizationError("semantic repair requires coordinator actor")
+        task = self.store.get_task(task_id)
+        self._require(actor, "semantic:repair", task.repository_id)
+        if self.semantic_store is None:
+            raise AuthorizationError("semantic coordinator capability unavailable")
+        request = (
+            repair_request
+            if isinstance(repair_request, SemanticRepairRequestV1)
+            else SemanticRepairRequestV1.from_dict(repair_request)
+        )
+        result = self.semantic_store.request_repair(
+            task_id, request, idempotency_key=idempotency_key
+        )
+        if not isinstance(result, RepairLifecycleResult):
+            raise ExecutionContractError("semantic_repair_result_invalid")
+        if result.decision == "repair":
+            if result.child_proposal is None:
+                raise ExecutionContractError("semantic_repair_child_missing")
+            if self.repair_child_broker is None:
+                raise ExecutionContractError("repair_child_broker_unavailable")
+            binding_wire = self.repair_child_broker.propose_repair_child(
+                result.child_proposal,
+                idempotency_key=result.child_proposal_digest,
+            )
+            try:
+                binding = (
+                    binding_wire
+                    if isinstance(binding_wire, RepairChildTaskBindingV1)
+                    else RepairChildTaskBindingV1.from_dict(binding_wire)
+                )
+            except (TypeError, ValueError) as exc:
+                raise ExecutionContractError("repair_child_binding_invalid") from exc
+            if binding.child_proposal_digest != result.child_proposal_digest:
+                raise ExecutionContractError("repair_child_binding_mismatch")
+            persisted = self.semantic_store.bind_repair_child(binding)
+            if persisted != binding:
+                raise ExecutionContractError("repair_child_binding_persistence_mismatch")
+        return result
 
     def list_tasks(self, *, repository_id: str, limit: int, cursor: str | None, actor: Actor):
         self._require(actor, "task:list", repository_id)

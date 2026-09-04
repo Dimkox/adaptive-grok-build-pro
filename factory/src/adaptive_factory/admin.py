@@ -130,6 +130,100 @@ def provision_artifact_attestor_login(
         raise BootstrapError("database role boundary validation failed") from exc
 
 
+def _provision_semantic_login(
+    owner_url: str,
+    login: str,
+    password: str,
+    *,
+    role: str,
+    label: str,
+) -> None:
+    if not owner_url or not LOGIN_NAME.fullmatch(login) or not 16 <= len(password) <= 1024:
+        raise BootstrapError(f"bounded owner URL, {label} login and password are required")
+    if role not in {
+        "factory_semantic_coordinator",
+        "factory_semantic_validator",
+        "factory_semantic_adjudicator",
+    }:
+        raise BootstrapError("unknown semantic capability role")
+    import psycopg
+    from psycopg import sql
+
+    with psycopg.connect(owner_url) as connection, connection.transaction(), connection.cursor() as cursor:
+        cursor.execute(
+            """SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
+            rolreplication,rolbypassrls,COALESCE(rolconfig,ARRAY[]::text[])
+            FROM pg_roles WHERE rolname=%s""",
+            (login,),
+        )
+        existing = cursor.fetchone()
+        if existing is None:
+            cursor.execute(
+                sql.SQL(
+                    "CREATE ROLE {} LOGIN NOINHERIT NOSUPERUSER NOCREATEROLE NOCREATEDB PASSWORD {}"
+                ).format(sql.Identifier(login), sql.Literal(password))
+            )
+        elif existing[:7] != (True, False, False, False, False, False, False) \
+                or tuple(existing[7]) != ():
+            raise BootstrapError(f"existing {label} login has unsafe attributes")
+        else:
+            cursor.execute(
+                sql.SQL("ALTER ROLE {} PASSWORD {}").format(
+                    sql.Identifier(login), sql.Literal(password)
+                )
+            )
+        _validate_capability_role(cursor, role, label)
+        for forbidden_role in (
+            "factory_runtime",
+            "factory_artifact_attestor",
+            "factory_semantic_coordinator",
+            "factory_semantic_validator",
+            "factory_semantic_adjudicator",
+        ):
+            if forbidden_role == role:
+                continue
+            cursor.execute("SELECT pg_has_role(%s,%s,'MEMBER')", (login, forbidden_role))
+            if cursor.fetchone()[0]:
+                raise BootstrapError(f"{label} login has unsafe role membership")
+        _grant_and_validate_membership(cursor, login, role, label)
+
+
+def provision_semantic_coordinator_login(
+    owner_url: str, login: str, password: str
+) -> None:
+    _provision_semantic_login(
+        owner_url,
+        login,
+        password,
+        role="factory_semantic_coordinator",
+        label="semantic coordinator",
+    )
+
+
+def provision_semantic_validator_login(
+    owner_url: str, login: str, password: str
+) -> None:
+    _provision_semantic_login(
+        owner_url,
+        login,
+        password,
+        role="factory_semantic_validator",
+        label="semantic validator",
+    )
+
+
+def provision_semantic_adjudicator_login(
+    owner_url: str, login: str, password: str
+) -> None:
+    _provision_semantic_login(
+        owner_url,
+        login,
+        password,
+        role="factory_semantic_adjudicator",
+        label="semantic adjudicator",
+    )
+
+
 def bootstrap_local(
     owner_url: str,
     login: str,

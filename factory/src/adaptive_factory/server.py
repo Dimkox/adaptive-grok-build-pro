@@ -13,7 +13,13 @@ from .migrations import discover_migrations
 from .models import Actor
 from .service import FactoryService
 from .settings import FactorySettings, SettingsError, read_private_file, read_token_file
-from .store import PostgresArtifactAttestationStore, PostgresFactoryStore
+from .store import (
+    PostgresArtifactAttestationStore,
+    PostgresFactoryStore,
+    PostgresSemanticAdjudicatorStore,
+    PostgresSemanticCoordinatorStore,
+    PostgresSemanticValidatorStore,
+)
 
 
 class ServerError(RuntimeError):
@@ -62,7 +68,9 @@ def load_actors(path: Path) -> dict[str, Actor]:
         actor_id = record["actor_id"]
         if not isinstance(actor_id, str) or not TEXT_ID.fullmatch(actor_id):
             raise ServerError("invalid actor identifier")
-        if record["kind"] not in {"client", "worker", "operator"}:
+        if record["kind"] not in {
+            "client", "worker", "operator", "validator", "adjudicator"
+        }:
             raise ServerError("invalid actor kind")
         if not all(isinstance(item, str) and item for item in record["scopes"] + record["repositories"]):
             raise ServerError("invalid actor authorization")
@@ -119,52 +127,67 @@ def build_app(
     artifact_broker=None,
     snapshot_broker=None,
 ):
-    if not settings.execution_enabled:
-        store = PostgresFactoryStore(settings.database_url)
-        _runtime_readiness(store)
-        return create_app(
-            FactoryService(store),
-            Authenticator(load_actors(settings.actors_file)),
-            execution_enabled=False,
-        )
-    if (
-        execution_registry is None
-        or not callable(getattr(execution_registry, "resolve", None))
-        or artifact_broker is None
-        or not callable(getattr(artifact_broker, "attest_artifact", None))
-        or snapshot_broker is None
-        or not callable(getattr(snapshot_broker, "snapshot", None))
-    ):
-        raise ServerError("trusted execution dependencies are unavailable")
     try:
         store = PostgresFactoryStore(settings.database_url)
-        attestation_store = PostgresArtifactAttestationStore(
-            settings.artifact_attestor_database_url
-        )
         runtime_readiness = _runtime_readiness(store)
-        attestor_readiness = attestation_store.readiness()
     except Exception as exc:
         raise ServerError("database capabilities are not ready") from exc
-    runtime_session = runtime_readiness.get("session_user")
-    attestor_session = attestor_readiness.get("session_user")
-    if (
-        attestor_readiness.get("database_role") != "factory_artifact_attestor"
-        or not isinstance(attestor_session, str)
-        or not attestor_session
-        or len(attestor_session) > 63
-        or runtime_session == attestor_session
-    ):
-        raise ServerError("database capabilities are not ready")
+
+    semantic_store = (
+        PostgresSemanticCoordinatorStore(settings.semantic_coordinator_database_url)
+        if settings.semantic_coordinator_database_url else None
+    )
+    semantic_validator_store = (
+        PostgresSemanticValidatorStore(settings.semantic_validator_database_url)
+        if settings.semantic_validator_database_url else None
+    )
+    semantic_adjudicator_store = (
+        PostgresSemanticAdjudicatorStore(settings.semantic_adjudicator_database_url)
+        if settings.semantic_adjudicator_database_url else None
+    )
+
+    attestation_store = None
+    if settings.execution_enabled:
+        if (
+            execution_registry is None
+            or not callable(getattr(execution_registry, "resolve", None))
+            or artifact_broker is None
+            or not callable(getattr(artifact_broker, "attest_artifact", None))
+            or snapshot_broker is None
+            or not callable(getattr(snapshot_broker, "snapshot", None))
+        ):
+            raise ServerError("trusted execution dependencies are unavailable")
+        try:
+            attestation_store = PostgresArtifactAttestationStore(
+                settings.artifact_attestor_database_url
+            )
+            attestor_readiness = attestation_store.readiness()
+        except Exception as exc:
+            raise ServerError("database capabilities are not ready") from exc
+        runtime_session = runtime_readiness.get("session_user")
+        attestor_session = attestor_readiness.get("session_user")
+        if (
+            attestor_readiness.get("database_role") != "factory_artifact_attestor"
+            or not isinstance(attestor_session, str)
+            or not attestor_session
+            or len(attestor_session) > 63
+            or runtime_session == attestor_session
+        ):
+            raise ServerError("database capabilities are not ready")
+
     return create_app(
         FactoryService(
             store,
-            execution_registry=execution_registry,
-            artifact_broker=artifact_broker,
+            execution_registry=execution_registry if settings.execution_enabled else None,
+            artifact_broker=artifact_broker if settings.execution_enabled else None,
             artifact_attestation_store=attestation_store,
-            snapshot_broker=snapshot_broker,
+            snapshot_broker=snapshot_broker if settings.execution_enabled else None,
+            semantic_store=semantic_store,
+            semantic_validator_store=semantic_validator_store,
+            semantic_adjudicator_store=semantic_adjudicator_store,
         ),
         Authenticator(load_actors(settings.actors_file)),
-        execution_enabled=True,
+        execution_enabled=settings.execution_enabled,
     )
 
 

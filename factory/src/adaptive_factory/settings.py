@@ -75,6 +75,9 @@ class FactorySettings:
     actors_file: Path
     artifact_attestor_database_url: str | None = None
     execution_enabled: bool = False
+    semantic_coordinator_database_url: str | None = None
+    semantic_validator_database_url: str | None = None
+    semantic_adjudicator_database_url: str | None = None
 
     @classmethod
     def from_environment(cls) -> "FactorySettings":
@@ -86,6 +89,15 @@ class FactorySettings:
         if execution_flag not in {"true", "false"}:
             raise SettingsError("FACTORY_EXECUTION_ENABLED must be true or false")
         execution_enabled = execution_flag == "true"
+        semantic_coordinator_database_url = os.environ.get(
+            "FACTORY_SEMANTIC_COORDINATOR_DATABASE_URL"
+        ) or None
+        semantic_validator_database_url = os.environ.get(
+            "FACTORY_SEMANTIC_VALIDATOR_DATABASE_URL"
+        ) or None
+        semantic_adjudicator_database_url = os.environ.get(
+            "FACTORY_SEMANTIC_ADJUDICATOR_DATABASE_URL"
+        ) or None
         actors_file = os.environ.get("FACTORY_ACTORS_FILE", "")
         socket_path = Path(os.environ.get("FACTORY_SOCKET_PATH", "/run/adaptive-factory/control.sock"))
         if (
@@ -105,9 +117,12 @@ class FactorySettings:
                 "enabled execution requires a separate artifact attestor database URL"
             )
         return cls(
-            database_url,
-            socket_path,
-            Path(actors_file),
-            artifact_attestor_database_url,
-            execution_enabled,
+            database_url=database_url,
+            socket_path=socket_path,
+            actors_file=Path(actors_file),
+            artifact_attestor_database_url=artifact_attestor_database_url,
+            execution_enabled=execution_enabled,
+            semantic_coordinator_database_url=semantic_coordinator_database_url,
+            semantic_validator_database_url=semantic_validator_database_url,
+            semantic_adjudicator_database_url=semantic_adjudicator_database_url,
         )
