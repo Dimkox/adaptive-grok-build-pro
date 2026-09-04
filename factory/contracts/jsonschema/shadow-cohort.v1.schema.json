@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:m7:shadow-cohort:v1",
+  "title": "Adaptive Factory M7 Shadow Cohort V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "cohort_id",
+    "key",
+    "observation_days",
+    "release_cycle_complete",
+    "baseline_review_seconds",
+    "outcomes"
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "cohort_key": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "repository_id",
+        "change_class",
+        "agent_digest",
+        "validator_digest",
+        "model_digest",
+        "prompt_digest",
+        "policy_digest",
+        "runner_digest",
+        "holdout_digest",
+        "authority_digest"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "repository_id": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/identifier"},
+        "change_class": {
+          "enum": ["ai", "api", "bugfix", "data", "feature", "integration", "release", "security"]
+        },
+        "agent_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"},
+        "validator_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"},
+        "model_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"},
+        "prompt_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"},
+        "policy_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"},
+        "runner_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"},
+        "holdout_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"},
+        "authority_digest": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/digest"}
+      }
+    }
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "cohort_id": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/identifier"},
+    "key": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1#/$defs/cohort_key"},
+    "observation_days": {"type": "integer", "minimum": 0, "maximum": 3650},
+    "release_cycle_complete": {"type": "boolean"},
+    "baseline_review_seconds": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {"type": "integer", "minimum": 1, "maximum": 604800}
+    },
+    "outcomes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {"$ref": "urn:adaptive-factory:m7:shadow-outcome:v1"}
+    }
+  }
+}
