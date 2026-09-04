@@ -6514,6 +6514,11 @@ class PostgresFactoryTests(unittest.TestCase):
             child_source_digest=revoked_authority_parent.child_proposal_digest,
             parent_repair=revoked_authority_parent,
             result_head_sha="e" * 40,
+            limit_overrides={
+                "max_output_bytes": (
+                    revoked_authority_parent.child_proposal.max_output_bytes - 1
+                )
+            },
             intake_only=True,
         )
         revoked_authority_child = self.semantic_repair_fixture(
@@ -6859,7 +6864,7 @@ class PostgresFactoryTests(unittest.TestCase):
         with self.subTest(stage="broker-replay-remains-current"):
             self.assertEqual(
                 (replay.created, replay.task.task_id, replay.task.status),
-                (False, post_child["task"].task_id, TaskStatus.QUEUED),
+                (True, post_child["task"].task_id, TaskStatus.QUEUED),
             )
             self.assertEqual(post_binding.child_task_id, replay.task.task_id)
 

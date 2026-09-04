@@ -1176,7 +1176,7 @@ def main() -> int:
     identity_before = _database_identity(owner_url)
     _require(
         identity_before[1] >= 170_000
-        and tuple(row[0] for row in identity_before[2]) == tuple(range(1, 18)),
+        and tuple(row[0] for row in identity_before[2]) == tuple(range(1, 19)),
         "restart probe requires the complete PostgreSQL 17 schema",
     )
 

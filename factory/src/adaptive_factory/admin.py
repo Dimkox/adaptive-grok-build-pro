@@ -130,6 +130,53 @@ def provision_artifact_attestor_login(
         raise BootstrapError("database role boundary validation failed") from exc
 
 
+def _validate_semantic_capability_role(cursor, role: str, label: str) -> None:
+    cursor.execute(
+        """SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
+        rolreplication,rolbypassrls,COALESCE(rolconfig,ARRAY[]::text[])
+        FROM pg_roles WHERE rolname=%s""",
+        (role,),
+    )
+    capability = cursor.fetchone()
+    if (
+        capability is None
+        or capability[:7] != (False, False, False, False, False, False, False)
+        or tuple(capability[7]) != ()
+    ):
+        raise BootstrapError(f"{label} capability role has unsafe attributes")
+    cursor.execute(
+        """SELECT EXISTS(SELECT 1 FROM pg_auth_members membership
+        JOIN pg_roles member ON member.oid=membership.member
+        WHERE member.rolname=%s)""",
+        (role,),
+    )
+    if cursor.fetchone()[0]:
+        raise BootstrapError(f"{label} capability role has unsafe membership")
+
+
+def _grant_and_validate_semantic_membership(
+    cursor, login: str, role: str, label: str
+) -> None:
+    from psycopg import sql
+
+    cursor.execute(
+        sql.SQL("GRANT {} TO {} WITH ADMIN FALSE, INHERIT FALSE, SET TRUE").format(
+            sql.Identifier(role), sql.Identifier(login)
+        )
+    )
+    cursor.execute(
+        """SELECT parent.rolname,membership.admin_option,
+        membership.inherit_option,membership.set_option
+        FROM pg_auth_members membership
+        JOIN pg_roles parent ON parent.oid=membership.roleid
+        JOIN pg_roles member ON member.oid=membership.member
+        WHERE member.rolname=%s""",
+        (login,),
+    )
+    if cursor.fetchall() != [(role, False, False, True)]:
+        raise BootstrapError(f"{label} login has unsafe role membership")
+
+
 def _provision_semantic_login(
     owner_url: str,
     login: str,
@@ -172,7 +219,7 @@ def _provision_semantic_login(
                     sql.Identifier(login), sql.Literal(password)
                 )
             )
-        _validate_capability_role(cursor, role, label)
+        _validate_semantic_capability_role(cursor, role, label)
         for forbidden_role in (
             "factory_runtime",
             "factory_artifact_attestor",
@@ -185,7 +232,7 @@ def _provision_semantic_login(
             cursor.execute("SELECT pg_has_role(%s,%s,'MEMBER')", (login, forbidden_role))
             if cursor.fetchone()[0]:
                 raise BootstrapError(f"{label} login has unsafe role membership")
-        _grant_and_validate_membership(cursor, login, role, label)
+        _grant_and_validate_semantic_membership(cursor, login, role, label)
 
 
 def provision_semantic_coordinator_login(

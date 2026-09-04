@@ -424,7 +424,7 @@ class MigrationTests(unittest.TestCase):
             tuple((item.version, item.name, item.sha256) for item in migrations[:16]),
             PRE_RECOVERY_MIGRATIONS,
         )
-        execution, canonical, contract, recovery = migrations[-4:]
+        execution, canonical, contract, recovery = migrations[13:17]
         self.assertEqual(execution.name, "014_execution_plane.sql")
         self.assertEqual(
             execution.sha256,
