@@ -1,4 +1,4 @@
-# Tasks — M9 staged delivery on exact M8 f53275d
+# Tasks — M9 staged delivery on corrected exact M8 a937ac8
 
 1. [x] **Source freeze.** Produce a clean source SHA/tree in `ready` package state with integrated M4-M9 code, truthful architecture and handoff documents, and product/runtime version identity `2.0.13`.
 2. [ ] **Dual-clone package.** Rebuild in two private no-local clones with secure umask and return the artifact-child SHA/tree plus ZIP digest; the child delta must contain only the ZIP and SHA-256 sidecar.

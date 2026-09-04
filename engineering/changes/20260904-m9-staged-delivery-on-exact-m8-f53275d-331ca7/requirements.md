@@ -1,4 +1,4 @@
-# Requirements — M9 staged delivery on exact M8 f53275d
+# Requirements — M9 staged delivery on corrected exact M8 a937ac8
 
 > Typed authority: [`change-spec.yaml`](change-spec.yaml). This Markdown explains context and cannot override typed IDs, risk, acceptance criteria, forbidden outcomes, or approval scopes.
 

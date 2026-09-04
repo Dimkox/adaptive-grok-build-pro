@@ -85,7 +85,7 @@ Implemented in-tree:
 
 M0 Live Trust Authority is delivered. Protected `main` requires the App-owned policy-epoch check `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`; repository source, prompts, local receipts and local grants cannot mint or replace it. The original roadmap observation predated that activation and is historical only.
 
-The current local source line integrates M4-M9 through M9 code checkpoint `64b10689ce78a0464a494440f3fa981e18789687` on exact M8 `f53275d5ed84022200419b399c799a995ed91a45`; migrations `001`-`018` are preserved. PR #22 is open but not merged or delivered. Artifact rebuild, exact-head verification, five route-selected reviews, App-owned Trust CI, protected merge, factual M8 cohort/activation, signed M9 input, environment/recovery proof, and human production authority remain separate gates.
+The current local source line integrates M4-M9 through M9 code checkpoint `64b10689ce78a0464a494440f3fa981e18789687` combined with corrected exact M8 `a937ac8d200a4e143c295fabd482b19bc8cc4286`; migrations `001`-`018` are preserved. PR #22 is open but not merged or delivered. Artifact rebuild, exact-head verification, five route-selected reviews, App-owned Trust CI, protected merge, factual M8 cohort/activation, signed M9 input, environment/recovery proof, and human production authority remain separate gates.
 
 PRs #12 and #13 remain stale old-epoch `ACTION_REQUIRED` work whose unique lazy CLI imports/tests and repository-scoped Trust CI profiles are absent from `main`. PR #15's current-epoch `adaptive-trust-ci/verified@06ecf1c875bc` conclusion is `FAILURE` while GitGuardian is `SUCCESS`; its failure cause was not inspected or inferred. Wholesale merge of its obsolete M1-M3 aggregate is superseded, while investor-demo commit `9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b` and packaging hardening remain unique. All three need clean successor extraction; no successor PR is claimed.
 
@@ -112,7 +112,7 @@ PRs #12 and #13 remain stale old-epoch `ACTION_REQUIRED` work whose unique lazy 
 | WIP, cost, and PR flood controls | M4 enforces durable WIP/cost; PR flood remains M7 work | Preserve M4 ceilings and add PR lifecycle bounds only at M7 |
 | Automated PR lifecycle | Integrated M7 shadow source at `00e0e4f9`; no external PR capability | Add runtime and real outcomes before acceptance; human merge remains mandatory |
 | Shadow-mode metrics | Synthetic algorithm evidence only | Measure real quality and human disagreement before autonomy |
-| Earned auto-merge | Integrated M8 evaluation at `f53275d5`; deliberately inactive and capped at L2 | Require an exact-profile 30-real-task cohort plus explicit activation |
+| Earned auto-merge | Corrected integrated M8 evaluation at `a937ac8d`; deliberately inactive and capped at L2 | Require an exact-profile 30-real-task cohort plus explicit activation |
 | Preview/staging/canary delivery | Integrated local-only M9 source at `64b10689`; no operational adapter | Require real signed input, environment and recovery evidence; production remains human-owned |
 
 ## 5. Non-negotiable constraints
@@ -198,7 +198,7 @@ M1 + M2 + M3
 
 Milestones M1, M2, and M3 may be developed in parallel only after M0 has a live proof or an explicitly documented bootstrap exception approved by the user. M4 must consume their stable interfaces rather than inventing replacements.
 
-Current local source is dependency-ordered and integrated through M9: M4 `67dc4ddf` → M5 `85cd4343` → M6 `c6d48ffd` → M7 `00e0e4f9` → M8 `f53275d5` → M9 code `64b10689`. PR #22 is open; it is not merged or delivered. M8 remains inactive pending a factual exact-profile cohort of at least 30 human-accepted tasks. M9 remains local-only pending signed input, an operational environment, exercised recovery, and human production authority. The next local boundary is the exact `2.0.13` artifact plus exact-head verification and five reviews; external acceptance still requires the App-owned check and protected merge.
+Current local source is dependency-ordered and integrated through M9: M4 `67dc4ddf` → M5 `85cd4343` → M6 `c6d48ffd` → M7 `00e0e4f9` → corrected M8 `a937ac8d`, combined with M9 code `64b10689` in the current candidate. PR #22 is open; it is not merged or delivered. M8 remains inactive pending a factual exact-profile cohort of at least 30 human-accepted tasks. M9 remains local-only pending signed input, an operational environment, exercised recovery, and human production authority. The next local boundary is the exact `2.0.13` artifact plus exact-head verification and five reviews; external acceptance still requires the App-owned check and protected merge.
 
 ## 7.1 Exact milestone handoff contracts
 
@@ -907,7 +907,7 @@ security escalation rate
 
 # M8 — Earned and Revocable Low-Risk Autonomy
 
-Current status: M8 earned-autonomy evaluation is integrated at `f53275d5ed84022200419b399c799a995ed91a45` over actual M7 records. Durable currentness, a factual 30-task cohort and activation remain absent; authority is capped at L2 and deterministic L0 demotion remains mandatory.
+Current status: M8 earned-autonomy evaluation is integrated at corrected checkpoint `a937ac8d200a4e143c295fabd482b19bc8cc4286` over actual M7 records. Durable currentness, a factual 30-task cohort and activation remain absent; authority is capped at L2 and deterministic L0 demotion remains mandatory.
 
 ## Objective
 

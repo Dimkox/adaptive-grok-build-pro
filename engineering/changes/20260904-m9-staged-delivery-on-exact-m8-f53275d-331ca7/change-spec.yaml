@@ -29,12 +29,12 @@
   ],
   "objective": {
     "id": "OBJ-001",
-    "statement": "Implement feature M9 AI agent staged delivery and recovery control on exact M8 head f53275d5ed84022200419b399c799a995ed91a45. Add closed signed-artifact metadata, deterministic staged decisions, least-authority recovery, an in-memory dry-run adapter, and canonical M8 producer linkage. Preserve unchanged PostgreSQL migrations 001-018 and security isolation across M4-M8. Repository-local code only; operational actions remain unreachable.",
+    "statement": "Implement feature M9 AI agent staged delivery and recovery control on corrected exact M8 head a937ac8d200a4e143c295fabd482b19bc8cc4286. Add closed signed-artifact metadata, deterministic staged decisions, least-authority recovery, an in-memory dry-run adapter, and canonical M8 producer linkage. Preserve unchanged PostgreSQL migrations 001-018 and security isolation across M4-M8. Repository-local code only; operational actions remain unreachable.",
     "success_metric": "The focused M9 delivery suite and affected structure checks pass on an exact-M8 descendant with migrations 001-018 unchanged and no operational effect surface.",
     "target": "repository_local_dry_run_m9_source_with_human_production_boundary"
   },
   "observability": [
-    {"id":"OBS-001","signal":"closed decision, recovery and evidence records with exact state, reason, input, observation-set, prior-link and effect digests","success":"identical closed inputs produce one deterministic non-production result and one chain append","failure":"binding drift, replay, stale authority, stage skip, duplicate effect, recovery widening or production target"}
+    {"id":"SIG-001","metric":"Deterministic closed delivery, recovery, and evidence records bind exact state, reason, input, observation-set, prior-link, and effect digests.","proves":["OBJ-001"]}
   ],
   "risk": {
     "domains": [

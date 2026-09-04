@@ -30,14 +30,14 @@
     "highest_implemented_milestone": "M9",
     "current_provisional_milestone": "M9",
     "next_roadmap_milestone": null,
-    "next_action": "Commit the truthful M9 documentation and architecture checkpoint, rebuild the 2.0.13 artifact from that exact source in isolated clones, then run exact-head verification and all five route-selected reviews. Local M4-M9 integration is not external acceptance: PR, App-owned Trust CI, protected merge, real M8 cohort/activation, signed M9 inputs, environment proof and production authority remain separate gates.",
+    "next_action": "Rebuild the 2.0.13 artifact from the final ready M9 source in isolated clones, then run exact-head verification and all five route-selected reviews. Local M4-M9 integration is not external acceptance: App-owned Trust CI, protected merge, real M8 cohort/activation, signed M9 inputs, environment proof and production authority remain separate gates.",
     "integrated_stack": {
       "status": "repository_local_source_only",
       "m4_head": "67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4",
       "m5_head": "85cd4343143915ce9342634e7fe81886b6394871",
       "m6_head": "c6d48ffd8594b3baab1a575021452ea5dfa2a98b",
       "m7_head": "00e0e4f9a6f50844bf9e0ffc7139d3283dda889f",
-      "m8_head": "f53275d5ed84022200419b399c799a995ed91a45",
+      "m8_head": "a937ac8d200a4e143c295fabd482b19bc8cc4286",
       "m9_source_head": "64b10689ce78a0464a494440f3fa981e18789687",
       "migrations": "001-018 byte-preserved",
       "production_authorized": false
@@ -356,16 +356,16 @@
       "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
     },
     "M8": {
-      "implementation": {"status": "integrated_local_source", "commit": "f53275d5ed84022200419b399c799a995ed91a45", "evidence": "engineering/changes/20260904-m8-earned-autonomy-on-exact-m7-00e0e4f-3ec8b3", "notes": "M8 earned-autonomy contracts, actual-M7 bridge, one-level L2-capped recommendation and deterministic L0 demotion are integrated on exact M7. Durable acceptance/currentness, factual cohort and activation remain absent."},
-      "review": {"status": "focused_source_evidence_only", "commit": "f53275d5ed84022200419b399c799a995ed91a45", "evidence": [], "notes": "No factual trust profile, 30-real-task cohort, activation or external acceptance exists."},
-      "stack_integration": {"status": "integrated_on_exact_m7_unaccepted", "base_branch": "integration/m8-m7-final-20260904", "pull_request": null, "merge_commit": null},
+      "implementation": {"status": "integrated_local_source", "commit": "a937ac8d200a4e143c295fabd482b19bc8cc4286", "evidence": "engineering/changes/20260904-m8-earned-autonomy-on-exact-m7-00e0e4f-3ec8b3", "notes": "M8 earned-autonomy contracts, actual-M7 bridge, one-level L2-capped recommendation and deterministic L0 demotion are integrated on exact M7. The corrected checkpoint restores the frozen M4 control contract and separates the additive M6 semantic API. Durable acceptance/currentness, factual cohort and activation remain absent."},
+      "review": {"status": "focused_source_evidence_only", "commit": "a937ac8d200a4e143c295fabd482b19bc8cc4286", "evidence": [], "notes": "Focused predecessor-boundary repair evidence passed; no factual trust profile, 30-real-task cohort, activation or external acceptance exists."},
+      "stack_integration": {"status": "integrated_on_exact_m7_unaccepted", "base_branch": "repair/m8-contract-boundary-20260904", "pull_request": null, "merge_commit": null},
       "main_delivery": {"status": "not_delivered", "pull_request": null, "merge_commit": null},
       "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
     },
     "M9": {
       "implementation": {"status": "integrated_local_source_ready_for_artifact", "commit": "64b10689ce78a0464a494440f3fa981e18789687", "evidence": "engineering/changes/20260904-m9-staged-delivery-on-exact-m8-f53275d-331ca7", "notes": "M9 closed delivery records, actual-M8 bridge, deterministic one-step preview/staging/bounded-canary evaluation, sealed in-memory adapter, evidence chain and least-authority recovery are integrated. There is no operational adapter, persistence, real signed input, environment proof or production authority."},
       "review": {"status": "not_started", "commit": null, "evidence": [], "notes": "Full exact-head verification and all five route-selected reviews follow the final tracked documentation and artifact checkpoint."},
-      "stack_integration": {"status": "integrated_on_exact_m8_unaccepted", "base_branch": "integration/m9-m8-final-20260904", "base_commit": "f53275d5ed84022200419b399c799a995ed91a45", "pull_request": 22, "merge_commit": null},
+      "stack_integration": {"status": "integrated_on_exact_m8_unaccepted", "base_branch": "integration/m9-m8-final-20260904", "base_commit": "a937ac8d200a4e143c295fabd482b19bc8cc4286", "pull_request": 22, "merge_commit": null},
       "main_delivery": {"status": "pull_request_open", "pull_request": 22, "merge_commit": null},
       "external_gate": {"status": "not_run", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": null}
     }
@@ -402,9 +402,9 @@
       },
       {
         "route_id": "3ec8b3357363",
-        "branch": "integration/m8-m7-final-20260904",
-        "head": "f53275d5ed84022200419b399c799a995ed91a45",
-        "purpose": "M8 source integrated on exact M7; factual cohort, durable currentness and activation remain absent."
+        "branch": "repair/m8-contract-boundary-20260904",
+        "head": "a937ac8d200a4e143c295fabd482b19bc8cc4286",
+        "purpose": "Corrected M8 source integrated on exact M7 with frozen predecessor contracts restored; factual cohort, durable currentness and activation remain absent."
       },
       {
         "route_id": "331ca7021cc0",

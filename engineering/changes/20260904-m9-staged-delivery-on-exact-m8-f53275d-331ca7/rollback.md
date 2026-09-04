@@ -1,4 +1,4 @@
-# Rollback plan — M9 staged delivery on exact M8 f53275d
+# Rollback plan — M9 staged delivery on corrected exact M8 a937ac8
 
 ## Trigger conditions
 
@@ -6,7 +6,7 @@ Rollback or forward-fix if M9 duplicates M8 authority, permits caller eligibilit
 
 ## Application rollback
 
-Before publication, revert the add-only M9 package, tests, architecture, and handoff documentation. Exact M8 `f53275d5ed84022200419b399c799a995ed91a45` remains the intact predecessor.
+Before publication, revert the add-only M9 package, tests, architecture, and handoff documentation. Corrected exact M8 `a937ac8d200a4e143c295fabd482b19bc8cc4286` remains the intact predecessor.
 
 ## Data recovery / forward-fix
 

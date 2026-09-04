@@ -521,3 +521,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** Contract fitness rechecked every unchanged contract after any contract change, so unrelated historical schemas with unsupported constructs could poison an otherwise bounded delta.
 **Prevention:** Recheck only directly changed contracts and the bounded transitive reverse-`$ref` closure, with regressions for both true dependents and unrelated contracts.
+
+## 2026-09-04 — Bound a stacked route to the delivery-comparison base
+
+**Root cause:** The M9 route stored protected `main` as `base_commit` while its fingerprint and implementation scope were bound to the exact M8 predecessor, conflating PR-target comparison with stacked architecture fitness.
+**Prevention:** Bind stacked route commit and fingerprint to the corrected exact predecessor, and keep the independent protected-main diff as a separate verifier check.
