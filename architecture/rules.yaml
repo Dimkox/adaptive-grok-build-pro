@@ -543,6 +543,36 @@
       "source_prefixes": [
         "delivery/src/adaptive_delivery"
       ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.brokers",
+        "adaptive_factory.migrations",
+        "adaptive_factory.service",
+        "adaptive_factory.store",
+        "adaptive_trust_ci",
+        "trust_ci",
+        "celery",
+        "httpx",
+        "psycopg",
+        "requests",
+        "rq",
+        "socket",
+        "urllib"
+      ],
+      "id": "FIT-FACTORY-LANDING-DOGFOOD-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/landing_artifact.py",
+        "factory/src/adaptive_factory/landing_contracts.py",
+        "factory/src/adaptive_factory/landing_coordinator.py",
+        "factory/src/adaptive_factory/landing_evaluation.py",
+        "factory/src/adaptive_factory/landing_intake.py",
+        "factory/src/adaptive_factory/landing_provider.py",
+        "factory/src/adaptive_factory/landing_renderer.py",
+        "factory/src/adaptive_factory/landing_service.py"
+      ]
     }
   ],
   "risk_escalations": [
@@ -612,6 +642,7 @@
         "DATA-JOB-STATE",
         "DATA-FACTORY-AUDIT",
         "DATA-FACTORY-INTENT",
+        "DATA-FACTORY-LANDING-INPUT",
         "DATA-FACTORY-STATE",
         "DATA-TRUST-MATERIAL"
       ],

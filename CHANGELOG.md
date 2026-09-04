@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.0.14 — 2026-09-04
+
+Local unpublished source candidate for the offline L5 multimodal landing dogfood vertical.
+
+- Adds six closed landing records, bounded private text/audio/image/PDF/DOCX intake, a fixed command-provider boundary with an unavailable default and sealed fixture, exact-SHA deterministic rendering/evaluation with a three-attempt ceiling, and a deterministic 19-member site artifact
+- Adds four authenticated local landing operations with a route-specific bounded streaming body path; the existing 1 MiB JSON limit and all M0-M9 contracts/migrations remain unchanged
+- Adds only a transport-free `UnavailableLandingPublisher`; no operational provider, network path, credentials, target mutation, live/indexed result, hosting action, or production authority is present
+- Published `v2.0.13` and its ZIP remain immutable. The `2.0.14` product ZIP is intentionally absent from source-freeze `F` and is built only after exact-source verification/review and the ready-state checkpoint
+
 ## 2.0.13 — 2026-09-02
 
 Published M4-M9 repository product release.

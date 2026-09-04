@@ -2,9 +2,9 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-04T08:33:19Z",
+  "observed_at": "2026-09-04T12:14:39Z",
   "observed_main_sha": "8599d45f4f28285381b05a53feb3059de92eb2a8",
-  "product_version": "2.0.13",
+  "product_version": "2.0.14",
   "latest_published_release": "v2.0.13",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
@@ -31,6 +31,18 @@
     },
     "notes": "The artifact is bound to v2.0.13 and is not rebuilt for later documentation-only commits. Repository delivery does not establish M8 activation or an operational M9 deployment."
   },
+  "local_candidate": {
+    "version": "2.0.14",
+    "status": "source_verifying",
+    "route_id": "9f67efd2575c",
+    "branch": "feature/l5-multimodal-landing-factory",
+    "change_package": "engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef",
+    "source_base": "b10a5c474883e30dcaf781d104cbb804f031b52f",
+    "artifact_status": "not_built",
+    "published": false,
+    "external_effect": false,
+    "notes": "The offline L5 landing dogfood source is integrated for exact-head verification. It has an unavailable default provider and publisher, no operational provider or hosting authority, and no 2.0.14 product ZIP yet."
+  },
   "delivered_non_milestone_work": [
     {
       "name": "SEO landing side project",
@@ -42,15 +54,15 @@
     }
   ],
   "active_delivery": {
-    "route_id": "331ca7021cc0",
-    "branch": "integration/m9-m8-final-20260904",
-    "pull_request": 22,
-    "change_package": "engineering/changes/20260904-m9-staged-delivery-on-exact-m8-f53275d-331ca7",
-    "status": "v2.0.13_published_to_main",
+    "route_id": "9f67efd2575c",
+    "branch": "feature/l5-multimodal-landing-factory",
+    "pull_request": null,
+    "change_package": "engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef",
+    "status": "local_2.0.14_source_verifying",
     "highest_implemented_milestone": "M9",
-    "current_provisional_milestone": null,
+    "current_provisional_milestone": "L5 multimodal landing dogfood",
     "next_roadmap_milestone": null,
-    "next_action": "Collect the factual M8 30-task human-accepted cohort and explicit activation, then qualify M9 with real signed input, an operational environment/provider deployment, exercised recovery and human production authority. Do not rebuild the tag-bound v2.0.13 artifact for documentation-only successors.",
+    "next_action": "Run the single exact-source verification and four route-selected reviews for source-freeze F, record the state-only ready child R, then build the 2.0.14 package twice from exact R before the artifact-bound final gate wave. No push, publication, provider call, target mutation, hosting action, or production effect is authorized.",
     "integrated_stack": {
       "status": "delivered_to_main",
       "m4_head": "67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4",
@@ -462,6 +474,14 @@
         "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8",
         "current_candidate_identity": "v2.0.13",
         "purpose": "Published M9 release head; real signed environment/provider deployment and production authority remain absent."
+      },
+      {
+        "route_id": "9f67efd2575c",
+        "branch": "feature/l5-multimodal-landing-factory",
+        "source_base": "b10a5c474883e30dcaf781d104cbb804f031b52f",
+        "current_candidate_identity": "v2.0.14-source",
+        "status": "verifying",
+        "purpose": "Active offline L5 landing dogfood source; default provider and publisher are unavailable, the product ZIP is not built, and no target, network, hosting, or production write is authorized."
       }
     ],
     "open_pull_requests": [

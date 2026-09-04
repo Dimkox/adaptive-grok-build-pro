@@ -275,6 +275,9 @@ class LandingContractTests(unittest.TestCase):
         self.assertEqual(parameters["RepositoryId"]["schema"]["const"], "github.com/Dimkox/ai-dark-factory-landing")
         self.assertEqual(parameters["ExactBaseSha"]["schema"]["const"], "176efcaab931c2482781ff163c621b10aa05dee9")
         self.assertEqual(parameters["ExactBaseTree"]["schema"]["const"], "f2bdcecc6dbe9ecc82007610d398ca12bd75e07f")
+        error = contract["components"]["schemas"]["Error"]
+        self.assertEqual(set(error["required"]), {"error", "code", "detail"})
+        self.assertFalse(error["additionalProperties"])
 
 
 if __name__ == "__main__":

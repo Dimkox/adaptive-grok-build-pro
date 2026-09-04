@@ -25,11 +25,17 @@
       "from": "approved",
       "reason": "Task 1 RED proved the additive landing modules absent; 12 focused contract/intake tests and the exact schema inventory are now green with the authoritative repository SHA/tree bound and no external effect.",
       "to": "implementing"
+    },
+    {
+      "at": "2026-09-04T12:24:48+00:00",
+      "from": "implementing",
+      "reason": "Tasks 1-5 now provide the bounded offline landing vertical, additive API, unavailable publisher, architecture and truthful unpublished 2.0.14 source identity; focused TDD, compatibility, structure, architecture and exact-target injected smoke evidence pass, while full verification, reviews, the 2.0.14 product artifact and every external action remain pending.",
+      "to": "verifying"
     }
   ],
   "route_id": "9f67efd2575c",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "verifying",
   "title": "L5 multimodal landing dogfood",
-  "updated_at": "2026-09-04T11:02:53+00:00"
+  "updated_at": "2026-09-04T12:24:48+00:00"
 }

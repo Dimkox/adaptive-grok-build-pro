@@ -576,3 +576,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The local clone boundary resolved the `git-upload-pack` symlink to `/usr/bin/git`, changing its multicall `argv[0]` identity and making every no-local clone fail before checkout.
 **Prevention:** Resolve the primary Git executable, but preserve the absolute symlink path for Git helper multicall commands and cover the exact clone argv with the focused real-target test.
+
+## 2026-09-04 — Used an empty exception handler in stream cleanup
+
+**Root cause:** The landing stream cleanup used `except Exception: pass` to preserve the original request failure, which made the intended suppression opaque to the security gate.
+**Prevention:** Express deliberate cleanup-only suppression with `contextlib.suppress` and run targeted Bandit on every modified production Python path before source freeze.

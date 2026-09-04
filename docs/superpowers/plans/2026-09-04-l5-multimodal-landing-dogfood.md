@@ -6,7 +6,7 @@
 
 **Design:** [`../specs/2026-09-04-l5-multimodal-landing-dogfood-design.md`](../specs/2026-09-04-l5-multimodal-landing-dogfood-design.md)
 
-**Control baseline:** `ad6d23cc30c11e5ea51c388213f5ebdfe306fb56`; no stale-branch cherry-picks. **Dogfood target:** private `github.com/Dimkox/ai-dark-factory-landing` at exact SHA `176efcaab931c2482781ff163c621b10aa05dee9`, tree `f2bdcecc6dbe9ecc82007610d398ca12bd75e07f`; its local clone is read-only and candidate writes occur only in disposable workspaces. Existing showcase, migrations `001`-`018`, M0-M9 contracts, version, and packages are frozen.
+**Control baseline:** `ad6d23cc30c11e5ea51c388213f5ebdfe306fb56`; no stale-branch cherry-picks. **Dogfood target:** private `github.com/Dimkox/ai-dark-factory-landing` at exact SHA `176efcaab931c2482781ff163c621b10aa05dee9`, tree `f2bdcecc6dbe9ecc82007610d398ca12bd75e07f`; its local clone is read-only and candidate writes occur only in disposable workspaces. Existing showcase, migrations `001`-`018`, M0-M9 contracts, and published `v2.0.13` package bytes are frozen; Task 5 establishes unpublished source candidate `2.0.14` without creating its product ZIP.
 
 **TDD rule:** For each task, add the named focused test first, run it to observe the specified RED, implement only that task, rerun the focused group once to GREEN, run Ruff only on modified Python files, run `git diff --check`, and commit. If GREEN fails, rerun only the failed method/group after repair.
 
@@ -71,6 +71,6 @@
 - [ ] Run `python3 -m unittest factory.tests.test_landing_api delivery.tests.test_landing_publisher -v`; expected RED is absent API/publisher integration.
 - [ ] Wire the additive routes and local store through existing composition without migration. Implement only `LandingPublisher` plus `UnavailableLandingPublisher`; no HTTPS client, credential/config discovery, live adapter, or fake production-success path.
 - [ ] Update architecture/docs to describe actual source and operational blockers. Run the Task 5 tests, `tests.test_structure`, architecture validate/drift/diagram checks, targeted Ruff, and diff check to GREEN.
-- [ ] Commit `feat: integrate offline landing dogfood`, freeze the source tree, run `python3 scripts/grok_verify.py --mode pr` once, and only after PASS dispatch the route-selected code, test, security, and release reviewers against the same fingerprint. Repairs remain owned by this same implementer and invalidate stale receipts.
+- [ ] Commit source-freeze `F` as `feat: integrate offline landing dogfood` with state `verifying` and no `2.0.14` product ZIP. The parent finalization flow runs gate wave 1 on exact `F`, records bookkeeping-only ready child `R`, builds twice from exact `R`, adds only the `2.0.14` ZIP/sidecar as artifact child `A`, then runs gate wave 2 on exact `A`; repairs remain owned by this implementer and invalidate stale receipts.
 
 **Handoff:** clean locally ready source with fingerprint-bound verifier/review evidence and no external effect. Push, PR, merge, release, provider transfer, signing, and deployment require new explicit authority and are not steps in this plan.

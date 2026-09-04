@@ -4,7 +4,7 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 ## Current project state
 
-- Product and published release identity is `2.0.13`. GitHub Release `v2.0.13` was published at `2026-09-04T08:33:19Z`; the ZIP SHA-256 is `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`, and later documentation-only HEADs do not restack the tag-bound artifact.
+- Product source identity is the local unpublished candidate `2.0.14`; latest published release `v2.0.13` remains immutable at ZIP SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`. Source-freeze `F` contains no `2.0.14` product ZIP.
 - M0 (Live Trust Authority) is delivered to `main`.
 - M0 runtime repair and policy-loop fixes are also merged into `main` through PR #7 and PR #6.
 - Protected `origin/main` is `8599d45f4f28285381b05a53feb3059de92eb2a8`; it requires `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114` on the exact up-to-date pull-request head.
@@ -13,7 +13,7 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 - PRs #12/#13 remain old-epoch `ACTION_REQUIRED`; their unique lazy CLI import/tests and repository-scoped Trust CI profiles are absent from `main`. PR #15's current-epoch Trust CI conclusion is `FAILURE` and GitGuardian is `SUCCESS`; the cause was not inspected or inferred. PR #21 remains open at `571cad7877431ac5ab5779b53fe9f7effd6859ce`, with Trust CI `FAILURE` and GitGuardian `FAILURE`; neither result is diagnosed or dismissed here.
 - PR #22 checked head `b5eba759c309a92f92f4d4003d025795c7f8a1f9` passed `adaptive-trust-ci/verified@06ecf1c875bc` as check run `100955508827` with attestation `74f1bbb2-3098-4d35-a42f-d49351d81c4a`, then merged at `2026-09-04T08:31:49Z` as main commit `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`.
 - PR #19 delivered the optional SEO side project to `main` as `8ab4e57038dec2e07f01aaa0b207813a387358f4`; it is non-milestone work and is no longer an open continuation item.
-- Current work is operational qualification, not another package loop: M8 still needs the factual 30-task human-accepted cohort and activation, while M9 still needs real signed input, an operational environment/provider deployment, exercised recovery proof, and human production authority.
+- Current work is route `9f67efd2575c` on `feature/l5-multimodal-landing-factory`: freeze and verify the offline L5 landing source, record the state-only ready checkpoint, then build the `2.0.14` product package from that exact checkpoint. The provider and publisher are unavailable by default; no network, target mutation, hosting action, live/indexed claim, or production effect is authorized. M8 cohort/activation and real M9 operational qualification remain separate gaps.
 
 Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
 
@@ -28,7 +28,7 @@ Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
    - `DARK_FACTORY_ROADMAP.md`
    - `README.md`
 2. Run `git fetch --all --prune` before reasoning about active branches or pull requests.
-3. Inspect `PROJECT_STATE.json`, the published `v2.0.13` record, and open PRs #12, #13, #15 and #21 before continuing work. Treat the named M4-M9 predecessor branches as historical integration evidence; protected-main delivery is PR #22 merge `8599d45f4f28285381b05a53feb3059de92eb2a8`.
+3. Inspect `PROJECT_STATE.json`, its separate local `2.0.14` candidate and published `v2.0.13` records, the active L5 change package, and open PRs #12, #13, #15 and #21 before continuing work. Treat M4-M9 predecessor branches as historical integration evidence; protected-main delivery remains PR #22 merge `8599d45f4f28285381b05a53feb3059de92eb2a8`.
 4. If starting a different software-development task, create/resolve the local route first. `.grok-stack/runtime/active-route.json` is runtime state and may legitimately be absent in a fresh clone; do not fabricate it.
 5. Follow `AGENTS.md`: one write owner, route-selected analysis/review agents, local verification as evidence, pull-request-only delivery, and external Trust CI as merge authority.
 6. Never add GitHub Actions.
@@ -63,8 +63,9 @@ Use one repository-level delivery ledger and one consolidated continuation route
 3. Keep the published ZIP bound to tag `v2.0.13` and SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`; documentation-only successors do not rebuild it.
 4. Preserve PR #22's exact checked-head/App-check/merge evidence as historical delivery authority; local receipts remain preflight evidence only.
 5. Do not describe M8 as active until the exact-profile factual cohort and activation record exist, and do not describe M9 as operational until signed inputs, an environment, exercised recovery and human production authority exist.
-8. Retain open PRs #12, #13, #15 and #21 plus the unresolved PR #14/local work identified in `PROJECT_STATE.json`; extract unique work through clean successors without claiming those successors exist. PR #17 is a closed exact duplicate of #21, and PR #19 is already delivered with its predecessor staging path archival.
-9. After every protected-main merge, fetch remote refs, update the one state model, and obtain fresh exact-head verification/approvals for every branch made stale by the base change. `origin/milestone/a-plus-autopilot` remains design input, not the current M8 source branch.
+6. Treat L5 landing output only as a deterministic local artifact candidate. The exact landing source clone stays read-only, the default provider/publisher stays unavailable, and production requires separate provider, Trust CI, signing, hosting, rollback and explicit external-action authority.
+7. Retain open PRs #12, #13, #15 and #21 plus the unresolved PR #14/local work identified in `PROJECT_STATE.json`; extract unique work through clean successors without claiming those successors exist. PR #17 is a closed exact duplicate of #21, and PR #19 is already delivered with its predecessor staging path archival.
+8. After every protected-main merge, fetch remote refs, update the one state model, and obtain fresh exact-head verification/approvals for every branch made stale by the base change. `origin/milestone/a-plus-autopilot` remains design input, not the current M8 source branch.
 
 ## No chat dependency
 

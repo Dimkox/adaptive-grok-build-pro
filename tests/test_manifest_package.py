@@ -1418,13 +1418,16 @@ module.main()
     def test_published_zip_matches_immutable_release_record_and_embedded_manifest(self) -> None:
         state = json.loads((ROOT / 'PROJECT_STATE.json').read_text(encoding='utf-8'))
         published = state['published_release']
-        version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
-        self.assertEqual(version, '2.0.13')
-        self.assertEqual(state['product_version'], version)
-        self.assertEqual(published['tag'], f'v{version}')
+        candidate_version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
+        self.assertEqual(candidate_version, '2.0.14')
+        self.assertEqual(state['product_version'], candidate_version)
+        self.assertEqual(state['local_candidate']['artifact_status'], 'not_built')
+        published_version = published['tag'].removeprefix('v')
+        self.assertEqual(published_version, '2.0.13')
+        self.assertEqual(state['latest_published_release'], published['tag'])
         artifact = published['artifact']
         self.assertEqual(artifact['binding'], 'immutable_release_tag')
-        expected_relative = f'packages/adaptive-grok-build-pro-v{version}.zip'
+        expected_relative = f'packages/adaptive-grok-build-pro-v{published_version}.zip'
         self.assertEqual(artifact['path'], expected_relative)
         expected_digest = '3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c'
         self.assertEqual(artifact['sha256'], expected_digest)
@@ -1490,7 +1493,7 @@ module.main()
             )
             self.assertEqual(
                 archive.read(f'{prefix}VERSION').decode('utf-8').strip(),
-                version,
+                published_version,
             )
             self.assertFalse(any('.github/workflows/' in name for name in names))
             self.assertNotIn(f'{prefix}.github/dependabot.yml', names)

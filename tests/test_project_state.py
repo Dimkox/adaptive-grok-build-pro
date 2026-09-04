@@ -79,7 +79,7 @@ class ProjectStateTests(unittest.TestCase):
     def test_project_state_has_independent_milestone_axes_and_truthful_facts(self) -> None:
         state = self.state
         self.assertEqual(state["schema_version"], 2)
-        self.assertEqual(state["product_version"], "2.0.13")
+        self.assertEqual(state["product_version"], "2.0.14")
         self.assertEqual(state["latest_published_release"], "v2.0.13")
         self.assertEqual(state["observed_main_sha"], CURRENT_MAIN_SHA)
         self.assertRegex(state["observed_at"], r"^2026-09-04T\d{2}:\d{2}:\d{2}Z$")
@@ -263,17 +263,37 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(published["merge_commit"], CURRENT_MAIN_SHA)
         self.assertEqual(published["tree"], RELEASE_TREE)
         self.assertEqual(published["artifact"]["sha256"], RELEASE_ZIP_SHA256)
+        self.assertEqual(
+            state["local_candidate"],
+            {
+                "version": "2.0.14",
+                "status": "source_verifying",
+                "route_id": "9f67efd2575c",
+                "branch": "feature/l5-multimodal-landing-factory",
+                "change_package": "engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef",
+                "source_base": "b10a5c474883e30dcaf781d104cbb804f031b52f",
+                "artifact_status": "not_built",
+                "published": False,
+                "external_effect": False,
+                "notes": "The offline L5 landing dogfood source is integrated for exact-head verification. It has an unavailable default provider and publisher, no operational provider or hosting authority, and no 2.0.14 product ZIP yet.",
+            },
+        )
 
     def test_m4_source_implementation_is_distinct_from_verification_review_and_delivery(self) -> None:
         dimensions = self.state["active_delivery"]["m4_dimensions"]
         self.assertEqual(
             self.state["active_delivery"]["status"],
-            "v2.0.13_published_to_main",
+            "local_2.0.14_source_verifying",
         )
         self.assertTrue(
             self.state["active_delivery"]["next_action"].startswith(
-                "Collect the factual M8 30-task human-accepted cohort"
+                "Run the single exact-source verification"
             )
+        )
+        self.assertEqual(self.state["active_delivery"]["route_id"], "9f67efd2575c")
+        self.assertEqual(
+            self.state["active_delivery"]["branch"],
+            "feature/l5-multimodal-landing-factory",
         )
         self.assertEqual(
             dimensions["implementation_source"],
@@ -571,6 +591,7 @@ class ProjectStateTests(unittest.TestCase):
                 ("03b8e24f06e9", "integration/m7-m6-final-20260904"),
                 ("3ec8b3357363", "repair/m8-contract-boundary-20260904"),
                 ("331ca7021cc0", "integration/m9-m8-final-20260904"),
+                ("9f67efd2575c", "feature/l5-multimodal-landing-factory"),
             ],
         )
         self.assertEqual(inventory["active"][0]["source_head"], M4_PRODUCT_SHA)
@@ -587,6 +608,11 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(inventory["active"][5]["head"], RELEASE_HEAD_SHA)
         self.assertEqual(inventory["active"][5]["source_checkpoint"], M9_PROVISIONAL_SHA)
         self.assertEqual(inventory["active"][5]["pull_request"], 22)
+        self.assertEqual(inventory["active"][6]["status"], "verifying")
+        self.assertEqual(
+            inventory["active"][6]["current_candidate_identity"],
+            "v2.0.14-source",
+        )
         self.assertIn(1, {item.get("pull_request") for item in inventory["superseded"]})
         self.assertIn(
             {

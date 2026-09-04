@@ -1299,7 +1299,7 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 26)
+        self.assertEqual(len(records), 33)
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}
@@ -1339,6 +1339,39 @@ class ArchitectureModelTests(unittest.TestCase):
                 and kind == "json_schema"
             },
         )
+        landing_records = {
+            record.id: (record.kind, record.role, record.compatibility, record.path)
+            for record in records
+            if "LANDING" in record.id
+        }
+        self.assertEqual(
+            set(landing_records),
+            {
+                "CONTRACT-FACTORY-LANDING-ATTEMPT-V1",
+                "CONTRACT-FACTORY-LANDING-EVALUATION-V1",
+                "CONTRACT-FACTORY-LANDING-INPUT-V1",
+                "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
+                "CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-V1",
+                "CONTRACT-FACTORY-LANDING-SITE-ARTIFACT-V1",
+                "CONTRACT-FACTORY-LANDING-SPEC-V1",
+            },
+        )
+        landing_node = next(
+            node
+            for node in snapshot.system["nodes"]
+            if node["id"] == "NODE-FACTORY-LANDING-DOGFOOD"
+        )
+        self.assertEqual(
+            set(landing_node["public_contracts"]),
+            set(landing_records) - {"CONTRACT-FACTORY-LANDING-OPENAPI-V1"},
+        )
+        landing_edge = next(
+            edge
+            for edge in snapshot.system["edges"]
+            if edge["id"] == "EDGE-FACTORY-API-LANDING-DOGFOOD"
+        )
+        self.assertEqual(landing_edge["network_policy"], "no_network")
+        self.assertEqual(landing_edge["allowed_data"], ["DATA-FACTORY-LANDING-INPUT"])
         governance_handoff = next(
             record
             for record in records

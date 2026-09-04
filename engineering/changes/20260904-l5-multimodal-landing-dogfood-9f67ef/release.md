@@ -2,7 +2,7 @@
 
 ## Current deliverable
 
-This change may produce a locally ready source branch and a deterministic site-candidate ZIP/sidecar. It does not change product version `2.0.13`, repack the published product ZIP, publish the candidate, call a provider, or claim a live/indexed site.
+This change produces unpublished local product candidate `2.0.14` and a deterministic site-candidate ZIP/sidecar while preserving published `v2.0.13` and its product ZIP as immutable history. Source-freeze `F` contains no `2.0.14` product ZIP; that pair is built twice only from ready-state child `R` and added alone in artifact child `A`. Nothing in this flow publishes the candidate, calls an operational provider, or claims a live/indexed site.
 
 ## Local go criteria
 

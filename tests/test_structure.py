@@ -206,6 +206,22 @@ class StructureTests(unittest.TestCase):
             "factory/contracts/jsonschema/semantic-validation-inputs.v1.schema.json",
             "factory/contracts/jsonschema/semantic-verdict.v1.schema.json",
             "factory/contracts/openapi/factory-semantic.v1.json",
+            "factory/contracts/openapi/landing-dogfood.v1.json",
+            "factory/contracts/jsonschema/landing-attempt.v1.schema.json",
+            "factory/contracts/jsonschema/landing-evaluation.v1.schema.json",
+            "factory/contracts/jsonschema/landing-input.v1.schema.json",
+            "factory/contracts/jsonschema/landing-provider-evidence.v1.schema.json",
+            "factory/contracts/jsonschema/landing-site-artifact.v1.schema.json",
+            "factory/contracts/jsonschema/static-landing-spec.v1.schema.json",
+            "factory/src/adaptive_factory/landing_artifact.py",
+            "factory/src/adaptive_factory/landing_contracts.py",
+            "factory/src/adaptive_factory/landing_coordinator.py",
+            "factory/src/adaptive_factory/landing_evaluation.py",
+            "factory/src/adaptive_factory/landing_intake.py",
+            "factory/src/adaptive_factory/landing_provider.py",
+            "factory/src/adaptive_factory/landing_renderer.py",
+            "factory/src/adaptive_factory/landing_service.py",
+            "delivery/src/adaptive_delivery/landing_publisher.py",
         )
         for relative in required:
             self.assertTrue((ROOT / relative).exists(), relative)
@@ -230,11 +246,14 @@ class StructureTests(unittest.TestCase):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
         roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
-        self.assertEqual(version, "2.0.13")
+        self.assertEqual(version, "2.0.14")
         self.assertTrue(readme.startswith(f"# Adaptive Grok Build Pro v{version}\n"))
-        self.assertIn("Identity: **2.0.13**", readme)
-        self.assertTrue(changelog.startswith("# Changelog\n\n## 2.0.13 — 2026-09-02\n"))
-        self.assertIn("product version: 2.0.13", roadmap)
+        self.assertIn("Identity: **2.0.14**", readme)
+        self.assertTrue(changelog.startswith("# Changelog\n\n## 2.0.14 — 2026-09-04\n"))
+        self.assertIn(
+            "product version: 2.0.14 (local unpublished candidate; latest published release v2.0.13)",
+            roadmap,
+        )
         sys.path.insert(0, str(ROOT / ".grok-stack"))
         try:
             import adaptive_grok

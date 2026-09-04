@@ -29,7 +29,7 @@ Provide an offline, deterministic, repository-local vertical that accepts one bo
 - Run an independent deterministic evaluator and bounded repair loop with one initial attempt and at most two repairs.
 - Produce a canonical candidate manifest, deterministic ZIP, and `.sha256` sidecar bound to the exact candidate SHA/tree and all relevant input/profile/evaluator identities.
 - Add a production publisher interface whose repository composition is disabled and fail-closed.
-- Preserve all delivered M0-M9 behavior, migrations `001`-`018`, the product `2.0.13` ZIP, and `side-projects/seo-landing-showcase/` byte-for-byte.
+- Preserve all delivered M0-M9 behavior, migrations `001`-`018`, the published `v2.0.13` ZIP, and `side-projects/seo-landing-showcase/` byte-for-byte. This change establishes unpublished local product candidate `2.0.14`; its product ZIP is deliberately absent from source-freeze `F`.
 
 ### Out of scope
 

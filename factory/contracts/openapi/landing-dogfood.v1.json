@@ -87,7 +87,7 @@
     "schemas": {
       "Job": {"type": "object", "additionalProperties": false, "required": ["schema_version", "job_id", "state", "input_digest"], "properties": {"schema_version": {"const": 1}, "job_id": {"type": "string"}, "state": {"enum": ["accepted", "normalizing", "generating", "evaluating", "artifact_ready", "provider_unavailable", "rejected", "cancelled", "needs_human"]}, "input_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}},
       "Result": {"type": "object", "additionalProperties": false, "required": ["schema_version", "job_id", "state", "artifact_digest", "live_url"], "properties": {"schema_version": {"const": 1}, "job_id": {"type": "string"}, "state": {"enum": ["artifact_ready", "provider_unavailable", "rejected", "cancelled", "needs_human"]}, "artifact_digest": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}, "live_url": {"type": "null"}}},
-      "Error": {"type": "object", "additionalProperties": false, "required": ["error", "correlation_id"], "properties": {"error": {"type": "string", "minLength": 1, "maxLength": 128}, "correlation_id": {"type": "string", "minLength": 1, "maxLength": 128}}}
+      "Error": {"type": "object", "additionalProperties": false, "required": ["error", "code", "detail"], "properties": {"error": {"type": "string", "minLength": 1, "maxLength": 128}, "code": {"type": "string", "minLength": 1, "maxLength": 128}, "detail": {"type": "string", "minLength": 1, "maxLength": 160}}}
     },
     "headers": {"CorrelationId": {"required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 128}}},
     "responses": {

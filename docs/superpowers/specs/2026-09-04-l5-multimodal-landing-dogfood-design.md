@@ -19,7 +19,7 @@ Dogfood the delivered Adaptive Grok factory boundaries with one executable offli
 6. The total generation ceiling is three: one initial candidate and at most two repair candidates, each with fresh context/workspace.
 7. The site ZIP and `.sha256` sidecar are deterministic and bound to exact source/candidate SHA/tree and the full provenance chain.
 8. The repository publisher is disabled and fails before transport. No live URL, indexing, or production claim is reachable.
-9. M0-M9 contracts, migrations `001`-`018`, version `2.0.13`, and published artifacts remain unchanged.
+9. M0-M9 contracts and migrations `001`-`018` remain unchanged. Published `v2.0.13` and its artifact remain immutable history; the integrated repository-local source becomes the unpublished `2.0.14` candidate, whose product ZIP is created only after the ready-state checkpoint.
 
 ## System boundary
 
