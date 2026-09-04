@@ -85,7 +85,7 @@ Implemented in-tree:
 
 M0 Live Trust Authority is delivered. Protected `main` requires the App-owned policy-epoch check `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`; repository source, prompts, local receipts and local grants cannot mint or replace it. The original roadmap observation predated that activation and is historical only.
 
-The current local source line integrates M4-M9 through M9 code checkpoint `64b10689ce78a0464a494440f3fa981e18789687` combined with corrected exact M8 `a937ac8d200a4e143c295fabd482b19bc8cc4286`; migrations `001`-`018` are preserved. PR #22 is open but not merged or delivered. Artifact rebuild, exact-head verification, five route-selected reviews, App-owned Trust CI, protected merge, factual M8 cohort/activation, signed M9 input, environment/recovery proof, and human production authority remain separate gates.
+M1-M9 are delivered to `main` as repository product source through PR #22. Checked head `b5eba759c309a92f92f4d4003d025795c7f8a1f9` passed App-owned `adaptive-trust-ci/verified@06ecf1c875bc` and merged as `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`; release `v2.0.13` publishes ZIP SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`. Factual M8 cohort/activation, signed M9 input, operational environment/provider deployment, recovery proof, and human production authority remain separate operational gates.
 
 PRs #12 and #13 remain stale old-epoch `ACTION_REQUIRED` work whose unique lazy CLI imports/tests and repository-scoped Trust CI profiles are absent from `main`. PR #15's current-epoch `adaptive-trust-ci/verified@06ecf1c875bc` conclusion is `FAILURE` while GitGuardian is `SUCCESS`; its failure cause was not inspected or inferred. Wholesale merge of its obsolete M1-M3 aggregate is superseded, while investor-demo commit `9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b` and packaging hardening remain unique. All three need clean successor extraction; no successor PR is claimed.
 
@@ -100,20 +100,20 @@ PRs #12 and #13 remain stale old-epoch `ACTION_REQUIRED` work whose unique lazy 
 | Exact-SHA external Trust CI | M0 delivered and live | Preserve exact-head/App ownership; every new M4+ SHA must earn a fresh check |
 | GitHub App registration | Delivered external authority | Keep credentials and deployed policy outside the PR trust domain |
 | Durable CI jobs | Implemented | Keep separate from implementation task state |
-| Typed business specification | M1 implemented/reviewed in accepted stack | Deliver the full accepted source to main without confusing stack merge with delivery |
-| Executable architecture model | M2 implemented/reviewed in accepted stack | Deliver through the dependency-ordered current-main path; retain independent enforcement |
-| Agent-loop backpressure | Integrated M6 source at `c6d48ffd`; local source evidence only | Preserve finite repair ceilings and bind final verification/reviews to the exact artifact commit |
-| Semantic validator/adjudicator | Integrated independent M6 verdict and artifact-validation boundary | Retain independent verdict authority; external acceptance remains separate |
-| Controlled learning | M3 implemented/reviewed; registries intentionally empty | Deliver accepted source; activation still requires independent evidence and human governance |
-| Debt/slop ledger | M3 source implemented | Keep empty/unapproved records non-authoritative and preserve owner/trigger/evidence requirements |
-| Durable factory task queue | Integrated M4 source at `67dc4ddf`; shipped parity and final receipts pending | Rebuild the exact `2.0.13` artifact, then bind verifier/reviews and external gates |
-| Background implementation environment | Integrated bounded M5 source at `85cd4343`; live adapters disabled | Require separate rootless live-host evidence before operational acceptance |
-| Immutable implementation run manifest | Integrated M5 source | Accept operational use only after isolation/capability/orphan and live-host evidence |
+| Typed business specification | M1 delivered to main in v2.0.13 | Retain typed intent and evidence as change authority |
+| Executable architecture model | M2 delivered to main in v2.0.13 | Retain independent fitness enforcement |
+| Agent-loop backpressure | M6 repository source delivered in `v2.0.13` | Preserve finite repair ceilings and independent semantic authority |
+| Semantic validator/adjudicator | M6 verdict and artifact-validation boundary delivered | Retain independent verdict authority during operational qualification |
+| Controlled learning | M3 delivered to main in v2.0.13; registries intentionally empty | Activation still requires independent evidence and human governance |
+| Debt/slop ledger | M3 delivered to main in v2.0.13 | Keep empty/unapproved records non-authoritative and preserve owner/trigger/evidence requirements |
+| Durable factory task queue | M4 repository source delivered in `v2.0.13` | Require separate rollout authority before persistent operation |
+| Background implementation environment | M5 repository source delivered; live adapters disabled | Require separate rootless live-host evidence before operational acceptance |
+| Immutable implementation run manifest | M5 repository source delivered | Accept operational use only after isolation/capability/orphan and live-host evidence |
 | WIP, cost, and PR flood controls | M4 enforces durable WIP/cost; PR flood remains M7 work | Preserve M4 ceilings and add PR lifecycle bounds only at M7 |
-| Automated PR lifecycle | Integrated M7 shadow source at `00e0e4f9`; no external PR capability | Add runtime and real outcomes before acceptance; human merge remains mandatory |
+| Automated PR lifecycle | M7 shadow source delivered; no external PR capability | Add runtime and real outcomes before activation; human merge remains mandatory |
 | Shadow-mode metrics | Synthetic algorithm evidence only | Measure real quality and human disagreement before autonomy |
-| Earned auto-merge | Corrected integrated M8 evaluation at `a937ac8d`; deliberately inactive and capped at L2 | Require an exact-profile 30-real-task cohort plus explicit activation |
-| Preview/staging/canary delivery | Integrated local-only M9 source at `64b10689`; no operational adapter | Require real signed input, environment and recovery evidence; production remains human-owned |
+| Earned auto-merge | Corrected M8 evaluation delivered; deliberately inactive and capped at L2 | Require an exact-profile 30-real-task cohort plus explicit activation |
+| Preview/staging/canary delivery | M9 sealed source delivered; no operational adapter | Require real signed input, environment/provider deployment and recovery evidence; production remains human-owned |
 
 ## 5. Non-negotiable constraints
 
@@ -198,7 +198,7 @@ M1 + M2 + M3
 
 Milestones M1, M2, and M3 may be developed in parallel only after M0 has a live proof or an explicitly documented bootstrap exception approved by the user. M4 must consume their stable interfaces rather than inventing replacements.
 
-Current local source is dependency-ordered and integrated through M9: M4 `67dc4ddf` → M5 `85cd4343` → M6 `c6d48ffd` → M7 `00e0e4f9` → corrected M8 `a937ac8d`, combined with M9 code `64b10689` in the current candidate. PR #22 is open; it is not merged or delivered. M8 remains inactive pending a factual exact-profile cohort of at least 30 human-accepted tasks. M9 remains local-only pending signed input, an operational environment, exercised recovery, and human production authority. The next local boundary is the exact `2.0.13` artifact plus exact-head verification and five reviews; external acceptance still requires the App-owned check and protected merge.
+The dependency-ordered M4 `67dc4ddf` → M5 `85cd4343` → M6 `c6d48ffd` → M7 `00e0e4f9` → corrected M8 `a937ac8d` → M9 `64b10689` source is delivered to `main` by PR #22 and published as `v2.0.13`. M8 remains inactive pending a factual exact-profile cohort of at least 30 human-accepted tasks. M9 remains non-operational pending signed input, an operational environment/provider deployment, exercised recovery, and human production authority.
 
 ## 7.1 Exact milestone handoff contracts
 
@@ -210,7 +210,7 @@ Current local source is dependency-ordered and integrated through M9: M4 `67dc4d
 | M7 → M8 | M7 emits an immutable shadow ready-for-PR bundle digest binding task/run/verdict/check/PR-head/human-decision and outcome metrics; M8 cohorts only exact trust-profile tuples. | At least 30 human-accepted tasks for the exact class/profile tuple, complete disagreement/rollback/security metrics and human merge for every PR; any tuple component or evidence mutation starts a new cohort. | Demote/discard the affected cohort and keep human merge; under current authority M8 is capped at L2, cannot auto-merge, rewrite historical decisions or activate governance. |
 | M8 → M9 | M8 emits a durable trust-profile digest and L2-or-lower decision bound to repository/class/models/prompts/policy/runner/holdout digests; M9 binds preview/staging/canary inputs to the exact merged SHA and signed artifact digest. | Accepted predecessor profiles, exact signed supply-chain artifact, reproducible preview/staging, explicit canary thresholds and exercised recovery; incident, rollback, policy/artifact/SHA change invalidates promotion and triggers demotion. | Halt/rollback the canary, preserve deployment evidence and demote the profile; production promotion remains human-owned and no agent gains production, signing-key, branch-protection or Trust CI authority. |
 
-M7-M9 source is integrated locally on exact predecessor commits. That source does not establish a factual M8 cohort or activation, real M9 preview/canary evidence, external acceptance, or production authority.
+M7-M9 repository source is delivered on exact predecessor bindings. That delivery does not establish a factual M8 cohort or activation, real M9 preview/canary evidence, operational deployment, or production authority.
 
 ---
 
@@ -347,7 +347,7 @@ approvals:
 - [x] Fail standard/high-risk work when a required criterion has no evidence mapping.
 - [x] Detect stale specs after a change to base/head SHA, contracts, or policy.
 
-The checked work items mean their source and local regression coverage exist. M1 is locally source-ready: exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a` passed full local verification and all four route-selected wave-7 reviews, followed only by evidence/docs/state closure. A later authorized isolated PostgreSQL run passed 10/10 database tests and the full Trust CI suite 200/200 with no skips, validating six Trust CI tables, migrations through version 3, and four bounded `NOLOGIN` roles; it is local evidence, not deployed qualification. PR update, the external App-owned exact-SHA check, signed approvals, merge, and deployed worker/reader/emitter/holdout/policy exit criteria remain open until separately authorized and proven.
+The checked work items mean their source and local regression coverage exist. At the M1 checkpoint, exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a` passed full local verification and all four route-selected wave-7 reviews, followed only by evidence/docs/state closure. A later authorized isolated PostgreSQL run passed 10/10 database tests and the full Trust CI suite 200/200 with no skips, validating six Trust CI tables, migrations through version 3, and four bounded `NOLOGIN` roles; that remains historical local evidence, while the complete M1 source was subsequently delivered through PR #22. Deployed worker/reader/emitter/holdout/policy qualification remains separately governed.
 
 ## Exit criteria
 
@@ -420,7 +420,7 @@ failure_behavior
 
 ## Mandatory fitness functions
 
-The checked items below mean bounded M2-A repository source and local regression coverage exist. They do not claim independent M2-B enforcement, deployment, merge eligibility, or a live external check.
+At the M2-A checkpoint, the checked items below meant bounded repository source and local regression coverage existed without claiming independent M2-B enforcement, deployment, merge eligibility, or a live external check. The source was subsequently delivered through PR #22; independent deployed enforcement remains a separate concern.
 
 - [x] forbidden dependency edges;
 - [x] module/package boundary enforcement;
@@ -455,7 +455,7 @@ The checked items below mean bounded M2-A repository source and local regression
 - architecture drift is visible in PR evidence;
 - critical fitness rules are outside implementer control.
 
-M2-A's current source candidate locally proves schema validation, read-only reproducible text projections, a package-aware bounded abstract interpreter for queue provenance, monotonic risk, drift/diff evidence, read-only planning for existing installer targets, and atomic materialization of absent targets. The installer emits dependency advice but never executes it, rejects `--force`, and excludes target-owned architecture authority. Passing final route reviews and current receipts remain pending; prohibited-edge independence and critical rules outside implementer control remain unchecked M2-B/deployed exit work.
+M2-A's delivered source proves schema validation, read-only reproducible text projections, a package-aware bounded abstract interpreter for queue provenance, monotonic risk, drift/diff evidence, read-only planning for existing installer targets, and atomic materialization of absent targets. The installer emits dependency advice but never executes it, rejects `--force`, and excludes target-owned architecture authority. PR #22 supplied the release-head gate for repository delivery; prohibited-edge independence and critical rules outside implementer control remain M2-B/deployed exit work.
 
 ---
 
@@ -534,7 +534,7 @@ status
 - [x] Introduce a debt ledger that distinguishes intentional debt from accidental slop.
 - [x] Prevent a factory task from activating its own governance rule.
 
-Checked M3 items denote behavior accepted at exact merge `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`; they do not denote deployment, active governance, or authority for any later tree. The seven small example source files exist, but the canonical-example registry remains empty until an independent exact-record authority and real human governance approval are available; therefore the two canonical-example work items remain open. M4 consumed that exact base and is now a local current-main integration candidate; the merged tree must obtain fresh verification, independent reviews, PR delivery and external exact-SHA authority.
+Checked M3 items denote behavior accepted at exact merge `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`; that source is an ancestor of the checked PR #22 head and is delivered in v2.0.13, but this does not denote deployment or active governance. The seven small example source files exist, while the canonical-example registry remains empty until an independent exact-record authority and real human governance approval are available; therefore the two canonical-example work items remain open. M4 consumed the exact aggregate; operational rollout remains separately gated.
 
 ## Exit criteria
 
@@ -568,7 +568,7 @@ factory/
 
 Do not add a root packaging marker.
 
-Current status: M4 is preserved at exact integrated ancestor `67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4` with migrations `001`-`013` and the complete durable control surface. It is the base of the local M5-M9 source chain; external acceptance and protected-main delivery remain separate.
+Current status: M4 is preserved at exact integrated ancestor `67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4` with migrations `001`-`013` and the complete durable control surface, delivered to `main` within PR #22. Persistent runtime rollout remains separately gated.
 
 ## Factory task state machine
 
@@ -670,7 +670,7 @@ Checked M4 items denote locally implemented behavior only. They do not claim fin
 
 # M5 — Isolated Background Execution Plane
 
-Current status: M5 bounded-execution source is integrated at `85cd4343143915ce9342634e7fe81886b6394871` with additive migrations `014`-`017`; operational adapters remain ineligible and live-host proof is still required.
+Current status: M5 bounded-execution source is delivered in `v2.0.13` from checkpoint `85cd4343143915ce9342634e7fe81886b6394871` with additive migrations `014`-`017`; operational adapters remain ineligible and live-host proof is still required.
 
 ## Objective
 
@@ -745,7 +745,7 @@ output contract
 
 # M6 — Independent Semantic Validation, Meta-Review, and Bounded Repair
 
-Current status: M6 semantic-validation source is integrated at `c6d48ffd8594b3baab1a575021452ea5dfa2a98b` with additive migration `018`, independent verdict authority, artifact validation, and bounded repair.
+Current status: M6 semantic-validation source is delivered in `v2.0.13` from checkpoint `c6d48ffd8594b3baab1a575021452ea5dfa2a98b` with additive migration `018`, independent verdict authority, artifact validation, and bounded repair.
 
 ## Objective
 
@@ -818,7 +818,7 @@ needs_human
 
 # M7 — Automated Pull-Request Lifecycle and Shadow Mode
 
-Current status: M7 shadow-handoff source is integrated at `00e0e4f9a6f50844bf9e0ffc7139d3283dda889f`; evidence is synthetic, no external PR capability exists, and human merge remains mandatory.
+Current status: M7 shadow-handoff source is delivered in `v2.0.13` from checkpoint `00e0e4f9a6f50844bf9e0ffc7139d3283dda889f`; evidence is synthetic, no external PR capability exists, and human merge remains mandatory.
 
 ## Objective
 
@@ -907,7 +907,7 @@ security escalation rate
 
 # M8 — Earned and Revocable Low-Risk Autonomy
 
-Current status: M8 earned-autonomy evaluation is integrated at corrected checkpoint `a937ac8d200a4e143c295fabd482b19bc8cc4286` over actual M7 records. Durable currentness, a factual 30-task cohort and activation remain absent; authority is capped at L2 and deterministic L0 demotion remains mandatory.
+Current status: M8 earned-autonomy evaluation is delivered in `v2.0.13` from corrected checkpoint `a937ac8d200a4e143c295fabd482b19bc8cc4286` over actual M7 records. Durable currentness, a factual 30-task cohort and activation remain absent; authority is capped at L2 and deterministic L0 demotion remains mandatory.
 
 ## Objective
 
@@ -1003,7 +1003,7 @@ Never initially eligible:
 
 # M9 — Preview, Staging, Canary, and Recovery-Aware Delivery
 
-Current status: M9 source is integrated at code checkpoint `64b10689ce78a0464a494440f3fa981e18789687` over exact M8, with immutable records, deterministic one-step preview/staging/bounded-canary decisions, a sealed in-memory environment and least-authority recovery. PR #22 is open, not merged. Real signed input, an operational environment, exercised recovery and production authority remain absent; production promotion remains human-owned.
+Current status: M9 repository source is delivered in `v2.0.13` from code checkpoint `64b10689ce78a0464a494440f3fa981e18789687` over exact M8, with immutable records, deterministic one-step preview/staging/bounded-canary decisions, a sealed in-memory environment and least-authority recovery. Real signed input, an operational environment/provider deployment, exercised recovery and production authority remain absent; production promotion remains human-owned.
 
 ## Objective
 

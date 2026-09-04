@@ -13,7 +13,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
-CURRENT_MAIN_SHA = "78ad2f679d38dc3244e716c586332417e610089c"
+CURRENT_MAIN_SHA = "8599d45f4f28285381b05a53feb3059de92eb2a8"
+HISTORICAL_M4_BASE_SHA = "78ad2f679d38dc3244e716c586332417e610089c"
+RELEASE_HEAD_SHA = "b5eba759c309a92f92f4d4003d025795c7f8a1f9"
+RELEASE_TREE = "03e122a30fb2dbb59907f4c4c28e17f93cbf0751"
+RELEASE_ZIP_SHA256 = "3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c"
+PR21_HEAD_SHA = "571cad7877431ac5ab5779b53fe9f7effd6859ce"
 SEO_MERGE_SHA = "8ab4e57038dec2e07f01aaa0b207813a387358f4"
 M4_PRODUCT_SHA = "67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4"
 M4_REVIEW_SHA = "4f75558770f2f332b32b4a47fe6afa61fcc524ec"
@@ -75,7 +80,7 @@ class ProjectStateTests(unittest.TestCase):
         state = self.state
         self.assertEqual(state["schema_version"], 2)
         self.assertEqual(state["product_version"], "2.0.13")
-        self.assertEqual(state["latest_published_release"], "v2.0.12")
+        self.assertEqual(state["latest_published_release"], "v2.0.13")
         self.assertEqual(state["observed_main_sha"], CURRENT_MAIN_SHA)
         self.assertRegex(state["observed_at"], r"^2026-09-04T\d{2}:\d{2}:\d{2}Z$")
         self.assertEqual(set(state["milestones"]), MILESTONES)
@@ -84,15 +89,15 @@ class ProjectStateTests(unittest.TestCase):
 
         expected = {
             "M0": ("complete", "passed", "not_applicable", "delivered", "stale"),
-            "M1": ("complete", "passed", "merged", "partial", "success"),
-            "M2": ("complete", "passed", "merged", "not_delivered", "success"),
-            "M3": ("complete", "passed", "merged", "not_delivered", "success"),
-            "M4": ("complete", "pending_refresh", "local_integrated_candidate", "not_delivered", "not_run"),
-            "M5": ("integrated_local_source", "focused_source_evidence_only", "integrated_on_exact_m4_unaccepted", "not_delivered", "blocked"),
-            "M6": ("integrated_local_source", "focused_source_evidence_only", "integrated_on_exact_m5_unaccepted", "not_delivered", "not_run"),
-            "M7": ("integrated_local_source", "focused_source_evidence_only", "integrated_on_exact_m6_unaccepted", "not_delivered", "not_run"),
-            "M8": ("integrated_local_source", "focused_source_evidence_only", "integrated_on_exact_m7_unaccepted", "not_delivered", "not_run"),
-            "M9": ("integrated_local_source_ready_for_artifact", "not_started", "integrated_on_exact_m8_unaccepted", "pull_request_open", "not_run"),
+            "M1": ("complete", "passed", "merged", "delivered", "success"),
+            "M2": ("complete", "passed", "merged", "delivered", "success"),
+            "M3": ("complete", "passed", "merged", "delivered", "success"),
+            "M4": ("complete", "passed_for_release_head", "included_in_v2.0.13_delivery", "delivered", "success"),
+            "M5": ("delivered_to_main", "passed_for_release_head", "included_in_v2.0.13_delivery", "delivered", "success"),
+            "M6": ("delivered_to_main", "passed_for_release_head", "included_in_v2.0.13_delivery", "delivered", "success"),
+            "M7": ("delivered_to_main", "passed_for_release_head", "included_in_v2.0.13_delivery", "delivered", "success"),
+            "M8": ("delivered_to_main", "passed_for_release_head", "included_in_v2.0.13_delivery", "delivered", "success"),
+            "M9": ("delivered_to_main", "passed_for_release_head", "included_in_v2.0.13_delivery", "delivered", "success"),
         }
         for milestone, statuses in expected.items():
             actual = self.state["milestones"][milestone]
@@ -100,7 +105,10 @@ class ProjectStateTests(unittest.TestCase):
                 tuple(actual[axis]["status"] for axis in AXES),
                 statuses,
             )
-        self.assertEqual(self.state["delivered_milestones_on_main"], ["M0"])
+        self.assertEqual(
+            self.state["delivered_milestones_on_main"],
+            ["M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9"],
+        )
         self.assertEqual(
             self.state["implemented_milestones"],
             ["M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9"],
@@ -119,6 +127,7 @@ class ProjectStateTests(unittest.TestCase):
                 "stack_pr": 10,
                 "stack_merge": "c23fd49f80c7d1c74ca3393b6079a74f251a72d8",
                 "gate_head": "022411b05924618cfde0cb97b8c8aff4955e6013",
+                "main_merge": CURRENT_MAIN_SHA,
             },
             "M2": {
                 "implementation": "022411b05924618cfde0cb97b8c8aff4955e6013",
@@ -127,6 +136,7 @@ class ProjectStateTests(unittest.TestCase):
                 "stack_pr": 10,
                 "stack_merge": "c23fd49f80c7d1c74ca3393b6079a74f251a72d8",
                 "gate_head": "022411b05924618cfde0cb97b8c8aff4955e6013",
+                "main_merge": CURRENT_MAIN_SHA,
             },
             "M3": {
                 "implementation": "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
@@ -135,13 +145,14 @@ class ProjectStateTests(unittest.TestCase):
                 "stack_pr": 11,
                 "stack_merge": "67714a1f1b87effcfabe55d5ca2770d0a68d17c1",
                 "gate_head": "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
+                "main_merge": CURRENT_MAIN_SHA,
             },
             "M4": {
                 "implementation": M4_PRODUCT_SHA,
                 "review": M4_REVIEW_SHA,
                 "stack_base": "origin/main",
-                "stack_pr": None,
-                "gate_head": None,
+                "stack_pr": 22,
+                "gate_head": RELEASE_HEAD_SHA,
             },
         }
         for milestone, exact in exact_milestone_facts.items():
@@ -167,12 +178,15 @@ class ProjectStateTests(unittest.TestCase):
         )
         self.assertEqual(
             m4["implementation"]["current_candidate_identity"],
-            "repository tree containing this PROJECT_STATE.json",
+            "v2.0.13",
         )
         self.assertEqual(m4["review"]["evidence_head"], M4_SOURCE_SHA)
-        self.assertEqual(m4["stack_integration"]["base_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(m4["stack_integration"]["base_commit"], HISTORICAL_M4_BASE_SHA)
         self.assertEqual(m4["stack_integration"]["source_head"], M4_SOURCE_SHA)
-        self.assertEqual(m4["stack_integration"]["merge_parents"], [M4_SOURCE_SHA, CURRENT_MAIN_SHA])
+        self.assertEqual(
+            m4["stack_integration"]["merge_parents"],
+            [M4_SOURCE_SHA, HISTORICAL_M4_BASE_SHA],
+        )
         self.assertEqual(m4["stack_integration"]["intermediate_code_head"], M4_INTEGRATION_SHA)
         self.assertEqual(
             m4["stack_integration"]["latest_committed_repair_checkpoint"],
@@ -215,19 +229,24 @@ class ProjectStateTests(unittest.TestCase):
                 "notes": "Exact baseline receipt only; the current follow-up changes source and package bytes, so the receipt does not transfer.",
             },
         )
-        self.assertIsNone(m4["stack_integration"]["merge_commit"])
-        self.assertEqual(m4["external_gate"]["source_pull_request"], 21)
-        self.assertEqual(m4["external_gate"]["source_head"], M4_SOURCE_SHA)
-        self.assertEqual(m4["external_gate"]["source_trust_ci_status"], "success")
-        self.assertEqual(m4["external_gate"]["source_gitguardian_status"], "failure_metadata_only")
+        self.assertEqual(m4["stack_integration"]["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(m4["external_gate"]["pull_request"], 22)
+        self.assertEqual(m4["external_gate"]["head_sha"], RELEASE_HEAD_SHA)
+        self.assertEqual(m4["external_gate"]["check_run_id"], 100955508827)
+        self.assertEqual(
+            m4["external_gate"]["attestation_id"],
+            "74f1bbb2-3098-4d35-a42f-d49351d81c4a",
+        )
+        self.assertEqual(m4["external_gate"]["historical_source_pull_request"], 21)
+        self.assertEqual(m4["external_gate"]["historical_source_head"], M4_SOURCE_SHA)
 
         m5 = state["milestones"]["M5"]
         self.assertEqual(m5["implementation"]["commit"], M5_PROVISIONAL_SHA)
         self.assertEqual(m5["stack_integration"]["base_commit"], M4_PRODUCT_SHA)
-        self.assertIsNone(m5["main_delivery"]["merge_commit"])
+        self.assertEqual(m5["main_delivery"]["merge_commit"], CURRENT_MAIN_SHA)
         m6 = state["milestones"]["M6"]
         self.assertEqual(m6["implementation"]["commit"], M6_PROVISIONAL_SHA)
-        self.assertIsNone(m6["main_delivery"]["merge_commit"])
+        self.assertEqual(m6["main_delivery"]["merge_commit"], CURRENT_MAIN_SHA)
         m7 = state["milestones"]["M7"]
         self.assertEqual(m7["implementation"]["commit"], M7_PROVISIONAL_SHA)
         m8 = state["milestones"]["M8"]
@@ -236,22 +255,30 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(m9["implementation"]["commit"], M9_PROVISIONAL_SHA)
         self.assertEqual(m9["stack_integration"]["base_commit"], M8_PROVISIONAL_SHA)
         self.assertEqual(m9["main_delivery"]["pull_request"], 22)
+        self.assertEqual(m9["main_delivery"]["merge_commit"], CURRENT_MAIN_SHA)
+
+        published = state["published_release"]
+        self.assertEqual(published["tag"], "v2.0.13")
+        self.assertEqual(published["checked_head"], RELEASE_HEAD_SHA)
+        self.assertEqual(published["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(published["tree"], RELEASE_TREE)
+        self.assertEqual(published["artifact"]["sha256"], RELEASE_ZIP_SHA256)
 
     def test_m4_source_implementation_is_distinct_from_verification_review_and_delivery(self) -> None:
         dimensions = self.state["active_delivery"]["m4_dimensions"]
         self.assertEqual(
             self.state["active_delivery"]["status"],
-            "local_m9_source_ready_for_artifact",
+            "v2.0.13_published_to_main",
         )
         self.assertTrue(
             self.state["active_delivery"]["next_action"].startswith(
-                "Rebuild the 2.0.13 artifact from the final ready M9 source"
+                "Collect the factual M8 30-task human-accepted cohort"
             )
         )
         self.assertEqual(
             dimensions["implementation_source"],
             {
-                "status": "ready_source_pending_artifact",
+                "status": "delivered_to_main",
                 "components": [
                     "typed_intake_and_task_state",
                     "postgresql_migrations_001_013",
@@ -276,18 +303,18 @@ class ProjectStateTests(unittest.TestCase):
                 )
             },
             {
-                "local_exact_head_verification": "receipt_required_for_current_exact_head",
-                "independent_review": "rereview_required_for_current_exact_head",
-                "pr_external_merge_delivery": "not_delivered",
+                "local_exact_head_verification": "passed_for_release_head",
+                "independent_review": "passed_for_release_head",
+                "pr_external_merge_delivery": "published",
             },
         )
         self.assertEqual(
             self.state["milestones"]["M4"]["implementation"]["source_status"],
-            "integrated_local_source",
+            "delivered_to_main",
         )
         self.assertEqual(
             self.state["milestones"]["M5"]["implementation"]["status"],
-            "integrated_local_source",
+            "delivered_to_main",
         )
 
     def test_m4_handoff_does_not_make_an_unconditional_stale_package_claim(self) -> None:
@@ -322,9 +349,9 @@ class ProjectStateTests(unittest.TestCase):
             schedule["t0"],
             {
                 "definition": "externally accepted exact M4 SHA",
-                "status": "unknown",
-                "sha": None,
-                "accepted_at": None,
+                "status": "accepted_via_pr22",
+                "sha": RELEASE_HEAD_SHA,
+                "accepted_at": "2026-09-04T08:31:49Z",
                 "requires": [
                     "separately_authorized_pull_request",
                     "exact_sha_external_trust_ci",
@@ -510,8 +537,8 @@ class ProjectStateTests(unittest.TestCase):
         self.assertNotRegex(checked_items, r"GitHub|open factory PR|PR age")
         self.assertIn("authenticated manual API/CLI intake", checked_items)
         self.assertIn("PostgreSQL `FOR UPDATE SKIP LOCKED` leases", checked_items)
-        self.assertEqual(self.state["milestones"]["M4"]["main_delivery"]["status"], "not_delivered")
-        self.assertEqual(self.state["milestones"]["M4"]["external_gate"]["status"], "not_run")
+        self.assertEqual(self.state["milestones"]["M4"]["main_delivery"]["status"], "delivered")
+        self.assertEqual(self.state["milestones"]["M4"]["external_gate"]["status"], "success")
 
     def test_work_inventory_preserves_open_and_unresolved_continuation_work(self) -> None:
         inventory = self.state["work_inventory"]
@@ -519,7 +546,7 @@ class ProjectStateTests(unittest.TestCase):
             {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Lazy CLI imports and tests are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
             {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Repository-scoped Trust CI profiles are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
             {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": CURRENT_CHECK, "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "Investor demo and packaging hardening are absent from main.", "disposition": "Wholesale merge is superseded; extract the unique scope into a clean successor. No successor PR exists."},
-            {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": M4_SOURCE_SHA, "status": "open_trust_ci_success_gitguardian_failure", "disposition": "Preserve check metadata without inspecting or dismissing the finding; the new current-main merge tree requires fresh verification and exact-head checks."},
+            {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": PR21_HEAD_SHA, "status": "open_trust_ci_failure_gitguardian_failure", "observed_check": CURRENT_CHECK, "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "FAILURE", "failure_cause": "not inspected or inferred", "disposition": "Preserve both failure results without diagnosing or dismissing them; PR 22 is the delivered v2.0.13 path."},
         ]
         self.assertEqual(inventory["open_pull_requests"], expected_open)
         seo = self.state["delivered_non_milestone_work"][0]
@@ -547,7 +574,7 @@ class ProjectStateTests(unittest.TestCase):
             ],
         )
         self.assertEqual(inventory["active"][0]["source_head"], M4_PRODUCT_SHA)
-        self.assertEqual(inventory["active"][0]["base_head"], CURRENT_MAIN_SHA)
+        self.assertEqual(inventory["active"][0]["base_head"], HISTORICAL_M4_BASE_SHA)
         self.assertEqual(inventory["active"][0]["intermediate_code_head"], M4_INTEGRATION_SHA)
         self.assertEqual(
             inventory["active"][0]["latest_committed_repair_checkpoint"],
@@ -557,7 +584,8 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(inventory["active"][2]["head"], M6_PROVISIONAL_SHA)
         self.assertEqual(inventory["active"][3]["head"], M7_PROVISIONAL_SHA)
         self.assertEqual(inventory["active"][4]["head"], M8_PROVISIONAL_SHA)
-        self.assertEqual(inventory["active"][5]["head"], M9_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][5]["head"], RELEASE_HEAD_SHA)
+        self.assertEqual(inventory["active"][5]["source_checkpoint"], M9_PROVISIONAL_SHA)
         self.assertEqual(inventory["active"][5]["pull_request"], 22)
         self.assertIn(1, {item.get("pull_request") for item in inventory["superseded"]})
         self.assertIn(

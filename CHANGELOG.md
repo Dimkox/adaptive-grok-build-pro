@@ -2,18 +2,18 @@
 
 ## 2.0.13 — 2026-09-02
 
-Integrated M4-M9 source candidate; release publication remains pending.
+Published M4-M9 repository product release.
 
 - Product identity **2.0.13** across `VERSION`, repository documentation, and the tracked `adaptive_grok` runtime; Trust CI service identity remains separately **2.1.0**
 - Integrates the M4 durable control plane, M5 bounded execution, M6 semantic validation, M7 shadow handoff, M8 earned-autonomy evaluation, and M9 local staged-delivery/recovery source while preserving migrations `001`-`018`
 - M9 is deliberately local-only: it provides immutable delivery records, deterministic preview/staging/bounded-canary decisions, a sealed in-memory environment, and least-authority recovery without an operational adapter, persistence, credentials, provider access, or production authority
 - Repairs roadmap/state parity, claim-terminal lease races, all-runtime database bounds/typed availability, fail-closed role bootstrap, and persisted accepted retry limits through additive migration `013`
 - Audits legacy schema-12 retry exhaustion without advancing a fence or creating a lease, and makes release packaging derive inventory and bytes from filtered, clean, exact Git `HEAD` while independent shipped-artifact tests reject ambient ignored/untracked members
-- Records the current PR/milestone inventory without claiming review, external Trust CI acceptance, merge, deployment, tag, or GitHub Release publication
-- Tracked local artifact: `packages/adaptive-grok-build-pro-v2.0.13.zip` with its SHA-256 sidecar
+- PR #22 checked head `b5eba759c309a92f92f4d4003d025795c7f8a1f9` passed App-owned `adaptive-trust-ci/verified@06ecf1c875bc` (`SUCCESS`, check run `100955508827`, attestation `74f1bbb2-3098-4d35-a42f-d49351d81c4a`) and merged to `main` as `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`
+- GitHub Release `v2.0.13` was published at `2026-09-04T08:33:19Z`; `packages/adaptive-grok-build-pro-v2.0.13.zip` has SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`
 - Binds sensitive hook policy and denial evidence to the unique effective repository root, including nested workdir aliases and literal `cd`/`git -C` shell overrides, without recording raw commands
-- Preserves the M4 repair source and integrates M5-M9 additively; artifact rebuild, exact-head verification, independent reviews, Trust CI acceptance, merge, tag, and release remain separate pending gates
-- The `aa12e7c` 14/14 verifier receipt is historical and stale for this follow-up after release rereview exposed ambient files in its archive; fresh exact-head verification and review remain required
+- Preserves the M4 repair source and integrates M5-M9 additively as the delivered repository product; factual M8 cohort/activation and real signed M9 environment/provider deployment remain operational gaps
+- The intermediate `aa12e7c` verifier receipt and earlier candidate artifacts remain historical evidence superseded by the exact PR #22 checked head and published tag; later documentation-only commits do not restack `v2.0.13`
 
 ## 2.0.12 — 2026-08-23
 

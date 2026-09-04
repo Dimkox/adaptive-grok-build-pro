@@ -1,6 +1,6 @@
 # Release packages
 
-Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). Exact shipped-package parity against source HEAD determines whether the `2.0.13` pair is current; after tracked mutation, rebuild an artifact-only child only if parity fails. When parity passes, proceed to exact-head verification and reviews rather than another unconditional rebuild. The files do not claim verification, review, acceptance, a tag or a GitHub Release. The most recently published release remains `v2.0.12`.
+Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). `adaptive-grok-build-pro-v2.0.13.zip` is the artifact published with tag `v2.0.13` at `2026-09-04T08:33:19Z`; its SHA-256 is `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`. The release is bound to immutable tag target `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`, rather than every later documentation-only HEAD.
 
 | File | Version |
 | --- | --- |
@@ -17,14 +17,14 @@ Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). Exact sh
 | `adaptive-grok-build-pro-v2.0.10.zip` | 2.0.10 |
 | `adaptive-grok-build-pro-v2.0.11.zip` | 2.0.11 |
 | `adaptive-grok-build-pro-v2.0.12.zip` | 2.0.12 |
-| `adaptive-grok-build-pro-v2.0.13.zip` | 2.0.13 (local candidate) |
+| `adaptive-grok-build-pro-v2.0.13.zip` | 2.0.13 (published) |
 
-Each zip has a sibling `.sha256`. Rebuild:
+Each zip has a sibling `.sha256`. Build a future candidate with:
 
 ```bash
 python3 scripts/package_stack.py --output packages/adaptive-grok-build-pro-v2.0.13.zip
 ```
 
-Production rebuilds package only the filtered regular-file inventory, blob bytes and canonical `0644`/`0755` member modes of a clean Git `HEAD`; ignored/untracked files and ambient non-executable permission bits are excluded even when present locally. Direct tracked output is published atomically with its sidecar, so no ad-hoc copy step may separate artifact provenance. The artifact-head verifier at `9f07c32` passed runtime, test, security and fresh PostgreSQL gates but failed the conservative secret heuristic and the pre-amendment architecture budget. Current acceptance depends on exact shipped parity followed by fresh exact-head verification and review of the final artifact commit.
+Production rebuilds package only the filtered regular-file inventory, blob bytes and canonical `0644`/`0755` member modes of a clean Git `HEAD`; ignored/untracked files and ambient non-executable permission bits are excluded even when present locally. Direct tracked output is published atomically with its sidecar, so no ad-hoc copy step may separate artifact provenance. The earlier artifact-head `9f07c32` failure is historical and was superseded; PR #22 checked head `b5eba759c309a92f92f4d4003d025795c7f8a1f9` earned the App-owned check before the same tree was merged and tagged.
 
 `.env` and private keys are never packaged.
