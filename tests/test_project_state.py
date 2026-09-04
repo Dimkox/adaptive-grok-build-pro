@@ -5,6 +5,7 @@ import itertools
 import json
 import re
 import subprocess
+import sys
 import unittest
 from pathlib import Path
 
@@ -12,13 +13,30 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
-CURRENT_MAIN_SHA = "8ab4e57038dec2e07f01aaa0b207813a387358f4"
+CURRENT_MAIN_SHA = "78ad2f679d38dc3244e716c586332417e610089c"
+SEO_MERGE_SHA = "8ab4e57038dec2e07f01aaa0b207813a387358f4"
+M4_PRODUCT_SHA = "67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4"
+M4_REVIEW_SHA = "4f75558770f2f332b32b4a47fe6afa61fcc524ec"
+M4_SOURCE_SHA = "460a8a01a6394cac710b4e3f9eea3d94d4beef89"
+M4_INTEGRATION_SHA = "da7ec8d7d40f52663aba1ff59bf03ccf209395b0"
+M4_SCANNER_REPAIR_SHA = "5a6cdfb7a129e02724c632f78c31de6406d6863a"
+M4_RELEASE_STATE_BASE_SHA = "56e12b2b394436ee227c66d78b1caba8f7317c78"
+M4_REPAIR_CHECKPOINT_SHA = "47b1c0ab5f27bc946cd1b2682de68b4ca3c67a95"
+M4_RELEASE_STATE_BASE_FINGERPRINT = "e27caec9d2de459ef26bea49b99b93b5b7326a9c84c89b97f4ec482c237d4add"
+M4_FAILED_VERIFY_SHA = "547ee628812fbf098f337a854f68edf660091ead"
+M4_FAILED_VERIFY_FINGERPRINT = "f0efa89e689dbe47c701a4d301e97361ee671e299ef2f32b5295b908e182e768"
+M5_PROVISIONAL_SHA = "85cd4343143915ce9342634e7fe81886b6394871"
+M6_PROVISIONAL_SHA = "c6d48ffd8594b3baab1a575021452ea5dfa2a98b"
+M7_PROVISIONAL_SHA = "00e0e4f9a6f50844bf9e0ffc7139d3283dda889f"
+M8_PROVISIONAL_SHA = "a937ac8d200a4e143c295fabd482b19bc8cc4286"
+M9_PROVISIONAL_SHA = "64b10689ce78a0464a494440f3fa981e18789687"
 MILESTONES = {f"M{number}" for number in range(10)}
 AXES = ("implementation", "review", "stack_integration", "main_delivery", "external_gate")
 CANONICAL_GRAPH_NODES = {
     "Route", "Skills", "Agents", "Hooks", "Policy", "Verify", "Packages", "Contract",
     "Decisions", "Mistakes", "TrustAPI", "TrustWorker", "Postgres", "Runner", "Holdout",
-    "GitHubApp",
+    "GitHubApp", "Factory", "M5Execution", "M6Semantic", "M7Shadow", "M8Autonomy",
+    "M9Delivery",
 }
 
 
@@ -43,8 +61,8 @@ def _assert_readme_graph(test: unittest.TestCase, readme: str) -> None:
     expected = {tuple(sorted(pair)) for pair in itertools.combinations(CANONICAL_GRAPH_NODES, 2)}
     test.assertEqual(role_nodes, CANONICAL_GRAPH_NODES)
     test.assertEqual(nodes, role_nodes)
-    test.assertEqual(len(edges), 120)
-    test.assertEqual(len(set(edges)), 120)
+    test.assertEqual(len(edges), 231)
+    test.assertEqual(len(set(edges)), 231)
     test.assertEqual(set(edges), expected)
 
 
@@ -56,8 +74,10 @@ class ProjectStateTests(unittest.TestCase):
     def test_project_state_has_independent_milestone_axes_and_truthful_facts(self) -> None:
         state = self.state
         self.assertEqual(state["schema_version"], 2)
+        self.assertEqual(state["product_version"], "2.0.13")
+        self.assertEqual(state["latest_published_release"], "v2.0.12")
         self.assertEqual(state["observed_main_sha"], CURRENT_MAIN_SHA)
-        self.assertRegex(state["observed_at"], r"^2026-09-01T\d{2}:\d{2}:\d{2}Z$")
+        self.assertRegex(state["observed_at"], r"^2026-09-04T\d{2}:\d{2}:\d{2}Z$")
         self.assertEqual(set(state["milestones"]), MILESTONES)
         for milestone in state["milestones"].values():
             self.assertEqual(set(milestone), set(AXES))
@@ -67,7 +87,12 @@ class ProjectStateTests(unittest.TestCase):
             "M1": ("complete", "passed", "merged", "partial", "success"),
             "M2": ("complete", "passed", "merged", "not_delivered", "success"),
             "M3": ("complete", "passed", "merged", "not_delivered", "success"),
-            "M4": ("complete", "stale", "open", "not_delivered", "failure"),
+            "M4": ("complete", "pending_refresh", "local_integrated_candidate", "not_delivered", "not_run"),
+            "M5": ("integrated_local_source", "focused_source_evidence_only", "integrated_on_exact_m4_unaccepted", "not_delivered", "blocked"),
+            "M6": ("integrated_local_source", "focused_source_evidence_only", "integrated_on_exact_m5_unaccepted", "not_delivered", "not_run"),
+            "M7": ("integrated_local_source", "focused_source_evidence_only", "integrated_on_exact_m6_unaccepted", "not_delivered", "not_run"),
+            "M8": ("integrated_local_source", "focused_source_evidence_only", "integrated_on_exact_m7_unaccepted", "not_delivered", "not_run"),
+            "M9": ("integrated_local_source_ready_for_artifact", "not_started", "integrated_on_exact_m8_unaccepted", "pull_request_open", "not_run"),
         }
         for milestone, statuses in expected.items():
             actual = self.state["milestones"][milestone]
@@ -75,14 +100,11 @@ class ProjectStateTests(unittest.TestCase):
                 tuple(actual[axis]["status"] for axis in AXES),
                 statuses,
             )
-        for milestone in (f"M{number}" for number in range(5, 10)):
-            actual = self.state["milestones"][milestone]
-            self.assertEqual(actual["implementation"]["status"], "not_started")
-            self.assertEqual(actual["review"]["status"], "not_reviewed")
-            self.assertEqual(actual["main_delivery"]["status"], "not_delivered")
-            self.assertEqual(actual["external_gate"]["status"], "not_run")
         self.assertEqual(self.state["delivered_milestones_on_main"], ["M0"])
-        self.assertEqual(self.state["implemented_milestones"], ["M0", "M1", "M2", "M3", "M4"])
+        self.assertEqual(
+            self.state["implemented_milestones"],
+            ["M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9"],
+        )
 
         exact_milestone_facts = {
             "M0": {
@@ -115,11 +137,11 @@ class ProjectStateTests(unittest.TestCase):
                 "gate_head": "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
             },
             "M4": {
-                "implementation": "cf0219b2510dd1a8d5f34e7a6d44e1e4c633dd06",
-                "review": "f82134de35e531a8b3bbf235ad480254ba40f1fe",
-                "stack_base": "milestone/m2-executable-architecture",
-                "stack_pr": 17,
-                "gate_head": "8e6504168462bbabad359fec3d23838c87f5ba22",
+                "implementation": M4_PRODUCT_SHA,
+                "review": M4_REVIEW_SHA,
+                "stack_base": "origin/main",
+                "stack_pr": None,
+                "gate_head": None,
             },
         }
         for milestone, exact in exact_milestone_facts.items():
@@ -135,6 +157,221 @@ class ProjectStateTests(unittest.TestCase):
                 self.assertEqual(actual["main_delivery"]["merge_commit"], exact["main_merge"])
             if "gate_head" in exact:
                 self.assertEqual(actual["external_gate"]["head_sha"], exact["gate_head"])
+
+        m4 = state["milestones"]["M4"]
+        self.assertEqual(m4["implementation"]["source_evidence_head"], M4_SOURCE_SHA)
+        self.assertEqual(m4["implementation"]["integration_baseline"], M4_INTEGRATION_SHA)
+        self.assertEqual(
+            m4["implementation"]["latest_committed_repair_checkpoint"],
+            M4_REPAIR_CHECKPOINT_SHA,
+        )
+        self.assertEqual(
+            m4["implementation"]["current_candidate_identity"],
+            "repository tree containing this PROJECT_STATE.json",
+        )
+        self.assertEqual(m4["review"]["evidence_head"], M4_SOURCE_SHA)
+        self.assertEqual(m4["stack_integration"]["base_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(m4["stack_integration"]["source_head"], M4_SOURCE_SHA)
+        self.assertEqual(m4["stack_integration"]["merge_parents"], [M4_SOURCE_SHA, CURRENT_MAIN_SHA])
+        self.assertEqual(m4["stack_integration"]["intermediate_code_head"], M4_INTEGRATION_SHA)
+        self.assertEqual(
+            m4["stack_integration"]["latest_committed_repair_checkpoint"],
+            M4_REPAIR_CHECKPOINT_SHA,
+        )
+        self.assertEqual(
+            m4["stack_integration"]["intermediate_local_verification"],
+            {
+                "status": "passed",
+                "head_sha": M4_INTEGRATION_SHA,
+                "checks_passed": 14,
+                "checks_total": 14,
+                "changed_files": 469,
+                "notes": "Historical exact-code-head preflight only; subsequent repair commits and this migration/docs tree require a final rerun before completion.",
+            },
+        )
+        self.assertEqual(
+            m4["stack_integration"]["repair_local_verification"],
+            {
+                "status": "failed",
+                "head_sha": M4_FAILED_VERIFY_SHA,
+                "tree_fingerprint": M4_FAILED_VERIFY_FINGERPRINT,
+                "checks_passed": 13,
+                "checks_total": 14,
+                "failed_check": "secret-scan",
+                "created_at": "2026-09-02T10:08:32Z",
+                "repair_head": M4_SCANNER_REPAIR_SHA,
+                "notes": "The sole generic-secret finding was repaired in synthetic test fixtures and superseded by the passing release-state verification at 56e12b2.",
+            },
+        )
+        self.assertEqual(
+            m4["stack_integration"]["release_state_local_verification"],
+            {
+                "status": "passed",
+                "head_sha": M4_RELEASE_STATE_BASE_SHA,
+                "tree_fingerprint": M4_RELEASE_STATE_BASE_FINGERPRINT,
+                "checks_passed": 14,
+                "checks_total": 14,
+                "created_at": "2026-09-02T10:51:29Z",
+                "notes": "Exact baseline receipt only; the current follow-up changes source and package bytes, so the receipt does not transfer.",
+            },
+        )
+        self.assertIsNone(m4["stack_integration"]["merge_commit"])
+        self.assertEqual(m4["external_gate"]["source_pull_request"], 21)
+        self.assertEqual(m4["external_gate"]["source_head"], M4_SOURCE_SHA)
+        self.assertEqual(m4["external_gate"]["source_trust_ci_status"], "success")
+        self.assertEqual(m4["external_gate"]["source_gitguardian_status"], "failure_metadata_only")
+
+        m5 = state["milestones"]["M5"]
+        self.assertEqual(m5["implementation"]["commit"], M5_PROVISIONAL_SHA)
+        self.assertEqual(m5["stack_integration"]["base_commit"], M4_PRODUCT_SHA)
+        self.assertIsNone(m5["main_delivery"]["merge_commit"])
+        m6 = state["milestones"]["M6"]
+        self.assertEqual(m6["implementation"]["commit"], M6_PROVISIONAL_SHA)
+        self.assertIsNone(m6["main_delivery"]["merge_commit"])
+        m7 = state["milestones"]["M7"]
+        self.assertEqual(m7["implementation"]["commit"], M7_PROVISIONAL_SHA)
+        m8 = state["milestones"]["M8"]
+        self.assertEqual(m8["implementation"]["commit"], M8_PROVISIONAL_SHA)
+        m9 = state["milestones"]["M9"]
+        self.assertEqual(m9["implementation"]["commit"], M9_PROVISIONAL_SHA)
+        self.assertEqual(m9["stack_integration"]["base_commit"], M8_PROVISIONAL_SHA)
+        self.assertEqual(m9["main_delivery"]["pull_request"], 22)
+
+    def test_m4_source_implementation_is_distinct_from_verification_review_and_delivery(self) -> None:
+        dimensions = self.state["active_delivery"]["m4_dimensions"]
+        self.assertEqual(
+            self.state["active_delivery"]["status"],
+            "local_m9_source_ready_for_artifact",
+        )
+        self.assertTrue(
+            self.state["active_delivery"]["next_action"].startswith(
+                "Rebuild the 2.0.13 artifact from the final ready M9 source"
+            )
+        )
+        self.assertEqual(
+            dimensions["implementation_source"],
+            {
+                "status": "ready_source_pending_artifact",
+                "components": [
+                    "typed_intake_and_task_state",
+                    "postgresql_migrations_001_013",
+                    "leases_fences_capacity_and_retry",
+                    "budgets_kills_audit_and_reconciliation",
+                    "semantic_work_identity_and_command_replay",
+                    "bounded_immutable_lifecycle_history_and_fenced_phases",
+                    "sole_checked_closed_inline_17_operation_http_contract",
+                    "authenticated_uds_api_cli_and_admin",
+                    "disposable_postgresql_and_restart_tests",
+                    "restored_m2_and_nested_factory_architecture_budgets",
+                ],
+            },
+        )
+        self.assertEqual(
+            {
+                name: dimensions[name]["status"]
+                for name in (
+                    "local_exact_head_verification",
+                    "independent_review",
+                    "pr_external_merge_delivery",
+                )
+            },
+            {
+                "local_exact_head_verification": "receipt_required_for_current_exact_head",
+                "independent_review": "rereview_required_for_current_exact_head",
+                "pr_external_merge_delivery": "not_delivered",
+            },
+        )
+        self.assertEqual(
+            self.state["milestones"]["M4"]["implementation"]["source_status"],
+            "integrated_local_source",
+        )
+        self.assertEqual(
+            self.state["milestones"]["M5"]["implementation"]["status"],
+            "integrated_local_source",
+        )
+
+    def test_m4_handoff_does_not_make_an_unconditional_stale_package_claim(self) -> None:
+        surfaces = (
+            'README.md',
+            'START_HERE.md',
+            'packages/README.md',
+            'PROJECT_STATE.json',
+            'DARK_FACTORY_ROADMAP.md',
+            'engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/release.md',
+            'engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/tasks.md',
+        )
+        forbidden = (
+            'currently stale candidate package',
+            'tracked stale local artifact',
+            'tracked zip is a stale local artifact',
+            'zip/sidecar are stale',
+            'zip/sidecar were built from an earlier tree and are stale',
+            'previous 2.0.13 files remain stale',
+            'tracked archive still represents an earlier tree and must be rebuilt',
+        )
+        for relative in surfaces:
+            content = (ROOT / relative).read_text(encoding='utf-8').lower()
+            for claim in forbidden:
+                self.assertNotIn(claim, content, (relative, claim))
+
+    def test_delivery_schedule_is_dependency_relative_and_does_not_revive_missed_dates(self) -> None:
+        schedule = self.state["active_delivery"]["schedule"]
+        self.assertEqual(schedule["basis"], "dependency_relative")
+        self.assertEqual(schedule["m4_local_ready_target"], "2026-09-03")
+        self.assertEqual(
+            schedule["t0"],
+            {
+                "definition": "externally accepted exact M4 SHA",
+                "status": "unknown",
+                "sha": None,
+                "accepted_at": None,
+                "requires": [
+                    "separately_authorized_pull_request",
+                    "exact_sha_external_trust_ci",
+                    "protected_merge_and_acceptance_record",
+                ],
+            },
+        )
+        self.assertEqual(
+            schedule["sequential_acceptance_order"],
+            ["M4", "M5", "M6", "M7", "M8", "M9"],
+        )
+        self.assertEqual(schedule["m8_calendar"]["status"], "indeterminate")
+        self.assertEqual(schedule["m8_calendar"]["minimum_human_accepted_tasks"], 30)
+        self.assertEqual(
+            schedule["m9_entry_requires"],
+            [
+                "accepted_m8",
+                "signed_artifact",
+                "environment_evidence",
+                "recovery_evidence",
+            ],
+        )
+        self.assertEqual(
+            schedule["superseded_target"],
+            {
+                "at": "2026-09-08T00:00:00+03:00",
+                "status": "superseded_unachievable_historical_target",
+                "gate_waiver": False,
+            },
+        )
+
+        current_docs = [
+            ROOT / "README.md",
+            ROOT / "START_HERE.md",
+            ROOT / "DARK_FACTORY_ROADMAP.md",
+            ROOT / "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md",
+            ROOT / "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/brief.md",
+            ROOT / "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/release.md",
+            ROOT / "engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/rollback.md",
+        ]
+        for path in current_docs:
+            text = path.read_text(encoding="utf-8")
+            self.assertNotRegex(text, r"(?i)(?:hard|superseding) (?:program )?deadline is \*\*2026-09-08")
+        canonical_schedule = current_docs[3].read_text(encoding="utf-8")
+        self.assertIn("T0", canonical_schedule)
+        self.assertIn("externally accepted exact M4 SHA", canonical_schedule)
+        self.assertIn("superseded and unachievable historical target", canonical_schedule)
 
     def test_local_git_objects_corrobate_durable_stack_proof_when_available(self) -> None:
         milestones = self.state["milestones"]
@@ -227,19 +464,68 @@ class ProjectStateTests(unittest.TestCase):
         self.assertIn("delivered", start_here)
         self.assertNotRegex(start_here, r"open PRs[^.;\n]*#19")
 
+    def test_m4_roadmap_matches_typed_state_machine_and_local_scope(self) -> None:
+        factory_src = str(ROOT / "factory" / "src")
+        if factory_src not in sys.path:
+            sys.path.insert(0, factory_src)
+        from adaptive_factory.models import TaskStatus
+
+        roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
+        m4 = re.search(r"^# M4 —.*?\n(.*?)(?=^---\n\n# M5 —)", roadmap, re.M | re.S)
+        self.assertIsNotNone(m4)
+        m4_text = m4.group(1)
+
+        state_section = _section(m4_text, "Factory task state machine")
+        blocks = re.findall(r"```text\n(.*?)```", state_section, re.S)
+        self.assertEqual(len(blocks), 2)
+        primary = re.findall(r"[a-z][a-z0-9_]*", blocks[0])
+        exceptional = re.findall(r"[a-z][a-z0-9_]*", blocks[1])
+        expected_primary = [
+            TaskStatus.INBOX,
+            TaskStatus.TRIAGED,
+            TaskStatus.WAITING_DESIGN_APPROVAL,
+            TaskStatus.QUEUED,
+            TaskStatus.LEASED,
+            TaskStatus.ANALYZING,
+            TaskStatus.IMPLEMENTING,
+            TaskStatus.VERIFYING,
+            TaskStatus.REVIEWING,
+            TaskStatus.READY_FOR_HUMAN,
+        ]
+        expected_exceptional = {
+            TaskStatus.RETRY,
+            TaskStatus.NEEDS_HUMAN,
+            TaskStatus.DEAD,
+            TaskStatus.CANCELLED,
+            TaskStatus.SUPERSEDED,
+        }
+        self.assertEqual(primary, [status.value for status in expected_primary])
+        self.assertEqual(set(exceptional), {status.value for status in expected_exceptional})
+        self.assertEqual(set(primary) | set(exceptional), {status.value for status in TaskStatus})
+        self.assertTrue({"waiting_approval", "pr_open", "ready", "merged"}.isdisjoint(primary + exceptional))
+
+        checked_items = "\n".join(
+            line for line in _section(m4_text, "Work items").splitlines() if line.startswith("- [x]")
+        )
+        self.assertNotRegex(checked_items, r"GitHub|open factory PR|PR age")
+        self.assertIn("authenticated manual API/CLI intake", checked_items)
+        self.assertIn("PostgreSQL `FOR UPDATE SKIP LOCKED` leases", checked_items)
+        self.assertEqual(self.state["milestones"]["M4"]["main_delivery"]["status"], "not_delivered")
+        self.assertEqual(self.state["milestones"]["M4"]["external_gate"]["status"], "not_run")
+
     def test_work_inventory_preserves_open_and_unresolved_continuation_work(self) -> None:
         inventory = self.state["work_inventory"]
         expected_open = [
-            {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "disposition": "Retain; rebase and obtain fresh governance approval/current-epoch check."},
-            {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "disposition": "Retain; restack after PR 12 and obtain fresh approval/check."},
-            {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "disposition": "Do not merge wholesale; replay the unique investor demo and packaging slice."},
-            {"pull_request": 17, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "milestone/m2-executable-architecture", "head": "8e6504168462bbabad359fec3d23838c87f5ba22", "status": "open_current_epoch_and_gitguardian_failure", "disposition": "Preserve as failed evidence; create and deliver a clean successor."},
+            {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Lazy CLI imports and tests are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
+            {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Repository-scoped Trust CI profiles are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
+            {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": CURRENT_CHECK, "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "Investor demo and packaging hardening are absent from main.", "disposition": "Wholesale merge is superseded; extract the unique scope into a clean successor. No successor PR exists."},
+            {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": M4_SOURCE_SHA, "status": "open_trust_ci_success_gitguardian_failure", "disposition": "Preserve check metadata without inspecting or dismissing the finding; the new current-main merge tree requires fresh verification and exact-head checks."},
         ]
         self.assertEqual(inventory["open_pull_requests"], expected_open)
         seo = self.state["delivered_non_milestone_work"][0]
         self.assertEqual(
             {key: seo[key] for key in ("pull_request", "status", "source_head", "merge_commit")},
-            {"pull_request": 19, "status": "delivered", "source_head": "ecc85d903d0394f99a139fd4e74a7cc452e386c6", "merge_commit": CURRENT_MAIN_SHA},
+            {"pull_request": 19, "status": "delivered", "source_head": "ecc85d903d0394f99a139fd4e74a7cc452e386c6", "merge_commit": SEO_MERGE_SHA},
         )
         self.assertEqual(
             inventory["retained_unresolved"],
@@ -252,18 +538,47 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(
             [(item["route_id"], item["branch"]) for item in inventory["active"]],
             [
-                ("944abd96ddb3", "chore/reconcile-milestone-state"),
-                ("944abd96ddb3", "origin/milestone/m2-executable-architecture"),
-                ("944abd96ddb3", "milestone/m4-durable-control-plane-accepted-m3"),
+                ("b7f288f1e81e", "integration/m4-main-20260902"),
+                ("6c578a9933b3", "integration/m5-m4-final-20260904"),
+                ("e323f21f2dfc", "integration/m6-m5-final-20260904"),
+                ("03b8e24f06e9", "integration/m7-m6-final-20260904"),
+                ("3ec8b3357363", "repair/m8-contract-boundary-20260904"),
+                ("331ca7021cc0", "integration/m9-m8-final-20260904"),
             ],
         )
+        self.assertEqual(inventory["active"][0]["source_head"], M4_PRODUCT_SHA)
+        self.assertEqual(inventory["active"][0]["base_head"], CURRENT_MAIN_SHA)
+        self.assertEqual(inventory["active"][0]["intermediate_code_head"], M4_INTEGRATION_SHA)
+        self.assertEqual(
+            inventory["active"][0]["latest_committed_repair_checkpoint"],
+            M4_REPAIR_CHECKPOINT_SHA,
+        )
+        self.assertEqual(inventory["active"][1]["head"], M5_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][2]["head"], M6_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][3]["head"], M7_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][4]["head"], M8_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][5]["head"], M9_PROVISIONAL_SHA)
+        self.assertEqual(inventory["active"][5]["pull_request"], 22)
         self.assertIn(1, {item.get("pull_request") for item in inventory["superseded"]})
+        self.assertIn(
+            {
+                "pull_request": 17,
+                "branch": "milestone/m4-durable-control-plane-accepted-m3",
+                "base": "milestone/m2-executable-architecture",
+                "head": M4_SOURCE_SHA,
+                "status": "closed_duplicate",
+                "closed_at": "2026-09-02T10:08:38Z",
+                "duplicate_of": 21,
+                "reason": "Closed because it exactly duplicated open PR 21 at the same head; it provides no separate delivery authority.",
+            },
+            inventory["superseded"],
+        )
 
-    def test_adversarial_pr17_base_head_and_status_are_rejected(self) -> None:
+    def test_adversarial_pr21_base_head_and_status_are_rejected(self) -> None:
         original = self.state
         mutated = copy.deepcopy(original)
-        pr17 = next(item for item in mutated["work_inventory"]["open_pull_requests"] if item["pull_request"] == 17)
-        pr17.update(base="main", head="0" * 40, status="success")
+        pr21 = next(item for item in mutated["work_inventory"]["open_pull_requests"] if item["pull_request"] == 21)
+        pr21.update(base="milestone/m2-executable-architecture", head="0" * 40, status="success")
         self.state = mutated
         try:
             with self.assertRaises(AssertionError):
@@ -295,7 +610,7 @@ class ProjectStateTests(unittest.TestCase):
         finally:
             self.state = original
 
-    def test_readme_graph_is_exact_complete_k16(self) -> None:
+    def test_readme_graph_is_exact_complete_k22(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         _assert_readme_graph(self, readme)
 

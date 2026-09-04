@@ -1,74 +1,25 @@
-schema_version: 1
-change_id: "20260901-consolidate-milestone-branch-state-and-delivery-944abd"
-objective:
-  id: OBJ-001
-  statement: "Give every fresh clone one truthful milestone delivery ledger without changing product or Trust CI behavior"
-  success_metric: project_state_consistency_checks_pass
-  target: m0_through_m9_have_five_axes_and_current_epoch_matches_handoff
-risk:
-  tier: yellow
-  domains:
-    - infra
-    - integration
-acceptance_criteria:
-  - id: AC-001
-    statement: "PROJECT_STATE schema version two records implementation review stack integration main delivery and external gate independently for M0 through M9"
-    evidence:
-      - kind: test
-        ref: tests/test_project_state.py:ProjectStateTests.test_project_state_has_independent_milestone_axes_and_truthful_facts
-  - id: AC-002
-    statement: "Current handoff files agree on policy epoch 06ecf1c875bc and GitHub App 4694114"
-    evidence:
-      - kind: test
-        ref: tests/test_project_state.py:ProjectStateTests.test_current_epoch_and_app_are_consistent_in_handoff_documents
-  - id: AC-003
-    statement: "Active open retained unresolved and superseded work remains inventoried for continuation without branch loss"
-    evidence:
-      - kind: test
-        ref: tests/test_project_state.py:ProjectStateTests.test_work_inventory_preserves_open_and_unresolved_continuation_work
-  - id: AC-004
-    statement: "README retains the exact complete K16 graph with 120 unique edges"
-    evidence:
-      - kind: test
-        ref: tests/test_project_state.py:ProjectStateTests.test_readme_graph_is_exact_complete_k16
-  - id: AC-005
-    statement: "The durable change package and root cause explain the bounded state-only repair and recovery"
-    evidence:
-      - kind: review
-        ref: engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd
-invariants:
-  - id: INV-001
-    statement: "No Trust CI implementation deployed authority roadmap checkbox GitHub Actions or external state changes"
-    evidence:
-      - kind: command
-        ref: git:diff-check
-  - id: INV-002
-    statement: "A stack merge and a successful check never imply delivery to protected main"
-    evidence:
-      - kind: review
-        ref: engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-repo-explorer.md
-forbidden_outcomes:
-  - id: FORBID-001
-    statement: "No milestone is advanced from a branch name local ready marker stale check or non-main pull request merge"
-    evidence:
-      - kind: test
-        ref: tests/test_project_state.py
-  - id: FORBID-002
-    statement: "No unique open or unresolved work is silently deleted merged or declared superseded"
-    evidence:
-      - kind: review
-        ref: engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-integration-architect.md
-contracts:
-  openapi: []
-  json_schema: []
-  events: []
-observability:
-  - metric: project_state_consistency_checks_pass
-    proves:
-      - OBJ-001
-rollback:
-  strategy: forward_fix
-  maximum_steps: 1
-approvals:
-  required_scopes:
-    - protected-path
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"PROJECT_STATE schema version two records implementation review stack integration main delivery and external gate independently for M0 through M9","evidence":[{"test":"tests/test_project_state.py::ProjectStateTests.test_project_state_has_independent_milestone_axes_and_truthful_facts"}]},
+    {"id":"AC-002","statement":"Current handoff files agree on policy epoch 06ecf1c875bc and GitHub App 4694114","evidence":[{"test":"tests/test_project_state.py::ProjectStateTests.test_current_epoch_and_app_are_consistent_in_handoff_documents"}]},
+    {"id":"AC-003","statement":"Active open retained unresolved and superseded work remains inventoried for continuation without branch loss","evidence":[{"test":"tests/test_project_state.py::ProjectStateTests.test_work_inventory_preserves_open_and_unresolved_continuation_work"}]},
+    {"id":"AC-004","statement":"README retains the exact complete K22 graph with 231 unique undirected edges","evidence":[{"test":"tests/test_project_state.py::ProjectStateTests.test_readme_graph_is_exact_complete_k22"}]},
+    {"id":"AC-005","statement":"The durable change package and root cause explain the bounded state-only repair and recovery","evidence":[{"receipt":"code_review"},{"receipt":"test_review"}]}
+  ],
+  "approvals":{"required_scopes":["protected-path"]},
+  "change_id":"20260901-consolidate-milestone-branch-state-and-delivery-944abd",
+  "contracts":{"events":[],"json_schema":[],"openapi":[]},
+  "forbidden_outcomes":[
+    {"id":"FORBID-001","statement":"No milestone is advanced from a branch name local ready marker stale check or non-main pull request merge","evidence":[{"test":"tests/test_project_state.py"}]},
+    {"id":"FORBID-002","statement":"No unique open or unresolved work is silently deleted merged or declared superseded","evidence":[{"receipt":"code_review"}]}
+  ],
+  "invariants":[
+    {"id":"INV-001","statement":"No Trust CI implementation deployed authority roadmap checkbox GitHub Actions or external state changes","evidence":[{"receipt":"verification"}]},
+    {"id":"INV-002","statement":"A stack merge and a successful check never imply delivery to protected main","evidence":[{"receipt":"code_review"}]}
+  ],
+  "objective":{"id":"OBJ-001","statement":"Give every fresh clone one truthful milestone delivery ledger without changing product or Trust CI behavior","success_metric":"project_state_consistency_checks_pass","target":"m0_through_m9_have_five_axes_and_current_epoch_matches_handoff"},
+  "observability":[{"id":"SIG-001","metric":"project_state_consistency_checks_pass","proves":["OBJ-001"]}],
+  "risk":{"domains":["infra","integration"],"tier":"yellow"},
+  "rollback":{"maximum_steps":1,"strategy":"forward_fix"},
+  "schema_version":2
+}

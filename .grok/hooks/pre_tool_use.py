@@ -20,7 +20,7 @@ for _p in _ROOT_CANDIDATES:
         sys.path.insert(0, s)
 
 try:
-    from _lib import emit, read_payload, root_from, session_id, tool_input, tool_name
+    from _lib import RootContext, emit, read_payload, root_context, session_id, tool_input, tool_name
 except Exception:
     # If even _lib is missing, never block the agent
     print('{"decision":"allow"}')
@@ -64,22 +64,45 @@ def _fingerprint(material: dict[str, Any]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _ledger_reason(action: str) -> str:
+    if action == 'external-write':
+        return 'External write denied by repository policy.'
+    if action == 'protected-path-write':
+        return 'Protected path write denied by repository policy.'
+    if action.startswith('git-push') or action in {
+        'pull-request-merge', 'docker-push', 'npm-publish', 'github-release', 'workflow-dispatch'
+    }:
+        return f'Production action {action} denied by repository policy.'
+    return f'Action {action} denied by repository policy.'
+
+
 def _denial_fingerprints(
     session: str,
     tool: str,
     input_data: dict[str, Any],
     reason: str,
+    context: RootContext,
+    action: str,
 ) -> tuple[str, str]:
+    roots = {
+        'session_root': str(context.session_root) if context.session_root else None,
+        'effective_root': str(context.effective_root) if context.effective_root else None,
+        'resolution_status': context.resolution_status,
+    }
     exact = _fingerprint({
         'session_id': session,
         'tool_name': tool,
         'tool_input': input_data,
-        'reason': reason,
+        'reason': _ledger_reason(action),
+        'reason_sha256': hashlib.sha256(reason.encode('utf-8')).hexdigest(),
+        'root_context': roots,
     })
     objective = _fingerprint({
         'session_id': session,
         'tool_name': tool,
         'reason': reason,
+        'action': action,
+        'root_context': roots,
     })
     return exact, objective
 
@@ -104,6 +127,7 @@ def _increment_entry(
     session: str,
     tool: str,
     now: float,
+    evidence: dict[str, Any],
 ) -> int:
     previous = entries.get(fingerprint, {})
     previous_count = previous.get('count', 0) if isinstance(previous, dict) else 0
@@ -113,6 +137,7 @@ def _increment_entry(
         'session_id': session,
         'tool_name': tool,
         'updated_at': now,
+        **evidence,
     }
     return count
 
@@ -134,6 +159,8 @@ def _record_denial(
     tool: str,
     input_data: dict[str, Any],
     reason: str,
+    context: RootContext,
+    action: str,
 ) -> tuple[int, int]:
     from adaptive_grok.state import runtime_lock
     from adaptive_grok.util import dump_json, load_json, runtime_dir
@@ -144,8 +171,23 @@ def _record_denial(
         tool,
         input_data,
         reason,
+        context,
+        action,
     )
     path = runtime_dir(root) / 'tool-denials.json'
+    command = input_data.get('command')
+    evidence = {
+        'session_cwd': context.session_cwd,
+        'session_root': str(context.session_root) if context.session_root else None,
+        'command_workdirs': context.command_workdirs,
+        'effective_root': str(context.effective_root) if context.effective_root else None,
+        'resolution_status': context.resolution_status,
+        'action': action,
+        'reason': _ledger_reason(action),
+        'reason_sha256': hashlib.sha256(reason.encode('utf-8')).hexdigest(),
+        'tool_input_sha256': _fingerprint(input_data),
+        'command_sha256': hashlib.sha256(command.encode('utf-8')).hexdigest() if isinstance(command, str) else None,
+    }
     with runtime_lock(root, 'tool-denials'):
         data = load_json(path, {}) or {}
         if not isinstance(data, dict):
@@ -158,6 +200,7 @@ def _record_denial(
             session=session,
             tool=tool,
             now=now,
+            evidence=evidence,
         )
         objective_count = _increment_entry(
             objective_entries,
@@ -165,9 +208,10 @@ def _record_denial(
             session=session,
             tool=tool,
             now=now,
+            evidence=evidence,
         )
         dump_json(path, {
-            'schema_version': 2,
+            'schema_version': 3,
             'exact': _cap_entries(exact_entries),
             'objectives': _cap_entries(objective_entries),
         })
@@ -177,11 +221,11 @@ def _record_denial(
 def main() -> None:
     try:
         payload = read_payload()
-        root = root_from(payload)
         current_tool = tool_name(payload)
         current_input = tool_input(payload)
+        context = root_context(payload, current_input, current_tool)
         try:
-            from adaptive_grok.policy import evaluate_pre_tool
+            from adaptive_grok.policy import evaluate_pre_tool, sensitive_action
         except Exception:
             # Soft: policy stack not importable → allow everything
             emit({
@@ -193,10 +237,30 @@ def main() -> None:
             })
             return
 
-        allowed, reason = evaluate_pre_tool(root, {
+        classification_root = context.effective_root or context.session_root or Path.cwd()
+        action = sensitive_action(classification_root, {
             'tool_name': current_tool,
             'tool_input': current_input,
         })
+        if current_tool == 'Bash' and context.has_ambiguous_command_evidence and action is None:
+            action = 'ambiguous-sensitive-shell'
+        root = context.effective_root or context.session_root
+        if action and not context.sensitive_safe:
+            allowed = False
+            reason = f'Sensitive action {action} denied: root resolution status is {context.resolution_status}.'
+        elif root is None:
+            allowed, reason = True, None
+        else:
+            try:
+                allowed, reason = evaluate_pre_tool(root, {
+                    'tool_name': current_tool,
+                    'tool_input': current_input,
+                })
+            except Exception:
+                if action:
+                    allowed, reason = False, f'Sensitive action {action} denied: policy evaluation failed closed.'
+                else:
+                    raise
         if allowed:
             emit({
                 'decision': 'allow',
@@ -209,12 +273,17 @@ def main() -> None:
 
         message = _actionable_reason(reason or 'Blocked by Adaptive Grok policy')
         try:
+            ledger_root = context.ledger_root
+            if ledger_root is None:
+                raise RuntimeError('no recognized repository root for denial ledger')
             exact_count, objective_count = _record_denial(
-                root,
+                ledger_root,
                 session_id(payload),
                 current_tool,
                 current_input,
                 message,
+                context,
+                action or 'policy-denial',
             )
         except Exception:
             exact_count, objective_count = 1, 1

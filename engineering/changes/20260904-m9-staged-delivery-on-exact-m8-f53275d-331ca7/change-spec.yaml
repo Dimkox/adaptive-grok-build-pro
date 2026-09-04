@@ -1,0 +1,53 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"Closed immutable delivery records bind exact artifact, authority, repository, environment, exposure, policy, holdout, runner, time and digest-chain identities and reject malformed, nonfinite, stale, duplicate, contradictory or reordered input.","evidence":[{"test":"delivery/tests/test_contracts.py"},{"test":"delivery/tests/test_evaluator.py"}]},
+    {"id":"AC-002","statement":"The M8 seam imports actual autonomy producer types, recomputes nested bodies and digests, rejects caller authority overrides and keeps durable acceptance/currentness unavailable.","evidence":[{"test":"delivery/tests/test_m8_boundary.py"}]},
+    {"id":"AC-003","statement":"Evaluation advances exactly one authorized preview-to-staging-to-bounded-canary step, while final canary and production require a human and production is unreachable.","evidence":[{"test":"delivery/tests/test_evaluator.py"},{"test":"delivery/tests/test_controller.py"}]},
+    {"id":"AC-004","statement":"The exact sealed fake adapter and controller serialize concurrent steps at most once, recheck expiry and append a full immutable digest chain bounded to 128 records.","evidence":[{"test":"delivery/tests/test_controller.py"}]},
+    {"id":"AC-005","statement":"Recovery only halts, decreases to the immediately prior authorized exposure, or restores the exact prior signed artifact without increasing authority.","evidence":[{"test":"delivery/tests/test_recovery.py"}]},
+    {"id":"AC-006","statement":"No operational adapter, persistence, migration, network, subprocess, credential, provider or production effect exists.","evidence":[{"test":"delivery/tests/test_controller.py"},{"receipt":"security_review"}]}
+  ],
+  "approvals": {
+    "required_scopes": ["scope_and_design_approval"]
+  },
+  "change_id": "20260904-m9-staged-delivery-on-exact-m8-f53275d-331ca7",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"Duplicate M8 or M7 producer definitions, caller-supplied eligibility/currentness/acceptance, or opaque digest pairs treated as authority.","evidence":[{"test":"delivery/tests/test_m8_boundary.py"},{"receipt":"code_review"}]},
+    {"id":"FORBID-002","statement":"Stage skipping, automatic final-canary or production advancement, operational adapter capability, I/O, persistence, provider or external action.","evidence":[{"test":"delivery/tests/test_controller.py"},{"receipt":"security_review"}]},
+    {"id":"FORBID-003","statement":"Recovery that widens exposure, restores an unbound artifact, uses stale authority, or records duplicate/reordered evidence.","evidence":[{"test":"delivery/tests/test_recovery.py"},{"test":"delivery/tests/test_controller.py"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Actual integrated M8 remains sole producer authority; M9 owns only its handoff envelope and delivery/recovery decisions.","evidence":[{"test":"delivery/tests/test_m8_boundary.py"}]},
+    {"id":"INV-002","statement":"Each evaluation selects no more than one pre-authorized non-production exposure step and binds the complete prior and observation digest chain.","evidence":[{"test":"delivery/tests/test_evaluator.py"},{"test":"delivery/tests/test_controller.py"}]},
+    {"id":"INV-003","statement":"Only the sealed in-memory fake adapter may apply an effect, at most once, and production is absent from its accepted target set.","evidence":[{"test":"delivery/tests/test_controller.py"}]},
+    {"id":"INV-004","statement":"Recovery is deterministic, narrowing and limited to halt, one-step decrease or exact prior signed artifact restoration.","evidence":[{"test":"delivery/tests/test_recovery.py"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Implement feature M9 AI agent staged delivery and recovery control on corrected exact M8 head a937ac8d200a4e143c295fabd482b19bc8cc4286. Add closed signed-artifact metadata, deterministic staged decisions, least-authority recovery, an in-memory dry-run adapter, and canonical M8 producer linkage. Preserve unchanged PostgreSQL migrations 001-018 and security isolation across M4-M8. Repository-local code only; operational actions remain unreachable.",
+    "success_metric": "The focused M9 delivery suite and affected structure checks pass on an exact-M8 descendant with migrations 001-018 unchanged and no operational effect surface.",
+    "target": "repository_local_dry_run_m9_source_with_human_production_boundary"
+  },
+  "observability": [
+    {"id":"SIG-001","metric":"Deterministic closed delivery, recovery, and evidence records bind exact state, reason, input, observation-set, prior-link, and effect digests.","proves":["OBJ-001"]}
+  ],
+  "risk": {
+    "domains": [
+      "ai",
+      "api",
+      "data",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

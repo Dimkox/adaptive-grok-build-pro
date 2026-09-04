@@ -1,0 +1,53 @@
+{
+  "change_id": "20260829-m2-trust-ci-read-only-workspace-compatibility-818501",
+  "created_at": "2026-08-29T06:13:28+00:00",
+  "history": [
+    {
+      "at": "2026-08-29T06:13:28+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-29T09:20:04+00:00",
+      "from": "draft",
+      "reason": "Typed scope, invariants, forbidden outcomes, rollback, and evidence map are complete.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-29T09:20:04+00:00",
+      "from": "scoped",
+      "reason": "User-authorized local implementation scope; this is not an external Trust CI security approval.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-29T09:20:04+00:00",
+      "from": "approved",
+      "reason": "Single write owner completed the bounded compatibility remediation.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-29T09:20:04+00:00",
+      "from": "implementing",
+      "reason": "Focused checks and final pinned runner passed 404/404 on the reviewed exact disposable tree.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-29T09:20:04+00:00",
+      "from": "verifying",
+      "reason": "Independent code, test, security, and release reviews passed with no findings.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-29T09:20:04+00:00",
+      "from": "reviewing",
+      "reason": "Local release-readiness passed; fingerprint-bound receipts are being recorded, while external exact-PR-SHA gates remain pending.",
+      "to": "ready"
+    }
+  ],
+  "route_id": "81850148d1f6",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "M2 Trust CI read-only workspace compatibility",
+  "updated_at": "2026-08-29T09:20:04+00:00"
+}

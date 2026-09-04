@@ -1,0 +1,12 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema", "$id":"urn:adaptive-factory:semantic-coverage:v1", "type":"object", "additionalProperties":false,
+  "required":["schema_version","subject_digest","validator","entries","coverage_millionths"],
+  "$defs": {
+    "id":{"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"}, "digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "ref":{"type":"string","minLength":1,"maxLength":256,"pattern":"^[A-Za-z0-9][A-Za-z0-9._:/@+\\-]{0,255}$"},
+    "requirement":{"type":"object","additionalProperties":false,"required":["kind","requirement_id"],"properties":{"kind":{"enum":["acceptance_criterion","invariant","forbidden_outcome","architecture_rule","non_functional_requirement"]},"requirement_id":{"$ref":"#/$defs/id"}}},
+    "validator":{"type":"object","additionalProperties":false,"required":["validator_id","role","capabilities","definition_digest","model_digest","context_digest"],"properties":{"validator_id":{"$ref":"#/$defs/id"},"role":{"const":"semantic_validator"},"capabilities":{"type":"array","minItems":1,"maxItems":256,"uniqueItems":true,"items":{"$ref":"#/$defs/id"}},"definition_digest":{"$ref":"#/$defs/digest"},"model_digest":{"$ref":"#/$defs/digest"},"context_digest":{"$ref":"#/$defs/digest"}}},
+    "entry":{"type":"object","additionalProperties":false,"required":["requirement","status","evidence_refs"],"properties":{"requirement":{"$ref":"#/$defs/requirement"},"status":{"enum":["proven","unproven","contradicted","out_of_scope"]},"evidence_refs":{"type":"array","maxItems":256,"uniqueItems":true,"items":{"$ref":"#/$defs/ref"}}}}
+  },
+  "properties":{"schema_version":{"const":1},"subject_digest":{"$ref":"#/$defs/digest"},"validator":{"$ref":"#/$defs/validator"},"entries":{"type":"array","minItems":1,"maxItems":256,"uniqueItems":true,"items":{"$ref":"#/$defs/entry"}},"coverage_millionths":{"const":1000000}}
+}

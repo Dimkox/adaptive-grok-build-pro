@@ -1,6 +1,42 @@
 # Decisions
 
+<!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
+> **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
+
+## Active governance rules
+
+_No active governance rules._
+
+## Candidate governance rules
+
+_No candidate governance rules._
+<!-- END ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
+
+## 2026-08-28 — Bind governance handoffs to fresh exact state
+
+Reopen the loader-bound governance root, recompute every component digest and finding, validate the complete M2 evidence envelope, and prove the Git head is exact and clean immediately before publishing the six-field handoff. Keeping projections in marked read-only blocks makes them reviewable without giving Markdown mutation or authority capability.
+
+## 2026-08-28 — Freeze governance transitions as canonical values
+
+Represent rule transitions as immutable canonical-byte `RuleRecord` values and append only typed review or approval records supplied at the transition boundary. This preserved rule identity across revisions and prevented callers from mutating a returned record through nested dictionaries.
+
 Patterns that paid for themselves. Each entry is at most three sentences.
+
+## 2026-08-26 — Provider-neutral factory core with explicit adapter boundary
+
+Keep deterministic policy, state, leases, budgets, and capabilities in a PostgreSQL-backed provider-neutral core; make Codex, Grok, and future providers explicit versioned JSON/JSONL translators with no silent fallback. This preserves one-writer and trust boundaries across provider changes while allowing model-native streams to evolve behind conformance-tested adapters.
+
+## 2026-08-26 — Isolate local PostgreSQL proof in a dedicated database
+
+Use `adaptive_grok_build_pro_test` with four bounded `NOLOGIN` Trust CI roles inside the already-running local PostgreSQL service. Dedicated data and least-privilege roles prove migration/store behavior without touching application schemas or representing the run as deployment.
+
+## 2026-08-26 — Version the strict typed contract as change-spec v2
+
+Freeze schema v1 and its YAML-subset reader for explicit unchanged-history compatibility only; every new or modified spec is canonical JSON using schema v2. This prevents malformed canonical input from downgrading into legacy parsing and gives the exactly-one-key evidence model a new contract identity.
+
+## 2026-08-26 — Rebuild M1 from the approved branch, not the stale baseline
+
+The user explicitly approved rebuilding from the roadmap and its M1 design; preserve merged M0 and later repairs because the roadmap forbids discarding newer work. Treat the existing M1 prototype as characterization input, use dual-read/single-write migration, and deliver trusted-runtime deployment as a separate externally approved operation.
 
 ## 2026-09-01 — Converge branch work through one delivery ledger
 
@@ -171,6 +207,204 @@ Reuse the active route only when `FOLLOW_UP_RE` matches the whole prompt, or the
 
 The M0 Trust CI host is hostname `claw` (Xeon E5-2680 v4, ~16 GiB ECC, Ubuntu 24.04). Never call it a laptop; SearXNG already owns `127.0.0.1:8080` and co-located n8n/app databases remain residual risk the user accepted. Trust CI therefore publishes another loopback port (`127.0.0.1:18080` by default) with compose project `adaptive-trust-ci`.
 
+## 2026-08-26 — Qualify aggregate criterion identity by spec path
+
+Acceptance-criterion IDs are local to one change spec, so multi-spec attestation coverage uses `engineering/changes/<change>/change-spec.yaml#AC-NNN` while single-spec coverage keeps the historical bare ID. This preserves deterministic, unambiguous aggregation without inventing a repository-global criterion namespace.
+
+## 2026-08-26 — Git path identity is NUL-delimited data
+
+Trusted changed-file and mutation discovery consumes byte-oriented `git ... -z` output, decodes each path as strict UTF-8, and preserves Unicode, whitespace, and backslash characters exactly. Display-oriented line output and slash rewriting are never approval or provenance inputs.
+
+## 2026-08-26 — Architecture adoption is explicit target state
+
+Use a strict, target-owned `architecture/adoption.json` marker as the adoption switch; diagrams, model drafts, and receipts are evidence rather than durable adoption authority. Marker/model absence preserves legacy `not_configured` only when current/route-base trees contain no authority and bounded history contains no canonical adoption marker; incomplete shallow history fails closed because it cannot prove legacy absence.
+
+## 2026-08-26 — Install architecture tools, never target authority
+
+The installer manages architecture modules, CLI, strict schemas, and non-authoritative examples, while an explicit denylist protects `architecture/adoption.json`, `architecture/system.yaml`, and `architecture/rules.yaml` even if a future managed list includes them accidentally. Repository owners adapt and validate the examples, then create the canonical marker manually as the final adoption step.
+
+## 2026-08-27 — Projection rendering is read-only
+
+Return deterministic Mermaid artifacts on stdout and keep checked-in projection updates in the normal reviewed source-edit path; removing the in-place writer eliminated unnecessary repository mutation capability. Queue applicability uses one bounded package-aware provenance result for both fitness and risk so uncertainty fails closed without turning unrelated method names into queue signals.
+
+## 2026-08-27 — Preserve provenance identity and installer mutation ownership
+
+Queue provenance retains tuple/list positions and dictionary keys so only the changed operation's dependency can trigger fitness/risk; ambiguous selection over queue and non-queue values is explicitly unsupported. Installer-created directories remain transaction-owned until complete-path identity is reproved, allowing relocation failure to remove only operation-created entries and restore exact file mode under umask.
+
+## 2026-08-27 — Replace patch accumulation with semantic joins and single-publication install
+
+After repeated adjacent review failures, model queue provenance with bounded monotone abstract values and control-flow joins instead of syntax-specific overwrites. Make installation read-only for existing repositories and publish only a fully prepared new target with one atomic rename, eliminating the impossible promise that a failed rollback can always restore already-mutated external bytes.
+
+## 2026-08-27 — Charge alias components before copying or merging
+
+Represent may-alias state as one member set per component plus a name-to-component map, union smaller components into larger ones, and charge create, merge, fork, and mutation work before performing it. This removes duplicated per-name closure state and makes the configured value ceiling bound alias analysis as well as abstract values.
+
+## 2026-08-27 — Created names are not cleanup ownership proof
+
+Bind cleanup identity from the descriptor returned by the original create/open sequence and compare the current no-follow name before removal. If the directory-create gap or descriptor identity failure leaves ownership unresolved, preserve the entry and emit an exact manual-cleanup diagnostic instead of adopting a later same-name occupant.
+
+## 2026-08-28 — Derived data artifacts are first-class fitness inputs
+
+Treat packaged migration mirrors as applicability and inventory roots, not as checks reached only through a primary-path change. Secret-bearing data classifications require an explicitly authenticated `secret_flow`, while source ownership and allowed-data edges describe the credentialed process that actually performs the read or write.
+
+## 2026-08-28 — Bound migration work before crossing expensive stages
+
+Charge conservative schema, derived-root, matching, inventory, semantic-plan, and blob-read work before each stage, and consume SQL statements lazily. This makes every exhausted budget a typed unsupported result without first performing the work the budget is meant to bound.
+
+## 2026-08-28 — Canonical migrations seed phased history
+
+Treat the immutable `001_schema`, `002_operational_indexes`, and `003_database_roles` names as exact logical versions in history while reserving expand/migrate/contract semantics for new phased artifacts. This preserves the repository's established convention while making version 004 contiguous and rejecting phased reuse of versions 001–003.
+Legacy versus phased identity is tracked independently of the free-form group text, so a phased group cannot evade the reservation by copying a canonical stem.
+
+## 2026-08-28 — Authenticate authority outside agent-authored records
+
+Treat `actor_kind`, approver names, timestamps, and authority observations inside task/governance JSON as untrusted claims until an independently verifiable receipt binds the exact subject, digest, scope, action, resource, and expiry. This keeps model/provider output proposal-only and prevents evidence-shaped data from minting governance, control-plane, or delivery authority.
+
+## 2026-08-28 — Preserve nullable contracts with typed schema unions
+
+When a closed schema requires a value or `null`, support the standard JSON Schema type array and test both the allowed null and a rejected non-member type. This preserves fail-closed typing instead of weakening the field to an unconstrained value.
+
+## 2026-08-28 — Normalize only declared governance sets
+
+Sort registry records by stable identity and sort only fields whose governance contract defines set semantics; preserve every other array in source order. This makes equivalent registries digest-identical without silently erasing meaning from ordered schema or future record fields.
+
+## 2026-08-28 — Derive handoff inputs at the trust boundary
+
+Recompute the complete M2 architecture evidence from the clean exact Git base/head with conservative trusted risk, then compare every canonical field to the supplied envelope. A caller file is transport only; its self-hash and aggregate architecture digest do not grant authority.
+
+## 2026-08-28 — Separate worktree governance receipts from committed handoffs
+
+Use a distinct `adaptive-grok.governance-receipt-evidence/v1` digest domain for local receipts and bind it to the worktree fingerprint, applicable Git commits, M2 architecture digest, and all effective M3 state. This prevents a local preflight digest from being mistaken for the clean exact-SHA `GovernanceHandoffV1` consumed by later milestones.
+
+## 2026-08-28 — Bind stacked verification to the immediate reviewed predecessor
+
+Set each stacked milestone route's base commit and clean fingerprint to its exact reviewed predecessor, not the program's inception commit. This keeps code budgets, contract deltas, architecture evidence, and rollback scope local to the milestone while preserving the unchanged route identity and approved scope.
+
+## 2026-08-28 — Evaluate exact handoff inputs against immutable Git objects
+
+Bind every authority and consumed evidence byte to the requested exact-head Git blob before emitting a governance handoff. Clean-worktree sampling remains a diagnostic because a nested rename or content swap can be restored between samples.
+
+## 2026-08-29 — Scope build trust and metadata to the operation
+
+Read-only CI helpers pass the exact canonical repository as command-scoped Git trust while continuing to ignore host configuration. Archive metadata is rendered in memory, leaving explicit generation as the only operation allowed to write the source manifest.
+The final measured compatibility diff is 10,739 lines, so the repository-owned architecture ceiling moves narrowly from 10,000 to 10,820 instead of weakening the security or streaming implementation.
+
+## 2026-08-29 — Bind package bytes at the repository descriptor boundary
+
+Exclude symlinks/non-regular entries and open every source component root-relative with `O_NOFOLLOW`, then require the same identity and digest during manifest hashing and ZIP streaming. Create the random sibling with `O_EXCL|O_NOFOLLOW`, retain its fd and digest authority through publication, accept success only after the output name matches that inode, and resolve POSIX-only capabilities lazily so explicit legacy manifest helpers remain portable. Bind all output operations to one effective-UID-owned private parent fd beneath trusted/non-renamable ancestors, no-follow-bind and `fchmod` every newly created parent to exact `0700`, and publish the sidecar from its own exclusive verified fd so pre-existing names are never opened or followed.
+
+## 2026-08-31 — Classify only proven zombie-only post-KILL groups as cleaned up
+
+Retain TERM/KILL/reap, reserve a bounded tail of KILL grace for one read-only procfs scan, and preserve the original command error only if every observed matching PGID member is positively `Z`. Live or incomplete procfs evidence remains fail-closed, avoiding both container zombie error masking and cleanup weakening.
+
+## 2026-08-31 — Keep frozen-adoption receipt tests scoped to their binding contract
+
+The receipt regression proves selected base, route-base, fingerprint, and evidence consistency; it must not assert a global fitness pass for every later stacked worktree. Architecture fitness continues to run independently against the active route base and retains the mixed-change policy.
+
+## 2026-08-31 — Test bounded procfs classification without the host procfs
+
+Mocking `scandir`, stat-file open/read, and monotonic time directly exercises parser and fail-closed branches deterministically while the existing runner regression continues to prove real descendant cleanup. This separates host-dependent process behavior from the security decision over procfs evidence.
+
+## 2026-08-31 — Restack M3 on the exact accepted M2 predecessor
+
+Consume accepted M2 `022411b05924618cfde0cb97b8c8aff4955e6013` through a true two-parent merge and regenerate architecture, governance, and receipt evidence for the resulting exact M3 head. This preserves both reviewed lineages while preventing historical exact-state artifacts from being reused as current authority.
+
+## 2026-09-01 — Keep factory control and merge trust as separate authority domains
+
+Model the factory as a nested local package with its own PostgreSQL schema/roles/migrations and Unix-socket API, and give it no edge or dependency on Trust CI, GitHub, providers, deployment, or production. This made installer, architecture, privilege and API tests able to prove the separation directly.
+
+## 2026-09-01 — Make the deployed boundary executable, not descriptive
+
+Pre-bind the owned mode-`0660` Unix socket, force every store connection through `SET ROLE factory_runtime`, and require persisted verifier/operator M0 records before intake. Exercising those boundaries through the mandatory disposable restart suite exposed failures that metadata and adapter-only tests could not.
+
+## 2026-09-01 — Couple terminal projection changes to resource ownership
+
+Lock capacity in one order and close the live run, allocation and counters before clearing a task's current lease pointer. This makes cancel, supersede, release and orphan reconciliation idempotent views of the same resource invariant.
+
+## 2026-09-01 — Serialize immutable command and intake identities without mutable-row authority
+
+Use transaction advisory locks derived from validated command or intake identity keys, then persist exact command results before returning. This closes concurrent replay races while allowing `factory_runtime` to lose UPDATE authority over immutable intake identity rows.
+
+## 2026-09-01 — Make capacity mutation capability-shaped
+
+Encode 20/10/1 identities and ceilings as schema constraints, revoke raw runtime counter DML, and expose only allocation-bound security-definer functions with a fixed safe search path. This keeps scheduler lifecycle atomic while making arbitrary counter insert/reset impossible to the effective runtime role.
+
+## 2026-09-01 — Bind lease validity to a live capacity allocation
+
+Treat an unreleased canonical allocation as part of the worker fence and deny runtime direct allocation updates. This keeps heartbeat, release and accounting fail-closed if privileged out-of-band drift hides an allocation, without implicitly repairing counters.
+
+## 2026-09-01 — Lock trusted authority inside intake without granting row mutation
+
+Use fixed-search-path security-definer predicates that take a row lock on the exact repository/policy/action subject, and invoke them after intake identity serialization in the insertion transaction. This prevents revocation TOCTOU while retaining an EXECUTE-only runtime boundary.
+
 ## 2026-09-01 — Keep SEO landing generation isolated and repository-scoped
 
 Embedding the Codex skill under `.agents/skills/` and its showcase under `side-projects/` makes the capability available on demand without changing Trust CI runtime behavior. The showcase remains `noindex, nofollow` until a real production origin is supplied and verified.
+
+## 2026-09-02 — Integrate legacy evidence at the stricter contract boundary
+
+When a current-main merge introduces legacy evidence into a stricter accepted stack, migrate only the affected artifacts to the current canonical contract and model real local test capabilities explicitly. Pure URL parsing is not network access, while loopback browser execution is a declared `local_only` edge; this preserved validator strength without granting general egress.
+
+## 2026-09-02 — Bind PR preflight to route and target ranges
+
+Derive the exact route ancestor and the local PR target merge base from Git metadata, then use their changed-file union for hygiene, secret, contract, and SQL gates. This keeps a stale route base from hiding PR-only changes without fetching or treating repository prose as merge authority.
+
+## 2026-09-02 — Exclude exact verifier environments from architecture inventory
+
+Skip untracked directory components named `.venv`, but enumerate force-added index entries beneath them and inspect those exact paths through root-relative no-follow descriptors. This prevents verifier tooling from poisoning later runs without letting the cache-shaped name hide tracked repository source or symlinks.
+
+## 2026-09-02 — Terminalize conditionally across claim races
+
+Cancel and supersede may terminalize directly only while `current_run_id IS NULL`; a failed conditional transition re-reads the committed run, acquires capacity locks before the task row, releases the run exactly once, and retries. This preserves the canonical capacity-to-task order while preventing a winning claim from being erased with live capacity.
+
+## 2026-09-03 — Scope Git ownership trust to the canonical package root
+
+Pass one command-local `safe.directory=<canonical-root>` entry only to repository Git reads while retaining the scrubbed config environment. This supports read-only runner mounts owned by another UID without trusting a wildcard, persisting configuration, or broadening non-repository commands.
+
+## 2026-09-03 — Preserve unresolved accounting as an explicit quarantine
+
+Cancel, supersession and deadline cleanup retain live reservation evidence and set `accounting_blocked` because absence of provider work cannot be proven. Mandatory event/audit metadata records the bounded quarantine decision, and readiness fails closed on equivalent unmarked terminal history.
+
+## 2026-09-03 — Use one cursor-stable deadline reconciliation candidate
+
+An orphan run releases capacity and terminalizes its already-expired queued/retry task in the same candidate savepoint. This prevents a newly eligible row with the same task UUID from falling behind the returned keyset cursor while keeping candidate kinds mutually exclusive.
+
+## 2026-09-03 — Keep the unaccepted repair schema-neutral on PostgreSQL 17
+
+No M4 candidate was accepted or authorized for persistent rollout, so the repair supports fresh PostgreSQL 17 schema `013` and does not invent an upgrade population or migration. Older candidate databases remain killed comparison evidence and are replaced fresh, while PostgreSQL 17 `transaction_timeout` plus decreasing statement timeouts enforces the whole reconciliation deadline. Leaving later migration numbers unused also avoids a compatibility collision with provisional M5 `014` through `017`.
+
+## 2026-09-03 — Separate intent, work and command identities
+
+Keep `intent_digest` over the complete normalized intake as the immutable stored/M5 packet identity, but deduplicate on a namespaced semantic work digest that excludes only transport `request_id` and the entire M0 proof. Bind each request ID separately to its full request digest and exact result in `command_results`, so refreshed equivalent authority deduplicates while changed reuse conflicts.
+
+## 2026-09-03 — Keep history cursors public but order by durable keys
+
+Expose a task-bound run UUID cursor while resolving it to the run's immutable fence, and use event sequence directly for event pages. Selecting and validating a `limit+1` window before slicing preserves stable pagination and makes malformed lookahead evidence fail closed without changing schema or `LeaseGrant` v1.
+
+## 2026-09-03 — Centralize task transitions without changing lock ownership
+
+Apply every task-state update through one operation-scoped, lock-neutral policy primitive after the caller acquires its required locks. This preserves capacity-before-task ordering in cleanup paths and makes any policy or evidence failure roll back the full mutation transaction.
+
+## 2026-09-03 — Make one checked document the API contract
+
+Disable runtime OpenAPI generation and describe all 17 operations with closed inline schemas, stable operation IDs, normalized errors and required response correlation in the checked contract. Keeping operation IDs optional for legacy architecture inputs while validating uniqueness and compatibility when present preserves existing Trust CI contracts without weakening the factory-specific gate.
+
+## 2026-09-03 — Normalize unexpected local API failures at the outer boundary
+
+Return one closed, redacted 500 envelope and establish correlation inside the outer exception handler because unexpected failures can bypass user middleware. Declare that response for every checked operation and never reflect exception text.
+
+## 2026-09-03 — Derive release member modes from the Git tree
+
+Use exact Git `100644`/`100755` modes only for release ZIP attributes while retaining the full opened-file identity for no-follow and replacement checks. This makes exact-tree archives byte-stable across checkouts without weakening secure source or publication binding.
+
+## 2026-09-03 — Layer finite budgets instead of rewriting the M2 bound
+
+Restore the original six-prefix M2 budget unchanged and enforce separate finite error budgets over the governed aggregate, all factory files, source, contracts and tests. Independent overlaps preserve the historical M2 rationale while bounding the measured frozen M4 representation without minification, stacked-route partitioning or an exemption.
+
+## 2026-09-03 — Anchor the remaining milestones to accepted predecessors
+
+Define T0 only when an exact M4 SHA earns separately authorized PR delivery, external exact-SHA gates and protected acceptance, then sequence M5-M9 from accepted predecessors rather than missed calendar promises. This keeps M8 cohort duration and M9 signed-artifact/environment/recovery entry conditions truthful; 2026-09-08 remains superseded history, never a waiver.
+
+## 2026-09-03 — Keep final evidence outside the package fingerprint
+
+Build the artifact-only final HEAD first, then store exact-head review reports under the locally ignored `engineering/changes/<active>/evidence/final-runtime-<sha>/` so the active change package retains them without changing Git package inventory or the final tree fingerprint. Runtime receipts bind that unchanged fingerprint; this workflow evidence is not merge authority.

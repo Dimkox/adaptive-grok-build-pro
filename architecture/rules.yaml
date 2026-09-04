@@ -1,0 +1,642 @@
+{
+  "architecture_id": "ARCH-ADAPTIVE-GROK-M2",
+  "background_job_policies": [
+    {
+      "id": "FIT-BOUNDED-WORKER-JOBS",
+      "max_retries": 3,
+      "node_types": [
+        "worker",
+        "runner"
+      ],
+      "require_correlation_id": true,
+      "require_idempotency": true,
+      "severity": "error",
+      "terminal_actions": [
+        "dead_letter",
+        "manual_recovery",
+        "reject"
+      ]
+    }
+  ],
+  "change_separation_policies": [
+    {
+      "id": "FIT-TRUST-CI-SEPARATION",
+      "implementation_prefixes": [
+        ".grok",
+        ".grok-stack",
+        "architecture",
+        "delivery",
+        "engineering/contracts",
+        "factory",
+        "governance",
+        "schemas",
+        "scripts"
+      ],
+      "severity": "error",
+      "trust_ci_prefixes": [
+        "trust-ci"
+      ]
+    }
+  ],
+  "code_budgets": [
+    {
+      "id": "FIT-BOUNDED-ARCHITECTURE-CHANGE",
+      "max_ast_complexity": 5000,
+      "max_changed_bytes": 1000000,
+      "max_changed_lines": 10820,
+      "path_prefixes": [
+        ".grok-stack/adaptive_grok",
+        "architecture",
+        "delivery",
+        "engineering/contracts",
+        "governance",
+        "schemas",
+        "scripts"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "FIT-BOUNDED-ALL-GOVERNED-CHANGE",
+      "max_ast_complexity": 5000,
+      "max_changed_bytes": 1300000,
+      "max_changed_lines": 24000,
+      "path_prefixes": [
+        ".grok-stack/adaptive_grok",
+        "architecture",
+        "engineering/contracts",
+        "factory",
+        "governance",
+        "schemas",
+        "scripts"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "FIT-BOUNDED-FACTORY-CHANGE",
+      "max_ast_complexity": 1000,
+      "max_changed_bytes": 950000,
+      "max_changed_lines": 22000,
+      "path_prefixes": [
+        "factory"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
+      "max_ast_complexity": 650,
+      "max_changed_bytes": 235000,
+      "max_changed_lines": 5500,
+      "path_prefixes": [
+        "factory/src"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "FIT-BOUNDED-FACTORY-CONTRACT-CHANGE",
+      "max_ast_complexity": 1,
+      "max_changed_bytes": 285000,
+      "max_changed_lines": 8500,
+      "path_prefixes": [
+        "factory/contracts"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
+      "max_ast_complexity": 350,
+      "max_changed_bytes": 340000,
+      "max_changed_lines": 7500,
+      "path_prefixes": [
+        "factory/tests"
+      ],
+      "severity": "error"
+    }
+  ],
+  "contract_policies": [
+    {
+      "compatibility": "bidirectional",
+      "contract_kinds": [
+        "openapi"
+      ],
+      "id": "FIT-OPENAPI-BIDIRECTIONAL",
+      "severity": "error"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "contract_kinds": [
+        "event",
+        "json_schema"
+      ],
+      "id": "FIT-CONSUMER-CONTRACTS",
+      "severity": "error"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "contract_kinds": [
+        "json_schema"
+      ],
+      "id": "FIT-GOVERNANCE-HANDOFF-COMPATIBILITY",
+      "severity": "error"
+    },
+    {
+      "compatibility": "exact",
+      "contract_kinds": [
+        "signed_payload"
+      ],
+      "id": "FIT-SIGNED-PAYLOAD-EXACT",
+      "severity": "error"
+    }
+  ],
+  "forbidden_edges": [
+    {
+      "edge_types": [
+        "control",
+        "data_flow",
+        "dependency",
+        "deployment",
+        "publication",
+        "secret_flow"
+      ],
+      "from_trust_domains": [
+        "TD-LOCAL-PREFLIGHT",
+        "TD-REPOSITORY"
+      ],
+      "id": "FIT-NO-LOCAL-PRODUCTION-AUTHORITY",
+      "severity": "error",
+      "to_trust_domains": [
+        "TD-PRODUCTION-TRUST"
+      ]
+    },
+    {
+      "edge_types": [
+        "control",
+        "data_flow",
+        "dependency",
+        "deployment",
+        "publication",
+        "secret_flow"
+      ],
+      "from_trust_domains": [
+        "TD-FACTORY-CONTROL"
+      ],
+      "id": "FIT-FACTORY-NO-TRUST-OR-EXTERNAL-EDGE",
+      "severity": "error",
+      "to_trust_domains": [
+        "TD-TRUST-CI-CONTROL",
+        "TD-TRUST-CI-EXECUTION",
+        "TD-EXTERNAL-POLICY",
+        "TD-EXTERNAL-PLATFORM",
+        "TD-PRODUCTION-TRUST"
+      ]
+    }
+  ],
+  "migration_policies": [
+    {
+      "id": "FIT-TRUST-CI-SQL-HISTORY",
+      "immutable_history": true,
+      "path_prefixes": [
+        "trust-ci/sql"
+      ],
+      "required_phases": [
+        "contract",
+        "expand",
+        "migrate"
+      ],
+      "severity": "error"
+    },
+    {
+      "id": "FIT-FACTORY-SQL-HISTORY",
+      "immutable_history": true,
+      "path_prefixes": [
+        "factory/src/adaptive_factory/resources"
+      ],
+      "required_phases": [],
+      "severity": "error"
+    }
+  ],
+  "network_policies": [
+    {
+      "allowed_protocols": [
+        "docker_api",
+        "filesystem",
+        "https",
+        "postgresql",
+        "tcp",
+        "unix_http"
+      ],
+      "id": "FIT-DECLARED-NETWORK-ONLY",
+      "node_types": [
+        "local_component",
+        "service",
+        "worker"
+      ],
+      "require_declared_edge": true,
+      "severity": "error"
+    },
+    {
+      "allowed_protocols": [
+        "filesystem"
+      ],
+      "id": "FIT-RUNNER-NO-NETWORK",
+      "node_types": [
+        "runner"
+      ],
+      "require_declared_edge": true,
+      "severity": "error"
+    }
+  ],
+  "path_boundaries": [
+    {
+      "forbidden_dependency_prefixes": [
+        "trust-ci"
+      ],
+      "id": "FIT-LOCAL-CANNOT-DEFINE-TRUST-CI",
+      "severity": "error",
+      "source_prefixes": [
+        ".grok",
+        ".grok-stack",
+        "architecture",
+        "delivery",
+        "engineering/contracts",
+        "factory",
+        "governance",
+        "schemas",
+        "scripts"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "trust-ci",
+        "trust_ci",
+        "adaptive_trust_ci"
+      ],
+      "id": "FIT-FACTORY-CANNOT-DEFINE-TRUST-CI",
+      "severity": "error",
+      "source_prefixes": [
+        "factory"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.brokers",
+        "adaptive_factory.migrations",
+        "adaptive_factory.store",
+        "adaptive_factory.workspace",
+        "brokers",
+        "migrations",
+        "store",
+        "workspace",
+        "psycopg",
+        "celery",
+        "rq",
+        "git",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-ADAPTER-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/adapters"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.brokers",
+        "adaptive_factory.migrations",
+        "adaptive_factory.store",
+        "adaptive_factory.workspace",
+        "adapters",
+        "brokers",
+        "migrations",
+        "store",
+        "workspace",
+        "psycopg",
+        "celery",
+        "rq",
+        "git",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-EXECUTION-CORE-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/execution_contracts.py",
+        "factory/src/adaptive_factory/protocol.py"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.migrations",
+        "adaptive_factory.store",
+        "adaptive_factory.workspace",
+        "adapters",
+        "migrations",
+        "store",
+        "workspace",
+        "psycopg",
+        "celery",
+        "rq",
+        "git",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-PROPOSAL-BROKER-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/brokers.py"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.brokers",
+        "adaptive_factory.migrations",
+        "adaptive_factory.store",
+        "adapters",
+        "brokers",
+        "migrations",
+        "store",
+        "psycopg",
+        "celery",
+        "rq",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-WORKSPACE-BROKER-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/workspace.py"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.api",
+        "adaptive_factory.migrations",
+        "adaptive_factory.service",
+        "adaptive_factory.store",
+        "adapters",
+        "api",
+        "migrations",
+        "service",
+        "store",
+        "psycopg",
+        "celery",
+        "rq",
+        "git",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-SEMANTIC-BRIDGE-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/semantic_bridge.py"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.api",
+        "adaptive_factory.brokers",
+        "adaptive_factory.execution_contracts",
+        "adaptive_factory.migrations",
+        "adaptive_factory.service",
+        "adaptive_factory.store",
+        "adaptive_factory.workspace",
+        "adapters",
+        "api",
+        "brokers",
+        "execution_contracts",
+        "migrations",
+        "service",
+        "store",
+        "workspace",
+        "psycopg",
+        "celery",
+        "rq",
+        "git",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-SEMANTIC-VALIDATION-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/semantic_adjudication.py",
+        "factory/src/adaptive_factory/semantic_contracts.py",
+        "factory/src/adaptive_factory/semantic_repair.py"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.api",
+        "adaptive_factory.brokers",
+        "adaptive_factory.execution_contracts",
+        "adaptive_factory.migrations",
+        "adaptive_factory.semantic_adjudication",
+        "adaptive_factory.semantic_bridge",
+        "adaptive_factory.semantic_repair",
+        "adaptive_factory.service",
+        "adaptive_factory.store",
+        "adaptive_factory.workspace",
+        "adapters",
+        "api",
+        "brokers",
+        "execution_contracts",
+        "migrations",
+        "semantic_adjudication",
+        "semantic_bridge",
+        "semantic_repair",
+        "service",
+        "store",
+        "workspace",
+        "psycopg",
+        "celery",
+        "rq",
+        "git",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-SHADOW-HANDOFF-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/shadow_contracts.py",
+        "factory/src/adaptive_factory/shadow_evaluation.py"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.api",
+        "adaptive_factory.brokers",
+        "adaptive_factory.execution_contracts",
+        "adaptive_factory.migrations",
+        "adaptive_factory.semantic_adjudication",
+        "adaptive_factory.semantic_bridge",
+        "adaptive_factory.semantic_repair",
+        "adaptive_factory.service",
+        "adaptive_factory.store",
+        "adaptive_factory.workspace",
+        "psycopg",
+        "celery",
+        "rq",
+        "git",
+        "requests",
+        "httpx",
+        "urllib",
+        "socket",
+        "subprocess"
+      ],
+      "id": "FIT-FACTORY-EARNED-AUTONOMY-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/autonomy.py",
+        "factory/src/adaptive_factory/m7_autonomy_bridge.py"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.api",
+        "adaptive_factory.brokers",
+        "adaptive_factory.execution_contracts",
+        "adaptive_factory.migrations",
+        "adaptive_factory.service",
+        "adaptive_factory.store",
+        "adaptive_factory.workspace",
+        "adaptive_trust_ci",
+        "trust_ci",
+        "fastapi",
+        "httpx",
+        "psycopg",
+        "requests",
+        "socket",
+        "subprocess",
+        "urllib",
+        "uvicorn"
+      ],
+      "id": "FIT-STAGED-DELIVERY-SOURCE-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "delivery/src/adaptive_delivery"
+      ]
+    }
+  ],
+  "risk_escalations": [
+    {
+      "id": "FIT-ARCHITECTURE-EXPANSION-RISK",
+      "risk": "red",
+      "severity": "error",
+      "triggers": [
+        "new_datastore",
+        "new_edge",
+        "new_external_integration",
+        "new_framework",
+        "new_network_client",
+        "new_queue",
+        "new_secret",
+        "new_service",
+        "new_trust_crossing"
+      ]
+    },
+    {
+      "id": "FIT-CONTRACT-OR-JOB-RISK",
+      "risk": "yellow",
+      "severity": "error",
+      "triggers": [
+        "new_contract",
+        "new_job"
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "secret_flow_policies": [
+    {
+      "allowed_trust_domains": [
+        "TD-PRODUCTION-TRUST",
+        "TD-TRUST-CI-CONTROL",
+        "TD-TRUST-CI-EXECUTION"
+      ],
+      "id": "FIT-TRUST-MATERIAL-BOUNDARY",
+      "secret_classes": [
+        "SECRET-CI-SIGNING",
+        "SECRET-DATABASE",
+        "SECRET-GITHUB-APP",
+        "SECRET-HUMAN-APPROVAL",
+        "SECRET-READ-TOKEN",
+        "SECRET-WEBHOOK"
+      ],
+      "severity": "error"
+    },
+    {
+      "allowed_trust_domains": [
+        "TD-FACTORY-CONTROL"
+      ],
+      "id": "FIT-FACTORY-MATERIAL-BOUNDARY",
+      "secret_classes": [
+        "SECRET-FACTORY-DATABASE",
+        "SECRET-FACTORY-TOKEN"
+      ],
+      "severity": "error"
+    }
+  ],
+  "tenant_authorization_policies": [
+    {
+      "data_classifications": [
+        "DATA-APPROVAL",
+        "DATA-ATTESTATION",
+        "DATA-HOLDOUT",
+        "DATA-JOB-STATE",
+        "DATA-FACTORY-AUDIT",
+        "DATA-FACTORY-INTENT",
+        "DATA-FACTORY-STATE",
+        "DATA-TRUST-MATERIAL"
+      ],
+      "id": "FIT-RESTRICTED-DATA-AUTHORIZATION",
+      "require_authorization": true,
+      "require_tenant_filter": false,
+      "severity": "error"
+    }
+  ],
+  "workspace_trust_policies": [
+    {
+      "forbidden_secret_classes": [
+        "SECRET-CI-SIGNING",
+        "SECRET-DATABASE",
+        "SECRET-GITHUB-APP",
+        "SECRET-HUMAN-APPROVAL",
+        "SECRET-READ-TOKEN",
+        "SECRET-WEBHOOK"
+      ],
+      "id": "FIT-UNTRUSTED-RUNNER-NO-SECRETS",
+      "node_types": [
+        "repository",
+        "runner"
+      ],
+      "severity": "error"
+    }
+  ]
+}

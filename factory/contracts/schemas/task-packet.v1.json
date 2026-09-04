@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.invalid/factory/task-packet.v1.json",
+  "title": "Adaptive Factory TaskPacketV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "protocol_version", "task_id", "run_id", "owner", "fence", "role", "repository_id", "legacy_intent_digest", "authority", "provider", "capability_policy", "plan", "workspace_handle", "acceptance_ids", "limits"],
+  "properties": {
+    "contract_version": {"const": 1},
+    "protocol_version": {"const": "adaptive-factory.execution/v1"},
+    "task_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "owner": {"type": "string", "minLength": 1, "maxLength": 128},
+    "fence": {"type": "integer", "minimum": 1},
+    "role": {"enum": ["reader", "writer"]},
+    "repository_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "legacy_intent_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "authority": {"type": "object"},
+    "provider": {"type": "object"},
+    "capability_policy": {"type": "object"},
+    "plan": {"type": "object"},
+    "workspace_handle": {"type": "string", "pattern": "^workspace:[0-9a-f]{64}$"},
+    "acceptance_ids": {"type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": {"type": "string", "pattern": "^AC-[0-9]{3,6}$"}},
+    "limits": {"type": "object"}
+  }
+}

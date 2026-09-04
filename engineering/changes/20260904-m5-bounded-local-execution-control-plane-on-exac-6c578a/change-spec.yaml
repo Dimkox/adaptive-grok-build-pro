@@ -1,0 +1,48 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"M4 migrations 001-013, its 17-operation control contract, identities, authorization, lifecycle, fencing, capacity, budget, accounting, history, retry, reconciliation, deadline and kill-switch behavior remain unchanged.","evidence":[{"test":"factory/tests/test_openapi_contract.py"},{"test":"factory/tests/test_postgres_integration.py"}]},
+    {"id":"AC-002","statement":"Fresh and exact schema-13 disposable PostgreSQL 17 databases migrate transactionally through 014-017 with checksum, order, version, timeout, canonicalization and disjoint runtime/attestor role guards; failure leaves prior state intact.","evidence":[{"test":"factory/tests/test_migrations.py"},{"test":"factory/tests/test_execution_persistence_postgres.py"}]},
+    {"id":"AC-003","statement":"One live M4 grant and one exact trusted selection create one immutable task packet and run manifest with separate domain digests bound to all persisted authority, source, policy, provider, plan, workspace, acceptance, deadline and limit identities; conflicting replay is rejected.","evidence":[{"test":"factory/tests/test_contracts.py"},{"test":"factory/tests/test_execution_contracts.py"},{"test":"factory/tests/test_execution_service.py"}]},
+    {"id":"AC-004","statement":"The task-packet, execution-invocation, execution-event and workspace-result v1 schemas, bounded canonical protocol and exact-version offline adapters accept only allowlisted events and reject malformed, oversized, unknown, mismatched, private-reasoning, ineligible and post-terminal input without provider, subprocess, network or fallback execution.","evidence":[{"test":"factory/tests/test_protocol.py"},{"test":"factory/tests/test_adapters.py"}]},
+    {"id":"AC-005","statement":"Every execution mutation requires authenticated task:execute authority, repository authorization, durable role and owner equality, and the live task/run/fence/allocation tuple; cross-boundary and stale-fence attempts commit nothing.","evidence":[{"test":"factory/tests/test_api.py"},{"test":"factory/tests/test_execution_persistence_postgres.py"}]},
+    {"id":"AC-006","statement":"Execution-disabled startup preserves the complete M4 surface and exposes no M5 route; complete injected local composition exposes exactly six logical operations in each planned closed factory-execution.v1.json and factory-execution.v2.json contract.","evidence":[{"test":"factory/tests/test_openapi_contract.py"},{"test":"factory/tests/test_server.py"}]},
+    {"id":"AC-007","statement":"Stages and proposals persist in strict sequence under live authority; terminal processing verifies trusted snapshot and artifact evidence and atomically writes one immutable result and one existing M4 disposition; replay produces one outcome.","evidence":[{"test":"factory/tests/test_brokers.py"},{"test":"factory/tests/test_execution_persistence_postgres.py"}]},
+    {"id":"AC-008","statement":"Disposable PostgreSQL 17 restart evidence proves bounded indexed recovery, concurrent fencing, preservation of live work, factual stale-work closure, exact-handle cleanup, durable replay and no synthetic evidence.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"test":"factory/tests/test_recovery.py"},{"test":"factory/tests/test_execution_persistence_postgres.py"}]},
+    {"id":"AC-009","statement":"Focused checks, retained M4 regressions, final PR-mode verification and every route-selected independent review pass against one clean exact tree; historical, external and production results do not transfer.","evidence":[{"receipt":"verification"},{"receipt":"code_review"},{"receipt":"test_review"},{"receipt":"security_review"},{"receipt":"release_review"}]}
+  ],
+  "approvals":{"required_scopes":["scope_and_design_approval","migration_or_external_write_approval"]},
+  "change_id":"20260904-m5-bounded-local-execution-control-plane-on-exac-6c578a",
+  "contracts":{
+    "events":["factory/contracts/schemas/execution-event.v1.json"],
+    "json_schema":["factory/contracts/schemas/execution-invocation.v1.json","factory/contracts/schemas/task-packet.v1.json","factory/contracts/schemas/workspace-result.v1.json"],
+    "openapi":["factory/contracts/openapi/factory-control.v1.json","factory/contracts/openapi/factory-execution.v1.json","factory/contracts/openapi/factory-execution.v2.json"]
+  },
+  "forbidden_outcomes":[
+    {"id":"FORBID-001","statement":"Any weakening or semantic substitution of M4 migration, control, identity, authorization, lifecycle, history, accounting or fencing guarantees.","evidence":[{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"code_review"}]},
+    {"id":"FORBID-002","statement":"Authority derived from request data or provider output, including repository, role, policy, workspace, snapshot, attestation or terminal authority.","evidence":[{"test":"factory/tests/test_execution_service.py"},{"receipt":"security_review"}]},
+    {"id":"FORBID-003","statement":"Provider invocation, subprocess execution, credential access, network access, executable discovery or dynamic provider fallback from a shipped M5 path.","evidence":[{"test":"factory/tests/test_adapters.py"},{"receipt":"security_review"}]},
+    {"id":"FORBID-004","statement":"Cross-repository access, stale-fence mutation, split lifecycle ownership, partial terminal state, evidence rewriting or fabricated recovery evidence.","evidence":[{"test":"factory/tests/test_execution_persistence_postgres.py"},{"receipt":"security_review"}]},
+    {"id":"FORBID-005","statement":"Migration application to shared, persistent, external or production data, destructive down-migration, or rewriting migrations 001-017.","evidence":[{"test":"factory/tests/test_migrations.py"},{"receipt":"release_review"}]},
+    {"id":"FORBID-006","statement":"Any claim of PR delivery, merge eligibility, release, deployment, live-provider operation, external acceptance or production authority from repository-local evidence.","evidence":[{"receipt":"release_review"}]}
+  ],
+  "invariants":[
+    {"id":"INV-001","statement":"M4 remains the sole task, lease, owner, role, fence, allocation, capacity, deadline, budget, accounting, retry and transition authority; M5 only narrows it.","evidence":[{"test":"factory/tests/test_service.py"}]},
+    {"id":"INV-002","statement":"M4 and M5 intent, work, transport, packet, manifest, proposal, snapshot, attestation and result identities remain domain-separated.","evidence":[{"test":"factory/tests/test_contracts.py"},{"test":"factory/tests/test_execution_contracts.py"}]},
+    {"id":"INV-003","statement":"Repository identity derived from the locked task remains the tenancy boundary and is checked with actor, owner, role, run, fence, allocation and workspace identity.","evidence":[{"test":"factory/tests/test_api.py"}]},
+    {"id":"INV-004","statement":"Provider-native input is untrusted proposal data and cannot modify policy, select a trusted profile, expose private reasoning, supply a trusted snapshot or initiate an external action.","evidence":[{"test":"factory/tests/test_protocol.py"}]},
+    {"id":"INV-005","statement":"Packets and manifests are insert-once; stages, proposals, attestations, results and recovery outcomes are immutable or append-only; exact replay is idempotent and conflicting replay fails closed.","evidence":[{"test":"factory/tests/test_execution_persistence_postgres.py"}]},
+    {"id":"INV-006","statement":"Terminal result, M4 disposition, accounting, allocation release, event and audit fact commit atomically under one live fence.","evidence":[{"test":"factory/tests/test_execution_persistence_postgres.py"}]},
+    {"id":"INV-007","statement":"Recovery is bounded, higher-fenced, exact-handle and factual; it never synthesizes provider, snapshot, attestation, result or external evidence.","evidence":[{"test":"factory/tests/test_recovery.py"}]},
+    {"id":"INV-008","statement":"Execution is disabled by default and unavailable until every trusted dependency and least-privilege database capability is ready before socket exposure.","evidence":[{"test":"factory/tests/test_server.py"}]}
+  ],
+  "objective":{"id":"OBJ-001","statement":"Integrate an additive disabled-by-default M5 bounded local execution control plane on exact M4 predecessor 67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4; use 78ad2f679d38dc3244e716c586332417e610089c only as the router-selected delivery comparison base.","success_metric":"all_nine_finite_acceptance_criteria_pass_on_one_clean_exact_tree","target":"repository_local_source_with_migrations_014_017_and_zero_live_or_external_effects"},
+  "observability":[
+    {"id":"SIG-001","metric":"factory_execution_claim_outcomes_total","proves":["OBJ-001"]},
+    {"id":"SIG-002","metric":"factory_execution_terminal_outcomes_total","proves":["OBJ-001"]},
+    {"id":"SIG-003","metric":"factory_execution_recovery_outcomes_total","proves":["OBJ-001"]},
+    {"id":"SIG-004","metric":"factory_execution_cleanup_outcomes_total","proves":["OBJ-001"]}
+  ],
+  "risk":{"domains":["ai","api","data","security"],"tier":"red"},
+  "rollback":{"maximum_steps":3,"strategy":"forward_fix"},
+  "schema_version":2
+}

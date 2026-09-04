@@ -1,0 +1,35 @@
+flowchart LR
+  node_8938bd3db1932751["NODE-CHANGE-SPEC-EVIDENCE | repository | repository engineering"]
+  node_2e8a7072de3f3743["NODE-EXACT-SHA-WORKSPACE | repository | Trust CI operators"]
+  node_0a0fe2f046a648e9["NODE-EXTERNAL-HOLDOUT | policy_bundle | external Trust CI policy operators"]
+  node_a6c166e55f8e1784["NODE-FACTORY-CONTROL | local_component | local factory operators"]
+  node_0a087cfaed95a8ad["NODE-FACTORY-EXECUTION-CORE | local_component | local factory operators"]
+  node_a77de286f8308fd4["NODE-FACTORY-POSTGRES | datastore | local factory operators"]
+  node_fae11f6a95d982dc["NODE-FACTORY-PROVIDER-ADAPTERS | local_component | local factory operators"]
+  node_c10acb5d92ad0ee0["NODE-FACTORY-SEMANTIC-VALIDATION | local_component | independent local semantic validators"]
+  node_23f89cd7152cc030["NODE-FACTORY-WORKSPACE-BROKER | local_component | local factory operators"]
+  node_8b8a8cd21b180532["NODE-GITHUB | external_system | GitHub"]
+  node_dfd1104494c6ab8f["NODE-GOVERNANCE-REGISTRIES | repository | repository engineering"]
+  node_23677f8757246623["NODE-GOVERNANCE-VALIDATOR | local_component | repository engineering"]
+  node_e4e37173e410ad23["NODE-HUMAN-APPROVAL | actor | human security approvers"]
+  node_1c3a10ba26a8e80d["NODE-ISOLATED-RUNNER | runner | Trust CI operators"]
+  node_23bed8fcbfc79861["NODE-LOCAL-VERIFIER | local_component | repository engineering"]
+  node_e1da543fa66b0086["NODE-STAGED-DELIVERY-SOURCE | local_component | repository engineering"]
+  node_d0e570b2fbe52f98["NODE-TRUST-CI-API | service | Trust CI operators"]
+  node_1a6c7efb2d08591b["NODE-TRUST-CI-POSTGRES | datastore | Trust CI operators"]
+  node_070dda93443dcc1f["NODE-TRUST-CI-WORKER | worker | Trust CI operators"]
+  node_d0e570b2fbe52f98 -->|"EDGE-API-POSTGRES | data_flow | postgresql | DATA-APPROVAL | DATA-ATTESTATION | DATA-JOB-STATE"| node_1a6c7efb2d08591b
+  node_8938bd3db1932751 -->|"EDGE-CHANGE-LOCAL-VERIFIER | data_flow | filesystem | DATA-CHANGE-EVIDENCE | DATA-REPOSITORY-SOURCE"| node_23bed8fcbfc79861
+  node_fae11f6a95d982dc -->|"EDGE-FACTORY-ADAPTERS-EXECUTION-CORE | data_flow | jsonl | DATA-FACTORY-INTENT | DATA-FACTORY-STATE"| node_0a087cfaed95a8ad
+  node_a6c166e55f8e1784 -->|"EDGE-FACTORY-CONTROL-POSTGRES | data_flow | postgresql | DATA-FACTORY-AUDIT | DATA-FACTORY-INTENT | DATA-FACTORY-STATE"| node_a77de286f8308fd4
+  node_0a087cfaed95a8ad -->|"EDGE-FACTORY-EXECUTION-SEMANTIC-VALIDATION | data_flow | json | DATA-FACTORY-INTENT | DATA-FACTORY-STATE"| node_c10acb5d92ad0ee0
+  node_23f89cd7152cc030 -->|"EDGE-FACTORY-WORKSPACE-CONTROL | data_flow | filesystem | DATA-FACTORY-STATE | DATA-REPOSITORY-SOURCE"| node_a6c166e55f8e1784
+  node_8b8a8cd21b180532 -->|"EDGE-GITHUB-TRUST-CI-API | data_flow | https | DATA-PR-PROJECTION"| node_d0e570b2fbe52f98
+  node_dfd1104494c6ab8f -->|"EDGE-GOVERNANCE-REGISTRIES-VALIDATOR | data_flow | filesystem | DATA-REPOSITORY-SOURCE"| node_23677f8757246623
+  node_23677f8757246623 -->|"EDGE-GOVERNANCE-VALIDATOR-LOCAL-VERIFIER | data_flow | filesystem | DATA-GOVERNANCE-EVIDENCE"| node_23bed8fcbfc79861
+  node_e4e37173e410ad23 -->|"EDGE-HUMAN-TRUST-CI-API | data_flow | https | DATA-APPROVAL"| node_d0e570b2fbe52f98
+  node_1c3a10ba26a8e80d -->|"EDGE-RUNNER-EXTERNAL-HOLDOUT | data_flow | filesystem | DATA-HOLDOUT"| node_0a0fe2f046a648e9
+  node_1c3a10ba26a8e80d -->|"EDGE-RUNNER-WORKSPACE | data_flow | filesystem | DATA-REPOSITORY-SOURCE"| node_2e8a7072de3f3743
+  node_e1da543fa66b0086 -->|"EDGE-STAGED-DELIVERY-LOCAL-VERIFIER | data_flow | filesystem | DATA-CHANGE-EVIDENCE"| node_23bed8fcbfc79861
+  node_070dda93443dcc1f -->|"EDGE-WORKER-GITHUB-PUBLICATION | publication | https | DATA-CHECK-STATUS"| node_8b8a8cd21b180532
+  node_070dda93443dcc1f -->|"EDGE-WORKER-POSTGRES | data_flow | postgresql | DATA-APPROVAL | DATA-ATTESTATION | DATA-JOB-STATE"| node_1a6c7efb2d08591b

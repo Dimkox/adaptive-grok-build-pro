@@ -1,0 +1,1 @@
+{"actors":[{"actor_id":"replace-with-worker-id","kind":"worker","scopes":["task:claim","task:heartbeat","task:release","task:budget"],"repositories":["replace/with-repository"],"token_file":"/run/secrets/adaptive-factory-worker-token"}]}

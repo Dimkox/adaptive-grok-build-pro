@@ -1,0 +1,101 @@
+{
+  "$defs": {
+    "actor": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_id": {"maxLength": 256, "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/-]*$", "type": "string"},
+        "actor_kind": {"enum": ["human", "agent", "system"], "type": "string"}
+      },
+      "required": ["actor_id", "actor_kind"],
+      "type": "object"
+    },
+    "approval": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_id": {"maxLength": 256, "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/-]*$", "type": "string"},
+        "actor_kind": {"const": "human", "type": "string"},
+        "approved_at": {"$ref": "#/$defs/timestamp"},
+        "scope": {"const": "governance", "type": "string"}
+      },
+      "required": ["actor_id", "actor_kind", "approved_at", "scope"],
+      "type": "object"
+    },
+    "enforcement": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"enum": ["advisory", "verifier", "external_holdout"], "type": "string"},
+        "selector": {"maxLength": 256, "minLength": 1, "pattern": "^[a-z][a-z0-9_.:-]*$", "type": "string"}
+      },
+      "required": ["kind", "selector"],
+      "type": "object"
+    },
+    "evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {"$ref": "#/$defs/id"},
+        "path": {"$ref": "#/$defs/path"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      },
+      "required": ["evidence_id", "path", "sha256"],
+      "type": "object"
+    },
+    "id": {"maxLength": 128, "minLength": 3, "pattern": "^[A-Z][A-Z0-9_-]*$", "type": "string"},
+    "path": {"maxLength": 4096, "minLength": 1, "pattern": "^[^/\\\\][^\\\\]*[^/\\\\]$|^[^/\\\\]$", "type": "string"},
+    "review": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_id": {"maxLength": 256, "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/-]*$", "type": "string"},
+        "actor_kind": {"enum": ["human", "system"], "type": "string"},
+        "reviewed_at": {"$ref": "#/$defs/timestamp"}
+      },
+      "required": ["actor_id", "actor_kind", "reviewed_at"],
+      "type": "object"
+    },
+    "rule": {
+      "additionalProperties": false,
+      "properties": {
+        "approved_by": {"items": {"$ref": "#/$defs/approval"}, "maxItems": 16, "type": "array", "uniqueItems": true},
+        "author": {"$ref": "#/$defs/actor"},
+        "confidence": {"enum": ["low", "medium", "high"], "type": "string"},
+        "created_at": {"$ref": "#/$defs/timestamp"},
+        "enforcement": {"$ref": "#/$defs/enforcement"},
+        "evidence": {"items": {"$ref": "#/$defs/evidence"}, "maxItems": 64, "minItems": 1, "type": "array", "uniqueItems": true},
+        "expires_at": {"$ref": "#/$defs/timestamp_or_null"},
+        "policy_version": {"maximum": 1000000, "minimum": 1, "type": "integer"},
+        "reviewed_by": {"items": {"$ref": "#/$defs/review"}, "maxItems": 32, "type": "array", "uniqueItems": true},
+        "revision": {"maximum": 1000000, "minimum": 1, "type": "integer"},
+        "rule_id": {"$ref": "#/$defs/id"},
+        "scope": {"$ref": "#/$defs/scope"},
+        "source_task": {"maxLength": 256, "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$", "type": "string"},
+        "statement": {"maxLength": 4000, "minLength": 1, "type": "string"},
+        "status": {"enum": ["candidate", "reviewed", "approved", "active", "deprecated", "revoked"], "type": "string"},
+        "supersedes": {"items": {"$ref": "#/$defs/id"}, "maxItems": 64, "type": "array", "uniqueItems": true}
+      },
+      "required": ["rule_id", "source_task", "author", "scope", "statement", "enforcement", "evidence", "confidence", "created_at", "expires_at", "reviewed_by", "approved_by", "policy_version", "status", "supersedes", "revision"],
+      "type": "object"
+    },
+    "scope": {
+      "additionalProperties": false,
+      "properties": {
+        "domains": {"items": {"maxLength": 64, "minLength": 1, "pattern": "^[a-z][a-z0-9_-]*$", "type": "string"}, "maxItems": 32, "type": "array", "uniqueItems": true},
+        "repository_paths": {"items": {"$ref": "#/$defs/path"}, "maxItems": 64, "type": "array", "uniqueItems": true},
+        "route_intents": {"items": {"enum": ["feature", "bugfix", "refactor", "release", "incident", "research"], "type": "string"}, "maxItems": 6, "type": "array", "uniqueItems": true}
+      },
+      "required": ["repository_paths", "domains", "route_intents"],
+      "type": "object"
+    },
+    "sha256": {"maxLength": 64, "minLength": 64, "pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "timestamp": {"maxLength": 32, "minLength": 20, "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$", "type": "string"},
+    "timestamp_or_null": {"maxLength": 32, "minLength": 20, "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$", "type": ["string", "null"]}
+  },
+  "$id": "https://adaptive-grok.local/schemas/governance-rule.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "governance_id": {"const": "GOV-ADAPTIVE-GROK-M3", "type": "string"},
+    "rules": {"items": {"$ref": "#/$defs/rule"}, "maxItems": 512, "type": "array", "uniqueItems": true},
+    "schema_version": {"const": 1, "type": "integer"}
+  },
+  "required": ["schema_version", "governance_id", "rules"],
+  "type": "object"
+}

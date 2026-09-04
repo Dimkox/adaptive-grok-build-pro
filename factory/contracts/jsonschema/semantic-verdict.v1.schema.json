@@ -1,0 +1,6 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema", "$id":"urn:adaptive-factory:semantic-verdict:v1", "type":"object", "additionalProperties":false,
+  "required":["schema_version","subject_digest","decision","decision_source","finding_identity_digests","duplicate_identity_digests","correlated_requirement_keys","contradicted_requirement_keys","unsupported_pass_requirement_keys","residual_risk"],
+  "$defs":{"digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},"digests":{"type":"array","maxItems":256,"uniqueItems":true,"items":{"$ref":"#/$defs/digest"}},"key":{"type":"string","minLength":1,"maxLength":256,"pattern":"^[A-Za-z0-9][A-Za-z0-9._:/@+\\-]{0,255}$"},"keys":{"type":"array","maxItems":256,"uniqueItems":true,"items":{"$ref":"#/$defs/key"}}},
+  "properties":{"schema_version":{"const":1},"subject_digest":{"$ref":"#/$defs/digest"},"decision":{"enum":["pass","repair","needs_human"]},"decision_source":{"const":"deterministic_adjudicator"},"finding_identity_digests":{"$ref":"#/$defs/digests"},"duplicate_identity_digests":{"$ref":"#/$defs/digests"},"correlated_requirement_keys":{"$ref":"#/$defs/keys"},"contradicted_requirement_keys":{"$ref":"#/$defs/keys"},"unsupported_pass_requirement_keys":{"$ref":"#/$defs/keys"},"residual_risk":{"enum":["none","low","medium","high","critical"]}}
+}
