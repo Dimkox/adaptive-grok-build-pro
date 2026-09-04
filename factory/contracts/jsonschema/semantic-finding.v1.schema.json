@@ -1,0 +1,17 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema", "$id":"urn:adaptive-factory:semantic-finding:v1", "type":"object", "additionalProperties":false,
+  "required":["schema_version","subject_digest","finding_id","requirement","severity","category","rule_id","message","evidence_refs","reproduction","repairable","validator","created_at"],
+  "$defs": {
+    "id":{"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"},
+    "digest":{"type":"string","pattern":"^[0-9a-f]{64}$"},
+    "ref":{"type":"string","minLength":1,"maxLength":256,"pattern":"^[A-Za-z0-9][A-Za-z0-9._:/@+\\-]{0,255}$"},
+    "requirement":{"type":"object","additionalProperties":false,"required":["kind","requirement_id"],"properties":{"kind":{"enum":["acceptance_criterion","invariant","forbidden_outcome","architecture_rule","non_functional_requirement"]},"requirement_id":{"$ref":"#/$defs/id"}}},
+    "validator":{"type":"object","additionalProperties":false,"required":["validator_id","role","capabilities","definition_digest","model_digest","context_digest"],"properties":{"validator_id":{"$ref":"#/$defs/id"},"role":{"const":"semantic_validator"},"capabilities":{"type":"array","minItems":1,"maxItems":256,"uniqueItems":true,"items":{"$ref":"#/$defs/id"}},"definition_digest":{"$ref":"#/$defs/digest"},"model_digest":{"$ref":"#/$defs/digest"},"context_digest":{"$ref":"#/$defs/digest"}}}
+  },
+  "properties": {
+    "schema_version":{"const":1}, "subject_digest":{"$ref":"#/$defs/digest"}, "finding_id":{"$ref":"#/$defs/id"}, "requirement":{"$ref":"#/$defs/requirement"},
+    "severity":{"enum":["minor","major","critical","blocker"]}, "category":{"enum":["requirement_unsatisfied","evidence_gap","test_gap","architecture_violation","security_boundary","authority_violation","contradiction"]},
+    "rule_id":{"$ref":"#/$defs/id"}, "message":{"type":"string","minLength":1,"maxLength":4096}, "evidence_refs":{"type":"array","maxItems":256,"uniqueItems":true,"items":{"$ref":"#/$defs/ref"}},
+    "reproduction":{"type":"string","minLength":1,"maxLength":4096}, "repairable":{"type":"boolean"}, "validator":{"$ref":"#/$defs/validator"}, "created_at":{"type":"string","format":"date-time","maxLength":64}
+  }
+}
