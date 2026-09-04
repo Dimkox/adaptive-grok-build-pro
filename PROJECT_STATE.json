@@ -29,7 +29,7 @@
     "highest_implemented_milestone": "M4",
     "current_provisional_milestone": "M9",
     "next_roadmap_milestone": null,
-    "next_action": "Stop restacking M4. Rebuild 2.0.13 only if factory/ or packages/ bytes differ from HEAD; otherwise skip ZIP rebuild, skip analysis/review waves, and do not rerun grok_verify for docs/state/mistakes-only trees. Local ready is the stop. No M5-M9. No push/PR/merge without explicit authorization. Repair ceiling: one ZIP, one verify, one review wave; markdown nits and leftover change-packages are residual risk, not a new cycle.",
+    "next_action": "Rebuild the 2.0.13 artifact-only child from ready source checkpoint 47b1c0ab5f27bc946cd1b2682de68b4ca3c67a95, then run local exact-head verification and all five route-selected reviews/reports/receipts on that artifact commit. Only after those fresh local gates may an authorized successor PR and new external exact-head gate be prepared; after M4 acceptance, restack M5 first, then M6 with renumbered migrations and fresh checksum/upgrade/restart evidence.",
     "schedule": {
       "basis": "dependency_relative",
       "m4_local_ready_target": "2026-09-03",
@@ -368,7 +368,7 @@
         "intermediate_code_head": "da7ec8d7d40f52663aba1ff59bf03ccf209395b0",
         "latest_committed_repair_checkpoint": "47b1c0ab5f27bc946cd1b2682de68b4ca3c67a95",
         "current_candidate_identity": "repository tree containing this PROJECT_STATE.json",
-        "purpose": "Ready source/state is frozen. Do not rebuild 2.0.13 unless factory/ or packages/ changed. Do not dispatch five reviewers or restack exact-head verify for paperwork. Local ready is the stop until explicit PR authorization."
+        "purpose": "Ready source/state is frozen at repair checkpoint 47b1c0ab5f27bc946cd1b2682de68b4ca3c67a95 without changing factory representation. Rebuild the 2.0.13 artifact-only child, then bind exact-head verification and all five route-selected reviews/reports/receipts to that artifact commit before any authorized PR-only delivery."
       },
       {
         "route_id": "37b05f579320",

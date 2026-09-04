@@ -36,14 +36,6 @@
 - If the product tree did not change (status, already-published identity, leftover uncommitted paperwork), do not dispatch analysis or review agents and do not block on `grok_verify`.
 - If product files changed, run `python3 scripts/grok_verify.py --mode pr`. Skip the analysis/review wave for a no-op.
 
-## Repair ceiling
-
-- Rebuild tracked `2.0.13` only when `factory/` or `packages/` bytes changed. Docs, `PROJECT_STATE.json`, `decisions.md`, `mistakes.md`, and `engineering/changes/**` do not restack the ZIP.
-- One `grok_verify --mode pr` and one review wave per frozen product tree. Review markdown does not invalidate that tree into another ZIP/verify/review cycle.
-- Trailing whitespace in Markdown, leftover change-package YAML, and `UNKNOWN` draft specs are residual paperwork, not product failures.
-- Nits are residual risk. Do not spawn analysis agents to re-derive a frozen M4. Do not start M5-M9. Stop at local ready until an explicit push/PR grant exists.
-- Hard ceiling: one ZIP rebuild, one verifier, one review wave. Then `ready` or `BLOCKED`. No unbounded repair.
-
 ## PR-only delivery and delegated release actions
 
 - All product changes are delivered through an isolated branch and pull request. Direct push to `main` or another protected/shared branch is prohibited.

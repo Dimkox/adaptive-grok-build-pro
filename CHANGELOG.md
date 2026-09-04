@@ -13,7 +13,6 @@ M4 control-plane repair candidate and exact current-state release artifact.
 - Freezes ready M4 source/state at repair checkpoint `47b1c0a` after one shared fail-closed authority analysis closes dynamic selector/scope and unproven-dispatcher grant borrowing; artifact and exact-head gates remain pending
 - Makes package handoff state-stable: rebuild an artifact-only child only when exact shipped parity fails; when it passes, proceed to exact-head verification and review
 - The `aa12e7c` 14/14 verifier receipt is historical and stale for this follow-up after release rereview exposed ambient files in its archive; fresh exact-head verification and review remain required
-- Local restack stop: rebuild `2.0.13` only on `factory/` or `packages/` bytes; `git diff --check` ignores Markdown; leftover change-packages are paperwork; one verify/review wave then stop
 
 ## 2.0.12 — 2026-08-23
 
