@@ -91,6 +91,8 @@ def sealed_target():
             "california-privacy.html": "<!doctype html><title>California privacy</title>\n",
             "terms.html": "<!doctype html><title>Terms</title>\n",
             "roadmap.html": "<!doctype html><title>Roadmap</title>\n",
+            "favicon.png": b"\x89PNG\r\n\x1a\nfixture-icon\n",
+            "og-image-automatic.jpg": b"\xff\xd8\xff\xe0fixture-og-image\xff\xd9",
             "zh-cn/index.html": "<!doctype html><html lang=\"zh-Hans\"></html>\n",
             "ko/index.html": "<!doctype html><html lang=\"ko-KR\"></html>\n",
             "nl/index.html": "<!doctype html><html lang=\"nl-NL\"></html>\n",
@@ -104,7 +106,10 @@ def sealed_target():
             for name, value in files.items():
                 path = repository / name
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(value, encoding="utf-8")
+                if isinstance(value, bytes):
+                    path.write_bytes(value)
+                else:
+                    path.write_text(value, encoding="utf-8")
         finally:
             os.umask(previous)
         _git(repository, "add", "--", ".")
