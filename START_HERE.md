@@ -4,16 +4,16 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 ## Current project state
 
-- Product source identity is `2.0.13`; validate the tracked ZIP/sidecar against exact source HEAD and rebuild an artifact-only child only if parity fails. The most recently published GitHub Release remains `v2.0.12`, and no `v2.0.13` tag or publication is claimed.
+- Product and published release identity is `2.0.13`. GitHub Release `v2.0.13` was published at `2026-09-04T08:33:19Z`; the ZIP SHA-256 is `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`, and later documentation-only HEADs do not restack the tag-bound artifact.
 - M0 (Live Trust Authority) is delivered to `main`.
 - M0 runtime repair and policy-loop fixes are also merged into `main` through PR #7 and PR #6.
-- The current integration base is protected `origin/main` `78ad2f679d38dc3244e716c586332417e610089c`; it requires `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114` on the exact up-to-date pull-request head.
-- M1 is implemented/reviewed in the accepted stack, but only its early slice and design/plan are on `main`; complete M1 delivery is partial. M2 and M3 are implemented/reviewed and merged into predecessor milestone branches by PRs #10 and #11, not delivered to `main`.
-- The local source line integrates M4 durable control (`67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4`), M5 bounded execution (`85cd4343143915ce9342634e7fe81886b6394871`), M6 semantic validation (`c6d48ffd8594b3baab1a575021452ea5dfa2a98b`), M7 shadow handoff (`00e0e4f9a6f50844bf9e0ffc7139d3283dda889f`), corrected M8 earned-autonomy evaluation (`a937ac8d200a4e143c295fabd482b19bc8cc4286`), and M9 staged-delivery code (`64b10689ce78a0464a494440f3fa981e18789687`) combined in the current candidate tree. Migrations `001`-`018` are preserved. Execution and delivery remain disabled by default, and no operational provider, persistence, network, systemd, merge, or production authority is present.
-- PRs #12/#13 remain old-epoch `ACTION_REQUIRED`; their unique lazy CLI import/tests and repository-scoped Trust CI profiles are absent from `main`. PR #15's current-epoch Trust CI conclusion is `FAILURE` and GitGuardian is `SUCCESS`; the cause was not inspected or inferred. Wholesale M1-M3 merge is superseded, while investor demo `9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b` and packaging hardening remain unique. Each needs clean successor extraction, and no successor PR is claimed.
-- PR #22 is open for the current M9 integration branch at the stable code checkpoint; it is not merged or delivered. M8 still lacks the required factual 30-task human-accepted cohort and activation. M9 still lacks real signed input, an operational environment, exercised recovery proof, and production authority.
+- Protected `origin/main` is `8599d45f4f28285381b05a53feb3059de92eb2a8`; it requires `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114` on the exact up-to-date pull-request head.
+- M1-M3 are implemented, reviewed and delivered to `main` through PR #22. Their earlier PR #4/#8 partial delivery and PR #10/#11 predecessor-stack acceptance remain historical evidence; exact M1/M2 head `022411b05924618cfde0cb97b8c8aff4955e6013`, M3 head `1e73ff9b91d9b711cafccad7ccccb1a992d5e84d` and aggregate `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` are ancestors of the checked release head.
+- M4-M9 are likewise implemented and delivered to `main` as repository product source through PR #22, preserving migrations `001`-`018`. Execution and delivery remain disabled by default, and no operational provider, persistent deployment, network capability, systemd activation, or production authority is present.
+- PRs #12/#13 remain old-epoch `ACTION_REQUIRED`; their unique lazy CLI import/tests and repository-scoped Trust CI profiles are absent from `main`. PR #15's current-epoch Trust CI conclusion is `FAILURE` and GitGuardian is `SUCCESS`; the cause was not inspected or inferred. PR #21 remains open at `571cad7877431ac5ab5779b53fe9f7effd6859ce`, with Trust CI `FAILURE` and GitGuardian `FAILURE`; neither result is diagnosed or dismissed here.
+- PR #22 checked head `b5eba759c309a92f92f4d4003d025795c7f8a1f9` passed `adaptive-trust-ci/verified@06ecf1c875bc` as check run `100955508827` with attestation `74f1bbb2-3098-4d35-a42f-d49351d81c4a`, then merged at `2026-09-04T08:31:49Z` as main commit `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`.
 - PR #19 delivered the optional SEO side project to `main` as `8ab4e57038dec2e07f01aaa0b207813a387358f4`; it is non-milestone work and is no longer an open continuation item.
-- Current work finalizes truthful tracked M9/2.0.13 source, then rebuilds the artifact and binds one exact-head verifier plus all five selected reviews. Local source integration does not waive App-owned Trust CI, protected merge, factual autonomy evidence, signed delivery inputs, or human production authority.
+- Current work is operational qualification, not another package loop: M8 still needs the factual 30-task human-accepted cohort and activation, while M9 still needs real signed input, an operational environment/provider deployment, exercised recovery proof, and human production authority.
 
 Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
 
@@ -28,7 +28,7 @@ Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
    - `DARK_FACTORY_ROADMAP.md`
    - `README.md`
 2. Run `git fetch --all --prune` before reasoning about active branches or pull requests.
-3. Inspect `PROJECT_STATE.json`, then PRs #10, #11, #17 and #21 plus the named M4-M9 local branches with their exact base/head SHAs before continuing milestone delivery. Treat a merge into another milestone branch or a provisional source branch as integration evidence, not delivery to `main`.
+3. Inspect `PROJECT_STATE.json`, the published `v2.0.13` record, and open PRs #12, #13, #15 and #21 before continuing work. Treat the named M4-M9 predecessor branches as historical integration evidence; protected-main delivery is PR #22 merge `8599d45f4f28285381b05a53feb3059de92eb2a8`.
 4. If starting a different software-development task, create/resolve the local route first. `.grok-stack/runtime/active-route.json` is runtime state and may legitimately be absent in a fresh clone; do not fabricate it.
 5. Follow `AGENTS.md`: one write owner, route-selected analysis/review agents, local verification as evidence, pull-request-only delivery, and external Trust CI as merge authority.
 6. Never add GitHub Actions.
@@ -58,10 +58,10 @@ Before changing Trust CI behavior, read the current deployed-policy/holdout cons
 
 Use one repository-level delivery ledger and one consolidated continuation route. Existing branches are evidence and integration inputs; their names, local `ready` files and GitHub `MERGED` labels do not prove protected-main delivery.
 
-1. Treat the exact local M4-M9 lineage named above as integrated source, not external acceptance or production delivery.
+1. Treat the exact M4-M9 lineage named above as repository product delivered by PR #22, not as operational activation or production deployment.
 2. Treat the corrected M8 checkpoint `a937ac8d200a4e143c295fabd482b19bc8cc4286` as the exact M9 predecessor; it restores the frozen M4 control contract and separates the additive M6 semantic API without changing migrations `001`-`018`.
-3. Rebuild the tracked `2.0.13` ZIP and sidecar from the exact clean M9 source in isolated private clones, then bind one exact-head verifier and all five route-selected reviews to the final artifact commit.
-4. Keep PR #22 open/unmerged until the exact-head App-owned Trust CI and all required approval scopes succeed; local receipts do not supply merge authority.
+3. Keep the published ZIP bound to tag `v2.0.13` and SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`; documentation-only successors do not rebuild it.
+4. Preserve PR #22's exact checked-head/App-check/merge evidence as historical delivery authority; local receipts remain preflight evidence only.
 5. Do not describe M8 as active until the exact-profile factual cohort and activation record exist, and do not describe M9 as operational until signed inputs, an environment, exercised recovery and human production authority exist.
 8. Retain open PRs #12, #13, #15 and #21 plus the unresolved PR #14/local work identified in `PROJECT_STATE.json`; extract unique work through clean successors without claiming those successors exist. PR #17 is a closed exact duplicate of #21, and PR #19 is already delivered with its predecessor staging path archival.
 9. After every protected-main merge, fetch remote refs, update the one state model, and obtain fresh exact-head verification/approvals for every branch made stale by the base change. `origin/milestone/a-plus-autopilot` remains design input, not the current M8 source branch.
