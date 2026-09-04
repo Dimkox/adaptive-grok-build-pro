@@ -34,8 +34,8 @@ Original planning baseline and current integration observation:
 repository: Dimkox/adaptive-grok-build-pro
 branch: main
 original baseline SHA: 73e4ae7c68a95d3a7440378964b8cc1879df9b89
-current origin/main SHA: 78ad2f679d38dc3244e716c586332417e610089c
-product version: 2.0.14 (local unpublished candidate; latest published release v2.0.13)
+publication snapshot main SHA: 1751b5855e46782b9a1bfceb6e1ab0102cba03b0 (2026-09-04T16:58:48Z; not a perpetual current-ref assertion)
+product version: 2.0.14 (published release v2.0.14; v2.0.13 retained as immutable history)
 Trust CI service version: 2.1.0
 required check: adaptive-trust-ci/verified@06ecf1c875bc
 ```
@@ -87,7 +87,7 @@ M0 Live Trust Authority is delivered. Protected `main` requires the App-owned po
 
 M1-M9 are delivered to `main` as repository product source through PR #22. Checked head `b5eba759c309a92f92f4d4003d025795c7f8a1f9` passed App-owned `adaptive-trust-ci/verified@06ecf1c875bc` and merged as `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`; release `v2.0.13` publishes ZIP SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`. Factual M8 cohort/activation, signed M9 input, operational environment/provider deployment, recovery proof, and human production authority remain separate operational gates.
 
-The local unpublished `2.0.14` candidate adds an offline L5 multimodal landing dogfood vertical without changing M0-M9 milestone semantics. Its exact-source API/provider/render/evaluate/package path is local and bounded; provider and publisher defaults are unavailable, `live_url` is unrepresentable except as null, the authoritative landing clone remains read-only, and no product ZIP, network, hosting, indexing, deployment, or production action is part of source-freeze `F`.
+Published `v2.0.14` adds the offline L5 multimodal landing dogfood vertical without changing M0-M9 milestone semantics. Its API/provider/render/evaluate/package path is bounded; provider and publisher defaults remain unavailable, `live_url` is unrepresentable except as null, the authoritative landing clone remains read-only, and repository publication supplied no operational provider, network, hosting, indexing, deployment, M8 activation, or production authority.
 
 PRs #12 and #13 remain stale old-epoch `ACTION_REQUIRED` work whose unique lazy CLI imports/tests and repository-scoped Trust CI profiles are absent from `main`. PR #15's current-epoch `adaptive-trust-ci/verified@06ecf1c875bc` conclusion is `FAILURE` while GitGuardian is `SUCCESS`; its failure cause was not inspected or inferred. Wholesale merge of its obsolete M1-M3 aggregate is superseded, while investor-demo commit `9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b` and packaging hardening remain unique. All three need clean successor extraction; no successor PR is claimed.
 

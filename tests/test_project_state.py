@@ -13,12 +13,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
-CURRENT_MAIN_SHA = "ad6d23cc30c11e5ea51c388213f5ebdfe306fb56"
+CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"
 RELEASE_MERGE_SHA = "8599d45f4f28285381b05a53feb3059de92eb2a8"
 HISTORICAL_M4_BASE_SHA = "78ad2f679d38dc3244e716c586332417e610089c"
 RELEASE_HEAD_SHA = "b5eba759c309a92f92f4d4003d025795c7f8a1f9"
 RELEASE_TREE = "03e122a30fb2dbb59907f4c4c28e17f93cbf0751"
 RELEASE_ZIP_SHA256 = "3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c"
+CURRENT_RELEASE_HEAD_SHA = "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57"
+CURRENT_RELEASE_TREE = "618df086920c92179aa0e22a8c8d4ad30ebd9230"
+CURRENT_RELEASE_ZIP_SHA256 = "b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264"
+CURRENT_RELEASE_SIDECAR_SHA256 = "1a961c35b8f12fa02579ec7888c889f0ae7ca8656b158eb731681ef8357caf3c"
 PR21_HEAD_SHA = "571cad7877431ac5ab5779b53fe9f7effd6859ce"
 SEO_MERGE_SHA = "8ab4e57038dec2e07f01aaa0b207813a387358f4"
 M4_PRODUCT_SHA = "67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4"
@@ -81,7 +85,7 @@ class ProjectStateTests(unittest.TestCase):
         state = self.state
         self.assertEqual(state["schema_version"], 2)
         self.assertEqual(state["product_version"], "2.0.14")
-        self.assertEqual(state["latest_published_release"], "v2.0.13")
+        self.assertEqual(state["latest_published_release"], "v2.0.14")
         self.assertEqual(state["observed_main_sha"], CURRENT_MAIN_SHA)
         self.assertRegex(state["observed_at"], r"^2026-09-04T\d{2}:\d{2}:\d{2}Z$")
         self.assertEqual(set(state["milestones"]), MILESTONES)
@@ -259,16 +263,27 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(m9["main_delivery"]["merge_commit"], RELEASE_MERGE_SHA)
 
         published = state["published_release"]
-        self.assertEqual(published["tag"], "v2.0.13")
-        self.assertEqual(published["checked_head"], RELEASE_HEAD_SHA)
-        self.assertEqual(published["merge_commit"], RELEASE_MERGE_SHA)
-        self.assertEqual(published["tree"], RELEASE_TREE)
-        self.assertEqual(published["artifact"]["sha256"], RELEASE_ZIP_SHA256)
+        self.assertEqual(published["tag"], "v2.0.14")
+        self.assertEqual(published["checked_head"], CURRENT_RELEASE_HEAD_SHA)
+        self.assertEqual(published["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(published["tree"], CURRENT_RELEASE_TREE)
+        self.assertEqual(published["artifact"]["sha256"], CURRENT_RELEASE_ZIP_SHA256)
+        self.assertEqual(
+            published["artifact"]["sidecar_sha256"],
+            CURRENT_RELEASE_SIDECAR_SHA256,
+        )
+        prior = state["prior_published_releases"]
+        self.assertEqual(len(prior), 1)
+        self.assertEqual(prior[0]["tag"], "v2.0.13")
+        self.assertEqual(prior[0]["checked_head"], RELEASE_HEAD_SHA)
+        self.assertEqual(prior[0]["merge_commit"], RELEASE_MERGE_SHA)
+        self.assertEqual(prior[0]["tree"], RELEASE_TREE)
+        self.assertEqual(prior[0]["artifact"]["sha256"], RELEASE_ZIP_SHA256)
         self.assertEqual(
             state["local_candidate"],
             {
                 "version": "2.0.14",
-                "status": "source_ready",
+                "status": "published",
                 "route_id": "9f67efd2575c",
                 "branch": "feature/l5-multimodal-landing-factory",
                 "change_package": "engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef",
@@ -277,21 +292,33 @@ class ProjectStateTests(unittest.TestCase):
                 "reviewed_product_tree": "0ae72773d73a294b88a398cec9926f6fca2f5555",
                 "reviewed_policy_head": "58c9caed5d2c8f9febba297430a0782438505d82",
                 "reviewed_policy_tree": "975bf7a21784bf91279a684bdeb5f5394fb715a1",
-                "source_gate_status": "passed_composite",
+                "source_gate_status": "passed_for_artifact_head",
                 "review_status": "four_route_selected_reviews_passed",
-                "artifact_status": "pending_at_ready_state_checkpoint_R",
+                "checked_head": CURRENT_RELEASE_HEAD_SHA,
+                "merge_commit": CURRENT_MAIN_SHA,
+                "tree": CURRENT_RELEASE_TREE,
+                "pull_request": 24,
+                "artifact_status": "published_tag_bound",
                 "artifact_child": {
                     "identity": "A",
-                    "source_parent": "ready_state_checkpoint_R",
+                    "source_parent": "5b33a384e853ad6e1b945898f9ed5e54329dd2ad",
+                    "source_parent_tree": "b4b0c5cc45469e57c7c8f5d1a4a4a31182c1dfce",
+                    "commit": CURRENT_RELEASE_HEAD_SHA,
+                    "tree": CURRENT_RELEASE_TREE,
                     "delta_paths": [
                         "packages/adaptive-grok-build-pro-v2.0.14.zip",
                         "packages/adaptive-grok-build-pro-v2.0.14.zip.sha256",
                     ],
-                    "authoritative_when": "both_paths_are_tracked_and_sidecar_matches_zip",
+                    "zip_sha256": CURRENT_RELEASE_ZIP_SHA256,
+                    "sidecar_sha256": CURRENT_RELEASE_SIDECAR_SHA256,
+                    "status": "published_as_v2.0.14",
                 },
-                "published": False,
-                "external_effect": False,
-                "notes": "The offline L5 landing source is locally ready. Checkpoint R is the package source parent; R has no 2.0.14 product pair, while child A is exactly R plus the two declared paths and their tracked presence and sidecar binding are authoritative. Provider and publisher defaults remain unavailable, with no operational provider or hosting authority.",
+                "published": True,
+                "published_at": "2026-09-04T16:58:48Z",
+                "external_effect": True,
+                "external_effect_scope": "github_repository_delivery_and_release_only",
+                "operational_activation": False,
+                "notes": "The L5 landing source and artifact are published as repository product v2.0.14. Provider and publisher defaults remain unavailable, with no operational provider, target mutation, hosting, indexing, deployment, M8 activation, or production authority.",
             },
         )
 
@@ -299,18 +326,21 @@ class ProjectStateTests(unittest.TestCase):
         dimensions = self.state["active_delivery"]["m4_dimensions"]
         self.assertEqual(
             self.state["active_delivery"]["status"],
-            "local_2.0.14_source_ready",
+            "v2.0.14_published_repository_delivery_complete",
         )
         self.assertTrue(
             self.state["active_delivery"]["next_action"].startswith(
-                "If the declared 2.0.14 pair is absent"
+                "No repository-release action remains for v2.0.14"
             )
         )
         source_gate = self.state["active_delivery"]["local_source_gate"]
-        self.assertEqual(source_gate["status"], "passed_composite")
+        self.assertEqual(source_gate["status"], "passed_for_artifact_head")
         self.assertEqual(source_gate["product_head"], "5f47508f3c0d52b71a3c866969cc28b6476a9d99")
         self.assertEqual(source_gate["policy_head"], "58c9caed5d2c8f9febba297430a0782438505d82")
         self.assertEqual(source_gate["reviews"], "four_route_selected_reviews_passed")
+        self.assertEqual(source_gate["artifact_head"], CURRENT_RELEASE_HEAD_SHA)
+        self.assertEqual(source_gate["artifact_tree"], CURRENT_RELEASE_TREE)
+        self.assertEqual(source_gate["artifact_verification"], "passed")
         self.assertEqual(self.state["active_delivery"]["route_id"], "9f67efd2575c")
         self.assertEqual(
             self.state["active_delivery"]["branch"],
@@ -590,10 +620,38 @@ class ProjectStateTests(unittest.TestCase):
             {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": PR21_HEAD_SHA, "status": "open_trust_ci_failure_gitguardian_failure", "observed_check": CURRENT_CHECK, "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "FAILURE", "failure_cause": "not inspected or inferred", "disposition": "Preserve both failure results without diagnosing or dismissing them; PR 22 is the delivered v2.0.13 path."},
         ]
         self.assertEqual(inventory["open_pull_requests"], expected_open)
-        seo = self.state["delivered_non_milestone_work"][0]
+        delivered = self.state["delivered_non_milestone_work"]
+        self.assertEqual(len(delivered), 2)
+        seo = delivered[0]
         self.assertEqual(
             {key: seo[key] for key in ("pull_request", "status", "source_head", "merge_commit")},
             {"pull_request": 19, "status": "delivered", "source_head": "ecc85d903d0394f99a139fd4e74a7cc452e386c6", "merge_commit": SEO_MERGE_SHA},
+        )
+        landing = delivered[1]
+        self.assertEqual(
+            {
+                key: landing[key]
+                for key in (
+                    "pull_request",
+                    "status",
+                    "checked_head",
+                    "merge_commit",
+                    "tree",
+                    "release",
+                    "artifact_sha256",
+                    "operational_activation",
+                )
+            },
+            {
+                "pull_request": 24,
+                "status": "delivered",
+                "checked_head": CURRENT_RELEASE_HEAD_SHA,
+                "merge_commit": CURRENT_MAIN_SHA,
+                "tree": CURRENT_RELEASE_TREE,
+                "release": "v2.0.14",
+                "artifact_sha256": CURRENT_RELEASE_ZIP_SHA256,
+                "operational_activation": False,
+            },
         )
         self.assertEqual(
             inventory["retained_unresolved"],
@@ -629,10 +687,12 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(inventory["active"][5]["head"], RELEASE_HEAD_SHA)
         self.assertEqual(inventory["active"][5]["source_checkpoint"], M9_PROVISIONAL_SHA)
         self.assertEqual(inventory["active"][5]["pull_request"], 22)
-        self.assertEqual(inventory["active"][6]["status"], "verifying")
+        self.assertEqual(inventory["active"][6]["status"], "published")
+        self.assertEqual(inventory["active"][6]["head"], CURRENT_RELEASE_HEAD_SHA)
+        self.assertEqual(inventory["active"][6]["merge_commit"], CURRENT_MAIN_SHA)
         self.assertEqual(
             inventory["active"][6]["current_candidate_identity"],
-            "v2.0.14-source",
+            "v2.0.14",
         )
         self.assertIn(1, {item.get("pull_request") for item in inventory["superseded"]})
         self.assertIn(

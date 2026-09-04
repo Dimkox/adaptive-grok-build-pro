@@ -1423,21 +1423,21 @@ module.main()
         self.assertEqual(state['product_version'], candidate_version)
         self.assertEqual(
             state['local_candidate']['artifact_status'],
-            'pending_at_ready_state_checkpoint_R',
+            'published_tag_bound',
         )
         candidate_pair = tuple(
             ROOT / path
             for path in state['local_candidate']['artifact_child']['delta_paths']
         )
-        self.assertIn(len(tuple(path for path in candidate_pair if path.exists())), {0, 2})
+        self.assertEqual(len(tuple(path for path in candidate_pair if path.exists())), 2)
         published_version = published['tag'].removeprefix('v')
-        self.assertEqual(published_version, '2.0.13')
+        self.assertEqual(published_version, '2.0.14')
         self.assertEqual(state['latest_published_release'], published['tag'])
         artifact = published['artifact']
         self.assertEqual(artifact['binding'], 'immutable_release_tag')
         expected_relative = f'packages/adaptive-grok-build-pro-v{published_version}.zip'
         self.assertEqual(artifact['path'], expected_relative)
-        expected_digest = '3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c'
+        expected_digest = 'b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264'
         self.assertEqual(artifact['sha256'], expected_digest)
 
         zip_path = ROOT / expected_relative
@@ -1449,6 +1449,10 @@ module.main()
         self.assertEqual(
             sidecar_path.read_text(encoding='ascii'),
             f'{expected_digest}  {zip_path.name}\n',
+        )
+        self.assertEqual(
+            hashlib.sha256(sidecar_path.read_bytes()).hexdigest(),
+            artifact['sidecar_sha256'],
         )
 
         with zipfile.ZipFile(zip_path) as archive:

@@ -10,6 +10,6 @@ All five implementation tasks are sequential and owned by the route-selected `ai
 
 Detailed file-level TDD steps and commit boundaries are fixed in [`docs/superpowers/plans/2026-09-04-l5-multimodal-landing-dogfood.md`](../../../docs/superpowers/plans/2026-09-04-l5-multimodal-landing-dogfood.md).
 
-## Finalization handoff
+## Finalization and publication record
 
-Exact product head `5f47508f3c0d52b71a3c866969cc28b6476a9d99` passed every heavy/product verifier gate and exposed only the source-AST policy ceiling; policy head `58c9caed5d2c8f9febba297430a0782438505d82` changes only the bounded policy/fixture/rationale and passes exact route fitness. All four route-selected reviews pass. This bookkeeping commit is ready checkpoint `R`; artifact child `A` must differ from `R` only by `packages/adaptive-grok-build-pro-v2.0.14.zip` and `packages/adaptive-grok-build-pro-v2.0.14.zip.sha256`, produced by two matching private no-local builds before the artifact-bound final gate.
+Exact artifact head `66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57` passed the final artifact-bound gate and all four reviews, then PR #24 passed App-owned Trust CI and GitGuardian and merged at `2026-09-04T16:56:37Z` as `1751b5855e46782b9a1bfceb6e1ab0102cba03b0`, tree `618df086920c92179aa0e22a8c8d4ad30ebd9230`. Tag and GitHub Release `v2.0.14` were published at `2026-09-04T16:58:48Z`; the repository-release workflow is complete. Operational provider, hosting, indexing, deployment, M8 cohort/activation and production authority remain separate pending work.

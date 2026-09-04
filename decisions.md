@@ -420,3 +420,7 @@ Preserve the tracked showcase and the read-only private target, generating candi
 ## 2026-09-04 — Amend finite budgets for mandatory safety repairs
 
 Raise only the measured factory-total AST ceiling to 1,450, factory-source AST ceiling to 1,010, and factory-test byte ceiling to 510,000 after required review repairs measured 1,404 total AST units, 1,005 source AST units, and 503,232 test bytes. Keeping test AST and every other ceiling unchanged makes the safety work explicit without moving files or deleting checks to game fitness.
+
+## 2026-09-04 — Bind publication to the protected merge tree
+
+Compare the protected merge tree with the checked artifact-child tree, then rebuild from the exact merged commit before pushing the tag and publishing the release. This proved the squash changed commit identity while preserving the reviewed bytes and kept the published archive bound to its immutable tag target.
