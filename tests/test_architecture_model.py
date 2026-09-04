@@ -179,6 +179,7 @@ class ArchitectureModelTests(unittest.TestCase):
                     "path_prefixes": [
                         ".grok-stack/adaptive_grok",
                         "architecture",
+                        "delivery",
                         "engineering/contracts",
                         "governance",
                         "schemas",

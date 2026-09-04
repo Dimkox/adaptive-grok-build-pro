@@ -2055,7 +2055,6 @@ def _openapi_schemas(
                     not operation_id
                     or _unsafe_text(operation_id)
                     or unicodedata.normalize("NFC", operation_id) != operation_id
-                    or len(operation_id.encode("utf-8")) > 128
                     or operation_id in operation_ids
                 ):
                     return None
@@ -2354,7 +2353,10 @@ def _compare_openapi(
             head_headers = _response_headers(head_response, head_resolver)
             if set(base_headers) - set(head_headers):
                 reasons.add("removed_response_header")
-            if set(head_headers) - set(base_headers):
+            if any(
+                head_headers[name].get("required", False)
+                for name in set(head_headers) - set(base_headers)
+            ):
                 reasons.add("widened_producer_output")
             for name in set(base_headers) & set(head_headers):
                 base_header = base_headers[name]
@@ -2362,7 +2364,7 @@ def _compare_openapi(
                 if base_header.get("required", False) and not head_header.get(
                     "required", False
                 ):
-                    reasons.add("widened_producer_output")
+                    reasons.add("changed_response_header_requirement")
                 _compare_schema_direction(
                     base_header["schema"],
                     head_header["schema"],

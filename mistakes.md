@@ -541,3 +541,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** Placing executable `runner.sh` under `.grok-stack/runtime/jobs` made the worktree architecture scanner classify it as an unowned source artifact and invalidated exact-head verification.
 **Prevention:** Keep detached executable wrappers outside the repository while retaining only ignored PID, log, and status data beneath `.grok-stack/runtime`.
+
+## 2026-09-04 — Replaced predecessor OpenAPI semantics during successor hardening
+
+**Root cause:** M5 comparator hardening added an undocumented per-`operationId` byte cap and collapsed distinct response-header compatibility rules after final M4 tests had fixed those semantics; focused successor validation did not run the inherited overlap methods.
+**Prevention:** Preserve predecessor overlap tests during stacked grafts, bound resources at documented document and traversal limits, and retain specific compatibility reasons instead of substituting a broader category.
