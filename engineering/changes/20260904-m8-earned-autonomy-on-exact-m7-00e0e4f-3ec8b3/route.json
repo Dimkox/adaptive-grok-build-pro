@@ -1,0 +1,86 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "ai_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "integration_architect"
+  ],
+  "base_commit": "78ad2f679d38dc3244e716c586332417e610089c",
+  "base_fingerprint": "155a3e7781880dcd1953cd82485544ba996a604529abd6d27a2ea7efe8cf2280",
+  "complexity": "standard",
+  "created_at": "2026-09-04T03:11:24+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "ai",
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "ai"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=feature",
+    "domains=ai,api",
+    "repository=generic",
+    "write-owner=ai_implementer",
+    "analysis-wave=6/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "3ec8b3357363",
+  "schema_version": 1,
+  "session_id": "m8-bounded-local-20260904",
+  "status": "routed",
+  "task": "Implement feature M8 AI agent earned autonomy on exact M7 head 00e0e4f9a6f50844bf9e0ffc7139d3283dda889f. Add a closed autonomy tuple, cohort evaluation, one-level recommendation capped at L2, an independent activation gate, deterministic priority-ordered demotion to L0, and canonical M7 producer linkage. Preserve predecessor source and migrations. Repository-local code only; no live execution or outside writes.",
+  "task_domains": [
+    "ai"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "ai-rag-change"
+  ],
+  "write_agent": "ai_implementer"
+}

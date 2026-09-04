@@ -1,0 +1,51 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"A thin M8 bridge parses actual M7 bundle/outcome/cohort contracts, recomputes M7 aggregate and evaluation, and rejects caller-supplied aggregate, eligibility, acceptance, or currentness fields.","evidence":[{"test":"factory/tests/test_autonomy.py"},{"test":"factory/tests/test_autonomy_schema.py"}]},
+    {"id":"AC-002","statement":"Sorted unique M7 bundles map one-to-one to outcomes and bind each M8 task to the exact task, run, result head, human receipt, attestation, and tuple.","evidence":[{"test":"factory/tests/test_autonomy.py"}]},
+    {"id":"AC-003","statement":"The closed autonomy tuple keeps validator and provider identities separate and binds the repository, task class, cohort, model, prompt, policy, runner, holdout, authority, L2 ceiling, and expiry.","evidence":[{"test":"factory/tests/test_autonomy.py"}]},
+    {"id":"AC-004","statement":"Evaluation requires at least 30 real accepted tasks, accepted audit sampling of at least 20 percent on every represented UTC day, zero safety facts, and bounded quality, cost, latency, time, and replay.","evidence":[{"test":"factory/tests/test_autonomy.py"}]},
+    {"id":"AC-005","statement":"A recommendation advances by at most one level, never exceeds L2, requires separate activation, and authorizes no external action; missing M7 acceptance/currentness remains fail-closed.","evidence":[{"test":"factory/tests/test_autonomy.py"},{"test":"factory/tests/test_autonomy_schema.py"}]},
+    {"id":"AC-006","statement":"Every supported demotion trigger uses fixed priority and atomically returns a halted L0 profile and non-operative immutable decision.","evidence":[{"test":"factory/tests/test_autonomy.py"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260904-m8-earned-autonomy-on-exact-m7-00e0e4f-3ec8b3",
+  "contracts": {
+    "events": [],
+    "json_schema": ["factory/contracts/jsonschema/earned-autonomy.v1.schema.json","factory/contracts/jsonschema/m7-autonomy-bridge.v1.schema.json"],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"Duplicate M7 producer models, schemas, aggregate authority, evaluation authority, or caller-supplied M7 acceptance/currentness in M8.","evidence":[{"test":"factory/tests/test_autonomy_schema.py"},{"receipt":"code_review"}]},
+    {"id":"FORBID-002","statement":"Automatic activation, promotion above one level or L2, executable recommendation/demotion, provider call, credential, network, command, delivery, or production effect.","evidence":[{"test":"factory/tests/test_autonomy.py"},{"receipt":"security_review"}]},
+    {"id":"FORBID-003","statement":"Treating synthetic fixtures or source-only recommendations as a real accepted cohort, current activation, M9 eligibility, or production authority.","evidence":[{"test":"factory/tests/test_autonomy.py"},{"receipt":"test_review"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"M7 remains sole authority for bundle, outcome, cohort, aggregate and shadow-evaluation semantics; M8 owns only provider mapping, handoff envelope and autonomy decisions.","evidence":[{"test":"factory/tests/test_autonomy.py"}]},
+    {"id":"INV-002","statement":"Every M8 cohort task has one unique bundle and outcome and matches task, run, result head and human receipt facts exactly.","evidence":[{"test":"factory/tests/test_autonomy.py"}]},
+    {"id":"INV-003","statement":"Promotion is recommendation-only, capped at one level and L2, independently activated, expiring, replay-safe and non-operative.","evidence":[{"test":"factory/tests/test_autonomy.py"}]},
+    {"id":"INV-004","statement":"Any demotion fact deterministically halts at L0 and authorizes no external action.","evidence":[{"test":"factory/tests/test_autonomy.py"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Implement feature M8 AI agent earned autonomy on exact M7 head 00e0e4f9a6f50844bf9e0ffc7139d3283dda889f. Add a closed autonomy tuple, cohort evaluation, one-level recommendation capped at L2, an independent activation gate, deterministic priority-ordered demotion to L0, and canonical M7 producer linkage. Preserve predecessor source and migrations. Repository-local code only; no live execution or outside writes.",
+    "success_metric": "Focused M8 bridge, autonomy and schema tests plus affected architecture checks pass on an exact-M7 descendant with every predecessor product path unchanged.",
+    "target": "repository_local_unactivated_m8_source_with_actual_m7_binding_and_zero_external_effects"
+  },
+  "observability": [
+    {"id":"OBS-001","signal":"profile aggregates, tuple/cohort digests, expiry, halt state and deterministic recommendation or demotion reason","success":"same closed facts produce the same bounded decision","failure":"identity drift, eligibility override, nondeterministic reason, authority escalation or effect-bearing output"}
+  ],
+  "risk": {
+    "domains": [
+      "ai",
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

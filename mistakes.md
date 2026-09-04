@@ -501,3 +501,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The first route prompt described only a test action and omitted an explicit feature or AI implementation keyword, so routing selected `general_implementer` instead of the required AI write owner.
 **Prevention:** State the product behavior, feature intent, and AI domain explicitly before routing; the task was rerouted before implementation.
+
+## 2026-09-04 — Used a reserved classifier substring in M8 routing text
+
+**Root cause:** The route classifier treated the substring `fix` inside `fixed-priority` as bugfix intent despite an explicit feature request.
+**Prevention:** Inspect the generated route before package or code changes and avoid ambiguous reserved-token substrings in routing prompts; this was caught and rerouted before implementation.

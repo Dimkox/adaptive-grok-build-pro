@@ -1,0 +1,29 @@
+{
+  "change_id": "20260904-m8-earned-autonomy-on-exact-m7-00e0e4f-3ec8b3",
+  "created_at": "2026-09-04T03:11:33+00:00",
+  "history": [
+    {
+      "at": "2026-09-04T03:11:33+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-04T03:16:37+00:00",
+      "from": "draft",
+      "reason": "Actual-M7 bridge ownership, six finite M8 acceptance criteria, factual cohort gates, one-level L2 ceiling, separate activation, deterministic L0 demotion, focused evidence, and deferred operational gates are fixed.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-04T03:16:42+00:00",
+      "from": "scoped",
+      "reason": "The route has no named human gate and the user explicitly authorized repository-local M8 continuation; real cohort evidence, activation, database, network, delivery, external, and production actions remain excluded.",
+      "to": "approved"
+    }
+  ],
+  "route_id": "3ec8b3357363",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "M8 earned autonomy on exact M7 00e0e4f",
+  "updated_at": "2026-09-04T03:16:42+00:00"
+}
