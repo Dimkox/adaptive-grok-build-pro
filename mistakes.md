@@ -485,3 +485,9 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 **Symptom:** Repeated pre-final reviewer probes expanded a locally working milestone into an open-ended sequence of new edge cases, delaying delivery and wasting verification time.
 **Root cause:** Exploratory pre-review findings were allowed to expand acceptance scope without a finite severity stop condition.
 **Prevention:** From M5 onward, run one fixed verifier/review wave and block only on Critical, core-scenario, authority, tenant-isolation, or data-loss failures; record every other finding in the optimization backlog without reopening the milestone.
+
+## 2026-09-04 — Ported M5 tests and release logic without the final M4 replay/accounting context
+
+**Symptom:** The first targeted PostgreSQL run reported repeated intake-command collisions, owner-login rejections in test-only fault injectors, and retry dispositions for failed runs with residual accounting.
+**Root cause:** The semantic graft retained M4 transport replay and capability validation but imported older M5 fixtures that reused one request ID, while the manual release merge selected M4's current-run reservation check instead of the stricter task-wide accounting quarantine required by the combined lifecycle.
+**Prevention:** When grafting a successor onto a strengthened predecessor, adapt fixture transport identities and injected stores to the predecessor's capability boundary, then preserve the stricter invariant from either side at every overlap.

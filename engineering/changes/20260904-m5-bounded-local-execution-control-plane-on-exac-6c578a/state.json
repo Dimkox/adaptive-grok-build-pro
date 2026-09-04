@@ -19,11 +19,17 @@
       "from": "scoped",
       "reason": "User explicitly approved repository-local implementation, authoring additive unpublished migrations 014-017, and isolated disposable PostgreSQL evidence; shared or persistent database mutation, provider/network use, service activation, delivery, external writes, and production actions remain unauthorized.",
       "to": "approved"
+    },
+    {
+      "at": "2026-09-04T02:15:40+00:00",
+      "from": "approved",
+      "reason": "Repository-local M5 execution source, additive unpublished migrations 014-017, closed execution contracts, disabled-by-default composition, and disposable PostgreSQL recovery evidence are now implemented on exact M4 predecessor 67dc4dd; final exact-head verifier and independent reviews remain pending and no external or production action is authorized.",
+      "to": "implementing"
     }
   ],
   "route_id": "6c578a9933b3",
   "schema_version": 1,
-  "status": "approved",
+  "status": "implementing",
   "title": "M5 bounded local execution control plane on exact M4 67dc4dd",
-  "updated_at": "2026-09-04T01:46:50+00:00"
+  "updated_at": "2026-09-04T02:15:40+00:00"
 }
