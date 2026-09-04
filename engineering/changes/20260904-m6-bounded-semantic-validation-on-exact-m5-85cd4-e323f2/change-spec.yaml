@@ -1,0 +1,57 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"Seven closed version-1 schemas bind bounded canonical semantic subjects, execution bindings, validation inputs, findings, coverage, verdicts and repair directives to one exact M5 result and requirement set.","evidence":[{"attestation":"planned:factory/tests/test_semantic_contracts.py"},{"attestation":"planned:factory/tests/test_semantic_bridge.py"}]},
+    {"id":"AC-002","statement":"Adjudication is deterministic under permutation and fail-closed for contradictions, unsupported proof, authority or security findings, duplicate correlation and unrepairable evidence; only exact supported coverage passes.","evidence":[{"attestation":"planned:factory/tests/test_semantic_adjudication.py"}]},
+    {"id":"AC-003","statement":"Coordinator, validator and adjudicator authorities are disjoint; validators are independent from the writer and no semantic role has application-write or direct table DML authority.","evidence":[{"attestation":"planned:factory/tests/test_semantic_store_runtime.py"},{"attestation":"planned:factory/tests/test_semantic_persistence.py"}]},
+    {"id":"AC-004","statement":"Semantic subjects, assignments, evidence, verdicts, directives, repair proposals, child bindings, escalations, recovery facts and metrics are append-only and exact-replay safe.","evidence":[{"attestation":"planned:factory/tests/test_semantic_persistence.py"}]},
+    {"id":"AC-005","statement":"Repair cycles one through three preserve exact lineage and bounds; cycle four or stale, recurrent or policy-invalid input records needs_human and creates no child.","evidence":[{"attestation":"planned:factory/tests/test_semantic_repair.py"},{"attestation":"planned:factory/tests/test_semantic_repair_lifecycle.py"}]},
+    {"id":"AC-006","statement":"Byte-identical M5 migrations 001-017 are followed transactionally by semantic migration 018, preserving existing M5 rows and digests and rolling back to schema 17 on failure.","evidence":[{"test":"factory/tests/test_migrations.py"},{"test":"factory/tests/test_postgres_integration.py"}]},
+    {"id":"AC-007","statement":"Six authenticated semantic operations are additive to current M4/M5 surfaces and expose no live provider, repair-write, network, credential, service activation or production path.","evidence":[{"attestation":"planned:factory/tests/test_semantic_service_api.py"},{"test":"factory/tests/test_server.py"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260904-m6-bounded-semantic-validation-on-exact-m5-85cd4-e323f2",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": ["factory/contracts/openapi/factory-control.v1.json","factory/contracts/openapi/factory-execution.v1.json","factory/contracts/openapi/factory-execution.v2.json"]
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"Modification or semantic weakening of M5 migrations 001-017, execution v1/v2 contracts, control/execution fencing, accounting, terminalization or recovery.","evidence":[{"test":"factory/tests/test_migrations.py"},{"receipt":"code_review"}]},
+    {"id":"FORBID-002","statement":"Authority derived from provider output, request bodies, stale evidence or semantic-role application-write capability.","evidence":[{"attestation":"planned:factory/tests/test_semantic_store_runtime.py"},{"receipt":"security_review"}]},
+    {"id":"FORBID-003","statement":"A fourth repair child, conflicting replay, cross-repository binding, synthetic M5 evidence or unbounded correction loop.","evidence":[{"attestation":"planned:factory/tests/test_semantic_repair_lifecycle.py"},{"receipt":"test_review"}]},
+    {"id":"FORBID-004","statement":"Shared or persistent database mutation, provider/network/credential use, systemd activation, push, pull request, merge, tag, release, deployment or production action from this scope.","evidence":[{"receipt":"security_review"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"M5 remains sole task, execution, workspace, owner, writer, fence, accounting and terminal authority; M6 only derives semantic facts and a reserved repair proposal.","evidence":[{"attestation":"planned:factory/tests/test_semantic_bridge.py"}]},
+    {"id":"INV-002","statement":"Every derived object has its own canonical digest domain and is stale after any bound subject, assignment, evidence, SHA or lineage change.","evidence":[{"attestation":"planned:factory/tests/test_semantic_contracts.py"}]},
+    {"id":"INV-003","statement":"One subject has at most one verdict and each permitted repair cycle has at most one exact child binding.","evidence":[{"attestation":"planned:factory/tests/test_semantic_persistence.py"}]},
+    {"id":"INV-004","statement":"Provider-native text is untrusted evidence and cannot select policy, grant authority, expose private reasoning, adjudicate itself or initiate an external action.","evidence":[{"attestation":"planned:factory/tests/test_semantic_adjudication.py"}]},
+    {"id":"INV-005","statement":"All semantic database roles are non-login, mutually disjoint, fixed-search-path capabilities with no direct table mutation.","evidence":[{"attestation":"planned:factory/tests/test_semantic_store_runtime.py"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Integrate the existing M6 provider-independent AI semantic validation source onto exact M5 head 85cd4343143915ce9342634e7fe81886b6394871. Preserve all M5 control and execution behavior; add typed criterion verdicts, deterministic contradiction handling, at most three correction cycles, fourth-cycle needs_human, exact SHA evidence regeneration, and PostgreSQL database migration 018. Repository-local source only; no live provider calls or operational actions.",
+    "success_metric": "seven_finite_semantic_criteria_pass_on_one_clean_exact_tree",
+    "target": "repository_local_disabled_by_default_m6_source_with_migration_018_and_zero_external_effects"
+  },
+  "observability": [
+    {"id":"SIG-001","metric":"factory_semantic_publication_outcomes_total","proves":["OBJ-001"]},
+    {"id":"SIG-002","metric":"factory_semantic_verdict_outcomes_total","proves":["OBJ-001"]},
+    {"id":"SIG-003","metric":"factory_semantic_repair_outcomes_total","proves":["OBJ-001"]}
+  ],
+  "risk": {
+    "domains": [
+      "ai",
+      "api",
+      "data"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
