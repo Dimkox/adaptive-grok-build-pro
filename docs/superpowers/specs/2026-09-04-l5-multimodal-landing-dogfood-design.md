@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-Approved repository-local design for route `9f67efd2575c`, change `20260904-l5-multimodal-landing-dogfood-9f67ef`, and base `ad6d23cc30c11e5ea51c388213f5ebdfe306fb56`. Approval evidence is recorded in the active package. It authorizes later local source implementation only; provider calls, data transfer, push, PR, merge, signing, release, hosting, and production remain unauthorized.
+Approved control-repository design for route `9f67efd2575c` and change `20260904-l5-multimodal-landing-dogfood-9f67ef`. The authoritative dogfood target is the separate private repository `github.com/Dimkox/ai-dark-factory-landing` at exact base SHA `176efcaab931c2482781ff163c621b10aa05dee9`, tree `f2bdcecc6dbe9ecc82007610d398ca12bd75e07f`; the current local clone is read-only input. Approval authorizes repository-local implementation only, not provider calls, data transfer, target mutation, push, PR, merge, signing, release, hosting, or production.
 
 ## Goal
 
@@ -11,9 +11,10 @@ Dogfood the delivered Adaptive Grok factory boundaries with one executable offli
 ## Fixed decisions
 
 1. `side-projects/seo-landing-showcase/` remains byte-for-byte unchanged.
-2. Candidate writes are add-only under `side-projects/seo-landings/therealaidarkfactory-online/` in a fresh disposable exact-SHA workspace.
+2. Candidate writes occur only to root `index.html` and `content.css` in a fresh detached workspace materialized from the exact target SHA/tree. The checked target clone and every other target path remain byte-identical, including the complete indexed URL topology, locale and legal pages, verification files, robots policy, sitemap, and canonical/hreflang source facts.
 3. No stale feature branch is replayed or cherry-picked; import count is zero.
 4. Command-provider executable and argv are selected only from trusted fixed configuration. Repository source ships one sealed deterministic fixture and one default unavailable profile.
+   Provider output has no indexing authority: the only accepted policy token is `preserve_source`, and the trusted renderer must derive the actual robots, canonical, and hreflang values from the exact target baseline.
 5. A trusted renderer, not model output, produces escaped static HTML/CSS. An independent evaluator returns closed reason codes and cannot write or disclose hidden fixtures.
 6. The total generation ceiling is three: one initial candidate and at most two repair candidates, each with fresh context/workspace.
 7. The site ZIP and `.sha256` sidecar are deterministic and bound to exact source/candidate SHA/tree and the full provenance chain.
@@ -28,7 +29,7 @@ raw bounded body
   -> trusted profile resolver
   -> fixed command-provider port
   -> StaticLandingSpecV1 + LandingProviderEvidenceV1
-  -> disposable exact-SHA workspace
+  -> disposable exact target SHA/tree workspace
   -> deterministic renderer
   -> independent evaluator
   -> pass | repair (next ordinal <= 3) | needs_human
@@ -67,7 +68,7 @@ The sealed fixture maps content digests to checked fixture responses and is expl
 
 The renderer is a pure function of the closed spec, renderer version, and optional verified repair reason codes. It owns escaping and emits framework-free local HTML/CSS only; spec fields cannot contain markup, scripts, commands, forms, analytics, remote dependencies, arbitrary URLs, or policy/authority instructions.
 
-Each attempt uses a new host-owned mode-`0700` directory under `umask 0077`, a detached verified base SHA/tree, no shared Git metadata, no outbound network, no inherited credentials, and a write allowlist restricted to the add-only domain path. The broker derives the resulting SHA/tree and cleans all descendants/state on every exit.
+Each attempt uses a new host-owned mode-`0700` directory under `umask 0077`, a detached verified target base SHA/tree, no shared Git metadata, no outbound network, no inherited credentials, and a write allowlist restricted to target-root `index.html` and `content.css`. The broker derives the resulting SHA/tree and cleans all descendants/state on every exit.
 
 The evaluator uses a different identity and fresh read-only context. The writer receives only verified closed repair codes, never hidden fixtures or free-form instructions. Attempt three without pass, repeated/contradictory/security findings, stale bindings, cleanup failure, or any fourth-attempt request yields `needs_human` without artifact creation.
 

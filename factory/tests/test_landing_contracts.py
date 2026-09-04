@@ -52,7 +52,7 @@ def spec_facts(**changes):
         "direction": "ltr",
         "title": "Adaptive delivery",
         "description": "A bounded static landing candidate.",
-        "robots_policy": "noindex_nofollow",
+        "robots_policy": "preserve_source",
         "sections": [
             {
                 "kind": "hero",
@@ -204,6 +204,27 @@ class LandingContractTests(unittest.TestCase):
         for payload in hostile:
             with self.subTest(payload=payload), self.assertRaises(LandingContractError):
                 StaticLandingSpecV1.from_facts(payload)
+
+    def test_spec_preserves_source_indexing_policy_without_provider_authority(self):
+        record = StaticLandingSpecV1.from_facts(
+            spec_facts(robots_policy="preserve_source")
+        )
+        self.assertEqual(record.robots_policy, "preserve_source")
+        schema = json.loads(
+            (SCHEMAS / "static-landing-spec.v1.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            schema["properties"]["robots_policy"], {"const": "preserve_source"}
+        )
+        for provider_choice in ("index_follow", "noindex_nofollow"):
+            with self.subTest(provider_choice=provider_choice), self.assertRaisesRegex(
+                LandingContractError, "robots_policy"
+            ):
+                StaticLandingSpecV1.from_facts(
+                    spec_facts(robots_policy=provider_choice)
+                )
 
     def test_attempt_ordinal_and_evaluator_collections_are_finite_and_closed(self):
         for ordinal in (0, 4):

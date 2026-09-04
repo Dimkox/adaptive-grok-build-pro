@@ -566,3 +566,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** We inferred non-indexing from one search and an anti-bot-limited origin observation, conflating current automation visibility with search-engine indexing; the user's SERP proves observed indexing.
 **Prevention:** Record indexing evidence separately from the ability of an automated client to observe current origin content, and never let one substitute for the other.
+
+## 2026-09-04 — Applied a preview indexing policy to a deployable candidate contract
+
+**Root cause:** Task 1 copied the showcase's `noindex` safety posture into `StaticLandingSpecV1` before the exact indexed target repository was bound, giving provider output authority to contradict source indexing.
+**Prevention:** Provider output carries only `preserve_source`; the trusted renderer derives robots, canonical, and hreflang facts from the verified exact target baseline.

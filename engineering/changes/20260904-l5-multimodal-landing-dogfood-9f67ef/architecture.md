@@ -6,7 +6,7 @@
 
 Add a repository-local landing pipeline over the delivered M5 workspace/provider boundaries and M6 semantic-evaluation concepts. It has a fixed command-provider port, a sealed deterministic fixture, an unavailable default profile, a trusted deterministic renderer, an independent evaluator, a three-attempt ceiling, exact-SHA site packaging, and a disabled publisher. It adds no migration, service, framework, provider SDK, network path, or production capability.
 
-The tracked showcase at `side-projects/seo-landing-showcase/` is immutable reference material. Generated files exist only at `side-projects/seo-landings/therealaidarkfactory-online/` inside fresh disposable workspaces and, after selection, in a content-addressed artifact. No stale branch is imported.
+The tracked showcase at `side-projects/seo-landing-showcase/` is immutable reference material. The separate private target is `github.com/Dimkox/ai-dark-factory-landing` at SHA `176efcaab931c2482781ff163c621b10aa05dee9`, tree `f2bdcecc6dbe9ecc82007610d398ca12bd75e07f`; generated `index.html` and `content.css` exist only in fresh disposable target workspaces and, after selection, in a content-addressed artifact. The local target clone is read-only, no stale branch is imported, and indexed URL topology, locale/legal pages, verification files, robots, sitemap, canonical, and hreflang facts stay byte-identical to the source.
 
 ## Components
 
@@ -16,7 +16,7 @@ The tracked showcase at `side-projects/seo-landing-showcase/` is immutable refer
 | Intake/quarantine | Bounded type/shape checks, tenant binding, private transient bytes | Caller paths/URLs, durable raw content |
 | Command-provider port | Fixed executable/argv, canonical stdin/JSONL stdout, limits | Shell, fallback, arbitrary env/network |
 | Sealed fixture / unavailable profile | Deterministic local proof / default closed denial | Operational model claim, credentials |
-| Trusted renderer | Escape a closed spec into static HTML/CSS | Model HTML, script, remote dependency |
+| Trusted renderer | Escape a closed spec into target-root `index.html` and `content.css` | Model HTML, script, remote dependency |
 | Workspace broker | Fresh exact-SHA checkout, allowlisted writes, Git-derived result identity, cleanup | Shared mutable worktree, ref mutation |
 | Independent evaluator | Read-only fixed rubric and closed `pass|repair|needs_human` result | Writer identity, hidden-data disclosure, selection authority |
 | Artifact builder | Sorted canonical manifest, ZIP and sidecar | Product ZIP mutation, mutable latest identity |
@@ -30,7 +30,7 @@ authenticated raw body
   -> trusted profile resolution
   -> fixed command-provider port
   -> closed StaticLandingSpecV1 + provider evidence
-  -> disposable exact-SHA workspace
+  -> disposable exact target SHA/tree workspace
   -> deterministic renderer
   -> read-only evaluator
        repair -> fresh workspace (total attempts <= 3)

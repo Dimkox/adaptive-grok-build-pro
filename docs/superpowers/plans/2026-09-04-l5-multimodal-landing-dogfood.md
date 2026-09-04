@@ -6,7 +6,7 @@
 
 **Design:** [`../specs/2026-09-04-l5-multimodal-landing-dogfood-design.md`](../specs/2026-09-04-l5-multimodal-landing-dogfood-design.md)
 
-**Baseline:** `ad6d23cc30c11e5ea51c388213f5ebdfe306fb56`; no stale-branch cherry-picks. Existing showcase, migrations `001`-`018`, M0-M9 contracts, version, and packages are frozen.
+**Control baseline:** `ad6d23cc30c11e5ea51c388213f5ebdfe306fb56`; no stale-branch cherry-picks. **Dogfood target:** private `github.com/Dimkox/ai-dark-factory-landing` at exact SHA `176efcaab931c2482781ff163c621b10aa05dee9`, tree `f2bdcecc6dbe9ecc82007610d398ca12bd75e07f`; its local clone is read-only and candidate writes occur only in disposable workspaces. Existing showcase, migrations `001`-`018`, M0-M9 contracts, version, and packages are frozen.
 
 **TDD rule:** For each task, add the named focused test first, run it to observe the specified RED, implement only that task, rerun the focused group once to GREEN, run Ruff only on modified Python files, run `git diff --check`, and commit. If GREEN fails, rerun only the failed method/group after repair.
 
@@ -41,9 +41,9 @@
 **Create:** `factory/src/adaptive_factory/landing_renderer.py`, `landing_evaluation.py`, `landing_coordinator.py`, `factory/tests/test_landing_renderer.py`, `factory/tests/test_landing_coordinator.py`.
 **Modify:** workspace broker only through additive landing-specific composition.
 
-- [ ] Write tests for escaped deterministic HTML/CSS, static/no-remote/no-script output, add-only domain path, exact-base verification, fresh context/workspace, no credential/network capability, cleanup, distinct read-only evaluator, bounded repair projection, append-only prior digest, and hard ordinal `1..3` ceiling.
+- [ ] Write tests for escaped deterministic HTML/CSS, static/no-remote/no-script output, the two-file target write allowlist, exact-base verification, fresh context/workspace, no credential/network capability, cleanup, distinct read-only evaluator, bounded repair projection, append-only prior digest, and hard ordinal `1..3` ceiling.
 - [ ] Run `python3 -m unittest factory.tests.test_landing_renderer factory.tests.test_landing_coordinator -v`; expected RED is missing renderer/coordinator behavior.
-- [ ] Implement a pure renderer and coordinator over fresh disposable exact-SHA workspaces. Preserve `side-projects/seo-landing-showcase/` by checked digest and reject every write outside `side-projects/seo-landings/therealaidarkfactory-online/`.
+- [ ] Implement a pure renderer and coordinator over fresh disposable workspaces of the exact target SHA/tree. Preserve the control-repository showcase and all target paths except root `index.html` and `content.css` by checked digest, including indexed URL topology, locale/legal pages, verification files, robots, sitemap, canonical, and hreflang facts; never mutate the read-only target clone.
 - [ ] Implement the independent deterministic evaluator with fixed policy/rubric and closed `pass|repair|needs_human`; only verified reason codes reach a fresh next attempt. Attempt three non-pass and every fourth-attempt request terminate `needs_human`.
 - [ ] Run the focused modules to GREEN, targeted Ruff/diff check, and commit `feat(factory): add bounded landing render loop`.
 

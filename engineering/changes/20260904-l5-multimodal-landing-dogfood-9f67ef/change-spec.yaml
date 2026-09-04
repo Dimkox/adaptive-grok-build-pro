@@ -10,15 +10,16 @@
     },
     {
       "id": "AC-002",
-      "statement": "A fixed trusted command-provider port accepts canonical input and returns one closed StaticLandingSpecV1; the sealed fixture is deterministic and the default unavailable profile performs no command or network call and has no fallback.",
+      "statement": "A fixed trusted command-provider port accepts canonical input and returns one closed StaticLandingSpecV1 with preserve_source and no indexing authority; the sealed fixture is deterministic and the default unavailable profile performs no command or network call and has no fallback.",
       "evidence": [
-        {"attestation": "planned-test-landing-provider"},
+        {"test": "factory/tests/test_landing_provider.py"},
+        {"test": "factory/tests/test_landing_contracts.py"},
         {"receipt": "security_review"}
       ]
     },
     {
       "id": "AC-003",
-      "statement": "The trusted renderer and independent evaluator use fresh disposable exact-SHA workspaces, modify only the add-only landing domain path, preserve the existing showcase, and make a fourth candidate attempt unrepresentable.",
+      "statement": "The trusted renderer and independent evaluator use fresh disposable workspaces of private target github.com/Dimkox/ai-dark-factory-landing at exact base 176efcaab931c2482781ff163c621b10aa05dee9 and tree f2bdcecc6dbe9ecc82007610d398ca12bd75e07f, modify only root index.html and content.css, preserve the read-only clone and existing showcase, and make a fourth candidate attempt unrepresentable.",
       "evidence": [
         {"attestation": "planned-test-landing-coordinator"},
         {"attestation": "planned-test-landing-renderer"}
@@ -85,7 +86,7 @@
     },
     {
       "id": "FORBID-003",
-      "statement": "Generation overwrites the existing showcase, any live-site path, an existing release artifact, or a path outside the add-only domain output root.",
+      "statement": "Generation overwrites the control-repository showcase, the read-only target clone, any target path other than root index.html and content.css, any live-site path, or an existing release artifact.",
       "evidence": [
         {"attestation": "planned-test-landing-renderer"},
         {"attestation": "planned-test-landing-artifact"}
@@ -112,7 +113,7 @@
       "id": "INV-002",
       "statement": "Only trusted fixed command-provider configuration can name an executable; the sealed fixture and unavailable default have no network, repository write, credential, or authority capability.",
       "evidence": [
-        {"attestation": "planned-test-landing-provider"}
+        {"test": "factory/tests/test_landing_provider.py"}
       ]
     },
     {
@@ -141,7 +142,7 @@
   ],
   "objective": {
     "id": "OBJ-001",
-    "statement": "Implement a repository-local L5 Landing Dogfood vertical that accepts bounded text, audio, image, PDF, or DOCX; normalizes through a fixed provider-neutral command port; deterministically renders and independently evaluates at most three isolated candidates; and emits an exact-SHA deterministic ZIP plus sidecar while preserving all current product and showcase bytes and keeping provider and production capabilities unavailable by default.",
+    "statement": "Implement a repository-local L5 Landing Dogfood control vertical for private target github.com/Dimkox/ai-dark-factory-landing at exact base 176efcaab931c2482781ff163c621b10aa05dee9 and tree f2bdcecc6dbe9ecc82007610d398ca12bd75e07f: accept bounded text, audio, image, PDF, or DOCX; normalize through a fixed provider-neutral command port; render and independently evaluate at most three isolated target-workspace candidates; and emit an exact-SHA deterministic ZIP plus sidecar while preserving both read-only source clones and keeping provider and production capabilities unavailable by default.",
     "success_metric": "All focused contract, intake, provider, renderer, coordinator, artifact, API, publisher-boundary, and structure tests pass once on the frozen source tree; identical inputs and sealed identities reproduce identical candidate and package digests; zero external calls or production claims occur.",
     "target": "offline_exact_sha_multimodal_landing_candidate_artifact_with_disabled_production"
   },

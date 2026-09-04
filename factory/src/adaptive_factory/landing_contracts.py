@@ -360,7 +360,7 @@ class StaticLandingSpecV1(_LandingRecord):
             raise LandingContractError("locale")
         if data["direction"] not in {"ltr", "rtl"}:
             raise LandingContractError("direction")
-        if data["robots_policy"] != "noindex_nofollow":
+        if data["robots_policy"] != "preserve_source":
             raise LandingContractError("robots_policy")
         sections_raw = data["sections"]
         if not isinstance(sections_raw, list) or not 1 <= len(sections_raw) <= 12:
@@ -377,7 +377,7 @@ class StaticLandingSpecV1(_LandingRecord):
             "direction": data["direction"],
             "title": _plain(data["title"], "title", 70),
             "description": _plain(data["description"], "description", 200),
-            "robots_policy": "noindex_nofollow",
+            "robots_policy": "preserve_source",
             "sections": sections,
             "assets": assets,
             "source_claim_refs": refs,

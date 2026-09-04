@@ -18,4 +18,4 @@ A defect is repaired on a new exact source SHA. All affected candidate/evaluator
 
 ## Verification after rollback
 
-Confirm L5 routes are unavailable, no fixed provider or publisher process ran, the generated domain path is absent from active source, all frozen showcase/migration/contract/package digests match the design base, and the pre-change focused structure/architecture checks pass.
+Confirm L5 routes are unavailable, no fixed provider or publisher process ran, the read-only target clone still matches exact SHA/tree, all target paths outside candidate `index.html`/`content.css` and all frozen showcase/migration/contract/package digests are unchanged, and the pre-change focused structure/architecture checks pass.
