@@ -22,6 +22,11 @@ Represent rule transitions as immutable canonical-byte `RuleRecord` values and a
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-09-04 — Stop M4 ZIP/review restack on paperwork
+
+Rebuild `2.0.13` only when `factory/` or `packages/` bytes change; ignore markdown nits and leftover change packages at `git diff --check` / change-spec gate. One verify and one review wave per frozen product tree, then stop at local ready until an explicit PR grant. This cuts the Codex repair loop that treated `PROJECT_STATE` and review markdown as a new artifact epoch.
+
+
 ## 2026-08-26 — Provider-neutral factory core with explicit adapter boundary
 
 Keep deterministic policy, state, leases, budgets, and capabilities in a PostgreSQL-backed provider-neutral core; make Codex, Grok, and future providers explicit versioned JSON/JSONL translators with no silent fallback. This preserves one-writer and trust boundaries across provider changes while allowing model-native streams to evolve behind conformance-tested adapters.

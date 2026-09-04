@@ -262,7 +262,7 @@ class ProjectStateTests(unittest.TestCase):
         )
         self.assertTrue(
             self.state["active_delivery"]["next_action"].startswith(
-                "Rebuild the 2.0.13 artifact-only child from ready source checkpoint"
+                "Stop restacking M4."
             )
         )
         self.assertEqual(
