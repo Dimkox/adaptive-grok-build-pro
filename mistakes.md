@@ -621,3 +621,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The lexical DOCX validator allowed any leading `../` sequence but discarded the `.rels` entry path, so it could not distinguish a legitimate parent reference from traversal above the OPC package root.
 **Prevention:** Bind every internal target to its relationship source part and reject it when normalized parent depth exceeds that source directory's package-root depth.
+
+## 2026-09-04 — Invoked an unresolved unittest selector
+
+**Root cause:** The initial targeted validation named a nonexistent unittest class because the exact class and method were not resolved in source before invocation, producing a loader `AttributeError` and executing no test.
+**Prevention:** Confirm every targeted selector with `rg` or a source listing before invocation, and treat any loader error as zero verification evidence.
