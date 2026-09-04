@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 from datetime import datetime, timezone
 import hashlib
 from pathlib import Path
@@ -277,6 +278,25 @@ class LandingApiTests(unittest.TestCase):
             content=payload,
         )
         self.assertEqual(413, legacy.status_code)
+
+    def test_landing_upload_uses_one_awaited_sync_call_without_background_queue(self):
+        source = Path(create_app.__code__.co_filename).read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        imported_modules = {
+            alias.name
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.Import, ast.ImportFrom))
+            for alias in node.names
+        }
+        called_attributes = [
+            node.func.attr
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+        ]
+
+        self.assertNotIn("queue", imported_modules)
+        self.assertNotIn("create_task", called_attributes)
+        self.assertEqual(1, called_attributes.count("to_thread"))
 
     def test_predecessor_contract_migration_showcase_and_published_package_are_frozen(self):
         def aggregate(paths):

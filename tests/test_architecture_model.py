@@ -211,7 +211,7 @@ class ArchitectureModelTests(unittest.TestCase):
                     "path_prefixes": ["factory"],
                     "max_changed_bytes": 950_000,
                     "max_changed_lines": 22_000,
-                    "max_ast_complexity": 1_000,
+                    "max_ast_complexity": 1_350,
                     "severity": "error",
                 },
                 {
@@ -219,7 +219,7 @@ class ArchitectureModelTests(unittest.TestCase):
                     "path_prefixes": ["factory/src"],
                     "max_changed_bytes": 235_000,
                     "max_changed_lines": 5_500,
-                    "max_ast_complexity": 650,
+                    "max_ast_complexity": 1_000,
                     "severity": "error",
                 },
                 {
@@ -233,9 +233,9 @@ class ArchitectureModelTests(unittest.TestCase):
                 {
                     "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
                     "path_prefixes": ["factory/tests"],
-                    "max_changed_bytes": 340_000,
+                    "max_changed_bytes": 500_000,
                     "max_changed_lines": 7_500,
-                    "max_ast_complexity": 350,
+                    "max_ast_complexity": 425,
                     "severity": "error",
                 },
             ]

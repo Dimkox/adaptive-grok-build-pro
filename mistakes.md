@@ -581,3 +581,18 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The landing stream cleanup used `except Exception: pass` to preserve the original request failure, which made the intended suppression opaque to the security gate.
 **Prevention:** Express deliberate cleanup-only suppression with `contextlib.suppress` and run targeted Bandit on every modified production Python path before source freeze.
+
+## 2026-09-04 — Left predecessor tests bound to incomplete global fixtures
+
+**Root cause:** The L5 schema addition did not update one exact global schema inventory, while a long PostgreSQL method compared a module-frozen authority proof with the later wall clock instead of its fixture clock.
+**Prevention:** Update every exact inventory with additive contracts and keep fixture-bound authority parsing on the same explicit test clock so suite duration cannot alter semantics.
+
+## 2026-09-04 — Let implementation signals outrun the declared L5 boundary
+
+**Root cause:** A transient stdlib queue and a direct socket import in a denial test advertised capabilities the MVP does not own, while new contracts were incorrectly self-compared against a nonexistent predecessor and pre-L5 AST ceilings were not remeasured.
+**Prevention:** Use one bounded awaited intake call, patch denial sentinels by string target, treat an absent contract baseline as vacuous while keeping later changes fail closed, and record finite measured budgets with explicit optimization debt.
+
+## 2026-09-04 — Patched a lookalike instead of the traceback location
+
+**Root cause:** The first deterministic-clock repair matched an earlier near-identical intake call instead of the traceback line inside the failing long-running method, and the isolated method completed before the stale-proof window exposed the miss.
+**Prevention:** Bind a repair to the traceback line and enclosing method, then inspect every same-pattern occurrence in that method before rerunning the smallest failed target.

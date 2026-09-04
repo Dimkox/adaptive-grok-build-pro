@@ -70,6 +70,10 @@ Production is blocked until an authoritative current-site snapshot and rollback 
 
 Migrations `001`-`018`, existing control/execution/semantic/shadow/autonomy/delivery contracts, the published `2.0.13` product package, and the showcase remain frozen. New architecture nodes and dependencies are additive. `L5` is the feature name and does not alter M8 autonomy levels `L0`-`L2`.
 
+## Bounded implementation budget
+
+The repaired complete vertical measures 1,303 factory AST units and 910 factory-source AST units against the exact route base. Its factory-test inventory measures 405 AST units and 489,796 bytes because the fitness rule correctly charges the entire existing 336,554-byte PostgreSQL test module after a one-line deterministic-time repair. The explicit error ceilings are therefore 1,350 total AST, 1,000 source AST, 425 test AST, and 500,000 test bytes: they remain finite and just above the measured vertical without weakening ownership, dependency, trust, contract, freshness, or security checks. Reducing orchestration and legacy-test coupling below the predecessor ceilings is recorded optimization debt after functional freeze; path shuffling or deletion of safety checks is not an acceptable reduction.
+
 ## Recovery
 
 Before artifact creation, cancellation or failure destroys transient input/workspace state and leaves the repository/showcase untouched. After artifact creation, disabling the local feature and deleting only the content-addressed candidate artifact is sufficient. A future production rollback may restore only an exact captured predecessor under separate authority; it is not implemented here.

@@ -6774,7 +6774,7 @@ class PostgresFactoryTests(unittest.TestCase):
         ordinary = self.service.intake(
             ordinary_payload,
             actor=OPERATOR,
-            now=datetime.now(timezone.utc),
+            now=NOW,
         )
         with self.subTest(stage="unknown-hex-api-source-remains-ordinary"):
             self.assertTrue(ordinary.created)
@@ -7088,7 +7088,7 @@ class PostgresFactoryTests(unittest.TestCase):
         ordinary = self.service.intake(
             ordinary_payload,
             actor=OPERATOR,
-            now=datetime.now(timezone.utc),
+            now=NOW,
         )
         with self.store._connect() as connection, connection.cursor() as cursor:
             cursor.execute(

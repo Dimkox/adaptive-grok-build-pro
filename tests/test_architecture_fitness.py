@@ -3788,7 +3788,7 @@ class ArchitectureFitnessTests(unittest.TestCase):
         self.assertEqual(result.status, "unsupported")
         self.assertIn("unsupported compatibility semantics", " ".join(result.findings))
 
-    def test_added_contracts_must_have_supported_baseline_semantics(self) -> None:
+    def test_added_contract_has_no_nonexistent_baseline_but_change_remains_fail_closed(self) -> None:
         system = _system()
         rules = _rules()
         rules["contract_policies"] = [{
@@ -3817,9 +3817,19 @@ class ArchitectureFitnessTests(unittest.TestCase):
         head = repo.commit("unsupported contract addition")
         report = self._evaluate(repo, base, head, pre_risk="yellow")
         result = self._results(report)["contract_compatibility"]
-        self.assertEqual(result.status, "unsupported")
-        self.assertEqual(report.status, "fail")
-        self.assertIn("CONTRACT-UNSUPPORTED", " ".join(result.findings))
+        self.assertEqual(result.status, "pass", result.findings)
+        self.assertEqual(report.status, "pass")
+
+        document["properties"]["value"]["dependentRequired"] = {
+            "value": ["changed"]
+        }
+        repo.write_json("engineering/contracts/unsupported.json", document)
+        changed = repo.commit("change unsupported contract")
+        changed_report = self._evaluate(repo, head, changed, pre_risk="yellow")
+        changed_result = self._results(changed_report)["contract_compatibility"]
+        self.assertEqual(changed_result.status, "unsupported")
+        self.assertEqual(changed_report.status, "fail")
+        self.assertIn("CONTRACT-UNSUPPORTED", " ".join(changed_result.findings))
 
     def test_added_rich_factory_contracts_resolve_from_head_inventory(self) -> None:
         system = _system()
@@ -3913,6 +3923,67 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 "FIT-OPENAPI",
                 "FIT-JSON-PRODUCER",
                 "FIT-EVENT-CONSUMER",
+            },
+        )
+
+    def test_added_landing_contracts_have_supported_closed_semantics(self) -> None:
+        source = ARCHITECTURE.load_architecture(ROOT)
+        contracts = [
+            copy.deepcopy(contract)
+            for contract in source.system["contracts"]
+            if contract["id"].startswith("CONTRACT-FACTORY-LANDING-")
+        ]
+        self.assertEqual(7, len(contracts))
+        system = _system()
+        rules = _rules()
+        rules["contract_policies"] = [
+            {
+                "id": "FIT-OPENAPI",
+                "contract_kinds": ["openapi"],
+                "compatibility": "bidirectional",
+                "severity": "error",
+            },
+            {
+                "id": "FIT-JSON-CONSUMER",
+                "contract_kinds": ["json_schema"],
+                "compatibility": "consumer_accepts_old",
+                "severity": "error",
+            },
+            {
+                "id": "FIT-JSON-PRODUCER",
+                "contract_kinds": ["json_schema"],
+                "compatibility": "producer_accepted_by_old",
+                "severity": "error",
+            },
+        ]
+        repo = GitArchitectureRepo(self)
+        repo.model(system, rules)
+        base = repo.commit("landing contract predecessor")
+        added = copy.deepcopy(system)
+        added["contracts"] = contracts
+        added["nodes"][0]["public_contracts"] = [
+            contract["id"] for contract in contracts
+        ]
+        repo.model(added, rules)
+        for contract in contracts:
+            repo.write_json(
+                contract["path"],
+                json.loads((ROOT / contract["path"]).read_text(encoding="utf-8")),
+            )
+        head = repo.commit("add closed landing contracts")
+
+        result = self._results(self._evaluate(repo, base, head))[
+            "contract_compatibility"
+        ]
+
+        self.assertEqual(result.status, "pass", result.findings)
+        self.assertEqual(
+            set(result.applicability.scanned_scope),
+            {
+                *(contract["id"] for contract in contracts),
+                "FIT-JSON-CONSUMER",
+                "FIT-JSON-PRODUCER",
+                "FIT-OPENAPI",
             },
         )
 

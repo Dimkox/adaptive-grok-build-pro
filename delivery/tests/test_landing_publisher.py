@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import inspect
-import socket
 import subprocess
 import unittest
 from unittest.mock import patch
@@ -20,9 +19,8 @@ class LandingPublisherTests(unittest.TestCase):
                 raise AssertionError("unavailable publisher inspected artifact")
 
         publisher = UnavailableLandingPublisher()
-        with patch.object(
-            socket,
-            "create_connection",
+        with patch(
+            "socket.create_connection",
             side_effect=AssertionError("publisher opened a socket"),
         ), patch.object(
             subprocess,

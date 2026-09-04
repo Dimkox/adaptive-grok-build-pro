@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable, Iterable
-from contextlib import suppress
 from dataclasses import fields, is_dataclass
 from datetime import datetime, timezone
 import hashlib
 import hmac
 import re
-import queue
 import threading
 import uuid
 from typing import Any, Mapping
@@ -251,46 +249,17 @@ def _landing_content_length(value: str | None, maximum: int) -> None:
 
 async def _stream_landing_body(
     request: Request,
+    maximum: int,
     submit: Callable[[Iterable[bytes]], Any],
 ) -> Any:
-    chunks: queue.Queue[bytes | object] = queue.Queue(maxsize=2)
-    sentinel = object()
-
-    def values() -> Iterable[bytes]:
-        while True:
-            value = chunks.get()
-            if value is sentinel:
-                return
-            if not isinstance(value, bytes):
-                raise LandingServiceError("stream", 500, "landing input stream failed")
-            yield value
-
-    worker = asyncio.create_task(asyncio.to_thread(submit, values()))
-
-    async def offer(value: bytes | object) -> bool:
-        while not worker.done():
-            try:
-                chunks.put_nowait(value)
-                return True
-            except queue.Full:
-                await asyncio.sleep(0)
-        return False
-
-    terminal_sent = False
-    try:
-        async for chunk in request.stream():
-            for offset in range(0, len(chunk), 65_536):
-                if not await offer(bytes(chunk[offset : offset + 65_536])):
-                    return await worker
-        terminal_sent = await offer(sentinel)
-        return await worker
-    except BaseException:
-        if not terminal_sent and not worker.done():
-            await offer(sentinel)
-        if not worker.done():
-            with suppress(Exception):
-                await worker
-        raise
+    body = bytearray()
+    async for chunk in request.stream():
+        if len(body) + len(chunk) > maximum:
+            raise LandingServiceError(
+                "input_too_large", 413, "landing input too large"
+            )
+        body.extend(chunk)
+    return await asyncio.to_thread(submit, (bytes(body),))
 
 
 def create_app(
@@ -543,6 +512,7 @@ def create_app(
 
         result = await _stream_landing_body(
             request,
+            maximum,
             lambda chunks: landing_service.submit(
                 job_id=job_id,
                 repository_id=repository_id,
