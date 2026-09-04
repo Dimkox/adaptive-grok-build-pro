@@ -6,6 +6,7 @@ import json
 import jsonschema
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -212,6 +213,13 @@ class StructureTests(unittest.TestCase):
         self.assertIn("Identity: **2.0.13**", readme)
         self.assertTrue(changelog.startswith("# Changelog\n\n## 2.0.13 — 2026-09-02\n"))
         self.assertIn("product version: 2.0.13", roadmap)
+        sys.path.insert(0, str(ROOT / ".grok-stack"))
+        try:
+            import adaptive_grok
+
+            self.assertEqual(adaptive_grok.__version__, version)
+        finally:
+            sys.path.pop(0)
 
     def test_readme_stack_graph_is_complete(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

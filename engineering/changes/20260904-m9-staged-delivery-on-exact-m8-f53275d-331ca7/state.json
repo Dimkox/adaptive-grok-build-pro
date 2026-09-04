@@ -25,11 +25,29 @@
       "from": "approved",
       "reason": "The focused seven-file delivery suite now demonstrates the missing adaptive_delivery package; implement the approved repository-local M9 core and actual-M8 bridge only.",
       "to": "implementing"
+    },
+    {
+      "at": "2026-09-04T03:43:36+00:00",
+      "from": "implementing",
+      "reason": "Integrated M9 source, actual-M8 bridge, focused delivery evidence, preserved migrations, truthful M4-M9 documentation, architecture projections, and version identity are ready for source-checkpoint verification.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-04T03:43:37+00:00",
+      "from": "verifying",
+      "reason": "The bounded local source checkpoint passed its focused source and architecture checks; artifact-bound full verification and five independent reviews remain the next explicit delivery phases.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-04T03:43:37+00:00",
+      "from": "reviewing",
+      "reason": "Repository-local M4-M9 source is ready for the dual-clone artifact build; this state does not claim the pending artifact-bound verifier, five review receipts, Trust CI acceptance, merge, tag, release, or production activation.",
+      "to": "ready"
     }
   ],
   "route_id": "331ca7021cc0",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "ready",
   "title": "M9 staged delivery on exact M8 f53275d",
-  "updated_at": "2026-09-04T03:31:27+00:00"
+  "updated_at": "2026-09-04T03:43:37+00:00"
 }

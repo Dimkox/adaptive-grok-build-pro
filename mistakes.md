@@ -506,3 +506,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The route classifier treated the substring `fix` inside `fixed-priority` as bugfix intent despite an explicit feature request.
 **Prevention:** Inspect the generated route before package or code changes and avoid ambiguous reserved-token substrings in routing prompts; this was caught and rerouted before implementation.
+
+## 2026-09-04 — Updated release identity without binding the installed runtime version
+
+**Root cause:** Product-version checks compared `VERSION`, README, changelog, and roadmap but omitted `.grok-stack/adaptive_grok.__version__`, allowing the installer-managed runtime to remain at `2.0.11` while the product declared `2.0.13`.
+**Prevention:** The focused structure version test must import `adaptive_grok` from the tracked runtime root and require its `__version__` to equal `VERSION`.

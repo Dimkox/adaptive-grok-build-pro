@@ -200,6 +200,22 @@
       "path": "factory/contracts/jsonschema/shadow-task-evidence.v1.schema.json",
       "role": "consumer",
       "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-M8-M7-BRIDGE-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/m7-autonomy-bridge.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-M8-EARNED-AUTONOMY-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/earned-autonomy.v1.schema.json",
+      "role": "producer",
+      "version": "1"
     }
   ],
   "data_classifications": [
@@ -847,6 +863,75 @@
       "sync_or_async": "synchronous",
       "to": "NODE-FACTORY-SEMANTIC-VALIDATION",
       "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-EARNED-AUTONOMY",
+      "id": "EDGE-FACTORY-AUTONOMY-SHADOW-HANDOFF",
+      "network_policy": "no_network",
+      "protocol": "python_import",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-SHADOW-HANDOFF",
+      "type": "dependency"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-STAGED-DELIVERY-SOURCE",
+      "id": "EDGE-STAGED-DELIVERY-EARNED-AUTONOMY",
+      "network_policy": "no_network",
+      "protocol": "python_import",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-EARNED-AUTONOMY",
+      "type": "dependency"
+    },
+    {
+      "allowed_data": [
+        "DATA-CHANGE-EVIDENCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 3600000
+      },
+      "from": "NODE-STAGED-DELIVERY-SOURCE",
+      "id": "EDGE-STAGED-DELIVERY-LOCAL-VERIFIER",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "batch",
+      "to": "NODE-LOCAL-VERIFIER",
+      "type": "data_flow"
     }
   ],
   "nodes": [
@@ -1391,6 +1476,50 @@
       },
       "secrets": [],
       "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-FACTORY-STATE",
+      "id": "NODE-FACTORY-EARNED-AUTONOMY",
+      "owner": "local factory operators and human reviewers",
+      "public_contracts": [
+        "CONTRACT-FACTORY-M8-EARNED-AUTONOMY-V1",
+        "CONTRACT-FACTORY-M8-M7-BRIDGE-V1"
+      ],
+      "repository_paths": [
+        "factory/contracts/jsonschema/earned-autonomy.v1.schema.json",
+        "factory/contracts/jsonschema/m7-autonomy-bridge.v1.schema.json",
+        "factory/src/adaptive_factory/autonomy.py",
+        "factory/src/adaptive_factory/m7_autonomy_bridge.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-CHANGE-EVIDENCE",
+      "id": "NODE-STAGED-DELIVERY-SOURCE",
+      "owner": "repository engineering",
+      "public_contracts": [],
+      "repository_paths": [
+        "delivery/pyproject.toml",
+        "delivery/src/adaptive_delivery",
+        "delivery/tests"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-LOCAL-PREFLIGHT",
       "type": "local_component"
     }
   ],

@@ -2,16 +2,17 @@
 
 ## 2.0.13 — 2026-09-02
 
-M4 control-plane repair candidate and exact current-state release artifact.
+Integrated M4-M9 source candidate; release publication remains pending.
 
-- Product identity **2.0.13**; Trust CI service identity remains separately **2.1.0**
+- Product identity **2.0.13** across `VERSION`, repository documentation, and the tracked `adaptive_grok` runtime; Trust CI service identity remains separately **2.1.0**
+- Integrates the M4 durable control plane, M5 bounded execution, M6 semantic validation, M7 shadow handoff, M8 earned-autonomy evaluation, and M9 local staged-delivery/recovery source while preserving migrations `001`-`018`
+- M9 is deliberately local-only: it provides immutable delivery records, deterministic preview/staging/bounded-canary decisions, a sealed in-memory environment, and least-authority recovery without an operational adapter, persistence, credentials, provider access, or production authority
 - Repairs roadmap/state parity, claim-terminal lease races, all-runtime database bounds/typed availability, fail-closed role bootstrap, and persisted accepted retry limits through additive migration `013`
 - Audits legacy schema-12 retry exhaustion without advancing a fence or creating a lease, and makes release packaging derive inventory and bytes from filtered, clean, exact Git `HEAD` while independent shipped-artifact tests reject ambient ignored/untracked members
 - Records the current PR/milestone inventory without claiming review, external Trust CI acceptance, merge, deployment, tag, or GitHub Release publication
 - Tracked local artifact: `packages/adaptive-grok-build-pro-v2.0.13.zip` with its SHA-256 sidecar
 - Binds sensitive hook policy and denial evidence to the unique effective repository root, including nested workdir aliases and literal `cd`/`git -C` shell overrides, without recording raw commands
-- Freezes ready M4 source/state at repair checkpoint `47b1c0a` after one shared fail-closed authority analysis closes dynamic selector/scope and unproven-dispatcher grant borrowing; artifact and exact-head gates remain pending
-- Makes package handoff state-stable: rebuild an artifact-only child only when exact shipped parity fails; when it passes, proceed to exact-head verification and review
+- Preserves the M4 repair source and integrates M5-M9 additively; artifact rebuild, exact-head verification, independent reviews, Trust CI acceptance, merge, tag, and release remain separate pending gates
 - The `aa12e7c` 14/14 verifier receipt is historical and stale for this follow-up after release rereview exposed ambient files in its archive; fresh exact-head verification and review remain required
 
 ## 2.0.12 — 2026-08-23

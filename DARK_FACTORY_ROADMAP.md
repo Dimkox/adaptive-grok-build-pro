@@ -85,7 +85,7 @@ Implemented in-tree:
 
 M0 Live Trust Authority is delivered. Protected `main` requires the App-owned policy-epoch check `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`; repository source, prompts, local receipts and local grants cannot mint or replace it. The original roadmap observation predated that activation and is historical only.
 
-PR #17 closed at `2026-09-02T10:08:38Z` because it exactly duplicated open M4 source PR #21 at head `460a8a01a6394cac710b4e3f9eea3d94d4beef89`. PR #21 has a successful App-owned check and separate unresolved GitGuardian FAILURE metadata; no finding value is read, copied or dismissed, and neither result transfers to the current integration tree. Release-state baseline `56e12b2b394436ee227c66d78b1caba8f7317c78` passed 14/14 local verifier gates at `2026-09-02T10:51:29Z`. The repaired source/docs freeze supersedes that fingerprint. Validate exact `2.0.13` shipped parity after tracked mutation and rebuild an artifact-only child only on failure; when parity passes, exact-head verification and route-selected reviews bind that final artifact commit before PR delivery. No new review or external acceptance is claimed.
+The current local source line integrates M4-M9 through M9 code checkpoint `64b10689ce78a0464a494440f3fa981e18789687` on exact M8 `f53275d5ed84022200419b399c799a995ed91a45`; migrations `001`-`018` are preserved. PR #22 is open but not merged or delivered. Artifact rebuild, exact-head verification, five route-selected reviews, App-owned Trust CI, protected merge, factual M8 cohort/activation, signed M9 input, environment/recovery proof, and human production authority remain separate gates.
 
 PRs #12 and #13 remain stale old-epoch `ACTION_REQUIRED` work whose unique lazy CLI imports/tests and repository-scoped Trust CI profiles are absent from `main`. PR #15's current-epoch `adaptive-trust-ci/verified@06ecf1c875bc` conclusion is `FAILURE` while GitGuardian is `SUCCESS`; its failure cause was not inspected or inferred. Wholesale merge of its obsolete M1-M3 aggregate is superseded, while investor-demo commit `9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b` and packaging hardening remain unique. All three need clean successor extraction; no successor PR is claimed.
 
@@ -102,18 +102,18 @@ PRs #12 and #13 remain stale old-epoch `ACTION_REQUIRED` work whose unique lazy 
 | Durable CI jobs | Implemented | Keep separate from implementation task state |
 | Typed business specification | M1 implemented/reviewed in accepted stack | Deliver the full accepted source to main without confusing stack merge with delivery |
 | Executable architecture model | M2 implemented/reviewed in accepted stack | Deliver through the dependency-ordered current-main path; retain independent enforcement |
-| Agent-loop backpressure | Provisional M6 Task 3 at `f3b2c0d0`; quarantined | Restack after accepted M5, renumber migration `014`, refresh checksum/upgrade/restart proof, and continue with untouched Task 4 |
-| Semantic validator/adjudicator | Deterministic verdict persistence at `f3b2c0d0`; focused 67/67, legacy 40/40, PG17 1/1 and architecture PASS only | Keep quarantined until accepted-M5 restack and retain independent verdict authority |
+| Agent-loop backpressure | Integrated M6 source at `c6d48ffd`; local source evidence only | Preserve finite repair ceilings and bind final verification/reviews to the exact artifact commit |
+| Semantic validator/adjudicator | Integrated independent M6 verdict and artifact-validation boundary | Retain independent verdict authority; external acceptance remains separate |
 | Controlled learning | M3 implemented/reviewed; registries intentionally empty | Deliver accepted source; activation still requires independent evidence and human governance |
 | Debt/slop ledger | M3 source implemented | Keep empty/unapproved records non-authoritative and preserve owner/trigger/evidence requirements |
-| Durable factory task queue | M4 source/docs frozen; shipped parity and final receipts pending | Rebuild an artifact-only child only if parity fails; otherwise bind verifier/reviews to the parity-current `2.0.13` artifact commit, then use PR-only external gates |
-| Background implementation environment | M5 Tasks 1-6 source complete provisionally at `141e51e7`, host evidence pending | Treat M5 as the next accepted step after M4; prove a suitable rootless live host and restack/review |
-| Immutable implementation run manifest | Provisional M5 source | Accept only after isolation/capability/orphan and rootless live-host evidence pass on the restacked tree |
+| Durable factory task queue | Integrated M4 source at `67dc4ddf`; shipped parity and final receipts pending | Rebuild the exact `2.0.13` artifact, then bind verifier/reviews and external gates |
+| Background implementation environment | Integrated bounded M5 source at `85cd4343`; live adapters disabled | Require separate rootless live-host evidence before operational acceptance |
+| Immutable implementation run manifest | Integrated M5 source | Accept operational use only after isolation/capability/orphan and live-host evidence |
 | WIP, cost, and PR flood controls | M4 enforces durable WIP/cost; PR flood remains M7 work | Preserve M4 ceilings and add PR lifecycle bounds only at M7 |
-| Automated PR lifecycle | Provisional M7 synthetic algorithm source at `c8b450f4` | Restack after accepted M6; add runtime, real outcomes and reviews before acceptance |
+| Automated PR lifecycle | Integrated M7 shadow source at `00e0e4f9`; no external PR capability | Add runtime and real outcomes before acceptance; human merge remains mandatory |
 | Shadow-mode metrics | Synthetic algorithm evidence only | Measure real quality and human disagreement before autonomy |
-| Earned auto-merge | M8 Task-1 contracts only at `5735e762`; deliberately inactive | Finish Tasks 2-3, then require an exact-profile 30-real-task cohort before any activation |
-| Preview/staging/canary delivery | M9 Task-1 frozen contracts only at `00030179` | Finish later tasks only after predecessor acceptance; require real signed input, environment and recovery evidence |
+| Earned auto-merge | Integrated M8 evaluation at `f53275d5`; deliberately inactive and capped at L2 | Require an exact-profile 30-real-task cohort plus explicit activation |
+| Preview/staging/canary delivery | Integrated local-only M9 source at `64b10689`; no operational adapter | Require real signed input, environment and recovery evidence; production remains human-owned |
 
 ## 5. Non-negotiable constraints
 
@@ -198,7 +198,7 @@ M1 + M2 + M3
 
 Milestones M1, M2, and M3 may be developed in parallel only after M0 has a live proof or an explicitly documented bootstrap exception approved by the user. M4 must consume their stable interfaces rather than inventing replacements.
 
-Current execution is parallel only for reversible source work; it is not acceptance. The M4 `2.0.13` candidate is the commit containing `PROJECT_STATE.json`, on verified release-state baseline `56e12b2b394436ee227c66d78b1caba8f7317c78`; this follow-up changes the fingerprint, so exact-head verification and route-selected review receipts must be refreshed after commit. PR #17 is a closed exact duplicate of still-open PR #21, whose source-head GitGuardian FAILURE metadata remains unresolved. M5 Tasks 1-6 are provisional at `141e51e75b2bb337fa3bb1544639c6c46c287309` and are the next accepted step after M4, with host proof/restack/reviews pending. M6 Task 3 is provisional at `f3b2c0d07116686b27feab4b60166e8a7402d672`, persisting deterministic semantic verdicts on Task-2 migration/publish/read source; its focused 67/67, legacy 40/40, dedicated PG17 1/1 and architecture PASS evidence remains quarantined until accepted-M5 restack, and Task 4 is untouched. M7 `c8b450f494b3d44b580556c6a612b21a3a780368` remains synthetic-only. M8 Task 1 is `5735e762b8d7571887f6fa4ac9cf10cd1fad1954`; later tasks and factual cohort/activation gates remain pending. M9 Task 1 is source-only at `000301796ac19c518ede110b97b9de09dc077cbd`, without real signed input, environment/recovery proof or production authority. Acceptance, PR delivery, merge and Trust CI remain strictly dependency ordered M4 → M5 → M6 → M7 → M8 → M9. The current 2026-09-03 work is M4's local-ready target, while T0—the recorded external acceptance of an exact M4 SHA after separately authorized PR and exact-SHA gates—remains unknown. M8 has no determinate date before its >=30-human-accepted-task cohort; M9 additionally requires accepted M8 plus signed artifact/environment/recovery evidence. The former **2026-09-08 00:00 UTC+3** target is superseded and unachievable, not a waiver. See the [root current state](README.md), [M4 package](factory/README.md) and [active schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
+Current local source is dependency-ordered and integrated through M9: M4 `67dc4ddf` → M5 `85cd4343` → M6 `c6d48ffd` → M7 `00e0e4f9` → M8 `f53275d5` → M9 code `64b10689`. PR #22 is open; it is not merged or delivered. M8 remains inactive pending a factual exact-profile cohort of at least 30 human-accepted tasks. M9 remains local-only pending signed input, an operational environment, exercised recovery, and human production authority. The next local boundary is the exact `2.0.13` artifact plus exact-head verification and five reviews; external acceptance still requires the App-owned check and protected merge.
 
 ## 7.1 Exact milestone handoff contracts
 
@@ -210,7 +210,7 @@ Current execution is parallel only for reversible source work; it is not accepta
 | M7 → M8 | M7 emits an immutable shadow ready-for-PR bundle digest binding task/run/verdict/check/PR-head/human-decision and outcome metrics; M8 cohorts only exact trust-profile tuples. | At least 30 human-accepted tasks for the exact class/profile tuple, complete disagreement/rollback/security metrics and human merge for every PR; any tuple component or evidence mutation starts a new cohort. | Demote/discard the affected cohort and keep human merge; under current authority M8 is capped at L2, cannot auto-merge, rewrite historical decisions or activate governance. |
 | M8 → M9 | M8 emits a durable trust-profile digest and L2-or-lower decision bound to repository/class/models/prompts/policy/runner/holdout digests; M9 binds preview/staging/canary inputs to the exact merged SHA and signed artifact digest. | Accepted predecessor profiles, exact signed supply-chain artifact, reproducible preview/staging, explicit canary thresholds and exercised recovery; incident, rollback, policy/artifact/SHA change invalidates promotion and triggers demotion. | Halt/rollback the canary, preserve deployment evidence and demote the profile; production promotion remains human-owned and no agent gains production, signing-key, branch-protection or Trust CI authority. |
 
-M7 has provisional synthetic algorithm source, M8 has a provisional Task-1 closed-contract slice using synthetic fixtures, and M9 has a provisional source-only Task-1 contract slice at `000301796ac19c518ede110b97b9de09dc077cbd`. M9 is not actively executing or accepted and still lacks later tasks, real signed input, environment/recovery proof and production authority. None has accepted predecessor integration, completion, a factual cohort, activation, preview/canary evidence or external-delivery authority.
+M7-M9 source is integrated locally on exact predecessor commits. That source does not establish a factual M8 cohort or activation, real M9 preview/canary evidence, external acceptance, or production authority.
 
 ---
 
@@ -568,7 +568,7 @@ factory/
 
 Do not add a root packaging marker.
 
-Current status: the M4 control plane under [`factory/`](factory/) has frozen local production/documentation source with schema `001`-`013`, cursor-stable deadline/accounting recovery, separate complete-intent/semantic-work/transport identities, immutable bounded task/run/attempt/event projections, operation-scoped fenced worker phases, and one checked closed-inline 17-operation HTTP contract. Validate exact `2.0.13` shipped parity after tracked mutation and rebuild an artifact-only child only when it fails. Once parity passes, the next gate is exact-head verification and route-selected review receipts on the final artifact commit, not another unconditional rebuild. Release-state baseline `56e12b2b394436ee227c66d78b1caba8f7317c78` passed 14/14 local verifier gates, but its receipt predates this repair and cannot be reused. PR #17 closed as an exact duplicate of open PR #21; a new external exact-SHA Trust CI result, unresolved PR #21 GitGuardian FAILURE metadata and merge remain pending. M4 is not accepted or delivered. Current dates and dependency gates are in the [M4 schedule](engineering/changes/20260831-implement-a-new-m4-application-feature-on-exact-b7f288/schedule.md).
+Current status: M4 is preserved at exact integrated ancestor `67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4` with migrations `001`-`013` and the complete durable control surface. It is the base of the local M5-M9 source chain; external acceptance and protected-main delivery remain separate.
 
 ## Factory task state machine
 
@@ -670,7 +670,7 @@ Checked M4 items denote locally implemented behavior only. They do not claim fin
 
 # M5 — Isolated Background Execution Plane
 
-Current status: Tasks 1-6 source are complete only provisionally on clean branch `milestone/m5-isolated-execution-provisional-m4`, route `37b05f579320`, at `141e51e75b2bb337fa3bb1544639c6c46c287309`. M5 is the next accepted dependency step after M4; rootless live-host isolation evidence and final accepted-M4 restack/reviews remain pending, so no M5 acceptance, delivery, external check or merge is claimed.
+Current status: M5 bounded-execution source is integrated at `85cd4343143915ce9342634e7fe81886b6394871` with additive migrations `014`-`017`; operational adapters remain ineligible and live-host proof is still required.
 
 ## Objective
 
@@ -745,7 +745,7 @@ output contract
 
 # M6 — Independent Semantic Validation, Meta-Review, and Bounded Repair
 
-Current status: clean provisional branch `milestone/m6-semantic-validation-provisional-m4`, route `82aac86a3bf9`, has Task-3 source at `f3b2c0d07116686b27feab4b60166e8a7402d672`. It persists deterministic semantic verdicts on Task-2 migration `014` and publish/read persistence. Task 3 passed focused 67/67, legacy 40/40, dedicated PostgreSQL 17 1/1 and architecture checks locally, but remains quarantined behind accepted-M5 restack/renumbering; Task 4 is untouched, and no M6 acceptance, delivery, external check or merge is claimed.
+Current status: M6 semantic-validation source is integrated at `c6d48ffd8594b3baab1a575021452ea5dfa2a98b` with additive migration `018`, independent verdict authority, artifact validation, and bounded repair.
 
 ## Objective
 
@@ -818,7 +818,7 @@ needs_human
 
 # M7 — Automated Pull-Request Lifecycle and Shadow Mode
 
-Current status: clean provisional source `c8b450f494b3d44b580556c6a612b21a3a780368` on `milestone/m7-shadow-handoff-provisional-m4` / route `e5911c3f8721` has synthetic algorithm evidence only. Accepted-M6 restack, runtime proof, real outcomes and reviews remain pending; no PR lifecycle acceptance or real shadow cohort is claimed.
+Current status: M7 shadow-handoff source is integrated at `00e0e4f9a6f50844bf9e0ffc7139d3283dda889f`; evidence is synthetic, no external PR capability exists, and human merge remains mandatory.
 
 ## Objective
 
@@ -907,7 +907,7 @@ security escalation rate
 
 # M8 — Earned and Revocable Low-Risk Autonomy
 
-Current status: branch `milestone/m8-earned-autonomy-provisional-m4` / route `670ffe5522e0` began at `46a6c8eba6b5bd8e4654f3041e52061cdd1a15d6` and has a first source-only Task-1 closed-contract slice with synthetic fixtures at clean provisional head `5735e762b8d7571887f6fa4ac9cf10cd1fad1954`. Tasks 2-3, accepted-M7 restack/reviews, a factual trust profile, the required 30-real-task cohort, activation and acceptance remain absent; immediate demotion remains mandatory and current authority is capped at L2 (automated recommendation, human merge).
+Current status: M8 earned-autonomy evaluation is integrated at `f53275d5ed84022200419b399c799a995ed91a45` over actual M7 records. Durable currentness, a factual 30-task cohort and activation remain absent; authority is capped at L2 and deterministic L0 demotion remains mandatory.
 
 ## Objective
 
@@ -1003,7 +1003,7 @@ Never initially eligible:
 
 # M9 — Preview, Staging, Canary, and Recovery-Aware Delivery
 
-Current status: clean provisional Task-1 head `000301796ac19c518ede110b97b9de09dc077cbd` on `milestone/m9-staged-recovery-provisional-m4` / route `e376373492fe` freezes source-only delivery contracts. Later tasks, real signed input, environment/recovery evidence and production authority remain absent; production promotion remains human-owned.
+Current status: M9 source is integrated at code checkpoint `64b10689ce78a0464a494440f3fa981e18789687` over exact M8, with immutable records, deterministic one-step preview/staging/bounded-canary decisions, a sealed in-memory environment and least-authority recovery. PR #22 is open, not merged. Real signed input, an operational environment, exercised recovery and production authority remain absent; production promotion remains human-owned.
 
 ## Objective
 

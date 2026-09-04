@@ -1,8 +1,7 @@
 # Tasks — M9 staged delivery on exact M8 f53275d
 
-- [x] Freeze the M8 bridge, staged decision, fake-adapter, evidence-chain, human boundary, and least-authority recovery contract.
-- [ ] Import the seven focused canonical test files, adapt only the actual-M8 seam, and observe one missing-package RED.
-- [ ] Add the six M9 source modules and delivery packaging without duplicate M8/M7 producer authority.
-- [ ] Run the focused delivery suite once; rerun only exact failed methods or affected groups after proven repairs.
-- [ ] Update architecture and formal project handoff documents to truthful integrated M9/2.0.13 source state.
-- [ ] Record a clean `verifying` source checkpoint. Full verifier, five reviews/receipts, artifact rebuild, and delivery remain deferred.
+1. [x] **Source freeze.** Produce a clean source SHA/tree in `ready` package state with integrated M4-M9 code, truthful architecture and handoff documents, and product/runtime version identity `2.0.13`.
+2. [ ] **Dual-clone package.** Rebuild in two private no-local clones with secure umask and return the artifact-child SHA/tree plus ZIP digest; the child delta must contain only the ZIP and SHA-256 sidecar.
+3. [ ] **Detached exact-head verifier.** Run `python3 scripts/grok_verify.py --mode pr` as a detached tracked job and return its PASS receipt, repository fingerprint, and log.
+4. [ ] **Five independent reviewers.** Run exactly the five route-selected reviewers, store and record their reports/receipts, and return `evidence_gaps=[]` on the same fingerprint.
+5. [ ] **GitHub delivery.** Under exact delegated authority, push the branch, require the App-owned Trust CI PASS, merge PR #22, then tag and publish `v2.0.13`; return the protected-main SHA, release URL, and published artifact digest.
