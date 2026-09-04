@@ -31,6 +31,17 @@ class RunRole(StrEnum):
     WRITER = "writer"
 
 
+class ExecutionStage(StrEnum):
+    PREPARED = "prepared"
+    RUNNING = "running"
+    COLLECTING = "collecting"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    NEEDS_HUMAN = "needs_human"
+    CANCELLED = "cancelled"
+    ORPHANED = "orphaned"
+
+
 class RunStatus(StrEnum):
     LEASED = "leased"
     RELEASED = "released"
@@ -158,3 +169,13 @@ class LeaseGrant:
     fence: int
     expires_at: datetime
     packet_digest: str
+
+
+@dataclass(frozen=True)
+class ExecutionGrant:
+    lease: LeaseGrant
+    packet_digest: str
+    manifest_digest: str
+    workspace_handle: str
+    provider_id: str
+    stage: ExecutionStage

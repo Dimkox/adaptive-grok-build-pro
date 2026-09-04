@@ -14,13 +14,20 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from .brokers import BrokerError, secret_free_identity
 from .contracts import ContractError, canonical_digest
-from .models import Actor, LeaseGrant, RunRole, TaskStatus
-from .service import AuthorizationError
+from .execution_contracts import ExecutionContractError
+from .models import Actor, ExecutionStage, LeaseGrant, RunRole, TaskStatus
+from .service import (
+    AuthorizationError,
+    SnapshotBrokerIntegrityError,
+    SnapshotBrokerUnavailable,
+)
 from .store import (
     AuthorityError,
     BudgetError,
     FenceError,
+    IntegrityError,
     MetricsUnavailable,
     StoreError,
     StoreUnavailable,
@@ -85,8 +92,26 @@ def _request_id(value: str | None, name: str) -> str:
     return value
 
 
+def _execution_request_id(value: str | None, name: str) -> str:
+    value = _request_id(value, name)
+    try:
+        secret_free_identity(value, 128)
+    except BrokerError as exc:
+        raise HTTPException(400, f"valid {name} header required") from exc
+    return value
+
+
 def _command_key(value: str | None) -> str:
     return canonical_digest({"contract": "adaptive-factory.command/v1", "idempotency_key": _request_id(value, "Idempotency-Key")})
+
+
+def _execution_command_key(value: str | None) -> str:
+    return canonical_digest(
+        {
+            "contract": "adaptive-factory.command/v1",
+            "idempotency_key": _execution_request_id(value, "Idempotency-Key"),
+        }
+    )
 
 
 def _closed(payload: Any, expected: set[str], *, optional: set[str] | None = None) -> Mapping[str, Any]:
@@ -194,7 +219,9 @@ def _http_error(status_code: int, detail: Any) -> tuple[str, str, str]:
     return "invalid", "invalid_request", safe_detail
 
 
-def create_app(service, authenticator: Authenticator) -> FastAPI:
+def create_app(
+    service, authenticator: Authenticator, *, execution_enabled: bool = True
+) -> FastAPI:
     app = FastAPI(
         title="Adaptive Factory Local Control API",
         version="1.0.0",
@@ -225,6 +252,14 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         return _error_response(
             "invalid", error.code, "contract validation failed", 422
         )
+
+    @app.exception_handler(ExecutionContractError)
+    async def execution_contract_error(_request: Request, error: ExecutionContractError):
+        return JSONResponse({"error": "invalid", "code": error.code}, status_code=422)
+
+    @app.exception_handler(BrokerError)
+    async def broker_error(_request: Request, error: BrokerError):
+        return JSONResponse({"error": "invalid", "code": error.code}, status_code=422)
 
     @app.exception_handler(AuthorizationError)
     async def authorization_error(_request: Request, _error: AuthorizationError):
@@ -260,6 +295,29 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
     async def store_unavailable(_request: Request, _error: StoreUnavailable):
         return _error_response(
             "unavailable", "database", "database unavailable", 503
+        )
+
+    @app.exception_handler(IntegrityError)
+    async def integrity_error(_request: Request, _error: IntegrityError):
+        return JSONResponse(
+            {"error": "internal", "code": "internal_integrity"}, status_code=500
+        )
+
+    @app.exception_handler(SnapshotBrokerIntegrityError)
+    async def snapshot_integrity_error(
+        _request: Request, _error: SnapshotBrokerIntegrityError
+    ):
+        return JSONResponse(
+            {"error": "internal", "code": "internal_integrity"}, status_code=500
+        )
+
+    @app.exception_handler(SnapshotBrokerUnavailable)
+    async def snapshot_unavailable(
+        _request: Request, _error: SnapshotBrokerUnavailable
+    ):
+        return JSONResponse(
+            {"error": "unavailable", "code": "workspace_snapshot"},
+            status_code=503,
         )
 
     @app.exception_handler(StoreError)
@@ -495,6 +553,192 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         )
         return JSONResponse(_json({"grant": grant}), headers={"X-Correlation-ID": correlation})
 
+    @app.post("/v2/execution/claims", tags=["execution"])
+    @app.post("/v1/execution/claims", tags=["execution"])
+    def claim_execution(
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:execute")
+        key = _execution_command_key(idempotency_key)
+        correlation = _execution_request_id(x_correlation_id, "X-Correlation-ID")
+        fields = {
+            "role",
+            "repositories",
+            "lease_seconds",
+            "provider",
+            "capability_policy",
+            "plan",
+            "workspace_handle",
+            "prompt_template_digest",
+            "role_definition_digest",
+            "tool_policy_digest",
+            "output_schema_digest",
+        }
+        payload = _closed(payload, fields)
+        try:
+            role = RunRole(payload["role"])
+        except (ValueError, TypeError) as exc:
+            raise HTTPException(422, "invalid role") from exc
+        selection = {name: payload[name] for name in fields - {"role", "repositories", "lease_seconds"}}
+        grant = service.claim_execution(
+            owner=actor.actor_id,
+            role=role,
+            repositories=_repositories(payload["repositories"]),
+            lease_seconds=_integer(payload["lease_seconds"], "lease_seconds", 30, 300),
+            selection=selection,
+            actor=actor,
+            now=datetime.now(timezone.utc),
+            idempotency_key=key,
+            correlation_id=correlation,
+        )
+        return JSONResponse(_json({"grant": grant}), headers={"X-Correlation-ID": correlation})
+
+    @app.post("/v2/execution/stages", tags=["execution"])
+    @app.post("/v1/execution/stages", tags=["execution"])
+    def advance_execution(
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:execute")
+        key = _execution_command_key(idempotency_key)
+        correlation = _execution_request_id(x_correlation_id, "X-Correlation-ID")
+        payload = _closed(payload, {"grant", "packet_digest", "stage"})
+        try:
+            stage = ExecutionStage(payload["stage"])
+        except (ValueError, TypeError) as exc:
+            raise HTTPException(422, "invalid execution stage") from exc
+        if stage is ExecutionStage.ORPHANED:
+            raise HTTPException(403, "orphaned is reconciliation-only")
+        result = service.advance_execution(
+            _grant(payload["grant"]),
+            packet_digest=_digest(payload["packet_digest"], "packet_digest"),
+            stage=stage,
+            actor=actor,
+            idempotency_key=key,
+            correlation_id=correlation,
+        )
+        return JSONResponse(_json({"stage": result}), headers={"X-Correlation-ID": correlation})
+
+    def execution_proposal(
+        payload: Mapping[str, Any],
+        *,
+        actor: Actor,
+        event_type: str,
+        proposal_payload: Mapping[str, Any],
+        idempotency_key: str | None,
+        correlation_id: str | None,
+    ):
+        key = _execution_command_key(idempotency_key)
+        correlation = _execution_request_id(correlation_id, "X-Correlation-ID")
+        proposal = service.commit_execution_proposal(
+            _grant(payload["grant"]),
+            packet_digest=_digest(payload["packet_digest"], "packet_digest"),
+            sequence=_integer(payload["sequence"], "sequence", 1, 100_000),
+            event_type=event_type,
+            payload=proposal_payload,
+            actor=actor,
+            idempotency_key=key,
+            correlation_id=correlation,
+        )
+        return JSONResponse(_json({"proposal": proposal}), headers={"X-Correlation-ID": correlation})
+
+    @app.post("/v2/execution/notes", tags=["execution"])
+    @app.post("/v1/execution/notes", tags=["execution"])
+    def execution_note(
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:execute")
+        payload = _closed(payload, {"grant", "packet_digest", "sequence", "note_type", "body", "evidence"})
+        return execution_proposal(
+            payload, actor=actor, event_type="note.proposed",
+            proposal_payload={name: payload[name] for name in ("note_type", "body", "evidence")},
+            idempotency_key=idempotency_key, correlation_id=x_correlation_id,
+        )
+
+    @app.post("/v2/execution/artifacts", tags=["execution"])
+    @app.post("/v1/execution/artifacts", tags=["execution"])
+    def execution_artifact(
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:execute")
+        fields = {"grant", "packet_digest", "sequence", "artifact_class", "path", "sha256", "size_bytes", "media_type"}
+        payload = _closed(payload, fields)
+        return execution_proposal(
+            payload, actor=actor, event_type="artifact.proposed",
+            proposal_payload={name: payload[name] for name in fields - {"grant", "packet_digest", "sequence"}},
+            idempotency_key=idempotency_key, correlation_id=x_correlation_id,
+        )
+
+    @app.post("/v2/execution/usage", tags=["execution"])
+    @app.post("/v1/execution/usage", tags=["execution"])
+    def execution_usage(
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:execute")
+        fields = {
+            "grant", "packet_digest", "sequence", "provider_call_id", "price_table_digest",
+            "input_tokens", "output_tokens", "reasoning_tokens", "cost_usd_micros", "output_bytes",
+        }
+        payload = _closed(payload, fields)
+        return execution_proposal(
+            payload, actor=actor, event_type="usage.reported",
+            proposal_payload={name: payload[name] for name in fields - {"grant", "packet_digest", "sequence"}},
+            idempotency_key=idempotency_key, correlation_id=x_correlation_id,
+        )
+
+    @app.post("/v2/execution/terminal", tags=["execution"])
+    @app.post("/v1/execution/terminal", tags=["execution"])
+    def execution_terminal(
+        payload: dict,
+        request: Request,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:execute")
+        common = {"grant", "packet_digest", "sequence", "terminal_type"}
+        payload = _closed(payload, common, optional={"summary", "failure_class", "diagnostic", "reason"})
+        terminal_type = payload["terminal_type"]
+        terminal_fields = {
+            "run.completed": {"summary"},
+            "run.failed": {"failure_class", "diagnostic"},
+            "run.needs_human": {"reason", "diagnostic"},
+        }
+        expected = terminal_fields.get(terminal_type)
+        if expected is None or set(payload) != common | expected:
+            raise HTTPException(422, "invalid terminal proposal")
+        key = _execution_command_key(idempotency_key)
+        correlation = _execution_request_id(x_correlation_id, "X-Correlation-ID")
+        completion = service.commit_terminal_and_finalize(
+            _grant(payload["grant"]),
+            packet_digest=_digest(payload["packet_digest"], "packet_digest"),
+            sequence=_integer(payload["sequence"], "sequence", 1, 100_000),
+            event_type=terminal_type,
+            payload={name: payload[name] for name in expected},
+            actor=actor,
+            idempotency_key=key,
+            correlation_id=correlation,
+        )
+        response = {"proposal": completion.proposal}
+        matched_route = request.scope.get("route")
+        if getattr(matched_route, "path", None) == "/v2/execution/terminal":
+            response["result"] = completion.result
+        return JSONResponse(_json(response), headers={"X-Correlation-ID": correlation})
+
     @app.post("/v1/heartbeats", tags=["worker"])
     def heartbeat(
         payload: dict,
@@ -672,4 +916,24 @@ def create_app(service, authenticator: Authenticator) -> FastAPI:
         )
         return JSONResponse(_json(result), headers={"X-Correlation-ID": correlation})
 
+    if not execution_enabled:
+        execution_paths = {
+            "/v1/execution/claims",
+            "/v1/execution/stages",
+            "/v1/execution/notes",
+            "/v1/execution/artifacts",
+            "/v1/execution/usage",
+            "/v1/execution/terminal",
+            "/v2/execution/claims",
+            "/v2/execution/stages",
+            "/v2/execution/notes",
+            "/v2/execution/artifacts",
+            "/v2/execution/usage",
+            "/v2/execution/terminal",
+        }
+        app.router.routes = [
+            route
+            for route in app.router.routes
+            if getattr(route, "path", None) not in execution_paths
+        ]
     return app

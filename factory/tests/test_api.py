@@ -6,6 +6,7 @@ import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 from unittest import mock
+from types import SimpleNamespace
 import os
 
 from fastapi.testclient import TestClient
@@ -26,9 +27,13 @@ from adaptive_factory.models import (
     TaskProjection,
     TaskStatus,
 )
-from adaptive_factory.service import FactoryService
+from adaptive_factory.service import (
+    FactoryService,
+    SnapshotBrokerIntegrityError,
+    SnapshotBrokerUnavailable,
+)
 from adaptive_factory.settings import SettingsError, read_token_file
-from adaptive_factory.store import IntakeResult, StoreError, TransitionError
+from adaptive_factory.store import IntegrityError, IntakeResult, StoreError, TransitionError
 from factory.tests.test_contracts import valid_intake
 
 
@@ -126,6 +131,106 @@ class FakeService:
         self.calls.append(("claim", kwargs))
         return None
 
+    def claim_execution(self, **kwargs):
+        self.calls.append(("claim_execution", kwargs))
+        return None
+
+    def advance_execution(self, *args, **kwargs):
+        self.calls.append(("advance_execution", args, kwargs))
+        return kwargs["stage"]
+
+    def commit_execution_proposal(self, *args, **kwargs):
+        self.calls.append(("commit_execution_proposal", args, kwargs))
+        return self._proposal(args[0], **kwargs)
+
+    def commit_terminal_and_finalize(self, *args, **kwargs):
+        self.calls.append(("commit_terminal_and_finalize", args, kwargs))
+        proposal = self._proposal(args[0], **kwargs)
+        terminal_stage = {
+            "run.completed": "completed",
+            "run.failed": "failed",
+            "run.needs_human": "needs_human",
+        }[kwargs["event_type"]]
+        m4_status = "ready_for_human" if terminal_stage == "completed" else "needs_human"
+        return SimpleNamespace(
+            proposal=proposal,
+            result={
+                "contract_version": 1,
+                "task_id": args[0].task_id,
+                "run_id": args[0].run_id,
+                "task_packet_digest": kwargs["packet_digest"],
+                "run_manifest_digest": "1" * 64,
+                "exact_head_sha": "2" * 40,
+                "workspace_snapshot_digest": "3" * 64,
+                "terminal_stage": terminal_stage,
+                "terminal_proposal_digest": proposal["idempotency_key"],
+                "artifact_manifest_digest": "4" * 64,
+                "note_manifest_digest": "5" * 64,
+                "usage_evidence_digest": "6" * 64,
+                "diagnostics_digest": "7" * 64,
+                "m4_status": m4_status,
+                "failure_class": (
+                    kwargs["payload"].get("failure_class")
+                    if kwargs["event_type"] == "run.failed"
+                    else None
+                ),
+                "failure_reason": (
+                    kwargs["payload"].get("diagnostic")
+                    if kwargs["event_type"] == "run.failed"
+                    else kwargs["payload"].get("reason")
+                    if kwargs["event_type"] == "run.needs_human"
+                    else None
+                ),
+                "workspace_result_digest": "8" * 64,
+            },
+        )
+
+    @staticmethod
+    def _proposal(grant, **kwargs):
+        payload = kwargs["payload"]
+        common = {
+            "task_id": grant.task_id,
+            "run_id": grant.run_id,
+            "packet_digest": kwargs["packet_digest"],
+            "fence": grant.fence,
+            "sequence": kwargs["sequence"],
+            "author_role": grant.role.value,
+            "idempotency_key": "a" * 64,
+        }
+        event_type = kwargs["event_type"]
+        if event_type == "note.proposed":
+            return {**common, **payload}
+        if event_type == "artifact.proposed":
+            return {**common, **payload, "artifact_attestation_digest": "b" * 64}
+        if event_type == "usage.reported":
+            return {**common, **payload}
+        if event_type == "run.completed":
+            return {
+                **common,
+                "terminal_type": event_type,
+                "summary": payload["summary"],
+                "failure_class": None,
+                "reason": None,
+                "diagnostic": None,
+            }
+        if event_type == "run.failed":
+            return {
+                **common,
+                "terminal_type": event_type,
+                "summary": f"{payload['failure_class']}: {payload['diagnostic']}",
+                "failure_class": payload["failure_class"],
+                "reason": None,
+                "diagnostic": payload["diagnostic"],
+            }
+        return {
+            **common,
+            "terminal_type": event_type,
+            "summary": f"{payload['reason']}: {payload['diagnostic']}",
+            "failure_class": None,
+            "reason": payload["reason"],
+            "diagnostic": payload["diagnostic"],
+        }
+
     def reconcile(self, **kwargs):
         self.calls.append(("reconcile", kwargs))
         return {"candidates": 0, "repaired": 0, "cursor": None}
@@ -181,6 +286,25 @@ class ApiTests(unittest.TestCase):
         payload["m0_authority"]["observed_at"] = datetime.now(timezone.utc).isoformat()
         return payload
 
+    @staticmethod
+    def execution_claim_payload():
+        packet = __import__(
+            "factory.tests.test_execution_contracts", fromlist=["valid_packet"]
+        ).valid_packet()
+        return {
+            "role": "writer",
+            "repositories": ["owner/repository"],
+            "lease_seconds": 60,
+            "provider": packet["provider"],
+            "capability_policy": packet["capability_policy"],
+            "plan": packet["plan"],
+            "workspace_handle": packet["workspace_handle"],
+            "prompt_template_digest": "7" * 64,
+            "role_definition_digest": "8" * 64,
+            "tool_policy_digest": "9" * 64,
+            "output_schema_digest": "a" * 64,
+        }
+
     def test_mutation_requires_bearer_idempotency_and_correlation(self):
         self.assertEqual(self.client.post("/v1/tasks", json=self.payload()).status_code, 401)
         missing = {"Authorization": f"Bearer {self.token}"}
@@ -203,6 +327,103 @@ class ApiTests(unittest.TestCase):
         self.assertFalse(paths & forbidden)
         self.assertIn("/v1/budget-reservations", paths)
         self.assertIn("/v1/usage-observations", paths)
+        self.assertEqual(self.client.get("/health/ready").json()["database_role"], "factory_runtime")
+
+    def test_legacy_request_identity_retains_m4_syntax_only_contract(self):
+        identity = "ghp_" + "abcdefghijklmnopqrstuvwxyz1234567890"
+        payload = self.payload()
+        payload["request_id"] = identity
+        response = self.client.post(
+            "/v1/tasks",
+            headers={
+                **self.auth,
+                "Idempotency-Key": identity,
+                "X-Correlation-ID": identity,
+            },
+            json=payload,
+        )
+        self.assertEqual(response.status_code, 201, response.text)
+
+    def test_all_execution_request_identities_reject_secret_shapes_before_service(self):
+        token = "execution-identity-credential"
+        actor = Actor(
+            "worker-01",
+            "worker",
+            frozenset({"task:execute"}),
+            frozenset({"owner/repository"}),
+        )
+        client = TestClient(create_app(self.service, Authenticator({token: actor})))
+        secret_identity = "ghp_" + "abcdefghijklmnopqrstuvwxyz1234567890"
+        base_headers = {
+            "Authorization": f"Bearer {token}",
+            "Idempotency-Key": "execution-identity-001",
+            "X-Correlation-ID": "execution-correlation-001",
+        }
+        grant = {
+            "task_id": "00000000-0000-0000-0000-000000000001",
+            "run_id": "00000000-0000-0000-0000-000000000002",
+            "owner": "worker-01",
+            "role": "writer",
+            "fence": 7,
+            "expires_at": "2026-09-02T01:00:00Z",
+            "packet_digest": "0" * 64,
+        }
+        common = {"grant": grant, "packet_digest": "d" * 64, "sequence": 3}
+        cases = {
+            "claims": self.execution_claim_payload(),
+            "stages": {"grant": grant, "packet_digest": "d" * 64, "stage": "running"},
+            "notes": {**common, "note_type": "finding", "body": "safe", "evidence": []},
+            "artifacts": {
+                **common,
+                "artifact_class": "patch",
+                "path": "factory/change.patch",
+                "sha256": "e" * 64,
+                "size_bytes": 12,
+                "media_type": "text/plain",
+            },
+            "usage": {
+                **common,
+                "provider_call_id": "fixture-call",
+                "price_table_digest": "f" * 64,
+                "input_tokens": 1,
+                "output_tokens": 2,
+                "reasoning_tokens": 0,
+                "cost_usd_micros": 3,
+                "output_bytes": 4,
+            },
+            "terminal": {
+                **common,
+                "terminal_type": "run.completed",
+                "summary": "fixture complete",
+            },
+        }
+        for header_name in ("Idempotency-Key", "X-Correlation-ID"):
+            headers = {**base_headers, header_name: secret_identity}
+            for endpoint, payload in cases.items():
+                with self.subTest(header=header_name, endpoint=endpoint):
+                    response = client.post(
+                        f"/v1/execution/{endpoint}", headers=headers, json=payload
+                    )
+                    self.assertEqual(response.status_code, 400, response.text)
+        self.assertEqual(self.service.calls, [])
+
+    def test_api_has_no_execution_external_write_or_systemd_endpoint(self):
+        paths = {
+            route.path
+            for route in self.client.app.routes
+            if isinstance(getattr(route, "path", None), str)
+        }
+        forbidden = {"/v1/providers/run", "/v1/git/push", "/v1/pull-requests", "/v1/deploy", "/v1/systemd", "/v1/shell"}
+        forbidden.add("/v1/execution/workspace-results")
+        self.assertFalse(paths & forbidden)
+        self.assertIn("/v1/budget-reservations", paths)
+        self.assertIn("/v1/usage-observations", paths)
+        self.assertIn("/v1/execution/claims", paths)
+        self.assertIn("/v1/execution/stages", paths)
+        for kind in ("notes", "artifacts", "usage", "terminal"):
+            self.assertIn(f"/v1/execution/{kind}", paths)
+        for kind in ("claims", "stages", "notes", "artifacts", "usage", "terminal"):
+            self.assertIn(f"/v2/execution/{kind}", paths)
         self.assertEqual(self.client.get("/health/ready").json()["database_role"], "factory_runtime")
 
     def test_declared_errors_are_normalized_correlated_and_preserve_auth_challenge(self):
@@ -454,6 +675,237 @@ class ApiTests(unittest.TestCase):
                     client.post("/v1/transitions", headers=headers, json=payload).status_code,
                     422,
                 )
+    def test_execution_claim_is_explicit_and_rejects_provider_command_fields(self):
+        token = "execution-worker-credential"
+        actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
+        client = TestClient(create_app(self.service, Authenticator({token: actor})))
+        payload = self.execution_claim_payload()
+        headers = {"Authorization": f"Bearer {token}", "Idempotency-Key": "execution-001", "X-Correlation-ID": "execution-correlation"}
+        self.assertEqual(client.post("/v1/execution/claims", headers=headers, json=payload).status_code, 200)
+        payload["provider_command"] = "codex exec"
+        self.assertEqual(client.post("/v1/execution/claims", headers=headers, json=payload).status_code, 422)
+
+    def test_execution_proposal_endpoints_are_typed_and_closed(self):
+        token = "proposal-worker-credential"
+        actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
+        client = TestClient(create_app(self.service, Authenticator({token: actor})))
+        headers = {"Authorization": f"Bearer {token}", "Idempotency-Key": "proposal-001", "X-Correlation-ID": "proposal-correlation"}
+        grant = {
+            "task_id": "00000000-0000-0000-0000-000000000001",
+            "run_id": "00000000-0000-0000-0000-000000000002",
+            "owner": "worker-01", "role": "writer", "fence": 7,
+            "expires_at": "2026-09-02T01:00:00Z", "packet_digest": "0" * 64,
+        }
+        common = {"grant": grant, "packet_digest": "d" * 64, "sequence": 3}
+        cases = {
+            "notes": {"note_type": "finding", "body": "safe", "evidence": []},
+            "artifacts": {"artifact_class": "patch", "path": "factory/change.patch", "sha256": "e" * 64, "size_bytes": 12, "media_type": "text/plain"},
+            "usage": {"provider_call_id": "fixture-call", "price_table_digest": "f" * 64, "input_tokens": 1, "output_tokens": 2, "reasoning_tokens": 0, "cost_usd_micros": 3, "output_bytes": 4},
+            "terminal": {"terminal_type": "run.completed", "summary": "fixture complete"},
+        }
+        contract_root = Path(__file__).resolve().parents[1] / "contracts"
+        execution_schemas = json.loads(
+            (contract_root / "openapi/factory-execution.v2.json").read_text(
+                encoding="utf-8"
+            )
+        )["components"]["schemas"]
+        response_proposals = {
+            "notes": "NoteProposal",
+            "artifacts": "ArtifactProposal",
+            "usage": "UsageProposal",
+            "terminal": "TerminalProposal",
+        }
+        for endpoint, body in cases.items():
+            with self.subTest(endpoint=endpoint):
+                response = client.post(f"/v2/execution/{endpoint}", headers=headers, json={**common, **body})
+            self.assertEqual(response.status_code, 200, response.text)
+            self.assertEqual(
+                set(response.json()["proposal"]),
+                set(execution_schemas[response_proposals[endpoint]]["required"]),
+            )
+            if endpoint == "terminal":
+                self.assertEqual(set(response.json()), {"proposal", "result"})
+                workspace_result = json.loads(
+                    (contract_root / "schemas/workspace-result.v1.json").read_text(
+                        encoding="utf-8"
+                    )
+                )
+                self.assertEqual(
+                    set(response.json()["result"]),
+                    set(workspace_result["required"]),
+                )
+                self.assertEqual(
+                    self.service.calls[-1][0], "commit_terminal_and_finalize"
+                )
+            else:
+                self.assertEqual(set(response.json()), {"proposal"})
+        legacy_terminal = client.post(
+            "/v1/execution/terminal",
+            headers=headers,
+            json={**common, **cases["terminal"]},
+        )
+        self.assertEqual(legacy_terminal.status_code, 200, legacy_terminal.text)
+        self.assertEqual(set(legacy_terminal.json()), {"proposal"})
+        self.assertEqual(
+            self.service.calls[-1][0], "commit_terminal_and_finalize"
+        )
+        unsafe = {**common, **cases["notes"], "provider_command": "codex exec"}
+        self.assertEqual(client.post("/v1/execution/notes", headers=headers, json=unsafe).status_code, 422)
+        terminal_snapshot = {
+            **common,
+            **cases["terminal"],
+            "workspace_snapshot": {"source": "worker"},
+        }
+        calls = len(self.service.calls)
+        self.assertEqual(
+            client.post(
+                "/v1/execution/terminal", headers=headers, json=terminal_snapshot
+            ).status_code,
+            422,
+        )
+        self.assertEqual(len(self.service.calls), calls)
+
+    def test_terminal_response_version_uses_matched_route_under_root_path(self):
+        token = "execution-root-path-credential"
+        actor = Actor(
+            "worker-01",
+            "worker",
+            frozenset({"task:execute"}),
+            frozenset({"owner/repository"}),
+        )
+        client = TestClient(
+            create_app(self.service, Authenticator({token: actor})),
+            root_path="/gateway",
+        )
+        grant = {
+            "task_id": "00000000-0000-0000-0000-000000000001",
+            "run_id": "00000000-0000-0000-0000-000000000002",
+            "owner": "worker-01",
+            "role": "writer",
+            "fence": 7,
+            "expires_at": "2026-09-02T01:00:00Z",
+            "packet_digest": "0" * 64,
+        }
+        payload = {
+            "grant": grant,
+            "packet_digest": "d" * 64,
+            "sequence": 3,
+            "terminal_type": "run.completed",
+            "summary": "fixture complete",
+        }
+        for path, expected_fields in (
+            ("/v1/execution/terminal", {"proposal"}),
+            ("/v2/execution/terminal", {"proposal", "result"}),
+        ):
+            with self.subTest(path=path):
+                response = client.post(
+                    path,
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Idempotency-Key": f"root-path-{path[2]}",
+                        "X-Correlation-ID": f"root-path-correlation-{path[2]}",
+                    },
+                    json=payload,
+                )
+                self.assertEqual(response.status_code, 200, response.text)
+                self.assertEqual(set(response.json()), expected_fields)
+
+    def test_execution_usage_authenticates_exactly_once(self):
+        token = "execution-usage-credential"
+        actor = Actor(
+            "worker-01",
+            "worker",
+            frozenset({"task:execute"}),
+            frozenset({"owner/repository"}),
+        )
+        authenticator = Authenticator({token: actor})
+        client = TestClient(create_app(self.service, authenticator))
+        grant = {
+            "task_id": "00000000-0000-0000-0000-000000000001",
+            "run_id": "00000000-0000-0000-0000-000000000002",
+            "owner": "worker-01",
+            "role": "writer",
+            "fence": 7,
+            "expires_at": "2026-09-02T01:00:00Z",
+            "packet_digest": "0" * 64,
+        }
+        payload = {
+            "grant": grant,
+            "packet_digest": "d" * 64,
+            "sequence": 3,
+            "provider_call_id": "fixture-call",
+            "price_table_digest": "f" * 64,
+            "input_tokens": 1,
+            "output_tokens": 2,
+            "reasoning_tokens": 0,
+            "cost_usd_micros": 3,
+            "output_bytes": 4,
+        }
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Idempotency-Key": "execution-usage-001",
+            "X-Correlation-ID": "execution-usage-correlation",
+        }
+        with mock.patch.object(
+            authenticator, "authenticate", wraps=authenticator.authenticate
+        ) as authenticate:
+            response = client.post(
+                "/v1/execution/usage", headers=headers, json=payload
+            )
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(authenticate.call_count, 1)
+
+    def test_terminal_snapshot_failures_are_server_errors_without_private_detail(self):
+        token = "execution-terminal-failure-credential"
+        actor = Actor(
+            "worker-01",
+            "worker",
+            frozenset({"task:execute"}),
+            frozenset({"owner/repository"}),
+        )
+        client = TestClient(create_app(self.service, Authenticator({token: actor})))
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Idempotency-Key": "execution-terminal-failure-001",
+            "X-Correlation-ID": "execution-terminal-failure-correlation",
+        }
+        payload = {
+            "grant": {
+                "task_id": "00000000-0000-0000-0000-000000000001",
+                "run_id": "00000000-0000-0000-0000-000000000002",
+                "owner": "worker-01",
+                "role": "writer",
+                "fence": 7,
+                "expires_at": "2026-09-02T01:00:00Z",
+                "packet_digest": "0" * 64,
+            },
+            "packet_digest": "d" * 64,
+            "sequence": 1,
+            "terminal_type": "run.completed",
+            "summary": "complete",
+        }
+        cases = (
+            (
+                SnapshotBrokerUnavailable("private broker timeout detail"),
+                503,
+                {"error": "unavailable", "code": "workspace_snapshot"},
+            ),
+            (
+                SnapshotBrokerIntegrityError("private mismatched head detail"),
+                500,
+                {"error": "internal", "code": "internal_integrity"},
+            ),
+        )
+        for error, status, body in cases:
+            with self.subTest(error=type(error).__name__):
+                self.service.commit_terminal_and_finalize = mock.Mock(
+                    side_effect=error
+                )
+                response = client.post(
+                    "/v1/execution/terminal", headers=headers, json=payload
+                )
+                self.assertEqual((response.status_code, response.json()), (status, body))
+                self.assertNotIn("private", response.text)
 
     def test_body_over_one_mebibyte_is_rejected_without_parsing(self):
         response = self.client.post(
@@ -538,6 +990,28 @@ class ApiTests(unittest.TestCase):
             "not ready",
         ):
             self.assertIn(required_semantic, readiness_unavailable)
+
+    def test_integrity_error_has_generic_500_without_database_detail(self):
+        self.service.intake = mock.Mock(
+            side_effect=IntegrityError("database integrity violation: private detail")
+        )
+        response = self.client.post("/v1/tasks", headers=self.auth, json=self.payload())
+        self.assertEqual(
+            (response.status_code, response.json()),
+            (500, {"error": "internal", "code": "internal_integrity"}),
+        )
+        self.assertNotIn("private detail", response.text)
+        contract = json.loads(
+            (
+                Path(__file__).resolve().parents[1]
+                / "contracts/openapi/factory-execution.v1.json"
+            ).read_text(encoding="utf-8")
+        )
+        for path in contract["paths"].values():
+            self.assertEqual(
+                path["post"]["responses"]["500"]["description"],
+                "internal integrity failure",
+            )
 
     def test_metrics_counts_auth_rejections_without_exposing_credentials(self):
         operator_token = "metrics-" + "operator-" + "credential"

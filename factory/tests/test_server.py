@@ -7,16 +7,370 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import Mock, patch
 
 import httpx
 import uvicorn
 
 from adaptive_factory.api import Authenticator, create_app
 from adaptive_factory.models import Actor
-from adaptive_factory.server import ServerError, load_actors, prepare_unix_socket
+from adaptive_factory.server import ServerError, build_app, load_actors, prepare_unix_socket
+from adaptive_factory.settings import FactorySettings, SettingsError
 
 
 class ServerTests(unittest.TestCase):
+    @staticmethod
+    def execution_dependencies():
+        class Registry:
+            def resolve(self, requested, *, role):
+                return requested, role
+
+        class ArtifactVerifier:
+            def attest_artifact(self, request):
+                return request
+
+        class SnapshotBroker:
+            def snapshot(self, request, *, timeout_seconds):
+                return request
+
+        return Registry(), ArtifactVerifier(), SnapshotBroker()
+
+    def test_build_app_requires_distinct_ready_runtime_and_attestor_capabilities(self):
+        settings = FactorySettings(
+            "postgresql://runtime",
+            Path("/run/factory.sock"),
+            Path("/run/actors.json"),
+            "postgresql://attestor",
+            True,
+        )
+        execution_registry = Mock()
+        artifact_broker = Mock()
+        snapshot_broker = Mock()
+        execution_registry.resolve = Mock()
+        artifact_broker.attest_artifact = Mock()
+        snapshot_broker.snapshot = Mock()
+        with (
+            patch("adaptive_factory.server.PostgresFactoryStore") as runtime_store,
+            patch(
+                "adaptive_factory.server.PostgresArtifactAttestationStore"
+            ) as attestor_store,
+            patch("adaptive_factory.server.load_actors", return_value={}),
+            patch("adaptive_factory.server.Authenticator"),
+            patch(
+                "adaptive_factory.server.create_app",
+                side_effect=lambda service, _auth, **_options: service,
+            ),
+        ):
+            runtime_store.return_value.readiness.return_value = {
+                "status": "ready",
+                "session_user": "factory_runtime_login",
+                "database_role": "factory_runtime",
+                "schema_version": 17,
+                "capacity_consistent": True,
+                "accounting_consistent": True,
+            }
+            attestor_store.return_value.readiness.return_value = {
+                "session_user": "factory_attestor_login",
+                "database_role": "factory_artifact_attestor",
+            }
+            service = build_app(
+                settings,
+                execution_registry=execution_registry,
+                artifact_broker=artifact_broker,
+                snapshot_broker=snapshot_broker,
+            )
+
+        runtime_store.assert_called_once_with(settings.database_url)
+        attestor_store.assert_called_once_with(
+            settings.artifact_attestor_database_url
+        )
+        runtime_store.return_value.readiness.assert_called_once_with()
+        attestor_store.return_value.readiness.assert_called_once_with()
+        self.assertIs(service.store, runtime_store.return_value)
+        self.assertIs(
+            service.artifact_attestation_store, attestor_store.return_value
+        )
+        self.assertIs(service.execution_registry, execution_registry)
+        self.assertIs(service.artifact_broker, artifact_broker)
+        self.assertIs(service.snapshot_broker, snapshot_broker)
+
+    def test_build_app_fails_closed_before_loading_actors_when_capability_is_not_ready(self):
+        settings = FactorySettings(
+            "postgresql://runtime",
+            Path("/run/factory.sock"),
+            Path("/run/actors.json"),
+            "postgresql://attestor",
+            True,
+        )
+        execution_registry = Mock(resolve=Mock())
+        artifact_broker = Mock(attest_artifact=Mock())
+        snapshot_broker = Mock(snapshot=Mock())
+        for runtime_readiness, attestor_readiness in (
+            (
+                {
+                    "status": "not_ready",
+                    "session_user": "factory_runtime_login",
+                    "database_role": "factory_runtime",
+                },
+                {
+                    "session_user": "factory_attestor_login",
+                    "database_role": "factory_artifact_attestor",
+                },
+            ),
+            (
+                {
+                    "status": "ready",
+                    "session_user": "factory_runtime_login",
+                    "database_role": "factory_runtime",
+                    "schema_version": 17,
+                    "capacity_consistent": True,
+                    "accounting_consistent": True,
+                },
+                {
+                    "session_user": "factory_attestor_login",
+                    "database_role": "factory_runtime",
+                },
+            ),
+            (
+                {
+                    "status": "ready",
+                    "session_user": "factory_runtime_login",
+                    "database_role": "factory_artifact_attestor",
+                    "schema_version": 17,
+                    "capacity_consistent": True,
+                    "accounting_consistent": True,
+                },
+                {
+                    "session_user": "factory_attestor_login",
+                    "database_role": "factory_artifact_attestor",
+                },
+            ),
+            (
+                {
+                    "status": "ready",
+                    "session_user": "same_login",
+                    "database_role": "factory_runtime",
+                    "schema_version": 17,
+                    "capacity_consistent": True,
+                    "accounting_consistent": True,
+                },
+                {
+                    "session_user": "same_login",
+                    "database_role": "factory_artifact_attestor",
+                },
+            ),
+        ):
+            with self.subTest(
+                runtime=runtime_readiness, attestor=attestor_readiness
+            ):
+                with (
+                    patch(
+                        "adaptive_factory.server.PostgresFactoryStore"
+                    ) as runtime_store,
+                    patch(
+                        "adaptive_factory.server.PostgresArtifactAttestationStore"
+                    ) as attestor_store,
+                    patch("adaptive_factory.server.load_actors") as load,
+                ):
+                    runtime_store.return_value.readiness.return_value = (
+                        runtime_readiness
+                    )
+                    attestor_store.return_value.readiness.return_value = (
+                        attestor_readiness
+                    )
+                    with self.assertRaisesRegex(
+                        ServerError, "database capabilities are not ready"
+                    ):
+                        build_app(
+                            settings,
+                            execution_registry=execution_registry,
+                            artifact_broker=artifact_broker,
+                            snapshot_broker=snapshot_broker,
+                        )
+                    load.assert_not_called()
+
+    def test_build_app_has_no_fallback_for_trusted_execution_dependencies(self):
+        settings = FactorySettings(
+            "postgresql://runtime",
+            Path("/run/factory.sock"),
+            Path("/run/actors.json"),
+            "postgresql://attestor",
+            True,
+        )
+        valid = {
+            "execution_registry": Mock(resolve=Mock()),
+            "artifact_broker": Mock(attest_artifact=Mock()),
+            "snapshot_broker": Mock(snapshot=Mock()),
+        }
+        for missing in tuple(valid):
+            dependencies = {**valid, missing: None}
+            with self.subTest(missing=missing), self.assertRaisesRegex(
+                ServerError, "trusted execution dependencies are unavailable"
+            ):
+                build_app(settings, **dependencies)
+
+    def test_main_accepts_explicit_composition_before_preparing_socket(self):
+        from adaptive_factory import server
+
+        settings = FactorySettings(
+            "postgresql://runtime",
+            Path("/run/factory.sock"),
+            Path("/run/actors.json"),
+            "postgresql://attestor",
+            True,
+        )
+        registry, artifact, snapshot = self.execution_dependencies()
+        order = []
+        listener = Mock()
+        listener.close = Mock(side_effect=lambda: order.append("close"))
+        application = object()
+        with (
+            patch.object(
+                server.FactorySettings,
+                "from_environment",
+                return_value=settings,
+            ),
+            patch.object(
+                server,
+                "build_app",
+                side_effect=lambda *_args, **_kwargs: (
+                    order.append("build"),
+                    application,
+                )[1],
+            ) as build,
+            patch.object(
+                server,
+                "prepare_unix_socket",
+                side_effect=lambda _path: (
+                    order.append("socket"),
+                    listener,
+                )[1],
+            ),
+            patch.object(server.uvicorn, "Config", return_value=object()),
+            patch.object(server.uvicorn, "Server") as uvicorn_server,
+        ):
+            self.assertEqual(
+                server.main(
+                    execution_registry=registry,
+                    artifact_broker=artifact,
+                    snapshot_broker=snapshot,
+                ),
+                0,
+            )
+        self.assertEqual(order[:2], ["build", "socket"])
+        build.assert_called_once_with(
+            settings,
+            execution_registry=registry,
+            artifact_broker=artifact,
+            snapshot_broker=snapshot,
+        )
+        uvicorn_server.return_value.run.assert_called_once_with(sockets=[listener])
+
+    def test_settings_require_separate_runtime_and_attestor_urls(self):
+        base = {
+            "FACTORY_DATABASE_URL": "postgresql://runtime",
+            "FACTORY_ARTIFACT_ATTESTOR_DATABASE_URL": "postgresql://attestor",
+            "FACTORY_EXECUTION_ENABLED": "true",
+            "FACTORY_ACTORS_FILE": "/run/actors.json",
+            "FACTORY_SOCKET_PATH": "/run/factory.sock",
+        }
+        with patch.dict(os.environ, base, clear=True):
+            settings = FactorySettings.from_environment()
+        self.assertEqual(
+            settings.artifact_attestor_database_url, "postgresql://attestor"
+        )
+        for override in (
+            {"FACTORY_ARTIFACT_ATTESTOR_DATABASE_URL": ""},
+            {"FACTORY_ARTIFACT_ATTESTOR_DATABASE_URL": "postgresql://runtime"},
+        ):
+            with self.subTest(override=override), patch.dict(
+                os.environ, {**base, **override}, clear=True
+            ), self.assertRaises(SettingsError):
+                FactorySettings.from_environment()
+
+    def test_execution_is_strictly_disabled_by_default_and_routes_are_absent(self):
+        settings = FactorySettings(
+            "postgresql://runtime",
+            Path("/run/factory.sock"),
+            Path("/run/actors.json"),
+        )
+        token = "legacy-control-token"
+        actor = Actor(
+            "legacy-operator",
+            "operator",
+            frozenset({"factory:reconcile"}),
+            frozenset({"*"}),
+        )
+        with (
+            patch("adaptive_factory.server.PostgresFactoryStore") as runtime_store,
+            patch("adaptive_factory.server.PostgresArtifactAttestationStore") as attestor,
+            patch(
+                "adaptive_factory.server.load_actors", return_value={token: actor}
+            ),
+        ):
+            runtime_store.return_value.readiness.return_value = {
+                "status": "ready",
+                "session_user": "factory_runtime_login",
+                "database_role": "factory_runtime",
+                "schema_version": 17,
+                "capacity_consistent": True,
+                "accounting_consistent": True,
+            }
+            app = build_app(settings)
+        runtime_store.assert_called_once_with(settings.database_url)
+        runtime_store.return_value.readiness.assert_called_once_with()
+        attestor.assert_not_called()
+        paths = {getattr(route, "path", None) for route in app.router.routes}
+        self.assertTrue({"/health/live", "/health/ready", "/v1/tasks"} <= paths)
+        self.assertFalse(any(path and path.startswith("/v1/execution/") for path in paths))
+
+    def test_enabled_app_registers_exactly_six_execution_routes(self):
+        class Service:
+            pass
+
+        token = "enabled-execution-token"
+        actor = Actor(
+            "enabled-worker",
+            "worker",
+            frozenset({"task:execute"}),
+            frozenset({"*"}),
+        )
+        app = create_app(Service(), Authenticator({token: actor}), execution_enabled=True)
+        paths = {
+            getattr(route, "path", None)
+            for route in app.router.routes
+            if getattr(route, "path", "").startswith("/v1/execution/")
+        }
+        self.assertEqual(
+            paths,
+            {
+                "/v1/execution/claims",
+                "/v1/execution/stages",
+                "/v1/execution/notes",
+                "/v1/execution/artifacts",
+                "/v1/execution/usage",
+                "/v1/execution/terminal",
+            },
+        )
+
+    def test_settings_reject_noncanonical_execution_flag(self):
+        base = {
+            "FACTORY_DATABASE_URL": "postgresql://runtime",
+            "FACTORY_ACTORS_FILE": "/run/actors.json",
+            "FACTORY_SOCKET_PATH": "/run/factory.sock",
+        }
+        for value in ("1", "TRUE", "yes", " false", ""):
+            with self.subTest(value=value), patch.dict(
+                os.environ,
+                {**base, "FACTORY_EXECUTION_ENABLED": value},
+                clear=True,
+            ), self.assertRaisesRegex(SettingsError, "must be true or false"):
+                FactorySettings.from_environment()
+        with patch.dict(os.environ, base, clear=True):
+            settings = FactorySettings.from_environment()
+        self.assertFalse(settings.execution_enabled)
+        self.assertIsNone(settings.artifact_attestor_database_url)
+
     def test_authenticated_request_reaches_real_unix_socket(self):
         class Service:
             @staticmethod

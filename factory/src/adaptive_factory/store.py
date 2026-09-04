@@ -2,16 +2,30 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime
 import json
+import math
 import time
 import uuid
 
 from .contracts import HEX64, TaskIntakeV1, canonical_digest
+from .brokers import (
+    ArtifactProposal,
+    BrokerError,
+    NoteProposal,
+    ProposalBroker,
+    ProposalContext,
+    TerminalProposal,
+    UsageProposal,
+    proposal_idempotency_key,
+)
+from .execution_contracts import RunManifestV1, TaskPacketV1, WorkspaceResultV1, workspace_evidence_digest
 from .migrations import discover_migrations
 from .models import (
     Actor,
+    ExecutionGrant,
+    ExecutionStage,
     FactoryAttemptV1,
     FactoryEventHistoryPageV1,
     FactoryEventV1,
@@ -25,11 +39,25 @@ from .models import (
     TaskProjection,
     TaskStatus,
 )
+from .protocol import CanonicalEvent, PROTOCOL_VERSION
+from .recovery import (
+    ExecutionRecoveryCandidate,
+    ExecutionRecoveryClaim,
+    ExecutionRecoveryCursor,
+    ExecutionRecoveryNotDue,
+    ExecutionRecoveryPage,
+)
 from .state import (
     TransitionCommand,
     TransitionOperation,
     authorize_transition,
     classify_retry,
+)
+from .workspace import (
+    ArtifactAttestationUnavailable,
+    ArtifactAttestationV1,
+    WorkspaceSnapshotRequest,
+    WorkspaceSnapshotV1,
 )
 
 
@@ -61,6 +89,104 @@ class TransitionError(StoreError):
     pass
 
 
+class IntegrityError(StoreError):
+    pass
+
+
+def _validate_capability_session(cursor, capability_role: str, label: str) -> None:
+    cursor.execute(
+        """SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
+        rolreplication,rolbypassrls,COALESCE(rolconfig,ARRAY[]::text[])
+        FROM pg_roles WHERE rolname=session_user"""
+    )
+    identity = cursor.fetchone()
+    if identity is None or identity[:7] != (True, False, False, False, False, False, False) \
+            or tuple(identity[7]) != ():
+        raise StoreError(f"{label} login is not least privilege")
+    if cursor.connection.info.server_version >= 160000:
+        cursor.execute(
+            """SELECT r.rolname,m.admin_option,m.inherit_option,m.set_option
+            FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.roleid
+            JOIN pg_roles u ON u.oid=m.member WHERE u.rolname=session_user"""
+        )
+        membership = cursor.fetchall()
+        expected_membership = [(capability_role, False, False, True)]
+    else:
+        cursor.execute(
+            """SELECT r.rolname,m.admin_option FROM pg_auth_members m
+            JOIN pg_roles r ON r.oid=m.roleid JOIN pg_roles u ON u.oid=m.member
+            WHERE u.rolname=session_user"""
+        )
+        membership = cursor.fetchall()
+        expected_membership = [(capability_role, False)]
+    if membership != expected_membership:
+        raise StoreError(f"{label} login has excess role membership")
+    cursor.execute(
+        """SELECT rolcanlogin,rolinherit,rolsuper,rolcreaterole,rolcreatedb,
+        rolreplication,rolbypassrls,COALESCE(rolconfig,ARRAY[]::text[])
+        FROM pg_roles WHERE rolname=%s""",
+        (capability_role,),
+    )
+    capability = cursor.fetchone()
+    expected_config = (
+        ("search_path=factory, pg_catalog",) if capability_role == "factory_runtime" else ()
+    )
+    if capability is None or capability[:7] != (False, False, False, False, False, False, False) \
+            or tuple(capability[7]) != expected_config:
+        raise StoreError(f"{label} capability role is not isolated")
+    cursor.execute(
+        """SELECT
+        EXISTS(SELECT 1 FROM pg_auth_members membership
+          JOIN pg_roles member ON member.oid=membership.member
+          WHERE member.rolname=%s),
+        ARRAY(SELECT member.rolname FROM pg_auth_members membership
+          JOIN pg_roles role ON role.oid=membership.roleid
+          JOIN pg_roles member ON member.oid=membership.member
+          WHERE role.rolname=%s ORDER BY member.rolname),
+        session_user""",
+        (capability_role, capability_role),
+    )
+    outbound_membership, inbound_members, session_user = cursor.fetchone()
+    if outbound_membership or tuple(inbound_members) != (session_user,):
+        raise StoreError(f"{label} capability role is not isolated")
+    cursor.execute(
+        """WITH login AS (SELECT oid FROM pg_roles WHERE rolname=session_user)
+        SELECT
+          (SELECT datdba=(SELECT oid FROM login) FROM pg_database WHERE datname=current_database())
+          OR EXISTS(SELECT 1 FROM pg_namespace WHERE nspowner=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_class WHERE relowner=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_proc WHERE proowner=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_type WHERE typowner=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_database d
+            CROSS JOIN LATERAL aclexplode(d.datacl) a
+            WHERE d.datacl IS NOT NULL AND a.grantee=(SELECT oid FROM login)
+              AND NOT (
+                d.datname=current_database() AND a.privilege_type='CONNECT'
+                AND NOT a.is_grantable
+              ))
+          OR EXISTS(SELECT 1 FROM pg_namespace n
+            CROSS JOIN LATERAL aclexplode(n.nspacl) a
+            WHERE n.nspacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_class c
+            CROSS JOIN LATERAL aclexplode(c.relacl) a
+            WHERE c.relacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_attribute c
+            CROSS JOIN LATERAL aclexplode(c.attacl) a
+            WHERE c.attacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_proc p
+            CROSS JOIN LATERAL aclexplode(p.proacl) a
+            WHERE p.proacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_type t
+            CROSS JOIN LATERAL aclexplode(t.typacl) a
+            WHERE t.typacl IS NOT NULL AND a.grantee=(SELECT oid FROM login))
+          OR EXISTS(SELECT 1 FROM pg_default_acl d
+            CROSS JOIN LATERAL aclexplode(d.defaclacl) a
+            WHERE d.defaclrole=(SELECT oid FROM login) OR a.grantee=(SELECT oid FROM login))"""
+    )
+    if cursor.fetchone()[0]:
+        raise StoreError(f"{label} login has direct database authority")
+
+
 @dataclass(frozen=True)
 class IntakeResult:
     task: TaskProjection
@@ -86,6 +212,68 @@ class TerminalizationResult:
     accounting_quarantined: bool
     from_state: TaskStatus | None = None
     operation: TransitionOperation | None = None
+
+
+class PostgresArtifactAttestationStore:
+    """Dedicated capability boundary; its login must not inherit factory_runtime."""
+
+    def __init__(self, database_url: str) -> None:
+        if not database_url:
+            raise StoreError("artifact attestor database URL is required")
+        self.database_url = database_url
+
+    def _connect(self):
+        import psycopg
+
+        connection = psycopg.connect(self.database_url, connect_timeout=5)
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SET search_path=pg_catalog")
+                cursor.execute("SET lock_timeout='5s'; SET statement_timeout='5s'")
+                _validate_capability_session(
+                    cursor, "factory_artifact_attestor", "artifact attestor"
+                )
+                cursor.execute("SET ROLE factory_artifact_attestor")
+                cursor.execute("SET search_path=pg_catalog,factory")
+                cursor.execute("SELECT current_user,current_setting('search_path')")
+                if cursor.fetchone() != ("factory_artifact_attestor", "pg_catalog, factory"):
+                    raise StoreError("artifact attestor capability unavailable")
+            return connection
+        except Exception:
+            connection.close()
+            raise
+
+    def readiness(self) -> dict[str, str]:
+        with self._connect() as connection, connection.cursor() as cursor:
+            cursor.execute("SELECT session_user,current_user")
+            session_user, current_user = cursor.fetchone()
+            return {"session_user": session_user, "database_role": current_user}
+
+    def record_artifact_attestation(
+        self, attestation: ArtifactAttestationV1
+    ) -> ArtifactAttestationV1 | ArtifactAttestationUnavailable:
+        import psycopg
+
+        try:
+            with self._connect() as connection, connection.transaction(), connection.cursor() as cursor:
+                cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+                cursor.execute(
+                    "SELECT factory.execution_record_artifact_attestation(%s::jsonb)",
+                    (json.dumps(attestation.to_dict(), sort_keys=True, separators=(",", ":")),),
+                )
+                value = cursor.fetchone()[0]
+        except (psycopg.DataError, psycopg.IntegrityError) as exc:
+            raise IntegrityError("database integrity violation") from exc
+        except psycopg.Error:
+            return ArtifactAttestationUnavailable(reason="trusted_artifact_attestation_unavailable")
+        if value is None:
+            return ArtifactAttestationUnavailable(reason="trusted_artifact_attestation_rejected")
+        if isinstance(value, str):
+            value = json.loads(value)
+        try:
+            return ArtifactAttestationV1.from_dict(value)
+        except (TypeError, ValueError) as exc:
+            raise StoreError("corrupt artifact attestation envelope") from exc
 
 
 class PostgresFactoryStore:
@@ -164,6 +352,7 @@ class PostgresFactoryStore:
         connect_timeout: int | None = None,
         lock_timeout: str | None = None,
         statement_timeout: str | None = None,
+        transaction_timeout: str | None = None,
     ):
         import psycopg
 
@@ -172,12 +361,31 @@ class PostgresFactoryStore:
         statement_timeout = statement_timeout or self._MUTATION_STATEMENT_TIMEOUT
         connection = None
         try:
+            options = (
+                f"-c lock_timeout={lock_timeout} "
+                f"-c statement_timeout={statement_timeout}"
+            )
             connection = psycopg.connect(
                 self.database_url,
                 connect_timeout=connect_timeout,
-                options=f"-c lock_timeout={lock_timeout} -c statement_timeout={statement_timeout}",
+                options=options,
             )
-            connection.execute("SET ROLE factory_runtime")
+            if transaction_timeout is not None:
+                if connection.info.server_version < 170000:
+                    raise StoreError("execution recovery requires PostgreSQL 17")
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT set_config('transaction_timeout',%s,false)",
+                        (transaction_timeout,),
+                    )
+            with connection.cursor() as cursor:
+                cursor.execute("SET search_path=pg_catalog")
+                _validate_capability_session(cursor, "factory_runtime", "runtime")
+                cursor.execute("SET ROLE factory_runtime")
+                cursor.execute("SET search_path=pg_catalog,factory")
+                cursor.execute("SELECT current_user,current_setting('search_path')")
+                if cursor.fetchone() != ("factory_runtime", "pg_catalog, factory"):
+                    raise StoreError("runtime capability unavailable")
         except (
             psycopg.InterfaceError,
             psycopg.OperationalError,
@@ -200,14 +408,25 @@ class PostgresFactoryStore:
         *,
         lock_timeout: str | None = None,
         statement_timeout: str | None = None,
+        transaction_timeout: str | None = None,
     ) -> None:
-        cursor.execute(
-            "SELECT set_config('lock_timeout',%s,true),set_config('statement_timeout',%s,true)",
-            (
-                lock_timeout or self._MUTATION_LOCK_TIMEOUT,
-                statement_timeout or self._MUTATION_STATEMENT_TIMEOUT,
-            ),
+        bounds = (
+            lock_timeout or self._MUTATION_LOCK_TIMEOUT,
+            statement_timeout or self._MUTATION_STATEMENT_TIMEOUT,
         )
+        if transaction_timeout is None:
+            cursor.execute(
+                "SELECT set_config('lock_timeout',%s,true),"
+                "set_config('statement_timeout',%s,true)",
+                bounds,
+            )
+        else:
+            cursor.execute(
+                "SELECT set_config('lock_timeout',%s,true),"
+                "set_config('statement_timeout',%s,true),"
+                "set_config('transaction_timeout',%s,true)",
+                (*bounds, transaction_timeout),
+            )
 
     @contextmanager
     def _transaction(
@@ -216,6 +435,7 @@ class PostgresFactoryStore:
         connect_timeout: int | None = None,
         lock_timeout: str | None = None,
         statement_timeout: str | None = None,
+        transaction_timeout: str | None = None,
     ):
         import psycopg
 
@@ -224,16 +444,20 @@ class PostgresFactoryStore:
                 connect_timeout=connect_timeout,
                 lock_timeout=lock_timeout,
                 statement_timeout=statement_timeout,
+                transaction_timeout=transaction_timeout,
             ) as connection:
                 with connection.transaction(), connection.cursor() as cursor:
                     self._set_transaction_bounds(
                         cursor,
                         lock_timeout=lock_timeout,
                         statement_timeout=statement_timeout,
+                        transaction_timeout=transaction_timeout,
                     )
                     yield cursor
-        except StoreUnavailable:
+        except (StoreUnavailable, IntegrityError):
             raise
+        except (psycopg.DataError, psycopg.IntegrityError) as exc:
+            raise IntegrityError("database integrity violation") from exc
         except (
             psycopg.InterfaceError,
             psycopg.OperationalError,
@@ -245,17 +469,417 @@ class PostgresFactoryStore:
 
     def readiness(self) -> dict[str, object]:
         with self._transaction() as cursor:
-            cursor.execute("SELECT current_user,COALESCE(max(version),0) FROM factory.schema_migrations")
-            role, version = cursor.fetchone()
+            cursor.execute(
+                "SELECT session_user,current_user,COALESCE(max(version),0) "
+                "FROM factory.schema_migrations GROUP BY session_user,current_user"
+            )
+            session_user, role, version = cursor.fetchone()
             capacity_consistent = self._capacity_consistent(cursor)
             accounting_consistent = self._accounting_consistent(cursor)
             return {
                 "status": "ready" if version == len(discover_migrations()) and capacity_consistent and accounting_consistent else "not_ready",
+                "session_user": session_user,
                 "database_role": role,
                 "schema_version": version,
                 "capacity_consistent": capacity_consistent,
                 "accounting_consistent": accounting_consistent,
             }
+
+    @staticmethod
+    def _require_recovery_actor(actor: Actor) -> None:
+        if (
+            not isinstance(actor, Actor)
+            or actor.kind != "operator"
+            or "factory:reconcile" not in actor.scopes
+            or "*" not in actor.repositories
+        ):
+            raise AuthorityError("global recovery authority is required")
+
+    @staticmethod
+    def _recovery_timeouts(timeout_seconds: float) -> tuple[int, str, str, str]:
+        if (
+            isinstance(timeout_seconds, bool)
+            or not isinstance(timeout_seconds, (int, float))
+            or not math.isfinite(timeout_seconds)
+            or timeout_seconds < 3.0
+        ):
+            raise StoreError("invalid execution recovery timeout")
+        bounded_seconds = min(5.0, float(timeout_seconds))
+        connect_timeout = 2
+        statement_milliseconds = max(
+            1, int((bounded_seconds - connect_timeout) * 1000)
+        )
+        lock_milliseconds = min(500, statement_milliseconds)
+        return (
+            connect_timeout,
+            f"{lock_milliseconds}ms",
+            f"{statement_milliseconds}ms",
+            f"{statement_milliseconds}ms",
+        )
+
+    def _require_single_host_recovery_url(self) -> None:
+        from psycopg.conninfo import conninfo_to_dict
+
+        try:
+            values = conninfo_to_dict(self.database_url)
+        except Exception as exc:
+            raise StoreError("invalid execution recovery database URL") from exc
+        if values.get("service") or not (
+            values.get("host") or values.get("hostaddr")
+        ) or any(
+            value and "," in value
+            for value in (
+                values.get("host", ""),
+                values.get("hostaddr", ""),
+                values.get("port", ""),
+            )
+        ):
+            raise StoreError("execution recovery requires a single database host")
+
+    @staticmethod
+    def _recovery_candidate(value) -> ExecutionRecoveryCandidate:
+        expected = {
+            "task_id",
+            "run_id",
+            "manifest_digest",
+            "workspace_handle",
+            "updated_at",
+            "source",
+        }
+        if not isinstance(value, dict) or set(value) != expected:
+            raise IntegrityError("database recovery candidate shape is invalid")
+        return ExecutionRecoveryCandidate(
+            value["task_id"],
+            value["run_id"],
+            value["manifest_digest"].strip(),
+            value["workspace_handle"],
+            datetime.fromisoformat(value["updated_at"].replace("Z", "+00:00")),
+            value["source"],
+        )
+
+    @classmethod
+    def _recovery_claim(cls, value) -> ExecutionRecoveryClaim:
+        if isinstance(value, str):
+            value = json.loads(value)
+        expected_keys = {
+            "task_id",
+            "run_id",
+            "manifest_digest",
+            "workspace_handle",
+            "updated_at",
+            "claim_token",
+            "claim_fence",
+            "claim_expires_at",
+            "transition",
+            "advances_discovery_cursor",
+            "source",
+        }
+        if not isinstance(value, dict) or set(value) != expected_keys:
+            raise IntegrityError("database recovery claim shape is invalid")
+        candidate = ExecutionRecoveryCandidate(
+            value["task_id"],
+            value["run_id"],
+            value["manifest_digest"],
+            value["workspace_handle"],
+            datetime.fromisoformat(value["updated_at"].replace("Z", "+00:00")),
+            value["source"],
+        )
+        return ExecutionRecoveryClaim(
+            candidate,
+            value["claim_token"],
+            value["claim_fence"],
+            datetime.fromisoformat(
+                value["claim_expires_at"].replace("Z", "+00:00")
+            ),
+            value["transition"],
+            value["advances_discovery_cursor"],
+        )
+
+    def execution_recovery_candidates(
+        self, *, limit: int, cursor: ExecutionRecoveryCursor | None
+    ) -> ExecutionRecoveryPage:
+        if type(limit) is not int or not 2 <= limit <= 100:
+            raise StoreError("invalid execution recovery limit")
+        if cursor is not None and not isinstance(cursor, ExecutionRecoveryCursor):
+            raise StoreError("invalid execution recovery cursor")
+        self._require_single_host_recovery_url()
+        with self._transaction(
+            connect_timeout=2,
+            lock_timeout="500ms",
+            statement_timeout="3s",
+            transaction_timeout="3s",
+        ) as db:
+            db.execute(
+                "SELECT factory.execution_recovery_candidates(%s,%s,%s)",
+                (
+                    limit,
+                    None if cursor is None else cursor.updated_at,
+                    None if cursor is None else cursor.run_id,
+                ),
+            )
+            value = db.fetchone()[0]
+            if isinstance(value, str):
+                value = json.loads(value)
+            if not isinstance(value, dict) or set(value) != {
+                "candidates",
+                "scanned_through",
+                "exhausted",
+            }:
+                raise IntegrityError("database recovery page shape is invalid")
+            raw_cursor = value["scanned_through"]
+            scanned_through = None
+            if raw_cursor is not None:
+                if not isinstance(raw_cursor, dict) or set(raw_cursor) != {
+                    "updated_at",
+                    "run_id",
+                }:
+                    raise IntegrityError("database recovery cursor shape is invalid")
+                scanned_through = ExecutionRecoveryCursor(
+                    datetime.fromisoformat(
+                        raw_cursor["updated_at"].replace("Z", "+00:00")
+                    ),
+                    raw_cursor["run_id"],
+                )
+            if (
+                not isinstance(value["candidates"], list)
+                or len(value["candidates"]) > limit
+                or type(value["exhausted"]) is not bool
+            ):
+                raise IntegrityError("database recovery candidates are invalid")
+            candidates = tuple(
+                self._recovery_candidate(candidate)
+                for candidate in value["candidates"]
+            )
+            if (
+                len({candidate.run_id for candidate in candidates})
+                != len(candidates)
+                or len({candidate.manifest_digest for candidate in candidates})
+                != len(candidates)
+            ):
+                raise IntegrityError("database recovery candidates are duplicated")
+            fresh_cursors = tuple(
+                candidate.cursor
+                for candidate in candidates
+                if candidate.source == "fresh"
+            )
+            if fresh_cursors != tuple(sorted(fresh_cursors)) or (
+                cursor is not None
+                and any(candidate_cursor <= cursor for candidate_cursor in fresh_cursors)
+            ):
+                raise IntegrityError("database recovery candidates are unordered")
+            return ExecutionRecoveryPage(
+                candidates,
+                scanned_through,
+                value["exhausted"],
+            )
+
+    def claim_execution_recovery(
+        self,
+        candidate: ExecutionRecoveryCandidate,
+        actor: Actor,
+        *,
+        timeout_seconds: float = 5.0,
+    ) -> ExecutionRecoveryClaim | ExecutionRecoveryNotDue | None:
+        if not isinstance(candidate, ExecutionRecoveryCandidate):
+            raise StoreError("invalid execution recovery candidate")
+        self._require_recovery_actor(actor)
+        self._require_single_host_recovery_url()
+        (
+            connect_timeout,
+            lock_timeout,
+            statement_timeout,
+            transaction_timeout,
+        ) = self._recovery_timeouts(timeout_seconds)
+        released_here = False
+        with self._transaction(
+            connect_timeout=connect_timeout,
+            lock_timeout=lock_timeout,
+            statement_timeout=statement_timeout,
+            transaction_timeout=transaction_timeout,
+        ) as db:
+            db.execute(
+                "SELECT factory.execution_recovery_context(%s,%s,%s,%s,%s)",
+                (
+                    candidate.task_id,
+                    candidate.run_id,
+                    candidate.manifest_digest,
+                    candidate.workspace_handle,
+                    candidate.updated_at,
+                ),
+            )
+            context = db.fetchone()[0]
+            if context is None:
+                return None
+            if isinstance(context, str):
+                context = json.loads(context)
+            if context in ({"released": True}, {"existing_job": True}):
+                context = None
+            expected_context = {
+                "task_state",
+                "current_run_id",
+                "current_fence",
+                "repair_count",
+                "repair_limit",
+                "owner",
+                "role",
+                "fence",
+                "expires_at",
+                "packet_digest",
+                "run_state",
+                "run_released",
+                "allocation_released",
+                "recovery_due",
+                "released",
+            }
+            if context is not None and (
+                not isinstance(context, dict) or set(context) != expected_context
+            ):
+                raise IntegrityError("database recovery context shape is invalid")
+            if context is not None and (
+                context["released"]
+                or context["run_released"]
+                or context["allocation_released"]
+            ):
+                raise IntegrityError("execution recovery release state is inconsistent")
+            if context is not None:
+                if (
+                    context["task_state"] != "leased"
+                    or context["current_run_id"] != candidate.run_id
+                    or context["current_fence"] != context["fence"]
+                    or context["run_state"] != "leased"
+                ):
+                    return None
+                if not context["recovery_due"]:
+                    if candidate.source != "fresh":
+                        return None
+                    return ExecutionRecoveryNotDue(candidate)
+                grant = LeaseGrant(
+                    candidate.task_id,
+                    candidate.run_id,
+                    context["owner"],
+                    RunRole(context["role"]),
+                    context["fence"],
+                    datetime.fromisoformat(
+                        context["expires_at"].replace("Z", "+00:00")
+                    ),
+                    context["packet_digest"].strip(),
+                )
+                failure = (
+                    FailureClass.PROVIDER_QUALITY
+                    if context["repair_count"] >= context["repair_limit"]
+                    else FailureClass.WORKER_LOST
+                )
+                self._release_locked(
+                    db,
+                    grant,
+                    failure,
+                    actor,
+                    allow_expired=True,
+                )
+                db.execute(
+                    "UPDATE factory.runs SET state='expired' WHERE run_id=%s",
+                    (candidate.run_id,),
+                )
+                if context["repair_count"] < context["repair_limit"]:
+                    db.execute(
+                        "UPDATE factory.tasks SET repair_count=repair_count+1 WHERE task_id=%s",
+                        (candidate.task_id,),
+                    )
+                released_here = True
+            db.execute(
+                "SELECT factory.execution_recovery_claim(%s,%s,%s,%s,%s,%s)",
+                (
+                    candidate.task_id,
+                    candidate.run_id,
+                    candidate.manifest_digest,
+                    candidate.workspace_handle,
+                    candidate.updated_at,
+                    30,
+                ),
+            )
+            value = db.fetchone()[0]
+            if value is None:
+                if released_here:
+                    raise StoreError("recovery claim lost after canonical release")
+                return None
+            claim = self._recovery_claim(value)
+            if claim.candidate != candidate:
+                raise IntegrityError("database recovery authority mismatch")
+            return claim
+
+    def record_execution_cleanup_success(
+        self, claim: ExecutionRecoveryClaim, *, timeout_seconds: float = 5.0
+    ) -> None:
+        if not isinstance(claim, ExecutionRecoveryClaim):
+            raise StoreError("invalid execution recovery claim")
+        self._require_single_host_recovery_url()
+        (
+            connect_timeout,
+            lock_timeout,
+            statement_timeout,
+            transaction_timeout,
+        ) = self._recovery_timeouts(timeout_seconds)
+        with self._transaction(
+            connect_timeout=connect_timeout,
+            lock_timeout=lock_timeout,
+            statement_timeout=statement_timeout,
+            transaction_timeout=transaction_timeout,
+        ) as db:
+            db.execute(
+                "SELECT factory.execution_recovery_cleanup_succeeded("
+                "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    claim.candidate.task_id,
+                    claim.candidate.run_id,
+                    claim.candidate.manifest_digest,
+                    claim.candidate.workspace_handle,
+                    claim.candidate.updated_at,
+                    claim.candidate.source,
+                    claim.claim_token,
+                    claim.claim_fence,
+                    claim.transition,
+                    claim.advances_discovery_cursor,
+                ),
+            )
+            if not db.fetchone()[0]:
+                raise FenceError("stale execution cleanup claim")
+
+    def record_execution_cleanup_failure(
+        self, claim: ExecutionRecoveryClaim, *, timeout_seconds: float = 5.0
+    ) -> None:
+        if not isinstance(claim, ExecutionRecoveryClaim):
+            raise StoreError("invalid execution recovery claim")
+        self._require_single_host_recovery_url()
+        (
+            connect_timeout,
+            lock_timeout,
+            statement_timeout,
+            transaction_timeout,
+        ) = self._recovery_timeouts(timeout_seconds)
+        with self._transaction(
+            connect_timeout=connect_timeout,
+            lock_timeout=lock_timeout,
+            statement_timeout=statement_timeout,
+            transaction_timeout=transaction_timeout,
+        ) as db:
+            db.execute(
+                "SELECT factory.execution_recovery_cleanup_failed("
+                "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    claim.candidate.task_id,
+                    claim.candidate.run_id,
+                    claim.candidate.manifest_digest,
+                    claim.candidate.workspace_handle,
+                    claim.candidate.updated_at,
+                    claim.candidate.source,
+                    claim.claim_token,
+                    claim.claim_fence,
+                    claim.transition,
+                    claim.advances_discovery_cursor,
+                ),
+            )
+            if not db.fetchone()[0]:
+                raise FenceError("stale execution cleanup claim")
 
     @staticmethod
     def _accounting_consistent(cursor) -> bool:
@@ -299,20 +923,81 @@ class PostgresFactoryStore:
 
     def metrics(self) -> dict[str, dict[str, int]]:
         try:
-            with self._connect() as connection, connection.cursor() as cursor:
+            with self._connect(
+                connect_timeout=2,
+                lock_timeout="500ms",
+                statement_timeout="3s",
+                transaction_timeout="3s",
+            ) as connection, connection.cursor() as cursor:
                 cursor.execute("SET LOCAL statement_timeout='5s'")
                 cursor.execute("SET LOCAL lock_timeout='500ms'")
-                cursor.execute("SELECT * FROM factory.read_metrics_snapshot()")
-                row = cursor.fetchone()
+                cursor.execute("SET LOCAL transaction_timeout='3s'")
+                cursor.execute("SELECT factory.read_combined_metrics_snapshot()")
+                snapshot = cursor.fetchone()[0]
+                legacy = snapshot["legacy"]
+                execution = snapshot["execution"]
+                if set(legacy) != {
+                    "singleton", "accepted", "superseded", "queued", "retry", "dead",
+                    "transition_events", "live_leases", "reclaimed", "fence_rejected",
+                    "active_capacity", "cost_reserved_micros", "cost_observed_micros",
+                    "tokens_reserved", "tokens_observed", "wall_reserved_seconds",
+                    "output_observed_bytes", "accounting_blocked", "active_kills",
+                    "reconciliation_runs", "reconciliation_candidates", "repaired",
+                } or set(execution) != {
+                    "singleton", "execution_claimed", "stage_prepared", "stage_running",
+                    "stage_collecting", "stage_completed", "stage_failed",
+                    "stage_needs_human", "stage_cancelled", "stage_orphaned",
+                    "proposal_note", "proposal_artifact", "proposal_usage",
+                    "proposal_terminal", "recovery_claimed", "recovery_orphaned",
+                    "recovery_cancelled", "cleanup_succeeded", "cleanup_failed",
+                }:
+                    raise ValueError("metrics snapshot shape is invalid")
         except Exception as exc:
             raise MetricsUnavailable("metrics snapshot unavailable") from exc
-        (
-            _singleton, intake, superseded, queued, retry, dead, transition_events,
-            live_leases, reclaimed, fence_rejected, active_capacity,
-            reserved_cost, observed_cost, reserved_tokens, observed_tokens, reserved_wall,
-            observed_output, blocked, kills, reconciliation_runs,
-            reconciliation_candidates, repaired,
-        ) = row
+        intake, superseded, queued, retry, dead = (
+            legacy["accepted"], legacy["superseded"], legacy["queued"],
+            legacy["retry"], legacy["dead"],
+        )
+        transition_events = legacy["transition_events"]
+        live_leases, reclaimed, fence_rejected = (
+            legacy["live_leases"], legacy["reclaimed"], legacy["fence_rejected"],
+        )
+        active_capacity = legacy["active_capacity"]
+        reserved_cost, observed_cost = (
+            legacy["cost_reserved_micros"], legacy["cost_observed_micros"],
+        )
+        reserved_tokens, observed_tokens = (
+            legacy["tokens_reserved"], legacy["tokens_observed"],
+        )
+        reserved_wall = legacy["wall_reserved_seconds"]
+        observed_output = legacy["output_observed_bytes"]
+        blocked, kills = legacy["accounting_blocked"], legacy["active_kills"]
+        reconciliation_runs = legacy["reconciliation_runs"]
+        reconciliation_candidates = legacy["reconciliation_candidates"]
+        repaired = legacy["repaired"]
+        execution_claimed = execution["execution_claimed"]
+        stage_prepared, stage_running = execution["stage_prepared"], execution["stage_running"]
+        stage_collecting, stage_completed = (
+            execution["stage_collecting"], execution["stage_completed"],
+        )
+        stage_failed = execution["stage_failed"]
+        stage_needs_human = execution["stage_needs_human"]
+        stage_cancelled, stage_orphaned = (
+            execution["stage_cancelled"], execution["stage_orphaned"],
+        )
+        proposal_note, proposal_artifact = (
+            execution["proposal_note"], execution["proposal_artifact"],
+        )
+        proposal_usage, proposal_terminal = (
+            execution["proposal_usage"], execution["proposal_terminal"],
+        )
+        recovery_claimed, recovery_orphaned, recovery_cancelled = (
+            execution["recovery_claimed"], execution["recovery_orphaned"],
+            execution["recovery_cancelled"],
+        )
+        cleanup_succeeded, cleanup_failed = (
+            execution["cleanup_succeeded"], execution["cleanup_failed"],
+        )
         return {
             "factory_intake_and_rejection_outcomes_total": {
                 "accepted": intake, "superseded": superseded, "queued": queued, "retry": retry,
@@ -328,6 +1013,30 @@ class PostgresFactoryStore:
                 "output_observed_bytes": observed_output, "accounting_blocked": blocked,
                 "active_kills": kills, "reconciliation_runs": reconciliation_runs,
                 "reconciliation_candidates": reconciliation_candidates, "repaired": repaired,
+            },
+            "factory_execution_claim_and_stage_outcomes_total": {
+                "claimed": execution_claimed,
+                "prepared": stage_prepared,
+                "running": stage_running,
+                "collecting": stage_collecting,
+                "completed": stage_completed,
+                "failed": stage_failed,
+                "needs_human": stage_needs_human,
+                "cancelled": stage_cancelled,
+                "orphaned": stage_orphaned,
+            },
+            "factory_execution_protocol_and_proposal_outcomes_total": {
+                "note": proposal_note,
+                "artifact": proposal_artifact,
+                "usage": proposal_usage,
+                "terminal": proposal_terminal,
+            },
+            "factory_execution_orphan_and_cleanup_outcomes_total": {
+                "claimed": recovery_claimed,
+                "orphaned": recovery_orphaned,
+                "cancelled": recovery_cancelled,
+                "workspace_released": cleanup_succeeded,
+                "cleanup_failed": cleanup_failed,
             },
         }
 
@@ -609,6 +1318,18 @@ class PostgresFactoryStore:
                 terminalization = self._terminalize_task(cursor, old_id, TaskStatus.SUPERSEDED)
                 if not terminalization.changed:
                     continue
+                cursor.execute("SET LOCAL lock_timeout='500ms'")
+                cursor.execute("SET LOCAL transaction_timeout='3s'")
+                cursor.execute(
+                    "SELECT factory.execution_recovery_cancel_task(%s)", (old_id,)
+                )
+                execution_projection = cursor.fetchone()[0]
+                if execution_projection not in {
+                    "cancelled",
+                    "no_execution",
+                    "already_terminal",
+                }:
+                    raise StoreError("execution supersede projection failed")
                 key = canonical_digest({"action": "superseded", "replacement": intake.intent_digest})
                 metadata = {
                     "replacement_intent_digest": intake.intent_digest,
@@ -1075,6 +1796,8 @@ class PostgresFactoryStore:
         return bool(cursor.fetchone()[0])
 
     def claim(self, request, actor: Actor, now: datetime, *, idempotency_key: str | None = None, correlation_id: str | None = None) -> LeaseGrant | None:
+        if actor.kind != "worker" or request.owner != actor.actor_id:
+            raise StoreError("claim owner must match worker actor")
         with self._transaction() as cursor:
             command = {
                 "owner": request.owner,
@@ -1246,6 +1969,799 @@ class PostgresFactoryStore:
                 }},
             )
             return grant
+
+    def execution_material(self, grant: LeaseGrant) -> dict[str, object]:
+        with self._transaction() as cursor:
+            self._lock_grant(cursor, grant)
+            cursor.execute(
+                """SELECT t.repository_id,t.packet_digest,t.deadline_at,i.body
+                FROM factory.tasks t JOIN factory.accepted_intents i ON i.intent_id=t.intent_id
+                WHERE t.task_id=%s AND t.current_run_id=%s""",
+                (grant.task_id, grant.run_id),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise FenceError("stale or expired fence")
+            repository_id, legacy_digest, deadline, body = row
+            if isinstance(body, str):
+                body = json.loads(body)
+            try:
+                return {
+                    "repository_id": repository_id,
+                    "legacy_intent_digest": legacy_digest.strip(),
+                    "route_id": body["route_id"],
+                    "change_id": body["change_id"],
+                    "exact_base_sha": body["exact_base_sha"],
+                    "exact_head_sha": body["governance"]["exact_head_sha"],
+                    "spec_digest": body["spec_digest"],
+                    "architecture_digest": body["architecture"]["architecture_digest"],
+                    "governance_digest": body["governance"]["governance_digest"],
+                    "policy_digest": body["policy_digest"],
+                    "acceptance_ids": body["acceptance_ids"],
+                    "limits": body["limits"],
+                    "deadline": deadline.isoformat().replace("+00:00", "Z"),
+                }
+            except (KeyError, TypeError) as exc:
+                raise StoreError("accepted intent cannot build an execution packet") from exc
+
+    def start_execution(
+        self,
+        grant: LeaseGrant,
+        packet,
+        manifest,
+        actor: Actor,
+        *,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ) -> ExecutionGrant:
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            self._lock_grant(cursor, grant)
+            command = {
+                "run_id": grant.run_id,
+                "legacy_packet_digest": grant.packet_digest,
+                "execution_packet_digest": packet.packet_digest,
+                "manifest_digest": manifest.manifest_digest,
+            }
+            replay, prior, request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "execution_start", command
+            )
+            if replay:
+                return ExecutionGrant(
+                    grant,
+                    prior["packet_digest"],
+                    prior["manifest_digest"],
+                    prior["workspace_handle"],
+                    prior["provider_id"],
+                    ExecutionStage(prior["stage"]),
+                )
+            cursor.execute(
+                "SELECT factory.execution_start(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb)",
+                (
+                    grant.task_id,
+                    grant.run_id,
+                    grant.owner,
+                    grant.fence,
+                    grant.packet_digest,
+                    packet.packet_digest,
+                    manifest.manifest_digest,
+                    manifest.workspace_handle,
+                    manifest.provider_id,
+                    json.dumps(packet.to_dict(), sort_keys=True, separators=(",", ":")),
+                    json.dumps(manifest.to_dict(), sort_keys=True, separators=(",", ":")),
+                ),
+            )
+            if not cursor.fetchone()[0]:
+                raise FenceError("stale or expired fence")
+            result = ExecutionGrant(
+                grant,
+                packet.packet_digest,
+                manifest.manifest_digest,
+                manifest.workspace_handle,
+                manifest.provider_id,
+                ExecutionStage.PREPARED,
+            )
+            recorded = {
+                "packet_digest": result.packet_digest,
+                "manifest_digest": result.manifest_digest,
+                "workspace_handle": result.workspace_handle,
+                "provider_id": result.provider_id,
+                "stage": result.stage.value,
+            }
+            self._record_command(
+                cursor,
+                idempotency_key,
+                actor,
+                "execution_start",
+                request_digest,
+                correlation_id,
+                recorded,
+            )
+            self._audit(
+                cursor,
+                grant.task_id,
+                actor,
+                "execution_start",
+                f"run:{grant.run_id}",
+                "packet_manifest_persisted",
+                correlation_id or idempotency_key or packet.packet_digest,
+                {"packet_digest": packet.packet_digest, "manifest_digest": manifest.manifest_digest},
+                grant.run_id,
+            )
+            return result
+
+    def advance_execution(
+        self,
+        grant: LeaseGrant,
+        packet_digest: str,
+        stage: ExecutionStage,
+        actor: Actor,
+        *,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ) -> ExecutionStage:
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            self._lock_grant(cursor, grant)
+            command = {"run_id": grant.run_id, "packet_digest": packet_digest, "stage": stage.value}
+            replay, prior, request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "execution_advance", command
+            )
+            if replay:
+                return ExecutionStage(prior["stage"])
+            cursor.execute(
+                "SELECT factory.execution_advance(%s,%s,%s,%s,%s,%s,%s)",
+                (
+                    grant.task_id,
+                    grant.run_id,
+                    grant.owner,
+                    grant.fence,
+                    grant.packet_digest,
+                    packet_digest,
+                    stage.value,
+                ),
+            )
+            if not cursor.fetchone()[0]:
+                raise FenceError("stale execution stage or fence")
+            self._record_command(
+                cursor,
+                idempotency_key,
+                actor,
+                "execution_advance",
+                request_digest,
+                correlation_id,
+                {"stage": stage.value},
+            )
+            return stage
+
+    def _proposal_context(self, cursor, grant: LeaseGrant, packet_digest: str) -> ProposalContext:
+        locked_grant = self._lock_grant(cursor, grant)
+        cursor.execute(
+            "SELECT factory.execution_proposal_context(%s,%s,%s,%s,%s,%s)",
+            (
+                grant.task_id, grant.run_id, grant.owner, grant.fence,
+                grant.packet_digest, packet_digest,
+            ),
+        )
+        row = cursor.fetchone()
+        if row is None or row[0] is None:
+            raise FenceError("stale execution packet or terminal manifest")
+        body = json.loads(row[0]) if isinstance(row[0], str) else row[0]
+        limits = body["limits"]
+        return ProposalContext(
+            grant.task_id,
+            grant.run_id,
+            grant.owner,
+            grant.fence,
+            packet_digest,
+            locked_grant[1],
+            body["repository_id"],
+            body["workspace_handle"],
+            tuple(body["capability_policy"]["allowed_paths"]),
+            tuple(body["capability_policy"]["artifact_classes"]),
+            min(65_536, limits["max_output_bytes"]),
+            limits["max_output_bytes"],
+            limits["max_output_bytes"],
+            limits["max_cost_usd_micros"],
+            limits["max_token_units"],
+            tuple(body["provider"]["capabilities"]),
+        )
+
+    def proposal_context(self, grant: LeaseGrant, packet_digest: str) -> ProposalContext:
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            return self._proposal_context(cursor, grant, packet_digest)
+
+    @staticmethod
+    def _execution_proposal_command(grant: LeaseGrant, event: CanonicalEvent) -> dict:
+        return {
+            "contract": "adaptive-factory.execution-propose-command/v1",
+            "grant": {
+                "task_id": grant.task_id,
+                "run_id": grant.run_id,
+                "owner": grant.owner,
+                "role": grant.role.value,
+                "fence": grant.fence,
+                "legacy_packet_digest": grant.packet_digest,
+            },
+            "event": event.to_dict(),
+        }
+
+    @staticmethod
+    def _proposal_kind(event_type: str) -> str:
+        if event_type == "note.proposed":
+            return "note"
+        if event_type == "artifact.proposed":
+            return "artifact"
+        if event_type == "usage.reported":
+            return "usage"
+        if event_type in {"run.completed", "run.failed", "run.needs_human"}:
+            return "terminal"
+        raise StoreError("unsupported execution proposal")
+
+    @classmethod
+    def _stored_execution_proposal(
+        cls,
+        cursor,
+        grant: LeaseGrant,
+        event: CanonicalEvent,
+        result: dict,
+    ):
+        if not isinstance(result, dict) or set(result) != {
+            "proposal_kind", "sequence", "proposal_idempotency_key"
+        }:
+            raise StoreError("persisted execution proposal command is corrupt")
+        expected_kind = cls._proposal_kind(event.event_type)
+        proposal_digest = result["proposal_idempotency_key"]
+        if (
+            result["proposal_kind"] != expected_kind
+            or type(result["sequence"]) is not int
+            or result["sequence"] != event.sequence
+            or not isinstance(proposal_digest, str)
+            or not HEX64.fullmatch(proposal_digest)
+        ):
+            raise StoreError("persisted execution proposal command is corrupt")
+        cursor.execute(
+            "SELECT factory.execution_proposal_by_key(%s,%s,%s)",
+            (grant.task_id, grant.run_id, proposal_digest),
+        )
+        envelope = cursor.fetchone()[0]
+        if envelope is None:
+            raise StoreError("persisted execution proposal is missing")
+        if isinstance(envelope, str):
+            envelope = json.loads(envelope)
+        if not isinstance(envelope, dict) or set(envelope) != {
+            "task_id", "run_id", "packet_digest", "producer_sequence", "proposal_kind",
+            "idempotency_key", "body",
+        }:
+            raise StoreError("persisted execution proposal is corrupt")
+        task_id = envelope["task_id"]
+        run_id = envelope["run_id"]
+        packet_digest = envelope["packet_digest"]
+        sequence = envelope["producer_sequence"]
+        kind = envelope["proposal_kind"]
+        stored_digest = envelope["idempotency_key"]
+        body = envelope["body"]
+        if (
+            str(task_id) != grant.task_id
+            or str(run_id) != grant.run_id
+            or packet_digest != event.packet_digest
+            or sequence != event.sequence
+            or kind != expected_kind
+            or stored_digest != proposal_digest
+        ):
+            raise StoreError("persisted execution proposal is corrupt")
+        classes = {
+            "note": NoteProposal,
+            "artifact": ArtifactProposal,
+            "usage": UsageProposal,
+            "terminal": TerminalProposal,
+        }
+        proposal_type = classes.get(kind)
+        if proposal_type is None or not isinstance(body, dict) or set(body) != set(proposal_type.__dataclass_fields__):
+            raise StoreError("persisted execution proposal is corrupt")
+        try:
+            if proposal_type is NoteProposal:
+                if not isinstance(body.get("evidence"), list):
+                    raise TypeError("invalid persisted evidence")
+                body["evidence"] = tuple(body["evidence"])
+            proposal = proposal_type(**body)
+        except (TypeError, ValueError) as exc:
+            raise StoreError("persisted execution proposal is corrupt") from exc
+        if (
+            proposal.task_id != grant.task_id
+            or proposal.run_id != grant.run_id
+            or proposal.packet_digest != event.packet_digest
+            or proposal.fence != grant.fence
+            or proposal.author_role != grant.role.value
+            or proposal.sequence != sequence
+            or proposal.idempotency_key != stored_digest
+            or proposal.idempotency_key != proposal_digest
+            or proposal_idempotency_key(proposal) != proposal_digest
+            or (
+                isinstance(proposal, TerminalProposal)
+                and proposal.terminal_type != event.event_type
+            )
+        ):
+            raise StoreError("persisted execution proposal is corrupt")
+        return proposal
+
+    def execution_proposal_replay(
+        self,
+        grant: LeaseGrant,
+        event: CanonicalEvent,
+        actor: Actor,
+        *,
+        idempotency_key: str | None,
+    ):
+        if idempotency_key is None:
+            return None
+        if (
+            actor.kind != "worker"
+            or actor.actor_id != grant.owner
+            or "task:execute" not in actor.scopes
+        ):
+            raise StoreError("execution proposal replay requires bound worker actor")
+        command = self._execution_proposal_command(grant, event)
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            replay, prior, _request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "execution_propose", command
+            )
+            if replay:
+                return self._stored_execution_proposal(
+                    cursor, grant, event, prior
+                )
+            self._proposal_context(cursor, grant, event.packet_digest)
+            return None
+
+    def begin_execution_terminal_composite(
+        self,
+        grant: LeaseGrant,
+        event: CanonicalEvent,
+        actor: Actor,
+        *,
+        proposal_key: str,
+        finalize_key: str,
+        idempotency_key: str,
+        correlation_id: str | None = None,
+    ) -> None:
+        if (
+            actor.kind != "worker"
+            or actor.actor_id != grant.owner
+            or "task:execute" not in actor.scopes
+            or not isinstance(idempotency_key, str)
+            or not HEX64.fullmatch(idempotency_key)
+            or event.protocol_version != PROTOCOL_VERSION
+            or event.task_id != grant.task_id
+            or event.run_id != grant.run_id
+            or self._proposal_kind(event.event_type) != "terminal"
+        ):
+            raise StoreError("invalid execution terminal composite command")
+        expected_keys = {
+            phase: canonical_digest(
+                {
+                    "contract": "adaptive-factory.execution-terminal-phase/v1",
+                    "command": idempotency_key,
+                    "phase": phase,
+                }
+            )
+            for phase in ("proposal", "finalize")
+        }
+        if (
+            proposal_key != expected_keys["proposal"]
+            or finalize_key != expected_keys["finalize"]
+            or proposal_key == finalize_key
+        ):
+            raise StoreError("invalid execution terminal phase keys")
+        command = {
+            "contract": "adaptive-factory.execution-terminal-composite-command/v1",
+            "proposal_command": self._execution_proposal_command(grant, event),
+            "proposal_key": proposal_key,
+            "finalize_key": finalize_key,
+        }
+        marker = {"proposal_key": proposal_key, "finalize_key": finalize_key}
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            replay, prior, request_digest = self._command_replay(
+                cursor,
+                idempotency_key,
+                actor,
+                "execution_terminal_composite",
+                command,
+            )
+            if replay:
+                if prior != marker:
+                    raise IntegrityError("persisted terminal composite marker is corrupt")
+                return
+            context = self._proposal_context(cursor, grant, event.packet_digest)
+            try:
+                proposal = ProposalBroker().accept(
+                    event,
+                    context,
+                    owner=grant.owner,
+                    fence=grant.fence,
+                )
+            except BrokerError as exc:
+                raise StoreError("execution terminal command semantics are invalid") from exc
+            if not isinstance(proposal, TerminalProposal):
+                raise StoreError("execution terminal command is not terminal")
+            self._record_command(
+                cursor,
+                idempotency_key,
+                actor,
+                "execution_terminal_composite",
+                request_digest,
+                correlation_id,
+                marker,
+            )
+
+    def commit_execution_proposal(
+        self,
+        grant: LeaseGrant,
+        proposal,
+        actor: Actor,
+        *,
+        event: CanonicalEvent,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ):
+        if (
+            actor.kind != "worker"
+            or actor.actor_id != grant.owner
+            or "task:execute" not in actor.scopes
+        ):
+            raise StoreError("execution proposal commit requires bound worker actor")
+        kinds = {
+            NoteProposal: "note",
+            ArtifactProposal: "artifact",
+            UsageProposal: "usage",
+            TerminalProposal: "terminal",
+        }
+        kind = kinds.get(type(proposal))
+        if kind is None:
+            raise StoreError("unsupported execution proposal")
+        expected_kind = self._proposal_kind(event.event_type)
+        if (
+            kind != expected_kind
+            or event.protocol_version != PROTOCOL_VERSION
+            or event.task_id != grant.task_id
+            or event.run_id != grant.run_id
+            or proposal.task_id != grant.task_id
+            or proposal.run_id != grant.run_id
+            or proposal.packet_digest != event.packet_digest
+            or proposal.fence != grant.fence
+            or proposal.sequence != event.sequence
+            or proposal.author_role != grant.role.value
+            or proposal.idempotency_key != proposal_idempotency_key(proposal)
+            or (
+                isinstance(proposal, TerminalProposal)
+                and proposal.terminal_type != event.event_type
+            )
+        ):
+            raise StoreError("execution proposal does not match command")
+        body = asdict(proposal)
+        command = self._execution_proposal_command(grant, event)
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            replay, prior, request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "execution_propose", command
+            )
+            if replay:
+                return self._stored_execution_proposal(
+                    cursor, grant, event, prior
+                )
+            context = self._proposal_context(cursor, grant, event.packet_digest)
+            attestation_digest = (
+                proposal.artifact_attestation_digest
+                if isinstance(proposal, ArtifactProposal)
+                else None
+            )
+            try:
+                expected_proposal = ProposalBroker().accept(
+                    event,
+                    context,
+                    owner=grant.owner,
+                    fence=grant.fence,
+                    artifact_attestation_digest=attestation_digest,
+                )
+            except BrokerError as exc:
+                raise StoreError("execution proposal event semantics are invalid") from exc
+            if expected_proposal != proposal:
+                raise StoreError("execution proposal does not match event semantics")
+            cursor.execute(
+                "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb)",
+                (
+                    grant.task_id, grant.run_id, grant.owner, grant.fence, grant.packet_digest,
+                    proposal.packet_digest, proposal.sequence, proposal.idempotency_key, kind,
+                    json.dumps(body, sort_keys=True, separators=(",", ":")),
+                ),
+            )
+            if not cursor.fetchone()[0]:
+                raise FenceError("stale execution proposal or fence")
+            self._record_command(
+                cursor, idempotency_key, actor, "execution_propose", request_digest,
+                correlation_id, {
+                    "proposal_kind": kind,
+                    "sequence": proposal.sequence,
+                    "proposal_idempotency_key": proposal.idempotency_key,
+                },
+            )
+            return proposal
+
+    @staticmethod
+    def _workspace_bundle(value) -> tuple[WorkspaceResultV1, WorkspaceSnapshotV1, TaskPacketV1, RunManifestV1] | None:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = json.loads(value)
+        try:
+            packet_wire = dict(value["packet"])
+            packet_digest = packet_wire.pop("packet_digest")
+            packet = TaskPacketV1.from_dict(packet_wire)
+            if packet.packet_digest != packet_digest:
+                raise StoreError("stored workspace packet digest mismatch")
+            manifest_wire = dict(value["manifest"])
+            manifest_digest = manifest_wire.pop("manifest_digest")
+            manifest = RunManifestV1.from_packet(packet, deadline=manifest_wire["deadline"])
+            if manifest.to_dict() != {**manifest_wire, "manifest_digest": manifest_digest}:
+                raise StoreError("stored workspace manifest mismatch")
+            result = WorkspaceResultV1.from_dict(value["result"])
+            snapshot = WorkspaceSnapshotV1.from_dict(value["snapshot"])
+            row = value["row"]
+            expected_row = {
+                "workspace_result_digest": result.workspace_result_digest,
+                "task_id": result.task_id,
+                "run_id": result.run_id,
+                "task_packet_digest": result.task_packet_digest,
+                "run_manifest_digest": result.run_manifest_digest,
+                "exact_head_sha": result.exact_head_sha,
+                "workspace_snapshot_digest": result.workspace_snapshot_digest,
+                "terminal_stage": result.terminal_stage,
+                "terminal_proposal_digest": result.terminal_proposal_digest,
+                "terminal_proposal_kind": "terminal",
+                "artifact_manifest_digest": result.artifact_manifest_digest,
+                "note_manifest_digest": result.note_manifest_digest,
+                "usage_evidence_digest": result.usage_evidence_digest,
+                "diagnostics_digest": result.diagnostics_digest,
+                "m4_status": result.m4_status,
+                "failure_class": result.failure_class,
+                "failure_reason": result.failure_reason,
+            }
+            if row != expected_row:
+                raise StoreError("stored workspace row mismatch")
+            if (
+                result.task_id != packet.task_id
+                or result.run_id != packet.run_id
+                or result.task_packet_digest != packet.packet_digest
+                or result.run_manifest_digest != manifest.manifest_digest
+                or snapshot.repository_id != packet.repository_id
+                or snapshot.workspace_handle != packet.workspace_handle
+                or snapshot.input_head_sha != packet.authority.exact_head_sha
+                or snapshot.result_head_sha != result.exact_head_sha
+                or snapshot.workspace_snapshot_digest != result.workspace_snapshot_digest
+            ):
+                raise StoreError("stored workspace bundle binding mismatch")
+            return result, snapshot, packet, manifest
+        except (KeyError, TypeError, ValueError) as exc:
+            if isinstance(exc, StoreError):
+                raise
+            raise StoreError("stored workspace bundle is corrupt") from exc
+
+    def finalize_execution(
+        self,
+        grant: LeaseGrant,
+        packet_digest: str,
+        snapshot: WorkspaceSnapshotV1,
+        actor: Actor,
+        *,
+        idempotency_key: str | None = None,
+        correlation_id: str | None = None,
+    ) -> WorkspaceResultV1:
+        command = {
+            "task_id": grant.task_id,
+            "run_id": grant.run_id,
+            "packet_digest": packet_digest,
+        }
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            replay, prior, request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "execution_finalize", command
+            )
+            if replay:
+                cursor.execute(
+                    "SELECT factory.execution_result_for_run(%s,%s)",
+                    (grant.task_id, grant.run_id),
+                )
+                bundle = self._workspace_bundle(cursor.fetchone()[0])
+                if bundle is None or prior.get("result") != bundle[0].to_dict():
+                    raise StoreError("persisted finalization command is corrupt")
+                return bundle[0]
+            cursor.execute("SELECT factory.execution_result_for_run(%s,%s)", (grant.task_id, grant.run_id))
+            existing = self._workspace_bundle(cursor.fetchone()[0])
+            if existing is not None:
+                result, stored_snapshot, _packet, _manifest = existing
+                if (
+                    result.task_packet_digest != packet_digest
+                    or stored_snapshot.workspace_snapshot_digest != snapshot.workspace_snapshot_digest
+                ):
+                    raise StoreError("workspace result already exists with different facts")
+                self._record_command(
+                    cursor, idempotency_key, actor, "execution_finalize", request_digest,
+                    correlation_id, {"result": result.to_dict()},
+                )
+                return result
+            cursor.execute(
+                "SELECT factory.execution_finalize_context(%s,%s,%s,%s,%s,%s)",
+                (
+                    grant.task_id, grant.run_id, grant.owner, grant.fence,
+                    grant.packet_digest, packet_digest,
+                ),
+            )
+            context = cursor.fetchone()[0]
+            if context is None:
+                raise FenceError("execution cannot be finalized")
+            if isinstance(context, str):
+                context = json.loads(context)
+            if (
+                snapshot.repository_id != context["repository_id"]
+                or snapshot.workspace_handle != context["workspace_handle"]
+                or snapshot.input_head_sha != context["input_head_sha"]
+            ):
+                raise FenceError("workspace snapshot does not bind execution")
+            result = WorkspaceResultV1.from_facts(
+                {
+                    "contract_version": 1,
+                    "task_id": grant.task_id,
+                    "run_id": grant.run_id,
+                    "task_packet_digest": packet_digest,
+                    "run_manifest_digest": context["run_manifest_digest"],
+                    "exact_head_sha": snapshot.result_head_sha,
+                    "workspace_snapshot_digest": snapshot.workspace_snapshot_digest,
+                    "terminal_stage": context["terminal_stage"],
+                    "terminal_proposal_digest": context["terminal_proposal_digest"],
+                    "artifact_manifest_digest": workspace_evidence_digest(
+                        "artifacts", context["artifact_digests"]
+                    ),
+                    "note_manifest_digest": workspace_evidence_digest("notes", context["note_digests"]),
+                    "usage_evidence_digest": workspace_evidence_digest("usage", context["usage_digests"]),
+                    "diagnostics_digest": workspace_evidence_digest(
+                        "diagnostics", context["diagnostic_digests"]
+                    ),
+                    "m4_status": context["m4_status"],
+                    "failure_class": context["failure_class"],
+                    "failure_reason": context["failure_reason"],
+                }
+            )
+            cursor.execute(
+                "SELECT factory.execution_finalize_commit(%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb)",
+                (
+                    grant.task_id, grant.run_id, grant.owner, grant.fence, grant.packet_digest,
+                    packet_digest, result.workspace_result_digest,
+                    json.dumps(snapshot.to_dict(), sort_keys=True, separators=(",", ":")),
+                    json.dumps(result.to_dict(), sort_keys=True, separators=(",", ":")),
+                ),
+            )
+            if not cursor.fetchone()[0]:
+                raise FenceError("execution finalization rejected")
+            status = TaskStatus(result.m4_status)
+            release_key = canonical_digest(
+                {
+                    "action": "execution_finalize",
+                    "fence": grant.fence,
+                    "run_id": grant.run_id,
+                    "target": status.value,
+                }
+            )
+            self._event(
+                cursor,
+                grant.task_id,
+                actor,
+                "released",
+                release_key,
+                {
+                    "target": status.value,
+                    "workspace_result_digest": result.workspace_result_digest,
+                },
+                mandatory_cleanup=True,
+            )
+            self._audit(
+                cursor,
+                grant.task_id,
+                actor,
+                "execution_finalize",
+                f"run:{grant.run_id}",
+                status.value,
+                correlation_id or release_key,
+                {
+                    "fence": grant.fence,
+                    "workspace_result_digest": result.workspace_result_digest,
+                },
+                grant.run_id,
+            )
+            self._record_command(
+                cursor, idempotency_key, actor, "execution_finalize", request_digest,
+                correlation_id, {"result": result.to_dict()},
+            )
+            return result
+
+    def execution_finalization_replay(
+        self,
+        grant: LeaseGrant,
+        packet_digest: str,
+        actor: Actor,
+        *,
+        idempotency_key: str | None,
+    ) -> WorkspaceResultV1 | None:
+        if idempotency_key is None:
+            return None
+        command = {"task_id": grant.task_id, "run_id": grant.run_id, "packet_digest": packet_digest}
+        with self._transaction() as cursor:
+            replay, prior, _request_digest = self._command_replay(
+                cursor, idempotency_key, actor, "execution_finalize", command
+            )
+            if not replay:
+                return None
+            cursor.execute(
+                "SELECT factory.execution_result_for_run(%s,%s)",
+                (grant.task_id, grant.run_id),
+            )
+            bundle = self._workspace_bundle(cursor.fetchone()[0])
+            if bundle is None:
+                raise StoreError("persisted finalization result is missing")
+            result, _snapshot, _packet, _manifest = bundle
+            if prior.get("result") != result.to_dict() or result.task_packet_digest != packet_digest:
+                raise StoreError("persisted finalization command is corrupt")
+            return result
+
+    def workspace_snapshot_request(self, grant: LeaseGrant, packet_digest: str) -> WorkspaceSnapshotRequest:
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
+            cursor.execute(
+                "SELECT factory.execution_finalize_context(%s,%s,%s,%s,%s,%s)",
+                (
+                    grant.task_id, grant.run_id, grant.owner, grant.fence,
+                    grant.packet_digest, packet_digest,
+                ),
+            )
+            context = cursor.fetchone()[0]
+            if context is None:
+                cursor.execute("SELECT factory.execution_result_for_run(%s,%s)", (grant.task_id, grant.run_id))
+                existing = self._workspace_bundle(cursor.fetchone()[0])
+                if existing is None:
+                    raise FenceError("execution snapshot context unavailable")
+                result, snapshot, _packet, _manifest = existing
+                return WorkspaceSnapshotRequest(
+                    result.task_id,
+                    result.run_id,
+                    snapshot.repository_id,
+                    snapshot.workspace_handle,
+                    snapshot.input_head_sha,
+                )
+            if isinstance(context, str):
+                context = json.loads(context)
+            return WorkspaceSnapshotRequest(
+                grant.task_id,
+                grant.run_id,
+                context["repository_id"],
+                context["workspace_handle"],
+                context["input_head_sha"],
+            )
+
+    def workspace_result(self, task_id: str, workspace_result_digest: str):
+        with self._transaction() as cursor:
+            cursor.execute("SET LOCAL statement_timeout='5s'")
+            cursor.execute(
+                "SELECT factory.execution_result_by_digest(%s,%s)",
+                (task_id, workspace_result_digest),
+            )
+            bundle = self._workspace_bundle(cursor.fetchone()[0])
+            if bundle is None:
+                raise KeyError(workspace_result_digest)
+            result, snapshot, packet, manifest = bundle
+            if result.workspace_result_digest != workspace_result_digest:
+                raise StoreError("requested workspace result digest mismatch")
+            return {"result": result, "snapshot": snapshot, "packet": packet, "manifest": manifest}
 
     @staticmethod
     def _lock_capacity_for_run(cursor, run_id: str) -> bool:
@@ -2141,6 +3657,18 @@ class PostgresFactoryStore:
                 return self._get_task(cursor, task_id)
             terminalization = self._terminalize_task(cursor, task_id, TaskStatus.CANCELLED)
             if terminalization.changed:
+                cursor.execute("SET LOCAL lock_timeout='500ms'")
+                cursor.execute("SET LOCAL transaction_timeout='3s'")
+                cursor.execute(
+                    "SELECT factory.execution_recovery_cancel_task(%s)", (task_id,)
+                )
+                execution_projection = cursor.fetchone()[0]
+                if execution_projection not in {
+                    "cancelled",
+                    "no_execution",
+                    "already_terminal",
+                }:
+                    raise StoreError("execution cancellation projection failed")
                 metadata = {
                     "reason": reason,
                     "accounting_quarantined": terminalization.accounting_quarantined,
