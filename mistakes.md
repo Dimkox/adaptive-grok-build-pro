@@ -611,3 +611,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The long verifier was launched with `nohup` but remained in the exec session, so the command boundary killed PID 3343961 before test stages while its status incorrectly remained `running`.
 **Prevention:** Launch long verification through `setsid` or an equivalent detached session, then prove the recorded PID survives a separate command boundary before reporting it as detached.
+
+## 2026-09-04 — Added an untrusted XML parser without its security gate
+
+**Root cause:** The DOCX hardening introduced `xml.etree.ElementTree` while focused functional checks omitted targeted Bandit; the exact verifier correctly caught B405 and B314.
+**Prevention:** Run targeted Bandit whenever a modified path parses untrusted formats, and prefer a bounded fail-closed lexical subset when no approved hardened parser dependency exists.

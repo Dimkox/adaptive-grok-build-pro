@@ -190,6 +190,21 @@ class LandingIntakeTests(unittest.TestCase):
         self.assertEqual(list(self.root.rglob("*.blob")), [])
 
     def test_docx_relationship_serialization_and_embedded_packages_fail_closed(self):
+        internal_relationships = (
+            b'<?xml version="1.0" encoding="UTF-8"?>\n'
+            b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            b'<Relationship Id="rId1" Type="officeDocument" Target="document.xml"/>'
+            b"</Relationships>"
+        )
+        internal = self.accept(
+            "docx",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            docx(relationship_xml=internal_relationships),
+            job_id="internal-relationship",
+        )
+        self.assertEqual("docx", internal.media_kind)
+        self.assertEqual(self.store.purge(internal, reason="normalized"), "purged")
+
         external_relationships = (
             b"<Relationships><Relationship TargetMode = 'External'/></Relationships>",
             b'<Relationships><Relationship targetmode=" external "/></Relationships>',
@@ -203,6 +218,21 @@ class LandingIntakeTests(unittest.TestCase):
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     docx(relationship_xml=relationships),
                     job_id=f"external-{index}",
+                )
+        ambiguous_relationships = (
+            b'<?xml version="1.0" encoding="ISO-8859-1"?>'
+            b"<Relationships></Relationships>",
+            b"<Relationships><!-- hidden markup --></Relationships>",
+        )
+        for index, relationships in enumerate(ambiguous_relationships, 1):
+            with self.subTest(relationships=relationships), self.assertRaisesRegex(
+                LandingContractError, "docx_relationships"
+            ):
+                self.accept(
+                    "docx",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    docx(relationship_xml=relationships),
+                    job_id=f"ambiguous-{index}",
                 )
         with self.assertRaisesRegex(LandingContractError, "docx_active_content"):
             self.accept(

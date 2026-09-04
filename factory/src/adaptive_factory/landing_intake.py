@@ -11,7 +11,6 @@ import stat
 import struct
 import tempfile
 from typing import Callable, Iterable
-from xml.etree import ElementTree
 import zipfile
 
 from .landing_contracts import (
@@ -34,6 +33,33 @@ _PURGE_REASONS = frozenset({"cancelled", "normalized", "rejected", "expired"})
 _PDF_PAGE = re.compile(rb"/Type\s*/Page(?!s)\b")
 _QUARANTINE_BLOB = re.compile(r"^[0-9a-f]{64}\.blob$")
 _QUARANTINE_TEMP = re.compile(r"^\.landing-[A-Za-z0-9_.-]+\.tmp$")
+_XML_DECLARATION = re.compile(
+    r"\A<\?xml[ \t\r\n]+version[ \t\r\n]*=[ \t\r\n]*(?:\"1\.0\"|'1\.0')"
+    r"(?:[ \t\r\n]+encoding[ \t\r\n]*=[ \t\r\n]*(?:\"[Uu][Tt][Ff]-8\"|'[Uu][Tt][Ff]-8'))?"
+    r"(?:[ \t\r\n]+standalone[ \t\r\n]*=[ \t\r\n]*(?:\"(?:yes|no)\"|'(?:yes|no)'))?"
+    r"[ \t\r\n]*\?>"
+)
+_RELATIONSHIPS_ROOT = re.compile(
+    r"\A<Relationships(?:[ \t\r\n]+xmlns[ \t\r\n]*=[ \t\r\n]*"
+    r"(?:\"http://schemas\.openxmlformats\.org/package/2006/relationships\"|"
+    r"'http://schemas\.openxmlformats\.org/package/2006/relationships'))?"
+    r"[ \t\r\n]*(?P<empty>/?)>"
+)
+_XML_ATTRIBUTE_SOURCE = (
+    r"[ \t\r\n]+[A-Za-z_][A-Za-z0-9_.:-]*[ \t\r\n]*=[ \t\r\n]*"
+    r'(?:"[^"<>&\r\n\t]*"|\'[^\'<>&\r\n\t]*\')'
+)
+_RELATIONSHIP_TAG = re.compile(
+    rf"<Relationship(?P<attributes>(?:{_XML_ATTRIBUTE_SOURCE})+)[ \t\r\n]*/>"
+)
+_XML_ATTRIBUTE = re.compile(
+    r"[ \t\r\n]+(?P<name>[A-Za-z_][A-Za-z0-9_.:-]*)[ \t\r\n]*=[ \t\r\n]*"
+    r'(?:(?:"(?P<double>[^"<>&\r\n\t]*)")|(?:\'(?P<single>[^\'<>&\r\n\t]*)\'))'
+)
+_INTERNAL_RELATIONSHIP_TARGET = re.compile(
+    r"^(?:\.\./)*(?!\.{1,2}(?:/|$))[A-Za-z0-9_~.-]+"
+    r"(?:/(?!\.{1,2}(?:/|$))[A-Za-z0-9_~.-]+)*$"
+)
 _MP3_BITRATES_MPEG1 = {
     1: (32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448),
     2: (32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384),
@@ -524,23 +550,61 @@ class PrivateLandingBlobStore:
                     ):
                         raise LandingContractError("docx_active_content")
                     if lowered.endswith(".rels"):
-                        relationships = archive.read(entry)
-                        if b"<!doctype" in relationships.lower() or b"<!entity" in relationships.lower():
-                            raise LandingContractError("docx_external_relationship")
-                        try:
-                            root = ElementTree.fromstring(relationships)
-                        except ElementTree.ParseError as exc:
-                            raise LandingContractError("docx_relationships") from exc
-                        for element in root.iter():
-                            if element.tag.rsplit("}", 1)[-1].casefold() != "relationship":
-                                continue
-                            attributes = {
-                                name.rsplit("}", 1)[-1].casefold(): value
-                                for name, value in element.attrib.items()
-                            }
-                            if attributes.get("targetmode", "").strip().casefold() == "external":
-                                raise LandingContractError("docx_external_relationship")
+                        _validate_relationships_xml(archive.read(entry))
         except LandingContractError:
             raise
         except (OSError, zipfile.BadZipFile, RuntimeError) as exc:
             raise LandingContractError("media_signature") from exc
+
+
+def _validate_relationships_xml(payload: bytes) -> None:
+    try:
+        text = payload.decode("utf-8", "strict").strip()
+    except UnicodeDecodeError as exc:
+        raise LandingContractError("docx_relationships") from exc
+    declaration = _XML_DECLARATION.match(text)
+    if text.startswith("<?xml"):
+        if declaration is None:
+            raise LandingContractError("docx_relationships")
+        text = text[declaration.end() :].strip()
+    root = _RELATIONSHIPS_ROOT.match(text)
+    if root is None:
+        raise LandingContractError("docx_relationships")
+    remaining = text[root.end() :]
+    if root.group("empty"):
+        if remaining.strip():
+            raise LandingContractError("docx_relationships")
+        return
+    closing = "</Relationships>"
+    if not remaining.endswith(closing):
+        raise LandingContractError("docx_relationships")
+    body = remaining[: -len(closing)]
+    offset = 0
+    for tag in _RELATIONSHIP_TAG.finditer(body):
+        if body[offset : tag.start()].strip():
+            raise LandingContractError("docx_relationships")
+        pairs = tuple(
+            (
+                match.group("name").rsplit(":", 1)[-1].casefold(),
+                match.group("double")
+                if match.group("double") is not None
+                else match.group("single"),
+            )
+            for match in _XML_ATTRIBUTE.finditer(tag.group("attributes"))
+        )
+        attributes = dict(pairs)
+        if len(attributes) != len(pairs):
+            raise LandingContractError("docx_relationships")
+        mode = attributes.get("targetmode", "").strip().casefold()
+        if mode == "external":
+            raise LandingContractError("docx_external_relationship")
+        if mode not in {"", "internal"} or set(attributes) not in (
+            {"id", "type", "target"},
+            {"id", "type", "target", "targetmode"},
+        ):
+            raise LandingContractError("docx_relationships")
+        if not _INTERNAL_RELATIONSHIP_TARGET.fullmatch(attributes["target"]):
+            raise LandingContractError("docx_external_relationship")
+        offset = tag.end()
+    if body[offset:].strip():
+        raise LandingContractError("docx_relationships")
