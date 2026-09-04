@@ -152,6 +152,54 @@
       "path": "factory/contracts/jsonschema/semantic-verdict.v1.schema.json",
       "role": "producer",
       "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-M7-PREDECESSOR-BRIDGES-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/m7-predecessor-bridges.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-M7-OPERATOR-HANDOFF-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/operator-handoff-proposal.v1.schema.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-FACTORY-M7-READY-BUNDLE-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/ready-for-pr-bundle.v1.schema.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-M7-SHADOW-COHORT-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/shadow-cohort.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-M7-SHADOW-OUTCOME-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/shadow-outcome.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
+    },
+    {
+      "compatibility": "consumer_accepts_old",
+      "id": "CONTRACT-FACTORY-M7-TASK-EVIDENCE-V1",
+      "kind": "json_schema",
+      "path": "factory/contracts/jsonschema/shadow-task-evidence.v1.schema.json",
+      "role": "consumer",
+      "version": "1"
     }
   ],
   "data_classifications": [
@@ -1308,6 +1356,32 @@
         "factory/src/adaptive_factory/semantic_adjudication.py",
         "factory/src/adaptive_factory/semantic_contracts.py",
         "factory/src/adaptive_factory/semantic_repair.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-FACTORY-STATE",
+      "id": "NODE-FACTORY-SHADOW-HANDOFF",
+      "owner": "local factory operators and human reviewers",
+      "public_contracts": [
+        "CONTRACT-FACTORY-M7-OPERATOR-HANDOFF-V1",
+        "CONTRACT-FACTORY-M7-PREDECESSOR-BRIDGES-V1",
+        "CONTRACT-FACTORY-M7-READY-BUNDLE-V1",
+        "CONTRACT-FACTORY-M7-SHADOW-COHORT-V1",
+        "CONTRACT-FACTORY-M7-SHADOW-OUTCOME-V1",
+        "CONTRACT-FACTORY-M7-TASK-EVIDENCE-V1"
+      ],
+      "repository_paths": [
+        "factory/src/adaptive_factory/shadow_contracts.py",
+        "factory/src/adaptive_factory/shadow_evaluation.py"
       ],
       "runtime": {
         "evidence": "source_described",
