@@ -4,6 +4,7 @@ import ast
 from collections import deque
 import hashlib
 import json
+import posixpath
 import re
 import sys
 from dataclasses import dataclass, replace
@@ -791,7 +792,7 @@ def _contract_compatibility(snapshot: ArchitectureSnapshot, diff: ArchitectureDi
         )
     before = {item.id: item for item in (diff._base_state.contracts if diff._base_state else ())}
     after = {item.id: item for item in diff._head_state.contracts}
-    changed_ids = directly_changed_ids | (set(before) & set(after))
+    changed_ids = _contract_dependency_closure(directly_changed_ids, before, after)
     findings: list[str] = []
     unsupported: list[str] = []
     used_rules: set[str] = set()
@@ -851,6 +852,52 @@ def _contract_compatibility(snapshot: ArchitectureSnapshot, diff: ArchitectureDi
         scope=changed_ids,
         reason="unsupported_contract_semantics" if unsupported else "applicable",
     )
+
+
+def _contract_dependency_closure(
+    changed_ids: set[str],
+    before: dict[str, Any],
+    after: dict[str, Any],
+) -> set[str]:
+    """Return changed contracts plus declared contracts that reference them."""
+
+    reverse_dependencies: dict[str, set[str]] = {}
+    for inventory in (before, after):
+        by_path = {record.path: record.id for record in inventory.values()}
+        for record in inventory.values():
+            for target_path in _external_contract_reference_paths(record):
+                target_id = by_path.get(target_path)
+                if target_id is not None:
+                    reverse_dependencies.setdefault(target_id, set()).add(record.id)
+
+    closure = set(changed_ids)
+    pending = deque(sorted(changed_ids))
+    while pending:
+        identity = pending.popleft()
+        for dependent in sorted(reverse_dependencies.get(identity, ())):
+            if dependent not in closure:
+                closure.add(dependent)
+                pending.append(dependent)
+    return closure
+
+
+def _external_contract_reference_paths(record: Any) -> set[str]:
+    references: set[str] = set()
+    pending: list[Any] = [record.document]
+    while pending:
+        value = pending.pop()
+        if isinstance(value, dict):
+            reference = value.get("$ref")
+            if isinstance(reference, str) and not reference.startswith("#"):
+                normalized = posixpath.normpath(
+                    posixpath.join(posixpath.dirname(record.path), reference)
+                )
+                if normalized != ".." and not normalized.startswith("../"):
+                    references.add(normalized)
+            pending.extend(value.values())
+        elif isinstance(value, list):
+            pending.extend(value)
+    return references
 
 
 def _repository_paths(root: Path, diff: ArchitectureDiff, prefixes: tuple[str, ...]) -> tuple[str, ...]:

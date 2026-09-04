@@ -373,6 +373,28 @@ class RecoveryTests(unittest.TestCase):
             0,
         )
 
+    def test_cleanup_outcome_write_failure_is_reported_as_terminalize_failure(self):
+        value = candidate(76)
+
+        class OutcomeFailingStore(RecordingRecoveryStore):
+            def record_execution_cleanup_failure(
+                self, claim, *, timeout_seconds=5.0
+            ):
+                raise RuntimeError("database-unavailable")
+
+        store = OutcomeFailingStore((value,))
+        workspace = FailingWorkspace(
+            self.registered(value), value.run_id, store.calls
+        )
+        result = ExecutionRecovery(store, workspace, RECOVERY_ACTOR).reconcile(
+            limit=2
+        )
+
+        self.assertEqual(
+            (result.orphaned, result.cleanup_failed, result.terminalize_failed),
+            (1, 1, 1),
+        )
+
     def test_terminalization_failure_retries_after_idempotent_cleanup(self):
         value = candidate(4)
         store = RecordingRecoveryStore((value,))

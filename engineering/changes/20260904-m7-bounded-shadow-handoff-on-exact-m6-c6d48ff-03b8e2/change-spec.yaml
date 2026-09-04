@@ -17,7 +17,7 @@
     "openapi": []
   },
   "forbidden_outcomes": [
-    {"id":"FORBID-001","statement":"Modification or semantic weakening of any exact-M6 source, contract, migration, execution, semantic-validation, authority, accounting, or recovery behavior.","evidence":[{"attestation":"git-diff exact M6"},{"receipt":"code_review"}]},
+    {"id":"FORBID-001","statement":"Modification or semantic weakening of any exact-M6 source, contract, migration, execution, semantic-validation, authority, accounting, or recovery behavior.","evidence":[{"attestation":"git-diff-exact-M6"},{"receipt":"code_review"}]},
     {"id":"FORBID-002","statement":"Any provider call, credential, command, network or remote target, direct pull-request or merge action, or other operational capability in an M7 contract or implementation.","evidence":[{"test":"factory/tests/test_shadow_contracts.py"},{"receipt":"security_review"}]},
     {"id":"FORBID-003","statement":"Treating synthetic fixtures, a pure bundle, or an evaluator recommendation as durable, real-outcome, M8-qualification, approval, delivery, or production evidence.","evidence":[{"test":"factory/tests/test_shadow_evaluation.py"},{"receipt":"test_review"}]}
   ],
@@ -34,7 +34,7 @@
     "target": "repository_local_unwired_m7_shadow_source_with_zero_external_capability"
   },
   "observability": [
-    {"id":"OBS-001","signal":"deterministic aggregate digest, sorted failure codes, bounded counters and recommendation","success":"identical closed cohorts produce identical values","failure":"digest drift, unsorted or duplicate failure codes, or non-human recommendation"}
+    {"id":"SIG-001","metric":"Deterministic aggregate digest, sorted failure codes, bounded counters and recommendation outcomes.","proves":["OBJ-001"]}
   ],
   "risk": {
     "domains": [

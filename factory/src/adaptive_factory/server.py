@@ -127,6 +127,16 @@ def build_app(
     artifact_broker=None,
     snapshot_broker=None,
 ):
+    if settings.execution_enabled and (
+        execution_registry is None
+        or not callable(getattr(execution_registry, "resolve", None))
+        or artifact_broker is None
+        or not callable(getattr(artifact_broker, "attest_artifact", None))
+        or snapshot_broker is None
+        or not callable(getattr(snapshot_broker, "snapshot", None))
+    ):
+        raise ServerError("trusted execution dependencies are unavailable")
+
     try:
         store = PostgresFactoryStore(settings.database_url)
         runtime_readiness = _runtime_readiness(store)
@@ -148,15 +158,6 @@ def build_app(
 
     attestation_store = None
     if settings.execution_enabled:
-        if (
-            execution_registry is None
-            or not callable(getattr(execution_registry, "resolve", None))
-            or artifact_broker is None
-            or not callable(getattr(artifact_broker, "attest_artifact", None))
-            or snapshot_broker is None
-            or not callable(getattr(snapshot_broker, "snapshot", None))
-        ):
-            raise ServerError("trusted execution dependencies are unavailable")
         try:
             attestation_store = PostgresArtifactAttestationStore(
                 settings.artifact_attestor_database_url

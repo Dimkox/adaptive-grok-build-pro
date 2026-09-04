@@ -34,7 +34,7 @@
     "target": "repository_local_unactivated_m8_source_with_actual_m7_binding_and_zero_external_effects"
   },
   "observability": [
-    {"id":"OBS-001","signal":"profile aggregates, tuple/cohort digests, expiry, halt state and deterministic recommendation or demotion reason","success":"same closed facts produce the same bounded decision","failure":"identity drift, eligibility override, nondeterministic reason, authority escalation or effect-bearing output"}
+    {"id":"SIG-001","metric":"Profile aggregates, tuple and cohort digests, expiry, halt state, and deterministic recommendation or demotion outcomes.","proves":["OBJ-001"]}
   ],
   "risk": {
     "domains": [

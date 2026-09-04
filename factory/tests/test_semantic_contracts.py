@@ -102,7 +102,7 @@ def coverage(subject_digest, **changes):
 
 class SemanticContractTests(unittest.TestCase):
     def test_public_schemas_are_closed_bounded_and_have_exact_versions(self):
-        names = {
+        semantic_names = {
             "semantic-execution-binding.v1.schema.json",
             "semantic-subject.v1.schema.json",
             "semantic-finding.v1.schema.json",
@@ -111,8 +111,18 @@ class SemanticContractTests(unittest.TestCase):
             "semantic-validation-inputs.v1.schema.json",
             "repair-directive.v1.schema.json",
         }
+        names = semantic_names | {
+            "earned-autonomy.v1.schema.json",
+            "m7-autonomy-bridge.v1.schema.json",
+            "m7-predecessor-bridges.v1.schema.json",
+            "operator-handoff-proposal.v1.schema.json",
+            "ready-for-pr-bundle.v1.schema.json",
+            "shadow-cohort.v1.schema.json",
+            "shadow-outcome.v1.schema.json",
+            "shadow-task-evidence.v1.schema.json",
+        }
         self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, names)
-        for name in names:
+        for name in semantic_names:
             with self.subTest(name=name):
                 schema = json.loads((SCHEMAS / name).read_text(encoding="utf-8"))
                 self.assertEqual(schema["$schema"], "https://json-schema.org/draft/2020-12/schema")

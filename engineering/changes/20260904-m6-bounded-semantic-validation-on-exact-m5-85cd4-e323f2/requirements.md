@@ -10,7 +10,7 @@
 - [ ] AC-004: Semantic persistence is append-only and exact-replay safe across subjects, assignments, evidence, verdicts, directives, repair proposals, child bindings, escalations, recovery facts, and metrics.
 - [ ] AC-005: Repair cycles one through three preserve exact lineage, writer, context freshness, risk, diff and budget bounds; cycle four or any stale/recurrent/policy-invalid attempt records `needs_human` and creates no child.
 - [ ] AC-006: Migration `018` applies transactionally after byte-identical migrations `001`-`017`, preserves existing M5 rows and digests, and rolls back to schema 17 on failure.
-- [ ] AC-007: The six semantic control operations are additive to the current M4/M5 surfaces, require authenticated repository-scoped semantic authority, and do not expose a live provider, repair-write, network, credential, or production path.
+- [ ] AC-007: The six separately contracted semantic operations are additive to the current M4/M5 surfaces, require authenticated repository-scoped semantic authority, and do not expose a live provider, repair-write, network, credential, or production path.
 
 ## Failure and edge cases
 

@@ -6,6 +6,7 @@ import json
 import jsonschema
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -183,6 +184,7 @@ class StructureTests(unittest.TestCase):
             "factory/contracts/jsonschema/semantic-subject.v1.schema.json",
             "factory/contracts/jsonschema/semantic-validation-inputs.v1.schema.json",
             "factory/contracts/jsonschema/semantic-verdict.v1.schema.json",
+            "factory/contracts/openapi/factory-semantic.v1.json",
         )
         for relative in required:
             self.assertTrue((ROOT / relative).exists(), relative)
@@ -621,7 +623,7 @@ class StructureTests(unittest.TestCase):
 
     def test_m6_semantic_control_openapi_is_closed_additive(self) -> None:
         document = json.loads(
-            (ROOT / "factory/contracts/openapi/factory-control.v1.json").read_text(
+            (ROOT / "factory/contracts/openapi/factory-semantic.v1.json").read_text(
                 encoding="utf-8"
             )
         )
@@ -661,7 +663,7 @@ class StructureTests(unittest.TestCase):
                 ),
             },
         )
-        self.assertEqual(len(operations), 23)
+        self.assertEqual(len(operations), 6)
         for method, path, operation_id in semantic:
             operation = document["paths"][path][method.lower()]
             self.assertEqual(operation.get("security"), [{"bearerAuth": []}], operation_id)
@@ -670,6 +672,30 @@ class StructureTests(unittest.TestCase):
             for status, response in operation["responses"].items():
                 self.assertRegex(status, r"^[1-5][0-9]{2}$")
                 self.assertIn("content", response, f"{operation_id}:{status}")
+
+    def test_m6_semantic_openapi_has_supported_exact_baseline_semantics(self) -> None:
+        sys.path.insert(0, str(ROOT / ".grok-stack"))
+        from adaptive_grok.architecture import (
+            compare_contracts,
+            contract_inventory,
+            load_architecture,
+        )
+
+        snapshot = load_architecture(ROOT)
+        inventory = contract_inventory(ROOT, snapshot)
+        contract = next(
+            item
+            for item in inventory
+            if item.id == "CONTRACT-FACTORY-SEMANTIC-OPENAPI"
+        )
+        result = compare_contracts(
+            contract,
+            contract,
+            "bidirectional",
+            base_inventory=inventory,
+            head_inventory=inventory,
+        )
+        self.assertEqual(result.status, "compatible", result.reasons)
 
     def test_architecture_authority_and_manual_adoption_are_documented(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

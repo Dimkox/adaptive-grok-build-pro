@@ -149,6 +149,11 @@ class SemanticBridgeTests(unittest.TestCase):
 
     def test_bridge_contracts_are_closed_versioned_and_invent_no_m5_fields(self):
         expected = {
+            "earned-autonomy.v1.schema.json",
+            "m7-autonomy-bridge.v1.schema.json",
+            "m7-predecessor-bridges.v1.schema.json",
+            "operator-handoff-proposal.v1.schema.json",
+            "ready-for-pr-bundle.v1.schema.json",
             "repair-directive.v1.schema.json",
             "semantic-coverage.v1.schema.json",
             "semantic-execution-binding.v1.schema.json",
@@ -156,6 +161,9 @@ class SemanticBridgeTests(unittest.TestCase):
             "semantic-subject.v1.schema.json",
             "semantic-validation-inputs.v1.schema.json",
             "semantic-verdict.v1.schema.json",
+            "shadow-cohort.v1.schema.json",
+            "shadow-outcome.v1.schema.json",
+            "shadow-task-evidence.v1.schema.json",
         }
         self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, expected)
         for name in ("semantic-execution-binding.v1.schema.json", "semantic-validation-inputs.v1.schema.json"):

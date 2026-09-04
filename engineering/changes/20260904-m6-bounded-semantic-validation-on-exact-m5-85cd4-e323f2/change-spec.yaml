@@ -15,7 +15,7 @@
   "contracts": {
     "events": [],
     "json_schema": ["factory/contracts/jsonschema/repair-directive.v1.schema.json","factory/contracts/jsonschema/semantic-coverage.v1.schema.json","factory/contracts/jsonschema/semantic-execution-binding.v1.schema.json","factory/contracts/jsonschema/semantic-finding.v1.schema.json","factory/contracts/jsonschema/semantic-subject.v1.schema.json","factory/contracts/jsonschema/semantic-validation-inputs.v1.schema.json","factory/contracts/jsonschema/semantic-verdict.v1.schema.json"],
-    "openapi": ["factory/contracts/openapi/factory-control.v1.json","factory/contracts/openapi/factory-execution.v1.json","factory/contracts/openapi/factory-execution.v2.json"]
+    "openapi": ["factory/contracts/openapi/factory-control.v1.json","factory/contracts/openapi/factory-execution.v1.json","factory/contracts/openapi/factory-execution.v2.json","factory/contracts/openapi/factory-semantic.v1.json"]
   },
   "forbidden_outcomes": [
     {"id":"FORBID-001","statement":"Modification or semantic weakening of M5 migrations 001-017, execution v1/v2 contracts, control/execution fencing, accounting, terminalization or recovery.","evidence":[{"test":"factory/tests/test_migrations.py"},{"receipt":"code_review"}]},

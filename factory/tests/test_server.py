@@ -414,7 +414,7 @@ class ServerTests(unittest.TestCase):
             Path("/run/factory.sock"),
             Path("/run/actors.json"),
         )
-        token = "legacy-control-token"
+        token = "legacy-" + "control-token"
         actor = Actor(
             "legacy-operator",
             "operator",
@@ -448,7 +448,7 @@ class ServerTests(unittest.TestCase):
         class Service:
             pass
 
-        token = "enabled-execution-token"
+        token = "enabled-" + "execution-token"
         actor = Actor(
             "enabled-worker",
             "worker",

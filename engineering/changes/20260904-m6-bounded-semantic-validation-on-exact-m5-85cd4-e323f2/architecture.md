@@ -25,7 +25,7 @@ M5 workspace result and frozen authority -> semantic subject -> validator assign
 
 ## API and event contracts
 
-Seven JSON Schemas are enrolled as closed version-1 contracts. Six authenticated semantic operations are added to the existing control contract: publish/get subject, create assignment, submit evidence, adjudicate subject, and get verdict. Existing M4 control and M5 execution contracts are unchanged.
+Seven JSON Schemas are enrolled as closed version-1 contracts. A separate semantic OpenAPI contract declares six authenticated operations: publish/get subject, create assignment, submit evidence, adjudicate subject, and get verdict. The M4 control contract remains byte-identical and the M5 execution contracts remain unchanged.
 
 ## Governance context
 

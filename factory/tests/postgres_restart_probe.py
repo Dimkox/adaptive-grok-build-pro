@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import time
+from urllib.parse import quote, unquote, urlsplit, urlunsplit
 import uuid
 
 SOURCE = Path(__file__).resolve().parents[1] / "src"
@@ -59,19 +60,40 @@ _DATABASE_ID = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,62}$")
 
 
 def _database_url_for_login(database_url: str, login: str, password: str) -> str:
-    from psycopg.conninfo import conninfo_to_dict, make_conninfo
-
-    values = conninfo_to_dict(database_url)
-    return make_conninfo(**{**values, "user": login, "password": password})
+    parsed = urlsplit(database_url)
+    if parsed.scheme not in {"postgres", "postgresql"} or parsed.hostname is None:
+        raise ValueError("database URL must be a PostgreSQL URI")
+    host = f"[{parsed.hostname}]" if ":" in parsed.hostname else parsed.hostname
+    port = f":{parsed.port}" if parsed.port is not None else ""
+    userinfo = f"{quote(login, safe='')}:{quote(password, safe='')}@"
+    return urlunsplit(
+        (parsed.scheme, f"{userinfo}{host}{port}", parsed.path, parsed.query, "")
+    )
 
 
 def _database_url_at_port(database_url: str, port: int) -> str:
     if type(port) is not int or not 1 <= port <= 65_535:
         raise ValueError("invalid PostgreSQL port")
-    from psycopg.conninfo import conninfo_to_dict, make_conninfo
-
-    values = conninfo_to_dict(database_url)
-    return make_conninfo(**{**values, "host": "127.0.0.1", "port": str(port)})
+    parsed = urlsplit(database_url)
+    if (
+        parsed.scheme not in {"postgres", "postgresql"}
+        or parsed.username is None
+        or parsed.password is None
+    ):
+        raise ValueError("database URL must include PostgreSQL credentials")
+    userinfo = (
+        f"{quote(unquote(parsed.username), safe='')}:"
+        f"{quote(unquote(parsed.password), safe='')}@"
+    )
+    return urlunsplit(
+        (
+            parsed.scheme,
+            f"{userinfo}127.0.0.1:{port}",
+            parsed.path,
+            parsed.query,
+            "",
+        )
+    )
 
 
 def _require(condition: bool, message: str) -> None:

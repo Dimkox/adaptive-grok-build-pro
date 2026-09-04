@@ -105,4 +105,3 @@ approval automation remain outside M5. Product documentation should retain its
 serious enterprise contract language and state these capabilities factually as
 disabled or unavailable; the temporary MVP prioritization itself must not be
 written into customer-facing documentation.
-

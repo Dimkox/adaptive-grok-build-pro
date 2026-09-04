@@ -51,6 +51,14 @@
     },
     {
       "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-SEMANTIC-OPENAPI",
+      "kind": "openapi",
+      "path": "factory/contracts/openapi/factory-semantic.v1.json",
+      "role": "bidirectional",
+      "version": "1"
+    },
+    {
+      "compatibility": "bidirectional",
       "id": "CONTRACT-FACTORY-EXECUTION-OPENAPI",
       "kind": "openapi",
       "path": "factory/contracts/openapi/factory-execution.v1.json",
@@ -829,7 +837,7 @@
         "DATA-FACTORY-INTENT",
         "DATA-FACTORY-STATE"
       ],
-      "authentication": "none",
+      "authentication": "local_os",
       "direction": "from_to",
       "failure_behavior": {
         "correlation_id": "required",
@@ -847,6 +855,29 @@
       "sync_or_async": "synchronous",
       "to": "NODE-FACTORY-SEMANTIC-VALIDATION",
       "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-EARNED-AUTONOMY",
+      "id": "EDGE-FACTORY-AUTONOMY-SHADOW-HANDOFF",
+      "network_policy": "no_network",
+      "protocol": "python_import",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-SHADOW-HANDOFF",
+      "type": "dependency"
     }
   ],
   "nodes": [
@@ -857,7 +888,8 @@
       "public_contracts": [
         "CONTRACT-FACTORY-CONTROL-OPENAPI",
         "CONTRACT-FACTORY-EXECUTION-OPENAPI",
-        "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2"
+        "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2",
+        "CONTRACT-FACTORY-SEMANTIC-OPENAPI"
       ],
       "repository_paths": [
         "factory/.env.example",
@@ -1382,6 +1414,25 @@
       "repository_paths": [
         "factory/src/adaptive_factory/shadow_contracts.py",
         "factory/src/adaptive_factory/shadow_evaluation.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-FACTORY-STATE",
+      "id": "NODE-FACTORY-EARNED-AUTONOMY",
+      "owner": "local factory operators and human reviewers",
+      "public_contracts": [],
+      "repository_paths": [
+        "factory/src/adaptive_factory/autonomy.py",
+        "factory/src/adaptive_factory/m7_autonomy_bridge.py"
       ],
       "runtime": {
         "evidence": "source_described",

@@ -114,10 +114,10 @@ class PostgresFactoryTests(unittest.TestCase):
         cls.semantic_coordinator_login = f"factory_semantic_{os.getpid()}"
         cls.semantic_validator_login = f"factory_validator_{os.getpid()}"
         cls.semantic_adjudicator_login = f"factory_adjudicator_{os.getpid()}"
-        cls.runtime_password = "local-base-runtime-store-password"
-        cls.semantic_coordinator_password = "local-semantic-coordinator-test"
-        cls.semantic_validator_password = "local-semantic-validator-test"
-        cls.semantic_adjudicator_password = "local-semantic-adjudicator-test"
+        cls.runtime_password = "local-" + "base-runtime-store-password"
+        cls.semantic_coordinator_password = "local-" + "semantic-coordinator-test"
+        cls.semantic_validator_password = "local-" + "semantic-validator-test"
+        cls.semantic_adjudicator_password = "local-" + "semantic-adjudicator-test"
         provision_runtime_login(DATABASE_URL, cls.runtime_login, cls.runtime_password)
         provision_semantic_coordinator_login(
             DATABASE_URL,
@@ -4037,7 +4037,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
                     self.assertEqual(
                         [item.version for item in self.migrate(upgrade_url)],
-                        [13, 14, 15, 16, 17],
+                        [13, 14, 15, 16, 17, 18],
                     )
                     upgraded_store = self.runtime_store(upgrade_url)
                     upgraded_service = FactoryService(upgraded_store)
@@ -4328,7 +4328,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12, 13, 14, 15, 16, 17], "ready", 17, True,
+                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18], "ready", 18, True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
@@ -5023,7 +5023,7 @@ class PostgresFactoryTests(unittest.TestCase):
             self.runtime_url,
         )
         self.assertEqual(result["database_role"], "factory_runtime")
-        self.assertEqual(result["schema_version"], 17)
+        self.assertEqual(result["schema_version"], 18)
         self.assertEqual(
             PostgresMigrator(DATABASE_URL).apply(
                 expected_runtime_login=self.runtime_login

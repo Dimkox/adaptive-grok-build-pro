@@ -421,12 +421,11 @@ class SemanticVerdictV1(JsonContract):
             raise ContractError("decision_source")
         if data["residual_risk"] not in RISK_LEVELS:
             raise ContractError("residual_risk")
-        digest_list = lambda value, name: _sorted_unique(
-            value, name, lambda item: _hex(item, name, HEX64)
-        )
-        key_list = lambda value, name: _sorted_unique(
-            value, name, lambda item: _reference(item, name)
-        )
+        def digest_list(value, name):
+            return _sorted_unique(value, name, lambda item: _hex(item, name, HEX64))
+
+        def key_list(value, name):
+            return _sorted_unique(value, name, lambda item: _reference(item, name))
         return cls(
             1,
             _hex(data["subject_digest"], "subject_digest", HEX64),

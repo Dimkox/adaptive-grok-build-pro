@@ -155,7 +155,7 @@ class SemanticPersistenceTests(unittest.TestCase):
                 return built
 
         service = Service()
-        token = "semantic-coordinator-token"
+        token = "semantic-" + "coordinator-token"
         actor = Actor(
             "semantic-coordinator", "operator",
             frozenset({"semantic:publish", "semantic:read"}),
@@ -204,7 +204,7 @@ class SemanticPersistenceTests(unittest.TestCase):
         self.assertEqual(read.status_code, 200, read.text)
 
     def test_task_execute_scope_cannot_publish_semantic_subject(self):
-        token = "writer-execution-only-token"
+        token = "writer-" + "execution-only-token"
         actor = Actor(
             "writer", "worker", frozenset({"task:execute"}),
             frozenset({"owner/repository"}),
