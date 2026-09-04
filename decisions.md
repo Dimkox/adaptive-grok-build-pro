@@ -415,4 +415,4 @@ Preserve the frozen M2 architecture inputs as manifest-bound text fixtures and e
 
 ## 2026-09-04 — Dogfood landing generation without overwriting prior evidence
 
-Preserve the tracked showcase bytes and generate candidates only in an add-only domain path inside disposable exact-SHA workspaces. Fixed command-provider ports with a sealed fixture keep the local flow executable, while unavailable defaults and a disabled publisher keep provider and production claims fail-closed until external authority exists.
+Preserve the tracked showcase and the read-only private target, generating candidates only from its exact SHA/tree in independent disposable workspaces where root `index.html` and `content.css` are the complete write allowlist. Fixed command-provider ports with a sealed fixture keep the local flow executable, while unavailable defaults and a disabled publisher keep provider and production claims fail-closed until external authority exists.

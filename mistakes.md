@@ -571,3 +571,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** Task 1 copied the showcase's `noindex` safety posture into `StaticLandingSpecV1` before the exact indexed target repository was bound, giving provider output authority to contradict source indexing.
 **Prevention:** Provider output carries only `preserve_source`; the trusted renderer derives robots, canonical, and hreflang facts from the verified exact target baseline.
+
+## 2026-09-04 — Resolved a Git multicall executable before invocation
+
+**Root cause:** The local clone boundary resolved the `git-upload-pack` symlink to `/usr/bin/git`, changing its multicall `argv[0]` identity and making every no-local clone fail before checkout.
+**Prevention:** Resolve the primary Git executable, but preserve the absolute symlink path for Git helper multicall commands and cover the exact clone argv with the focused real-target test.

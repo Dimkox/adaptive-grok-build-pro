@@ -21,8 +21,8 @@
       "id": "AC-003",
       "statement": "The trusted renderer and independent evaluator use fresh disposable workspaces of private target github.com/Dimkox/ai-dark-factory-landing at exact base 176efcaab931c2482781ff163c621b10aa05dee9 and tree f2bdcecc6dbe9ecc82007610d398ca12bd75e07f, modify only root index.html and content.css, preserve the read-only clone and existing showcase, and make a fourth candidate attempt unrepresentable.",
       "evidence": [
-        {"attestation": "planned-test-landing-coordinator"},
-        {"attestation": "planned-test-landing-renderer"}
+        {"test": "factory/tests/test_landing_coordinator.py"},
+        {"test": "factory/tests/test_landing_renderer.py"}
       ]
     },
     {
@@ -120,8 +120,8 @@
       "id": "INV-003",
       "statement": "Rendering is deterministic from the closed spec and verified repair projection, evaluation is read-only and independently identified, and the attempt chain is append-only with ordinals one through three.",
       "evidence": [
-        {"attestation": "planned-test-landing-coordinator"},
-        {"attestation": "planned-test-landing-renderer"}
+        {"test": "factory/tests/test_landing_coordinator.py"},
+        {"test": "factory/tests/test_landing_renderer.py"}
       ]
     },
     {

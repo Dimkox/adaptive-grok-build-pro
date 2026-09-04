@@ -11,7 +11,7 @@ Each focused group runs once after its RED and repair. On failure, rerun only th
 | P0 | Five media kinds, shape/type/limit validation, tenant and replay isolation | `test_landing_intake.py` |
 | P0 | Fixed command identity, strict protocol, sealed fixture, unavailable default, no fallback/call | `test_landing_provider.py` |
 | P0 | Prompt/tool/path/URL/authority injection rejected by closed spec | `test_landing_contracts.py`, `test_landing_provider.py` |
-| P0 | Exact-SHA workspace, add-only writes, cleanup, independent evaluator, ordinals 1-3 only | `test_landing_coordinator.py`, `test_landing_renderer.py` |
+| P0 | Exact-SHA no-local workspace, two-file write scope, full-tree preservation, cleanup, independent evaluator, ordinals 1-3 only | `test_landing_coordinator.py`, `test_landing_renderer.py` |
 | P0 | Deterministic manifest/ZIP/sidecar, traversal/symlink/mode/member rejection | `test_landing_artifact.py` |
 | P0 | Default publisher denies before transport and cannot return live/indexed state | `test_landing_api.py`, `delivery/tests/test_landing_publisher.py` |
 | P1 | 320/768/1280/1920 layout, keyboard, focus, reduced motion, static dependency policy | focused browser contract |
