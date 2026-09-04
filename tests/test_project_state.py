@@ -13,7 +13,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
-CURRENT_MAIN_SHA = "8599d45f4f28285381b05a53feb3059de92eb2a8"
+CURRENT_MAIN_SHA = "ad6d23cc30c11e5ea51c388213f5ebdfe306fb56"
+RELEASE_MERGE_SHA = "8599d45f4f28285381b05a53feb3059de92eb2a8"
 HISTORICAL_M4_BASE_SHA = "78ad2f679d38dc3244e716c586332417e610089c"
 RELEASE_HEAD_SHA = "b5eba759c309a92f92f4d4003d025795c7f8a1f9"
 RELEASE_TREE = "03e122a30fb2dbb59907f4c4c28e17f93cbf0751"
@@ -127,7 +128,7 @@ class ProjectStateTests(unittest.TestCase):
                 "stack_pr": 10,
                 "stack_merge": "c23fd49f80c7d1c74ca3393b6079a74f251a72d8",
                 "gate_head": "022411b05924618cfde0cb97b8c8aff4955e6013",
-                "main_merge": CURRENT_MAIN_SHA,
+                "main_merge": RELEASE_MERGE_SHA,
             },
             "M2": {
                 "implementation": "022411b05924618cfde0cb97b8c8aff4955e6013",
@@ -136,7 +137,7 @@ class ProjectStateTests(unittest.TestCase):
                 "stack_pr": 10,
                 "stack_merge": "c23fd49f80c7d1c74ca3393b6079a74f251a72d8",
                 "gate_head": "022411b05924618cfde0cb97b8c8aff4955e6013",
-                "main_merge": CURRENT_MAIN_SHA,
+                "main_merge": RELEASE_MERGE_SHA,
             },
             "M3": {
                 "implementation": "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
@@ -145,7 +146,7 @@ class ProjectStateTests(unittest.TestCase):
                 "stack_pr": 11,
                 "stack_merge": "67714a1f1b87effcfabe55d5ca2770d0a68d17c1",
                 "gate_head": "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
-                "main_merge": CURRENT_MAIN_SHA,
+                "main_merge": RELEASE_MERGE_SHA,
             },
             "M4": {
                 "implementation": M4_PRODUCT_SHA,
@@ -229,7 +230,7 @@ class ProjectStateTests(unittest.TestCase):
                 "notes": "Exact baseline receipt only; the current follow-up changes source and package bytes, so the receipt does not transfer.",
             },
         )
-        self.assertEqual(m4["stack_integration"]["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(m4["stack_integration"]["merge_commit"], RELEASE_MERGE_SHA)
         self.assertEqual(m4["external_gate"]["pull_request"], 22)
         self.assertEqual(m4["external_gate"]["head_sha"], RELEASE_HEAD_SHA)
         self.assertEqual(m4["external_gate"]["check_run_id"], 100955508827)
@@ -243,10 +244,10 @@ class ProjectStateTests(unittest.TestCase):
         m5 = state["milestones"]["M5"]
         self.assertEqual(m5["implementation"]["commit"], M5_PROVISIONAL_SHA)
         self.assertEqual(m5["stack_integration"]["base_commit"], M4_PRODUCT_SHA)
-        self.assertEqual(m5["main_delivery"]["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(m5["main_delivery"]["merge_commit"], RELEASE_MERGE_SHA)
         m6 = state["milestones"]["M6"]
         self.assertEqual(m6["implementation"]["commit"], M6_PROVISIONAL_SHA)
-        self.assertEqual(m6["main_delivery"]["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(m6["main_delivery"]["merge_commit"], RELEASE_MERGE_SHA)
         m7 = state["milestones"]["M7"]
         self.assertEqual(m7["implementation"]["commit"], M7_PROVISIONAL_SHA)
         m8 = state["milestones"]["M8"]
@@ -255,12 +256,12 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(m9["implementation"]["commit"], M9_PROVISIONAL_SHA)
         self.assertEqual(m9["stack_integration"]["base_commit"], M8_PROVISIONAL_SHA)
         self.assertEqual(m9["main_delivery"]["pull_request"], 22)
-        self.assertEqual(m9["main_delivery"]["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(m9["main_delivery"]["merge_commit"], RELEASE_MERGE_SHA)
 
         published = state["published_release"]
         self.assertEqual(published["tag"], "v2.0.13")
         self.assertEqual(published["checked_head"], RELEASE_HEAD_SHA)
-        self.assertEqual(published["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(published["merge_commit"], RELEASE_MERGE_SHA)
         self.assertEqual(published["tree"], RELEASE_TREE)
         self.assertEqual(published["artifact"]["sha256"], RELEASE_ZIP_SHA256)
         self.assertEqual(

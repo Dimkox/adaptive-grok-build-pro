@@ -636,3 +636,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** The checksum command ran from repository/root context while the sidecar deliberately names only the ZIP basename, so `sha256sum -c` reported that no file was verified despite identical correct archives.
 **Prevention:** Run checksum verification from each artifact's `dist` directory, or resolve the sidecar member relative to the sidecar's own directory.
+
+## 2026-09-04 — Reused a release merge as the live main identity
+
+**Root cause:** The immutable `v2.0.13` merge identity was reused as live `origin/main` after later commits because a fetch-and-compare was not a final packaging precondition.
+**Prevention:** Before packaging, fetch and bind live claims to `refs/remotes/origin/main` while storing the release merge as a separate historical identity.
