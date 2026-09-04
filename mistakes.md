@@ -546,3 +546,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** M5 comparator hardening added an undocumented per-`operationId` byte cap and collapsed distinct response-header compatibility rules after final M4 tests had fixed those semantics; focused successor validation did not run the inherited overlap methods.
 **Prevention:** Preserve predecessor overlap tests during stacked grafts, bound resources at documented document and traversal limits, and retain specific compatibility reasons instead of substituting a broader category.
+
+## 2026-09-04 — Relied on an undeclared host-only test dependency
+
+**Root cause:** `tests/test_structure.py` imported third-party `jsonschema` even though the root test environment did not declare it, so host verification masked the import failure in the exact pinned Trust CI runner.
+**Prevention:** Keep root tests dependency-free where practical and verify import/dependency parity in the exact pinned runner before push.

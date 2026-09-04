@@ -3,13 +3,14 @@ from __future__ import annotations
 import hashlib
 import itertools
 import json
-import jsonschema
 import re
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+from tests.json_schema_subset import SubsetValidator
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -467,7 +468,7 @@ class StructureTests(unittest.TestCase):
             },
         }
         for schema_name, proposal in proposals.items():
-            validator = jsonschema.Draft202012Validator(
+            validator = SubsetValidator(
                 {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$ref": f"#/components/schemas/{schema_name}",
@@ -487,7 +488,7 @@ class StructureTests(unittest.TestCase):
             with self.subTest(wrong_subtype=schema_name):
                 self.assertFalse(validator.is_valid({"proposal": wrong}), schema_name)
 
-        terminal_proposal_validator = jsonschema.Draft202012Validator(
+        terminal_proposal_validator = SubsetValidator(
             {
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "$ref": "#/components/schemas/TerminalProposal",
@@ -542,7 +543,7 @@ class StructureTests(unittest.TestCase):
         }
         for label, proposal in response_contract_negatives.items():
             schema_name = label.split("/", 1)[0]
-            validator = jsonschema.Draft202012Validator(
+            validator = SubsetValidator(
                 {
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "$ref": f"#/components/schemas/{schema_name}",
@@ -552,7 +553,7 @@ class StructureTests(unittest.TestCase):
             with self.subTest(response_parity=label):
                 self.assertFalse(validator.is_valid({"proposal": proposal}))
 
-        terminal_validator = jsonschema.Draft202012Validator(
+        terminal_validator = SubsetValidator(
             {
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "$ref": "#/components/schemas/TerminalRequest",
