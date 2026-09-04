@@ -99,7 +99,7 @@ def _literal_xargs_command(words: list[str]) -> list[str] | None:
     index = 1
     while index < len(words):
         token = words[index]
-        if token == '--':
+        if token == '--':  # nosec B105
             return words[index + 1:]
         if token in {'-a', '--arg-file'}:
             if index + 1 >= len(words):

@@ -317,7 +317,7 @@ def _literal_xargs_target(tokens: list[str]) -> list[str] | None:
     index = 1
     while index < len(tokens):
         token = tokens[index]
-        if token == '--':
+        if token == '--':  # nosec B105
             return tokens[index + 1:]
         if token in {'-a', '--arg-file'}:
             if index + 1 >= len(tokens):
@@ -393,22 +393,51 @@ def _command_tokens(chunk: str) -> list[str] | None:
 
 def _bounded_command(tokens: list[str]) -> tuple[list[str], bool]:
     remaining = list(tokens)
-    if remaining and Path(remaining[0]).name.lower() in {'sudo', 'doas'}:
-        if len(remaining) < 2 or remaining[1].startswith('-'):
+    if remaining and Path(remaining[0]).name.lower() == 'sudo':
+        index = 1
+        if index < len(remaining) and remaining[index] == '-E':
+            index += 1
+        if index >= len(remaining) or remaining[index].startswith('-'):
             return remaining, False
-        remaining = remaining[1:]
+        remaining = remaining[index:]
+    elif remaining and Path(remaining[0]).name.lower() == 'doas':
+        index = 1
+        if index + 1 < len(remaining) and remaining[index] == '-u':
+            index += 2
+        if index >= len(remaining) or remaining[index].startswith('-'):
+            return remaining, False
+        remaining = remaining[index:]
     elif remaining and Path(remaining[0]).name.lower() == 'env':
-        return remaining, False
+        index = 1
+        while index < len(remaining) and re.match(
+            r'^[A-Za-z_][A-Za-z0-9_]*=', remaining[index]
+        ):
+            index += 1
+        if index >= len(remaining) or remaining[index].startswith('-'):
+            return remaining, False
+        remaining = remaining[index:]
     remaining, ambiguous_wrapper = _unwrap_execution_wrappers(remaining)
     return remaining, not ambiguous_wrapper
 
 
 def _literal_shell_payload(tokens: list[str]) -> str | None:
-    if len(tokens) != 3 or Path(tokens[0]).name.lower() not in _SHELL_EXECUTABLES:
+    if not tokens or Path(tokens[0]).name.lower() not in _SHELL_EXECUTABLES:
         return None
-    if tokens[1] not in {'-c', '-lc'}:
+    if len(tokens) == 3 and tokens[1] in {'-c', '-lc'}:
+        return tokens[2]
+    if len(tokens) == 4 and tokens[1] == '--noprofile' and tokens[2] in {'-c', '-lc'}:
+        return tokens[3]
+    return None
+
+
+def _exact_outer_shell_payload(raw_command: str) -> str | None:
+    tokens = _command_tokens(raw_command)
+    if tokens is None:
         return None
-    return tokens[2]
+    bounded, proven = _bounded_command(tokens)
+    if not proven:
+        return None
+    return _literal_shell_payload(bounded)
 
 
 def _analyze_authority_pieces(
@@ -486,6 +515,9 @@ def _analyze_authority_pieces(
 
 def analyze_command_authority(raw_command: str) -> AuthorityAnalysis:
     """Conservatively classify production authority without evaluating shell syntax."""
+    shell_payload = _exact_outer_shell_payload(raw_command)
+    if shell_payload is not None:
+        return _analyze_authority_pieces(shell_payload, shell_depth=1)
     return _analyze_authority_pieces(raw_command)
 
 
@@ -527,7 +559,12 @@ def _agent_type(tool_input: Any) -> str | None:
     return None
 
 
-def evaluate_pre_tool(root: Path, event: dict[str, Any]) -> tuple[bool, str | None]:
+def evaluate_pre_tool(
+    root: Path,
+    event: dict[str, Any],
+    *,
+    _skip_substring_control_plane_guard: bool = False,
+) -> tuple[bool, str | None]:
     tool = str(event.get('tool_name', ''))
     tool_input = event.get('tool_input') or {}
     route = get_active_route(root)
@@ -540,7 +577,10 @@ def evaluate_pre_tool(root: Path, event: dict[str, Any]) -> tuple[bool, str | No
 
     if tool == 'Bash':
         command = str(tool_input.get('command', '')) if isinstance(tool_input, dict) else str(tool_input)
-        if _is_control_plane_shell_mutation(command, control_plane):
+        if (
+            not _skip_substring_control_plane_guard
+            and _is_control_plane_shell_mutation(command, control_plane)
+        ):
             return False, 'Blocked control-plane shell mutation; use a structured write with an exact protected-path grant.'
         for pattern in _configured_patterns(config, 'destructive_command_patterns', DESTRUCTIVE_COMMANDS):
             if re.search(pattern, command, flags=re.IGNORECASE):
