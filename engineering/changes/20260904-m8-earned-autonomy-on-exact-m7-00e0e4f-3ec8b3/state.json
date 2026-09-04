@@ -25,11 +25,17 @@
       "from": "approved",
       "reason": "Focused M8 tests now demonstrate the missing earned-autonomy module; implement the approved repository-local bridge and deterministic policy core only.",
       "to": "implementing"
+    },
+    {
+      "at": "2026-09-04T03:22:49+00:00",
+      "from": "implementing",
+      "reason": "Integrated M8 source is present without a duplicate M7 producer model; 30 focused methods passed initially, the single test-harness compatibility failure passed on its exact-method rerun, schema syntax passed, and architecture validation reported no findings.",
+      "to": "verifying"
     }
   ],
   "route_id": "3ec8b3357363",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "verifying",
   "title": "M8 earned autonomy on exact M7 00e0e4f",
-  "updated_at": "2026-09-04T03:19:50+00:00"
+  "updated_at": "2026-09-04T03:22:49+00:00"
 }
