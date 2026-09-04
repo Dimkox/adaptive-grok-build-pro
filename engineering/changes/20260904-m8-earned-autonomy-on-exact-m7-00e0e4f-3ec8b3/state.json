@@ -19,11 +19,17 @@
       "from": "scoped",
       "reason": "The route has no named human gate and the user explicitly authorized repository-local M8 continuation; real cohort evidence, activation, database, network, delivery, external, and production actions remain excluded.",
       "to": "approved"
+    },
+    {
+      "at": "2026-09-04T03:19:50+00:00",
+      "from": "approved",
+      "reason": "Focused M8 tests now demonstrate the missing earned-autonomy module; implement the approved repository-local bridge and deterministic policy core only.",
+      "to": "implementing"
     }
   ],
   "route_id": "3ec8b3357363",
   "schema_version": 1,
-  "status": "approved",
+  "status": "implementing",
   "title": "M8 earned autonomy on exact M7 00e0e4f",
-  "updated_at": "2026-09-04T03:16:42+00:00"
+  "updated_at": "2026-09-04T03:19:50+00:00"
 }
