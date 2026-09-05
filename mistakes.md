@@ -671,3 +671,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** Component tests treated self-validating JSON and SQLite `quick_check` as durability proof without modeling physical row keys, sealed artifact files, and command replay across process restart.
 **Prevention:** Every durable terminal result must have composed close/reopen tests that cross-bind row identity, source, commands, evidence, and external bytes, including tamper and swap cases.
+## 2026-09-05 — Created an external issue after invalidating its exact local grant
+
+**Symptom:** Landing issue #1 was created after its exact external-write grant had been materialized, but adding the final body file changed the control worktree fingerprint before `gh issue create`; the ambient execution boundary did not reject the now-stale grant. The issue content and target were intended and explicitly authorized, but the local evidence no longer proved that authorization at effect time.
+
+**Root cause:** The external input file was finalized after, rather than before, freezing the control tree and materializing the grant, and the operator path relied on ambient hook enforcement instead of calling `has_valid_approval` for the exact action/resource immediately before the effect. Future external operations must freeze every local input first, create the exact grant second, explicitly revalidate it third, and permit no repository mutation between validation and the one write.

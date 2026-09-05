@@ -264,6 +264,46 @@
       "path": "factory/contracts/jsonschema/landing-site-artifact.v1.schema.json",
       "role": "producer",
       "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-PILOT-ISSUE-SNAPSHOT",
+      "kind": "json_schema",
+      "path": "pilot/contracts/jsonschema/issue-snapshot.v1.schema.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-PILOT-CANDIDATE-CHANGE",
+      "kind": "json_schema",
+      "path": "pilot/contracts/jsonschema/candidate-change.v1.schema.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-PILOT-CANDIDATE-VALIDATION",
+      "kind": "json_schema",
+      "path": "pilot/contracts/jsonschema/candidate-validation.v1.schema.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-PILOT-PULL-REQUEST-PROPOSAL",
+      "kind": "json_schema",
+      "path": "pilot/contracts/jsonschema/pull-request-proposal.v1.schema.json",
+      "role": "producer",
+      "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-PILOT-DESIGN-PARTNER-OUTCOME",
+      "kind": "json_schema",
+      "path": "pilot/contracts/jsonschema/design-partner-outcome.v1.schema.json",
+      "role": "producer",
+      "version": "1"
     }
   ],
   "data_classifications": [
@@ -349,6 +389,12 @@
       "classification": "restricted",
       "contains_secret": true,
       "id": "DATA-TRUST-MATERIAL",
+      "tenant_scoped": false
+    },
+    {
+      "classification": "restricted",
+      "contains_secret": false,
+      "id": "DATA-PILOT-STATE",
       "tenant_scoped": false
     }
   ],
@@ -1032,6 +1078,144 @@
       "sync_or_async": "batch",
       "to": "NODE-LOCAL-VERIFIER",
       "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-PILOT-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-PILOT-CONTROL-FAILURE",
+        "terminal_action": "manual_recovery",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-PILOT-CONTROL",
+      "id": "EDGE-PILOT-STATE",
+      "network_policy": "no_network",
+      "protocol": "filesystem",
+      "sync_or_async": "synchronous",
+      "to": "NODE-PILOT-SQLITE",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
+        "DATA-PILOT-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-PILOT-CONTROL-FAILURE",
+        "terminal_action": "manual_recovery",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-PILOT-CONTROL",
+      "id": "EDGE-PILOT-GITHUB-BROKER",
+      "network_policy": "no_network",
+      "protocol": "python_import",
+      "sync_or_async": "synchronous",
+      "to": "NODE-PILOT-GITHUB-BROKER",
+      "type": "dependency"
+    },
+    {
+      "allowed_data": [
+        "DATA-PILOT-STATE"
+      ],
+      "authentication": "external_managed",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-PILOT-EXTERNAL-FAILURE",
+        "terminal_action": "manual_recovery",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-PILOT-GITHUB-BROKER",
+      "id": "EDGE-PILOT-GITHUB",
+      "network_policy": "allowlisted_egress",
+      "protocol": "https",
+      "sync_or_async": "synchronous",
+      "to": "NODE-GITHUB",
+      "type": "publication"
+    },
+    {
+      "allowed_data": [
+        "DATA-PILOT-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-PILOT-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-PILOT-CONTROL",
+      "id": "EDGE-PILOT-CODEX-SUPERVISOR",
+      "network_policy": "no_network",
+      "protocol": "python_import",
+      "sync_or_async": "synchronous",
+      "to": "NODE-PILOT-CODEX-SUPERVISOR",
+      "type": "dependency"
+    },
+    {
+      "allowed_data": [
+        "DATA-PILOT-STATE"
+      ],
+      "authentication": "external_managed",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-PILOT-EXTERNAL-FAILURE",
+        "terminal_action": "manual_recovery",
+        "timeout_ms": 300000
+      },
+      "from": "NODE-PILOT-CODEX-SUPERVISOR",
+      "id": "EDGE-PILOT-CODEX",
+      "network_policy": "allowlisted_egress",
+      "protocol": "https",
+      "sync_or_async": "synchronous",
+      "to": "NODE-PILOT-MODEL-PROVIDER",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-PILOT-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-PILOT-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 900000
+      },
+      "from": "NODE-PILOT-CONTROL",
+      "id": "EDGE-PILOT-SANDBOX",
+      "network_policy": "no_network",
+      "protocol": "process",
+      "sync_or_async": "synchronous",
+      "to": "NODE-PILOT-SANDBOX",
+      "type": "control"
     }
   ],
   "nodes": [
@@ -1678,6 +1862,135 @@
       "secrets": [],
       "trust_domain": "TD-LOCAL-PREFLIGHT",
       "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-PILOT-STATE",
+      "id": "NODE-PILOT-CONTROL",
+      "owner": "single local pilot operator",
+      "public_contracts": [
+        "CONTRACT-PILOT-ISSUE-SNAPSHOT",
+        "CONTRACT-PILOT-CANDIDATE-CHANGE",
+        "CONTRACT-PILOT-CANDIDATE-VALIDATION",
+        "CONTRACT-PILOT-PULL-REQUEST-PROPOSAL",
+        "CONTRACT-PILOT-DESIGN-PARTNER-OUTCOME"
+      ],
+      "repository_paths": [
+        "pilot/__init__.py",
+        "pilot/contracts.py",
+        "pilot/profile.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-PILOT-OPERATOR",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-PILOT-STATE",
+      "id": "NODE-PILOT-SQLITE",
+      "owner": "single local pilot operator",
+      "public_contracts": [],
+      "repository_paths": [
+        "pilot/store.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "none",
+        "lifecycle": "none",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-PILOT-OPERATOR",
+      "type": "datastore"
+    },
+    {
+      "data_classification": "DATA-PILOT-STATE",
+      "id": "NODE-PILOT-GITHUB-BROKER",
+      "owner": "single local pilot operator",
+      "public_contracts": [
+        "CONTRACT-PILOT-ISSUE-SNAPSHOT",
+        "CONTRACT-PILOT-PULL-REQUEST-PROPOSAL",
+        "CONTRACT-PILOT-DESIGN-PARTNER-OUTCOME"
+      ],
+      "repository_paths": [
+        "pilot/authority.py",
+        "pilot/github.py",
+        "pilot/issue_source.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "declared_egress"
+      },
+      "secrets": [
+        "SECRET-PILOT-GITHUB"
+      ],
+      "trust_domain": "TD-PILOT-EXECUTION",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-PILOT-STATE",
+      "id": "NODE-PILOT-CODEX-SUPERVISOR",
+      "owner": "single local pilot operator",
+      "public_contracts": [
+        "CONTRACT-PILOT-CANDIDATE-CHANGE"
+      ],
+      "repository_paths": [
+        "pilot/codex_executor.py",
+        "pilot/workspace.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "job",
+        "network": "declared_egress"
+      },
+      "secrets": [
+        "SECRET-PILOT-CODEX"
+      ],
+      "trust_domain": "TD-PILOT-EXECUTION",
+      "type": "worker"
+    },
+    {
+      "data_classification": "DATA-PILOT-STATE",
+      "id": "NODE-PILOT-SANDBOX",
+      "owner": "single local pilot operator",
+      "public_contracts": [
+        "CONTRACT-PILOT-CANDIDATE-VALIDATION"
+      ],
+      "repository_paths": [
+        "pilot/validation.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "job",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-PILOT-EXECUTION",
+      "type": "runner"
+    },
+    {
+      "data_classification": "DATA-PILOT-STATE",
+      "id": "NODE-PILOT-MODEL-PROVIDER",
+      "owner": "external model provider",
+      "public_contracts": [],
+      "repository_paths": [],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "external_managed",
+        "lifecycle": "on_demand",
+        "network": "external_managed"
+      },
+      "secrets": [],
+      "trust_domain": "TD-EXTERNAL-PLATFORM",
+      "type": "external_system"
     }
   ],
   "schema_version": 1,
@@ -1713,6 +2026,14 @@
     {
       "classification": "trust_material",
       "id": "SECRET-FACTORY-TOKEN"
+    },
+    {
+      "classification": "trust_material",
+      "id": "SECRET-PILOT-GITHUB"
+    },
+    {
+      "classification": "trust_material",
+      "id": "SECRET-PILOT-CODEX"
     }
   ],
   "signals": [
@@ -1763,6 +2084,14 @@
     {
       "description": "Factory-only PostgreSQL operational state was unavailable or inconsistent.",
       "id": "SIG-FACTORY-DURABLE-STATE-FAILURE"
+    },
+    {
+      "description": "The bounded local pilot rejected an identity, state transition, workspace, validation, or grant invariant.",
+      "id": "SIG-PILOT-CONTROL-FAILURE"
+    },
+    {
+      "description": "A single-attempt model or GitHub operation failed or returned an ambiguous result requiring observation-only recovery.",
+      "id": "SIG-PILOT-EXTERNAL-FAILURE"
     }
   ],
   "trust_domains": [
@@ -1805,6 +2134,16 @@
       "id": "TD-FACTORY-CONTROL",
       "kind": "local_preflight",
       "owner": "local factory operators"
+    },
+    {
+      "id": "TD-PILOT-OPERATOR",
+      "kind": "local_preflight",
+      "owner": "single local pilot operator"
+    },
+    {
+      "id": "TD-PILOT-EXECUTION",
+      "kind": "local_preflight",
+      "owner": "single local pilot operator"
     }
   ]
 }
