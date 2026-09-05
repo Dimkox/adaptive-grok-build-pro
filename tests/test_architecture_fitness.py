@@ -623,6 +623,31 @@ class ArchitectureFitnessTests(unittest.TestCase):
                 self.assertEqual(result.status, "fail")
                 self.assertTrue(result.findings)
 
+    def test_nested_test_sources_are_not_classified_as_production_importers(self) -> None:
+        system = _system()
+        system["nodes"][0]["repository_paths"] = ["pilot"]
+        system["nodes"][1]["repository_paths"] = ["pilot/tests"]
+        repo, base = self._repo(system=system)
+        repo.write_text("pilot/__init__.py", "")
+        repo.write_text(
+            "pilot/tests/test_contracts.py",
+            "from adaptive_grok.spec import validate_schema\n",
+        )
+        repo.write_text(
+            "pilot/runtime.py",
+            "from adaptive_grok.spec import validate_schema\n",
+        )
+        head = repo.commit("nested pilot tests")
+
+        result = self._results(self._evaluate(repo, base, head))["production_import"]
+
+        self.assertEqual(result.status, "fail")
+        self.assertEqual(
+            result.findings,
+            ("pilot/runtime.py imports governance/test module adaptive_grok.spec",),
+        )
+        self.assertNotIn("pilot/tests/test_contracts.py", result.applicability.scanned_scope)
+
     def test_source_only_queue_signals_fail_background_fitness(self) -> None:
         system = _system()
         system["nodes"][0]["type"] = "worker"

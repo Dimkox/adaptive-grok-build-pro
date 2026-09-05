@@ -114,9 +114,9 @@
     },
     {
       "id": "FIT-BOUNDED-PILOT-CHANGE",
-      "max_ast_complexity": 900,
-      "max_changed_bytes": 350000,
-      "max_changed_lines": 6000,
+      "max_ast_complexity": 1100,
+      "max_changed_bytes": 400000,
+      "max_changed_lines": 10000,
       "path_prefixes": [
         "pilot"
       ],

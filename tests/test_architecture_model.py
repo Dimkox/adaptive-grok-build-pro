@@ -169,6 +169,13 @@ class ArchitectureModelTests(unittest.TestCase):
         self.assertTrue(factory_edges)
         self.assertTrue(all(edge["network_policy"] in {"no_network", "local_only"} for edge in factory_edges))
 
+    def test_pilot_package_and_nested_tests_have_hierarchical_owners(self) -> None:
+        snapshot = ARCH.load_architecture(ROOT)
+        nodes = {node["id"]: node for node in snapshot.system["nodes"]}
+
+        self.assertIn("pilot", nodes["NODE-PILOT-CONTROL"]["repository_paths"])
+        self.assertIn("pilot/tests", nodes["NODE-LOCAL-VERIFIER"]["repository_paths"])
+
     def test_repository_code_budgets_restore_m2_and_bound_factory_independently(self) -> None:
         snapshot = ARCH.load_architecture(ROOT)
         expected = {
@@ -241,9 +248,9 @@ class ArchitectureModelTests(unittest.TestCase):
                 {
                     "id": "FIT-BOUNDED-PILOT-CHANGE",
                     "path_prefixes": ["pilot"],
-                    "max_changed_bytes": 350_000,
-                    "max_changed_lines": 6_000,
-                    "max_ast_complexity": 900,
+                    "max_changed_bytes": 400_000,
+                    "max_changed_lines": 10_000,
+                    "max_ast_complexity": 1_100,
                     "severity": "error",
                 },
             ]

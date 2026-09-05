@@ -14,6 +14,12 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-05 — Mistook architecture validity for route fitness
+
+**Symptom:** Architecture validate, repository drift, and diagram checks passed, but exact route fitness rejected a local pilot import as external and treated `pilot/tests/**` as production source.
+**Root cause:** The model assigned the nested test subtree to the pilot production owner without declaring the top-level `pilot` package root, and preflight stopped before running route fitness against the exact base/head pair.
+**Durable rule:** Give package roots production ownership and more-specific nested test roots verifier ownership, and run the exact route-fitness command before declaring architecture evidence green.
+
 ## 2026-09-05 — Treated targeted implementation tests as the exact PR gate
 
 **Symptom:** The exact PR verifier found unowned `pilot/tests/**`, secret-scan fixture false positives, and root unittest failures after the targeted pilot tests had passed.

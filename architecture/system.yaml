@@ -1442,6 +1442,7 @@
       "owner": "repository engineering",
       "public_contracts": [],
       "repository_paths": [
+        "pilot/tests",
         "scripts",
         "tests",
         "trust-ci/tests"
@@ -1875,14 +1876,7 @@
         "CONTRACT-PILOT-DESIGN-PARTNER-OUTCOME"
       ],
       "repository_paths": [
-        "pilot/__init__.py",
-        "pilot/__main__.py",
-        "pilot/cli.py",
-        "pilot/coordinator.py",
-        "pilot/contracts.py",
-        "pilot/live.py",
-        "pilot/profile.py",
-        "pilot/tests"
+        "pilot"
       ],
       "runtime": {
         "evidence": "source_described",
