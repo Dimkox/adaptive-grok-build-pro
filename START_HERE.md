@@ -4,8 +4,8 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 ## Current project state
 
-- Product identity `2.0.14` is published as tag-bound repository release `v2.0.14`; `packages/adaptive-grok-build-pro-v2.0.14.zip` has SHA-256 `b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264`. Published `v2.0.13` remains immutable historical evidence at ZIP SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`.
-- Current unreleased work is route `65b2018b786d` on `feature/l5-live-mvp`, exact predecessor `f3f8d7375a153393ffba3906165e8d625e45d4a1`: Stage 3/5 now has a default-unavailable injected native-Codex normalizer seam, private single-operator SQLite command/job replay with bounded fail-closed restart recovery, and a concrete existing coordinator/evaluator/packager bridge retaining full deterministic artifact metadata. Text/image/safe DOCX are handled locally; PDF/audio stop at `needs_human` before invocation. Published `v2.0.14` bytes, frozen landing OpenAPI, migrations `001`-`018`, exact source identity, two-file renderer writes, 20-member inventory and `live_url=null` remain unchanged; focused checks pass, but the single final exact-head verifier and four selected reviews are not yet claimed.
+- Product identity `2.0.15` is an unreleased local pilot candidate whose final PR shape is source parent `R` plus a ZIP+sidecar-only artifact child `A`; the pair remains unpublished. The latest published repository release remains tag-bound `v2.0.14`, whose ZIP SHA-256 is `b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264`, and published `v2.0.14`/`v2.0.13` artifacts are immutable.
+- Current unreleased work is route `0ce2d62a018e` on `feature/design-partner-pilot`, exact predecessor `6f3b6ed2853b7a6f78804888cffca578d4dc9448`: the separate `pilot/` component binds issue #1 and any candidate to `Dimkox/ai-dark-factory-landing@699010380f4f90a0193a9c22090c35e6aded7d2c`. Its built-in CLI is default-unavailable and exposes only `prepare`, `publish-branch`, `publish-proposal` and read-only `status`; a closed pinned config selects one Codex app-server `gpt-6-astra` turn through opaque host ChatGPT auth, while deterministic private workspace recovery and SQLite intents make ambiguous external effects observation-only. Focused fake evidence covers the direct composition; exact artifact-child verification/reviews and the separately authorized real model/branch/PR attempt remain outside this source preparation.
 - M0 (Live Trust Authority) is delivered to `main`.
 - M0 runtime repair and policy-loop fixes are also merged into `main` through PR #7 and PR #6.
 - At the `2026-09-04T16:58:48Z` publication snapshot, protected `origin/main` and tag `v2.0.14` pointed to `1751b5855e46782b9a1bfceb6e1ab0102cba03b0`; this is not a perpetual current-ref assertion. The historical PR #22 / `v2.0.13` merge remains `8599d45f4f28285381b05a53feb3059de92eb2a8`. Protected merges require `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114` on the exact up-to-date pull-request head.
@@ -18,6 +18,8 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
 
+Current pilot continuation: the original `2405b013` artifact received failing reviews; CSP, test-discovery and command read-isolation repairs are tracked in the active package's bounded review-repair handoff. Primary `/root` is the user-approved sole fallback writer after the agent-thread ceiling. Preserve original full-verifier/targeted-recovery evidence, verify only affected components on the rebuilt exact artifact child, and reuse the three independent reviewers. The first live attempt is separately blocked by landing `main` advancing to `80d6215`; no model turn has been consumed and the old profile must not overwrite newer analytics.
+
 ## Bootstrap from a clean clone
 
 1. Start on the default branch and read, in order:
@@ -29,7 +31,7 @@ Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
    - `DARK_FACTORY_ROADMAP.md`
    - `README.md`
 2. Run `git fetch --all --prune` before reasoning about active branches or pull requests.
-3. Inspect `PROJECT_STATE.json`, its `current_unreleased_change`, the active single-operator local-runtime package, published `v2.0.14`, prior `v2.0.13` history, and the recorded open-work inventory before continuing. Treat M4-M9 predecessor branches as historical integration evidence; their `v2.0.13` protected-main delivery remains PR #22 merge `8599d45f4f28285381b05a53feb3059de92eb2a8`.
+3. Inspect `PROJECT_STATE.json`, its `current_unreleased_change`, the active design-partner pilot package, published `v2.0.14`, prior `v2.0.13` history, and the recorded open-work inventory before continuing. Treat M4-M9 predecessor branches as historical integration evidence; their `v2.0.13` protected-main delivery remains PR #22 merge `8599d45f4f28285381b05a53feb3059de92eb2a8`.
 4. If starting a different software-development task, create/resolve the local route first. `.grok-stack/runtime/active-route.json` is runtime state and may legitimately be absent in a fresh clone; do not fabricate it.
 5. Follow `AGENTS.md`: one write owner, route-selected analysis/review agents, local verification as evidence, pull-request-only delivery, and external Trust CI as merge authority.
 6. Never add GitHub Actions.

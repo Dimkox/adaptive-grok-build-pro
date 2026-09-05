@@ -29,6 +29,7 @@
         "engineering/contracts",
         "factory",
         "governance",
+        "pilot",
         "schemas",
         "scripts"
       ],
@@ -110,6 +111,16 @@
         "factory/tests"
       ],
       "severity": "error"
+    },
+    {
+      "id": "FIT-BOUNDED-PILOT-CHANGE",
+      "max_ast_complexity": 1100,
+      "max_changed_bytes": 400000,
+      "max_changed_lines": 10000,
+      "path_prefixes": [
+        "pilot"
+      ],
+      "severity": "error"
     }
   ],
   "contract_policies": [
@@ -186,6 +197,43 @@
         "TD-TRUST-CI-EXECUTION",
         "TD-EXTERNAL-POLICY",
         "TD-EXTERNAL-PLATFORM",
+        "TD-PRODUCTION-TRUST"
+      ]
+    },
+    {
+      "edge_types": [
+        "control",
+        "data_flow",
+        "dependency",
+        "deployment",
+        "publication",
+        "secret_flow"
+      ],
+      "from_trust_domains": [
+        "TD-PILOT-OPERATOR"
+      ],
+      "id": "FIT-PILOT-CONTROL-NO-DIRECT-EXTERNAL-AUTHORITY",
+      "severity": "error",
+      "to_trust_domains": [
+        "TD-EXTERNAL-PLATFORM",
+        "TD-PRODUCTION-TRUST"
+      ]
+    },
+    {
+      "edge_types": [
+        "control",
+        "data_flow",
+        "dependency",
+        "deployment",
+        "publication",
+        "secret_flow"
+      ],
+      "from_trust_domains": [
+        "TD-PILOT-EXECUTION"
+      ],
+      "id": "FIT-PILOT-EXECUTION-NO-PRODUCTION-AUTHORITY",
+      "severity": "error",
+      "to_trust_domains": [
         "TD-PRODUCTION-TRUST"
       ]
     }
@@ -577,6 +625,25 @@
         "factory/src/adaptive_factory/landing_service.py",
         "factory/src/adaptive_factory/landing_sqlite_store.py"
       ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory",
+        "adaptive_trust_ci",
+        "httpx",
+        "requests",
+        "socket",
+        "subprocess",
+        "trust_ci",
+        "urllib"
+      ],
+      "id": "FIT-PILOT-CONTROL-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "pilot/contracts.py",
+        "pilot/profile.py",
+        "pilot/store.py"
+      ]
     }
   ],
   "risk_escalations": [
@@ -635,6 +702,17 @@
         "SECRET-FACTORY-TOKEN"
       ],
       "severity": "error"
+    },
+    {
+      "allowed_trust_domains": [
+        "TD-PILOT-EXECUTION"
+      ],
+      "id": "FIT-PILOT-MATERIAL-BOUNDARY",
+      "secret_classes": [
+        "SECRET-PILOT-CODEX",
+        "SECRET-PILOT-GITHUB"
+      ],
+      "severity": "error"
     }
   ],
   "tenant_authorization_policies": [
@@ -663,6 +741,8 @@
         "SECRET-DATABASE",
         "SECRET-GITHUB-APP",
         "SECRET-HUMAN-APPROVAL",
+        "SECRET-PILOT-CODEX",
+        "SECRET-PILOT-GITHUB",
         "SECRET-READ-TOKEN",
         "SECRET-WEBHOOK"
       ],

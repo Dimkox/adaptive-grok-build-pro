@@ -829,6 +829,16 @@ def _node(root: Path, mode: str) -> list[CheckResult]:
 
 def _python(root: Path, mode: str = 'fast') -> list[CheckResult]:
     results: list[CheckResult] = [_ruff(root), _bandit(root)]
+    pilot_tests = root / 'pilot' / 'tests'
+    if pilot_tests.is_dir() and any(pilot_tests.glob('test*.py')):
+        results.append(
+            _command_check(
+                root,
+                'pilot-unittest',
+                [sys.executable, '-m', 'unittest', 'discover', '-s', 'pilot/tests', '-t', '.', '-v'],
+                300,
+            )
+        )
     has_project = any((root / item).exists() for item in ('pyproject.toml', 'requirements.txt', 'setup.py'))
     tests_dir = root / 'tests'
     has_unittest_files = tests_dir.is_dir() and any(tests_dir.glob('test*.py'))

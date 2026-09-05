@@ -162,6 +162,10 @@ def _matches(path: str, prefixes: Iterable[str]) -> bool:
     return any(path == prefix or path.startswith(prefix + "/") for prefix in prefixes)
 
 
+def _is_governance_or_test_path(path: str) -> bool:
+    return _matches(path, _GOVERNANCE_PATHS) or "tests" in Path(path).parts[:-1]
+
+
 @dataclass(frozen=True)
 class ApplicabilityEvidence:
     predicate: str
@@ -1310,7 +1314,7 @@ def _network_clients(
 def _production_imports(diff: ArchitectureDiff, python: _PythonInventory) -> FitnessResult:
     predicate = "changed production Python source imports test or governance modules"
     applicable = tuple(
-        path for path in _python_paths(diff) if not _matches(path, _GOVERNANCE_PATHS)
+        path for path in _python_paths(diff) if not _is_governance_or_test_path(path)
     )
     if not applicable:
         return _not_applicable(

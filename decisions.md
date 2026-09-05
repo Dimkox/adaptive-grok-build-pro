@@ -22,6 +22,10 @@ Represent rule transitions as immutable canonical-byte `RuleRecord` values and a
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-09-05 — Calibrate only the accepted pilot vertical
+
+Raise only `FIT-BOUNDED-PILOT-CHANGE` to 400,000 bytes, 10,000 lines, and AST complexity 1,100, leaving global, Factory, and Trust-CI limits unchanged. This preserves a narrow ceiling with at most 15% headroom over the accepted pilot implementation while making the exact route fitness gate reflect its actual bounded scope.
+
 ## 2026-08-26 — Provider-neutral factory core with explicit adapter boundary
 
 Keep deterministic policy, state, leases, budgets, and capabilities in a PostgreSQL-backed provider-neutral core; make Codex, Grok, and future providers explicit versioned JSON/JSONL translators with no silent fallback. This preserves one-writer and trust boundaries across provider changes while allowing model-native streams to evolve behind conformance-tested adapters.
@@ -428,3 +432,23 @@ Compare the protected merge tree with the checked artifact-child tree, then rebu
 ## 2026-09-05 — Separate stale-PR cleanup from product source
 
 Close stale conflicting PR #21 only after verifying that PR #22 and PR #24 delivered its superseding product history, and bind the cleanup to its own exact external-write grant. Keeping that historical mutation outside the product change avoided package restacking and reverification while restoring protected main and immutable releases as source of truth.
+
+## 2026-09-05 — Persist exact effect intent before the sole publication attempt
+
+Derive each GitHub resource from the canonical request digest, require one literal current grant, and commit both request and grant-use facts before entering the injected transport. A reopened prepared or in-flight effect performs observation only, which made hard-crash reconciliation deterministic without granting a second write.
+
+## 2026-09-05 — Use the official app-server as an opaque subscription-auth boundary
+
+Start one ephemeral Codex app-server thread/turn through the host ChatGPT capability without reading or copying auth-store bytes, while clearing MCP/web/shell-env inheritance. The initial workspace-write profile did not prove read isolation; the review correction below is required before claiming credentials are inaccessible to model commands.
+
+## 2026-09-05 — Bind command confinement to the effective pinned profile
+
+Use the same closed `pilot_confined` configuration and pinned executable for the no-model sentinel proof and actual Codex invocation, with outside reads, filesystem/abstract Unix sockets and temporary roots denied. The installed `0.153.4` binary passed the synthetic proof; this establishes local command isolation, not a successful model turn or live delivery.
+
+## 2026-09-05 — Preserve single ownership after the agent thread ceiling
+
+After both permitted attempts to resume the selected implementer hit the global agent-thread ceiling, the user explicitly authorized primary `/root` to take over as the sole write owner. Existing code, test and security reviewers remain independent and read-only; no second implementer or extra review wave is created.
+
+## 2026-09-05 — Carry unchanged evidence without concealing the failed command
+
+Preserve the original full-verifier failure and successful targeted PostgreSQL retry, then bind unchanged component evidence by Git identity while freshly checking the repaired pilot, verifier selection and package. This follows the user's explicit affected-tests-only instruction without representing a targeted continuation as a second full-suite PASS.

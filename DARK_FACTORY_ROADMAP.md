@@ -35,7 +35,7 @@ repository: Dimkox/adaptive-grok-build-pro
 branch: main
 original baseline SHA: 73e4ae7c68a95d3a7440378964b8cc1879df9b89
 publication snapshot main SHA: 1751b5855e46782b9a1bfceb6e1ab0102cba03b0 (2026-09-04T16:58:48Z; not a perpetual current-ref assertion)
-product version: 2.0.14 (published release v2.0.14; v2.0.13 retained as immutable history)
+product version: 2.0.15 (unreleased pilot candidate; published release v2.0.14 and v2.0.13 retained as immutable history)
 Trust CI service version: 2.1.0
 required check: adaptive-trust-ci/verified@06ecf1c875bc
 ```

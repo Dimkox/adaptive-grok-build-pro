@@ -289,6 +289,7 @@ def _materialize_architecture(root: Path) -> None:
     shutil.copytree(ROOT / "architecture", root / "architecture")
     shutil.copytree(ROOT / "engineering" / "contracts", root / "engineering" / "contracts")
     shutil.copytree(ROOT / "factory" / "contracts", root / "factory" / "contracts")
+    shutil.copytree(ROOT / "pilot" / "contracts", root / "pilot" / "contracts")
     for schema_name in (
         "architecture-system.schema.json",
         "architecture-rules.schema.json",

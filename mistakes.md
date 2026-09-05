@@ -14,6 +14,18 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-05 — Mistook architecture validity for route fitness
+
+**Symptom:** Architecture validate, repository drift, and diagram checks passed, but exact route fitness rejected a local pilot import as external and treated `pilot/tests/**` as production source.
+**Root cause:** The model assigned the nested test subtree to the pilot production owner without declaring the top-level `pilot` package root, and preflight stopped before running route fitness against the exact base/head pair.
+**Durable rule:** Give package roots production ownership and more-specific nested test roots verifier ownership, and run the exact route-fitness command before declaring architecture evidence green.
+
+## 2026-09-05 — Treated targeted implementation tests as the exact PR gate
+
+**Symptom:** The exact PR verifier found unowned `pilot/tests/**`, secret-scan fixture false positives, and root unittest failures after the targeted pilot tests had passed.
+**Root cause:** The implementation preflight omitted the exact PR gate, so architecture ownership/adoption fixtures and credential-shaped test/documentation strings were not checked against the repository-wide architecture and secret-scan contracts before the source freeze.
+**Durable rule:** Preflight changed architecture ownership and scanner fixtures with their focused repository-wide gate methods, then run the exact PR verifier once on the frozen product tree.
+
 ## 2026-08-31 — Ran the restack verifier with its inherited divergent route base
 
 **Symptom:** The first full verifier passed tests and coverage but failed architecture and governance because it compared the merge against unrelated `1c06299894279a88b881defa3f19b004fa742223`.
@@ -646,6 +658,7 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** A read-only `rg` invocation placed Markdown backticks inside a double-quoted Bash pattern, causing unintended command substitution (`main: command not found` and `origin/main: No such file`) even though later checks completed.
 **Prevention:** Single-quote literal patterns or pass fixed strings without shell metacharacters, as required by the command-escaping rule.
+**Recurrence 2026-09-05:** A documentation audit repeated the same quoting error for `2.0.15`; the command produced only local diagnostic noise, and subsequent literal searches use single-quoted patterns.
 
 ## 2026-09-04 — Assumed the configured GitHub merge method was effective
 
@@ -671,3 +684,37 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** Component tests treated self-validating JSON and SQLite `quick_check` as durability proof without modeling physical row keys, sealed artifact files, and command replay across process restart.
 **Prevention:** Every durable terminal result must have composed close/reopen tests that cross-bind row identity, source, commands, evidence, and external bytes, including tamper and swap cases.
+## 2026-09-05 — Created an external issue after invalidating its exact local grant
+
+**Symptom:** Landing issue #1 was created after its exact external-write grant had been materialized, but adding the final body file changed the control worktree fingerprint before `gh issue create`; the ambient execution boundary did not reject the now-stale grant. The issue content and target were intended and explicitly authorized, but the local evidence no longer proved that authorization at effect time.
+
+**Root cause:** The external input file was finalized after, rather than before, freezing the control tree and materializing the grant, and the operator path relied on ambient hook enforcement instead of calling `has_valid_approval` for the exact action/resource immediately before the effect. Future external operations must freeze every local input first, create the exact grant second, explicitly revalidate it third, and permit no repository mutation between validation and the one write.
+
+## 2026-09-05 — Treated an injected test seam as a runnable CLI composition
+
+**Symptom:** Task 5 documented a live command, but `python3 -m pilot` could only return `live_adapter_unavailable` because `__main__` supplied no host composition.
+**Root cause:** Readiness stopped at fake dependency injection instead of exercising the public entrypoint through its concrete closed adapters. Future runtime-readiness criteria must include a direct entrypoint contract across fresh processes before the CLI is described as runnable.
+
+## 2026-09-05 — Duplicated the implementation bug in the CSP test oracle
+
+**Root cause:** Both the semantic gate and its positive fixture appended another padding character to an already padded Base64 SHA-256, so they agreed on an invalid browser CSP token. Use an independently calculated literal digest for the positive fixture and compare a closed directive/source map; substring presence does not prove that additional sources or overrides are absent.
+
+## 2026-09-05 — Omitted the new sibling test package from verification
+
+**Root cause:** The verifier discovered root and factory tests but never included the new `pilot/tests` package, allowing a nominal full run to omit the implemented vertical. Explicit pilot discovery now precedes runner-specific early returns, and a temporary passing/failing package regression proves that its actual subprocess result propagates.
+
+## 2026-09-05 — Confused write confinement with read isolation
+
+**Root cause:** The `:workspace` preset prevented outside writes but allowed outside reads; the original probe tested only writes, network and environment-variable names. The repaired profile denies outside reads and both Unix socket forms, and the same pinned configuration is checked against synthetic operator/provider/publisher/sibling sentinels before model execution; no real credential content is probed.
+
+## 2026-09-05 — Launched the targeted recovery loader without the repository import root
+
+**Root cause:** The evidence script ran from a nested directory without placing the repository on `sys.path`, so its first invocation failed during import and ran no test or database recovery. Preserve that failed attempt separately and check the loader path before the one corrected targeted invocation; the subsequent real method and restart probes passed on unchanged source.
+
+## 2026-09-05 — Built before synchronizing the machine-handoff assertion
+
+**Root cause:** The repaired `PROJECT_STATE.json` changed verification status strings before its exact-value test consumer was inspected, causing an avoidable candidate rebuild. Inspect machine-state consumers before source freeze; synchronize the factual assertion without rerunning unrelated suites.
+
+## 2026-09-05 — Left architecture consumers behind the confinement repair
+
+**Root cause:** Adding real synthetic AF_UNIX listeners required a declared local architectural edge, while the previously omitted pilot suite still asserted exact path enumeration instead of longest-prefix ownership. Declare the no-network sentinel boundary and test effective ownership, preserving the separate test node; a public CSP digest fixture must be named as a digest rather than a credential token to avoid the generic secret heuristic's false positive.
