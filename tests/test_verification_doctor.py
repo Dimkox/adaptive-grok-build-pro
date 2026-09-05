@@ -1091,6 +1091,22 @@ class VerificationTests(unittest.TestCase):
             self.assertIsNotNone(factory)
             self.assertEqual(factory.status, 'pass')
 
+    def test_python_discovers_pilot_tests_and_propagates_failure(self) -> None:
+        for source, expected in ((_PASSING_UNITTEST, 'pass'), (_FAILING_UNITTEST, 'fail')):
+            with self.subTest(expected=expected), tempfile.TemporaryDirectory() as raw:
+                root = Path(raw)
+                package = root / 'pilot' / 'tests'
+                package.mkdir(parents=True)
+                (root / 'pilot' / '__init__.py').write_text('', encoding='utf-8')
+                (package / '__init__.py').write_text('', encoding='utf-8')
+                (package / 'test_probe.py').write_text(source, encoding='utf-8')
+                results = _python(root, mode='pr')
+                pilot = next((item for item in results if item.name == 'pilot-unittest'), None)
+                self.assertIsNotNone(pilot)
+                self.assertEqual(pilot.status, expected)
+                self.assertEqual(pilot.command, [sys.executable, '-m', 'unittest',
+                                                'discover', '-s', 'pilot/tests', '-t', '.', '-v'])
+
     def test_python_pr_requires_factory_postgres_api_and_restart_exit_runner(self) -> None:
         with project_copy() as root:
             package = root / 'factory' / 'tests'

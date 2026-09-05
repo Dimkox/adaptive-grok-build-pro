@@ -439,4 +439,16 @@ Derive each GitHub resource from the canonical request digest, require one liter
 
 ## 2026-09-05 — Use the official app-server as an opaque subscription-auth boundary
 
-Start one ephemeral Codex app-server thread/turn through the host ChatGPT capability without reading or copying auth-store bytes, while clearing MCP/web/shell-env inheritance and validating the returned workspace-write/no-network profile. This preserved the user's supported subscription path and kept credentials outside model/test workspaces and durable evidence.
+Start one ephemeral Codex app-server thread/turn through the host ChatGPT capability without reading or copying auth-store bytes, while clearing MCP/web/shell-env inheritance. The initial workspace-write profile did not prove read isolation; the review correction below is required before claiming credentials are inaccessible to model commands.
+
+## 2026-09-05 — Bind command confinement to the effective pinned profile
+
+Use the same closed `pilot_confined` configuration and pinned executable for the no-model sentinel proof and actual Codex invocation, with outside reads, filesystem/abstract Unix sockets and temporary roots denied. The installed `0.153.4` binary passed the synthetic proof; this establishes local command isolation, not a successful model turn or live delivery.
+
+## 2026-09-05 — Preserve single ownership after the agent thread ceiling
+
+After both permitted attempts to resume the selected implementer hit the global agent-thread ceiling, the user explicitly authorized primary `/root` to take over as the sole write owner. Existing code, test and security reviewers remain independent and read-only; no second implementer or extra review wave is created.
+
+## 2026-09-05 — Carry unchanged evidence without concealing the failed command
+
+Preserve the original full-verifier failure and successful targeted PostgreSQL retry, then bind unchanged component evidence by Git identity while freshly checking the repaired pilot, verifier selection and package. This follows the user's explicit affected-tests-only instruction without representing a targeted continuation as a second full-suite PASS.

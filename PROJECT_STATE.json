@@ -63,7 +63,7 @@
     "change_id": "20260905-feature-implement-a-single-operator-codex-github-0ce2d6",
     "route_id": "0ce2d62a018e",
     "branch": "feature/design-partner-pilot",
-    "status": "task6_source_complete_pending_artifact_child_runtime_evidence",
+    "status": "bounded_review_repairs_pending_final_artifact_evidence",
     "stage": "local_pr_candidate",
     "source_base": "6f3b6ed2853b7a6f78804888cffca578d4dc9448",
     "change_package": "engineering/changes/20260905-feature-implement-a-single-operator-codex-github-0ce2d6",
@@ -74,6 +74,13 @@
       "tree": "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4",
       "default_branch": "main",
       "read_only": true
+    },
+    "observed_target_drift": {
+      "observed_at": "2026-09-05T17:17:00Z",
+      "commit": "80d621545938e24c296420d7f685f2d0b2b5785e",
+      "tree": "a1c2eff37ec808a53b2aeec089a5f6d7cb72bd55",
+      "status": "blocked_before_model_attempt",
+      "required_action": "review target-policy refresh preserving newer analytics and deployment-archive coherence"
     },
     "issue_number": 1,
     "write_paths": [
@@ -99,6 +106,8 @@
       "provider_mode": "app_server_chatgpt",
       "model": "gpt-6-astra",
       "host_auth": "opaque_path_capability_never_read_or_copied",
+      "command_permissions": "pilot_confined",
+      "sandbox_proof": "same_pinned_config_outside_read_write_git_network_unix_socket_denials",
       "max_codex_starts": 1,
       "max_test_starts": 1,
       "automatic_retry": false,
@@ -145,12 +154,13 @@
       "task6_store": 3,
       "task6_workspace": 3
     },
-    "full_verifier": "one_exact_artifact_child_run_required_before_ready",
-    "independent_reviews": "one_route_selected_wave_required_after_verifier_pass",
+    "full_verifier": "original_2405b013_failed_one_postgres_method_then_targeted_recovery_passed_unchanged_tree",
+    "final_verification": "fresh_affected_checks_plus_identity_bound_unchanged_evidence_not_a_second_full_suite_pass",
+    "independent_reviews": "original_fail_reports_preserved_existing_three_reviewers_recheck_final_repaired_artifact",
     "package_rebuild": "source_parent_R_then_zip_sidecar_only_child_A",
     "external_effect": false,
     "operational_activation": false,
-    "next_action": "Commit source parent R, build matching 2.0.15 ZIP+sidecar bytes from two private exact-R no-local clones, import only that pair as artifact child A, then run one exact-A PR verifier and the route-selected review wave. Record exact R/A/tree/artifact/fingerprint evidence outside the tracked tree. A live Codex run, landing branch push and draft PR remain separate explicitly authorized operations."
+    "next_action": "Freeze corrected source R, build matching 2.0.15 ZIP+sidecar in two private exact-R clones and import only that pair as child A. Bind fresh affected checks and retained unchanged-component evidence to A, then obtain the existing three independent reviews; do not repeat unaffected PostgreSQL/root suites. Primary /root is the explicitly user-approved sole fallback writer. The live attempt remains blocked until the trusted landing profile is refreshed for observed target drift."
   },
   "local_candidate": {
     "version": "2.0.14",

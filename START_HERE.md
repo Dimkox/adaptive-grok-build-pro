@@ -18,6 +18,8 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
 
+Current pilot continuation: the original `2405b013` artifact received failing reviews; CSP, test-discovery and command read-isolation repairs are tracked in the active package's bounded review-repair handoff. Primary `/root` is the user-approved sole fallback writer after the agent-thread ceiling. Preserve original full-verifier/targeted-recovery evidence, verify only affected components on the rebuilt exact artifact child, and reuse the three independent reviewers. The first live attempt is separately blocked by landing `main` advancing to `80d6215`; no model turn has been consumed and the old profile must not overwrite newer analytics.
+
 ## Bootstrap from a clean clone
 
 1. Start on the default branch and read, in order:

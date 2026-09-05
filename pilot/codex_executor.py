@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import selectors
 import signal
+import socket
 import stat
 import subprocess
 import tempfile
@@ -18,13 +19,24 @@ import time
 from typing import Any, Protocol
 
 from .contracts import CandidateChangeV1, ContractError, IssueSnapshotV1, canonical_json, contract_digest
-from .profile import CODEX_OUTPUT_SCHEMA, CODEX_PROMPT, PilotProfileV1
+from .profile import CODEX_OUTPUT_SCHEMA, CODEX_PERMISSION_PROFILE, CODEX_PROMPT, PilotProfileV1
 from .store import PilotStore, PilotStoreError
 from .workspace import PreparedWorkspace
 
 
 class CodexExecutionError(RuntimeError):
     pass
+
+
+def confined_configuration(executable: str) -> tuple[str, ...]:
+    # Replace the complete profile map rather than inheriting operator entries.
+    # The exact binary exception permits sandbox re-exec, not its parent directory.
+    config = (
+        'permissions={pilot_confined={extends=":workspace",filesystem={'
+        '":root"="deny",":minimal"="read",":tmpdir"="deny",":slash_tmp"="deny",'
+        + json.dumps(executable) + '="read"},network={enabled=false}}}'
+    )
+    return ('-c', config, '-c', 'default_permissions="pilot_confined"')
 
 
 @dataclass(frozen=True)
@@ -43,7 +55,9 @@ class SandboxProof:
     launcher_digest: str
     inside_write: bool
     outside_write_denied: bool
+    outside_read_denied: bool
     network_denied: bool
+    unix_socket_denied: bool
     git_write_denied: bool
     credentials_absent: bool
     status: str
@@ -59,7 +73,9 @@ class SandboxProof:
             launcher_digest=launcher_digest,
             inside_write=True,
             outside_write_denied=True,
+            outside_read_denied=True,
             network_denied=True,
+            unix_socket_denied=True,
             git_write_denied=True,
             credentials_absent=True,
             status="pass",
@@ -75,7 +91,9 @@ class SandboxProof:
             launcher_digest=launcher_digest,
             inside_write=False,
             outside_write_denied=False,
+            outside_read_denied=False,
             network_denied=False,
+            unix_socket_denied=False,
             git_write_denied=False,
             credentials_absent=False,
             status="fail",
@@ -99,7 +117,9 @@ class SandboxProof:
         checks = (
             self.inside_write,
             self.outside_write_denied,
+            self.outside_read_denied,
             self.network_denied,
+            self.unix_socket_denied,
             self.git_write_denied,
             self.credentials_absent,
         )
@@ -230,6 +250,7 @@ class CodexExecutor:
         if self._profile.provider_mode == "app_server_chatgpt":
             return (
                 self._profile.codex_executable,
+                *confined_configuration(self._profile.codex_executable),
                 "-c", "mcp_servers={}",
                 "-c", 'web_search="disabled"',
                 "-c", 'shell_environment_policy.inherit="none"',
@@ -241,12 +262,13 @@ class CodexExecutor:
         return (
             self._profile.codex_executable,
             "-a", "never",
+            *confined_configuration(self._profile.codex_executable),
+            "-P", CODEX_PERMISSION_PROFILE,
             "exec",
             "--strict-config",
             "--ignore-user-config",
             "--ignore-rules",
             "--ephemeral",
-            "--sandbox", "workspace-write",
             "-C", str(workspace.worktree),
             "--model", self._profile.model_id,
             "-c", "sandbox_workspace_write.network_access=false",
@@ -527,6 +549,7 @@ class AppServerCodexRunner:
     ) -> ProcessResult:
         expected_argv = (
             self._profile.codex_executable,
+            *confined_configuration(self._profile.codex_executable),
             "-c", "mcp_servers={}",
             "-c", 'web_search="disabled"',
             "-c", 'shell_environment_policy.inherit="none"',
@@ -584,7 +607,7 @@ class AppServerCodexRunner:
                         "cwd": str(cwd),
                         "model": self._profile.model_id,
                         "approvalPolicy": "never",
-                        "permissions": ":workspace",
+                        "permissions": CODEX_PERMISSION_PROFILE,
                         "ephemeral": True,
                         "dynamicTools": [],
                         "runtimeWorkspaceRoots": [str(cwd)],
@@ -601,11 +624,18 @@ class AppServerCodexRunner:
                 or not thread_id
                 or thread_result.get("model") != self._profile.model_id
                 or thread_result.get("modelProvider") != "openai"
+                or thread_result.get("cwd") != str(cwd)
+                or thread_result.get("runtimeWorkspaceRoots") != [str(cwd)]
+                or thread_result.get("approvalPolicy") != "never"
                 or not isinstance(permission, dict)
-                or permission.get("id") != ":workspace"
+                or permission.get("id") != CODEX_PERMISSION_PROFILE
+                or permission.get("extends") != ":workspace"
                 or not isinstance(sandbox, dict)
                 or sandbox.get("type") != "workspaceWrite"
                 or sandbox.get("networkAccess") is not False
+                or sandbox.get("writableRoots") != []
+                or sandbox.get("excludeTmpdirEnvVar") is not True
+                or sandbox.get("excludeSlashTmp") is not True
                 or thread_result.get("instructionSources") != []
             ):
                 raise CodexExecutionError("provider_confinement")
@@ -702,7 +732,7 @@ class CodexSandboxProbe:
     """No-model confinement probe using the installed Codex sandbox helper."""
 
     _SCRIPT = r'''import os, socket, sys
-inside, outside, git_head = sys.argv[1:]
+inside, outside, git_head, socket_path, abstract_name, *read_paths = sys.argv[1:]
 with open(inside, "xb") as stream:
     stream.write(b"inside")
 os.unlink(inside)
@@ -727,8 +757,31 @@ except OSError:
 else:
     candidate.close()
 credentials_absent = not any(key in os.environ for key in ("CODEX_API_KEY", "GH_TOKEN", "GITHUB_TOKEN"))
-if all((outside_denied, git_denied, network_denied, credentials_absent)):
-    print("adaptive-pilot-sandbox-proof-v1")
+def read_denied(path):
+    try:
+        descriptor = os.open(path, os.O_RDONLY)
+    except OSError:
+        return True
+    else:
+        os.close(descriptor)
+        return False
+def socket_denied(address):
+    candidate = None
+    try:
+        candidate = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        candidate.settimeout(1)
+        candidate.connect(address)
+    except OSError:
+        return True
+    else:
+        return False
+    finally:
+        if candidate is not None:
+            candidate.close()
+outside_reads_denied = all(read_denied(path) for path in (git_head, *read_paths))
+unix_denied = all(socket_denied(address) for address in (socket_path, '\0' + abstract_name))
+if all((outside_denied, git_denied, network_denied, credentials_absent, outside_reads_denied, unix_denied)):
+    print("adaptive-pilot-sandbox-proof-v2")
 else:
     raise SystemExit(91)
 '''
@@ -738,32 +791,60 @@ else:
         self._clock = clock or (lambda: datetime.now(timezone.utc))
 
     def prove(self, workspace: PreparedWorkspace) -> SandboxProof:
-        launcher_digest = hashlib.sha256(self._SCRIPT.encode("utf-8")).hexdigest()
+        configuration = confined_configuration(self._profile.codex_executable)
+        launcher_digest = hashlib.sha256(canonical_json({
+            'script': self._SCRIPT,
+            'configuration': list(configuration),
+            'permission_profile': CODEX_PERMISSION_PROFILE,
+            'codex_sha256': self._profile.codex_sha256,
+            'python_sha256': self._profile.python_sha256,
+        })).hexdigest()
         outside = workspace.root / "outside-sentinel"
         inside = workspace.worktree / ".pilot-sandbox-probe"
         if outside.exists() or inside.exists():
             return SandboxProof.failed(profile_digest=self._profile.profile_digest, workspace_digest=workspace.workspace_digest, launcher_digest=launcher_digest, reason_code="sentinel_exists", observed_at=_utc(self._clock()))
-        environment = {
-            "HOME": str(workspace.root / "sandbox-home"),
-            "PATH": "/usr/bin:/bin",
-            "LC_ALL": "C.UTF-8",
-            "TZ": "UTC",
-        }
-        Path(environment["HOME"]).mkdir(mode=0o700, exist_ok=False)
-        argv = (
-            self._profile.codex_executable,
-            "sandbox", "-P", ":workspace", "-C", str(workspace.worktree), "--",
-            self._profile.python_executable, "-c", self._SCRIPT,
-            str(inside), str(outside), str(workspace.git_dir / "HEAD"),
-        )
+        completed = None
         try:
-            completed = subprocess.run(argv, cwd=workspace.worktree, env=environment, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30, check=False)
-        except (OSError, subprocess.TimeoutExpired):
-            completed = None
+            CodexExecutor._verify_executable(self._profile.codex_executable, self._profile.codex_sha256)
+            CodexExecutor._verify_executable(self._profile.python_executable, self._profile.python_sha256)
+            with tempfile.TemporaryDirectory(prefix='pilot-proof-') as raw:
+                probe_root = Path(raw)
+                environment = {
+                    "HOME": str(probe_root / 'operator-home'),
+                    "CODEX_HOME": str(probe_root / 'provider-home'),
+                    "PATH": "/usr/bin:/bin", "LC_ALL": "C.UTF-8", "TZ": "UTC",
+                }
+                read_paths = []
+                for name in ('operator-home', 'provider-home', 'publisher-home', 'sibling-repo'):
+                    directory = probe_root / name
+                    directory.mkdir(mode=0o700)
+                    sentinel = directory / 'benign-sentinel'
+                    sentinel.write_bytes(b'public synthetic sandbox probe')
+                    read_paths.append(str(sentinel))
+                control_marker = Path(__file__).resolve().parents[1] / 'AGENTS.md'
+                if control_marker.is_file():
+                    read_paths.append(str(control_marker))
+                socket_path = str(probe_root / 'daemon.sock')
+                abstract_name = probe_root.name
+                with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as filesystem_socket, socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as abstract_socket:
+                    filesystem_socket.bind(socket_path)
+                    filesystem_socket.listen(1)
+                    abstract_socket.bind('\0' + abstract_name)
+                    abstract_socket.listen(1)
+                    argv = (
+                        self._profile.codex_executable, "sandbox", *configuration,
+                        "-P", CODEX_PERMISSION_PROFILE, "-C", str(workspace.worktree), "--",
+                        self._profile.python_executable, "-c", self._SCRIPT,
+                        str(inside), str(outside), str(workspace.git_dir / "HEAD"),
+                        socket_path, abstract_name, *read_paths,
+                    )
+                    completed = subprocess.run(argv, cwd=workspace.worktree, env=environment, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30, check=False)
+        except (OSError, subprocess.TimeoutExpired, CodexExecutionError):
+            pass
         passed = (
             completed is not None
             and completed.returncode == 0
-            and completed.stdout == b"adaptive-pilot-sandbox-proof-v1\n"
+            and completed.stdout == b"adaptive-pilot-sandbox-proof-v2\n"
             and len(completed.stderr) <= 4096
             and not outside.exists()
             and not inside.exists()

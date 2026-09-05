@@ -14,7 +14,7 @@ import shutil
 import stat
 import subprocess
 import tempfile
-from typing import Mapping, Protocol
+from typing import Protocol
 
 from .contracts import CandidateChangeV1, CandidateValidationV1, contract_digest
 from .profile import PilotProfileV1
@@ -120,9 +120,8 @@ class LandingSemanticGate:
                 if not isinstance(document, dict) or document.get("version") != self._profile.expected_jsonld_version:
                     findings.append("jsonld_version")
             csp = _read(root / ".htaccess").decode("utf-8")
-            token = "'sha256-" + base64.b64encode(hashlib.sha256(script).digest()).decode("ascii") + "='"
-            required = ("default-src 'self'", "style-src 'self'", "object-src 'none'", "base-uri 'self'", "frame-ancestors 'none'")
-            if csp.count(token) != 1 or any(value not in csp for value in required) or "unsafe-inline" in csp or "unsafe-eval" in csp:
+            token = "'sha256-" + base64.b64encode(hashlib.sha256(script).digest()).decode("ascii") + "'"
+            if not self._csp_matches(csp, token):
                 findings.append("csp")
             for locale in ("km", "ko", "lv", "nl", "zh-cn"):
                 text = _read(root / locale / "index.html").decode("utf-8")
@@ -145,6 +144,45 @@ class LandingSemanticGate:
             tuple(acceptance_ids),
             () if not findings else ("semantic_non_pass",),
         )
+
+    @staticmethod
+    def _csp_matches(htaccess: str, script_token: str) -> bool:
+        # The pinned landing allows changing only its JSON-LD hash, not policy.
+        # Count all mentions so another Header unset/set cannot override this one.
+        if htaccess.casefold().count("content-security-policy") != 1:
+            return False
+        match = re.search(
+            r'^\s*Header[ \t]+always[ \t]+set[ \t]+Content-Security-Policy[ \t]+"([^"\r\n]*)"[ \t]*$',
+            htaccess, re.MULTILINE,
+        )
+        if match is None:
+            return False
+        directives: dict[str, tuple[str, ...]] = {}
+        for raw in match.group(1).split(';'):
+            parts = raw.split()
+            if not parts:
+                continue
+            name, *sources = parts
+            if name in directives:
+                return False
+            directives[name] = tuple(sources)
+        expected = {
+            'default-src': ("'self'",),
+            'script-src': ("'self'", script_token),
+            'style-src': ("'self'",),
+            'img-src': ("'self'",),
+            'font-src': ("'self'",),
+            'connect-src': ("'none'",),
+            'media-src': ("'none'",),
+            'frame-src': ("'none'",),
+            'worker-src': ("'none'",),
+            'object-src': ("'none'",),
+            'base-uri': ("'self'",),
+            'form-action': ("'self'",),
+            'frame-ancestors': ("'none'",),
+            'upgrade-insecure-requests': (),
+        }
+        return directives == expected
 
 
 class CandidateValidator:
@@ -357,11 +395,11 @@ class BubblewrapTestRunner:
             "--symlink", "usr/bin", "/bin",
             "--symlink", "usr/lib", "/lib",
             "--proc", "/proc", "--dev", "/dev",
-            "--tmpfs", "/tmp", "--dir", "/tmp/home",
+            "--tmpfs", "/tmp", "--dir", "/tmp/home",  # nosec B108: private sandbox tmpfs, not host paths
             "--ro-bind", str(workspace.worktree), "/workspace",
             "--chdir", "/workspace",
-            "--setenv", "HOME", "/tmp/home",
-            "--setenv", "TMPDIR", "/tmp",
+            "--setenv", "HOME", "/tmp/home",  # nosec B108: private sandbox tmpfs
+            "--setenv", "TMPDIR", "/tmp",  # nosec B108: private sandbox tmpfs
             "--setenv", "PATH", "/usr/bin:/bin",
             "--setenv", "LC_ALL", "C.UTF-8",
             "--setenv", "TZ", "UTC",

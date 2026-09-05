@@ -4,7 +4,7 @@ from collections import deque
 from pathlib import Path
 import unittest
 
-from pilot.codex_executor import AppServerCodexRunner, CodexExecutionError
+from pilot.codex_executor import AppServerCodexRunner, CodexExecutionError, confined_configuration
 from pilot.profile import CODEX_OUTPUT_SCHEMA, exact_landing_profile
 
 
@@ -58,13 +58,16 @@ def successful_messages() -> list[dict]:
                 "thread": {"id": "thread-1"},
                 "model": "gpt-6-astra",
                 "modelProvider": "openai",
-                "activePermissionProfile": {"id": ":workspace", "extends": None},
+                "activePermissionProfile": {"id": "pilot_confined", "extends": ":workspace"},
+                "cwd": "/private/writer/app",
+                "runtimeWorkspaceRoots": ["/private/writer/app"],
+                "approvalPolicy": "never",
                 "sandbox": {
                     "type": "workspaceWrite",
                     "writableRoots": [],
                     "networkAccess": False,
-                    "excludeTmpdirEnvVar": False,
-                    "excludeSlashTmp": False,
+                    "excludeTmpdirEnvVar": True,
+                    "excludeSlashTmp": True,
                 },
                 "instructionSources": [],
             },
@@ -84,6 +87,7 @@ def successful_messages() -> list[dict]:
 def app_server_argv(configured) -> tuple[str, ...]:
     return (
         configured.codex_executable,
+        *confined_configuration(configured.codex_executable),
         "-c",
         "mcp_servers={}",
         "-c",
@@ -99,6 +103,21 @@ def app_server_argv(configured) -> tuple[str, ...]:
 
 
 class AppServerCodexRunnerTests(unittest.TestCase):
+    def test_broad_workspace_profile_is_rejected_before_model_turn(self) -> None:
+        configured = profile()
+        messages = successful_messages()
+        messages[1]['result']['activePermissionProfile'] = {'id': ':workspace', 'extends': None}
+        session = FakeJsonRpcSession(messages)
+        runner = AppServerCodexRunner(
+            configured, session_factory=SessionFactory(session),
+            auth_environment=lambda: {'HOME': '/private/operator'},
+        )
+        with self.assertRaisesRegex(CodexExecutionError, 'provider_confinement'):
+            runner.run(argv=app_server_argv(configured), cwd=Path('/private/writer/app'),
+                       environment={}, stdin=b'prompt', timeout_seconds=30, max_output_bytes=65536)
+        self.assertFalse(any(item.get('method') == 'turn/start' for item in session.sent))
+        self.assertTrue(session.closed)
+
     def test_one_closed_app_server_thread_and_turn_returns_synthetic_success(self) -> None:
         configured = profile()
         session = FakeJsonRpcSession(successful_messages())
@@ -140,7 +159,7 @@ class AppServerCodexRunnerTests(unittest.TestCase):
                 "cwd": str(cwd),
                 "model": "gpt-6-astra",
                 "approvalPolicy": "never",
-                "permissions": ":workspace",
+                "permissions": "pilot_confined",
                 "ephemeral": True,
                 "dynamicTools": [],
                 "runtimeWorkspaceRoots": [str(cwd)],

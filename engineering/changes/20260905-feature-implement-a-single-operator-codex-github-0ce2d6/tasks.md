@@ -1,6 +1,6 @@
 # Six sequential implementation tasks
 
-Each task has one unambiguous output consumed by the next. Exactly one `integration_implementer` owns every source edit.
+Each task has one unambiguous output consumed by the next. Exactly one write owner operates at a time: `integration_implementer` owned the initial implementation; after the global agent-thread ceiling, the user explicitly authorized primary `/root` to own the bounded review repairs. The existing three reviewers remain independent.
 
 ## Task 1 — freeze the boundary and contracts
 
@@ -41,3 +41,11 @@ Each task has one unambiguous output consumed by the next. Exactly one `integrat
 - Output handoff: one committed, directly runnable source tree whose package build, exact-head verifier and independent review wave remain the next local finalization steps; the real live attempt remains pending separate authority.
 
 No task adds a second Codex attempt or expands the target. A failed core check returns only to the owning task; already-passing unaffected checks are not rerun.
+
+## Bounded review repair handoff
+
+- Original artifact head `2405b01383c4bb2f014da0151462b685d731eb36` received FAIL reviews for CSP padding/shared oracle, missing pilot-test discovery, and insufficient sandbox read confinement. Preserve those reports under its ignored exact-head evidence directory.
+- Repair only those defects: independent CSP oracle and closed policy map, actual pilot-test discovery, and one pinned read-restricted Codex profile shared with the real no-model sentinel proof.
+- The full verifier's sole PostgreSQL statement-timeout failure was retried successfully on unchanged source, including actual restart probes. Do not relaunch the unaffected PostgreSQL or full root suite; the final receipt must distinguish fresh affected checks from identity-bound retained evidence.
+- Freeze the corrected source parent, rebuild its ZIP+sidecar, then obtain the existing three reviewers' verdicts on the exact artifact child. No live success, publication or release is asserted by this handoff.
+- Live-target blocker: observed landing `main` advanced to `80d621545938e24c296420d7f685f2d0b2b5785e` (analytics/privacy and deployment-archive coherence) while issue #1/profile still name `6990103`. Refresh that trusted scope separately before spending the one model attempt; do not merely substitute a SHA or overwrite newer work.

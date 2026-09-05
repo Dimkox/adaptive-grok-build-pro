@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import hashlib
+import os
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 
 from pilot.codex_executor import (
     CodexExecutionError,
     CodexExecutor,
+    CodexSandboxProbe,
     ProcessResult,
     SandboxProof,
 )
@@ -75,6 +78,33 @@ class FakeWorkspaceManager:
 
 
 class CodexExecutorTests(unittest.TestCase):
+    @unittest.skipUnless(os.environ.get('PILOT_TEST_CODEX_PATH'), 'requires explicit pinned local Codex sandbox')
+    def test_installed_sandbox_denies_outside_reads_and_unix_sockets(self) -> None:
+        binary = Path(os.environ['PILOT_TEST_CODEX_PATH'])
+        python = Path(sys.executable).resolve()
+        configured = exact_landing_profile(
+            codex_executable=str(binary),
+            codex_sha256='56ef98ab4032d317ab26e9b5e5a175650717351edb16ed9cde0cb6d1734d62da',
+            codex_version='0.153.4', model_id='gpt-6-astra',
+            python_executable=str(python),
+            python_sha256=hashlib.sha256(python.read_bytes()).hexdigest(),
+            provider_mode='app_server_chatgpt',
+        )
+        with tempfile.TemporaryDirectory(prefix='pilot-proof-test-') as raw:
+            root = Path(raw)
+            (root / 'app').mkdir()
+            (root / 'control.git').mkdir()
+            (root / 'control.git/HEAD').write_bytes(b'ref: refs/heads/main\n')
+            workspace = PreparedWorkspace(root, root / 'app', root / 'control.git',
+                                          configured.base_sha, configured.base_tree, '3' * 64, True, True)
+            proof = CodexSandboxProbe(configured).prove(workspace)
+            proof.validate()
+            self.assertEqual(proof.status, 'pass')
+            self.assertTrue(proof.outside_read_denied)
+            self.assertTrue(proof.unix_socket_denied)
+            self.assertTrue(proof.git_write_denied)
+            self.assertTrue(proof.network_denied)
+
     def test_exact_argv_starts_once_and_persists_the_sealed_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
@@ -150,7 +180,9 @@ class CodexExecutorTests(unittest.TestCase):
             argv = invocation["argv"]
             self.assertEqual(argv[0], str(binary))
             self.assertLess(argv.index("-a"), argv.index("exec"))
-            self.assertIn("workspace-write", argv)
+            self.assertIn("pilot_confined", argv)
+            self.assertNotIn("--sandbox", argv)
+            self.assertTrue(any('permissions={pilot_confined=' in item for item in argv))
             self.assertIn("--ignore-user-config", argv)
             self.assertNotIn(issue.body, "\x00".join(argv))
             self.assertIn(issue.body, invocation["stdin"].decode("utf-8"))

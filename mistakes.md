@@ -694,3 +694,19 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** Task 5 documented a live command, but `python3 -m pilot` could only return `live_adapter_unavailable` because `__main__` supplied no host composition.
 **Root cause:** Readiness stopped at fake dependency injection instead of exercising the public entrypoint through its concrete closed adapters. Future runtime-readiness criteria must include a direct entrypoint contract across fresh processes before the CLI is described as runnable.
+
+## 2026-09-05 — Duplicated the implementation bug in the CSP test oracle
+
+**Root cause:** Both the semantic gate and its positive fixture appended another padding character to an already padded Base64 SHA-256, so they agreed on an invalid browser CSP token. Use an independently calculated literal digest for the positive fixture and compare a closed directive/source map; substring presence does not prove that additional sources or overrides are absent.
+
+## 2026-09-05 — Omitted the new sibling test package from verification
+
+**Root cause:** The verifier discovered root and factory tests but never included the new `pilot/tests` package, allowing a nominal full run to omit the implemented vertical. Explicit pilot discovery now precedes runner-specific early returns, and a temporary passing/failing package regression proves that its actual subprocess result propagates.
+
+## 2026-09-05 — Confused write confinement with read isolation
+
+**Root cause:** The `:workspace` preset prevented outside writes but allowed outside reads; the original probe tested only writes, network and environment-variable names. The repaired profile denies outside reads and both Unix socket forms, and the same pinned configuration is checked against synthetic operator/provider/publisher/sibling sentinels before model execution; no real credential content is probed.
+
+## 2026-09-05 — Launched the targeted recovery loader without the repository import root
+
+**Root cause:** The evidence script ran from a nested directory without placing the repository on `sys.path`, so its first invocation failed during import and ran no test or database recovery. Preserve that failed attempt separately and check the loader path before the one corrected targeted invocation; the subsequent real method and restart probes passed on unchanged source.

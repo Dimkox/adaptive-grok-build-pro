@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import base64
-import hashlib
-import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -75,7 +72,8 @@ def candidate(issue) -> CandidateChangeV1:
 
 def semantic_fixture(root: Path) -> None:
     script = b'{"@context":"https://schema.org","@type":"SoftwareSourceCode","version":"2.0.14"}'
-    token = base64.b64encode(hashlib.sha256(script).digest()).decode("ascii")
+    # Independently derived with OpenSSL over the literal script bytes above.
+    token = "5LMeRiDxuvLWdAoIIfcRC8fSEylkqAjIPg+W1KGh2hg="
     root_html = (
         "<html><body>Governed Agentic Software Factory — Offline Technical Preview "
         "Latest published release v2.0.14 <span>v2.0.14</span>"
@@ -93,7 +91,9 @@ def semantic_fixture(root: Path) -> None:
     (root / ".htaccess").write_text(
         "Header always set Content-Security-Policy \"default-src 'self'; script-src 'self' 'sha256-"
         + token
-        + "='; style-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'\"\n",
+        + "'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'none'; "
+        "media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; "
+        "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests\"\n",
         encoding="utf-8",
     )
 
@@ -130,6 +130,34 @@ class FakeTestRunner:
 
 
 class ValidationTests(unittest.TestCase):
+    def test_semantic_gate_rejects_extra_padding_and_csp_policy_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            semantic_fixture(root)
+            configured = profile()
+            issue = issue_snapshot(profile_digest=configured.profile_digest,
+                                   base_sha=configured.base_sha, base_tree=configured.base_tree)
+            path = root / ".htaccess"
+            original = path.read_text(encoding="utf-8")
+            malformed = (
+                original.replace("1KGh2hg='", "1KGh2hg=='"),
+                original.replace("script-src 'self'", "script-src 'self' https://example.invalid"),
+                original.replace("connect-src 'none'", "connect-src *"),
+                original.replace("upgrade-insecure-requests", "script-src *; upgrade-insecure-requests"),
+                original.replace("upgrade-insecure-requests", "report-uri https://example.invalid; upgrade-insecure-requests"),
+                original + 'Header unset Content-Security-Policy\n',
+            )
+            for csp in malformed:
+                with self.subTest(csp=csp):
+                    path.write_text(csp, encoding="utf-8")
+                    result = LandingSemanticGate(configured).evaluate(
+                        root, candidate(issue),
+                        ProtectedFileObservation(configured.protected_index_css_blob,
+                                                 configured.protected_index_css_sha256),
+                        issue.acceptance_ids,
+                    )
+                    self.assertEqual(result.decision, "rejected")
+
     def test_semantic_gate_proves_exact_versions_labels_csp_and_protected_css(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
