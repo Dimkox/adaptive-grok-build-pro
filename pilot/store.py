@@ -247,6 +247,46 @@ class PilotStore:
                 candidate=candidate,
             )
 
+    def begin_validation(self, job_id: str, *, command_key: str) -> PilotJob:
+        _bounded_text(command_key, "command_key")
+        with self._transaction():
+            if self._connection.execute(
+                "SELECT 1 FROM events WHERE job_id=? AND kind='validation_intent'", (job_id,)
+            ).fetchone():
+                raise PilotStoreError("validation_consumed")
+            return self._transition_locked(
+                job_id,
+                "validation_intent",
+                kind="validation_intent",
+                command_key=command_key,
+                payload_digest=contract_digest("validation-intent", {"job_id": job_id, "command_key": command_key}),
+            )
+
+    def store_validation(self, job_id: str, validation: CandidateValidationV1) -> PilotJob:
+        validation = CandidateValidationV1.from_dict(validation.to_dict())
+        with self._transaction():
+            current = self._select_required(job_id)
+            candidate = current.candidate
+            if candidate is None or (
+                validation.job_id != current.job_id
+                or validation.profile_digest != current.profile_digest
+                or validation.candidate_digest != candidate.candidate_digest
+                or validation.candidate_sha != candidate.candidate_sha
+                or validation.candidate_tree != candidate.candidate_tree
+                or validation.writer_id != candidate.writer_id
+            ):
+                raise PilotStoreError("validation_binding")
+            destination = "gate_passed" if validation.decision == "pass" else "needs_human"
+            reason = None if validation.decision == "pass" else (validation.reason_codes[0] if validation.reason_codes else "validation_non_pass")
+            return self._transition_locked(
+                job_id,
+                destination,
+                kind="validation",
+                payload_digest=validation.validation_digest,
+                validation=validation,
+                reason_code=reason,
+            )
+
     def mark_terminal(self, job_id: str, *, reason_code: str) -> PilotJob:
         _bounded_text(reason_code, "reason_code")
         return self._transition(
@@ -257,11 +297,11 @@ class PilotStore:
             reason_code=reason_code,
         )
 
-    def _transition(self, job_id: str, state: str, *, kind: str, payload_digest: str, command_key: str | None = None, workspace_digest: str | None = None, candidate: CandidateChangeV1 | None = None, reason_code: str | None = None) -> PilotJob:
+    def _transition(self, job_id: str, state: str, *, kind: str, payload_digest: str, command_key: str | None = None, workspace_digest: str | None = None, candidate: CandidateChangeV1 | None = None, validation: CandidateValidationV1 | None = None, reason_code: str | None = None) -> PilotJob:
         with self._transaction():
-            return self._transition_locked(job_id, state, kind=kind, payload_digest=payload_digest, command_key=command_key, workspace_digest=workspace_digest, candidate=candidate, reason_code=reason_code)
+            return self._transition_locked(job_id, state, kind=kind, payload_digest=payload_digest, command_key=command_key, workspace_digest=workspace_digest, candidate=candidate, validation=validation, reason_code=reason_code)
 
-    def _transition_locked(self, job_id: str, state: str, *, kind: str, payload_digest: str, command_key: str | None = None, workspace_digest: str | None = None, candidate: CandidateChangeV1 | None = None, reason_code: str | None = None) -> PilotJob:
+    def _transition_locked(self, job_id: str, state: str, *, kind: str, payload_digest: str, command_key: str | None = None, workspace_digest: str | None = None, candidate: CandidateChangeV1 | None = None, validation: CandidateValidationV1 | None = None, reason_code: str | None = None) -> PilotJob:
         current = self._select_required(job_id)
         if state not in _TRANSITIONS.get(current.state, set()):
             raise PilotStoreError("invalid_transition")
@@ -270,12 +310,13 @@ class PilotStore:
         timestamp = self._timestamp()
         event_digest = _event_digest(job_id, sequence, kind, command_key, current.last_event_digest, payload_digest, timestamp)
         new_candidate = candidate or current.candidate
+        new_validation = validation or current.validation
         new_workspace = workspace_digest or current.workspace_digest
         cursor = self._connection.execute(
             """UPDATE jobs SET state=?, reason_code=?, workspace_digest=?,
-                      candidate_json=?, revision=?, last_event_digest=?, updated_at=?
+                      candidate_json=?, validation_json=?, revision=?, last_event_digest=?, updated_at=?
                  WHERE job_id=? AND revision=?""",
-            (state, reason_code, new_workspace, canonical_json(new_candidate.to_dict()) if new_candidate else None, sequence, event_digest, timestamp, job_id, current.revision),
+            (state, reason_code, new_workspace, canonical_json(new_candidate.to_dict()) if new_candidate else None, canonical_json(new_validation.to_dict()) if new_validation else None, sequence, event_digest, timestamp, job_id, current.revision),
         )
         if cursor.rowcount != 1:
             raise PilotStoreError("stale_revision")
@@ -362,6 +403,15 @@ class PilotStore:
             or candidate.profile_digest != record.profile_digest
             or candidate.issue_snapshot_digest != snapshot.issue_snapshot_digest
             or candidate.workspace_digest != record.workspace_digest
+        ):
+            raise PilotStoreError("record_integrity")
+        if validation and (
+            candidate is None
+            or validation.job_id != record.job_id
+            or validation.profile_digest != record.profile_digest
+            or validation.candidate_digest != candidate.candidate_digest
+            or validation.candidate_sha != candidate.candidate_sha
+            or validation.candidate_tree != candidate.candidate_tree
         ):
             raise PilotStoreError("record_integrity")
         event = self._connection.execute(
