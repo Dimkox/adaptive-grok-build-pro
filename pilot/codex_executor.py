@@ -1,1 +1,460 @@
-"""One-start pinned Codex supervisor (implemented in Task 2)."""
+"""Pinned one-start Codex supervisor; GitHub authority never enters this port."""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+import signal
+import stat
+import subprocess
+import tempfile
+from typing import Protocol
+
+from .contracts import CandidateChangeV1, ContractError, IssueSnapshotV1, canonical_json, contract_digest
+from .profile import CODEX_OUTPUT_SCHEMA, CODEX_PROMPT, PilotProfileV1
+from .store import PilotStore, PilotStoreError
+from .workspace import PreparedWorkspace
+
+
+class CodexExecutionError(RuntimeError):
+    pass
+
+
+@dataclass(frozen=True)
+class ProcessResult:
+    returncode: int
+    stdout: bytes
+    stderr: bytes
+    started_at: str
+    completed_at: str
+
+
+@dataclass(frozen=True)
+class SandboxProof:
+    profile_digest: str
+    workspace_digest: str
+    launcher_digest: str
+    inside_write: bool
+    outside_write_denied: bool
+    network_denied: bool
+    git_write_denied: bool
+    credentials_absent: bool
+    status: str
+    reason_code: str | None
+    observed_at: str
+    evidence_digest: str
+
+    @classmethod
+    def passed(cls, *, profile_digest: str, workspace_digest: str, launcher_digest: str, observed_at: str) -> "SandboxProof":
+        return cls._build(
+            profile_digest=profile_digest,
+            workspace_digest=workspace_digest,
+            launcher_digest=launcher_digest,
+            inside_write=True,
+            outside_write_denied=True,
+            network_denied=True,
+            git_write_denied=True,
+            credentials_absent=True,
+            status="pass",
+            reason_code=None,
+            observed_at=observed_at,
+        )
+
+    @classmethod
+    def failed(cls, *, profile_digest: str, workspace_digest: str, launcher_digest: str, reason_code: str, observed_at: str) -> "SandboxProof":
+        return cls._build(
+            profile_digest=profile_digest,
+            workspace_digest=workspace_digest,
+            launcher_digest=launcher_digest,
+            inside_write=False,
+            outside_write_denied=False,
+            network_denied=False,
+            git_write_denied=False,
+            credentials_absent=False,
+            status="fail",
+            reason_code=reason_code,
+            observed_at=observed_at,
+        )
+
+    @classmethod
+    def _build(cls, **facts) -> "SandboxProof":
+        digest = contract_digest("sandbox-proof", facts)
+        return cls(**facts, evidence_digest=digest)
+
+    def validate(self) -> None:
+        facts = {
+            key: value
+            for key, value in self.__dict__.items()
+            if key != "evidence_digest"
+        }
+        if contract_digest("sandbox-proof", facts) != self.evidence_digest:
+            raise CodexExecutionError("sandbox_proof_digest")
+        checks = (
+            self.inside_write,
+            self.outside_write_denied,
+            self.network_denied,
+            self.git_write_denied,
+            self.credentials_absent,
+        )
+        if self.status == "pass" and (not all(checks) or self.reason_code is not None):
+            raise CodexExecutionError("sandbox_proof_invalid")
+        if self.status == "fail" and not self.reason_code:
+            raise CodexExecutionError("sandbox_proof_invalid")
+
+
+class SandboxProbe(Protocol):
+    def prove(self, workspace: PreparedWorkspace) -> SandboxProof: ...
+
+
+class ProcessRunner(Protocol):
+    def run(
+        self,
+        *,
+        argv: tuple[str, ...],
+        cwd: Path,
+        environment: Mapping[str, str],
+        stdin: bytes,
+        timeout_seconds: int,
+        max_output_bytes: int,
+    ) -> ProcessResult: ...
+
+
+class CandidateWorkspace(Protocol):
+    def seal(self, workspace: PreparedWorkspace, issue: IssueSnapshotV1, **facts) -> CandidateChangeV1: ...
+
+
+class CodexExecutor:
+    def __init__(
+        self,
+        profile: PilotProfileV1,
+        store: PilotStore,
+        workspaces: CandidateWorkspace,
+        *,
+        probe: SandboxProbe,
+        runner: ProcessRunner,
+        output_schema_path: Path,
+    ) -> None:
+        self._profile = profile
+        self._store = store
+        self._workspaces = workspaces
+        self._probe = probe
+        self._runner = runner
+        self._output_schema_path = Path(output_schema_path)
+
+    def run(self, issue: IssueSnapshotV1, workspace: PreparedWorkspace, *, command_key: str) -> CandidateChangeV1:
+        current = self._store.get(issue.job_id)
+        if current.state != "workspace_ready" or current.snapshot != issue:
+            raise CodexExecutionError("invalid_state")
+        if (
+            issue.profile_digest != self._profile.profile_digest
+            or workspace.base_sha != issue.base_sha
+            or workspace.base_tree != issue.base_tree
+            or workspace.workspace_digest != current.workspace_digest
+            or not workspace.remote_removed
+            or not workspace.object_storage_independent
+        ):
+            raise CodexExecutionError("binding_mismatch")
+        proof = self._probe.prove(workspace)
+        proof.validate()
+        if (
+            proof.profile_digest != self._profile.profile_digest
+            or proof.workspace_digest != workspace.workspace_digest
+            or proof.status != "pass"
+        ):
+            self._terminal(issue.job_id, "sandbox_unavailable")
+            raise CodexExecutionError("sandbox_unavailable")
+        self._verify_executable(self._profile.codex_executable, self._profile.codex_sha256)
+        self._verify_output_schema()
+        supervisor_home = workspace.root / "supervisor-home"
+        codex_home = workspace.root / "codex-home"
+        for directory in (supervisor_home, codex_home):
+            directory.mkdir(mode=0o700, exist_ok=False)
+        argv = self._argv(workspace)
+        environment = {
+            "HOME": str(supervisor_home),
+            "CODEX_HOME": str(codex_home),
+            "PATH": "/usr/bin:/bin",
+            "LC_ALL": "C.UTF-8",
+            "TZ": "UTC",
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_GLOBAL": "/dev/null",
+            "GIT_TERMINAL_PROMPT": "0",
+            "GIT_ASKPASS": "/bin/false",
+            "SSH_ASKPASS": "/bin/false",
+        }
+        stdin = CODEX_PROMPT.encode("utf-8") + b"\n\nUntrusted issue snapshot JSON:\n" + canonical_json(issue.to_dict()) + b"\n"
+        try:
+            self._store.begin_invocation(issue.job_id, command_key=command_key)
+        except PilotStoreError as exc:
+            raise CodexExecutionError("attempt_consumed") from exc
+        try:
+            result = self._runner.run(
+                argv=argv,
+                cwd=workspace.worktree,
+                environment=environment,
+                stdin=stdin,
+                timeout_seconds=self._profile.codex_timeout_seconds,
+                max_output_bytes=self._profile.max_output_bytes,
+            )
+            self._validate_result(result)
+            candidate = self._workspaces.seal(
+                workspace,
+                issue,
+                sandbox_evidence_digest=proof.evidence_digest,
+                model_id=self._profile.model_id,
+                executable_version=self._profile.codex_version,
+                executable_sha256=self._profile.codex_sha256,
+                prompt_digest=self._profile.prompt_digest,
+                tool_policy_digest=self._profile.tool_policy_digest,
+                output_schema_digest=self._profile.output_schema_digest,
+                started_at=result.started_at,
+                completed_at=result.completed_at,
+            )
+            self._validate_candidate(candidate, issue, workspace, proof)
+            self._store.store_candidate(issue.job_id, candidate)
+            return candidate
+        except BaseException as exc:
+            self._terminal(issue.job_id, "model_outcome_ambiguous")
+            if isinstance(exc, CodexExecutionError):
+                raise
+            raise CodexExecutionError("model_outcome_ambiguous") from exc
+
+    def _argv(self, workspace: PreparedWorkspace) -> tuple[str, ...]:
+        return (
+            self._profile.codex_executable,
+            "-a", "never",
+            "exec",
+            "--strict-config",
+            "--ignore-user-config",
+            "--ignore-rules",
+            "--ephemeral",
+            "--sandbox", "workspace-write",
+            "-C", str(workspace.worktree),
+            "--model", self._profile.model_id,
+            "-c", "sandbox_workspace_write.network_access=false",
+            "-c", "sandbox_workspace_write.exclude_slash_tmp=true",
+            "-c", "sandbox_workspace_write.exclude_tmpdir_env_var=true",
+            "-c", 'web_search="disabled"',
+            "-c", 'shell_environment_policy.inherit="none"',
+            "-c", "shell_environment_policy.ignore_default_excludes=false",
+            "--json",
+            "--output-schema", str(self._output_schema_path),
+            "-",
+        )
+
+    def _verify_output_schema(self) -> None:
+        expected = canonical_json(CODEX_OUTPUT_SCHEMA)
+        try:
+            metadata = self._output_schema_path.lstat()
+            body = self._output_schema_path.read_bytes()
+        except OSError as exc:
+            raise CodexExecutionError("output_schema_unavailable") from exc
+        if (
+            not self._output_schema_path.is_absolute()
+            or not stat.S_ISREG(metadata.st_mode)
+            or stat.S_ISLNK(metadata.st_mode)
+            or body != expected
+            or hashlib.sha256(body).hexdigest() != self._profile.output_schema_digest
+        ):
+            raise CodexExecutionError("output_schema_mismatch")
+
+    @staticmethod
+    def _verify_executable(path: str, digest: str) -> None:
+        target = Path(path)
+        try:
+            metadata = target.lstat()
+            body_digest = _sha256_file(target)
+        except OSError as exc:
+            raise CodexExecutionError("executable_unavailable") from exc
+        if not stat.S_ISREG(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode) or metadata.st_mode & 0o111 == 0 or body_digest != digest:
+            raise CodexExecutionError("executable_mismatch")
+
+    def _validate_result(self, result: ProcessResult) -> None:
+        if type(result.returncode) is not int or not isinstance(result.stdout, bytes) or not isinstance(result.stderr, bytes):
+            raise CodexExecutionError("provider_result")
+        if len(result.stdout) + len(result.stderr) > self._profile.max_output_bytes:
+            raise CodexExecutionError("provider_output_limit")
+        if result.returncode != 0:
+            raise CodexExecutionError("provider_nonzero")
+        terminals = 0
+        try:
+            for raw in result.stdout.splitlines():
+                event = json.loads(raw)
+                if not isinstance(event, dict) or not isinstance(event.get("type"), str):
+                    raise ValueError
+                if event["type"] == "turn.completed":
+                    terminals += 1
+                if event["type"] in {"error", "turn.failed"}:
+                    raise CodexExecutionError("provider_failed")
+        except (UnicodeError, json.JSONDecodeError, ValueError) as exc:
+            raise CodexExecutionError("provider_stream") from exc
+        if terminals != 1:
+            raise CodexExecutionError("provider_terminal")
+
+    def _validate_candidate(self, candidate: CandidateChangeV1, issue: IssueSnapshotV1, workspace: PreparedWorkspace, proof: SandboxProof) -> None:
+        try:
+            candidate = CandidateChangeV1.from_dict(candidate.to_dict())
+        except ContractError as exc:
+            raise CodexExecutionError("candidate_contract") from exc
+        if (
+            candidate.job_id != issue.job_id
+            or candidate.profile_digest != self._profile.profile_digest
+            or candidate.issue_snapshot_digest != issue.issue_snapshot_digest
+            or (candidate.base_sha, candidate.base_tree) != (issue.base_sha, issue.base_tree)
+            or candidate.workspace_digest != workspace.workspace_digest
+            or candidate.sandbox_evidence_digest != proof.evidence_digest
+            or candidate.model_id != self._profile.model_id
+            or candidate.executable_version != self._profile.codex_version
+            or candidate.executable_sha256 != self._profile.codex_sha256
+            or candidate.prompt_digest != self._profile.prompt_digest
+            or candidate.tool_policy_digest != self._profile.tool_policy_digest
+            or candidate.output_schema_digest != self._profile.output_schema_digest
+            or any(item.path not in self._profile.allowed_write_paths for item in candidate.changed_files)
+            or candidate.diff_bytes > self._profile.max_diff_bytes
+        ):
+            raise CodexExecutionError("candidate_binding")
+
+    def _terminal(self, job_id: str, reason_code: str) -> None:
+        try:
+            if self._store.get(job_id).state not in {"needs_human", "rejected"}:
+                self._store.mark_terminal(job_id, reason_code=reason_code)
+        except PilotStoreError:
+            pass
+
+
+class SubprocessCodexRunner:
+    """Process adapter; credential bytes are provided only at effect time."""
+
+    def __init__(self, credential_environment: Callable[[], Mapping[str, str]] | None = None, *, clock=None) -> None:
+        self._credential_environment = credential_environment or (lambda: {})
+        self._clock = clock or (lambda: datetime.now(timezone.utc))
+
+    def run(self, *, argv: tuple[str, ...], cwd: Path, environment: Mapping[str, str], stdin: bytes, timeout_seconds: int, max_output_bytes: int) -> ProcessResult:
+        credentials = dict(self._credential_environment())
+        if set(credentials) - {"CODEX_API_KEY"} or any(not isinstance(value, str) or not value for value in credentials.values()):
+            raise CodexExecutionError("credential_handle")
+        started = _utc(self._clock())
+        with tempfile.TemporaryFile() as stdout_file, tempfile.TemporaryFile() as stderr_file:
+            try:
+                process = subprocess.Popen(
+                    argv,
+                    cwd=cwd,
+                    env={**dict(environment), **credentials},
+                    stdin=subprocess.PIPE,
+                    stdout=stdout_file,
+                    stderr=stderr_file,
+                    shell=False,
+                    close_fds=True,
+                    start_new_session=True,
+                )
+                process.communicate(input=stdin, timeout=timeout_seconds)
+            except subprocess.TimeoutExpired as exc:
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except OSError:
+                    pass
+                process.wait()
+                raise CodexExecutionError("provider_timeout") from exc
+            except OSError as exc:
+                raise CodexExecutionError("provider_start") from exc
+            completed = _utc(self._clock())
+            if stdout_file.tell() + stderr_file.tell() > max_output_bytes:
+                raise CodexExecutionError("provider_output_limit")
+            stdout_file.seek(0)
+            stderr_file.seek(0)
+            return ProcessResult(process.returncode, stdout_file.read(), stderr_file.read(), started, completed)
+
+
+class CodexSandboxProbe:
+    """No-model confinement probe using the installed Codex sandbox helper."""
+
+    _SCRIPT = r'''import os, socket, sys
+inside, outside, git_head = sys.argv[1:]
+with open(inside, "xb") as stream:
+    stream.write(b"inside")
+os.unlink(inside)
+outside_denied = False
+try:
+    with open(outside, "xb") as stream:
+        stream.write(b"escape")
+except OSError:
+    outside_denied = not os.path.exists(outside)
+git_denied = False
+try:
+    descriptor = os.open(git_head, os.O_WRONLY)
+except OSError:
+    git_denied = True
+else:
+    os.close(descriptor)
+network_denied = False
+try:
+    candidate = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+except OSError:
+    network_denied = True
+else:
+    candidate.close()
+credentials_absent = not any(key in os.environ for key in ("CODEX_API_KEY", "GH_TOKEN", "GITHUB_TOKEN"))
+if all((outside_denied, git_denied, network_denied, credentials_absent)):
+    print("adaptive-pilot-sandbox-proof-v1")
+else:
+    raise SystemExit(91)
+'''
+
+    def __init__(self, profile: PilotProfileV1, *, clock=None) -> None:
+        self._profile = profile
+        self._clock = clock or (lambda: datetime.now(timezone.utc))
+
+    def prove(self, workspace: PreparedWorkspace) -> SandboxProof:
+        launcher_digest = hashlib.sha256(self._SCRIPT.encode("utf-8")).hexdigest()
+        outside = workspace.root / "outside-sentinel"
+        inside = workspace.worktree / ".pilot-sandbox-probe"
+        if outside.exists() or inside.exists():
+            return SandboxProof.failed(profile_digest=self._profile.profile_digest, workspace_digest=workspace.workspace_digest, launcher_digest=launcher_digest, reason_code="sentinel_exists", observed_at=_utc(self._clock()))
+        environment = {
+            "HOME": str(workspace.root / "sandbox-home"),
+            "PATH": "/usr/bin:/bin",
+            "LC_ALL": "C.UTF-8",
+            "TZ": "UTC",
+        }
+        Path(environment["HOME"]).mkdir(mode=0o700, exist_ok=False)
+        argv = (
+            self._profile.codex_executable,
+            "sandbox", "-P", ":workspace", "-C", str(workspace.worktree), "--",
+            self._profile.python_executable, "-c", self._SCRIPT,
+            str(inside), str(outside), str(workspace.git_dir / "HEAD"),
+        )
+        try:
+            completed = subprocess.run(argv, cwd=workspace.worktree, env=environment, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30, check=False)
+        except (OSError, subprocess.TimeoutExpired):
+            completed = None
+        passed = (
+            completed is not None
+            and completed.returncode == 0
+            and completed.stdout == b"adaptive-pilot-sandbox-proof-v1\n"
+            and len(completed.stderr) <= 4096
+            and not outside.exists()
+            and not inside.exists()
+        )
+        observed = _utc(self._clock())
+        if passed:
+            return SandboxProof.passed(profile_digest=self._profile.profile_digest, workspace_digest=workspace.workspace_digest, launcher_digest=launcher_digest, observed_at=observed)
+        return SandboxProof.failed(profile_digest=self._profile.profile_digest, workspace_digest=workspace.workspace_digest, launcher_digest=launcher_digest, reason_code="sandbox_probe_failed", observed_at=observed)
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(65_536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _utc(value: datetime) -> str:
+    if not isinstance(value, datetime) or value.tzinfo is None:
+        raise CodexExecutionError("clock")
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
