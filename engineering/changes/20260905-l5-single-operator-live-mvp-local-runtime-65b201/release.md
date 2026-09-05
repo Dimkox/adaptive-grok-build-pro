@@ -20,8 +20,8 @@ made.
 
 ## Go/no-go criteria
 
-Go to local verification only when focused tests pass, the frozen files match
-the predecessor, the worktree is clean, and no external capability is reachable.
-Then run one exact-head verifier and one code/test/security/data review wave.
+Focused source tests and architecture checks pass; after the final tracked source
+checkpoint is clean and frozen-file identity is rechecked, run one exact-head
+verifier and one code/test/security/data review wave.
 cPanel, live model use, hosting, PR/release, and deployment are separate no-go
 boundaries pending new authority and evidence.

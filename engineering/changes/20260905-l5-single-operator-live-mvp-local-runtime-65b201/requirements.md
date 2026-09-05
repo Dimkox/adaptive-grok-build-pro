@@ -4,20 +4,21 @@
 
 ## Acceptance criteria
 
-- [ ] Strict text, validated image, and safe DOCX fixtures normalize through one
+- [x] Strict text, validated image, and safe DOCX fixtures normalize through one
   fixed profile and deterministic fake executor; PDF/audio reach stable
   `needs_human` before executor invocation.
-- [ ] SQLite initializes only in an absolute, owned, non-link, mode-0700 root;
+- [x] SQLite initializes only in an absolute, owned, non-link, mode-0700 root;
   it verifies WAL, FULL synchronization, foreign keys, bounded busy timeout, and
   schema version one.
-- [ ] Submit/cancel exact replay survives store recreation; changed material
+- [x] Submit/cancel exact replay survives store recreation; changed material
   conflicts and cross-tenant/repository access is not disclosed.
-- [ ] Terminal jobs survive restart; stale normalizing/generating/evaluating jobs
-  become `needs_human` in one bounded recovery call with no automatic effect.
-- [ ] The concrete builder returns a fully bound deterministic artifact by
+- [x] Terminal jobs survive restart; stale accepted/normalizing/generating/
+  evaluating jobs become `needs_human` in one bounded recovery call with no
+  automatic effect.
+- [x] The concrete builder returns a fully bound deterministic artifact by
   reusing the existing coordinator/evaluator/packager and never permits a fourth
   attempt.
-- [ ] Frozen `v2.0.14`, OpenAPI, migrations `001`-`018`, source identity,
+- [x] Frozen `v2.0.14`, OpenAPI, migrations `001`-`018`, source identity,
   20-member inventory, existing API, and `live_url=null` remain unchanged.
 
 ## Failure and edge cases

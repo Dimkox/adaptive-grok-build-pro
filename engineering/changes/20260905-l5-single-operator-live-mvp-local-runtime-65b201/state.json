@@ -25,11 +25,17 @@
       "from": "approved",
       "reason": "Approved scope is decomposed into bounded TDD slices for the normalizer seam, SQLite store, and existing coordinator-to-packager bridge.",
       "to": "implementing"
+    },
+    {
+      "at": "2026-09-05T12:50:47+00:00",
+      "from": "implementing",
+      "reason": "Focused TDD slices for the injected normalizer, private SQLite replay/recovery, and coordinator-to-packager builder pass; architecture is registered and the frozen published identities remain unchanged, so the source is ready for its single final verifier and review wave.",
+      "to": "verifying"
     }
   ],
   "route_id": "65b2018b786d",
   "schema_version": 1,
-  "status": "implementing",
+  "status": "verifying",
   "title": "L5 single-operator live MVP local runtime",
-  "updated_at": "2026-09-05T12:16:59+00:00"
+  "updated_at": "2026-09-05T12:50:47+00:00"
 }

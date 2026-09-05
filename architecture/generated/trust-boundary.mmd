@@ -10,6 +10,7 @@ flowchart LR
     node_379217d10ea012c3["NODE-FACTORY-EARNED-AUTONOMY | local_component | local factory operators and human reviewers"]
     node_0a087cfaed95a8ad["NODE-FACTORY-EXECUTION-CORE | local_component | local factory operators"]
     node_340c6123d4df34df["NODE-FACTORY-LANDING-DOGFOOD | local_component | local factory operators"]
+    node_7c8192807445a8a6["NODE-FACTORY-LANDING-SQLITE | datastore | local factory operators"]
     node_93915052ae8a2e67["NODE-FACTORY-LOCAL-API | service | local factory operators"]
     node_a77de286f8308fd4["NODE-FACTORY-POSTGRES | datastore | local factory operators"]
     node_21b552fdfa11f1c2["NODE-FACTORY-PROPOSAL-BROKER | local_component | local factory operators"]
@@ -54,6 +55,7 @@ flowchart LR
   node_a6c166e55f8e1784 -->|"EDGE-FACTORY-CONTROL-PROPOSAL-BROKER | control | python_call"| node_21b552fdfa11f1c2
   node_a6c166e55f8e1784 -->|"EDGE-FACTORY-CONTROL-WORKSPACE | control | filesystem"| node_23f89cd7152cc030
   node_0a087cfaed95a8ad -->|"EDGE-FACTORY-EXECUTION-SEMANTIC-VALIDATION | data_flow | json"| node_c10acb5d92ad0ee0
+  node_340c6123d4df34df -->|"EDGE-FACTORY-LANDING-SQLITE | data_flow | sqlite"| node_7c8192807445a8a6
   node_21b552fdfa11f1c2 -->|"EDGE-FACTORY-PROPOSAL-BROKER-EXECUTION-CORE | dependency | python_import"| node_0a087cfaed95a8ad
   node_23f89cd7152cc030 -->|"EDGE-FACTORY-WORKSPACE-CONTROL | data_flow | filesystem"| node_a6c166e55f8e1784
   node_8b8a8cd21b180532 -->|"EDGE-GITHUB-TRUST-CI-API | data_flow | https"| node_d0e570b2fbe52f98

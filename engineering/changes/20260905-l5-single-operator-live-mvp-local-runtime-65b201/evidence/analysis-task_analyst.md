@@ -184,4 +184,3 @@ or its absence creates one of the critical failures above.
 - Stale PR #21 is superseded history and should be closed in a separate,
   explicitly authorized external operation. Its closure neither blocks nor
   proves this route.
-

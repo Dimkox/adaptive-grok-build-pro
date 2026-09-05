@@ -29,16 +29,18 @@ hosting action, and every result keeps `live_url` null.
 - `CoordinatedLandingArtifactBuilder` composes existing coordinator and packager
   objects and retains the complete sealed result; it does not reimplement Git,
   rendering, evaluation, or ZIP logic.
-- Reversible publication is optional and library-only. No concrete transport or
-  server wiring is introduced; cPanel remains downstream.
+- Reversible publication was intentionally deferred. The existing unavailable
+  publisher remains the only shipped boundary; cPanel remains downstream.
 
 ## Data flow
 
 `submit -> durable accepted -> normalizing -> typed provider outcome ->
 generating/evaluating (<=3 existing attempts) -> sealed artifact -> terminal`.
-Each durable transition is short and local. Startup examines a finite batch;
-stale `normalizing`, `generating`, or `evaluating` becomes `needs_human` and is
-never automatically replayed.
+Each durable transition is short and local. Startup examines at most 100 ordered
+records; stale `accepted` becomes `needs_human/input_unavailable_after_restart`,
+stale `normalizing` becomes `needs_human/provider_outcome_ambiguous`, and stale
+`generating` or `evaluating` becomes `needs_human/local_run_interrupted`. None is
+automatically replayed.
 
 ## API and event contracts
 

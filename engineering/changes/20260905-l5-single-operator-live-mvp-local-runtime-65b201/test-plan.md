@@ -8,7 +8,7 @@
 | P0 | SQLite exact submit/cancel replay, isolation, terminal persistence, and bounded interrupted-state recovery | `test_landing_sqlite_store.py` |
 | P0 | Existing coordinator and packager produce one fully bound deterministic artifact | `test_landing_runtime.py` |
 | P1 | Existing in-memory API behavior, frozen identities, and `live_url=null` remain compatible | focused existing landing tests |
-| P1 | Optional reversible port performs only deterministic fake effects and is absent from composition | focused delivery test if implemented |
+| P1 | Existing publisher remains unavailable and absent from composition | predecessor behavior; no publisher source changed |
 
 ## Automated checks
 

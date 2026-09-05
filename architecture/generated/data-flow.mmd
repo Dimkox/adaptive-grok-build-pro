@@ -4,6 +4,8 @@ flowchart LR
   node_0a0fe2f046a648e9["NODE-EXTERNAL-HOLDOUT | policy_bundle | external Trust CI policy operators"]
   node_a6c166e55f8e1784["NODE-FACTORY-CONTROL | local_component | local factory operators"]
   node_0a087cfaed95a8ad["NODE-FACTORY-EXECUTION-CORE | local_component | local factory operators"]
+  node_340c6123d4df34df["NODE-FACTORY-LANDING-DOGFOOD | local_component | local factory operators"]
+  node_7c8192807445a8a6["NODE-FACTORY-LANDING-SQLITE | datastore | local factory operators"]
   node_a77de286f8308fd4["NODE-FACTORY-POSTGRES | datastore | local factory operators"]
   node_fae11f6a95d982dc["NODE-FACTORY-PROVIDER-ADAPTERS | local_component | local factory operators"]
   node_c10acb5d92ad0ee0["NODE-FACTORY-SEMANTIC-VALIDATION | local_component | independent local semantic validators"]
@@ -23,6 +25,7 @@ flowchart LR
   node_fae11f6a95d982dc -->|"EDGE-FACTORY-ADAPTERS-EXECUTION-CORE | data_flow | jsonl | DATA-FACTORY-INTENT | DATA-FACTORY-STATE"| node_0a087cfaed95a8ad
   node_a6c166e55f8e1784 -->|"EDGE-FACTORY-CONTROL-POSTGRES | data_flow | postgresql | DATA-FACTORY-AUDIT | DATA-FACTORY-INTENT | DATA-FACTORY-STATE"| node_a77de286f8308fd4
   node_0a087cfaed95a8ad -->|"EDGE-FACTORY-EXECUTION-SEMANTIC-VALIDATION | data_flow | json | DATA-FACTORY-INTENT | DATA-FACTORY-STATE"| node_c10acb5d92ad0ee0
+  node_340c6123d4df34df -->|"EDGE-FACTORY-LANDING-SQLITE | data_flow | sqlite | DATA-FACTORY-LANDING-INPUT"| node_7c8192807445a8a6
   node_23f89cd7152cc030 -->|"EDGE-FACTORY-WORKSPACE-CONTROL | data_flow | filesystem | DATA-FACTORY-STATE | DATA-REPOSITORY-SOURCE"| node_a6c166e55f8e1784
   node_8b8a8cd21b180532 -->|"EDGE-GITHUB-TRUST-CI-API | data_flow | https | DATA-PR-PROJECTION"| node_d0e570b2fbe52f98
   node_dfd1104494c6ab8f -->|"EDGE-GOVERNANCE-REGISTRIES-VALIDATOR | data_flow | filesystem | DATA-REPOSITORY-SOURCE"| node_23677f8757246623

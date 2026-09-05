@@ -4,15 +4,15 @@
       "id": "AC-001",
       "statement": "A trusted native-Codex normalizer seam accepts strict text, a validated image, or safe bounded DOCX input through a fixed profile and deterministic fake executor; the default is unavailable, while PDF and audio become needs_human before blob-dependent model invocation or any external effect.",
       "evidence": [
-        {"attestation": "planned-test-landing-normalizer"},
+        {"test": "factory/tests/test_landing_normalizer.py"},
         {"receipt": "security_review"}
       ]
     },
     {
       "id": "AC-002",
-      "statement": "The stdlib SQLite store enforces a private absolute runtime root, WAL and FULL synchronization, complete tenant/repository/job identity, durable submit and cancel replay, terminal persistence, and bounded startup conversion of interrupted processing states to needs_human without automatic external replay.",
+      "statement": "The stdlib SQLite store enforces a private absolute runtime root, WAL and FULL synchronization, complete tenant/repository/job identity, durable submit and cancel replay, terminal persistence, and bounded startup conversion of accepted or interrupted processing states to needs_human without automatic external replay.",
       "evidence": [
-        {"attestation": "planned-test-landing-sqlite-store"},
+        {"test": "factory/tests/test_landing_sqlite_store.py"},
         {"receipt": "test_review"}
       ]
     },
@@ -21,14 +21,14 @@
       "statement": "The application service continues to work with its in-memory store and API while a store protocol permits restart-safe SQLite use without weakening tenant isolation, idempotency, cancellation, or terminal replay.",
       "evidence": [
         {"test": "factory/tests/test_landing_api.py"},
-        {"attestation": "planned-test-landing-sqlite-store"}
+        {"test": "factory/tests/test_landing_sqlite_store.py"}
       ]
     },
     {
       "id": "AC-004",
-      "statement": "A concrete offline builder composes the existing provider, three-attempt coordinator, independent evaluator, exact-source workspace, and deterministic packager into a validated SiteArtifactV1 while retaining the full ZIP, sidecar, manifest, attempt, and evaluation metadata.",
+      "statement": "A concrete offline builder consumes a bound provider result and composes the existing three-attempt coordinator, independent evaluator, exact-source workspace, and deterministic packager into a validated SiteArtifactV1 while retaining the full ZIP, sidecar, manifest, attempt, and evaluation metadata.",
       "evidence": [
-        {"attestation": "planned-test-landing-runtime"},
+        {"test": "factory/tests/test_landing_runtime.py"},
         {"receipt": "code_review"}
       ]
     },
@@ -54,17 +54,17 @@
     {
       "id": "FORBID-001",
       "statement": "Caller or input content selects an executable, model, provider, repository, source identity, filesystem root, output path, credential, transport, host, or authority.",
-      "evidence": [{"attestation": "planned-test-landing-normalizer"}, {"receipt": "security_review"}]
+      "evidence": [{"test": "factory/tests/test_landing_normalizer.py"}, {"receipt": "security_review"}]
     },
     {
       "id": "FORBID-002",
       "statement": "PDF or audio invokes the executor, an unavailable profile reads source bytes, or any provider failure causes implicit fallback or replay.",
-      "evidence": [{"attestation": "planned-test-landing-normalizer"}]
+      "evidence": [{"test": "factory/tests/test_landing_normalizer.py"}]
     },
     {
       "id": "FORBID-003",
       "statement": "Restart repeats an ambiguous external operation, loses a terminal result, exposes a cross-tenant record, or permits a cancelled or stale worker result to replace durable state.",
-      "evidence": [{"attestation": "planned-test-landing-sqlite-store"}, {"receipt": "test_review"}]
+      "evidence": [{"test": "factory/tests/test_landing_sqlite_store.py"}, {"receipt": "test_review"}]
     },
     {
       "id": "FORBID-004",
@@ -76,22 +76,22 @@
     {
       "id": "INV-001",
       "statement": "Every durable job and command is canonically bound to tenant_id, repository_id, job_id, input digest, state, and exact command material.",
-      "evidence": [{"attestation": "planned-test-landing-sqlite-store"}]
+      "evidence": [{"test": "factory/tests/test_landing_sqlite_store.py"}]
     },
     {
       "id": "INV-002",
       "statement": "SQLite mutations are local, bounded, transactional, WAL/FULL, and never span provider, workspace, renderer, evaluator, or artifact I/O.",
-      "evidence": [{"attestation": "planned-test-landing-sqlite-store"}]
+      "evidence": [{"test": "factory/tests/test_landing_sqlite_store.py"}]
     },
     {
       "id": "INV-003",
       "statement": "A ready result is accepted only after all existing source, provider, attempt, evaluation, manifest, ZIP, sidecar, and artifact bindings validate.",
-      "evidence": [{"attestation": "planned-test-landing-runtime"}]
+      "evidence": [{"test": "factory/tests/test_landing_runtime.py"}]
     },
     {
       "id": "INV-004",
       "statement": "Unavailable is the default provider and publisher composition; fake executors or transports confer no network, credential, target, publication, or deployment authority.",
-      "evidence": [{"attestation": "planned-test-landing-normalizer"}, {"receipt": "security_review"}]
+      "evidence": [{"test": "factory/tests/test_landing_normalizer.py"}, {"receipt": "security_review"}]
     }
   ],
   "objective": {
@@ -108,7 +108,7 @@
     },
     {
       "id": "SIG-002",
-      "metric": "Startup recovery reports a bounded scanned/recovered count and converts each interrupted processing state to a stable needs_human reason without invoking an executor or transport.",
+      "metric": "Startup recovery is limited to 100 ordered records and persists a stable needs_human reason for each recovered accepted or processing state without invoking an executor or transport.",
       "proves": ["OBJ-001"]
     }
   ],
