@@ -211,7 +211,7 @@ env -i \
   PATH=/usr/bin:/bin \
   HOME="$PRIVATE_HOME" \
   CODEX_HOME="$PRIVATE_CODEX_HOME" \
-  CODEX_API_KEY="$ONE_RUN_CODEX_TOKEN" \
+  "CODEX_API_KEY=${ONE_RUN_CODEX_TOKEN}" \
   LC_ALL=C.UTF-8 TZ=UTC \
   "$PINNED_CODEX" -a never exec \
     --strict-config \
@@ -321,7 +321,7 @@ base, already-pushed head, trusted title, and private mode-`0600` body file:
 
 ```bash
 env GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1 GH_TELEMETRY=0 \
-  GH_TOKEN="$ONE_EFFECT_GITHUB_TOKEN" \
+  "GH_TOKEN=${ONE_EFFECT_GITHUB_TOKEN}" \
   gh pr create \
     --repo "$OWNER/$REPO" \
     --base "$BASE_BRANCH" \

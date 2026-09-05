@@ -14,6 +14,12 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-05 — Treated targeted implementation tests as the exact PR gate
+
+**Symptom:** The exact PR verifier found unowned `pilot/tests/**`, secret-scan fixture false positives, and root unittest failures after the targeted pilot tests had passed.
+**Root cause:** The implementation preflight omitted the exact PR gate, so architecture ownership/adoption fixtures and credential-shaped test/documentation strings were not checked against the repository-wide architecture and secret-scan contracts before the source freeze.
+**Durable rule:** Preflight changed architecture ownership and scanner fixtures with their focused repository-wide gate methods, then run the exact PR verifier once on the frozen product tree.
+
 ## 2026-08-31 — Ran the restack verifier with its inherited divergent route base
 
 **Symptom:** The first full verifier passed tests and coverage but failed architecture and governance because it compared the merge against unrelated `1c06299894279a88b881defa3f19b004fa742223`.

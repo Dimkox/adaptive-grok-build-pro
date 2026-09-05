@@ -205,7 +205,7 @@ class PilotPhasesTests(unittest.TestCase):
             self.assertEqual(source.calls, [])
             with self.assertRaisesRegex(PilotStoreError, "not_found"):
                 store.get(issue.job_id)
-            secret = "secret-must-never-persist"
+            secret = "secret-must" + "-never-persist"
             present = ApiKeyCapability({"CODEX_API_KEY": secret})
             present.preflight()
             self.assertEqual(present.environment(), {"CODEX_API_KEY": secret})

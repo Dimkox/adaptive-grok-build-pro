@@ -1881,7 +1881,8 @@
         "pilot/coordinator.py",
         "pilot/contracts.py",
         "pilot/live.py",
-        "pilot/profile.py"
+        "pilot/profile.py",
+        "pilot/tests"
       ],
       "runtime": {
         "evidence": "source_described",

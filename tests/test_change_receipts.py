@@ -86,7 +86,13 @@ class ChangeTests(unittest.TestCase):
 class ReceiptTests(unittest.TestCase):
     @staticmethod
     def _adopt_architecture(root: Path) -> None:
-        for rel in ("architecture", "schemas", "engineering/contracts", "factory/contracts"):
+        for rel in (
+            "architecture",
+            "schemas",
+            "engineering/contracts",
+            "factory/contracts",
+            "pilot/contracts",
+        ):
             source = ROOT / rel
             target = root / rel
             if target.exists():

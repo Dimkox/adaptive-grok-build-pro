@@ -238,6 +238,14 @@ class ArchitectureModelTests(unittest.TestCase):
                     "max_ast_complexity": 425,
                     "severity": "error",
                 },
+                {
+                    "id": "FIT-BOUNDED-PILOT-CHANGE",
+                    "path_prefixes": ["pilot"],
+                    "max_changed_bytes": 350_000,
+                    "max_changed_lines": 6_000,
+                    "max_ast_complexity": 900,
+                    "severity": "error",
+                },
             ]
         }
         actual = {rule["id"]: rule for rule in snapshot.rules["code_budgets"]}
@@ -1299,7 +1307,7 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 33)
+        self.assertEqual(len(records), 38)
         self.assertNotIn(".gitkeep", {record.path for record in records})
         self.assertFalse(any(record.path.startswith("examples/") for record in records))
         documents = {record.id: record.document for record in records}

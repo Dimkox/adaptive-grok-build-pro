@@ -290,7 +290,13 @@ class _PathTools:
 class VerificationTests(unittest.TestCase):
     @staticmethod
     def _adopt_architecture(root: Path) -> None:
-        for rel in ('architecture', 'schemas', 'engineering/contracts', 'factory'):
+        for rel in (
+            'architecture',
+            'schemas',
+            'engineering/contracts',
+            'factory',
+            'pilot/contracts',
+        ):
             source = ROOT / rel
             target = root / rel
             if target.exists():
