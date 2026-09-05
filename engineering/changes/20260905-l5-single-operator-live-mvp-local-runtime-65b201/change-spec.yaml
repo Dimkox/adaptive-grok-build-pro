@@ -1,0 +1,128 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "A trusted native-Codex normalizer seam accepts strict text, a validated image, or safe bounded DOCX input through a fixed profile and deterministic fake executor; the default is unavailable, while PDF and audio become needs_human before blob-dependent model invocation or any external effect.",
+      "evidence": [
+        {"attestation": "planned-test-landing-normalizer"},
+        {"receipt": "security_review"}
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "The stdlib SQLite store enforces a private absolute runtime root, WAL and FULL synchronization, complete tenant/repository/job identity, durable submit and cancel replay, terminal persistence, and bounded startup conversion of interrupted processing states to needs_human without automatic external replay.",
+      "evidence": [
+        {"attestation": "planned-test-landing-sqlite-store"},
+        {"receipt": "test_review"}
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "The application service continues to work with its in-memory store and API while a store protocol permits restart-safe SQLite use without weakening tenant isolation, idempotency, cancellation, or terminal replay.",
+      "evidence": [
+        {"test": "factory/tests/test_landing_api.py"},
+        {"attestation": "planned-test-landing-sqlite-store"}
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "A concrete offline builder composes the existing provider, three-attempt coordinator, independent evaluator, exact-source workspace, and deterministic packager into a validated SiteArtifactV1 while retaining the full ZIP, sidecar, manifest, attempt, and evaluation metadata.",
+      "evidence": [
+        {"attestation": "planned-test-landing-runtime"},
+        {"receipt": "code_review"}
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "The predecessor f3f8d7375a153393ffba3906165e8d625e45d4a1 remains the exact source boundary: v2.0.14 package bytes, frozen OpenAPI, migrations 001-018, source identity, 20-member artifact inventory, and live_url null do not change; no live model, network, hosting, GitHub, release, or deployment effect occurs.",
+      "evidence": [
+        {"test": "tests/test_structure.py"},
+        {"receipt": "verification"}
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260905-l5-single-operator-live-mvp-local-runtime-65b201",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Caller or input content selects an executable, model, provider, repository, source identity, filesystem root, output path, credential, transport, host, or authority.",
+      "evidence": [{"attestation": "planned-test-landing-normalizer"}, {"receipt": "security_review"}]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "PDF or audio invokes the executor, an unavailable profile reads source bytes, or any provider failure causes implicit fallback or replay.",
+      "evidence": [{"attestation": "planned-test-landing-normalizer"}]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "Restart repeats an ambiguous external operation, loses a terminal result, exposes a cross-tenant record, or permits a cancelled or stale worker result to replace durable state.",
+      "evidence": [{"attestation": "planned-test-landing-sqlite-store"}, {"receipt": "test_review"}]
+    },
+    {
+      "id": "FORBID-004",
+      "statement": "The route changes published artifacts, frozen OpenAPI, migrations, server-wires a publisher, reports a live URL, or claims operational L5, cPanel, hosting, model, or production capability.",
+      "evidence": [{"receipt": "code_review"}, {"receipt": "security_review"}]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Every durable job and command is canonically bound to tenant_id, repository_id, job_id, input digest, state, and exact command material.",
+      "evidence": [{"attestation": "planned-test-landing-sqlite-store"}]
+    },
+    {
+      "id": "INV-002",
+      "statement": "SQLite mutations are local, bounded, transactional, WAL/FULL, and never span provider, workspace, renderer, evaluator, or artifact I/O.",
+      "evidence": [{"attestation": "planned-test-landing-sqlite-store"}]
+    },
+    {
+      "id": "INV-003",
+      "statement": "A ready result is accepted only after all existing source, provider, attempt, evaluation, manifest, ZIP, sidecar, and artifact bindings validate.",
+      "evidence": [{"attestation": "planned-test-landing-runtime"}]
+    },
+    {
+      "id": "INV-004",
+      "statement": "Unavailable is the default provider and publisher composition; fake executors or transports confer no network, credential, target, publication, or deployment authority.",
+      "evidence": [{"attestation": "planned-test-landing-normalizer"}, {"receipt": "security_review"}]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Deliver a Stage 3/5 single-operator local landing runtime on exact predecessor f3f8d7375a153393ffba3906165e8d625e45d4a1 by adding a disabled-by-default native-Codex normalization seam, restart-safe SQLite job state, and a concrete deterministic artifact builder without any live or external effect.",
+    "success_metric": "Focused tests prove text/image/safe-DOCX normalization, PDF/audio pre-invocation needs_human, durable submit/cancel and restart replay, full-key isolation, bounded recovery, and a correctly bound SiteArtifactV1; one later exact-head verifier and one four-reviewer wave close the frozen source tree.",
+    "target": "offline_stage_3_of_5_single_operator_landing_runtime"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Closed job outcomes expose state, bounded reason, revision, input/provider/artifact digests, and exact replay identity without raw content or secrets.",
+      "proves": ["OBJ-001"]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "Startup recovery reports a bounded scanned/recovered count and converts each interrupted processing state to a stable needs_human reason without invoking an executor or transport.",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "ai",
+      "api",
+      "data"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 2,
+    "strategy": "feature_flag"
+  },
+  "schema_version": 2
+}

@@ -656,3 +656,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** A no-local clone from a worktree did not receive a merge commit that existed only in that worktree's remote-tracking ref.
 **Prevention:** Post-merge rebuilds must clone the canonical origin or explicitly fetch the exact merge commit before checkout.
+
+## 2026-09-05 — Spawned outside the active route to probe status
+
+**Root cause:** A collaboration worker was used as a progress probe even though `status_probe` was not route-allowed; it was interrupted before making edits.
+**Prevention:** Use `list_agents` and read-only Git/process status for progress checks, and never spawn an agent absent from `allowed_agents`.
