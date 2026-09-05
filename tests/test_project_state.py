@@ -179,12 +179,15 @@ class ProjectStateTests(unittest.TestCase):
         )
         self.assertEqual(
             repair["full_verifier"],
-            "one_exact_artifact_child_run_required_before_ready",
+            "original_2405b013_failed_one_postgres_method_then_targeted_recovery_passed_unchanged_tree",
         )
         self.assertEqual(
             repair["independent_reviews"],
-            "one_route_selected_wave_required_after_verifier_pass",
+            "original_fail_reports_preserved_existing_three_reviewers_recheck_final_repaired_artifact",
         )
+        self.assertEqual(repair["execution"]["command_permissions"], "pilot_confined")
+        self.assertEqual(repair["observed_target_drift"]["status"], "blocked_before_model_attempt")
+        self.assertFalse(repair["execution"]["live_model_invoked"])
 
         exact_milestone_facts = {
             "M0": {

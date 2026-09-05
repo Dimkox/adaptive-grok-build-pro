@@ -710,3 +710,7 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 ## 2026-09-05 — Launched the targeted recovery loader without the repository import root
 
 **Root cause:** The evidence script ran from a nested directory without placing the repository on `sys.path`, so its first invocation failed during import and ran no test or database recovery. Preserve that failed attempt separately and check the loader path before the one corrected targeted invocation; the subsequent real method and restart probes passed on unchanged source.
+
+## 2026-09-05 — Built before synchronizing the machine-handoff assertion
+
+**Root cause:** The repaired `PROJECT_STATE.json` changed verification status strings before its exact-value test consumer was inspected, causing an avoidable candidate rebuild. Inspect machine-state consumers before source freeze; synchronize the factual assertion without rerunning unrelated suites.
