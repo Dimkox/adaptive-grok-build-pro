@@ -424,3 +424,7 @@ Raise only the measured factory-total AST ceiling to 1,450, factory-source AST c
 ## 2026-09-04 — Bind publication to the protected merge tree
 
 Compare the protected merge tree with the checked artifact-child tree, then rebuild from the exact merged commit before pushing the tag and publishing the release. This proved the squash changed commit identity while preserving the reviewed bytes and kept the published archive bound to its immutable tag target.
+
+## 2026-09-05 — Separate stale-PR cleanup from product source
+
+Close stale conflicting PR #21 only after verifying that PR #22 and PR #24 delivered its superseding product history, and bind the cleanup to its own exact external-write grant. Keeping that historical mutation outside the product change avoided package restacking and reverification while restoring protected main and immutable releases as source of truth.

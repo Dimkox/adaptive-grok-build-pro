@@ -14,4 +14,4 @@ adaptive-factory-server = "adaptive_factory.server:main"
 adaptive-factory-admin = "adaptive_factory.admin:main"
 
 [tool.setuptools.package-data]
-adaptive_factory = ["resources/*.sql"]
+adaptive_factory = ["resources/*.json", "resources/*.sql"]

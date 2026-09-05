@@ -249,10 +249,10 @@ class LandingApplicationService:
                 raise LandingServiceError(
                     "provider_binding", 500, "landing provider evidence mismatch"
                 )
-            if outcome.spec is None:
+            if outcome.state != "normalized" or outcome.spec is None:
                 return replace(
                     accepted,
-                    state="provider_unavailable",
+                    state=outcome.state,
                     provider_evidence_digest=outcome.evidence.provider_evidence_digest,
                 )
             if (

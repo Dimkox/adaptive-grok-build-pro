@@ -225,6 +225,23 @@ class LandingNormalizationRequest:
 class LandingNormalizationOutcome:
     spec: StaticLandingSpecV1 | None
     evidence: LandingProviderEvidenceV1
+    state: str = "normalized"
+    reason_code: str = "normalized"
+
+    def __post_init__(self) -> None:
+        if self.state not in {
+            "normalized",
+            "provider_unavailable",
+            "needs_human",
+            "rejected",
+        }:
+            raise LandingProviderError("normalization_state")
+        if not _IDENTIFIER.fullmatch(self.reason_code):
+            raise LandingProviderError("normalization_reason")
+        if (self.state == "normalized") != isinstance(
+            self.spec, StaticLandingSpecV1
+        ):
+            raise LandingProviderError("normalization_spec")
 
 
 class LandingProvider(Protocol):
@@ -272,7 +289,9 @@ class UnavailableLandingProvider:
             usage_output_units=0,
             disposition="provider_unavailable",
         )
-        return LandingNormalizationOutcome(None, evidence)
+        return LandingNormalizationOutcome(
+            None, evidence, "provider_unavailable", "profile_unavailable"
+        )
 
 
 class FixedCommandLandingProvider:
