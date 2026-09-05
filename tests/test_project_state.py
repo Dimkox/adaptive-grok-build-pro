@@ -11,6 +11,12 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PILOT_MERGE_SHA = "fd51dcfed6b33f4a8707c0db602328146df17cc9"
+PILOT_HEAD_SHA = "9fcc9d943c74260c02a920a59490143f91cb38b2"
+PILOT_TREE = "f01e9b0d1f80fb6731c68079540fd98e5c1f64ac"
+PILOT_ZIP_SHA256 = "1f0f64557fd258df7e533f674bb4e7c55d4a1a51454d48bcfecfa5487d08e9d7"
+PILOT_SIDECAR_SHA256 = "8f3ed4b8eb96f7984eb38b0c988bd8a8cee8cdc789bca52527084b78fd791c6d"
+# CURRENT_* below retain the prior v2.0.14 evidence fixtures.
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
 CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"
@@ -87,9 +93,9 @@ class ProjectStateTests(unittest.TestCase):
         state = self.state
         self.assertEqual(state["schema_version"], 2)
         self.assertEqual(state["product_version"], "2.0.15")
-        self.assertEqual(state["latest_published_release"], "v2.0.14")
-        self.assertEqual(state["observed_main_sha"], CURRENT_MAIN_SHA)
-        self.assertRegex(state["observed_at"], r"^2026-09-04T\d{2}:\d{2}:\d{2}Z$")
+        self.assertEqual(state["latest_published_release"], "v2.0.15")
+        self.assertEqual(state["observed_main_sha"], PILOT_MERGE_SHA)
+        self.assertRegex(state["observed_at"], r"^2026-09-05T\d{2}:\d{2}:\d{2}Z$")
         self.assertEqual(set(state["milestones"]), MILESTONES)
         for milestone in state["milestones"].values():
             self.assertEqual(set(milestone), set(AXES))
@@ -120,11 +126,12 @@ class ProjectStateTests(unittest.TestCase):
             self.state["implemented_milestones"],
             ["M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9"],
         )
-        repair = state["current_unreleased_change"]
+        self.assertIsNone(state["current_unreleased_change"])
+        repair = state["pilot_delivery"]
         self.assertEqual(repair["route_id"], "0ce2d62a018e")
         self.assertEqual(repair["branch"], "feature/design-partner-pilot")
         self.assertEqual(repair["source_base"], "6f3b6ed2853b7a6f78804888cffca578d4dc9448")
-        self.assertEqual(repair["stage"], "local_pr_candidate")
+        self.assertEqual(repair["stage"], "published_repository_capability")
         self.assertEqual(repair["landing_source"]["commit"], CURRENT_LANDING_SHA)
         self.assertEqual(repair["landing_source"]["tree"], CURRENT_LANDING_TREE)
         self.assertTrue(repair["landing_source"]["read_only"])
@@ -157,7 +164,8 @@ class ProjectStateTests(unittest.TestCase):
             repair["package_rebuild"],
             "source_parent_R_then_zip_sidecar_only_child_A",
         )
-        self.assertFalse(repair["external_effect"])
+        self.assertTrue(repair["external_effect"])
+        self.assertEqual(repair["external_effect_scope"], "control_repository_branch_pr_merge_tag_release_only")
         self.assertEqual(
             repair["focused_tests"],
             {
@@ -183,7 +191,7 @@ class ProjectStateTests(unittest.TestCase):
         )
         self.assertEqual(
             repair["independent_reviews"],
-            "original_fail_reports_preserved_existing_three_reviewers_recheck_final_repaired_artifact",
+            "code_test_security_pass_at_9fcc9d9",
         )
         self.assertEqual(repair["execution"]["command_permissions"], "pilot_confined")
         self.assertEqual(repair["observed_target_drift"]["status"], "blocked_before_model_attempt")
@@ -333,22 +341,25 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(m9["main_delivery"]["merge_commit"], RELEASE_MERGE_SHA)
 
         published = state["published_release"]
-        self.assertEqual(published["tag"], "v2.0.14")
-        self.assertEqual(published["checked_head"], CURRENT_RELEASE_HEAD_SHA)
-        self.assertEqual(published["merge_commit"], CURRENT_MAIN_SHA)
-        self.assertEqual(published["tree"], CURRENT_RELEASE_TREE)
-        self.assertEqual(published["artifact"]["sha256"], CURRENT_RELEASE_ZIP_SHA256)
-        self.assertEqual(
-            published["artifact"]["sidecar_sha256"],
-            CURRENT_RELEASE_SIDECAR_SHA256,
-        )
+        self.assertEqual(published["tag"], "v2.0.15")
+        self.assertEqual(published["checked_head"], PILOT_HEAD_SHA)
+        self.assertEqual(published["merge_commit"], PILOT_MERGE_SHA)
+        self.assertEqual(published["tree"], PILOT_TREE)
+        self.assertEqual(published["artifact"]["sha256"], PILOT_ZIP_SHA256)
+        self.assertEqual(published["artifact"]["sidecar_sha256"], PILOT_SIDECAR_SHA256)
+        self.assertEqual(published["trust_ci"]["check_run_id"], 101365945968)
+        self.assertEqual(published["trust_ci"]["conclusion"], "SUCCESS")
+        self.assertEqual(published["gitguardian"]["conclusion"], "SKIPPED")
         prior = state["prior_published_releases"]
-        self.assertEqual(len(prior), 1)
-        self.assertEqual(prior[0]["tag"], "v2.0.13")
-        self.assertEqual(prior[0]["checked_head"], RELEASE_HEAD_SHA)
-        self.assertEqual(prior[0]["merge_commit"], RELEASE_MERGE_SHA)
-        self.assertEqual(prior[0]["tree"], RELEASE_TREE)
-        self.assertEqual(prior[0]["artifact"]["sha256"], RELEASE_ZIP_SHA256)
+        self.assertEqual([entry["tag"] for entry in prior], ["v2.0.14", "v2.0.13"])
+        self.assertEqual(prior[0]["checked_head"], CURRENT_RELEASE_HEAD_SHA)
+        self.assertEqual(prior[0]["merge_commit"], CURRENT_MAIN_SHA)
+        self.assertEqual(prior[0]["tree"], CURRENT_RELEASE_TREE)
+        self.assertEqual(prior[0]["artifact"]["sha256"], CURRENT_RELEASE_ZIP_SHA256)
+        self.assertEqual(prior[1]["checked_head"], RELEASE_HEAD_SHA)
+        self.assertEqual(prior[1]["merge_commit"], RELEASE_MERGE_SHA)
+        self.assertEqual(prior[1]["tree"], RELEASE_TREE)
+        self.assertEqual(prior[1]["artifact"]["sha256"], RELEASE_ZIP_SHA256)
         self.assertEqual(
             state["local_candidate"],
             {
@@ -395,15 +406,15 @@ class ProjectStateTests(unittest.TestCase):
     def test_m4_source_implementation_is_distinct_from_verification_review_and_delivery(self) -> None:
         dimensions = self.state["active_delivery"]["m4_dimensions"]
         self.assertEqual(
-            self.state["active_delivery"]["status"],
+            self.state["historical_delivery_v2_0_14"]["status"],
             "v2.0.14_published_repository_delivery_complete",
         )
         self.assertTrue(
-            self.state["active_delivery"]["next_action"].startswith(
+            self.state["historical_delivery_v2_0_14"]["next_action"].startswith(
                 "No repository-release action remains for v2.0.14"
             )
         )
-        source_gate = self.state["active_delivery"]["local_source_gate"]
+        source_gate = self.state["historical_delivery_v2_0_14"]["local_source_gate"]
         self.assertEqual(source_gate["status"], "passed_for_artifact_head")
         self.assertEqual(source_gate["product_head"], "5f47508f3c0d52b71a3c866969cc28b6476a9d99")
         self.assertEqual(source_gate["policy_head"], "58c9caed5d2c8f9febba297430a0782438505d82")
@@ -411,9 +422,9 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(source_gate["artifact_head"], CURRENT_RELEASE_HEAD_SHA)
         self.assertEqual(source_gate["artifact_tree"], CURRENT_RELEASE_TREE)
         self.assertEqual(source_gate["artifact_verification"], "passed")
-        self.assertEqual(self.state["active_delivery"]["route_id"], "9f67efd2575c")
+        self.assertEqual(self.state["historical_delivery_v2_0_14"]["route_id"], "9f67efd2575c")
         self.assertEqual(
-            self.state["active_delivery"]["branch"],
+            self.state["historical_delivery_v2_0_14"]["branch"],
             "feature/l5-multimodal-landing-factory",
         )
         self.assertEqual(
@@ -457,6 +468,23 @@ class ProjectStateTests(unittest.TestCase):
             self.state["milestones"]["M5"]["implementation"]["status"],
             "delivered_to_main",
         )
+
+    def test_published_pilot_handoff_keeps_live_work_separate(self) -> None:
+        delivery = self.state["active_delivery"]
+        self.assertEqual(delivery["pull_request"], 27)
+        self.assertEqual(delivery["status"], "v2.0.15_published_repository_delivery_complete")
+        self.assertEqual(delivery["repository_delivery_ref"], "published_release")
+        self.assertEqual(delivery["package_handoff"]["tag_target"], PILOT_MERGE_SHA)
+        self.assertEqual(delivery["local_source_gate"]["artifact_head"], PILOT_HEAD_SHA)
+        self.assertFalse(delivery["local_source_gate"]["full_local_suite_repeated"])
+        self.assertFalse(self.state["pilot_delivery"]["execution"]["live_model_invoked"])
+        self.assertFalse(self.state["pilot_delivery"]["operational_activation"])
+        for name in ("README.md", "START_HERE.md", "packages/README.md"):
+            text = (ROOT / name).read_text(encoding="utf-8")
+            self.assertIn(PILOT_MERGE_SHA, text)
+            self.assertIn(PILOT_ZIP_SHA256, text)
+            self.assertNotIn("pair remains unpublished", text)
+            self.assertNotIn("pair is not published", text)
 
     def test_m4_handoff_does_not_make_an_unconditional_stale_package_claim(self) -> None:
         surfaces = (
@@ -684,13 +712,17 @@ class ProjectStateTests(unittest.TestCase):
     def test_work_inventory_preserves_open_and_unresolved_continuation_work(self) -> None:
         inventory = self.state["work_inventory"]
         expected_open = [
-            {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Lazy CLI imports and tests are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
-            {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Repository-scoped Trust CI profiles are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
-            {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": CURRENT_CHECK, "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "Investor demo and packaging hardening are absent from main.", "disposition": "Wholesale merge is superseded; extract the unique scope into a clean successor. No successor PR exists."},
+            {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Lazy CLI imports and tests are absent from main.", "disposition": "First bounded successor: adapt lazy CLI imports and dependency-isolation tests to current CLI. No successor PR exists."},
+            {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Repository-scoped Trust CI profiles are absent from main.", "disposition": "Separate security-sensitive successor preserving later path/policy hardening. Deployed-policy rollout is separately authorized. No successor PR exists."},
+            {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": CURRENT_CHECK, "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "Exposed check99474674480: holdout integrity and external holdout pass, root-unittest exit1; no method diagnostics available.", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "Loopback investor dashboard, bounded demo adapters and current-architecture integration remain absent; old writable-staging packaging test workaround is obsolete.", "disposition": "Preserve feature scope in an adapted clean successor; do not restore obsolete packaging workaround or cherry-pick the old fingerprint. No successor PR exists."},
         ]
+        for entry in expected_open:
+            entry["inventory_evidence"] = "engineering/runbooks/20260905-open-pr-reconciliation.md"
         self.assertEqual(inventory["open_pull_requests"], expected_open)
         delivered = self.state["delivered_non_milestone_work"]
-        self.assertEqual(len(delivered), 2)
+        self.assertEqual(len(delivered), 3)
+        self.assertEqual(delivered[2]["pull_request"], 27)
+        self.assertEqual(delivered[2]["merge_commit"], PILOT_MERGE_SHA)
         seo = delivered[0]
         self.assertEqual(
             {key: seo[key] for key in ("pull_request", "status", "source_head", "merge_commit")},

@@ -718,3 +718,7 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 ## 2026-09-05 — Left architecture consumers behind the confinement repair
 
 **Root cause:** Adding real synthetic AF_UNIX listeners required a declared local architectural edge, while the previously omitted pilot suite still asserted exact path enumeration instead of longest-prefix ownership. Declare the no-network sentinel boundary and test effective ownership, preserving the separate test node; a public CSP digest fixture must be named as a digest rather than a credential token to avoid the generic secret heuristic's false positive.
+
+## 2026-09-05 — Negative scope wording inflated a documentation route
+
+The first handoff-only routing prompt included excluded terms such as `no deploy` and `no policy change`; the keyword classifier interpreted the negated deployment word as a high-risk operation and an assertion-fixture substring as a repair. Cancelled that unused route and restated the positive documentation scope once, preserving all external-operation gates separately. No executable code, deployed policy or ZIP bytes were changed to correct this classification.

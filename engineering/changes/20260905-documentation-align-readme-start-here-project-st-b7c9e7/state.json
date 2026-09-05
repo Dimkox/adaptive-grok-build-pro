@@ -1,0 +1,53 @@
+{
+  "change_id": "20260905-documentation-align-readme-start-here-project-st-b7c9e7",
+  "created_at": "2026-09-05T20:18:47+00:00",
+  "history": [
+    {
+      "at": "2026-09-05T20:18:47+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-05T20:28:16+00:00",
+      "from": "draft",
+      "reason": "Docs and historical assertion fixtures only; executable product and artifacts frozen at v2.0.15.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-05T20:28:16+00:00",
+      "from": "scoped",
+      "reason": "Standing user request to synchronize README/state after delivery; no-op rule in AGENTS.md applies.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-05T20:28:16+00:00",
+      "from": "approved",
+      "reason": "Primary remains user-approved sole fallback writer; no additional write agent.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-05T20:28:16+00:00",
+      "from": "implementing",
+      "reason": "Affected status, graph, immutable package and static checks; no full product suite.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-05T20:28:16+00:00",
+      "from": "verifying",
+      "reason": "No-op exception: no analysis/review wave for unchanged published product; independent old-PR inventory already completed.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-05T20:28:16+00:00",
+      "from": "reviewing",
+      "reason": "Affected checks passed; protected exact-head App check remains necessary before documentation merge.",
+      "to": "ready"
+    }
+  ],
+  "route_id": "b7c9e7d01b94",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Documentation: align README, START_HERE, PROJECT_STATE and archive notes with completed v2.0.15 delivery and matching historical assertions. Preserve executable code and ZIP bytes. Include the remaining old-branch inventory.",
+  "updated_at": "2026-09-05T20:28:16+00:00"
+}

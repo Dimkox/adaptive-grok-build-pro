@@ -452,3 +452,7 @@ After both permitted attempts to resume the selected implementer hit the global 
 ## 2026-09-05 — Carry unchanged evidence without concealing the failed command
 
 Preserve the original full-verifier failure and successful targeted PostgreSQL retry, then bind unchanged component evidence by Git identity while freshly checking the repaired pilot, verifier selection and package. This follows the user's explicit affected-tests-only instruction without representing a targeted continuation as a second full-suite PASS.
+
+## 2026-09-05 — Publish the checked tree, then synchronize the handoff
+
+PR #27's exact App-owned success allowed protected squash delivery and immutable v2.0.15 publication; the exact merged-commit rebuild matched both private source builds. Record post-publication status in a documentation-only successor and preserve the tag-bound ZIP, so a completed release cannot turn paperwork into another product rebuild/test loop.

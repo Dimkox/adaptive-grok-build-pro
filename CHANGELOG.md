@@ -1,14 +1,17 @@
 # Changelog
 
-## 2.0.15 — 2026-09-05 (unreleased)
+## 2.0.15 — 2026-09-05
 
-Local PR candidate for the disabled-by-default single-operator design-partner pilot.
+Published repository capability for the disabled-by-default single-operator design-partner pilot; no live model/target proposal or operational activation is claimed.
 
 - Adds five closed digest-linked pilot outputs, one exact landing target/base profile, a private restart-safe SQLite ledger, and exact writer/evaluator workspace boundaries
 - Pins one Codex start, one credential-free unittest command, deterministic version/status/CSP semantics, and terminal no-retry recovery
 - Adds literal operation-digest grants, one non-force branch ref and one draft PR command boundary with observation-only recovery after ambiguity
 - Adds built-in default-off `prepare`, `publish-branch`, `publish-proposal` and read-only `status` phases, one bounded Codex app-server `gpt-6-astra` path using opaque host ChatGPT auth, pinned narrow `gh`/Git adapters, current-control grant rebinding and exact private-workspace recovery; no live model, target mutation, push, PR, merge, deployment, tag or release occurred while preparing this source
-- Preserves published `v2.0.14` and `v2.0.13` artifacts byte-for-byte; final local `2.0.15` packaging uses source parent `R` plus a ZIP+sidecar-only unpublished artifact child `A`
+- Preserves published `v2.0.14` and `v2.0.13` artifacts byte-for-byte; final local `2.0.15` packaging uses source parent `R` plus a ZIP+sidecar-only artifact child `A`, accepted through PR #27
+
+- PR #27 passed App-owned check `101365945968` and merged as `fd51dcfed6b33f4a8707c0db602328146df17cc9`; GitHub Release `v2.0.15` was published at `2026-09-05T20:17:20Z` with ZIP SHA-256 `1f0f64557fd258df7e533f674bb4e7c55d4a1a51454d48bcfecfa5487d08e9d7`. GitGuardian's public-CSP-digest alert was marked false positive by the operator; its final conclusion is `SKIPPED`.
+- The first live model attempt remains blocked by landing target drift from `6990103` to observed `80d6215`; preserve analytics and deployment-archive coherence in the next trusted profile.
 
 ## 2.0.14 — 2026-09-04
 
