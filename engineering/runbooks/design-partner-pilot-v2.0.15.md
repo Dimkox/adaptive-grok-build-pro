@@ -2,6 +2,10 @@
 
 This runbook describes a capability; it grants no permission to invoke Codex, push a branch, create a pull request, merge, release, deploy or read credentials. The repository CLI is directly composed but unavailable by default. Each effect remains a separate finite operator command, and the real attempt is pending.
 
+## Repository delivery checkpoint
+
+PR #27 is merged as `fd51dcfed6b33f4a8707c0db602328146df17cc9`; v2.0.15 was published at `2026-09-05T20:17:20Z`. Exact checked head `9fcc9d943c74260c02a920a59490143f91cb38b2` passed App-owned check `101365945968` and all three independent local reviews. The ZIP SHA-256 is `1f0f64557fd258df7e533f674bb4e7c55d4a1a51454d48bcfecfa5487d08e9d7`. This completes the control-repository capability publication only; the live precondition below is still unmet.
+
 ## Frozen target and limits
 
 - GitHub repository: `Dimkox/ai-dark-factory-landing`.

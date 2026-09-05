@@ -1,0 +1,68 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [],
+  "base_commit": "fd51dcfed6b33f4a8707c0db602328146df17cc9",
+  "base_fingerprint": "d4c0c07f855b80e1e7bd388282e59aeefad5360fca3c63656df7ffc3d0620745",
+  "change_id": "20260905-documentation-align-readme-start-here-project-st-b7c9e7",
+  "complexity": "standard",
+  "created_at": "2026-09-05T20:18:29+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "docs",
+  "noop_basis": "AGENTS.md Skip no-op checks; standing user prohibition on repeated unaffected suites",
+  "noop_product_unchanged": true,
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=docs",
+    "domains=api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification"
+  ],
+  "review_agents": [],
+  "risk": "medium",
+  "route_id": "b7c9e7d01b94",
+  "schema_version": 1,
+  "session_id": "v2.0.15-published-handoff",
+  "sole_fallback_writer": "/root",
+  "status": "ready",
+  "task": "Documentation: align README, START_HERE, PROJECT_STATE and archive notes with completed v2.0.15 delivery and matching historical assertions. Preserve executable code and ZIP bytes. Include the remaining old-branch inventory.",
+  "task_domains": [],
+  "updated_at": "2026-09-05T20:28:16+00:00",
+  "workflow_skills": [
+    "adaptive-delivery",
+    "task-triage",
+    "api-event-change"
+  ],
+  "write_agent": "general_implementer"
+}

@@ -34,8 +34,8 @@ Original planning baseline and current integration observation:
 repository: Dimkox/adaptive-grok-build-pro
 branch: main
 original baseline SHA: 73e4ae7c68a95d3a7440378964b8cc1879df9b89
-publication snapshot main SHA: 1751b5855e46782b9a1bfceb6e1ab0102cba03b0 (2026-09-04T16:58:48Z; not a perpetual current-ref assertion)
-product version: 2.0.15 (unreleased pilot candidate; published release v2.0.14 and v2.0.13 retained as immutable history)
+publication snapshot main SHA: fd51dcfed6b33f4a8707c0db602328146df17cc9 (2026-09-05T20:17:20Z; not a perpetual current-ref assertion)
+product version: 2.0.15 (published; v2.0.14 and v2.0.13 retained as immutable history)
 Trust CI service version: 2.1.0
 required check: adaptive-trust-ci/verified@06ecf1c875bc
 ```
@@ -89,7 +89,9 @@ M1-M9 are delivered to `main` as repository product source through PR #22. Check
 
 Published `v2.0.14` adds the offline L5 multimodal landing dogfood vertical without changing M0-M9 milestone semantics. Its API/provider/render/evaluate/package path is bounded; provider and publisher defaults remain unavailable, `live_url` is unrepresentable except as null, the authoritative landing clone remains read-only, and repository publication supplied no operational provider, network, hosting, indexing, deployment, M8 activation, or production authority.
 
-PRs #12 and #13 remain stale old-epoch `ACTION_REQUIRED` work whose unique lazy CLI imports/tests and repository-scoped Trust CI profiles are absent from `main`. PR #15's current-epoch `adaptive-trust-ci/verified@06ecf1c875bc` conclusion is `FAILURE` while GitGuardian is `SUCCESS`; its failure cause was not inspected or inferred. Wholesale merge of its obsolete M1-M3 aggregate is superseded, while investor-demo commit `9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b` and packaging hardening remain unique. All three need clean successor extraction; no successor PR is claimed.
+Published `v2.0.15` adds the separate single-operator `pilot/` capability, delivered through PR #27 at protected merge `fd51dcfed6b33f4a8707c0db602328146df17cc9`. The first live landing task has not run: its pinned base and version request require refresh while preserving newer client analytics and deployment-archive coherence. Capability publication is distinct from a completed live issue-to-PR result.
+
+PRs #12 and #13 remain stale old-epoch `ACTION_REQUIRED` work whose unique lazy CLI imports/tests and repository-scoped Trust CI profiles are absent from `main`. PR #15's current-epoch check failed at `root-unittest` (exit 1), with no exposed method diagnostic; GitGuardian passed. Its investor-demo capability remains unique, while the old writable-staging packaging-test workaround is superseded by current packaging. Preserve each scope in a clean successor; see the [exact remaining-work inventory](engineering/runbooks/20260905-open-pr-reconciliation.md).
 
 ## 4. Consolidated gap analysis
 

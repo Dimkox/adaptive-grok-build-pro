@@ -1,0 +1,73 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Current handoff records the exact protected merge, publication time, App check and immutable artifact digests while retaining prior-release evidence.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        },
+        {
+          "test": "tests/test_manifest_package.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260905-documentation-align-readme-start-here-project-st-b7c9e7",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Documentation claims a successful live model, target PR, deployment or M8/M9 activation, or replaces an immutable package.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Executable product and all ZIP/sidecar bytes are unchanged from the protected v2.0.15 tag.",
+      "evidence": [
+        {
+          "test": "tests/test_manifest_package.py"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Documentation: align README, START_HERE, PROJECT_STATE and archive notes with completed v2.0.15 delivery and matching historical assertions. Preserve executable code and ZIP bytes. Include the remaining old-branch inventory.",
+    "success_metric": "current_handoff_matches_completed_v2015_publication_without_product_delta",
+    "target": "fd51dcfed6b33f4a8707c0db602328146df17cc9"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "handoff_exact_publication_match",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
