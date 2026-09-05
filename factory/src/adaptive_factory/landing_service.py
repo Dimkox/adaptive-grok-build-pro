@@ -56,7 +56,12 @@ class LandingArtifactBuilder(Protocol):
         source: LandingInputV1,
         spec: StaticLandingSpecV1,
         evidence: LandingProviderEvidenceV1,
-    ) -> SiteArtifactV1: ...
+    ) -> SiteArtifactV1 | LandingArtifactBuildResult: ...
+
+
+@runtime_checkable
+class LandingArtifactBuildResult(Protocol):
+    artifact: SiteArtifactV1
 
 
 @dataclass(frozen=True)
@@ -412,7 +417,14 @@ class LandingApplicationService:
                     provider_evidence_digest=outcome.evidence.provider_evidence_digest,
                 )
             )
-            artifact = self._artifact_builder.build(source, outcome.spec, outcome.evidence)
+            built = self._artifact_builder.build(source, outcome.spec, outcome.evidence)
+            artifact = (
+                built
+                if isinstance(built, SiteArtifactV1)
+                else built.artifact
+                if isinstance(built, LandingArtifactBuildResult)
+                else None
+            )
             self._validate_artifact(source, outcome.spec, outcome.evidence, artifact)
             return replace(
                 processing,
