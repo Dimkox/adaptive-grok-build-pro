@@ -25,6 +25,8 @@ class IssueSnapshots(Protocol):
 class Workspaces(Protocol):
     def prepare(self, job_id: str) -> PreparedWorkspace: ...
 
+    def recover(self, job_id: str, candidate=None) -> PreparedWorkspace: ...
+
     def cleanup(self, workspace: PreparedWorkspace) -> None: ...
 
 
@@ -98,6 +100,8 @@ class PilotCoordinator:
         if job.state in self._FINAL:
             return PreparedPilot(job, None)
         try:
+            if job.state in {"workspace_ready", "candidate_sealed", "gate_passed"}:
+                workspace = self._workspaces.recover(job_id, job.candidate)
             if job.state == "issue_snapshotted":
                 workspace = self._workspaces.prepare(job_id)
                 job = self._store.mark_workspace_ready(

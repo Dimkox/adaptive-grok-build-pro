@@ -63,7 +63,7 @@
     "change_id": "20260905-feature-implement-a-single-operator-codex-github-0ce2d6",
     "route_id": "0ce2d62a018e",
     "branch": "feature/design-partner-pilot",
-    "status": "focused_source_passed_pending_exact_head_verification_and_reviews",
+    "status": "task6_source_complete_pending_artifact_child_runtime_evidence",
     "stage": "local_pr_candidate",
     "source_base": "6f3b6ed2853b7a6f78804888cffca578d4dc9448",
     "change_package": "engineering/changes/20260905-feature-implement-a-single-operator-codex-github-0ce2d6",
@@ -90,6 +90,15 @@
     "execution": {
       "profile": "landing-design-partner-699010",
       "default": "unavailable",
+      "cli_phases": [
+        "prepare",
+        "publish-branch",
+        "publish-proposal",
+        "status"
+      ],
+      "provider_mode": "app_server_chatgpt",
+      "model": "gpt-6-astra",
+      "host_auth": "opaque_path_capability_never_read_or_copied",
       "max_codex_starts": 1,
       "max_test_starts": 1,
       "automatic_retry": false,
@@ -101,11 +110,15 @@
       "journal_mode": "WAL",
       "synchronous": "FULL",
       "startup_recovery_limit": 100,
+      "status_access": "read_only_query_only",
+      "workspace_recovery": "deterministic_exact_identity_fail_closed",
       "automatic_external_replay": false
     },
     "publication": {
       "branch_push": "exact_resource_non_force_only",
       "proposal": "exact_resource_draft_only",
+      "transport": "pinned_narrow_gh_and_git_commands",
+      "runtime_grant_binding": "current_origin_route_change_head_tree_fingerprint",
       "ambiguous_recovery": "observation_only",
       "merge_close_deploy": false,
       "landing_trust_ci_profile": null,
@@ -117,19 +130,27 @@
       "postgresql_migrations": "001-018"
     },
     "focused_tests": {
-      "status": "focused_source_passed",
+      "status": "task6_affected_tests_passed_before_source_freeze",
       "contracts_architecture": 5,
       "issue_store_workspace_codex_recovery": 9,
       "validation": 4,
       "authority_publication": 4,
-      "coordinator_cli": 3
+      "coordinator_cli": 3,
+      "task6_app_server": 4,
+      "task6_cli": 3,
+      "task6_coordinator_recovery": 2,
+      "task6_live_phases": 4,
+      "task6_pinned_github": 2,
+      "task6_runtime_authority": 2,
+      "task6_store": 3,
+      "task6_workspace": 3
     },
-    "full_verifier": "pending",
-    "independent_reviews": "pending",
-    "package_rebuild": "pending_after_source_freeze",
+    "full_verifier": "one_exact_artifact_child_run_required_before_ready",
+    "independent_reviews": "one_route_selected_wave_required_after_verifier_pass",
+    "package_rebuild": "source_parent_R_then_zip_sidecar_only_child_A",
     "external_effect": false,
     "operational_activation": false,
-    "next_action": "Freeze and commit this source, build the 2.0.15 ZIP+sidecar from two private exact-head no-local clones, then run one exact-head PR verifier and the route-selected code, test, and security review wave. A live Codex run, landing branch push and draft PR remain separate explicitly granted operations."
+    "next_action": "Commit source parent R, build matching 2.0.15 ZIP+sidecar bytes from two private exact-R no-local clones, import only that pair as artifact child A, then run one exact-A PR verifier and the route-selected review wave. Record exact R/A/tree/artifact/fingerprint evidence outside the tracked tree. A live Codex run, landing branch push and draft PR remain separate explicitly authorized operations."
   },
   "local_candidate": {
     "version": "2.0.14",

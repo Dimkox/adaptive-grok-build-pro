@@ -7,8 +7,8 @@ Local PR candidate for the disabled-by-default single-operator design-partner pi
 - Adds five closed digest-linked pilot outputs, one exact landing target/base profile, a private restart-safe SQLite ledger, and exact writer/evaluator workspace boundaries
 - Pins one Codex start, one credential-free unittest command, deterministic version/status/CSP semantics, and terminal no-retry recovery
 - Adds literal operation-digest grants, one non-force branch ref and one draft PR command boundary with observation-only recovery after ambiguity
-- Keeps the CLI live path unavailable without both `--live` and an injected operator-owned host adapter; no model, target mutation, push, PR, merge, deployment, tag, release, or package build occurred while preparing this source
-- Preserves published `v2.0.14` and `v2.0.13` artifacts byte-for-byte; the `2.0.15` ZIP+sidecar remain pending exact-head packaging after source freeze
+- Adds built-in default-off `prepare`, `publish-branch`, `publish-proposal` and read-only `status` phases, one bounded Codex app-server `gpt-6-astra` path using opaque host ChatGPT auth, pinned narrow `gh`/Git adapters, current-control grant rebinding and exact private-workspace recovery; no live model, target mutation, push, PR, merge, deployment, tag or release occurred while preparing this source
+- Preserves published `v2.0.14` and `v2.0.13` artifacts byte-for-byte; final local `2.0.15` packaging uses source parent `R` plus a ZIP+sidecar-only unpublished artifact child `A`
 
 ## 2.0.14 — 2026-09-04
 

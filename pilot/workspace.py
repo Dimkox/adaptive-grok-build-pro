@@ -10,7 +10,6 @@ import re
 import shutil
 import stat
 import subprocess
-import tempfile
 from typing import Mapping
 
 from .contracts import CandidateChangeV1, ChangedFileV1, IssueSnapshotV1, canonical_json
@@ -90,17 +89,13 @@ class ExactGitWorkspace:
         self._git_executable = str(executable)
 
     def prepare(self, job_id: str) -> PreparedWorkspace:
-        if not isinstance(job_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._+-]{0,127}", job_id):
-            raise WorkspaceError("job_id")
+        workspace_root = self._job_root(job_id)
         source_guard = self._source_guard()
         previous = os.umask(0o077)
         try:
-            workspace_root = Path(
-                tempfile.mkdtemp(
-                    prefix=f"job-{hashlib.sha256(job_id.encode()).hexdigest()[:16]}-",
-                    dir=self._root,
-                )
-            )
+            workspace_root.mkdir(mode=0o700, exist_ok=False)
+        except OSError as exc:
+            raise WorkspaceError("workspace_exists") from exc
         finally:
             os.umask(previous)
         workspace_root.chmod(0o700)
@@ -119,6 +114,7 @@ class ExactGitWorkspace:
                 cwd=workspace_root,
                 env=environment,
             )
+            git_dir.chmod(0o700)
             self._git_repo(
                 git_dir,
                 worktree,
@@ -142,18 +138,7 @@ class ExactGitWorkspace:
                 raise WorkspaceError("object_storage_shared")
             if (worktree / ".git").exists() or self._source_guard() != source_guard:
                 raise WorkspaceError("source_mutation")
-            digest = hashlib.sha256(
-                canonical_json(
-                    {
-                        "contract": "adaptive-pilot.workspace/v1",
-                        "profile_digest": self._policy.profile_digest,
-                        "base_sha": head,
-                        "base_tree": tree,
-                        "remote_removed": True,
-                        "object_storage_independent": True,
-                    }
-                )
-            ).hexdigest()
+            digest = self._workspace_digest(head, tree)
             return PreparedWorkspace(
                 workspace_root,
                 worktree,
@@ -167,6 +152,66 @@ class ExactGitWorkspace:
         except BaseException:
             shutil.rmtree(workspace_root, ignore_errors=True)
             raise
+
+    def recover(
+        self,
+        job_id: str,
+        candidate: CandidateChangeV1 | None = None,
+    ) -> PreparedWorkspace:
+        """Reopen only the deterministic exact workspace for one durable job."""
+        root = self._job_root(job_id)
+        git_dir = root / "control.git"
+        worktree = root / "app"
+        _owned_private_directory(root, exact_mode=True)
+        for path in (git_dir, worktree):
+            _owned_private_directory(path, exact_mode=False)
+        if candidate is not None and (
+            candidate.job_id != job_id
+            or candidate.profile_digest != self._policy.profile_digest
+            or (candidate.base_sha, candidate.base_tree)
+            != (self._policy.base_sha, self._policy.base_tree)
+        ):
+            raise WorkspaceError("workspace_binding")
+        source_guard = self._source_guard()
+        environment = self._environment(root)
+        expected_head = candidate.candidate_sha if candidate is not None else self._policy.base_sha
+        expected_tree = candidate.candidate_tree if candidate is not None else self._policy.base_tree
+        try:
+            head, tree = self._head_tree(git_dir, worktree, environment)
+            dirty = self._git_repo(
+                git_dir,
+                worktree,
+                ("status", "--porcelain=v1", "-z", "--untracked-files=all"),
+                env=environment,
+            )
+            remotes = self._git_repo(git_dir, worktree, ("remote",), env=environment)
+        except WorkspaceError as exc:
+            raise WorkspaceError("workspace_tamper") from exc
+        alternates = git_dir / "objects" / "info" / "alternates"
+        digest = self._workspace_digest(self._policy.base_sha, self._policy.base_tree)
+        if (
+            (head, tree) != (expected_head, expected_tree)
+            or dirty
+            or remotes
+            or (worktree / ".git").exists()
+            or (worktree / ".git").is_symlink()
+            or alternates.exists()
+            or alternates.is_symlink()
+            or not self._objects_are_independent(git_dir)
+            or (candidate is not None and candidate.workspace_digest != digest)
+            or self._source_guard() != source_guard
+        ):
+            raise WorkspaceError("workspace_tamper")
+        return PreparedWorkspace(
+            root,
+            worktree,
+            git_dir,
+            self._policy.base_sha,
+            self._policy.base_tree,
+            digest,
+            True,
+            True,
+        )
 
     def seal(
         self,
@@ -317,6 +362,27 @@ class ExactGitWorkspace:
         ):
             raise WorkspaceError("workspace_binding")
 
+    def _job_root(self, job_id: str) -> Path:
+        if not isinstance(job_id, str) or not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9._+-]{0,127}", job_id
+        ):
+            raise WorkspaceError("job_id")
+        return self._root / f"job-{hashlib.sha256(job_id.encode()).hexdigest()[:32]}"
+
+    def _workspace_digest(self, base_sha: str, base_tree: str) -> str:
+        return hashlib.sha256(
+            canonical_json(
+                {
+                    "contract": "adaptive-pilot.workspace/v1",
+                    "profile_digest": self._policy.profile_digest,
+                    "base_sha": base_sha,
+                    "base_tree": base_tree,
+                    "remote_removed": True,
+                    "object_storage_independent": True,
+                }
+            )
+        ).hexdigest()
+
     def _changed_file(self, workspace: PreparedWorkspace, path: str, candidate_sha: str, environment: Mapping[str, str]) -> ChangedFileV1:
         raw = self._git_repo(workspace.git_dir, workspace.worktree, ("ls-tree", "-z", candidate_sha, "--", path), env=environment)
         try:
@@ -404,6 +470,20 @@ def _private_root(root: Path, forbidden: tuple[Path, ...]) -> Path:
     if not stat.S_ISDIR(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode) or metadata.st_uid != os.getuid() or metadata.st_mode & 0o777 != 0o700:
         raise WorkspaceError("workspace_root_mode")
     return absolute.resolve(strict=True)
+
+
+def _owned_private_directory(path: Path, *, exact_mode: bool) -> None:
+    try:
+        metadata = path.lstat()
+    except OSError as exc:
+        raise WorkspaceError("workspace_tamper") from exc
+    if (
+        not stat.S_ISDIR(metadata.st_mode)
+        or stat.S_ISLNK(metadata.st_mode)
+        or metadata.st_uid != os.getuid()
+        or (metadata.st_mode & 0o777 != 0o700 if exact_mode else metadata.st_mode & 0o022)
+    ):
+        raise WorkspaceError("workspace_tamper")
 
 
 def _safe_path(value: str) -> str:

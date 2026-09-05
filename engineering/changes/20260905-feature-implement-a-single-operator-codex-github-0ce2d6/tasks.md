@@ -1,4 +1,4 @@
-# Five sequential implementation tasks
+# Six sequential implementation tasks
 
 Each task has one unambiguous output consumed by the next. Exactly one `integration_implementer` owns every source edit.
 
@@ -26,10 +26,18 @@ Each task has one unambiguous output consumed by the next. Exactly one `integrat
 - Persist prepared intent before effects; prove no merge/close/deploy/duplicate or automatic write retry path.
 - Output handoff: `PullRequestProposalV1` with exact branch/PR identities or a typed terminal outcome.
 
-## Task 5 — integrate, document and prove readiness
+## Task 5 — integrate and document the initial fake-composed source
 
 - Add disabled-by-default CLI, fake end-to-end test, operator runbook, README/PROJECT_STATE/VERSION `2.0.15` synchronization and release/rollback notes.
-- Run focused changed tests while implementing. Freeze one source HEAD, then run exactly one detached PR verifier and one parallel code/test/security review wave.
-- Output handoff: clean local PR candidate with fingerprint-bound receipts; after merge, one separately granted real issue/Codex/branch/draft-PR attempt.
+- Run focused changed tests while implementing. Task 6 supersedes the initial test-only CLI composition before the one final source freeze/verifier/review sequence.
+- Output handoff: the initial five-output source and fake end-to-end checkpoint consumed by Task 6; it is not the final runtime-readiness claim.
+
+## Task 6 — compose the closed host runtime into explicit phases
+
+- Replace the test-only CLI seam with closed `prepare`, `publish-branch`, `publish-proposal` and read-only `status` composition for the one exact landing profile.
+- Add pinned `gh`/Git transports, deterministic private-workspace recovery, current-control runtime-grant loading and the bounded Codex app-server path that uses host ChatGPT authentication without reading or copying credential bytes.
+- Prove direct default-off dispatch, one-start/one-test flow, separate literal grants, observation-only crash recovery, no duplicate external write, credential non-persistence, executable binding and workspace tamper rejection with focused fakes only.
+- Synchronize the architecture inventory, operator runbook and repository handoff. Do not invoke the live provider or either GitHub write while implementing this task.
+- Output handoff: one committed, directly runnable source tree whose package build, exact-head verifier and independent review wave remain the next local finalization steps; the real live attempt remains pending separate authority.
 
 No task adds a second Codex attempt or expands the target. A failed core check returns only to the owning task; already-passing unaffected checks are not rerun.

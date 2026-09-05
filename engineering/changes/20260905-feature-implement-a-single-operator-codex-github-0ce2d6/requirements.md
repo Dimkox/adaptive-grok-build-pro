@@ -14,6 +14,11 @@
 8. Persist each prepared external intent before effect. Restart or ambiguity permits one read-only reconciliation, never an automatic second write.
 9. Require literal operation-digest resources for separate branch-push and draft-PR grants. Exact grants do not authorize merge, close, deployment or Trust CI.
 10. Report `merge_gate_unavailable` honestly when the landing repository lacks its App-owned exact-SHA check/profile.
+11. Expose the exact run as `prepare`, `publish-branch`, `publish-proposal` and read-only `status`; every effect-capable phase is unavailable without both `--live` and one closed owner-only config.
+12. Reopen only the deterministic private job workspace across CLI processes, after revalidating owner/mode/no-symlink, exact HEAD/tree, clean state, no remote/alternate, independent objects and unchanged source.
+13. Bind runtime grants independently to the current control origin, route/change, Git HEAD and adaptive tree fingerprint. Branch and proposal grants are literal, distinct and loaded only at their own phase.
+14. Prefer one bounded Codex app-server thread/turn using the host ChatGPT capability without reading/copying auth bytes. Disable MCP/web/shell-env inheritance, require the exact returned workspace/no-network confinement, reject every server request, and retain credential-isolated API-key exec only as an optional closed mode.
+15. Provide only the exact pinned GitHub reads, one non-force candidate-ref push and one draft-proposal create. Do not expose a generic raw API or any force/merge/close/delete/tag/comment/label/deploy operation.
 
 ## First live issue semantic gate
 

@@ -78,6 +78,7 @@ class PilotProfileV1:
     codex_sha256: str
     codex_version: str
     model_id: str
+    provider_mode: str
     python_executable: str
     python_sha256: str
     test_argv: tuple[str, ...]
@@ -115,6 +116,7 @@ def exact_landing_profile(
     model_id: str,
     python_executable: str,
     python_sha256: str,
+    provider_mode: str = "api_key_exec",
 ) -> PilotProfileV1:
     for name, value in (
         ("codex_executable", codex_executable),
@@ -129,6 +131,10 @@ def exact_landing_profile(
         raise ContractError("unsupported_codex_version")
     if not isinstance(model_id, str) or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", model_id) is None:
         raise ContractError("invalid_model_id")
+    if provider_mode not in {"app_server_chatgpt", "api_key_exec"}:
+        raise ContractError("unsupported_provider_mode")
+    if provider_mode == "app_server_chatgpt" and model_id != "gpt-6-astra":
+        raise ContractError("unsupported_model")
     prompt_digest = _digest(CODEX_PROMPT)
     tool_policy_digest = _digest(CODEX_TOOL_POLICY)
     output_schema_digest = _digest(CODEX_OUTPUT_SCHEMA)
@@ -191,6 +197,7 @@ def exact_landing_profile(
         "codex_sha256": codex_sha256,
         "codex_version": codex_version,
         "model_id": model_id,
+        "provider_mode": provider_mode,
         "python_executable": python_executable,
         "python_sha256": python_sha256,
         "test_argv": test_argv,

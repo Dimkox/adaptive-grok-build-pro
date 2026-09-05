@@ -1880,6 +1880,7 @@
         "pilot/cli.py",
         "pilot/coordinator.py",
         "pilot/contracts.py",
+        "pilot/live.py",
         "pilot/profile.py"
       ],
       "runtime": {
@@ -1922,7 +1923,9 @@
       "repository_paths": [
         "pilot/authority.py",
         "pilot/github.py",
-        "pilot/issue_source.py"
+        "pilot/issue_source.py",
+        "pilot/live_github.py",
+        "pilot/runtime_authority.py"
       ],
       "runtime": {
         "evidence": "source_described",

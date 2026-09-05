@@ -28,10 +28,15 @@ class FakeWorkspaces:
     def __init__(self, workspace) -> None:
         self.workspace = workspace
         self.prepare_calls = []
+        self.recover_calls = []
         self.cleanup_calls = []
 
     def prepare(self, job_id):
         self.prepare_calls.append(job_id)
+        return self.workspace
+
+    def recover(self, job_id, candidate=None):
+        self.recover_calls.append((job_id, candidate))
         return self.workspace
 
     def cleanup(self, workspace):
@@ -89,6 +94,73 @@ class FakeValidator:
 
 
 class PilotCoordinatorTests(unittest.TestCase):
+    def test_restart_reopens_workspace_at_each_recoverable_local_state(self) -> None:
+        for restart_state in ("workspace_ready", "candidate_sealed", "gate_passed"):
+            with self.subTest(restart_state=restart_state), tempfile.TemporaryDirectory() as raw:
+                control = Path(__file__).resolve().parents[2]
+                store = PilotStore(
+                    Path(raw) / "state",
+                    control_repository=control,
+                    clock=lambda: utc_time(0),
+                )
+                configured = profile()
+                issue = issue_snapshot(
+                    profile_digest=configured.profile_digest,
+                    base_sha=configured.base_sha,
+                    base_tree=configured.base_tree,
+                )
+                candidate = candidate_change(issue)
+                workspace = PreparedWorkspace(
+                    Path(raw) / "writer",
+                    Path(raw) / "writer/app",
+                    Path(raw) / "writer/control.git",
+                    issue.base_sha,
+                    issue.base_tree,
+                    candidate.workspace_digest,
+                    True,
+                    True,
+                )
+                store.create_or_replay(issue, command_key="seed-submit")
+                store.mark_workspace_ready(
+                    issue.job_id, workspace_digest=workspace.workspace_digest
+                )
+                validator = FakeValidator(configured, store, issue, candidate)
+                if restart_state in {"candidate_sealed", "gate_passed"}:
+                    store.begin_invocation(issue.job_id, command_key="seed-invocation")
+                    store.store_candidate(issue.job_id, candidate)
+                if restart_state == "gate_passed":
+                    store.begin_validation(issue.job_id, command_key="seed-validation")
+                    store.store_validation(issue.job_id, validator.validation)
+                source = FakeIssueSource(issue)
+                workspaces = FakeWorkspaces(workspace)
+                executor = FakeExecutor(store, candidate)
+                coordinator = PilotCoordinator(
+                    configured,
+                    store,
+                    source,
+                    workspaces,
+                    executor,
+                    validator,
+                    GitHubPublication(configured, store, clock=lambda: utc_time(5)),
+                )
+
+                prepared = coordinator.prepare_candidate(
+                    job_id=issue.job_id,
+                    issue_number=issue.issue_number,
+                    acceptance_ids=issue.acceptance_ids,
+                )
+
+                self.assertEqual(prepared.job.state, "gate_passed")
+                self.assertIs(prepared.workspace, workspace)
+                self.assertEqual(
+                    workspaces.recover_calls,
+                    [(issue.job_id, None if restart_state == "workspace_ready" else candidate)],
+                )
+                self.assertEqual(len(executor.calls), int(restart_state == "workspace_ready"))
+                self.assertEqual(len(validator.calls), int(restart_state != "gate_passed"))
+                self.assertEqual(source.calls, [])
+                store.close()
+
     def test_one_fake_run_forms_all_five_outputs_and_replay_has_no_effect(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             control = Path(__file__).resolve().parents[2]

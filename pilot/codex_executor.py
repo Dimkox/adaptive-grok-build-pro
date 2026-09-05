@@ -9,11 +9,13 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import selectors
 import signal
 import stat
 import subprocess
 import tempfile
-from typing import Protocol
+import time
+from typing import Any, Protocol
 
 from .contracts import CandidateChangeV1, ContractError, IssueSnapshotV1, canonical_json, contract_digest
 from .profile import CODEX_OUTPUT_SCHEMA, CODEX_PROMPT, PilotProfileV1
@@ -225,6 +227,17 @@ class CodexExecutor:
             raise CodexExecutionError("model_outcome_ambiguous") from exc
 
     def _argv(self, workspace: PreparedWorkspace) -> tuple[str, ...]:
+        if self._profile.provider_mode == "app_server_chatgpt":
+            return (
+                self._profile.codex_executable,
+                "-c", "mcp_servers={}",
+                "-c", 'web_search="disabled"',
+                "-c", 'shell_environment_policy.inherit="none"',
+                "-c", "shell_environment_policy.ignore_default_excludes=false",
+                "app-server",
+                "--stdio",
+                "--strict-config",
+            )
         return (
             self._profile.codex_executable,
             "-a", "never",
@@ -368,6 +381,321 @@ class SubprocessCodexRunner:
             stdout_file.seek(0)
             stderr_file.seek(0)
             return ProcessResult(process.returncode, stdout_file.read(), stderr_file.read(), started, completed)
+
+
+class JsonRpcSession(Protocol):
+    def send(self, message: dict[str, Any]) -> None: ...
+
+    def receive(self, timeout_seconds: float) -> dict[str, Any]: ...
+
+    def close(self) -> None: ...
+
+
+class StdioJsonRpcSession:
+    """Bounded JSON-lines session for one local Codex app-server process."""
+
+    def __init__(
+        self,
+        *,
+        argv: tuple[str, ...],
+        cwd: Path,
+        environment: Mapping[str, str],
+        max_output_bytes: int,
+    ) -> None:
+        self._stderr = tempfile.TemporaryFile()
+        try:
+            self._process = subprocess.Popen(
+                argv,
+                cwd=cwd,
+                env=dict(environment),
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=self._stderr,
+                shell=False,
+                close_fds=True,
+                start_new_session=True,
+                bufsize=0,
+            )
+        except OSError as exc:
+            self._stderr.close()
+            raise CodexExecutionError("provider_start") from exc
+        if self._process.stdin is None or self._process.stdout is None:
+            self.close()
+            raise CodexExecutionError("provider_start")
+        self._selector = selectors.DefaultSelector()
+        self._selector.register(self._process.stdout, selectors.EVENT_READ)
+        self._buffer = bytearray()
+        self._observed_bytes = 0
+        self._max_output_bytes = max_output_bytes
+        self._closed = False
+
+    def send(self, message: dict[str, Any]) -> None:
+        raw = canonical_json(message) + b"\n"
+        if len(raw) > 262_144:
+            raise CodexExecutionError("provider_protocol")
+        try:
+            assert self._process.stdin is not None
+            self._process.stdin.write(raw)
+            self._process.stdin.flush()
+        except (OSError, BrokenPipeError) as exc:
+            raise CodexExecutionError("provider_protocol") from exc
+
+    def receive(self, timeout_seconds: float) -> dict[str, Any]:
+        deadline = time.monotonic() + max(timeout_seconds, 0.0)
+        while b"\n" not in self._buffer:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError
+            events = self._selector.select(remaining)
+            if not events:
+                raise TimeoutError
+            assert self._process.stdout is not None
+            chunk = os.read(self._process.stdout.fileno(), 65_536)
+            if not chunk:
+                raise CodexExecutionError("provider_protocol")
+            self._observed_bytes += len(chunk)
+            self._stderr.flush()
+            if self._observed_bytes + self._stderr.tell() > self._max_output_bytes:
+                raise CodexExecutionError("provider_output_limit")
+            self._buffer.extend(chunk)
+        raw, _, remainder = self._buffer.partition(b"\n")
+        self._buffer = bytearray(remainder)
+        try:
+            value = json.loads(raw.decode("utf-8"))
+        except (UnicodeError, json.JSONDecodeError) as exc:
+            raise CodexExecutionError("provider_protocol") from exc
+        if not isinstance(value, dict):
+            raise CodexExecutionError("provider_protocol")
+        return value
+
+    def close(self) -> None:
+        if getattr(self, "_closed", False):
+            return
+        self._closed = True
+        process = getattr(self, "_process", None)
+        if process is not None and process.poll() is None:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except OSError:
+                pass
+            try:
+                process.wait(timeout=5)
+            except (OSError, subprocess.TimeoutExpired):
+                pass
+        selector = getattr(self, "_selector", None)
+        if selector is not None:
+            selector.close()
+        if process is not None:
+            if process.stdin is not None:
+                process.stdin.close()
+            if process.stdout is not None:
+                process.stdout.close()
+        stderr = getattr(self, "_stderr", None)
+        if stderr is not None:
+            stderr.close()
+
+
+class AppServerCodexRunner:
+    """Run one ephemeral, no-request Codex app-server thread and turn."""
+
+    def __init__(
+        self,
+        profile: PilotProfileV1,
+        *,
+        session_factory: Callable[..., JsonRpcSession] | None = None,
+        auth_environment: Callable[[], Mapping[str, str]] | None = None,
+        clock=None,
+    ) -> None:
+        if profile.provider_mode != "app_server_chatgpt":
+            raise CodexExecutionError("provider_mode")
+        self._profile = profile
+        self._session_factory = session_factory or (
+            lambda **values: StdioJsonRpcSession(**values)
+        )
+        self._auth_environment = auth_environment or (lambda: {})
+        self._clock = clock or (lambda: datetime.now(timezone.utc))
+
+    def run(
+        self,
+        *,
+        argv: tuple[str, ...],
+        cwd: Path,
+        environment: Mapping[str, str],
+        stdin: bytes,
+        timeout_seconds: int,
+        max_output_bytes: int,
+    ) -> ProcessResult:
+        expected_argv = (
+            self._profile.codex_executable,
+            "-c", "mcp_servers={}",
+            "-c", 'web_search="disabled"',
+            "-c", 'shell_environment_policy.inherit="none"',
+            "-c", "shell_environment_policy.ignore_default_excludes=false",
+            "app-server",
+            "--stdio",
+            "--strict-config",
+        )
+        if argv != expected_argv or not cwd.is_absolute() or len(stdin) > max_output_bytes:
+            raise CodexExecutionError("provider_binding")
+        try:
+            prompt = stdin.decode("utf-8")
+        except UnicodeError as exc:
+            raise CodexExecutionError("provider_input") from exc
+        auth = _chatgpt_auth_environment(self._auth_environment())
+        child_environment = {
+            "PATH": "/usr/bin:/bin",
+            "LC_ALL": "C.UTF-8",
+            "TZ": "UTC",
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_GLOBAL": "/dev/null",
+            "GIT_TERMINAL_PROMPT": "0",
+            "GIT_ASKPASS": "/bin/false",
+            "SSH_ASKPASS": "/bin/false",
+            **auth,
+        }
+        started_at = _utc(self._clock())
+        deadline = time.monotonic() + timeout_seconds
+        session = self._session_factory(
+            argv=argv,
+            cwd=cwd,
+            environment=child_environment,
+            max_output_bytes=max_output_bytes,
+        )
+        try:
+            session.send(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {
+                        "clientInfo": {"name": "adaptive-pilot", "version": "2.0.15"},
+                        "capabilities": {"experimentalApi": True},
+                    },
+                }
+            )
+            _response(session, 1, deadline)
+            session.send({"jsonrpc": "2.0", "method": "initialized", "params": {}})
+            session.send(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 2,
+                    "method": "thread/start",
+                    "params": {
+                        "cwd": str(cwd),
+                        "model": self._profile.model_id,
+                        "approvalPolicy": "never",
+                        "permissions": ":workspace",
+                        "ephemeral": True,
+                        "dynamicTools": [],
+                        "runtimeWorkspaceRoots": [str(cwd)],
+                    },
+                }
+            )
+            thread_result = _response(session, 2, deadline)
+            thread = thread_result.get("thread")
+            thread_id = thread.get("id") if isinstance(thread, dict) else None
+            permission = thread_result.get("activePermissionProfile")
+            sandbox = thread_result.get("sandbox")
+            if (
+                not isinstance(thread_id, str)
+                or not thread_id
+                or thread_result.get("model") != self._profile.model_id
+                or thread_result.get("modelProvider") != "openai"
+                or not isinstance(permission, dict)
+                or permission.get("id") != ":workspace"
+                or not isinstance(sandbox, dict)
+                or sandbox.get("type") != "workspaceWrite"
+                or sandbox.get("networkAccess") is not False
+                or thread_result.get("instructionSources") != []
+            ):
+                raise CodexExecutionError("provider_confinement")
+            session.send(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 3,
+                    "method": "turn/start",
+                    "params": {
+                        "threadId": thread_id,
+                        "input": [{"type": "text", "text": prompt}],
+                        "outputSchema": CODEX_OUTPUT_SCHEMA,
+                    },
+                }
+            )
+            turn_result = _response(session, 3, deadline)
+            turn = turn_result.get("turn")
+            turn_id = turn.get("id") if isinstance(turn, dict) else None
+            if not isinstance(turn_id, str) or not turn_id:
+                raise CodexExecutionError("provider_protocol")
+            _terminal(session, thread_id, turn_id, deadline)
+            return ProcessResult(
+                0,
+                b'{"type":"turn.completed"}\n',
+                b"",
+                started_at,
+                _utc(self._clock()),
+            )
+        except TimeoutError as exc:
+            raise CodexExecutionError("provider_timeout") from exc
+        finally:
+            session.close()
+
+
+def _response(session: JsonRpcSession, request_id: int, deadline: float) -> dict[str, Any]:
+    for _ in range(4096):
+        message = session.receive(deadline - time.monotonic())
+        if "id" not in message:
+            continue
+        if "method" in message:
+            raise CodexExecutionError("provider_request_denied")
+        if message.get("jsonrpc") != "2.0" or message.get("id") != request_id:
+            raise CodexExecutionError("provider_protocol")
+        if message.get("error") is not None or not isinstance(message.get("result"), dict):
+            raise CodexExecutionError("provider_failed")
+        return message["result"]
+    raise CodexExecutionError("provider_message_limit")
+
+
+def _terminal(
+    session: JsonRpcSession, thread_id: str, turn_id: str, deadline: float
+) -> None:
+    for _ in range(4096):
+        message = session.receive(deadline - time.monotonic())
+        if "id" in message:
+            raise CodexExecutionError("provider_request_denied")
+        method = message.get("method")
+        if method in {"turn/failed", "error"}:
+            raise CodexExecutionError("provider_failed")
+        if method != "turn/completed":
+            continue
+        params = message.get("params")
+        turn = params.get("turn") if isinstance(params, dict) else None
+        if (
+            not isinstance(turn, dict)
+            or message.get("jsonrpc") != "2.0"
+            or params.get("threadId") != thread_id
+            or turn.get("id") != turn_id
+            or turn.get("status") != "completed"
+            or turn.get("error") is not None
+            or not isinstance(turn.get("items"), list)
+        ):
+            raise CodexExecutionError("provider_terminal")
+        return
+    raise CodexExecutionError("provider_message_limit")
+
+
+def _chatgpt_auth_environment(value: Mapping[str, str]) -> dict[str, str]:
+    environment = dict(value)
+    if set(environment) - {"HOME", "CODEX_HOME"} or "HOME" not in environment:
+        raise CodexExecutionError("provider_credential_unavailable")
+    if any(
+        not isinstance(item, str)
+        or not item
+        or not Path(item).is_absolute()
+        or "\x00" in item
+        for item in environment.values()
+    ):
+        raise CodexExecutionError("provider_credential_unavailable")
+    return environment
 
 
 class CodexSandboxProbe:

@@ -135,28 +135,56 @@ class ProjectStateTests(unittest.TestCase):
         )
         self.assertEqual(repair["protected_source_member"], "index.css")
         self.assertEqual(repair["execution"]["default"], "unavailable")
+        self.assertEqual(
+            repair["execution"]["cli_phases"],
+            ["prepare", "publish-branch", "publish-proposal", "status"],
+        )
+        self.assertEqual(repair["execution"]["provider_mode"], "app_server_chatgpt")
+        self.assertEqual(repair["execution"]["model"], "gpt-6-astra")
         self.assertEqual(repair["execution"]["max_codex_starts"], 1)
         self.assertFalse(repair["execution"]["automatic_retry"])
         self.assertEqual(repair["local_store"]["engine"], "stdlib_sqlite")
         self.assertEqual(repair["local_store"]["startup_recovery_limit"], 100)
+        self.assertEqual(repair["local_store"]["status_access"], "read_only_query_only")
         self.assertEqual(repair["publication"]["branch_push"], "exact_resource_non_force_only")
         self.assertEqual(repair["publication"]["proposal"], "exact_resource_draft_only")
+        self.assertEqual(
+            repair["publication"]["runtime_grant_binding"],
+            "current_origin_route_change_head_tree_fingerprint",
+        )
         self.assertIsNone(repair["publication"]["landing_trust_ci_profile"])
-        self.assertEqual(repair["package_rebuild"], "pending_after_source_freeze")
+        self.assertEqual(
+            repair["package_rebuild"],
+            "source_parent_R_then_zip_sidecar_only_child_A",
+        )
         self.assertFalse(repair["external_effect"])
         self.assertEqual(
             repair["focused_tests"],
             {
-                "status": "focused_source_passed",
+                "status": "task6_affected_tests_passed_before_source_freeze",
                 "contracts_architecture": 5,
                 "issue_store_workspace_codex_recovery": 9,
                 "validation": 4,
                 "authority_publication": 4,
                 "coordinator_cli": 3,
+                "task6_app_server": 4,
+                "task6_cli": 3,
+                "task6_coordinator_recovery": 2,
+                "task6_live_phases": 4,
+                "task6_pinned_github": 2,
+                "task6_runtime_authority": 2,
+                "task6_store": 3,
+                "task6_workspace": 3,
             },
         )
-        self.assertEqual(repair["full_verifier"], "pending")
-        self.assertEqual(repair["independent_reviews"], "pending")
+        self.assertEqual(
+            repair["full_verifier"],
+            "one_exact_artifact_child_run_required_before_ready",
+        )
+        self.assertEqual(
+            repair["independent_reviews"],
+            "one_route_selected_wave_required_after_verifier_pass",
+        )
 
         exact_milestone_facts = {
             "M0": {

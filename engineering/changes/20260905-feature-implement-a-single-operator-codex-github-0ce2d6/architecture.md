@@ -8,7 +8,7 @@ The new top-level `pilot/` component is owned by the local single operator. It i
 
 `trusted profile + issue number -> read-only issue/base snapshot -> private exact clone -> one pinned Codex CLI -> trusted Git seal -> one sandboxed unittest command + deterministic semantics -> exact push grant -> non-force new ref -> exact PR grant -> draft PR -> read-only App/human observation`
 
-The durable chain commits each output before the next transition. Provider and GitHub transports are injected ports; deterministic fakes prove local behavior. The live adapters own argv construction and receive no shell fragments. GitHub/Codex credentials remain opaque host capability, outside model/test environments and evidence.
+The durable chain commits each output before the next transition. `pilot.live` now composes the ports into four finite CLI processes: `prepare`, `publish-branch`, `publish-proposal` and read-only `status`; deterministic fakes prove the same process-boundary behavior. Concrete live adapters own pinned argv construction and receive no caller-supplied shell fragments; the only `!` helper is the fixed pinned `gh auth git-credential` binding. GitHub authentication and the Codex app-server's host ChatGPT login remain opaque host capabilities: the pilot never reads or copies credential bytes, and model/test workspaces receive neither host tokens nor credential stores.
 
 ## Components
 
@@ -17,11 +17,12 @@ The durable chain commits each output before the next transition. Provider and G
 - `store`: private SQLite append-only records, prepared intents and idempotency keys.
 - `issue_source`: bounded read-only `gh` projections and base observation.
 - `workspace`: private clone, remote removal, exact checkout, trusted seal and cleanup.
-- `codex_executor`: pinned executable/version/digest, one ephemeral noninteractive invocation in workspace-write sandbox.
+- `codex_executor`: pinned executable/version/digest, one ephemeral app-server thread/turn with exact workspace-write/no-network response validation; the optional API-key exec mode remains isolated behind the same one-start boundary.
 - `validation`: credential-free bubblewrap test runner and independent deterministic semantic gate.
 - `authority`: exact literal operation-resource validation against current delegated grants.
-- `github`: non-force exact ref publisher, draft-PR publisher and observation-only reconciliation.
-- `coordinator`/`cli`: five finite transitions; default unavailable; no background retry loop.
+- `github`/`live_github`: pinned narrow GitHub reads, non-force exact ref publisher, one draft-PR publisher and observation-only reconciliation.
+- `runtime_authority`: re-derives current control origin, route/change, HEAD and adaptive tree fingerprint before loading literal machine-local grants.
+- `coordinator`/`live`/`cli`: five finite transitions exposed as four explicit process phases; default unavailable; no background retry loop.
 
 ## Architecture ruling
 
@@ -33,6 +34,7 @@ Route `0ce2d62a018e` remains valid as the agent-selection record. The typed spec
 
 - Before Codex start, store `prepared`; after a start without a sealed output, recover to terminal `provider_outcome_ambiguous`.
 - Before push/PR, store the canonical request and grant-use digest. An in-flight restart performs exact observation only.
+- Reopening a local phase resolves one deterministic private job directory and revalidates owner/mode/no-symlink, exact HEAD/tree, clean state, absent remotes/alternates, independent objects and unchanged source before using it.
 - Ref conflict, base/issue drift, multiple matching PRs, or unavailable observation is terminal; never force or retry.
 - A missing sandbox/profile/executable/credential/grant/check produces a typed stop, not fallback.
 - Landing branch protection currently returns private-plan `403`, and deployed Trust CI policy currently allowlists only the control repository. A draft proposal therefore remains `merge_eligible=false` until external operators establish that independent gate.

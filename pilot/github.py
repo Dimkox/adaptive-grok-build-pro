@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 import hashlib
@@ -255,6 +256,12 @@ class GitHubPublication:
     def proposal_request(self, job_id: str, push: PushReceiptV1) -> ProposalCreateRequestV1:
         return ProposalCreateRequestV1.from_chain(self._profile, self._store.get(job_id), push)
 
+    def push_receipt(self, job_id: str) -> PushReceiptV1:
+        effect = self._store.get_effect(job_id, "branch_push")
+        if effect is None or effect.state != "completed":
+            raise PublicationError("push_receipt")
+        return _stored_push_receipt(effect)
+
     def publish_branch(
         self,
         request: BranchPushRequestV1,
@@ -295,10 +302,8 @@ class GitHubPublication:
         if not owns_write:
             return self._fail_effect(request.job_id, "branch_push", "no_effect", before)
         self._store.mark_effect_in_flight(request.job_id, "branch_push")
-        try:
+        with suppress(Exception):
             transport.push_exact(request, writer)
-        except Exception:
-            pass
         after = _safe_observe(transport, request)
         failure = _freshness_failure(job, self._profile, after)
         if failure:
@@ -321,8 +326,12 @@ class GitHubPublication:
         job = self._store.get(request.job_id)
         _assert_proposal_binding(self._profile, job, request, push)
         existing = self._store.get_effect(request.job_id, "proposal_create")
-        if existing is not None and existing.state == "completed" and job.proposal is not None:
-            return job.proposal
+        if existing is not None and existing.state == "completed":
+            if job.proposal is not None:
+                return job.proposal
+            proposal = _stored_proposal(existing)
+            self._store.store_proposal(request.job_id, proposal)
+            return proposal
         if existing is None:
             use = authority.authorize("proposal_create", request.request_digest)
             _record, owns_write = self._store.prepare_effect(
@@ -351,10 +360,8 @@ class GitHubPublication:
         if not owns_write:
             return self._fail_effect(request.job_id, "proposal_create", "no_effect", before)
         self._store.mark_effect_in_flight(request.job_id, "proposal_create")
-        try:
+        with suppress(Exception):
             transport.create_draft(request)
-        except Exception:
-            pass
         proposals = _safe_find(transport, request)
         match = _exact_proposal(request, proposals)
         if match is not None:
@@ -437,8 +444,9 @@ class GitHubPublication:
 class ExactGitPushCommand:
     """Build the sole permitted ref publication command; execution is host-owned."""
 
-    def __init__(self, executable: str = "/usr/bin/git") -> None:
+    def __init__(self, executable: str = "/usr/bin/git", *, gh_executable: str = "/usr/bin/gh") -> None:
         self._executable = executable
+        self._gh_executable = gh_executable
 
     def invocation(self, request: BranchPushRequestV1, writer: PreparedWorkspace) -> tuple[tuple[str, ...], dict[str, str]]:
         if (
@@ -450,6 +458,8 @@ class ExactGitPushCommand:
             raise PublicationError("push_binding")
         argv = (
             self._executable,
+            "-c", "credential.helper=",
+            "-c", f"credential.https://github.com.helper=!{self._gh_executable} auth git-credential",
             f"--git-dir={writer.git_dir}",
             "push",
             "--porcelain",
@@ -480,6 +490,8 @@ class GhDraftProposalCommand:
         argv = (
             self._executable,
             "api",
+            "--hostname",
+            "github.com",
             "--method",
             "POST",
             f"repos/{request.github_name}/pulls",
@@ -586,3 +598,10 @@ def _stored_push_receipt(effect: EffectRecord) -> PushReceiptV1:
         return PushReceiptV1.from_dict(effect.outcome["receipt"])
     except (KeyError, TypeError, PublicationError) as exc:
         raise PublicationError("push_receipt") from exc
+
+
+def _stored_proposal(effect: EffectRecord) -> PullRequestProposalV1:
+    try:
+        return PullRequestProposalV1.from_dict(effect.outcome["proposal"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise PublicationError("proposal_receipt") from exc

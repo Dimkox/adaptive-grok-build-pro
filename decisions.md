@@ -432,3 +432,7 @@ Close stale conflicting PR #21 only after verifying that PR #22 and PR #24 deliv
 ## 2026-09-05 — Persist exact effect intent before the sole publication attempt
 
 Derive each GitHub resource from the canonical request digest, require one literal current grant, and commit both request and grant-use facts before entering the injected transport. A reopened prepared or in-flight effect performs observation only, which made hard-crash reconciliation deterministic without granting a second write.
+
+## 2026-09-05 — Use the official app-server as an opaque subscription-auth boundary
+
+Start one ephemeral Codex app-server thread/turn through the host ChatGPT capability without reading or copying auth-store bytes, while clearing MCP/web/shell-env inheritance and validating the returned workspace-write/no-network profile. This preserved the user's supported subscription path and kept credentials outside model/test workspaces and durable evidence.

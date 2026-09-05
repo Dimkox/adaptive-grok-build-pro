@@ -141,33 +141,44 @@ class EffectRecord:
 
 
 class PilotStore:
-    def __init__(self, root: Path, *, control_repository: Path, clock=None, busy_timeout_ms: int = 5_000) -> None:
+    def __init__(self, root: Path, *, control_repository: Path, clock=None, busy_timeout_ms: int = 5_000, read_only: bool = False) -> None:
         if type(busy_timeout_ms) is not int or not 1 <= busy_timeout_ms <= 30_000:
             raise PilotStoreError("store_timeout")
-        self._root = _private_root(Path(root), Path(control_repository))
+        if type(read_only) is not bool:
+            raise PilotStoreError("store_mode")
+        self._read_only = read_only
+        self._root = _private_root(Path(root), Path(control_repository), create=not read_only)
         self._database_path = self._root / "pilot.sqlite3"
-        _validate_database(self._database_path, allow_missing=True)
+        _validate_database(self._database_path, allow_missing=not read_only)
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self._lock = threading.RLock()
         self._closed = False
         previous = os.umask(0o077)
         try:
+            target = self._database_path.as_uri() + "?mode=ro" if read_only else self._database_path
             self._connection = sqlite3.connect(
-                self._database_path,
+                target,
                 isolation_level=None,
                 check_same_thread=False,
                 timeout=busy_timeout_ms / 1000,
+                uri=read_only,
             )
         except sqlite3.Error as exc:
             raise PilotStoreError("store_open") from exc
         finally:
             os.umask(previous)
-        os.chmod(self._database_path, 0o600)
+        if not read_only:
+            os.chmod(self._database_path, 0o600)
         try:
-            self._configure(busy_timeout_ms)
-            self._initialize()
+            if read_only:
+                self._configure_read_only(busy_timeout_ms)
+                self._validate_initialized()
+            else:
+                self._configure(busy_timeout_ms)
+                self._initialize()
             _validate_database(self._database_path, allow_missing=False)
-            self._recover()
+            if not read_only:
+                self._recover()
         except BaseException:
             self._connection.close()
             self._closed = True
@@ -187,7 +198,8 @@ class PilotStore:
         with self._lock:
             if self._closed:
                 return
-            self._connection.execute("PRAGMA wal_checkpoint(PASSIVE)")
+            if not self._read_only:
+                self._connection.execute("PRAGMA wal_checkpoint(PASSIVE)")
             self._connection.close()
             self._closed = True
 
@@ -594,6 +606,13 @@ class PilotStore:
         if connection.execute("PRAGMA synchronous").fetchone()[0] != 2:
             raise PilotStoreError("store_sync")
 
+    def _configure_read_only(self, busy_timeout_ms: int) -> None:
+        connection = self._connection
+        connection.execute("PRAGMA query_only=ON")
+        connection.execute("PRAGMA foreign_keys=ON")
+        connection.execute("PRAGMA trusted_schema=OFF")
+        connection.execute(f"PRAGMA busy_timeout={busy_timeout_ms}")
+
     def _initialize(self) -> None:
         identity = (self._connection.execute("PRAGMA user_version").fetchone()[0], self._connection.execute("PRAGMA application_id").fetchone()[0])
         tables = _tables(self._connection)
@@ -605,6 +624,12 @@ class PilotStore:
                 self._connection.execute(f"PRAGMA application_id={APPLICATION_ID}")
                 self._connection.execute(f"PRAGMA user_version={SCHEMA_VERSION}")
         elif identity != (SCHEMA_VERSION, APPLICATION_ID):
+            raise PilotStoreError("store_schema")
+        self._validate_initialized()
+
+    def _validate_initialized(self) -> None:
+        identity = (self._connection.execute("PRAGMA user_version").fetchone()[0], self._connection.execute("PRAGMA application_id").fetchone()[0])
+        if identity != (SCHEMA_VERSION, APPLICATION_ID):
             raise PilotStoreError("store_schema")
         if _tables(self._connection) != {"effects", "events", "jobs"}:
             raise PilotStoreError("store_schema")
@@ -744,7 +769,7 @@ class PilotStore:
             if self._closed:
                 raise PilotStoreError("store_closed")
             try:
-                self._connection.execute("BEGIN IMMEDIATE")
+                self._connection.execute("BEGIN" if self._read_only else "BEGIN IMMEDIATE")
                 yield
                 self._connection.execute("COMMIT")
             except BaseException:
@@ -759,21 +784,25 @@ class PilotStore:
         return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def _private_root(root: Path, control_repository: Path) -> Path:
+def _private_root(root: Path, control_repository: Path, *, create: bool) -> Path:
     if not root.is_absolute():
         raise PilotStoreError("state_root_absolute")
     control = control_repository.resolve(strict=True)
     absolute = Path(os.path.abspath(root))
     if absolute == control or control in absolute.parents:
         raise PilotStoreError("state_root_repository")
-    previous = os.umask(0o077)
+    if create:
+        previous = os.umask(0o077)
+        try:
+            absolute.mkdir(mode=0o700, parents=False, exist_ok=True)
+        except OSError as exc:
+            raise PilotStoreError("state_root") from exc
+        finally:
+            os.umask(previous)
     try:
-        absolute.mkdir(mode=0o700, parents=False, exist_ok=True)
+        metadata = absolute.lstat()
     except OSError as exc:
         raise PilotStoreError("state_root") from exc
-    finally:
-        os.umask(previous)
-    metadata = absolute.lstat()
     if not stat.S_ISDIR(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode) or metadata.st_uid != os.getuid() or metadata.st_mode & 0o777 != 0o700:
         raise PilotStoreError("state_root_mode")
     return absolute.resolve(strict=True)

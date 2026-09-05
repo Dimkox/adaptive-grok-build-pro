@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 from pathlib import Path
 import sqlite3
@@ -67,6 +68,29 @@ class PilotStoreTests(unittest.TestCase):
             with self.assertRaises(PilotStoreError):
                 reopened.get(issue.job_id)
             reopened.close()
+
+    def test_read_only_status_does_not_recover_or_change_database(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            state_root = root / "state"
+            issue = issue_snapshot()
+            store = PilotStore(state_root, control_repository=Path(__file__).resolve().parents[2])
+            store.create_or_replay(issue, command_key="submit-1")
+            store.mark_workspace_ready(issue.job_id, workspace_digest="3" * 64)
+            store.begin_invocation(issue.job_id, command_key="codex-1")
+            store.close()
+            database = state_root / "pilot.sqlite3"
+            before = hashlib.sha256(database.read_bytes()).hexdigest()
+
+            status = PilotStore(
+                state_root,
+                control_repository=Path(__file__).resolve().parents[2],
+                read_only=True,
+            )
+            self.assertEqual(status.get(issue.job_id).state, "invocation_intent")
+            status.close()
+
+            self.assertEqual(hashlib.sha256(database.read_bytes()).hexdigest(), before)
 
 
 if __name__ == "__main__":

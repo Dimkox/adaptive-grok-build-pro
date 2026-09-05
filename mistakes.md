@@ -646,6 +646,7 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** A read-only `rg` invocation placed Markdown backticks inside a double-quoted Bash pattern, causing unintended command substitution (`main: command not found` and `origin/main: No such file`) even though later checks completed.
 **Prevention:** Single-quote literal patterns or pass fixed strings without shell metacharacters, as required by the command-escaping rule.
+**Recurrence 2026-09-05:** A documentation audit repeated the same quoting error for `2.0.15`; the command produced only local diagnostic noise, and subsequent literal searches use single-quoted patterns.
 
 ## 2026-09-04 — Assumed the configured GitHub merge method was effective
 
@@ -676,3 +677,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 **Symptom:** Landing issue #1 was created after its exact external-write grant had been materialized, but adding the final body file changed the control worktree fingerprint before `gh issue create`; the ambient execution boundary did not reject the now-stale grant. The issue content and target were intended and explicitly authorized, but the local evidence no longer proved that authorization at effect time.
 
 **Root cause:** The external input file was finalized after, rather than before, freezing the control tree and materializing the grant, and the operator path relied on ambient hook enforcement instead of calling `has_valid_approval` for the exact action/resource immediately before the effect. Future external operations must freeze every local input first, create the exact grant second, explicitly revalidate it third, and permit no repository mutation between validation and the one write.
+
+## 2026-09-05 — Treated an injected test seam as a runnable CLI composition
+
+**Symptom:** Task 5 documented a live command, but `python3 -m pilot` could only return `live_adapter_unavailable` because `__main__` supplied no host composition.
+**Root cause:** Readiness stopped at fake dependency injection instead of exercising the public entrypoint through its concrete closed adapters. Future runtime-readiness criteria must include a direct entrypoint contract across fresh processes before the CLI is described as runnable.

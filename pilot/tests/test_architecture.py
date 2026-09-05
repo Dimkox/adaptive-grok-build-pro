@@ -32,6 +32,11 @@ class PilotArchitectureTests(unittest.TestCase):
 
         self.assertEqual(edges["EDGE-PILOT-GITHUB"]["from"], "NODE-PILOT-GITHUB-BROKER")
         self.assertEqual(edges["EDGE-PILOT-CODEX"]["from"], "NODE-PILOT-CODEX-SUPERVISOR")
+        self.assertIn("pilot/live.py", nodes["NODE-PILOT-CONTROL"]["repository_paths"])
+        self.assertTrue(
+            {"pilot/live_github.py", "pilot/runtime_authority.py"}
+            <= set(nodes["NODE-PILOT-GITHUB-BROKER"]["repository_paths"])
+        )
         for edge in edges.values():
             source = nodes[edge["from"]]
             target = nodes[edge["to"]]
