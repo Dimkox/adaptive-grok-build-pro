@@ -11,7 +11,7 @@ from pathlib import Path
 import sqlite3
 import stat
 import threading
-from typing import Iterator
+from typing import Any, Iterator, Mapping
 
 from .contracts import (
     CandidateChangeV1,
@@ -64,13 +64,19 @@ CREATE TABLE effects (
     kind TEXT NOT NULL,
     command_key TEXT NOT NULL,
     resource TEXT NOT NULL,
+    request_digest TEXT NOT NULL,
+    request_json BLOB NOT NULL,
+    grant_id TEXT NOT NULL,
     grant_digest TEXT NOT NULL,
+    authority_json BLOB NOT NULL,
     candidate_digest TEXT NOT NULL,
     state TEXT NOT NULL,
-    observation_json BLOB,
+    outcome_json BLOB,
     created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
     PRIMARY KEY (job_id, kind),
     UNIQUE (job_id, command_key),
+    UNIQUE (grant_id),
     FOREIGN KEY (job_id) REFERENCES jobs(job_id)
 ) STRICT;
 """
@@ -114,6 +120,24 @@ class PilotJob:
     outcome: DesignPartnerOutcomeV1 | None
     revision: int
     last_event_digest: str
+
+
+@dataclass(frozen=True)
+class EffectRecord:
+    job_id: str
+    kind: str
+    command_key: str
+    resource: str
+    request_digest: str
+    request: Mapping[str, Any]
+    grant_id: str
+    grant_digest: str
+    authority: Mapping[str, Any]
+    candidate_digest: str
+    state: str
+    outcome: Mapping[str, Any] | None
+    created_at: str
+    updated_at: str
 
 
 class PilotStore:
@@ -287,6 +311,206 @@ class PilotStore:
                 reason_code=reason,
             )
 
+    def get_effect(self, job_id: str, kind: str) -> EffectRecord | None:
+        _bounded_text(job_id, "job_id")
+        _effect_kind(kind)
+        with self._transaction():
+            return self._select_effect(job_id, kind)
+
+    def prepare_effect(
+        self,
+        job_id: str,
+        kind: str,
+        *,
+        command_key: str,
+        resource: str,
+        request: Mapping[str, Any],
+        authority: Mapping[str, Any],
+        candidate_digest: str,
+    ) -> tuple[EffectRecord, bool]:
+        _effect_kind(kind)
+        _bounded_text(command_key, "command_key")
+        _digest(candidate_digest)
+        request_value = dict(request)
+        authority_value = dict(authority)
+        request_digest = _digest(str(request_value.get("request_digest", "")))
+        grant_id = str(authority_value.get("grant_id", ""))
+        grant_digest = _digest(str(authority_value.get("grant_use_digest", "")))
+        if (
+            not resource.endswith("/" + request_digest)
+            or authority_value.get("resource") != resource
+            or authority_value.get("request_digest") != request_digest
+            or authority_value.get("grant_id") != grant_id
+            or len(grant_id) != 16
+            or any(character not in "0123456789abcdef" for character in grant_id)
+        ):
+            raise PilotStoreError("effect_binding")
+        request_bytes = canonical_json(request_value)
+        authority_bytes = canonical_json(authority_value)
+        if len(request_bytes) > 131_072 or len(authority_bytes) > 32_768:
+            raise PilotStoreError("effect_size")
+        with self._transaction():
+            existing = self._select_effect(job_id, kind)
+            if existing is not None:
+                expected = (
+                    command_key,
+                    resource,
+                    request_digest,
+                    request_value,
+                    grant_id,
+                    grant_digest,
+                    authority_value,
+                    candidate_digest,
+                )
+                actual = (
+                    existing.command_key,
+                    existing.resource,
+                    existing.request_digest,
+                    dict(existing.request),
+                    existing.grant_id,
+                    existing.grant_digest,
+                    dict(existing.authority),
+                    existing.candidate_digest,
+                )
+                if actual != expected:
+                    raise PilotStoreError("effect_conflict")
+                return existing, False
+            current = self._select_required(job_id)
+            required_state = "gate_passed" if kind == "branch_push" else "branch_observed"
+            if (
+                current.state != required_state
+                or current.candidate is None
+                or current.validation is None
+                or current.validation.decision != "pass"
+                or current.candidate.candidate_digest != candidate_digest
+            ):
+                raise PilotStoreError("effect_state")
+            timestamp = self._timestamp()
+            try:
+                self._connection.execute(
+                    """INSERT INTO effects
+                       (job_id, kind, command_key, resource, request_digest,
+                        request_json, grant_id, grant_digest, authority_json,
+                        candidate_digest, state, outcome_json, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'prepared', NULL, ?, ?)""",
+                    (
+                        job_id,
+                        kind,
+                        command_key,
+                        resource,
+                        request_digest,
+                        request_bytes,
+                        grant_id,
+                        grant_digest,
+                        authority_bytes,
+                        candidate_digest,
+                        timestamp,
+                        timestamp,
+                    ),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise PilotStoreError("effect_conflict") from exc
+            destination = "branch_intent" if kind == "branch_push" else "pr_intent"
+            self._transition_locked(
+                job_id,
+                destination,
+                kind=destination,
+                command_key=command_key,
+                payload_digest=request_digest,
+            )
+            return self._select_effect_required(job_id, kind), True
+
+    def mark_effect_in_flight(self, job_id: str, kind: str) -> EffectRecord:
+        _effect_kind(kind)
+        with self._transaction():
+            current = self._select_effect_required(job_id, kind)
+            if current.state != "prepared":
+                raise PilotStoreError("effect_consumed")
+            timestamp = self._timestamp()
+            self._connection.execute(
+                "UPDATE effects SET state='in_flight', updated_at=? WHERE job_id=? AND kind=? AND state='prepared'",
+                (timestamp, job_id, kind),
+            )
+            return self._select_effect_required(job_id, kind)
+
+    def complete_effect(
+        self,
+        job_id: str,
+        kind: str,
+        *,
+        outcome: str,
+        observation: Mapping[str, Any],
+        success: bool,
+    ) -> EffectRecord:
+        _effect_kind(kind)
+        _bounded_text(outcome, "effect_outcome")
+        if type(success) is not bool:
+            raise PilotStoreError("effect_success")
+        observation_value = {"outcome": outcome, **dict(observation)}
+        observation_bytes = canonical_json(observation_value)
+        if len(observation_bytes) > 131_072:
+            raise PilotStoreError("effect_size")
+        with self._transaction():
+            current = self._select_effect_required(job_id, kind)
+            if current.state not in {"prepared", "in_flight"}:
+                raise PilotStoreError("effect_consumed")
+            timestamp = self._timestamp()
+            self._connection.execute(
+                "UPDATE effects SET state='completed', outcome_json=?, updated_at=? WHERE job_id=? AND kind=?",
+                (observation_bytes, timestamp, job_id, kind),
+            )
+            payload_digest = contract_digest(
+                "effect-observation",
+                {"kind": kind, "request_digest": current.request_digest, **observation_value},
+            )
+            if success:
+                destination = "branch_observed" if kind == "branch_push" else "pr_observed"
+                reason_code = None
+            else:
+                destination = "needs_human"
+                reason_code = outcome
+            self._transition_locked(
+                job_id,
+                destination,
+                kind=f"{kind}_observation",
+                payload_digest=payload_digest,
+                reason_code=reason_code,
+            )
+            return self._select_effect_required(job_id, kind)
+
+    def store_proposal(self, job_id: str, proposal: PullRequestProposalV1) -> PilotJob:
+        proposal = PullRequestProposalV1.from_dict(proposal.to_dict())
+        with self._transaction():
+            current = self._select_required(job_id)
+            branch = self._select_effect_required(job_id, "branch_push")
+            created = self._select_effect_required(job_id, "proposal_create")
+            candidate = current.candidate
+            validation = current.validation
+            if (
+                current.state != "pr_observed"
+                or candidate is None
+                or validation is None
+                or proposal.job_id != current.job_id
+                or proposal.profile_digest != current.profile_digest
+                or proposal.validation_digest != validation.validation_digest
+                or proposal.head_sha != candidate.candidate_sha
+                or proposal.head_tree != candidate.candidate_tree
+                or proposal.push_resource != branch.resource
+                or proposal.push_grant_id != branch.grant_id
+                or proposal.push_grant_digest != branch.grant_digest
+                or proposal.proposal_resource != created.resource
+                or proposal.proposal_grant_id != created.grant_id
+                or proposal.proposal_grant_digest != created.grant_digest
+            ):
+                raise PilotStoreError("proposal_binding")
+            return self._transition_locked(
+                job_id,
+                "awaiting_human",
+                kind="proposal",
+                payload_digest=proposal.proposal_digest,
+                proposal=proposal,
+            )
+
     def mark_terminal(self, job_id: str, *, reason_code: str) -> PilotJob:
         _bounded_text(reason_code, "reason_code")
         return self._transition(
@@ -297,11 +521,11 @@ class PilotStore:
             reason_code=reason_code,
         )
 
-    def _transition(self, job_id: str, state: str, *, kind: str, payload_digest: str, command_key: str | None = None, workspace_digest: str | None = None, candidate: CandidateChangeV1 | None = None, validation: CandidateValidationV1 | None = None, reason_code: str | None = None) -> PilotJob:
+    def _transition(self, job_id: str, state: str, *, kind: str, payload_digest: str, command_key: str | None = None, workspace_digest: str | None = None, candidate: CandidateChangeV1 | None = None, validation: CandidateValidationV1 | None = None, proposal: PullRequestProposalV1 | None = None, reason_code: str | None = None) -> PilotJob:
         with self._transaction():
-            return self._transition_locked(job_id, state, kind=kind, payload_digest=payload_digest, command_key=command_key, workspace_digest=workspace_digest, candidate=candidate, validation=validation, reason_code=reason_code)
+            return self._transition_locked(job_id, state, kind=kind, payload_digest=payload_digest, command_key=command_key, workspace_digest=workspace_digest, candidate=candidate, validation=validation, proposal=proposal, reason_code=reason_code)
 
-    def _transition_locked(self, job_id: str, state: str, *, kind: str, payload_digest: str, command_key: str | None = None, workspace_digest: str | None = None, candidate: CandidateChangeV1 | None = None, validation: CandidateValidationV1 | None = None, reason_code: str | None = None) -> PilotJob:
+    def _transition_locked(self, job_id: str, state: str, *, kind: str, payload_digest: str, command_key: str | None = None, workspace_digest: str | None = None, candidate: CandidateChangeV1 | None = None, validation: CandidateValidationV1 | None = None, proposal: PullRequestProposalV1 | None = None, reason_code: str | None = None) -> PilotJob:
         current = self._select_required(job_id)
         if state not in _TRANSITIONS.get(current.state, set()):
             raise PilotStoreError("invalid_transition")
@@ -311,12 +535,14 @@ class PilotStore:
         event_digest = _event_digest(job_id, sequence, kind, command_key, current.last_event_digest, payload_digest, timestamp)
         new_candidate = candidate or current.candidate
         new_validation = validation or current.validation
+        new_proposal = proposal or current.proposal
         new_workspace = workspace_digest or current.workspace_digest
         cursor = self._connection.execute(
             """UPDATE jobs SET state=?, reason_code=?, workspace_digest=?,
-                      candidate_json=?, validation_json=?, revision=?, last_event_digest=?, updated_at=?
+                      candidate_json=?, validation_json=?, proposal_json=?,
+                      revision=?, last_event_digest=?, updated_at=?
                  WHERE job_id=? AND revision=?""",
-            (state, reason_code, new_workspace, canonical_json(new_candidate.to_dict()) if new_candidate else None, canonical_json(new_validation.to_dict()) if new_validation else None, sequence, event_digest, timestamp, job_id, current.revision),
+            (state, reason_code, new_workspace, canonical_json(new_candidate.to_dict()) if new_candidate else None, canonical_json(new_validation.to_dict()) if new_validation else None, canonical_json(new_proposal.to_dict()) if new_proposal else None, sequence, event_digest, timestamp, job_id, current.revision),
         )
         if cursor.rowcount != 1:
             raise PilotStoreError("stale_revision")
@@ -414,11 +640,61 @@ class PilotStore:
             or validation.candidate_tree != candidate.candidate_tree
         ):
             raise PilotStoreError("record_integrity")
+        if proposal and (
+            validation is None
+            or candidate is None
+            or proposal.job_id != record.job_id
+            or proposal.profile_digest != record.profile_digest
+            or proposal.validation_digest != validation.validation_digest
+            or proposal.head_sha != candidate.candidate_sha
+            or proposal.head_tree != candidate.candidate_tree
+        ):
+            raise PilotStoreError("record_integrity")
         event = self._connection.execute(
             "SELECT sequence, event_digest FROM events WHERE job_id=? ORDER BY sequence DESC LIMIT 1", (job_id,)
         ).fetchone()
         if event != (record.revision, record.last_event_digest):
             raise PilotStoreError("event_integrity")
+        return record
+
+    def _select_effect(self, job_id: str, kind: str) -> EffectRecord | None:
+        row = self._connection.execute(
+            """SELECT job_id, kind, command_key, resource, request_digest,
+                      request_json, grant_id, grant_digest, authority_json,
+                      candidate_digest, state, outcome_json, created_at, updated_at
+                 FROM effects WHERE job_id=? AND kind=?""",
+            (job_id, kind),
+        ).fetchone()
+        if row is None:
+            return None
+        try:
+            request = _decode(row[5])
+            authority = _decode(row[8])
+            outcome = _decode(row[11]) if row[11] else None
+        except (ValueError, TypeError, UnicodeError, json.JSONDecodeError) as exc:
+            raise PilotStoreError("effect_integrity") from exc
+        record = EffectRecord(
+            row[0], row[1], row[2], row[3], row[4], request, row[6], row[7],
+            authority, row[9], row[10], outcome, row[12], row[13],
+        )
+        if (
+            record.kind != kind
+            or record.state not in {"prepared", "in_flight", "completed"}
+            or request.get("request_digest") != record.request_digest
+            or not record.resource.endswith("/" + record.request_digest)
+            or authority.get("grant_id") != record.grant_id
+            or authority.get("grant_use_digest") != record.grant_digest
+            or authority.get("request_digest") != record.request_digest
+            or authority.get("resource") != record.resource
+            or (record.state == "completed") != (outcome is not None)
+        ):
+            raise PilotStoreError("effect_integrity")
+        return record
+
+    def _select_effect_required(self, job_id: str, kind: str) -> EffectRecord:
+        record = self._select_effect(job_id, kind)
+        if record is None:
+            raise PilotStoreError("effect_not_found")
         return record
 
     def _select_required(self, job_id: str) -> PilotJob:
@@ -501,6 +777,12 @@ def _bounded_text(value: str, field: str) -> str:
 def _digest(value: str) -> str:
     if not isinstance(value, str) or len(value) != 64 or any(c not in "0123456789abcdef" for c in value):
         raise PilotStoreError("digest")
+    return value
+
+
+def _effect_kind(value: str) -> str:
+    if value not in {"branch_push", "proposal_create"}:
+        raise PilotStoreError("effect_kind")
     return value
 
 
