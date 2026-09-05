@@ -726,3 +726,11 @@ The first handoff-only routing prompt included excluded terms such as `no deploy
 ## 2026-09-05 — Publication handoff missed another direct version consumer
 
 The docs-only check selection covered PROJECT_STATE and package assertions but missed `StructureTests.test_version_identity_matches_readme`, which independently pinned the unpublished changelog and roadmap wording. PR #28's exact App check failed at root-unittest; the isolated method reproduced the mismatch without rerunning that suite. Include every direct consumer found by the changed publication literals in the affected set, update the stale roadmap in the same repair, and preserve the failure rather than calling the original selection complete.
+
+## 2026-09-05 — A local clone does not inherit remote-tracking-only source tips
+
+The fresh private landing clone could not check out fde60e0 because that commit existed only under the source checkout's refs/remotes/origin/main, whereas clone advertised the older local branch tip. Fetch that exact already-observed local ref into the private clone before checkout, then verify the requested commit/tree; do not move or clean the client checkout to make cloning convenient. The failed checkout started no model or tests and changed no client source.
+
+## 2026-09-05 — Pilot semantic fixtures did not represent the actual client document
+
+The pilot's passing semantic fixture stored SoftwareSourceCode.version at the JSON-LD root, but the real landing stores it inside @graph; the evaluator mirrored that synthetic assumption and would reject a correctly edited client page. The same fixture retained the pre-analytics CSP and omitted deployment ZIP/checksum parity even after the client added them. Characterize the exact client document and archive at the adapter boundary before spending a provider attempt; this is a control-side integration defect, not evidence about the separately reported Qwen failure.

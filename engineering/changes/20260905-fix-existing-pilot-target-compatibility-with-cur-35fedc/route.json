@@ -1,0 +1,86 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "fd51dcfed6b33f4a8707c0db602328146df17cc9",
+  "base_fingerprint": "8262cb5e97e2eba34a43d66d39c2ecc481f85310aac40960ba911506c3154722",
+  "complexity": "high-risk",
+  "created_at": "2026-09-05T22:24:06+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "security",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "high-risk intent/domain: bugfix",
+    "intent=bugfix",
+    "domains=security,api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "35fedca5e612",
+  "schema_version": 1,
+  "session_id": "pilot-current-landing",
+  "status": "routed",
+  "task": "Fix existing pilot target compatibility with current landing main fde60e040167c10975b00d11f578c4da6763069a and published v2.0.15: preserve analytics and privacy behavior, validate coherent deterministic deployment ZIP and checksum, retaining existing authorization and confinement. Continue the approved single-operator issue-to-candidate workflow.",
+  "task_domains": [
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "general_implementer"
+}
