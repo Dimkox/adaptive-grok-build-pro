@@ -565,6 +565,7 @@
       "severity": "error",
       "source_prefixes": [
         "factory/src/adaptive_factory/landing_artifact.py",
+        "factory/src/adaptive_factory/landing_artifact_retention.py",
         "factory/src/adaptive_factory/landing_contracts.py",
         "factory/src/adaptive_factory/landing_coordinator.py",
         "factory/src/adaptive_factory/landing_evaluation.py",

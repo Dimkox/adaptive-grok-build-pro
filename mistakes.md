@@ -666,3 +666,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** A fresh normalizer PASS was unnecessarily rerun after stale tool output was mistaken for the current assertion state.
 **Prevention:** Inspect the exact current line and diff, trust fresh recorded focused evidence, and rerun only after a source change or failure.
+
+## 2026-09-05 — Mistook component validity for semantic durability
+
+**Root cause:** Component tests treated self-validating JSON and SQLite `quick_check` as durability proof without modeling physical row keys, sealed artifact files, and command replay across process restart.
+**Prevention:** Every durable terminal result must have composed close/reopen tests that cross-bind row identity, source, commands, evidence, and external bytes, including tamper and swap cases.

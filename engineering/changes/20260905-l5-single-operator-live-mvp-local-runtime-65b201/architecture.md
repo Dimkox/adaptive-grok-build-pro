@@ -25,10 +25,13 @@ hosting action, and every result keeps `live_url` null.
   inputs. It does not claim a no-tool capability that has not been proven.
 - `LandingJobStore` is a structural service port. The existing in-memory store
   remains compatible; `SQLiteLandingJobStore` adds private local durability with
-  WAL/FULL and canonical full-key records.
+  WAL/FULL, exact schema identity, physical full-key binding, and canonical
+  records. Only a truly empty database can be initialized as schema v1.
 - `CoordinatedLandingArtifactBuilder` composes existing coordinator and packager
-  objects and retains the complete sealed result; it does not reimplement Git,
-  rendering, evaluation, or ZIP logic.
+  objects and retains the complete sealed result. A closed durable record binds
+  its private root-relative ZIP/sidecar names and bytes, canonical manifest,
+  provider evidence, final attempt/evaluation, source, input, and profile; every
+  ready read revalidates those files and identities without rebuilding them.
 - Reversible publication was intentionally deferred. The existing unavailable
   publisher remains the only shipped boundary; cPanel remains downstream.
 
@@ -75,6 +78,7 @@ Canonical governance JSON under `governance/` remains separately reviewed author
   convert it to stable `needs_human` on restart without another call.
 - Local state disclosure or replacement: require absolute owned private roots,
   reject links/non-regular files, use mode `0600`, WAL, FULL synchronization, and
-  canonical revalidation on read.
+  canonical revalidation on read. Missing, tampered, or cross-row-swapped ready
+  artifacts become stable `needs_human/artifact_integrity` results.
 - Artifact authority widening: use the existing exact-source coordinator and
   packager and validate the complete returned metadata before `artifact_ready`.

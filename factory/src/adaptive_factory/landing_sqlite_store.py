@@ -17,6 +17,8 @@ from .landing_contracts import (
     SiteArtifactV1,
     strict_json_object,
 )
+from .landing_artifact import LandingArtifactError
+from .landing_artifact_retention import RetainedLandingArtifact
 from .landing_service import (
     LANDING_STATES,
     LandingJobRecord,
@@ -36,6 +38,7 @@ CREATE TABLE IF NOT EXISTS landing_jobs (
     source_json BLOB NOT NULL,
     state TEXT NOT NULL,
     artifact_json BLOB,
+    sealed_artifact_json BLOB,
     provider_evidence_digest TEXT,
     reason_code TEXT,
     revision INTEGER NOT NULL,
@@ -56,6 +59,36 @@ CREATE TABLE IF NOT EXISTS landing_commands (
       REFERENCES landing_jobs (tenant_id, repository_id, job_id)
 ) STRICT;
 """
+_EXPECTED_COLUMNS = {
+    "landing_jobs": (
+        ("tenant_id", "TEXT", 1, 1),
+        ("repository_id", "TEXT", 1, 2),
+        ("job_id", "TEXT", 1, 3),
+        ("source_json", "BLOB", 1, 0),
+        ("state", "TEXT", 1, 0),
+        ("artifact_json", "BLOB", 0, 0),
+        ("sealed_artifact_json", "BLOB", 0, 0),
+        ("provider_evidence_digest", "TEXT", 0, 0),
+        ("reason_code", "TEXT", 0, 0),
+        ("revision", "INTEGER", 1, 0),
+        ("updated_at", "TEXT", 1, 0),
+    ),
+    "landing_commands": (
+        ("tenant_id", "TEXT", 1, 1),
+        ("repository_id", "TEXT", 1, 2),
+        ("job_id", "TEXT", 1, 3),
+        ("action", "TEXT", 1, 4),
+        ("command_key", "TEXT", 1, 5),
+        ("request_digest", "TEXT", 1, 0),
+        ("input_digest", "TEXT", 1, 0),
+        ("created_at", "TEXT", 1, 0),
+    ),
+}
+_EXPECTED_FOREIGN_KEY = (
+    (0, "landing_jobs", "tenant_id", "tenant_id", "NO ACTION", "NO ACTION", "NONE"),
+    (1, "landing_jobs", "repository_id", "repository_id", "NO ACTION", "NO ACTION", "NONE"),
+    (2, "landing_jobs", "job_id", "job_id", "NO ACTION", "NO ACTION", "NONE"),
+)
 
 
 class SQLiteLandingJobStore:
@@ -125,16 +158,8 @@ class SQLiteLandingJobStore:
     def find(
         self, tenant_id: str, repository_id: str, job_id: str
     ) -> LandingJobRecord | None:
-        with self._lock:
-            self._ensure_open()
-            row = self._connection.execute(
-                """SELECT source_json, state, artifact_json,
-                          provider_evidence_digest, reason_code, revision
-                     FROM landing_jobs
-                    WHERE tenant_id = ? AND repository_id = ? AND job_id = ?""",
-                (tenant_id, repository_id, job_id),
-            ).fetchone()
-        return _decode_record(row) if row is not None else None
+        with self._transaction():
+            return self._select_record((tenant_id, repository_id, job_id))
 
     def create_or_replay(
         self,
@@ -156,7 +181,11 @@ class SQLiteLandingJobStore:
             ).fetchone()
             current = self._select_record(identity)
             if command is not None:
-                if command != (request_digest, source.input_digest) or current is None:
+                if (
+                    current is None
+                    or current.source != source
+                    or command != (request_digest, current.source.input_digest)
+                ):
                     raise _conflict()
                 return current, False
             if current is not None:
@@ -183,7 +212,7 @@ class SQLiteLandingJobStore:
             return current, created
 
     def put(self, record: LandingJobRecord) -> LandingJobRecord:
-        _validate_record(record)
+        _validate_record(record, validate_files=True)
         identity = (
             record.source.tenant_id,
             record.source.repository_id,
@@ -200,8 +229,9 @@ class SQLiteLandingJobStore:
             values = _record_values(stored)
             cursor = self._connection.execute(
                 """UPDATE landing_jobs
-                      SET state = ?, artifact_json = ?, provider_evidence_digest = ?,
-                          reason_code = ?, revision = ?, updated_at = ?
+                      SET state = ?, artifact_json = ?, sealed_artifact_json = ?,
+                          provider_evidence_digest = ?, reason_code = ?,
+                          revision = ?, updated_at = ?
                     WHERE tenant_id = ? AND repository_id = ? AND job_id = ?
                       AND revision = ?""",
                 (
@@ -210,6 +240,7 @@ class SQLiteLandingJobStore:
                     values[3],
                     values[4],
                     values[5],
+                    values[6],
                     self._timestamp(),
                     *identity,
                     record.revision,
@@ -234,6 +265,8 @@ class SQLiteLandingJobStore:
             current = self._select_record(identity)
             if current is None:
                 raise LandingServiceError("not_found", 404, "landing job not found")
+            if current.source != source:
+                raise _conflict()
             command = self._connection.execute(
                 """SELECT request_digest, input_digest FROM landing_commands
                     WHERE tenant_id = ? AND repository_id = ? AND job_id = ?
@@ -241,22 +274,22 @@ class SQLiteLandingJobStore:
                 (*identity, command_key),
             ).fetchone()
             if command is not None:
-                if command != (request_digest, source.input_digest):
+                if command != (request_digest, current.source.input_digest):
                     raise _conflict()
                 return current
             _validate_transition(current.state, "cancelled")
             cancelled = replace(
                 current,
                 state="cancelled",
-                artifact=None,
                 reason_code="cancelled",
                 revision=current.revision + 1,
             )
             values = _record_values(cancelled)
             self._connection.execute(
                 """UPDATE landing_jobs
-                      SET state = ?, artifact_json = ?, provider_evidence_digest = ?,
-                          reason_code = ?, revision = ?, updated_at = ?
+                      SET state = ?, artifact_json = ?, sealed_artifact_json = ?,
+                          provider_evidence_digest = ?, reason_code = ?,
+                          revision = ?, updated_at = ?
                     WHERE tenant_id = ? AND repository_id = ? AND job_id = ?""",
                 (
                     values[1],
@@ -264,6 +297,7 @@ class SQLiteLandingJobStore:
                     values[3],
                     values[4],
                     values[5],
+                    values[6],
                     self._timestamp(),
                     *identity,
                 ),
@@ -298,18 +332,27 @@ class SQLiteLandingJobStore:
             raise LandingServiceError("store_foreign_keys", 500, "landing FK unavailable")
 
     def _initialize_schema(self) -> None:
-        version = self._connection.execute("PRAGMA user_version").fetchone()[0]
-        application = self._connection.execute("PRAGMA application_id").fetchone()[0]
-        if version not in {0, SCHEMA_VERSION} or application not in {0, APPLICATION_ID}:
-            raise LandingServiceError("store_schema", 500, "landing store schema unsupported")
-        if version == 0:
-            with self._transaction():
-                for statement in _SCHEMA.split(";"):
-                    if statement.strip():
-                        self._connection.execute(statement)
-                self._connection.execute(f"PRAGMA application_id = {APPLICATION_ID}")
-                self._connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
-        result = self._connection.execute("PRAGMA quick_check").fetchone()[0]
+        try:
+            version = self._connection.execute("PRAGMA user_version").fetchone()[0]
+            application = self._connection.execute("PRAGMA application_id").fetchone()[0]
+            identity = (version, application)
+            if identity == (0, 0):
+                if _schema_inventory(self._connection):
+                    raise _schema_error()
+                with self._transaction():
+                    for statement in _SCHEMA.split(";"):
+                        if statement.strip():
+                            self._connection.execute(statement)
+                    self._connection.execute(f"PRAGMA application_id = {APPLICATION_ID}")
+                    self._connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+            elif identity != (SCHEMA_VERSION, APPLICATION_ID):
+                raise _schema_error()
+            _validate_schema(self._connection)
+            result = self._connection.execute("PRAGMA quick_check").fetchone()[0]
+        except LandingServiceError:
+            raise
+        except sqlite3.Error as exc:
+            raise _schema_error() from exc
         if result != "ok":
             raise LandingServiceError("store_integrity", 500, "landing store corrupt")
 
@@ -351,21 +394,48 @@ class SQLiteLandingJobStore:
 
     def _select_record(self, identity: tuple[str, str, str]) -> LandingJobRecord | None:
         row = self._connection.execute(
-            """SELECT source_json, state, artifact_json,
+            """SELECT tenant_id, repository_id, job_id, source_json, state,
+                      artifact_json, sealed_artifact_json,
                       provider_evidence_digest, reason_code, revision
                  FROM landing_jobs
                 WHERE tenant_id = ? AND repository_id = ? AND job_id = ?""",
             identity,
         ).fetchone()
-        return _decode_record(row) if row is not None else None
+        if row is None:
+            return None
+        record = _decode_record(row)
+        try:
+            _validate_record(record, validate_files=True)
+        except LandingServiceError as exc:
+            if exc.code != "artifact_integrity" or record.state != "artifact_ready":
+                raise
+            revision = record.revision + 1
+            cursor = self._connection.execute(
+                """UPDATE landing_jobs
+                      SET state = 'needs_human', reason_code = 'artifact_integrity',
+                          revision = ?, updated_at = ?
+                    WHERE tenant_id = ? AND repository_id = ? AND job_id = ?
+                      AND revision = ?""",
+                (revision, self._timestamp(), *identity, record.revision),
+            )
+            if cursor.rowcount != 1:
+                raise LandingServiceError("stale_job", 409, "landing job is stale")
+            return replace(
+                record,
+                state="needs_human",
+                reason_code="artifact_integrity",
+                revision=revision,
+            )
+        return record
 
     def _insert_record(self, record: LandingJobRecord) -> None:
         values = _record_values(record)
         self._connection.execute(
             """INSERT INTO landing_jobs
                (tenant_id, repository_id, job_id, source_json, state,
-                artifact_json, provider_evidence_digest, reason_code, revision, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                artifact_json, sealed_artifact_json, provider_evidence_digest,
+                reason_code, revision, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 record.source.tenant_id,
                 record.source.repository_id,
@@ -444,13 +514,63 @@ def _validate_database_path(path: Path) -> None:
         raise LandingServiceError("store_file", 500, "landing store file invalid")
 
 
+def _schema_inventory(connection: sqlite3.Connection) -> tuple[tuple[str, str], ...]:
+    return tuple(
+        connection.execute(
+            """SELECT type, name FROM sqlite_schema
+                WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name"""
+        ).fetchall()
+    )
+
+
+def _validate_schema(connection: sqlite3.Connection) -> None:
+    if _schema_inventory(connection) != (
+        ("table", "landing_commands"),
+        ("table", "landing_jobs"),
+    ):
+        raise _schema_error()
+    table_list = {
+        row[1]: (row[2], row[3], row[4], row[5])
+        for row in connection.execute("PRAGMA table_list").fetchall()
+        if row[0] == "main" and row[1] in _EXPECTED_COLUMNS
+    }
+    for table, expected in _EXPECTED_COLUMNS.items():
+        columns = tuple(
+            (row[1], row[2], row[3], row[5])
+            for row in connection.execute(f"PRAGMA table_xinfo({table})").fetchall()
+            if row[6] == 0
+        )
+        if columns != expected or table_list.get(table) != (
+            "table",
+            len(expected),
+            0,
+            1,
+        ):
+            raise _schema_error()
+    foreign_keys = tuple(
+        (row[1], row[2], row[3], row[4], row[5], row[6], row[7])
+        for row in connection.execute("PRAGMA foreign_key_list(landing_commands)")
+    )
+    if foreign_keys != _EXPECTED_FOREIGN_KEY:
+        raise _schema_error()
+
+
+def _schema_error() -> LandingServiceError:
+    return LandingServiceError("store_schema", 500, "landing store schema unsupported")
+
+
 def _record_values(
     record: LandingJobRecord,
-) -> tuple[bytes, str, bytes | None, str | None, str | None, int]:
+) -> tuple[bytes, str, bytes | None, bytes | None, str | None, str | None, int]:
     return (
         canonical_json(record.source.to_dict()),
         record.state,
         canonical_json(record.artifact.to_dict()) if record.artifact else None,
+        (
+            canonical_json(record.sealed_artifact.to_dict())
+            if record.sealed_artifact
+            else None
+        ),
         record.provider_evidence_digest,
         record.reason_code,
         record.revision,
@@ -458,7 +578,18 @@ def _record_values(
 
 
 def _decode_record(row) -> LandingJobRecord:
-    source_json, state, artifact_json, evidence_digest, reason_code, revision = row
+    (
+        tenant_id,
+        repository_id,
+        job_id,
+        source_json,
+        state,
+        artifact_json,
+        sealed_json,
+        evidence_digest,
+        reason_code,
+        revision,
+    ) = row
     try:
         source = LandingInputV1.from_dict(strict_json_object(source_json))
         artifact = (
@@ -466,14 +597,32 @@ def _decode_record(row) -> LandingJobRecord:
             if artifact_json is not None
             else None
         )
-    except (LandingContractError, ValueError, TypeError) as exc:
+        sealed_artifact = (
+            RetainedLandingArtifact.from_dict(strict_json_object(sealed_json))
+            if sealed_json is not None
+            else None
+        )
+    except (LandingArtifactError, LandingContractError, ValueError, TypeError) as exc:
         raise LandingServiceError("store_record", 500, "landing store record invalid") from exc
-    record = LandingJobRecord(source, state, artifact, evidence_digest, reason_code, revision)
-    _validate_record(record)
+    if (tenant_id, repository_id, job_id) != (
+        source.tenant_id,
+        source.repository_id,
+        source.job_id,
+    ):
+        raise LandingServiceError("store_identity", 500, "landing row identity invalid")
+    record = LandingJobRecord(
+        source,
+        state,
+        artifact,
+        evidence_digest,
+        reason_code,
+        revision,
+        sealed_artifact,
+    )
     return record
 
 
-def _validate_record(record: LandingJobRecord) -> None:
+def _validate_record(record: LandingJobRecord, *, validate_files: bool = False) -> None:
     if not isinstance(record, LandingJobRecord) or record.state not in LANDING_STATES:
         raise LandingServiceError("state", 500, "landing state invalid")
     if (
@@ -483,10 +632,36 @@ def _validate_record(record: LandingJobRecord) -> None:
         raise LandingServiceError("provider_binding", 500, "landing evidence invalid")
     if type(record.revision) is not int or record.revision < 0:
         raise LandingServiceError("revision", 500, "landing revision invalid")
-    if record.state == "artifact_ready" and record.artifact is None:
+    if record.state == "artifact_ready" and (
+        record.artifact is None or record.sealed_artifact is None
+    ):
         raise LandingServiceError("artifact_binding", 500, "landing artifact missing")
-    if record.state != "artifact_ready" and record.artifact is not None:
-        raise LandingServiceError("artifact_binding", 500, "landing artifact not terminal")
+    if (record.artifact is None) != (record.sealed_artifact is None):
+        raise LandingServiceError("artifact_integrity", 500, "landing artifact incomplete")
+    if record.state == "needs_human" and record.reason_code == "artifact_integrity":
+        return
+    if record.artifact is not None:
+        if record.state not in {"artifact_ready", "needs_human", "cancelled"}:
+            raise LandingServiceError("artifact_binding", 500, "landing artifact not terminal")
+        sealed = record.sealed_artifact
+        if (
+            sealed is None
+            or sealed.artifact != record.artifact
+            or record.provider_evidence_digest
+            != sealed.provider_evidence.provider_evidence_digest
+            or record.artifact.site_id != record.source.site_id
+            or record.artifact.source_sha != record.source.exact_base_sha
+            or record.artifact.source_tree != record.source.exact_base_tree
+            or record.artifact.input_digest != record.source.input_digest
+        ):
+            raise LandingServiceError("artifact_integrity", 500, "landing artifact invalid")
+        if validate_files and record.state == "artifact_ready":
+            try:
+                sealed.validate(record.source)
+            except LandingArtifactError as exc:
+                raise LandingServiceError(
+                    "artifact_integrity", 500, "landing artifact invalid"
+                ) from exc
 
 
 def _validate_command(command_key: str, request_digest: str) -> None:

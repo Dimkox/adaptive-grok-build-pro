@@ -29,3 +29,17 @@ live model, network, publisher, cPanel, hosting, release, or deployment action.
 The optional reversible publisher was not required for the finite Stage 3/5 MVP
 and was deferred. Final exact-head verification and four selected reviews remain
 pending after the tracked source checkpoint is frozen.
+
+## Review-blocker repair
+
+- Provider matrix RED: the new focused provider method had four contradictory
+  state/spec/evidence subcases accepted; GREEN: `1/1`, and the service-boundary
+  regression passed `1/1` with zero builder calls.
+- Durability RED: the composed SQLite/service/runtime close-reopen method failed
+  because `LandingJobRecord` retained no sealed result; GREEN: `1/1`, including
+  exact replay with zero provider/builder calls and missing/tampered/swapped
+  artifact demotion.
+- SQLite identity/schema RED: the focused group exposed acceptance of a mixed or
+  drifted schema and decoded cross-row source identity; GREEN: the complete
+  focused module passed `7/7`. The adjacent landing service/provider/runtime
+  selection passed `8/8`, and the architecture ownership method passed `1/1`.

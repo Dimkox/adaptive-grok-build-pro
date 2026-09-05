@@ -229,19 +229,35 @@ class LandingNormalizationOutcome:
     reason_code: str = "normalized"
 
     def __post_init__(self) -> None:
-        if self.state not in {
-            "normalized",
-            "provider_unavailable",
-            "needs_human",
-            "rejected",
-        }:
-            raise LandingProviderError("normalization_state")
-        if not _IDENTIFIER.fullmatch(self.reason_code):
-            raise LandingProviderError("normalization_reason")
-        if (self.state == "normalized") != isinstance(
-            self.spec, StaticLandingSpecV1
-        ):
-            raise LandingProviderError("normalization_spec")
+        validate_landing_normalization_outcome(self)
+
+
+def validate_landing_normalization_outcome(
+    outcome: LandingNormalizationOutcome,
+) -> None:
+    if not isinstance(outcome, LandingNormalizationOutcome) or outcome.state not in {
+        "normalized",
+        "provider_unavailable",
+        "needs_human",
+        "rejected",
+    }:
+        raise LandingProviderError("normalization_state")
+    if not isinstance(outcome.evidence, LandingProviderEvidenceV1):
+        raise LandingProviderError("normalization_evidence")
+    if not _IDENTIFIER.fullmatch(outcome.reason_code):
+        raise LandingProviderError("normalization_reason")
+    if (outcome.state == "normalized") != isinstance(
+        outcome.spec, StaticLandingSpecV1
+    ):
+        raise LandingProviderError("normalization_spec")
+    expected_disposition = {
+        "normalized": "fixture_ready",
+        "provider_unavailable": "provider_unavailable",
+        "needs_human": "provider_unavailable",
+        "rejected": "rejected",
+    }[outcome.state]
+    if outcome.evidence.disposition != expected_disposition:
+        raise LandingProviderError("normalization_evidence")
 
 
 class LandingProvider(Protocol):

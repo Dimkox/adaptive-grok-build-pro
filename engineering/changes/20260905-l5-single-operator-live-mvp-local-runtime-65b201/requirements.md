@@ -15,6 +15,15 @@
 - [x] Terminal jobs survive restart; stale accepted/normalizing/generating/
   evaluating jobs become `needs_human` in one bounded recovery call with no
   automatic effect.
+- [x] A durable `artifact_ready` row retains the sealed ZIP, sidecar, canonical
+  manifest, final attempt/evaluation, and provider evidence; each read/replay
+  revalidates their exact source/input/profile and private-file bindings.
+- [x] SQLite accepts only an empty `(0,0)` database for initialization or the
+  exact application/schema identity for reopen, and verifies its complete
+  table, column, composite-key, foreign-key, and STRICT inventory.
+- [x] Decoded source records match their physical tenant/repository/job key,
+  command replay matches the current source, and contradictory provider outcome
+  state/spec/evidence dispositions stop before artifact construction.
 - [x] The concrete builder returns a fully bound deterministic artifact by
   reusing the existing coordinator/evaluator/packager and never permits a fourth
   attempt.
@@ -25,7 +34,8 @@
 
 - Missing/drifted profile, malformed text/DOCX, unsupported PDF/audio, digest
   mismatch, unknown SQLite version, busy store, duplicate command conflict,
-  corrupt durable JSON, and artifact binding mismatch fail closed.
+  corrupt durable JSON, cross-row identity, schema drift, and missing, tampered,
+  or swapped artifact material fail closed.
 - Startup recovery is bounded and does not replay an ambiguous provider,
   workspace, publisher, or other external operation.
 

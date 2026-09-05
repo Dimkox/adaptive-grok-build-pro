@@ -1367,6 +1367,7 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertTrue(
             {
+                "factory/src/adaptive_factory/landing_artifact_retention.py",
                 "factory/src/adaptive_factory/landing_normalizer.py",
                 "factory/src/adaptive_factory/landing_runtime.py",
                 "factory/src/adaptive_factory/resources/landing-normalization-draft.v1.schema.json",

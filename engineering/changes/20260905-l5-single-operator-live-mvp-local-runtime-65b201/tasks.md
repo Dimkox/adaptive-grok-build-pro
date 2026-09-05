@@ -9,8 +9,10 @@
    and minimal service store protocol with durable submit/cancel/terminal replay
    and bounded fail-closed startup recovery.
 4. [x] Add focused RED tests, then implement the concrete coordinator-to-packager
-   builder and prove one deterministic offline artifact with complete metadata.
-   The optional publisher seam was deliberately deferred as non-blocking scope.
+   builder and prove one deterministic offline artifact with complete metadata,
+   durable close/reopen replay, exact row/schema identity, and fail-closed
+   artifact revalidation. The optional publisher seam was deliberately deferred
+   as non-blocking scope.
 5. [ ] Freeze tracked source/docs/state, run exactly one full PR verifier and one
    parallel code/test/security/data review wave, record fingerprint-bound
    receipts, and stop locally. External model, cPanel, PR, release, and deploy

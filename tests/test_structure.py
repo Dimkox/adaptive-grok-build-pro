@@ -214,6 +214,7 @@ class StructureTests(unittest.TestCase):
             "factory/contracts/jsonschema/landing-site-artifact.v1.schema.json",
             "factory/contracts/jsonschema/static-landing-spec.v1.schema.json",
             "factory/src/adaptive_factory/landing_artifact.py",
+            "factory/src/adaptive_factory/landing_artifact_retention.py",
             "factory/src/adaptive_factory/landing_contracts.py",
             "factory/src/adaptive_factory/landing_coordinator.py",
             "factory/src/adaptive_factory/landing_evaluation.py",

@@ -11,10 +11,11 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from adaptive_factory.api import Authenticator, create_app
-from adaptive_factory.landing_contracts import SiteArtifactV1
+from adaptive_factory.landing_contracts import LandingProviderEvidenceV1, SiteArtifactV1
 from adaptive_factory.landing_intake import PrivateLandingBlobStore
 from adaptive_factory.landing_provider import (
     FixedCommandLandingProvider,
+    LandingNormalizationOutcome,
     LandingProviderError,
     UnavailableLandingProvider,
     unavailable_landing_profile,
@@ -50,7 +51,11 @@ class CountingBlobStore(PrivateLandingBlobStore):
 
 
 class BoundArtifactBuilder:
+    def __init__(self):
+        self.calls = 0
+
     def build(self, source, spec, evidence):
+        self.calls += 1
         return SiteArtifactV1.from_facts(
             {
                 "schema_version": 1,
@@ -83,6 +88,25 @@ class FailingLandingProvider:
         self.calls += 1
         read_blob()
         raise LandingProviderError("provider_timeout")
+
+
+class ContradictoryLandingProvider:
+    def __init__(self, delegate):
+        self.delegate = delegate
+
+    def normalize(self, request, read_blob):
+        valid = self.delegate.normalize(request, read_blob)
+        facts = valid.evidence.to_dict()
+        facts.pop("provider_evidence_digest")
+        facts["disposition"] = "provider_unavailable"
+        forged = object.__new__(LandingNormalizationOutcome)
+        object.__setattr__(forged, "spec", valid.spec)
+        object.__setattr__(
+            forged, "evidence", LandingProviderEvidenceV1.from_facts(facts)
+        )
+        object.__setattr__(forged, "state", "normalized")
+        object.__setattr__(forged, "reason_code", "normalized")
+        return forged
 
 
 class LandingApiTests(unittest.TestCase):
@@ -316,6 +340,26 @@ class LandingApiTests(unittest.TestCase):
         self.assertEqual("provider_unavailable", result.json()["state"])
         self.assertEqual(1, provider.calls)
         self.assertEqual([], list((Path(self.temporary.name) / "blobs").glob("*.blob")))
+
+    def test_contradictory_provider_outcome_fails_closed_before_artifact_builder(self):
+        configured = fixture_profile()
+        builder = BoundArtifactBuilder()
+        client = self.client(
+            provider=ContradictoryLandingProvider(
+                FixedCommandLandingProvider(configured, clock=provider_clock())
+            ),
+            profile_digest=configured.profile_digest,
+            artifact_builder=builder,
+        )
+        response = client.post(
+            "/v1/landing-inputs",
+            headers=self.submit_headers(key="landing-contradictory"),
+            content=b"contradictory provider evidence",
+        )
+
+        self.assertEqual(202, response.status_code, response.text)
+        self.assertEqual("provider_unavailable", response.json()["state"])
+        self.assertEqual(0, builder.calls)
 
     def test_landing_streams_above_global_limit_without_raising_task_limit(self):
         client = self.client()

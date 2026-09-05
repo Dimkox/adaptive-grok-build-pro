@@ -16,11 +16,13 @@ from .landing_contracts import (
     StaticLandingSpecV1,
     landing_digest,
 )
+from .landing_artifact_retention import RetainedLandingArtifact
 from .landing_intake import PrivateLandingBlobStore
 from .landing_provider import (
     LandingNormalizationRequest,
     LandingProvider,
     LandingProviderError,
+    validate_landing_normalization_outcome,
 )
 from .landing_renderer import TARGET_BASE_SHA, TARGET_BASE_TREE, TARGET_REPOSITORY_ID
 from .models import Actor
@@ -72,6 +74,7 @@ class LandingJobRecord:
     provider_evidence_digest: str | None
     reason_code: str | None = None
     revision: int = 0
+    sealed_artifact: RetainedLandingArtifact | None = None
 
     def job_view(self) -> dict[str, object]:
         return {
@@ -230,7 +233,6 @@ class InMemoryLandingJobStore:
             cancelled = replace(
                 current,
                 state="cancelled",
-                artifact=None,
                 reason_code="cancelled",
             )
             cancelled = self.put(cancelled)
@@ -386,6 +388,7 @@ class LandingApplicationService:
                     job_id=source.job_id,
                 ),
             )
+            validate_landing_normalization_outcome(outcome)
             if (
                 outcome.evidence.input_digest != source.input_digest
                 or outcome.evidence.profile_digest != self._profile_digest
@@ -425,12 +428,21 @@ class LandingApplicationService:
                 if isinstance(built, LandingArtifactBuildResult)
                 else None
             )
+            sealed_artifact = (
+                candidate
+                if isinstance(
+                    candidate := getattr(built, "retained", None),
+                    RetainedLandingArtifact,
+                )
+                else None
+            )
             self._validate_artifact(source, outcome.spec, outcome.evidence, artifact)
             return replace(
                 processing,
                 state="artifact_ready",
                 artifact=artifact,
                 provider_evidence_digest=outcome.evidence.provider_evidence_digest,
+                sealed_artifact=sealed_artifact,
             )
         except LandingProviderError:
             return replace(

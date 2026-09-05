@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .landing_artifact import LandingArtifactPackager, LandingArtifactResult
+from .landing_artifact_retention import RetainedLandingArtifact
 from .landing_contracts import (
     LandingInputV1,
     LandingProviderEvidenceV1,
@@ -22,6 +23,7 @@ class LandingRuntimeError(RuntimeError):
 class CoordinatedLandingArtifactResult:
     run: LandingRunResult
     sealed: LandingArtifactResult
+    retained: RetainedLandingArtifact
 
     @property
     def artifact(self) -> SiteArtifactV1:
@@ -86,4 +88,7 @@ class CoordinatedLandingArtifactBuilder:
             or artifact.profile_digest != evidence.profile_digest
         ):
             raise LandingRuntimeError("artifact_binding")
-        return CoordinatedLandingArtifactResult(run, sealed)
+        retained = RetainedLandingArtifact.capture(
+            sealed, evidence, run.attempts[-1], run.evaluations[-1], source
+        )
+        return CoordinatedLandingArtifactResult(run, sealed, retained)
