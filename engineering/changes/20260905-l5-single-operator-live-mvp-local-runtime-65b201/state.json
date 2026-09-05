@@ -1,0 +1,41 @@
+{
+  "change_id": "20260905-l5-single-operator-live-mvp-local-runtime-65b201",
+  "created_at": "2026-09-05T11:38:47+00:00",
+  "history": [
+    {
+      "at": "2026-09-05T11:38:47+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-05T12:16:58+00:00",
+      "from": "draft",
+      "reason": "Seven route-selected analyses converge on a finite Stage 3/5 local-only runtime bound to exact predecessor f3f8d737; frozen product identities and external-effect exclusions are explicit.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-05T12:16:58+00:00",
+      "from": "scoped",
+      "reason": "User explicitly authorized this repository-local single-operator MVP while forbidding live model, network, provider, publishing, deployment, and other external writes.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-05T12:16:59+00:00",
+      "from": "approved",
+      "reason": "Approved scope is decomposed into bounded TDD slices for the normalizer seam, SQLite store, and existing coordinator-to-packager bridge.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-05T12:50:47+00:00",
+      "from": "implementing",
+      "reason": "Focused TDD slices for the injected normalizer, private SQLite replay/recovery, and coordinator-to-packager builder pass; architecture is registered and the frozen published identities remain unchanged, so the source is ready for its single final verifier and review wave.",
+      "to": "verifying"
+    }
+  ],
+  "route_id": "65b2018b786d",
+  "schema_version": 1,
+  "status": "verifying",
+  "title": "L5 single-operator live MVP local runtime",
+  "updated_at": "2026-09-05T12:50:47+00:00"
+}

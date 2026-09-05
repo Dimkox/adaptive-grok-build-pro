@@ -38,6 +38,7 @@ DEPLOY_MEMBERS = tuple(
         (
             ".htaccess",
             "index.html",
+            "index.css",
             "content.css",
             "zh-cn/index.html",
             "ko/index.html",

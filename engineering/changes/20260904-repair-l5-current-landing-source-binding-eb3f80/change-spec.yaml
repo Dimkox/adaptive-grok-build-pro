@@ -1,0 +1,133 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "New landing intake accepts only github.com/Dimkox/ai-dark-factory-landing at exact commit 699010380f4f90a0193a9c22090c35e6aded7d2c and tree f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4; the prior or a mixed tuple returns the existing 409 source_identity outcome before blob, provider, candidate, or artifact work.",
+      "evidence": [
+        {"test": "factory/tests/test_landing_api.py"},
+        {"test": "factory/tests/test_landing_contracts.py"}
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "The pinned source with exactly one protected /index.css link and no inline style renders deterministically; the candidate retains that link, adds only the fixed /content.css link, preserves indexing and JSON-LD facts, and changes exactly index.html and content.css.",
+      "evidence": [
+        {"test": "factory/tests/test_landing_renderer.py"},
+        {"test": "factory/tests/test_landing_coordinator.py"}
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "The deterministic deploy artifact contains exactly 20 allowlisted members; index.css occurs once with source provenance, identical source/candidate object identity, and byte content from the pinned source while prohibited target files remain absent.",
+      "evidence": [
+        {"test": "factory/tests/test_landing_artifact.py"},
+        {"receipt": "verification"}
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "The landing OpenAPI remains byte-identical to the published 1.0.0 non-deployed snapshot and is explicitly not current runtime-configuration authority; a config-neutral successor contract is deferred.",
+      "evidence": [
+        {"test": "factory/tests/test_landing_contracts.py"},
+        {"receipt": "code_review"}
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Published v2.0.14 ZIP, sidecar, tag-bound identities, prior L5 evidence, landing source worktree, provider defaults, publisher behavior, and all M0-M9 migrations remain unchanged; this repair performs zero external effects.",
+      "evidence": [
+        {"test": "factory/tests/test_landing_api.py"},
+        {"receipt": "security_review"}
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260904-repair-l5-current-landing-source-binding-eb3f80",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "index.css enters LANDING_WRITE_PATHS, is generated, staged, changed, omitted from the deploy artifact, or receives candidate provenance.",
+      "evidence": [
+        {"test": "factory/tests/test_landing_renderer.py"},
+        {"test": "factory/tests/test_landing_artifact.py"}
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "The repair accepts an inline style, duplicate or foreign stylesheet, remote style dependency, stale source tuple, or provider-selected active content.",
+      "evidence": [
+        {"test": "factory/tests/test_landing_renderer.py"},
+        {"receipt": "security_review"}
+      ]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "The repair edits or rebuilds any published package, calls a provider, mutates either landing source worktree or a live target, deploys, publishes, or claims a live URL.",
+      "evidence": [
+        {"receipt": "code_review"},
+        {"receipt": "security_review"}
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Repository ID, source SHA, source tree, renderer identity, and service intake checks describe one atomic runtime source epoch; the frozen OpenAPI snapshot is not runtime authority.",
+      "evidence": [
+        {"test": "factory/tests/test_landing_contracts.py"},
+        {"test": "factory/tests/test_landing_api.py"}
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "LANDING_WRITE_PATHS remains exactly index.html and content.css; all other source tree members retain their mode and object identity.",
+      "evidence": [
+        {"test": "factory/tests/test_landing_renderer.py"}
+      ]
+    },
+    {
+      "id": "INV-003",
+      "statement": "Repeated sealing of one candidate yields identical sorted 20-member ZIP, manifest, sidecar, and digests without replacing an existing content-addressed pair.",
+      "evidence": [
+        {"test": "factory/tests/test_landing_artifact.py"}
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Make the delivered offline L5 landing pipeline consume the current exact landing source revision and produce a complete deterministic artifact without broadening generator or operational authority.",
+    "success_metric": "The focused landing tests pass after demonstrated regression failures, one exact-head PR verifier and the three selected reviews pass on the frozen tree, the candidate delta remains two paths, and the deploy inventory is exactly 20 members with index.css source-owned.",
+    "target": "current_exact_source_compatible_offline_l5_artifact"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Landing input, candidate, manifest, and artifact records expose the exact source tuple, changed paths, member count, provenance, and content digests.",
+      "proves": ["OBJ-001"]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "Focused tests observe stale-pin 409, protected stylesheet preservation, deterministic replay, and zero provider or publisher effect.",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "ai",
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

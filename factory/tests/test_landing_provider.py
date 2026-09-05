@@ -9,6 +9,7 @@ from unittest.mock import patch
 from adaptive_factory.landing_contracts import LandingInputV1
 from adaptive_factory.landing_provider import (
     FixedCommandLandingProvider,
+    LandingNormalizationOutcome,
     LandingNormalizationRequest,
     LandingProviderError,
     LandingProviderProfile,
@@ -27,8 +28,8 @@ STATIC_SPEC_SCHEMA = (
 )
 NOW = datetime(2026, 9, 4, 11, 0, tzinfo=timezone.utc)
 REPOSITORY_ID = "github.com/Dimkox/ai-dark-factory-landing"
-BASE_SHA = "176efcaab931c2482781ff163c621b10aa05dee9"
-BASE_TREE = "f2bdcecc6dbe9ecc82007610d398ca12bd75e07f"
+BASE_SHA = "699010380f4f90a0193a9c22090c35e6aded7d2c"
+BASE_TREE = "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4"
 
 
 def digest(value):
@@ -87,6 +88,36 @@ def clock():
 
 
 class LandingProviderTests(unittest.TestCase):
+    def test_outcome_state_spec_and_evidence_disposition_are_closed(self):
+        payload = b"bounded"
+        source = landing_input(payload)
+        configured = profile()
+        successful = FixedCommandLandingProvider(
+            configured, clock=clock()
+        ).normalize(
+            LandingNormalizationRequest(source, configured.profile_digest),
+            lambda: payload,
+        )
+        unavailable_profile = unavailable_landing_profile()
+        unavailable = UnavailableLandingProvider(
+            unavailable_profile, clock=clock()
+        ).normalize(
+            LandingNormalizationRequest(source, unavailable_profile.profile_digest),
+            lambda: payload,
+        )
+
+        contradictions = (
+            (successful.spec, unavailable.evidence, "normalized", "normalized"),
+            (None, successful.evidence, "provider_unavailable", "profile_unavailable"),
+            (None, successful.evidence, "needs_human", "invalid_model_output"),
+            (None, successful.evidence, "rejected", "invalid_input"),
+        )
+        for spec, evidence, state, reason in contradictions:
+            with self.subTest(state=state), self.assertRaisesRegex(
+                LandingProviderError, "normalization_evidence"
+            ):
+                LandingNormalizationOutcome(spec, evidence, state, reason)
+
     def test_unavailable_default_stops_before_blob_read_or_process_creation(self):
         source = landing_input()
         configured = unavailable_landing_profile()

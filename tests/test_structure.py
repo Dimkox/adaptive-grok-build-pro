@@ -214,13 +214,18 @@ class StructureTests(unittest.TestCase):
             "factory/contracts/jsonschema/landing-site-artifact.v1.schema.json",
             "factory/contracts/jsonschema/static-landing-spec.v1.schema.json",
             "factory/src/adaptive_factory/landing_artifact.py",
+            "factory/src/adaptive_factory/landing_artifact_retention.py",
             "factory/src/adaptive_factory/landing_contracts.py",
             "factory/src/adaptive_factory/landing_coordinator.py",
             "factory/src/adaptive_factory/landing_evaluation.py",
             "factory/src/adaptive_factory/landing_intake.py",
+            "factory/src/adaptive_factory/landing_normalizer.py",
             "factory/src/adaptive_factory/landing_provider.py",
             "factory/src/adaptive_factory/landing_renderer.py",
+            "factory/src/adaptive_factory/landing_runtime.py",
             "factory/src/adaptive_factory/landing_service.py",
+            "factory/src/adaptive_factory/landing_sqlite_store.py",
+            "factory/src/adaptive_factory/resources/landing-normalization-draft.v1.schema.json",
             "delivery/src/adaptive_delivery/landing_publisher.py",
         )
         for relative in required:

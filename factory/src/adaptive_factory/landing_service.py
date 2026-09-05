@@ -5,7 +5,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 import re
 import threading
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from .landing_contracts import (
     MEDIA_TYPES,
@@ -14,12 +14,15 @@ from .landing_contracts import (
     LandingProviderEvidenceV1,
     SiteArtifactV1,
     StaticLandingSpecV1,
+    landing_digest,
 )
+from .landing_artifact_retention import RetainedLandingArtifact
 from .landing_intake import PrivateLandingBlobStore
 from .landing_provider import (
     LandingNormalizationRequest,
     LandingProvider,
     LandingProviderError,
+    validate_landing_normalization_outcome,
 )
 from .landing_renderer import TARGET_BASE_SHA, TARGET_BASE_TREE, TARGET_REPOSITORY_ID
 from .models import Actor
@@ -55,7 +58,12 @@ class LandingArtifactBuilder(Protocol):
         source: LandingInputV1,
         spec: StaticLandingSpecV1,
         evidence: LandingProviderEvidenceV1,
-    ) -> SiteArtifactV1: ...
+    ) -> SiteArtifactV1 | LandingArtifactBuildResult: ...
+
+
+@runtime_checkable
+class LandingArtifactBuildResult(Protocol):
+    artifact: SiteArtifactV1
 
 
 @dataclass(frozen=True)
@@ -64,6 +72,9 @@ class LandingJobRecord:
     state: str
     artifact: SiteArtifactV1 | None
     provider_evidence_digest: str | None
+    reason_code: str | None = None
+    revision: int = 0
+    sealed_artifact: RetainedLandingArtifact | None = None
 
     def job_view(self) -> dict[str, object]:
         return {
@@ -93,11 +104,43 @@ class LandingSubmitResult:
     created: bool
 
 
+@runtime_checkable
+class LandingJobStore(Protocol):
+    def get(
+        self, tenant_id: str, repository_id: str, job_id: str
+    ) -> LandingJobRecord: ...
+
+    def find(
+        self, tenant_id: str, repository_id: str, job_id: str
+    ) -> LandingJobRecord | None: ...
+
+    def create_or_replay(
+        self,
+        record: LandingJobRecord,
+        *,
+        command_key: str,
+        request_digest: str,
+    ) -> tuple[LandingJobRecord, bool]: ...
+
+    def put(self, record: LandingJobRecord) -> LandingJobRecord: ...
+
+    def cancel_or_replay(
+        self,
+        record: LandingJobRecord,
+        *,
+        command_key: str,
+        request_digest: str,
+    ) -> LandingJobRecord: ...
+
+
 class InMemoryLandingJobStore:
     """Process-local landing projection, deliberately separate from M4 task state."""
 
     def __init__(self) -> None:
         self._records: dict[tuple[str, str, str], LandingJobRecord] = {}
+        self._commands: dict[
+            tuple[str, str, str, str, str], tuple[str, str]
+        ] = {}
         self._lock = threading.RLock()
 
     def get(self, tenant_id: str, repository_id: str, job_id: str) -> LandingJobRecord:
@@ -113,18 +156,104 @@ class InMemoryLandingJobStore:
         with self._lock:
             return self._records.get((tenant_id, repository_id, job_id))
 
-    def put(self, record: LandingJobRecord) -> None:
+    def create_or_replay(
+        self,
+        record: LandingJobRecord,
+        *,
+        command_key: str,
+        request_digest: str,
+    ) -> tuple[LandingJobRecord, bool]:
+        self._validate_command(command_key, request_digest)
+        identity = (
+            record.source.tenant_id,
+            record.source.repository_id,
+            record.source.job_id,
+        )
+        command = (*identity, "submit", command_key)
+        with self._lock:
+            prior = self._commands.get(command)
+            if prior is not None:
+                if prior != (request_digest, record.source.input_digest):
+                    raise LandingServiceError(
+                        "idempotency_conflict", 409, "landing idempotency conflict"
+                    )
+                return self._records[identity], False
+            existing = self._records.get(identity)
+            if existing is not None and existing.source != record.source:
+                raise LandingServiceError(
+                    "idempotency_conflict", 409, "landing idempotency conflict"
+                )
+            created = existing is None
+            if created:
+                self._records[identity] = record
+            self._commands[command] = (request_digest, record.source.input_digest)
+            return self._records[identity], created
+
+    def put(self, record: LandingJobRecord) -> LandingJobRecord:
         if record.state not in LANDING_STATES:
             raise LandingServiceError("state", 500, "landing state invalid")
         key = (record.source.tenant_id, record.source.repository_id, record.source.job_id)
         with self._lock:
-            self._records[key] = record
+            existing = self._records.get(key)
+            if existing is None:
+                stored = record
+            else:
+                if existing.source != record.source or existing.revision != record.revision:
+                    raise LandingServiceError("stale_job", 409, "landing job is stale")
+                _validate_transition(existing.state, record.state)
+                stored = replace(record, revision=record.revision + 1)
+            self._records[key] = stored
+            return stored
+
+    def cancel_or_replay(
+        self,
+        record: LandingJobRecord,
+        *,
+        command_key: str,
+        request_digest: str,
+    ) -> LandingJobRecord:
+        self._validate_command(command_key, request_digest)
+        identity = (
+            record.source.tenant_id,
+            record.source.repository_id,
+            record.source.job_id,
+        )
+        command = (*identity, "cancel", command_key)
+        with self._lock:
+            current = self._records.get(identity)
+            if current is None:
+                raise LandingServiceError("not_found", 404, "landing job not found")
+            prior = self._commands.get(command)
+            if prior is not None:
+                if prior != (request_digest, record.source.input_digest):
+                    raise LandingServiceError(
+                        "idempotency_conflict", 409, "landing idempotency conflict"
+                    )
+                return current
+            cancelled = replace(
+                current,
+                state="cancelled",
+                reason_code="cancelled",
+            )
+            cancelled = self.put(cancelled)
+            self._commands[command] = (request_digest, record.source.input_digest)
+            return cancelled
+
+    @staticmethod
+    def _validate_command(command_key: str, request_digest: str) -> None:
+        if (
+            not isinstance(command_key, str)
+            or not _IDENTIFIER.fullmatch(command_key)
+            or not isinstance(request_digest, str)
+            or not _HEX64.fullmatch(request_digest)
+        ):
+            raise LandingServiceError("idempotency", 422, "landing idempotency invalid")
 
 
 class LandingApplicationService:
     def __init__(
         self,
-        store: InMemoryLandingJobStore,
+        store: LandingJobStore,
         blobs: PrivateLandingBlobStore,
         provider: LandingProvider,
         *,
@@ -132,7 +261,7 @@ class LandingApplicationService:
         artifact_builder: LandingArtifactBuilder | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
-        if not isinstance(store, InMemoryLandingJobStore):
+        if not isinstance(store, LandingJobStore):
             raise LandingServiceError("store", 500, "landing store unavailable")
         if not isinstance(blobs, PrivateLandingBlobStore):
             raise LandingServiceError("blob_store", 500, "landing intake unavailable")
@@ -181,23 +310,29 @@ class LandingApplicationService:
                 )
             except LandingContractError as exc:
                 raise _service_error(exc) from exc
-            if existing is not None:
-                try:
-                    if source != existing.source:
-                        raise LandingServiceError(
-                            "idempotency_conflict", 409, "landing idempotency conflict"
-                        )
-                    return LandingSubmitResult(existing, False)
-                finally:
-                    self._purge(source, "normalized")
-
             accepted = LandingJobRecord(source, "accepted", None, None)
-            self._store.put(accepted)
+            try:
+                accepted, created = self._store.create_or_replay(
+                    accepted,
+                    command_key=job_id,
+                    request_digest=source.input_digest,
+                )
+            except Exception:
+                self._purge(source, "rejected")
+                raise
+            if not created:
+                self._purge(source, "normalized")
+                return LandingSubmitResult(accepted, False)
             try:
                 final = self._process(accepted)
             except Exception:
-                final = replace(accepted, state="needs_human")
-            self._store.put(final)
+                current = self._store.get(
+                    source.tenant_id, source.repository_id, source.job_id
+                )
+                final = replace(
+                    current, state="needs_human", reason_code="internal_failure"
+                )
+            final = self._store.put(final)
             self._purge(source, "normalized")
             return LandingSubmitResult(final, True)
 
@@ -213,13 +348,23 @@ class LandingApplicationService:
         idempotency_key: str,
         actor: Actor,
     ) -> LandingJobRecord:
-        del idempotency_key
         self._authorize(actor, repository_id)
         with self._lock:
             current = self._store.get(actor.actor_id, repository_id, job_id)
-            self._purge(current.source, "cancelled")
-            cancelled = replace(current, state="cancelled", artifact=None)
-            self._store.put(cancelled)
+            request_digest = landing_digest(
+                "cancel-command",
+                {
+                    "tenant_id": actor.actor_id,
+                    "repository_id": repository_id,
+                    "job_id": job_id,
+                },
+            )
+            cancelled = self._store.cancel_or_replay(
+                current,
+                command_key=idempotency_key,
+                request_digest=request_digest,
+            )
+            self._purge(cancelled.source, "cancelled")
             return cancelled
 
     def result(
@@ -232,6 +377,7 @@ class LandingApplicationService:
 
     def _process(self, accepted: LandingJobRecord) -> LandingJobRecord:
         source = accepted.source
+        processing = self._store.put(replace(accepted, state="normalizing"))
         try:
             outcome = self._provider.normalize(
                 LandingNormalizationRequest(source, self._profile_digest),
@@ -242,6 +388,7 @@ class LandingApplicationService:
                     job_id=source.job_id,
                 ),
             )
+            validate_landing_normalization_outcome(outcome)
             if (
                 outcome.evidence.input_digest != source.input_digest
                 or outcome.evidence.profile_digest != self._profile_digest
@@ -249,35 +396,61 @@ class LandingApplicationService:
                 raise LandingServiceError(
                     "provider_binding", 500, "landing provider evidence mismatch"
                 )
-            if outcome.spec is None:
+            if outcome.state != "normalized" or outcome.spec is None:
                 return replace(
-                    accepted,
-                    state="provider_unavailable",
+                    processing,
+                    state=outcome.state,
                     provider_evidence_digest=outcome.evidence.provider_evidence_digest,
+                    reason_code=outcome.reason_code,
                 )
             if (
                 outcome.spec.input_digest != source.input_digest
                 or self._artifact_builder is None
             ):
                 return replace(
-                    accepted,
+                    processing,
                     state="needs_human",
                     provider_evidence_digest=outcome.evidence.provider_evidence_digest,
+                    reason_code="artifact_builder_unavailable",
                 )
-            artifact = self._artifact_builder.build(source, outcome.spec, outcome.evidence)
+            processing = self._store.put(
+                replace(
+                    processing,
+                    state="generating",
+                    provider_evidence_digest=outcome.evidence.provider_evidence_digest,
+                )
+            )
+            built = self._artifact_builder.build(source, outcome.spec, outcome.evidence)
+            artifact = (
+                built
+                if isinstance(built, SiteArtifactV1)
+                else built.artifact
+                if isinstance(built, LandingArtifactBuildResult)
+                else None
+            )
+            sealed_artifact = (
+                candidate
+                if isinstance(
+                    candidate := getattr(built, "retained", None),
+                    RetainedLandingArtifact,
+                )
+                else None
+            )
             self._validate_artifact(source, outcome.spec, outcome.evidence, artifact)
             return replace(
-                accepted,
+                processing,
                 state="artifact_ready",
                 artifact=artifact,
                 provider_evidence_digest=outcome.evidence.provider_evidence_digest,
+                sealed_artifact=sealed_artifact,
             )
         except LandingProviderError:
             return replace(
-                accepted,
+                processing,
                 state="provider_unavailable",
                 artifact=None,
                 provider_evidence_digest=None,
+                reason_code="provider_error",
             )
 
     @staticmethod
@@ -335,3 +508,33 @@ def _service_error(error: LandingContractError) -> LandingServiceError:
     if error.code in {"idempotency_conflict", "quarantine_collision"}:
         return LandingServiceError(error.code, 409, "landing input conflicts")
     return LandingServiceError(error.code, 422, "landing input rejected")
+
+
+_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,127}$")
+_TERMINAL_STATES = frozenset(
+    {"artifact_ready", "provider_unavailable", "rejected", "needs_human"}
+)
+_TRANSITIONS = {
+    "accepted": frozenset(
+        {"normalizing", "provider_unavailable", "rejected", "needs_human", "cancelled"}
+    ),
+    "normalizing": frozenset(
+        {"generating", "provider_unavailable", "rejected", "needs_human", "cancelled"}
+    ),
+    "generating": frozenset(
+        {"evaluating", "artifact_ready", "needs_human", "cancelled"}
+    ),
+    "evaluating": frozenset({"artifact_ready", "needs_human", "cancelled"}),
+    "artifact_ready": frozenset({"cancelled"}),
+    "provider_unavailable": frozenset({"cancelled"}),
+    "rejected": frozenset({"cancelled"}),
+    "needs_human": frozenset({"cancelled"}),
+    "cancelled": frozenset(),
+}
+
+
+def _validate_transition(current: str, target: str) -> None:
+    if current == target:
+        return
+    if target not in _TRANSITIONS.get(current, frozenset()):
+        raise LandingServiceError("state_transition", 409, "landing transition invalid")

@@ -59,6 +59,67 @@
       }
     }
   ],
+  "current_unreleased_change": {
+    "change_id": "20260905-l5-single-operator-live-mvp-local-runtime-65b201",
+    "route_id": "65b2018b786d",
+    "branch": "feature/l5-live-mvp",
+    "status": "focused_source_passed_pending_exact_head_verification_and_reviews",
+    "stage": "3_of_5",
+    "source_base": "f3f8d7375a153393ffba3906165e8d625e45d4a1",
+    "change_package": "engineering/changes/20260905-l5-single-operator-live-mvp-local-runtime-65b201",
+    "predecessor_change": "20260904-repair-l5-current-landing-source-binding-eb3f80",
+    "landing_source": {
+      "repository_id": "github.com/Dimkox/ai-dark-factory-landing",
+      "commit": "699010380f4f90a0193a9c22090c35e6aded7d2c",
+      "tree": "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4",
+      "default_branch": "main",
+      "read_only": true
+    },
+    "write_paths": ["content.css", "index.html"],
+    "protected_source_member": "index.css",
+    "deploy_member_count": 20,
+    "normalizer": {
+      "profile": "native_codex_injected_seam",
+      "default": "unavailable",
+      "supported_local_inputs": ["docx", "image", "text"],
+      "needs_human_before_invocation": ["audio", "pdf"],
+      "live_model_configured": false
+    },
+    "local_store": {
+      "engine": "stdlib_sqlite",
+      "scope": "single_operator_private_runtime_root",
+      "journal_mode": "WAL",
+      "synchronous": "FULL",
+      "startup_recovery_limit": 100,
+      "automatic_external_replay": false
+    },
+    "artifact_builder": {
+      "composition": "existing_coordinator_evaluator_exact_source_packager",
+      "deploy_member_count": 20,
+      "full_metadata_retained": true,
+      "publisher_wired": false
+    },
+    "frozen": {
+      "published_release": "v2.0.14",
+      "package_bytes": true,
+      "landing_openapi": true,
+      "postgresql_migrations": "001-018"
+    },
+    "focused_tests": {
+      "status": "focused_source_passed",
+      "normalizer": 5,
+      "sqlite_store": 4,
+      "artifact_runtime": 1,
+      "affected_api": 3
+    },
+    "full_verifier": "pending",
+    "independent_reviews": "pending",
+    "package_rebuild": false,
+    "external_effect": false,
+    "live_url": null,
+    "operational_activation": false,
+    "next_action": "Freeze this source checkpoint, then run one exact-head PR verifier and one route-selected code, test, security, and data review wave. Live model, cPanel, hosting, publication, and deployment remain separately authorized downstream work."
+  },
   "local_candidate": {
     "version": "2.0.14",
     "status": "published",
@@ -603,8 +664,7 @@
     "open_pull_requests": [
       {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Lazy CLI imports and tests are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
       {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Repository-scoped Trust CI profiles are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
-      {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "Investor demo and packaging hardening are absent from main.", "disposition": "Wholesale merge is superseded; extract the unique scope into a clean successor. No successor PR exists."},
-      {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": "571cad7877431ac5ab5779b53fe9f7effd6859ce", "status": "open_trust_ci_failure_gitguardian_failure", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "FAILURE", "failure_cause": "not inspected or inferred", "disposition": "Preserve both failure results without diagnosing or dismissing them; PR 22 is the delivered v2.0.13 path."}
+      {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "Investor demo and packaging hardening are absent from main.", "disposition": "Wholesale merge is superseded; extract the unique scope into a clean successor. No successor PR exists."}
     ],
     "retained_unresolved": [
       {"pull_request": 14, "local_head": "cb2fe7ce637c464179e20b5b37aae334e56c1838", "purpose": "Unique closed production-promotion work requiring explicit re-evaluation."},
@@ -615,6 +675,7 @@
       {"pull_request": 1, "branch": "hardening/trust-boundary-v2-1", "reason": "Closed Actions-era trust design; never merge."},
       {"pull_request": 17, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "milestone/m2-executable-architecture", "head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89", "status": "closed_duplicate", "closed_at": "2026-09-02T10:08:38Z", "duplicate_of": 21, "reason": "Closed because it exactly duplicated open PR 21 at the same head; it provides no separate delivery authority."},
       {"pull_request": 18, "branch": "feature/seo-landing-codex-side-project", "reason": "Stacked staging integration only; PR 19 delivered the SEO source to main and this path is archival."},
+      {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": "571cad7877431ac5ab5779b53fe9f7effd6859ce", "status": "closed_superseded", "closed_at": "2026-09-05T12:07:24Z", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "FAILURE", "failure_cause": "not inspected or inferred", "disposition": "Closed as stale after PR 22 delivered M1-M9 in v2.0.13 and PR 24 delivered additive L5 in v2.0.14; preserved failure conclusions are historical evidence, not current delivery blockers."},
       {"branches": ["feat/m4-durable-factory-control-plane", "milestone/m4-durable-control-plane-local", "fix/m3-restack-accepted-m2"], "reason": "Local aliases carry no source beyond accepted M2/M3 and historical M4 source head 460a8a01; published main and tag v2.0.13 are authoritative for delivered product identity."}
     ]
   },

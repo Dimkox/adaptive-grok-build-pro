@@ -1365,6 +1365,26 @@ class ArchitectureModelTests(unittest.TestCase):
             set(landing_node["public_contracts"]),
             set(landing_records) - {"CONTRACT-FACTORY-LANDING-OPENAPI-V1"},
         )
+        self.assertTrue(
+            {
+                "factory/src/adaptive_factory/landing_artifact_retention.py",
+                "factory/src/adaptive_factory/landing_normalizer.py",
+                "factory/src/adaptive_factory/landing_runtime.py",
+                "factory/src/adaptive_factory/resources/landing-normalization-draft.v1.schema.json",
+            }
+            <= set(landing_node["repository_paths"])
+        )
+        landing_sqlite = next(
+            node
+            for node in snapshot.system["nodes"]
+            if node["id"] == "NODE-FACTORY-LANDING-SQLITE"
+        )
+        self.assertEqual("datastore", landing_sqlite["type"])
+        self.assertEqual("none", landing_sqlite["runtime"]["kind"])
+        self.assertEqual(
+            ["factory/src/adaptive_factory/landing_sqlite_store.py"],
+            landing_sqlite["repository_paths"],
+        )
         landing_edge = next(
             edge
             for edge in snapshot.system["edges"]
@@ -1372,6 +1392,14 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(landing_edge["network_policy"], "no_network")
         self.assertEqual(landing_edge["allowed_data"], ["DATA-FACTORY-LANDING-INPUT"])
+        landing_store_edge = next(
+            edge
+            for edge in snapshot.system["edges"]
+            if edge["id"] == "EDGE-FACTORY-LANDING-SQLITE"
+        )
+        self.assertEqual("sqlite", landing_store_edge["protocol"])
+        self.assertEqual("local_os", landing_store_edge["authentication"])
+        self.assertEqual("no_network", landing_store_edge["network_policy"])
         governance_handoff = next(
             record
             for record in records

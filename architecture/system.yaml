@@ -402,6 +402,29 @@
     },
     {
       "allowed_data": [
+        "DATA-FACTORY-LANDING-INPUT"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "manual_recovery",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-LANDING-DOGFOOD",
+      "id": "EDGE-FACTORY-LANDING-SQLITE",
+      "network_policy": "no_network",
+      "protocol": "sqlite",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-LANDING-SQLITE",
+      "type": "data_flow"
+    },
+    {
+      "allowed_data": [
         "DATA-FACTORY-INTENT",
         "DATA-FACTORY-STATE",
         "DATA-FACTORY-AUDIT"
@@ -1596,13 +1619,17 @@
         "factory/contracts/jsonschema/landing-site-artifact.v1.schema.json",
         "factory/contracts/jsonschema/static-landing-spec.v1.schema.json",
         "factory/src/adaptive_factory/landing_artifact.py",
+        "factory/src/adaptive_factory/landing_artifact_retention.py",
         "factory/src/adaptive_factory/landing_contracts.py",
         "factory/src/adaptive_factory/landing_coordinator.py",
         "factory/src/adaptive_factory/landing_evaluation.py",
         "factory/src/adaptive_factory/landing_intake.py",
+        "factory/src/adaptive_factory/landing_normalizer.py",
         "factory/src/adaptive_factory/landing_provider.py",
         "factory/src/adaptive_factory/landing_renderer.py",
-        "factory/src/adaptive_factory/landing_service.py"
+        "factory/src/adaptive_factory/landing_runtime.py",
+        "factory/src/adaptive_factory/landing_service.py",
+        "factory/src/adaptive_factory/resources/landing-normalization-draft.v1.schema.json"
       ],
       "runtime": {
         "evidence": "source_described",
@@ -1613,6 +1640,24 @@
       "secrets": [],
       "trust_domain": "TD-FACTORY-CONTROL",
       "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-FACTORY-LANDING-INPUT",
+      "id": "NODE-FACTORY-LANDING-SQLITE",
+      "owner": "local factory operators",
+      "public_contracts": [],
+      "repository_paths": [
+        "factory/src/adaptive_factory/landing_sqlite_store.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "none",
+        "lifecycle": "none",
+        "network": "none"
+      },
+      "secrets": [],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "datastore"
     },
     {
       "data_classification": "DATA-CHANGE-EVIDENCE",

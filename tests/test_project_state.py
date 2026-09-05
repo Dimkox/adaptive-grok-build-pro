@@ -23,6 +23,8 @@ CURRENT_RELEASE_HEAD_SHA = "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57"
 CURRENT_RELEASE_TREE = "618df086920c92179aa0e22a8c8d4ad30ebd9230"
 CURRENT_RELEASE_ZIP_SHA256 = "b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264"
 CURRENT_RELEASE_SIDECAR_SHA256 = "1a961c35b8f12fa02579ec7888c889f0ae7ca8656b158eb731681ef8357caf3c"
+CURRENT_LANDING_SHA = "699010380f4f90a0193a9c22090c35e6aded7d2c"
+CURRENT_LANDING_TREE = "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4"
 PR21_HEAD_SHA = "571cad7877431ac5ab5779b53fe9f7effd6859ce"
 SEO_MERGE_SHA = "8ab4e57038dec2e07f01aaa0b207813a387358f4"
 M4_PRODUCT_SHA = "67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4"
@@ -118,6 +120,44 @@ class ProjectStateTests(unittest.TestCase):
             self.state["implemented_milestones"],
             ["M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9"],
         )
+        repair = state["current_unreleased_change"]
+        self.assertEqual(repair["route_id"], "65b2018b786d")
+        self.assertEqual(repair["branch"], "feature/l5-live-mvp")
+        self.assertEqual(repair["source_base"], "f3f8d7375a153393ffba3906165e8d625e45d4a1")
+        self.assertEqual(repair["stage"], "3_of_5")
+        self.assertEqual(repair["landing_source"]["commit"], CURRENT_LANDING_SHA)
+        self.assertEqual(repair["landing_source"]["tree"], CURRENT_LANDING_TREE)
+        self.assertTrue(repair["landing_source"]["read_only"])
+        self.assertEqual(repair["write_paths"], ["content.css", "index.html"])
+        self.assertEqual(repair["protected_source_member"], "index.css")
+        self.assertEqual(repair["deploy_member_count"], 20)
+        self.assertEqual(repair["normalizer"]["default"], "unavailable")
+        self.assertEqual(
+            repair["normalizer"]["supported_local_inputs"],
+            ["docx", "image", "text"],
+        )
+        self.assertEqual(
+            repair["normalizer"]["needs_human_before_invocation"],
+            ["audio", "pdf"],
+        )
+        self.assertEqual(repair["local_store"]["engine"], "stdlib_sqlite")
+        self.assertEqual(repair["local_store"]["startup_recovery_limit"], 100)
+        self.assertEqual(repair["artifact_builder"]["deploy_member_count"], 20)
+        self.assertTrue(repair["artifact_builder"]["full_metadata_retained"])
+        self.assertEqual(
+            repair["focused_tests"],
+            {
+                "status": "focused_source_passed",
+                "normalizer": 5,
+                "sqlite_store": 4,
+                "artifact_runtime": 1,
+                "affected_api": 3,
+            },
+        )
+        self.assertEqual(repair["full_verifier"], "pending")
+        self.assertEqual(repair["independent_reviews"], "pending")
+        self.assertFalse(repair["package_rebuild"])
+        self.assertFalse(repair["external_effect"])
 
         exact_milestone_facts = {
             "M0": {
@@ -617,7 +657,6 @@ class ProjectStateTests(unittest.TestCase):
             {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Lazy CLI imports and tests are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
             {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Repository-scoped Trust CI profiles are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
             {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": CURRENT_CHECK, "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "Investor demo and packaging hardening are absent from main.", "disposition": "Wholesale merge is superseded; extract the unique scope into a clean successor. No successor PR exists."},
-            {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": PR21_HEAD_SHA, "status": "open_trust_ci_failure_gitguardian_failure", "observed_check": CURRENT_CHECK, "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "FAILURE", "failure_cause": "not inspected or inferred", "disposition": "Preserve both failure results without diagnosing or dismissing them; PR 22 is the delivered v2.0.13 path."},
         ]
         self.assertEqual(inventory["open_pull_requests"], expected_open)
         delivered = self.state["delivered_non_milestone_work"]
@@ -708,11 +747,31 @@ class ProjectStateTests(unittest.TestCase):
             },
             inventory["superseded"],
         )
+        self.assertIn(
+            {
+                "pull_request": 21,
+                "branch": "milestone/m4-durable-control-plane-accepted-m3",
+                "base": "main",
+                "head": PR21_HEAD_SHA,
+                "status": "closed_superseded",
+                "closed_at": "2026-09-05T12:07:24Z",
+                "observed_check": CURRENT_CHECK,
+                "observed_check_conclusion": "FAILURE",
+                "gitguardian_conclusion": "FAILURE",
+                "failure_cause": "not inspected or inferred",
+                "disposition": "Closed as stale after PR 22 delivered M1-M9 in v2.0.13 and PR 24 delivered additive L5 in v2.0.14; preserved failure conclusions are historical evidence, not current delivery blockers.",
+            },
+            inventory["superseded"],
+        )
 
     def test_adversarial_pr21_base_head_and_status_are_rejected(self) -> None:
         original = self.state
         mutated = copy.deepcopy(original)
-        pr21 = next(item for item in mutated["work_inventory"]["open_pull_requests"] if item["pull_request"] == 21)
+        pr21 = next(
+            item
+            for item in mutated["work_inventory"]["superseded"]
+            if item.get("pull_request") == 21
+        )
         pr21.update(base="milestone/m2-executable-architecture", head="0" * 40, status="success")
         self.state = mutated
         try:

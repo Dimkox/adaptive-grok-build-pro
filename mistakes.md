@@ -656,3 +656,18 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Root cause:** A no-local clone from a worktree did not receive a merge commit that existed only in that worktree's remote-tracking ref.
 **Prevention:** Post-merge rebuilds must clone the canonical origin or explicitly fetch the exact merge commit before checkout.
+
+## 2026-09-05 — Spawned outside the active route to probe status
+
+**Root cause:** A collaboration worker was used as a progress probe even though `status_probe` was not route-allowed; it was interrupted before making edits.
+**Prevention:** Use `list_agents` and read-only Git/process status for progress checks, and never spawn an agent absent from `allowed_agents`.
+
+## 2026-09-05 — Repeated a passing focused test from stale output
+
+**Root cause:** A fresh normalizer PASS was unnecessarily rerun after stale tool output was mistaken for the current assertion state.
+**Prevention:** Inspect the exact current line and diff, trust fresh recorded focused evidence, and rerun only after a source change or failure.
+
+## 2026-09-05 — Mistook component validity for semantic durability
+
+**Root cause:** Component tests treated self-validating JSON and SQLite `quick_check` as durability proof without modeling physical row keys, sealed artifact files, and command replay across process restart.
+**Prevention:** Every durable terminal result must have composed close/reopen tests that cross-bind row identity, source, commands, evidence, and external bytes, including tamper and swap cases.

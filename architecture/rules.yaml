@@ -565,13 +565,17 @@
       "severity": "error",
       "source_prefixes": [
         "factory/src/adaptive_factory/landing_artifact.py",
+        "factory/src/adaptive_factory/landing_artifact_retention.py",
         "factory/src/adaptive_factory/landing_contracts.py",
         "factory/src/adaptive_factory/landing_coordinator.py",
         "factory/src/adaptive_factory/landing_evaluation.py",
         "factory/src/adaptive_factory/landing_intake.py",
+        "factory/src/adaptive_factory/landing_normalizer.py",
         "factory/src/adaptive_factory/landing_provider.py",
         "factory/src/adaptive_factory/landing_renderer.py",
-        "factory/src/adaptive_factory/landing_service.py"
+        "factory/src/adaptive_factory/landing_runtime.py",
+        "factory/src/adaptive_factory/landing_service.py",
+        "factory/src/adaptive_factory/landing_sqlite_store.py"
       ]
     }
   ],
