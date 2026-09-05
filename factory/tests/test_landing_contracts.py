@@ -1,4 +1,5 @@
 from copy import deepcopy
+from hashlib import sha256
 import json
 from pathlib import Path
 import re
@@ -308,7 +309,7 @@ class LandingContractTests(unittest.TestCase):
         with self.assertRaisesRegex(LandingContractError, "reason_codes"):
             LandingEvaluationV1.from_facts(evaluation_facts(reason_codes=["z", "a"]))
 
-    def test_six_json_schemas_and_additive_openapi_are_closed_version_one(self):
+    def test_six_json_schemas_and_frozen_openapi_snapshot_are_closed_version_one(self):
         names = {
             "landing-input.v1.schema.json",
             "static-landing-spec.v1.schema.json",
@@ -325,8 +326,12 @@ class LandingContractTests(unittest.TestCase):
                 self.assertIn("schema_version", schema["required"])
                 self.assertEqual(schema["properties"]["schema_version"], {"const": 1})
         contract = json.loads(OPENAPI.read_text(encoding="utf-8"))
+        self.assertEqual(
+            sha256(OPENAPI.read_bytes()).hexdigest(),
+            "4aa733b43c6f2fca9ec6f40d442ebd5c585fc96d489006b0c05054963da55dd3",
+        )
         self.assertEqual(contract["openapi"], "3.1.0")
-        self.assertEqual(contract["info"]["version"], "1.0.1")
+        self.assertEqual(contract["info"]["version"], "1.0.0")
         operations = {(method, path): body for path, item in contract["paths"].items() for method, body in item.items()}
         self.assertEqual(
             {key: value["operationId"] for key, value in operations.items()},
@@ -349,8 +354,12 @@ class LandingContractTests(unittest.TestCase):
         self.assertEqual(set(operations[("get", "/v1/landing-jobs/{job_id}/result")]["responses"]), {"200", "401", "403", "404", "409", "500", "503"})
         parameters = contract["components"]["parameters"]
         self.assertEqual(parameters["RepositoryId"]["schema"]["const"], "github.com/Dimkox/ai-dark-factory-landing")
-        self.assertEqual(parameters["ExactBaseSha"]["schema"]["const"], "699010380f4f90a0193a9c22090c35e6aded7d2c")
-        self.assertEqual(parameters["ExactBaseTree"]["schema"]["const"], "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4")
+        self.assertEqual(parameters["ExactBaseSha"]["schema"]["const"], "176efcaab931c2482781ff163c621b10aa05dee9")
+        self.assertEqual(parameters["ExactBaseTree"]["schema"]["const"], "f2bdcecc6dbe9ecc82007610d398ca12bd75e07f")
+        self.assertNotEqual(
+            parameters["ExactBaseSha"]["schema"]["const"],
+            input_facts()["exact_base_sha"],
+        )
         error = contract["components"]["schemas"]["Error"]
         self.assertEqual(set(error["required"]), {"error", "code", "detail"})
         self.assertFalse(error["additionalProperties"])

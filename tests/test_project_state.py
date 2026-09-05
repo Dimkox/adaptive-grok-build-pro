@@ -129,7 +129,25 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(repair["write_paths"], ["content.css", "index.html"])
         self.assertEqual(repair["protected_source_member"], "index.css")
         self.assertEqual(repair["deploy_member_count"], 20)
-        self.assertEqual(repair["focused_tests"], {"status": "passed", "count": 47})
+        self.assertEqual(repair["renderer_version"], "1.0.1")
+        self.assertEqual(repair["openapi_version"], "1.0.0")
+        self.assertEqual(
+            repair["openapi_status"],
+            "frozen_non_deployed_published_snapshot",
+        )
+        self.assertEqual(
+            repair["runtime_source_authority"],
+            "renderer_and_service_exact_configuration",
+        )
+        self.assertEqual(repair["config_neutral_openapi_successor"], "deferred")
+        self.assertEqual(
+            repair["focused_tests"],
+            {
+                "status": "targeted_final_contract_passed",
+                "prior_group_count": 47,
+                "final_contract_test_count": 1,
+            },
+        )
         self.assertEqual(repair["full_verifier"], "pending")
         self.assertEqual(repair["independent_reviews"], "pending")
         self.assertFalse(repair["package_rebuild"])

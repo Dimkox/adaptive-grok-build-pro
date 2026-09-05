@@ -4,7 +4,7 @@
 
 **Goal:** Make offline L5 accept exact landing commit `699010380f4f90a0193a9c22090c35e6aded7d2c` and seal its complete 20-member site artifact without widening write or operational authority.
 
-**Architecture:** Rotate the exact source epoch across renderer and OpenAPI, treat `/index.css` as immutable source surface, and add it to the closed deploy inventory. Candidate generation remains a deterministic two-file delta in a private no-local clone; provider and publisher defaults remain unavailable.
+**Architecture:** Rotate the exact runtime source epoch across renderer/service checks, treat `/index.css` as immutable source surface, and add it to the closed deploy inventory. Preserve the published OpenAPI `1.0.0` document as a non-deployed snapshot; candidate generation remains a deterministic two-file delta in a private no-local clone and provider/publisher defaults remain unavailable.
 
 **Tech Stack:** Python 3.11+, stdlib `unittest`, Git plumbing, FastAPI TestClient, OpenAPI 3.1 JSON.
 
@@ -32,8 +32,10 @@
 - Modify: `factory/tests/test_landing_provider.py`
 
 **Interfaces:**
-- Consumes: current `source_surface_facts`, `ExactGitLandingWorkspace`, `DEPLOY_MEMBERS`, and OpenAPI exact-base parameters.
-- Produces: failing behavior tests for an external `/index.css`, exact 20-member source provenance, and new pin/API cutover.
+- Consumes: current `source_surface_facts`, `ExactGitLandingWorkspace`,
+  `DEPLOY_MEMBERS`, and renderer/service exact-base configuration.
+- Produces: failing behavior tests for an external `/index.css`, exact
+  20-member source provenance, and the new runtime pin.
 
 - [x] **Step 1: Change the hermetic source fixture to the accepted topology**
 
@@ -45,11 +47,11 @@ Assert the rendered page has one `/index.css` and one `/content.css`; unknown/du
 
 - [x] **Step 3: Update expected current identity in contract/intake/provider/API fixtures**
 
-Use the exact target values from Global Constraints, expect OpenAPI `1.0.1`, and make the fake artifact count 20. Add stale/mixed tuple assertions that return `409 source_identity` without a provider call.
+Use the exact target values from Global Constraints in runtime fixtures and make the fake artifact count 20. Characterize the OpenAPI as the byte-identical published `1.0.0` non-deployed snapshot; add stale/mixed runtime tuple assertions that return `409 source_identity` without a provider call.
 
 - [x] **Step 4: Run the smallest tests and observe RED**
 
-Run resolved test methods in `test_landing_renderer`, `test_landing_artifact`, and `test_landing_contracts`. Expected failures must specifically show `source_active_content`, missing `index.css`/19-member inventory, or stale OpenAPI/source constants; loader or fixture errors are not evidence.
+Run resolved test methods in `test_landing_renderer`, `test_landing_artifact`, and `test_landing_contracts`. Expected failures must specifically show `source_active_content`, missing `index.css`/19-member inventory, or stale runtime source constants; loader or fixture errors are not evidence.
 
 ### Task 2: Repair Renderer Source Epoch and Surface
 
@@ -77,22 +79,23 @@ Run `PYTHONPATH=.:factory/src python3 -m unittest factory.tests.test_landing_ren
 
 **Files:**
 - Modify: `factory/src/adaptive_factory/landing_artifact.py`
-- Modify: `factory/contracts/openapi/landing-dogfood.v1.json`
+- Preserve: `factory/contracts/openapi/landing-dogfood.v1.json`
 - Test: `factory/tests/test_landing_artifact.py`
 - Test: `factory/tests/test_landing_contracts.py`
 - Test: `factory/tests/test_landing_api.py`
 
 **Interfaces:**
 - Consumes: Task 2 exact candidate and protected `index.css` tree member.
-- Produces: sorted 20-member artifact and OpenAPI metadata version `1.0.1` advertising the same SHA/tree.
+- Produces: sorted 20-member artifact while retaining the exact published
+  OpenAPI `1.0.0` snapshot as non-deployed history.
 
 - [x] **Step 1: Add only `index.css` to `DEPLOY_MEMBERS`**
 
 Do not add it to `LANDING_WRITE_PATHS`; retain all existing regular-file, mode, object, deterministic ZIP, and no-replace validation.
 
-- [x] **Step 2: Update the OpenAPI patch contract**
+- [x] **Step 2: Preserve and characterize the frozen OpenAPI snapshot**
 
-Set `info.version` to `1.0.1` and exact header constants to Global Constraints. Keep paths, operations, media types, responses, and referenced JSON schemas unchanged.
+Keep the file byte-identical to the published `1.0.0` snapshot and assert its digest, paths, operations, media types, responses, and referenced JSON schemas. Do not present its historical exact-source constants as current runtime configuration; defer a config-neutral successor contract.
 
 - [x] **Step 3: Run the focused landing modules**
 

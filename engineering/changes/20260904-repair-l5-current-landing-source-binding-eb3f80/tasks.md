@@ -4,6 +4,7 @@
 - [x] Add failing test or characterization test.
 - [x] Implement the smallest vertical change.
 - [x] Run the focused landing quality profile (47 tests).
+- [x] Freeze the published OpenAPI snapshot and tracked source-ready handoff.
 - [ ] Run the exact-head PR verifier.
 - [ ] Complete independent reviews.
 - [ ] Bind evidence to the final tree fingerprint.

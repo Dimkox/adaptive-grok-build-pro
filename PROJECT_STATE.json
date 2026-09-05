@@ -63,7 +63,7 @@
     "change_id": "20260904-repair-l5-current-landing-source-binding-eb3f80",
     "route_id": "eb3f80383d44",
     "branch": "feature/l5-current-landing-source",
-    "status": "focused_implementation_complete_verification_pending",
+    "status": "source_ready_for_exact_head_verification_and_reviews",
     "source_base": "33206fa06ae4b5bfb390cb68bbf233800d2902ab",
     "change_package": "engineering/changes/20260904-repair-l5-current-landing-source-binding-eb3f80",
     "landing_source": {
@@ -74,19 +74,23 @@
       "read_only": true
     },
     "renderer_version": "1.0.1",
-    "openapi_version": "1.0.1",
+    "openapi_version": "1.0.0",
+    "openapi_status": "frozen_non_deployed_published_snapshot",
+    "runtime_source_authority": "renderer_and_service_exact_configuration",
+    "config_neutral_openapi_successor": "deferred",
     "write_paths": ["content.css", "index.html"],
     "protected_source_member": "index.css",
     "deploy_member_count": 20,
     "focused_tests": {
-      "status": "passed",
-      "count": 47
+      "status": "targeted_final_contract_passed",
+      "prior_group_count": 47,
+      "final_contract_test_count": 1
     },
     "full_verifier": "pending",
     "independent_reviews": "pending",
     "package_rebuild": false,
     "external_effect": false,
-    "next_action": "Freeze the source commit, run one exact-head PR verifier, then dispatch the route-selected code, test, and security reviews."
+    "next_action": "Run one exact-head PR verifier on this frozen source checkpoint, then dispatch the route-selected code, test, and security reviews without another tracked state edit."
   },
   "local_candidate": {
     "version": "2.0.14",

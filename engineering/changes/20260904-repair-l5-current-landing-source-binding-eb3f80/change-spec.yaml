@@ -26,7 +26,7 @@
     },
     {
       "id": "AC-004",
-      "statement": "OpenAPI 3.1 document version 1.0.1 advertises the new exact SHA/tree without changing /v1 paths, operations, media types, response shapes, or record schema versions.",
+      "statement": "The landing OpenAPI remains byte-identical to the published 1.0.0 non-deployed snapshot and is explicitly not current runtime-configuration authority; a config-neutral successor contract is deferred.",
       "evidence": [
         {"test": "factory/tests/test_landing_contracts.py"},
         {"receipt": "code_review"}
@@ -48,7 +48,7 @@
   "contracts": {
     "events": [],
     "json_schema": [],
-    "openapi": ["factory/contracts/openapi/landing-dogfood.v1.json"]
+    "openapi": []
   },
   "forbidden_outcomes": [
     {
@@ -71,7 +71,7 @@
       "id": "FORBID-003",
       "statement": "The repair edits or rebuilds any published package, calls a provider, mutates either landing source worktree or a live target, deploys, publishes, or claims a live URL.",
       "evidence": [
-        {"receipt": "release_review"},
+        {"receipt": "code_review"},
         {"receipt": "security_review"}
       ]
     }
@@ -79,7 +79,7 @@
   "invariants": [
     {
       "id": "INV-001",
-      "statement": "Repository ID, source SHA, source tree, OpenAPI constants, and renderer identity describe one atomic source epoch.",
+      "statement": "Repository ID, source SHA, source tree, renderer identity, and service intake checks describe one atomic runtime source epoch; the frozen OpenAPI snapshot is not runtime authority.",
       "evidence": [
         {"test": "factory/tests/test_landing_contracts.py"},
         {"test": "factory/tests/test_landing_api.py"}

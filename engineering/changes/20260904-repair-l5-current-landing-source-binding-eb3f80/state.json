@@ -31,11 +31,23 @@
       "from": "implementing",
       "reason": "Bounded source repair is implemented; 47 focused landing tests, current-state checks, static analysis, typed spec validation, and immutable source/package checks pass. Exact-head verifier and independent reviews remain pending.",
       "to": "verifying"
+    },
+    {
+      "at": "2026-09-05T11:08:25+00:00",
+      "from": "verifying",
+      "reason": "Source and contract compatibility repair is frozen; the affected contract regression, exact-base architecture fitness, and governance projections pass. Fresh exact-head verifier and selected review receipts remain pending on the final commit and are not claimed.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-05T11:08:32+00:00",
+      "from": "reviewing",
+      "reason": "Tracked source and handoff are pre-frozen so the final verifier and route-selected reviews can bind one immutable head. Ready denotes source readiness only; no verification or review receipt, package, delivery, or external action is claimed.",
+      "to": "ready"
     }
   ],
   "route_id": "eb3f80383d44",
   "schema_version": 1,
-  "status": "verifying",
+  "status": "ready",
   "title": "Repair L5 current landing source binding",
-  "updated_at": "2026-09-04T19:02:53+00:00"
+  "updated_at": "2026-09-05T11:08:32+00:00"
 }

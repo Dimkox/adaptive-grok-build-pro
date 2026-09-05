@@ -5,10 +5,9 @@ HEAD `33206fa06ae4b5bfb390cb68bbf233800d2902ab`, tree
 `6e24f82570bcb78ae90b92ee3e67d7fa7fbb4b28`. The bounded repair changes the
 accepted landing epoch to commit
 `699010380f4f90a0193a9c22090c35e6aded7d2c`, tree
-`f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4`, advances the renderer and OpenAPI
-metadata identity to `1.0.1`, and adds protected source-owned `index.css` to
-the 20-member deploy inventory. `LANDING_WRITE_PATHS` remains exactly
-`content.css,index.html`.
+`f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4`, advances renderer identity to
+`1.0.1`, and adds protected source-owned `index.css` to the 20-member deploy
+inventory. `LANDING_WRITE_PATHS` remains exactly `content.css,index.html`.
 
 ## TDD evidence
 
@@ -69,6 +68,39 @@ and `git diff --check` passed.
 - No package, migration, old L5 package/evidence, provider, publisher, target
   repository, live URL, network resource, or external system was changed.
 
-The tracked state is `verifying`. One exact-head PR verifier and the selected
-code, test, and security reviews remain deliberately pending and are not
-claimed by this implementation report.
+## Final compatibility ruling
+
+The first implementation also changed the rich landing OpenAPI exact-source
+constants and metadata to `1.0.1`. The exact architecture gate correctly made
+that existing contract applicable and rejected it: the document is outside
+the bounded generic comparator subset, and the required-header constant swap
+is an intentional runtime acceptance cutover rather than bidirectional API
+compatibility. A digest-bound transition prototype passed focused tests but
+was fully reverted because changing `.grok-stack/**` would require a separate
+human-signed governance approval that this route does not possess.
+
+The final repair restores `factory/contracts/openapi/landing-dogfood.v1.json`
+byte-for-byte to its published `1.0.0` snapshot (SHA-256
+`4aa733b43c6f2fca9ec6f40d442ebd5c585fc96d489006b0c05054963da55dd3`).
+That file is non-deployed history, not runtime-configuration authority; the
+renderer/service exact tuple remains current and old or mixed tuples still
+fail with HTTP 409 before blob/provider work. A config-neutral, separately
+versioned successor API is explicit deferred debt. The affected frozen
+contract characterization and exact architecture fitness were rerun after
+this ruling: the affected selector passed 1/1, exact-base fitness returned
+`pass` with contract compatibility not applicable, and governance validation
+and projection checks passed. No broad successful group was repeated.
+
+The substantive self-learning facts remain in this package rather than in
+governance-gated root ledgers: a read-only baseline diagnostic unnecessarily
+used `rm -f` for temporary cleanup, and free-text routing matched `d7` inside
+an opaque SHA plus `rag` inside `coverage`. Future diagnostics hash in memory,
+opaque identifiers remain structured, and generated route output is inspected
+before dispatch. The source-owned `index.css` decision likewise remains:
+exact SHA/tree binds it as protected provenance outside the generator write
+set without rewriting published `v2.0.14` evidence.
+
+The tracked workflow state is pre-frozen as `ready` for immutable evidence.
+One fresh exact-head PR verifier and the selected code, test, and security
+reviews remain deliberately pending and are not claimed by this report; they
+must not be followed by another tracked bookkeeping edit.

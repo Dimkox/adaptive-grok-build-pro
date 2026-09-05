@@ -10,7 +10,7 @@ Domains: ai, api
 
 ## Problem
 
-Repair the delivered L5 exact source binding and deterministic artifact inventory for the current landing repository. Update the pinned source revision and protected style asset handling, keep generator write scope unchanged, update the versioned API contract, and add regression coverage. Preserve previously published artifacts and perform no provider calls or target mutation.
+Repair the delivered L5 exact runtime source binding and deterministic artifact inventory for the current landing repository. Update the pinned source revision and protected style asset handling, keep generator write scope unchanged, preserve the published non-deployed OpenAPI snapshot, and add regression coverage. Preserve previously published artifacts and perform no provider calls or target mutation.
 
 ## Outcome
 
@@ -25,7 +25,8 @@ production authority.
 
 ### In scope
 
-- Atomically update the renderer and OpenAPI exact source SHA/tree.
+- Atomically update the renderer/service exact source SHA/tree while retaining
+  the byte-identical published OpenAPI `1.0.0` snapshot as non-deployed history.
 - Accept the exact protected `/index.css` source link and reject inline,
   duplicate, remote, or unknown stylesheet surfaces.
 - Add `index.css` to the closed deploy inventory with source provenance while
@@ -38,13 +39,15 @@ production authority.
 - Provider execution, durable job runtime, cPanel/LiteSpeed publication, live
   deployment, DNS, indexing, credentials, secrets, or target mutation.
 - Rewriting historical L5 design/evidence or rebuilding published `v2.0.14`.
+- Designing or publishing the separately versioned config-neutral successor API.
 - General HTML/CSS sanitization, arbitrary source revisions, frameworks, or a
   second generator write path.
 
 ## Constraints
 
-- Backward compatibility: v1 record schemas and operations stay unchanged;
-  the old or mixed exact-source tuple intentionally fails with HTTP 409.
+- Backward compatibility: v1 record schemas and runtime operations stay
+  unchanged; the old or mixed exact-source tuple intentionally fails with
+  HTTP 409. The frozen OpenAPI snapshot is not runtime configuration authority.
 - Data/privacy: source bytes remain local exact-Git inputs and are never sent
   to a provider by this repair.
 - Performance: no dependency or runtime phase is added.
