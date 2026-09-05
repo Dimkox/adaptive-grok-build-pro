@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / ".grok-stack"))
 
 from adaptive_grok.architecture import load_architecture  # noqa: E402
+from adaptive_grok.architecture_fitness import _owner_for_path  # noqa: E402
 
 
 class PilotArchitectureTests(unittest.TestCase):
@@ -32,7 +33,8 @@ class PilotArchitectureTests(unittest.TestCase):
 
         self.assertEqual(edges["EDGE-PILOT-GITHUB"]["from"], "NODE-PILOT-GITHUB-BROKER")
         self.assertEqual(edges["EDGE-PILOT-CODEX"]["from"], "NODE-PILOT-CODEX-SUPERVISOR")
-        self.assertIn("pilot/live.py", nodes["NODE-PILOT-CONTROL"]["repository_paths"])
+        self.assertEqual(_owner_for_path(snapshot, "pilot/live.py")["id"], "NODE-PILOT-CONTROL")
+        self.assertEqual(_owner_for_path(snapshot, "pilot/tests/test_live.py")["id"], "NODE-LOCAL-VERIFIER")
         self.assertTrue(
             {"pilot/live_github.py", "pilot/runtime_authority.py"}
             <= set(nodes["NODE-PILOT-GITHUB-BROKER"]["repository_paths"])

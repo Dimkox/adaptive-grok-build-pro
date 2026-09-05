@@ -73,7 +73,7 @@ def candidate(issue) -> CandidateChangeV1:
 def semantic_fixture(root: Path) -> None:
     script = b'{"@context":"https://schema.org","@type":"SoftwareSourceCode","version":"2.0.14"}'
     # Independently derived with OpenSSL over the literal script bytes above.
-    token = "5LMeRiDxuvLWdAoIIfcRC8fSEylkqAjIPg+W1KGh2hg="
+    public_csp_digest = "5LMeRiDxuvLWdAoIIfcRC8fSEylkqAjIPg+W1KGh2hg="
     root_html = (
         "<html><body>Governed Agentic Software Factory — Offline Technical Preview "
         "Latest published release v2.0.14 <span>v2.0.14</span>"
@@ -90,7 +90,7 @@ def semantic_fixture(root: Path) -> None:
     )
     (root / ".htaccess").write_text(
         "Header always set Content-Security-Policy \"default-src 'self'; script-src 'self' 'sha256-"
-        + token
+        + public_csp_digest
         + "'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'none'; "
         "media-src 'none'; frame-src 'none'; worker-src 'none'; object-src 'none'; "
         "base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests\"\n",

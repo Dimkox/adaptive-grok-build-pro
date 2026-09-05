@@ -18,6 +18,7 @@ The durable chain commits each output before the next transition. `pilot.live` n
 - `issue_source`: bounded read-only `gh` projections and base observation.
 - `workspace`: private clone, remote removal, exact checkout, trusted seal and cleanup.
 - `codex_executor`: pinned executable/version/digest, one ephemeral app-server thread/turn with exact workspace-write/no-network response validation; the optional API-key exec mode remains isolated behind the same one-start boundary.
+- Its `pilot_confined` prerequisite creates only synthetic owner-local filesystem and abstract Unix listeners, then requires sandbox connection denial. `EDGE-PILOT-SYNTHETIC-UNIX-PROBE` is a no-network supervisor self-edge: the current architecture vocabulary classifies bounded AF_UNIX sockets under `unix_http`, although the sentinels exchange no HTTP or credential data; it grants no access to a real daemon or external endpoint.
 - `validation`: credential-free bubblewrap test runner and independent deterministic semantic gate.
 - `authority`: exact literal operation-resource validation against current delegated grants.
 - `github`/`live_github`: pinned narrow GitHub reads, non-force exact ref publisher, one draft-PR publisher and observation-only reconciliation.

@@ -1207,6 +1207,29 @@
         "mode": "fail_closed",
         "observable_signal": "SIG-PILOT-CONTROL-FAILURE",
         "terminal_action": "reject",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-PILOT-CODEX-SUPERVISOR",
+      "id": "EDGE-PILOT-SYNTHETIC-UNIX-PROBE",
+      "network_policy": "no_network",
+      "protocol": "unix_http",
+      "sync_or_async": "synchronous",
+      "to": "NODE-PILOT-CODEX-SUPERVISOR",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-PILOT-STATE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-PILOT-CONTROL-FAILURE",
+        "terminal_action": "reject",
         "timeout_ms": 900000
       },
       "from": "NODE-PILOT-CONTROL",
