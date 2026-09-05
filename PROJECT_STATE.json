@@ -4,7 +4,7 @@
   "default_branch": "main",
   "observed_at": "2026-09-04T16:58:48Z",
   "observed_main_sha": "1751b5855e46782b9a1bfceb6e1ab0102cba03b0",
-  "product_version": "2.0.14",
+  "product_version": "2.0.15",
   "latest_published_release": "v2.0.14",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
@@ -60,14 +60,14 @@
     }
   ],
   "current_unreleased_change": {
-    "change_id": "20260905-l5-single-operator-live-mvp-local-runtime-65b201",
-    "route_id": "65b2018b786d",
-    "branch": "feature/l5-live-mvp",
+    "change_id": "20260905-feature-implement-a-single-operator-codex-github-0ce2d6",
+    "route_id": "0ce2d62a018e",
+    "branch": "feature/design-partner-pilot",
     "status": "focused_source_passed_pending_exact_head_verification_and_reviews",
-    "stage": "3_of_5",
-    "source_base": "f3f8d7375a153393ffba3906165e8d625e45d4a1",
-    "change_package": "engineering/changes/20260905-l5-single-operator-live-mvp-local-runtime-65b201",
-    "predecessor_change": "20260904-repair-l5-current-landing-source-binding-eb3f80",
+    "stage": "local_pr_candidate",
+    "source_base": "6f3b6ed2853b7a6f78804888cffca578d4dc9448",
+    "change_package": "engineering/changes/20260905-feature-implement-a-single-operator-codex-github-0ce2d6",
+    "predecessor_change": "20260905-l5-single-operator-live-mvp-local-runtime-65b201",
     "landing_source": {
       "repository_id": "github.com/Dimkox/ai-dark-factory-landing",
       "commit": "699010380f4f90a0193a9c22090c35e6aded7d2c",
@@ -75,15 +75,25 @@
       "default_branch": "main",
       "read_only": true
     },
-    "write_paths": ["content.css", "index.html"],
+    "issue_number": 1,
+    "write_paths": [
+      ".htaccess",
+      "index.html",
+      "km/index.html",
+      "ko/index.html",
+      "lv/index.html",
+      "nl/index.html",
+      "tests/test_landing.py",
+      "zh-cn/index.html"
+    ],
     "protected_source_member": "index.css",
-    "deploy_member_count": 20,
-    "normalizer": {
-      "profile": "native_codex_injected_seam",
+    "execution": {
+      "profile": "landing-design-partner-699010",
       "default": "unavailable",
-      "supported_local_inputs": ["docx", "image", "text"],
-      "needs_human_before_invocation": ["audio", "pdf"],
-      "live_model_configured": false
+      "max_codex_starts": 1,
+      "max_test_starts": 1,
+      "automatic_retry": false,
+      "live_model_invoked": false
     },
     "local_store": {
       "engine": "stdlib_sqlite",
@@ -93,32 +103,33 @@
       "startup_recovery_limit": 100,
       "automatic_external_replay": false
     },
-    "artifact_builder": {
-      "composition": "existing_coordinator_evaluator_exact_source_packager",
-      "deploy_member_count": 20,
-      "full_metadata_retained": true,
-      "publisher_wired": false
+    "publication": {
+      "branch_push": "exact_resource_non_force_only",
+      "proposal": "exact_resource_draft_only",
+      "ambiguous_recovery": "observation_only",
+      "merge_close_deploy": false,
+      "landing_trust_ci_profile": null,
+      "branch_protection_observation": "unavailable_private_plan_403"
     },
     "frozen": {
       "published_release": "v2.0.14",
       "package_bytes": true,
-      "landing_openapi": true,
       "postgresql_migrations": "001-018"
     },
     "focused_tests": {
       "status": "focused_source_passed",
-      "normalizer": 5,
-      "sqlite_store": 4,
-      "artifact_runtime": 1,
-      "affected_api": 3
+      "contracts_architecture": 5,
+      "issue_store_workspace_codex_recovery": 9,
+      "validation": 4,
+      "authority_publication": 4,
+      "coordinator_cli": 3
     },
     "full_verifier": "pending",
     "independent_reviews": "pending",
-    "package_rebuild": false,
+    "package_rebuild": "pending_after_source_freeze",
     "external_effect": false,
-    "live_url": null,
     "operational_activation": false,
-    "next_action": "Freeze this source checkpoint, then run one exact-head PR verifier and one route-selected code, test, security, and data review wave. Live model, cPanel, hosting, publication, and deployment remain separately authorized downstream work."
+    "next_action": "Freeze and commit this source, build the 2.0.15 ZIP+sidecar from two private exact-head no-local clones, then run one exact-head PR verifier and the route-selected code, test, and security review wave. A live Codex run, landing branch push and draft PR remain separate explicitly granted operations."
   },
   "local_candidate": {
     "version": "2.0.14",

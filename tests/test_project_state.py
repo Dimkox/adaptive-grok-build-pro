@@ -86,7 +86,7 @@ class ProjectStateTests(unittest.TestCase):
     def test_project_state_has_independent_milestone_axes_and_truthful_facts(self) -> None:
         state = self.state
         self.assertEqual(state["schema_version"], 2)
-        self.assertEqual(state["product_version"], "2.0.14")
+        self.assertEqual(state["product_version"], "2.0.15")
         self.assertEqual(state["latest_published_release"], "v2.0.14")
         self.assertEqual(state["observed_main_sha"], CURRENT_MAIN_SHA)
         self.assertRegex(state["observed_at"], r"^2026-09-04T\d{2}:\d{2}:\d{2}Z$")
@@ -121,43 +121,42 @@ class ProjectStateTests(unittest.TestCase):
             ["M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9"],
         )
         repair = state["current_unreleased_change"]
-        self.assertEqual(repair["route_id"], "65b2018b786d")
-        self.assertEqual(repair["branch"], "feature/l5-live-mvp")
-        self.assertEqual(repair["source_base"], "f3f8d7375a153393ffba3906165e8d625e45d4a1")
-        self.assertEqual(repair["stage"], "3_of_5")
+        self.assertEqual(repair["route_id"], "0ce2d62a018e")
+        self.assertEqual(repair["branch"], "feature/design-partner-pilot")
+        self.assertEqual(repair["source_base"], "6f3b6ed2853b7a6f78804888cffca578d4dc9448")
+        self.assertEqual(repair["stage"], "local_pr_candidate")
         self.assertEqual(repair["landing_source"]["commit"], CURRENT_LANDING_SHA)
         self.assertEqual(repair["landing_source"]["tree"], CURRENT_LANDING_TREE)
         self.assertTrue(repair["landing_source"]["read_only"])
-        self.assertEqual(repair["write_paths"], ["content.css", "index.html"])
+        self.assertEqual(repair["issue_number"], 1)
+        self.assertEqual(
+            repair["write_paths"],
+            [".htaccess", "index.html", "km/index.html", "ko/index.html", "lv/index.html", "nl/index.html", "tests/test_landing.py", "zh-cn/index.html"],
+        )
         self.assertEqual(repair["protected_source_member"], "index.css")
-        self.assertEqual(repair["deploy_member_count"], 20)
-        self.assertEqual(repair["normalizer"]["default"], "unavailable")
-        self.assertEqual(
-            repair["normalizer"]["supported_local_inputs"],
-            ["docx", "image", "text"],
-        )
-        self.assertEqual(
-            repair["normalizer"]["needs_human_before_invocation"],
-            ["audio", "pdf"],
-        )
+        self.assertEqual(repair["execution"]["default"], "unavailable")
+        self.assertEqual(repair["execution"]["max_codex_starts"], 1)
+        self.assertFalse(repair["execution"]["automatic_retry"])
         self.assertEqual(repair["local_store"]["engine"], "stdlib_sqlite")
         self.assertEqual(repair["local_store"]["startup_recovery_limit"], 100)
-        self.assertEqual(repair["artifact_builder"]["deploy_member_count"], 20)
-        self.assertTrue(repair["artifact_builder"]["full_metadata_retained"])
+        self.assertEqual(repair["publication"]["branch_push"], "exact_resource_non_force_only")
+        self.assertEqual(repair["publication"]["proposal"], "exact_resource_draft_only")
+        self.assertIsNone(repair["publication"]["landing_trust_ci_profile"])
+        self.assertEqual(repair["package_rebuild"], "pending_after_source_freeze")
+        self.assertFalse(repair["external_effect"])
         self.assertEqual(
             repair["focused_tests"],
             {
                 "status": "focused_source_passed",
-                "normalizer": 5,
-                "sqlite_store": 4,
-                "artifact_runtime": 1,
-                "affected_api": 3,
+                "contracts_architecture": 5,
+                "issue_store_workspace_codex_recovery": 9,
+                "validation": 4,
+                "authority_publication": 4,
+                "coordinator_cli": 3,
             },
         )
         self.assertEqual(repair["full_verifier"], "pending")
         self.assertEqual(repair["independent_reviews"], "pending")
-        self.assertFalse(repair["package_rebuild"])
-        self.assertFalse(repair["external_effect"])
 
         exact_milestone_facts = {
             "M0": {

@@ -511,6 +511,30 @@ class PilotStore:
                 proposal=proposal,
             )
 
+    def store_outcome(self, job_id: str, outcome: DesignPartnerOutcomeV1) -> PilotJob:
+        outcome = DesignPartnerOutcomeV1.from_dict(outcome.to_dict())
+        with self._transaction():
+            current = self._select_required(job_id)
+            proposal = current.proposal
+            if (
+                current.state != "awaiting_human"
+                or proposal is None
+                or outcome.job_id != current.job_id
+                or outcome.profile_digest != current.profile_digest
+                or outcome.proposal_digest != proposal.proposal_digest
+                or outcome.pr_number != proposal.pr_number
+                or outcome.head_sha != proposal.head_sha
+                or outcome.status not in {"merge_gate_unavailable", "merged_accepted", "closed_rejected"}
+            ):
+                raise PilotStoreError("outcome_binding")
+            return self._transition_locked(
+                job_id,
+                outcome.status,
+                kind="outcome",
+                payload_digest=outcome.outcome_digest,
+                outcome=outcome,
+            )
+
     def mark_terminal(self, job_id: str, *, reason_code: str) -> PilotJob:
         _bounded_text(reason_code, "reason_code")
         return self._transition(
@@ -521,11 +545,11 @@ class PilotStore:
             reason_code=reason_code,
         )
 
-    def _transition(self, job_id: str, state: str, *, kind: str, payload_digest: str, command_key: str | None = None, workspace_digest: str | None = None, candidate: CandidateChangeV1 | None = None, validation: CandidateValidationV1 | None = None, proposal: PullRequestProposalV1 | None = None, reason_code: str | None = None) -> PilotJob:
+    def _transition(self, job_id: str, state: str, *, kind: str, payload_digest: str, command_key: str | None = None, workspace_digest: str | None = None, candidate: CandidateChangeV1 | None = None, validation: CandidateValidationV1 | None = None, proposal: PullRequestProposalV1 | None = None, outcome: DesignPartnerOutcomeV1 | None = None, reason_code: str | None = None) -> PilotJob:
         with self._transaction():
-            return self._transition_locked(job_id, state, kind=kind, payload_digest=payload_digest, command_key=command_key, workspace_digest=workspace_digest, candidate=candidate, validation=validation, proposal=proposal, reason_code=reason_code)
+            return self._transition_locked(job_id, state, kind=kind, payload_digest=payload_digest, command_key=command_key, workspace_digest=workspace_digest, candidate=candidate, validation=validation, proposal=proposal, outcome=outcome, reason_code=reason_code)
 
-    def _transition_locked(self, job_id: str, state: str, *, kind: str, payload_digest: str, command_key: str | None = None, workspace_digest: str | None = None, candidate: CandidateChangeV1 | None = None, validation: CandidateValidationV1 | None = None, proposal: PullRequestProposalV1 | None = None, reason_code: str | None = None) -> PilotJob:
+    def _transition_locked(self, job_id: str, state: str, *, kind: str, payload_digest: str, command_key: str | None = None, workspace_digest: str | None = None, candidate: CandidateChangeV1 | None = None, validation: CandidateValidationV1 | None = None, proposal: PullRequestProposalV1 | None = None, outcome: DesignPartnerOutcomeV1 | None = None, reason_code: str | None = None) -> PilotJob:
         current = self._select_required(job_id)
         if state not in _TRANSITIONS.get(current.state, set()):
             raise PilotStoreError("invalid_transition")
@@ -536,13 +560,14 @@ class PilotStore:
         new_candidate = candidate or current.candidate
         new_validation = validation or current.validation
         new_proposal = proposal or current.proposal
+        new_outcome = outcome or current.outcome
         new_workspace = workspace_digest or current.workspace_digest
         cursor = self._connection.execute(
             """UPDATE jobs SET state=?, reason_code=?, workspace_digest=?,
                       candidate_json=?, validation_json=?, proposal_json=?,
-                      revision=?, last_event_digest=?, updated_at=?
+                      outcome_json=?, revision=?, last_event_digest=?, updated_at=?
                  WHERE job_id=? AND revision=?""",
-            (state, reason_code, new_workspace, canonical_json(new_candidate.to_dict()) if new_candidate else None, canonical_json(new_validation.to_dict()) if new_validation else None, canonical_json(new_proposal.to_dict()) if new_proposal else None, sequence, event_digest, timestamp, job_id, current.revision),
+            (state, reason_code, new_workspace, canonical_json(new_candidate.to_dict()) if new_candidate else None, canonical_json(new_validation.to_dict()) if new_validation else None, canonical_json(new_proposal.to_dict()) if new_proposal else None, canonical_json(new_outcome.to_dict()) if new_outcome else None, sequence, event_digest, timestamp, job_id, current.revision),
         )
         if cursor.rowcount != 1:
             raise PilotStoreError("stale_revision")
@@ -648,6 +673,16 @@ class PilotStore:
             or proposal.validation_digest != validation.validation_digest
             or proposal.head_sha != candidate.candidate_sha
             or proposal.head_tree != candidate.candidate_tree
+        ):
+            raise PilotStoreError("record_integrity")
+        if outcome and (
+            proposal is None
+            or outcome.job_id != record.job_id
+            or outcome.profile_digest != record.profile_digest
+            or outcome.proposal_digest != proposal.proposal_digest
+            or outcome.pr_number != proposal.pr_number
+            or outcome.head_sha != proposal.head_sha
+            or outcome.status != record.state
         ):
             raise PilotStoreError("record_integrity")
         event = self._connection.execute(

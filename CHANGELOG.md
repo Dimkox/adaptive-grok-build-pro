@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.15 — 2026-09-05 (unreleased)
+
+Local PR candidate for the disabled-by-default single-operator design-partner pilot.
+
+- Adds five closed digest-linked pilot outputs, one exact landing target/base profile, a private restart-safe SQLite ledger, and exact writer/evaluator workspace boundaries
+- Pins one Codex start, one credential-free unittest command, deterministic version/status/CSP semantics, and terminal no-retry recovery
+- Adds literal operation-digest grants, one non-force branch ref and one draft PR command boundary with observation-only recovery after ambiguity
+- Keeps the CLI live path unavailable without both `--live` and an injected operator-owned host adapter; no model, target mutation, push, PR, merge, deployment, tag, release, or package build occurred while preparing this source
+- Preserves published `v2.0.14` and `v2.0.13` artifacts byte-for-byte; the `2.0.15` ZIP+sidecar remain pending exact-head packaging after source freeze
+
 ## 2.0.14 — 2026-09-04
 
 Published repository release for the offline L5 multimodal landing dogfood vertical.

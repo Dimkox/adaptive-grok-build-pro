@@ -1876,6 +1876,9 @@
       ],
       "repository_paths": [
         "pilot/__init__.py",
+        "pilot/__main__.py",
+        "pilot/cli.py",
+        "pilot/coordinator.py",
         "pilot/contracts.py",
         "pilot/profile.py"
       ],

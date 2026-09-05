@@ -428,3 +428,7 @@ Compare the protected merge tree with the checked artifact-child tree, then rebu
 ## 2026-09-05 — Separate stale-PR cleanup from product source
 
 Close stale conflicting PR #21 only after verifying that PR #22 and PR #24 delivered its superseding product history, and bind the cleanup to its own exact external-write grant. Keeping that historical mutation outside the product change avoided package restacking and reverification while restoring protected main and immutable releases as source of truth.
+
+## 2026-09-05 — Persist exact effect intent before the sole publication attempt
+
+Derive each GitHub resource from the canonical request digest, require one literal current grant, and commit both request and grant-use facts before entering the injected transport. A reopened prepared or in-flight effect performs observation only, which made hard-crash reconciliation deterministic without granting a second write.
