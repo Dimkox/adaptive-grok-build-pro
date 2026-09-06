@@ -1,18 +1,46 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
-from .landing_artifact import LandingArtifactPackager, LandingArtifactResult
+from . import landing_renderer as landing_pins
+from .landing_artifact import (
+    DEPLOY_MEMBERS,
+    ExactGitLandingArtifactSource,
+    LandingArtifactPackager,
+    LandingArtifactResult,
+)
 from .landing_artifact_retention import RetainedLandingArtifact
 from .landing_contracts import (
     LandingInputV1,
     LandingProviderEvidenceV1,
     SiteArtifactV1,
     StaticLandingSpecV1,
+    landing_digest,
 )
 from .landing_coordinator import LandingCoordinator, LandingRunResult
-from .landing_renderer import TARGET_REPOSITORY_ID
+from .landing_evaluation import DeterministicLandingEvaluator
+from .landing_intake import PrivateLandingBlobStore
+from .landing_normalizer import (
+    CodexLandingExecutor,
+    CodexLandingNormalizer,
+    CodexLandingProfile,
+)
+from .landing_provider import UnavailableLandingProvider, unavailable_landing_profile
+from .landing_renderer import (
+    DeterministicLandingRenderer,
+    ExactGitLandingWorkspace,
+    LANDING_WRITE_PATHS,
+    RENDERER_VERSION,
+    TARGET_REPOSITORY_ID,
+)
+from .landing_service import (
+    InMemoryLandingJobStore,
+    LandingApplicationService,
+    LandingJobStore,
+)
 
 
 class LandingRuntimeError(RuntimeError):
@@ -92,3 +120,121 @@ class CoordinatedLandingArtifactBuilder:
             sealed, evidence, run.attempts[-1], run.evaluations[-1], source
         )
         return CoordinatedLandingArtifactResult(run, sealed, retained)
+
+
+@dataclass(frozen=True)
+class LandingLiveBindingV1:
+    schema_version: int
+    repository_id: str
+    exact_base_sha: str
+    exact_base_tree: str
+    renderer_version: str
+    deploy_members: tuple[str, ...]
+    write_paths: frozenset[str]
+    enabled: bool
+
+    def __post_init__(self) -> None:
+        if self.schema_version != 1:
+            raise LandingRuntimeError("binding_version")
+        if self.repository_id != TARGET_REPOSITORY_ID:
+            raise LandingRuntimeError("source_binding_unimplemented")
+        if self.renderer_version != RENDERER_VERSION:
+            raise LandingRuntimeError("source_binding_unimplemented")
+        if tuple(self.deploy_members) != DEPLOY_MEMBERS:
+            raise LandingRuntimeError("source_binding_unimplemented")
+        if frozenset(self.write_paths) != LANDING_WRITE_PATHS:
+            raise LandingRuntimeError("source_binding_unimplemented")
+
+    @property
+    def binding_digest(self) -> str:
+        return landing_digest(
+            "live-binding",
+            {
+                "schema_version": self.schema_version,
+                "repository_id": self.repository_id,
+                "exact_base_sha": self.exact_base_sha,
+                "exact_base_tree": self.exact_base_tree,
+                "renderer_version": self.renderer_version,
+                "deploy_members": list(self.deploy_members),
+                "write_paths": sorted(self.write_paths),
+                "enabled": self.enabled,
+            },
+        )
+
+
+def implemented_live_binding(*, enabled: bool = False) -> LandingLiveBindingV1:
+    return LandingLiveBindingV1(
+        schema_version=1,
+        repository_id=landing_pins.TARGET_REPOSITORY_ID,
+        exact_base_sha=landing_pins.TARGET_BASE_SHA,
+        exact_base_tree=landing_pins.TARGET_BASE_TREE,
+        renderer_version=landing_pins.RENDERER_VERSION,
+        deploy_members=DEPLOY_MEMBERS,
+        write_paths=landing_pins.LANDING_WRITE_PATHS,
+        enabled=enabled,
+    )
+
+
+def compose_unavailable_landing(
+    blobs: PrivateLandingBlobStore,
+    *,
+    store: LandingJobStore | None = None,
+    clock: Callable[[], datetime] | None = None,
+) -> LandingApplicationService:
+    profile = unavailable_landing_profile()
+    return LandingApplicationService(
+        store or InMemoryLandingJobStore(),
+        blobs,
+        UnavailableLandingProvider(profile, clock=clock),
+        profile_digest=profile.profile_digest,
+        clock=clock,
+    )
+
+
+def compose_landing_live(
+    *,
+    binding: LandingLiveBindingV1,
+    profile: CodexLandingProfile,
+    executor: CodexLandingExecutor,
+    source_repository: Path,
+    scratch_root: Path,
+    output_directory: Path,
+    blobs: PrivateLandingBlobStore,
+    store: LandingJobStore | None = None,
+    clock: Callable[[], datetime] | None = None,
+) -> LandingApplicationService:
+    if not binding.enabled:
+        raise LandingRuntimeError("live_disabled")
+    if (
+        binding.exact_base_sha != landing_pins.TARGET_BASE_SHA
+        or binding.exact_base_tree != landing_pins.TARGET_BASE_TREE
+    ):
+        raise LandingRuntimeError("source_binding_unimplemented")
+    if not isinstance(profile, CodexLandingProfile) or not profile.available:
+        raise LandingRuntimeError("profile_unavailable")
+    if executor is None:
+        raise LandingRuntimeError("executor_required")
+    source = Path(source_repository)
+    scratch = Path(scratch_root)
+    output = Path(output_directory)
+    if not source.is_absolute() or not scratch.is_absolute() or not output.is_absolute():
+        raise LandingRuntimeError("output_path")
+    tick = clock or (lambda: datetime.now(timezone.utc))
+    builder = CoordinatedLandingArtifactBuilder(
+        LandingCoordinator(
+            ExactGitLandingWorkspace(source, scratch_root=scratch),
+            DeterministicLandingRenderer(),
+            DeterministicLandingEvaluator(clock=tick),
+            clock=tick,
+        ),
+        LandingArtifactPackager(ExactGitLandingArtifactSource(source)),
+        output,
+    )
+    return LandingApplicationService(
+        store or InMemoryLandingJobStore(),
+        blobs,
+        CodexLandingNormalizer(profile, executor, clock=tick),
+        profile_digest=profile.profile_digest,
+        artifact_builder=builder,
+        clock=tick,
+    )

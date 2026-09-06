@@ -718,3 +718,8 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 ## 2026-09-05 — Left architecture consumers behind the confinement repair
 
 **Root cause:** Adding real synthetic AF_UNIX listeners required a declared local architectural edge, while the previously omitted pilot suite still asserted exact path enumeration instead of longest-prefix ownership. Declare the no-network sentinel boundary and test effective ownership, preserving the separate test node; a public CSP digest fixture must be named as a digest rather than a credential token to avoid the generic secret heuristic's false positive.
+
+## 2026-09-06 — Treated append-only self-learning files as blocked protected paths
+
+**Symptom:** Root `decisions.md` / `mistakes.md` structured edits were denied, so facts were delayed or written only in side worktrees.
+**Root cause:** A PreToolUse protected-path deny was read as a standing ban. The user later allowed append-only writes to those two files in every tree, including root. Other protected paths stay blocked.
