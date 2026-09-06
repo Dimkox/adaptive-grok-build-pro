@@ -460,3 +460,11 @@ compose_landing_live automatically normalize→render→evaluate→seals the 20-
 ## 2026-09-06 — Root decisions.md and mistakes.md may be appended in every worktree
 
 The user explicitly allowed additive writes to `decisions.md` and `mistakes.md` in every project tree, including the repository root. This is append-only self-learning, not a grant to rewrite history, merge, or edit other protected paths.
+
+## 2026-09-06 — Live Grok and Qwen landing executors stay outside the no-httpx landing core
+
+httpx is already a factory dependency, but FIT-FACTORY-LANDING-DOGFOOD-BOUNDARY forbids it in landing_runtime.py. Grok/Qwen chat-completions adapters therefore live in landing_live_executors.py, remain default-off, and take injected keys plus an optional MockTransport.
+
+## 2026-09-06 — Live landing HTTP sits in its own factory node
+
+NODE-FACTORY-LANDING-DOGFOOD stays network: none. Grok/Qwen httpx adapters live in NODE-FACTORY-LANDING-LIVE-EXECUTORS with a declared HTTPS edge to NODE-FACTORY-LANDING-MODEL-PROVIDER inside TD-FACTORY-CONTROL, so fitness can own the new file without giving the dogfood core live network or a Trust-CI/external-platform crossing.

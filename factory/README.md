@@ -40,3 +40,21 @@ Configuration names are documented in `.env.example`; it contains placeholders o
 `/health/ready` checks the isolated `factory_runtime` capability and exact schema version `17`; the artifact attestor uses a separate non-inheriting login and capability. Recovery has bounded connection, lock, statement and transaction timeouts, a 30-second monotonic coordinator budget, exact-handle idempotent cleanup, durable claim fences and work-conserving fresh/retry lanes. Cancel and supersede project cleanup transactionally; stale completion is rejected and replacement M4 work receives a higher fence. Authenticated metrics remain fixed and low-cardinality, with additive execution, terminal, recovery and cleanup families. A disposable PostgreSQL 17 probe has passed two actual restarts and confirmed zero fabricated proposal/result/attestation evidence.
 
 For a separately approved local rollout, follow the [M4 / 2.0.13 local rollout and recovery runbook](../engineering/runbooks/m4-v2.0.13-local-control-plane.md). Provision PostgreSQL 17 and a fresh schema-`013` operational database, preserve the distinct owner and runtime DSNs, and start killed. Check readiness/metrics including capacity/allocation, retry-limit and claimable/positive-endpoint accounting agreement; run synthetic submit/claim/reserve/observe/release/restart/reconcile twice; then clear kill. On any invariant failure, enable global kill, stop the socket process, preserve state/audit/logs, and require a reviewed dependency-coordinated forward repair before reuse.
+
+## Live Grok / Qwen landing executors (default off)
+
+Current host requirements, pinned from this machine:
+
+| Item | Value |
+| --- | --- |
+| Python executable | `/usr/bin/python3.12` |
+| Python version | `3.12.3` |
+| Python SHA-256 | `a92f0f95e883390c7256b2e441484aac06b1002dbe1d924141a77c8d82f96223` |
+| Factory `requires-python` | `>=3.11` |
+| `httpx` | `0.28.1` |
+| Grok | `https://api.x.ai/v1` model `grok-4`, env `FACTORY_LANDING_GROK_API_KEY` |
+| Qwen | `https://dashscope.aliyuncs.com/compatible-mode/v1` model `qwen-plus`, env `FACTORY_LANDING_QWEN_API_KEY` |
+
+`compose_landing_live_grok` / `compose_landing_live_qwen` live in `landing_live_executors.py` and inject those executors into the existing auto-seal path. The dogfood landing core stays `network: none` and does not import `httpx`. The shipped server does not read these env vars. Tests use `httpx.MockTransport` and never open a real socket. `live_url` stays null.
+
+This table is the closed operator-host record for this machine, not a CI-binary guarantee. Observed here: CPython on Linux x86_64 (glibc 2.39); `/usr/bin/python3` resolves to `/usr/bin/python3.12`. Tests assert the frozen record and `factory/pyproject.toml` pins, not the SHA of a runner's `/usr/bin/python3.12`.

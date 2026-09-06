@@ -471,6 +471,52 @@
     },
     {
       "allowed_data": [
+        "DATA-FACTORY-LANDING-INPUT"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-FACTORY-LANDING-LIVE-EXECUTORS",
+      "id": "EDGE-FACTORY-LANDING-LIVE-EXECUTORS",
+      "network_policy": "no_network",
+      "protocol": "python_import",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-LANDING-DOGFOOD",
+      "type": "dependency"
+    },
+    {
+      "allowed_data": [
+        "DATA-FACTORY-LANDING-INPUT"
+      ],
+      "authentication": "external_managed",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-FACTORY-CONTROL-FAILURE",
+        "terminal_action": "manual_recovery",
+        "timeout_ms": 30000
+      },
+      "from": "NODE-FACTORY-LANDING-LIVE-EXECUTORS",
+      "id": "EDGE-FACTORY-LANDING-LIVE-MODELS",
+      "network_policy": "allowlisted_egress",
+      "protocol": "https",
+      "sync_or_async": "synchronous",
+      "to": "NODE-FACTORY-LANDING-MODEL-PROVIDER",
+      "type": "control"
+    },
+    {
+      "allowed_data": [
         "DATA-FACTORY-INTENT",
         "DATA-FACTORY-STATE",
         "DATA-FACTORY-AUDIT"
@@ -1848,6 +1894,41 @@
       "secrets": [],
       "trust_domain": "TD-FACTORY-CONTROL",
       "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-FACTORY-LANDING-INPUT",
+      "id": "NODE-FACTORY-LANDING-LIVE-EXECUTORS",
+      "owner": "local factory operators",
+      "public_contracts": [],
+      "repository_paths": [
+        "factory/src/adaptive_factory/landing_live_executors.py",
+        "factory/tests/test_landing_live_executors.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "declared_egress"
+      },
+      "secrets": [],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-FACTORY-LANDING-INPUT",
+      "id": "NODE-FACTORY-LANDING-MODEL-PROVIDER",
+      "owner": "injected live landing model providers",
+      "public_contracts": [],
+      "repository_paths": [],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "external_managed",
+        "lifecycle": "on_demand",
+        "network": "external_managed"
+      },
+      "secrets": [],
+      "trust_domain": "TD-FACTORY-CONTROL",
+      "type": "external_system"
     },
     {
       "data_classification": "DATA-FACTORY-LANDING-INPUT",

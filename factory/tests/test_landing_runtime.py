@@ -186,6 +186,10 @@ class CoordinatedLandingArtifactBuilderTests(unittest.TestCase):
         with sealed_target() as (target, base_sha, base_tree), tempfile.TemporaryDirectory(
             prefix="landing-runtime-durable-"
         ) as directory, patch.multiple(
+            "adaptive_factory.landing_renderer",
+            TARGET_BASE_SHA=base_sha,
+            TARGET_BASE_TREE=base_tree,
+        ), patch.multiple(
             "adaptive_factory.landing_service",
             TARGET_BASE_SHA=base_sha,
             TARGET_BASE_TREE=base_tree,
@@ -209,7 +213,9 @@ class CoordinatedLandingArtifactBuilderTests(unittest.TestCase):
             service = LandingApplicationService(
                 store,
                 PrivateLandingBlobStore(
-                    root / "blobs", repository_root=Path(__file__).resolve().parents[2]
+                    root / "blobs",
+                    repository_root=Path(__file__).resolve().parents[2],
+                    clock=lambda: FIXED_TIME,
                 ),
                 provider,
                 profile_digest=PROFILE_DIGEST,
@@ -266,7 +272,9 @@ class CoordinatedLandingArtifactBuilderTests(unittest.TestCase):
             replay_service = LandingApplicationService(
                 reopened,
                 PrivateLandingBlobStore(
-                    root / "blobs", repository_root=Path(__file__).resolve().parents[2]
+                    root / "blobs",
+                    repository_root=Path(__file__).resolve().parents[2],
+                    clock=lambda: FIXED_TIME,
                 ),
                 replay_provider,
                 profile_digest=PROFILE_DIGEST,
@@ -316,7 +324,9 @@ class CoordinatedLandingArtifactBuilderTests(unittest.TestCase):
             failed_service = LandingApplicationService(
                 tampered,
                 PrivateLandingBlobStore(
-                    root / "blobs", repository_root=Path(__file__).resolve().parents[2]
+                    root / "blobs",
+                    repository_root=Path(__file__).resolve().parents[2],
+                    clock=lambda: FIXED_TIME,
                 ),
                 NeverProvider(),
                 profile_digest=PROFILE_DIGEST,
