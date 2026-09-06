@@ -6,7 +6,7 @@ It does not make a live provider call, execute repository commands, access Git/G
 
 Current status is bounded by the [root current-state summary](../README.md), [program roadmap](../DARK_FACTORY_ROADMAP.md), and milestone change packages. This M4-M8 source was delivered to `main` by PR #22 and published in `v2.0.13`; the checked head was `b5eba759c309a92f92f4d4003d025795c7f8a1f9` and the merge was `8599d45f4f28285381b05a53feb3059de92eb2a8`. Repository delivery does not authorize deployment, live-provider action, persistent database mutation, M8 activation, or production acceptance.
 
-Published `v2.0.14` added a separate L5 landing state/store and four authenticated routes for bounded multimodal intake, status, cancellation and local artifact results. The unreleased Stage 3/5 local runtime retains exact landing source `699010380f4f90a0193a9c22090c35e6aded7d2c` / tree `f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4`, protected source-owned `index.css`, the 20-member deploy inventory, and exact renderer writes `index.html`/`content.css`; it adds a default-unavailable injected native-Codex normalizer seam, private single-operator SQLite replay/recovery, and a concrete coordinator-to-packager artifact builder. PDF/audio stop at `needs_human`, the publisher still has no transport, every result keeps `live_url` null, and no live model, target mutation, deployment, publication, or indexing is claimed.
+Published `v2.0.14` added a separate L5 landing state/store and four authenticated routes for bounded multimodal intake, status, cancellation and local artifact results. The unreleased Stage 3/5 local runtime retains exact landing source `699010380f4f90a0193a9c22090c35e6aded7d2c` / tree `f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4`, protected source-owned `index.css`, the 20-member deploy inventory, and exact renderer writes `index.html`/`content.css`; it adds a default-unavailable injected native-Codex normalizer seam, private single-operator SQLite replay/recovery, and a concrete coordinator-to-packager artifact builder. PDF/audio stop at `needs_human`, the publisher still has no transport, every result keeps `live_url` null, and no live model, target mutation, deployment, publication, or indexing is claimed. Default-off `compose_landing_live` automatically normalize→render→evaluate→seals the 20-member L5 artifact when a caller injects a live executor; the shipped server path stays unavailable, `live_url` remains null, and the source pin is unchanged.
 
 ## Local disposable verification
 
@@ -40,3 +40,21 @@ Configuration names are documented in `.env.example`; it contains placeholders o
 `/health/ready` checks the isolated `factory_runtime` capability and exact schema version `17`; the artifact attestor uses a separate non-inheriting login and capability. Recovery has bounded connection, lock, statement and transaction timeouts, a 30-second monotonic coordinator budget, exact-handle idempotent cleanup, durable claim fences and work-conserving fresh/retry lanes. Cancel and supersede project cleanup transactionally; stale completion is rejected and replacement M4 work receives a higher fence. Authenticated metrics remain fixed and low-cardinality, with additive execution, terminal, recovery and cleanup families. A disposable PostgreSQL 17 probe has passed two actual restarts and confirmed zero fabricated proposal/result/attestation evidence.
 
 For a separately approved local rollout, follow the [M4 / 2.0.13 local rollout and recovery runbook](../engineering/runbooks/m4-v2.0.13-local-control-plane.md). Provision PostgreSQL 17 and a fresh schema-`013` operational database, preserve the distinct owner and runtime DSNs, and start killed. Check readiness/metrics including capacity/allocation, retry-limit and claimable/positive-endpoint accounting agreement; run synthetic submit/claim/reserve/observe/release/restart/reconcile twice; then clear kill. On any invariant failure, enable global kill, stop the socket process, preserve state/audit/logs, and require a reviewed dependency-coordinated forward repair before reuse.
+
+## Live Grok / Qwen landing executors (default off)
+
+Current host requirements, pinned from this machine:
+
+| Item | Value |
+| --- | --- |
+| Python executable | `/usr/bin/python3.12` |
+| Python version | `3.12.3` |
+| Python SHA-256 | `a92f0f95e883390c7256b2e441484aac06b1002dbe1d924141a77c8d82f96223` |
+| Factory `requires-python` | `>=3.11` |
+| `httpx` | `0.28.1` |
+| Grok | `https://api.x.ai/v1` model `grok-4`, env `FACTORY_LANDING_GROK_API_KEY` |
+| Qwen | `https://dashscope.aliyuncs.com/compatible-mode/v1` model `qwen-plus`, env `FACTORY_LANDING_QWEN_API_KEY` |
+
+`compose_landing_live_grok` / `compose_landing_live_qwen` live in `landing_live_executors.py` and inject those executors into the existing auto-seal path. The dogfood landing core stays `network: none` and does not import `httpx`. The shipped server does not read these env vars. Tests use `httpx.MockTransport` and never open a real socket. `live_url` stays null.
+
+This table is the closed operator-host record for this machine, not a CI-binary guarantee. Observed here: CPython on Linux x86_64 (glibc 2.39); `/usr/bin/python3` resolves to `/usr/bin/python3.12`. Tests assert the frozen record and `factory/pyproject.toml` pins, not the SHA of a runner's `/usr/bin/python3.12`.

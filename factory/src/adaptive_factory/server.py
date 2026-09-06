@@ -180,6 +180,7 @@ def build_app(
         ):
             raise ServerError("database capabilities are not ready")
 
+    # Live landing composition is constructor-injected only (compose_landing_live).
     if landing_service is None and settings.landing_quarantine_path is not None:
         profile = unavailable_landing_profile()
         try:
