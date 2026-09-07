@@ -400,13 +400,46 @@ class HookTests(unittest.TestCase):
 
     def test_benign_shell_expansion_and_read_chain_remain_soft(self) -> None:
         with project_copy(git=True) as root:
-            for command in ('echo "$HOME"', 'cat VERSION && git status --short'):
+            for command in (
+                'echo "$HOME"',
+                'cat VERSION && git status --short',
+                'true; true',
+                'true || true',
+                'echo (x)',
+                'rg pattern | head',
+                'ls | wc -l',
+                'printf ok; git status --short',
+                "git log --format='%h (%s)'",
+                'cd .; git status --short',
+                'nice -n 10 git status --short | cat',
+                'timeout 10 git rev-parse HEAD',
+            ):
                 _, data, error = run_hook(root, 'pre_tool_use.py', {
                     'cwd': str(root),
                     'tool_name': 'Bash',
                     'tool_input': {'command': command},
                 })
                 self.assertEqual(data['decision'], 'allow', (command, error, data))
+
+            _, data, error = run_hook(root, 'pre_tool_use.py', {
+                'cwd': str(root),
+                'session_id': 'inert-empty-units-still-allow',
+                'tool_name': 'Bash',
+                'tool_input': {'command': 'true; ; true'},
+            })
+            self.assertEqual(data['decision'], 'allow', error)
+
+        with project_copy(git=True) as root:
+            for index, command in enumerate((';;;', ';')):
+                with self.subTest(command=command):
+                    _, data, error = run_hook(root, 'pre_tool_use.py', {
+                        'cwd': str(root),
+                        'session_id': f'separator-only-shell-{index}',
+                        'tool_name': 'Bash',
+                        'tool_input': {'command': command},
+                    })
+                    self.assertEqual(data['decision'], 'deny', (command, error, data))
+                    self.assertIn('ambiguous-sensitive-shell', data['reason'])
 
     def test_execution_wrappers_cannot_hide_production_actions(self) -> None:
         with project_copy(git=True) as session_root:

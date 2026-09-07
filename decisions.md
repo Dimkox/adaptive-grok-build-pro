@@ -22,6 +22,10 @@ Represent rule transitions as immutable canonical-byte `RuleRecord` values and a
 
 Patterns that paid for themselves. Each entry is at most three sentences.
 
+## 2026-09-07 — Exempt proven inert reads from catch-all promotion
+
+Keep the control-flow regex and do not parse `if/then` in directory-alias resolution. Withhold `ambiguous-sensitive-shell` only when `is_proven_inert_read_shell` proves every unit is a closed read, then still run `evaluate_pre_tool`. Shape catch-all objectives with sorted authority-token presence plus optional `dynamic`; leave classified-action objectives coarse and exact fingerprints unchanged.
+
 ## 2026-09-05 — Calibrate only the accepted pilot vertical
 
 Raise only `FIT-BOUNDED-PILOT-CHANGE` to 400,000 bytes, 10,000 lines, and AST complexity 1,100, leaving global, Factory, and Trust-CI limits unchanged. This preserves a narrow ceiling with at most 15% headroom over the accepted pilot implementation while making the exact route fitness gate reflect its actual bounded scope.

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -20,7 +21,16 @@ for _p in _ROOT_CANDIDATES:
         sys.path.insert(0, s)
 
 try:
-    from _lib import RootContext, emit, read_payload, root_context, session_id, tool_input, tool_name
+    from _lib import (
+        RootContext,
+        emit,
+        is_proven_inert_read_shell,
+        read_payload,
+        root_context,
+        session_id,
+        tool_input,
+        tool_name,
+    )
 except Exception:
     # If even _lib is missing, never block the agent
     print('{"decision":"allow"}')
@@ -43,6 +53,7 @@ _CONTROL_PLANE_BATCH_GUIDANCE = (
     'For an atomic multi-file batch, put the manifest outside the repository '
     'and run `python3 scripts/grok_protected_write.py --manifest <path>`.'
 )
+_AUTHORITY_SHAPE_TOKENS = ('curl', 'docker', 'eval', 'exec', 'gh', 'git', 'npm', 'source', 'wget')
 
 
 def _actionable_reason(reason: str) -> str:
@@ -76,6 +87,16 @@ def _ledger_reason(action: str) -> str:
     return f'Action {action} denied by repository policy.'
 
 
+def _ambiguous_shell_authority_shape(command: str) -> list[str]:
+    shape = [
+        token for token in _AUTHORITY_SHAPE_TOKENS
+        if re.search(rf'(?<![A-Za-z0-9_]){re.escape(token)}(?![A-Za-z0-9_])', command, re.IGNORECASE)
+    ]
+    if '$' in command or '`' in command or '$(' in command or '${' in command:
+        shape.append('dynamic')
+    return shape
+
+
 def _denial_fingerprints(
     session: str,
     tool: str,
@@ -97,13 +118,19 @@ def _denial_fingerprints(
         'reason_sha256': hashlib.sha256(reason.encode('utf-8')).hexdigest(),
         'root_context': roots,
     })
-    objective = _fingerprint({
+    objective_material: dict[str, Any] = {
         'session_id': session,
         'tool_name': tool,
         'reason': reason,
         'action': action,
         'root_context': roots,
-    })
+    }
+    if action == 'ambiguous-sensitive-shell':
+        command = input_data.get('command') if isinstance(input_data, dict) else None
+        objective_material['authority_shape'] = (
+            _ambiguous_shell_authority_shape(command) if isinstance(command, str) else []
+        )
+    objective = _fingerprint(objective_material)
     return exact, objective
 
 
@@ -243,7 +270,9 @@ def main() -> None:
             'tool_input': current_input,
         })
         if current_tool == 'Bash' and context.has_ambiguous_command_evidence and action is None:
-            action = 'ambiguous-sensitive-shell'
+            command = current_input.get('command') if isinstance(current_input, dict) else None
+            if not (isinstance(command, str) and is_proven_inert_read_shell(command)):
+                action = 'ambiguous-sensitive-shell'
         root = context.effective_root or context.session_root
         if action and not context.sensitive_safe:
             allowed = False

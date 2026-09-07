@@ -1,0 +1,89 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Proven inert Bash reads that use pipes, or-lists, semicolons, or argument parentheses are allowed by PreToolUse and are not assigned ambiguous-sensitive-shell.",
+      "evidence": [
+        {
+          "test": "tests/test_hooks.py::HookTests.test_benign_shell_expansion_and_read_chain_remain_soft"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Unproven control-flow and classified sensitive shells remain denied; existing deny tests are unchanged.",
+      "evidence": [
+        {
+          "test": "tests/test_hooks.py::HookTests.test_execution_wrappers_cannot_hide_production_actions"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Distinct catch-all authority shapes in one session do not share an objective; same-shape catch-alls and classified external-write remain coarse; the ledger stores no raw command.",
+      "evidence": [
+        {
+          "test": "tests/test_pre_tool_circuit_breaker.py::DenialCircuitBreakerTest.test_distinct_catchall_shapes_do_not_share_objective"
+        },
+        {
+          "test": "tests/test_pre_tool_circuit_breaker.py::DenialCircuitBreakerTest.test_same_catchall_shape_trips_objective_breaker"
+        },
+        {
+          "test": "tests/test_pre_tool_circuit_breaker.py::DenialCircuitBreakerTest.test_classified_external_write_stays_coarse"
+        },
+        {
+          "test": "tests/test_pre_tool_circuit_breaker.py::DenialCircuitBreakerTest.test_second_identical_denial_stops_retry_loop"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260906-inert-control-flow-shells-must-not-become-ambigu-f88955",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Do not parse if/then in _command_directory_aliases, change policy.py, add ledger keys, or persist raw commands or secrets.",
+      "evidence": [
+        {
+          "test": "tests/test_pre_tool_circuit_breaker.py::DenialCircuitBreakerTest.test_second_identical_denial_stops_retry_loop"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Control-flow regex remains; synthetic action is withheld only when is_proven_inert_read_shell is true; classified-action objectives stay unshaped.",
+      "evidence": [
+        {
+          "test": "tests/test_hooks.py::HookTests.test_benign_shell_expansion_and_read_chain_remain_soft"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Exempt proven inert read shells from synthetic catch-all promotion and shape catch-all circuit-breaker objectives by secret-free authority tokens only.",
+    "success_metric": "Extended hook allow tests pass and circuit-breaker tests distinguish catch-all shapes without schema-3 ledger expansion.",
+    "target": "PreToolUse allows listed inert control-flow reads; distinct eval vs exec denials do not BLOCK; same-shape eval and two curl POSTs still BLOCK."
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "generic"
+    ],
+    "tier": "green"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "restore"
+  },
+  "schema_version": 2
+}

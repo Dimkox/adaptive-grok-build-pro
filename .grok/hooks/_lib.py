@@ -302,6 +302,216 @@ def _command_directory_aliases(command: str, *, depth: int = 0) -> dict[str, str
     return aliases
 
 
+_INERT_READ_EXECUTABLES = {
+    'echo', 'printf', 'cat', 'ls', 'head', 'tail', 'wc', 'pwd', 'true', 'false',
+    'test', '[', 'dirname', 'basename', 'rg', 'grep', 'sort', 'uniq', 'tr', 'cut',
+    'date', 'uname', 'which', 'type',
+}
+_INERT_GIT_SUBCOMMANDS = {
+    'status', 'log', 'diff', 'show', 'rev-parse', 'describe', 'ls-files', 'ls-tree',
+    'blame', 'grep', 'shortlog', 'name-rev', 'rev-list', 'symbolic-ref', 'cat-file',
+    'help', 'version',
+}
+_INERT_CONTROL_KEYWORDS = {
+    'if', 'then', 'elif', 'else', 'fi', 'for', 'while', 'until', 'do', 'done',
+    'case', 'esac', 'eval', 'exec', 'source',
+}
+_UNQUOTED_REDIRECT_TOKENS = {'>', '>>', '<', '<<', '>&', '&'}
+_DYNAMIC_MARKERS = ('$', '`', '$(', '${')
+
+
+def _split_inert_shell_units(command: str) -> list[str] | None:
+    units: list[str] = []
+    buf: list[str] = []
+    quote: str | None = None
+    escape = False
+    index = 0
+    while index < len(command):
+        char = command[index]
+        if escape:
+            buf.append(char)
+            escape = False
+            index += 1
+            continue
+        if quote is None and char == '\\':
+            buf.append(char)
+            escape = True
+            index += 1
+            continue
+        if quote is None and char in {'"', "'"}:
+            quote = char
+            buf.append(char)
+            index += 1
+            continue
+        if quote is not None:
+            buf.append(char)
+            if char == quote:
+                quote = None
+            index += 1
+            continue
+        if char in {';', '\n'}:
+            units.append(''.join(buf))
+            buf = []
+            index += 1
+            continue
+        if char == '&' and index + 1 < len(command) and command[index + 1] == '&':
+            units.append(''.join(buf))
+            buf = []
+            index += 2
+            continue
+        if char == '|' and index + 1 < len(command) and command[index + 1] == '|':
+            units.append(''.join(buf))
+            buf = []
+            index += 2
+            continue
+        if char == '|':
+            units.append(''.join(buf))
+            buf = []
+            index += 1
+            continue
+        buf.append(char)
+        index += 1
+    if escape or quote is not None:
+        return None
+    units.append(''.join(buf))
+    return units
+
+
+def _strip_balanced_outer_parens(unit: str) -> str | None:
+    text = unit.strip()
+    while text.startswith('('):
+        depth = 0
+        quote: str | None = None
+        escape = False
+        match: int | None = None
+        for index, char in enumerate(text):
+            if escape:
+                escape = False
+                continue
+            if quote is None and char == '\\':
+                escape = True
+                continue
+            if quote is None and char in {'"', "'"}:
+                quote = char
+                continue
+            if quote is not None:
+                if char == quote:
+                    quote = None
+                continue
+            if char == '(':
+                depth += 1
+            elif char == ')':
+                depth -= 1
+                if depth == 0:
+                    match = index
+                    break
+                if depth < 0:
+                    return None
+        if match is None:
+            return None
+        if match != len(text) - 1:
+            return text
+        text = text[1:match].strip()
+    return text
+
+
+def _token_is_dynamic(token: str) -> bool:
+    return token.startswith(('$', '`')) or '$(' in token or '${' in token
+
+
+def _git_operands_are_static(words: list[str]) -> bool:
+    index = 1
+    while index < len(words):
+        token = words[index]
+        if token in {'-C', '-c', '--git-dir', '--work-tree'}:
+            if index + 1 >= len(words):
+                return False
+            operand = words[index + 1]
+            if any(marker in operand for marker in _DYNAMIC_MARKERS):
+                return False
+            index += 2
+            continue
+        if token.startswith(('--git-dir=', '--work-tree=')):
+            operand = token.split('=', 1)[1]
+            if any(marker in operand for marker in _DYNAMIC_MARKERS):
+                return False
+            index += 1
+            continue
+        if token.startswith('-'):
+            return True
+        return True
+    return True
+
+
+def is_proven_inert_read_shell(command: str) -> bool:
+    if not isinstance(command, str) or not command.strip():
+        return False
+    units = _split_inert_shell_units(command)
+    if units is None:
+        return False
+    saw_directory = False
+    proven_units = 0
+    for raw_unit in units:
+        unit = raw_unit.strip()
+        if not unit:
+            continue
+        stripped = _strip_balanced_outer_parens(unit)
+        if stripped is None:
+            return False
+        if not stripped:
+            return False
+        try:
+            words = shlex.split(stripped)
+        except ValueError:
+            return False
+        if any(token in _UNQUOTED_REDIRECT_TOKENS for token in words):
+            return False
+        while words and re.match(r'^[A-Za-z_][A-Za-z0-9_]*=', words[0]):
+            if words[0].startswith('CDPATH=') and words[0] != 'CDPATH=':
+                return False
+            words = words[1:]
+        if not words:
+            return False
+        words, ambiguous_wrapper = _unwrap_execution_wrappers(words)
+        if ambiguous_wrapper or not words:
+            return False
+        executable = Path(words[0]).name.lower()
+        if executable in {'cd', 'pushd'}:
+            saw_directory = True
+            cursor = 1
+            if cursor < len(words) and words[cursor] == '--':
+                cursor += 1
+            if cursor >= len(words) or words[cursor].startswith('-'):
+                return False
+            operand = words[cursor]
+            if any(marker in operand for marker in _DYNAMIC_MARKERS):
+                return False
+            if cursor + 1 != len(words):
+                return False
+            proven_units += 1
+            continue
+        if executable in _INERT_CONTROL_KEYWORDS or executable == '.':
+            return False
+        if _token_is_dynamic(words[0]):
+            return False
+        if executable == 'git':
+            if not _git_operands_are_static(words):
+                return False
+            subcommand = _literal_git_subcommand(words)
+            if subcommand is None or subcommand not in _INERT_GIT_SUBCOMMANDS:
+                return False
+            proven_units += 1
+            continue
+        if executable not in _INERT_READ_EXECUTABLES:
+            return False
+        proven_units += 1
+    if proven_units == 0:
+        return False
+    if saw_directory and os.environ.get('CDPATH'):
+        return False
+    return True
+
+
 def root_context(payload: dict[str, Any], input_data: dict[str, Any], tool: str) -> RootContext:
     try:
         return _root_context(payload, input_data, tool)

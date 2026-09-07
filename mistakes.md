@@ -14,6 +14,12 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-07 — Promoted unresolved control-flow to a shapeless catch-all
+
+**Symptom:** Inert reads such as `ls | head` and `true; true` were denied as `ambiguous-sensitive-shell`, and a second unrelated Bash deny in 15 minutes tripped the objective circuit breaker.
+**Root cause:** Unresolved `|/;/()` evidence was promoted to a synthetic sensitive action, and that catch-all was fingerprinted without any command-authority shape.
+**Durable rule:** Withhold the synthetic action only for a closed proven inert-read proof, and shape catch-all objectives by secret-free authority tokens.
+
 ## 2026-09-05 — Mistook architecture validity for route fitness
 
 **Symptom:** Architecture validate, repository drift, and diagram checks passed, but exact route fitness rejected a local pilot import as external and treated `pilot/tests/**` as production source.
