@@ -505,7 +505,7 @@ class ServerTests(unittest.TestCase):
         self.assertIsNone(settings.landing_quarantine_path)
         self.assertEqual(
             tuple(FactorySettings.__dataclass_fields__)[-1],
-            "landing_quarantine_path",
+            "landing_output_path",
         )
 
         with patch.dict(
@@ -524,6 +524,20 @@ class ServerTests(unittest.TestCase):
             {**base, "FACTORY_LANDING_QUARANTINE_PATH": "relative/landing"},
             clear=True,
         ), self.assertRaisesRegex(SettingsError, "absolute and normalized"):
+            FactorySettings.from_environment()
+
+        with patch.dict(
+            os.environ,
+            {**base, "FACTORY_LANDING_PROVIDER": "claude"},
+            clear=True,
+        ), self.assertRaisesRegex(SettingsError, "must be grok or qwen"):
+            FactorySettings.from_environment()
+
+        with patch.dict(
+            os.environ,
+            {**base, "FACTORY_LANDING_PROVIDER": "grok"},
+            clear=True,
+        ), self.assertRaisesRegex(SettingsError, "requires quarantine"):
             FactorySettings.from_environment()
 
     def test_authenticated_request_reaches_real_unix_socket(self):

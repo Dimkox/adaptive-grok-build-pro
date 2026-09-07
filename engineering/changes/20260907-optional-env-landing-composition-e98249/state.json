@@ -1,0 +1,7 @@
+{
+  "change_id": "20260907-optional-env-landing-composition-e98249",
+  "status": "implementing",
+  "schema_version": 1,
+  "route_id": "e98249ed2c64",
+  "title": "Optional env landing composition for operator-injected live Grok/Qwen"
+}

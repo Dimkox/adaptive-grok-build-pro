@@ -1,0 +1,64 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Unset FACTORY_LANDING_PROVIDER makes compose_env_landing return None without HTTP.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Unknown provider fails closed as landing_provider.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "compose_env_landing with grok env and MockTransport seals an artifact with live_url null.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "FACTORY_LANDING_PROVIDER requires grok or qwen and absolute quarantine/source/scratch/output paths.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_server.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260907-optional-env-landing-composition-e98249",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FO-001",
+      "statement": "adaptive_factory.server does not import httpx or landing_live_executors.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    }
+  ],
+  "intent": "feature",
+  "risk": "low",
+  "schema_version": 1,
+  "title": "Optional env landing composition for operator-injected live Grok/Qwen"
+}
