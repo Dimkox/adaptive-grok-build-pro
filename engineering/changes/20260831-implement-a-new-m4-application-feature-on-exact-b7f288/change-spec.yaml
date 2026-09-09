@@ -1,0 +1,34 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"Closed immutable M1 M2 M3 and M0 bound intake deduplicates exact work and atomically supersedes stale active generations","evidence":[{"test":"factory/tests/test_contracts.py"},{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"test_review"}]},
+    {"id":"AC-002","statement":"PostgreSQL leases monotonic fences 20 10 1 capacity retries budgets kills append-only audit and reconciliation enforce bounded durable behavior","evidence":[{"test":"factory/tests/test_migrations.py"},{"test":"factory/tests/test_postgres_integration.py"},{"receipt":"test_review"},{"receipt":"security_review"}]},
+    {"id":"AC-003","statement":"Authenticated scoped Unix socket API and CLI expose local control without execution external-write production or Trust CI authority","evidence":[{"test":"factory/tests/test_api.py"},{"receipt":"security_review"}]},
+    {"id":"AC-004","statement":"Architecture tooling documentation final verification and all selected independent reviews describe and validate one final product tree","evidence":[{"test":"tests/test_architecture_model.py"},{"test":"tests/test_structure.py"},{"receipt":"verification"},{"receipt":"code_review"},{"receipt":"test_review"},{"receipt":"release_review"}]},
+    {"id":"AC-005","statement":"Architecture fitness restores the exact original M2 six-prefix budget and independently enforces finite aggregate factory source contract and test budgets at error severity","evidence":[{"test":"tests/test_architecture_model.py"},{"test":"tests/test_architecture_fitness.py"},{"receipt":"code_review"},{"receipt":"test_review"},{"receipt":"release_review"}]}
+  ],
+  "approvals": {"required_scopes":["architecture","data","security","release"]},
+  "change_id":"20260831-implement-a-new-m4-application-feature-on-exact-b7f288",
+  "contracts": {"events":[],"json_schema":[],"openapi":["factory/contracts/openapi/factory-control.v1.json"]},
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"Factory executes providers repository commands GitHub writes deployment systemd production mutation or Trust CI authority","evidence":[{"receipt":"security_review"}]},
+    {"id":"FORBID-002","statement":"Factory shares Trust CI package schema migration registry roles credentials policy holdout keys approvals or database state","evidence":[{"receipt":"security_review"}]},
+    {"id":"FORBID-003","statement":"Calendar pressure bypasses real PostgreSQL verification review signed approval or exact-head external gates","evidence":[{"receipt":"release_review"}]},
+    {"id":"FORBID-004","statement":"Architecture budget compliance is obtained by minification stacked-route partitioning warning-only policy exemption or mutation of the frozen factory representation","evidence":[{"test":"tests/test_architecture_model.py"},{"test":"tests/test_architecture_fitness.py"},{"receipt":"code_review"},{"receipt":"security_review"},{"receipt":"release_review"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Factory operational state migrations roles credentials and authority remain separate from Trust CI","evidence":[{"receipt":"security_review"}]},
+    {"id":"INV-002","statement":"At most 20 global readers 10 readers per repository and one live writer can be allocated","evidence":[{"receipt":"test_review"}]},
+    {"id":"INV-003","statement":"No worker mutation succeeds without current task run owner fence packet state live lease deadline budget and idempotency evidence","evidence":[{"receipt":"test_review"},{"receipt":"security_review"}]},
+    {"id":"INV-004","statement":"The per-task runtime deadline never exceeds 14400 seconds and is independent of calendar delivery dates","evidence":[{"receipt":"test_review"}]},
+    {"id":"INV-005","statement":"Every overlapping architecture budget is evaluated independently unknown line metrics fail closed and the approved amendment preserves the exact frozen factory source contract test and migration representations","evidence":[{"test":"tests/test_architecture_model.py"},{"test":"tests/test_architecture_fitness.py"},{"receipt":"test_review"},{"receipt":"security_review"},{"receipt":"release_review"}]}
+  ],
+  "objective":{"id":"OBJ-001","statement":"Create a separate durable local factory task control plane with immutable frozen intake fenced PostgreSQL scheduling bounded recovery and authenticated local administration on accepted M3 base 67714a1f1b87effcfabe55d5ca2770d0a68d17c1","success_metric":"m4_durable_control_plane_exit_gate","target":"All M4 acceptance criteria including independently bounded architecture growth real PostgreSQL invariants final verifier and five route reviews pass on one final fingerprint"},
+  "observability":[
+    {"id":"SIG-001","metric":"factory_intake_and_rejection_outcomes_total","proves":["OBJ-001"]},
+    {"id":"SIG-002","metric":"factory_lease_reclaim_and_fence_rejection_total","proves":["OBJ-001"]},
+    {"id":"SIG-003","metric":"factory_capacity_budget_kill_and_reconcile_outcomes_total","proves":["OBJ-001"]}
+  ],
+  "risk":{"domains":["api","data","integration","security"],"tier":"red"},
+  "rollback":{"maximum_steps":5,"strategy":"forward_fix"},
+  "schema_version":2
+}

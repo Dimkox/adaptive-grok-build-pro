@@ -1,5 +1,41 @@
 # Changelog
 
+## 2.0.15 — 2026-09-05 (unreleased)
+
+Local PR candidate for the disabled-by-default single-operator design-partner pilot.
+
+- Adds five closed digest-linked pilot outputs, one exact landing target/base profile, a private restart-safe SQLite ledger, and exact writer/evaluator workspace boundaries
+- Pins one Codex start, one credential-free unittest command, deterministic version/status/CSP semantics, and terminal no-retry recovery
+- Adds literal operation-digest grants, one non-force branch ref and one draft PR command boundary with observation-only recovery after ambiguity
+- Adds built-in default-off `prepare`, `publish-branch`, `publish-proposal` and read-only `status` phases, one bounded Codex app-server `gpt-6-astra` path using opaque host ChatGPT auth, pinned narrow `gh`/Git adapters, current-control grant rebinding and exact private-workspace recovery; no live model, target mutation, push, PR, merge, deployment, tag or release occurred while preparing this source
+- Preserves published `v2.0.14` and `v2.0.13` artifacts byte-for-byte; final local `2.0.15` packaging uses source parent `R` plus a ZIP+sidecar-only unpublished artifact child `A`
+
+## 2.0.14 — 2026-09-04
+
+Published repository release for the offline L5 multimodal landing dogfood vertical.
+
+- Adds six closed landing records, bounded private text/audio/image/PDF/DOCX intake, a fixed command-provider boundary with an unavailable default and sealed fixture, exact-SHA deterministic rendering/evaluation with a three-attempt ceiling, and a deterministic 19-member site artifact
+- Adds four authenticated local landing operations with a route-specific bounded streaming body path; the existing 1 MiB JSON limit and all M0-M9 contracts/migrations remain unchanged
+- Adds only a transport-free `UnavailableLandingPublisher`; no operational provider, network path, credentials, target mutation, live/indexed result, hosting action, or production authority is present
+- PR #24 checked head `66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57` passed App-owned `adaptive-trust-ci/verified@06ecf1c875bc` (`SUCCESS`, check run `101099224099`, attestation `9defb556-f703-4a13-b20a-8b88aa6781b4`, signer `0519cf1d47436f2e`) and GitGuardian (`SUCCESS`), then merged at `2026-09-04T16:56:37Z` as `1751b5855e46782b9a1bfceb6e1ab0102cba03b0`, preserving reviewed tree `618df086920c92179aa0e22a8c8d4ad30ebd9230`
+- GitHub Release `v2.0.14` was published at `2026-09-04T16:58:48Z`; `packages/adaptive-grok-build-pro-v2.0.14.zip` has SHA-256 `b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264`, and its sidecar file has SHA-256 `1a961c35b8f12fa02579ec7888c889f0ae7ca8656b158eb731681ef8357caf3c`
+- Published `v2.0.13`, PR #22, merge `8599d45f4f28285381b05a53feb3059de92eb2a8`, and their artifact remain immutable historical facts; repository publication does not establish an operational provider, hosting, M8 cohort/activation, or production authority
+
+## 2.0.13 — 2026-09-02
+
+Published M4-M9 repository product release.
+
+- Product identity **2.0.13** across `VERSION`, repository documentation, and the tracked `adaptive_grok` runtime; Trust CI service identity remains separately **2.1.0**
+- Integrates the M4 durable control plane, M5 bounded execution, M6 semantic validation, M7 shadow handoff, M8 earned-autonomy evaluation, and M9 local staged-delivery/recovery source while preserving migrations `001`-`018`
+- M9 is deliberately local-only: it provides immutable delivery records, deterministic preview/staging/bounded-canary decisions, a sealed in-memory environment, and least-authority recovery without an operational adapter, persistence, credentials, provider access, or production authority
+- Repairs roadmap/state parity, claim-terminal lease races, all-runtime database bounds/typed availability, fail-closed role bootstrap, and persisted accepted retry limits through additive migration `013`
+- Audits legacy schema-12 retry exhaustion without advancing a fence or creating a lease, and makes release packaging derive inventory and bytes from filtered, clean, exact Git `HEAD` while independent shipped-artifact tests reject ambient ignored/untracked members
+- PR #22 checked head `b5eba759c309a92f92f4d4003d025795c7f8a1f9` passed App-owned `adaptive-trust-ci/verified@06ecf1c875bc` (`SUCCESS`, check run `100955508827`, attestation `74f1bbb2-3098-4d35-a42f-d49351d81c4a`) and merged to `main` as `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`
+- GitHub Release `v2.0.13` was published at `2026-09-04T08:33:19Z`; `packages/adaptive-grok-build-pro-v2.0.13.zip` has SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`
+- Binds sensitive hook policy and denial evidence to the unique effective repository root, including nested workdir aliases and literal `cd`/`git -C` shell overrides, without recording raw commands
+- Preserves the M4 repair source and integrates M5-M9 additively as the delivered repository product; factual M8 cohort/activation and real signed M9 environment/provider deployment remain operational gaps
+- The intermediate `aa12e7c` verifier receipt and earlier candidate artifacts remain historical evidence superseded by the exact PR #22 checked head and published tag; later documentation-only commits do not restack `v2.0.13`
+
 ## 2.0.12 — 2026-08-23
 
 Self-hosted Trust CI control plane in-tree, K16 README graph, optional docker/syft/trivy/cosign toolchain pins.

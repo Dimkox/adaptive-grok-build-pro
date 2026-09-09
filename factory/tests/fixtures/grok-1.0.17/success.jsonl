@@ -1,0 +1,5 @@
+{"event":"session_started"}
+{"event":"message","kind":"analysis","text":"private scratch"}
+{"event":"message","kind":"final","text":"bounded conclusion","evidence":["factory/src/adaptive_factory/contracts.py"]}
+{"event":"usage","input_tokens":9,"output_tokens":3,"reasoning_tokens":1,"cost_usd_micros":25,"output_bytes":18,"price_table_digest":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}
+{"event":"finished","status":"needs_human","reason":"cancellation conformance unavailable"}

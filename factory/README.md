@@ -1,0 +1,60 @@
+# Adaptive Factory M4-M8 control/evaluation and offline L5 landing source
+
+This nested Python package is a source-only, local control plane. It validates immutable M1/M2/M3/M0-bound intake, stores operational truth in an isolated PostgreSQL `factory` schema, schedules work with database leases and monotonic fences, enforces 20 global readers / 10 readers per repository / one writer, bounds retries and budgets, retains hash-chained audit, and performs restart-safe reconciliation.
+
+It does not make a live provider call, execute repository commands, access Git/GitHub or Trust CI credentials, activate systemd, deploy, publish, or perform an external/production write. `ready_for_human` remains M4's positive terminal state. M5 adds immutable execution packets/manifests, closed provider-neutral protocols and APIs, offline ineligible adapters, trusted proposal/workspace boundaries, atomic terminal finalization, and bounded factual recovery. Shipped execution remains disabled by default.
+
+Current status is bounded by the [root current-state summary](../README.md), [program roadmap](../DARK_FACTORY_ROADMAP.md), and milestone change packages. This M4-M8 source was delivered to `main` by PR #22 and published in `v2.0.13`; the checked head was `b5eba759c309a92f92f4d4003d025795c7f8a1f9` and the merge was `8599d45f4f28285381b05a53feb3059de92eb2a8`. Repository delivery does not authorize deployment, live-provider action, persistent database mutation, M8 activation, or production acceptance.
+
+Published `v2.0.14` added a separate L5 landing state/store and four authenticated routes for bounded multimodal intake, status, cancellation and local artifact results. The unreleased Stage 3/5 local runtime retains exact landing source `699010380f4f90a0193a9c22090c35e6aded7d2c` / tree `f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4`, protected source-owned `index.css`, the 20-member deploy inventory, and exact renderer writes `index.html`/`content.css`; it adds a default-unavailable injected native-Codex normalizer seam, private single-operator SQLite replay/recovery, and a concrete coordinator-to-packager artifact builder. PDF/audio stop at `needs_human`, the publisher still has no transport, every result keeps `live_url` null, and no live model, target mutation, deployment, publication, or indexing is claimed. Default-off `compose_landing_live` automatically normalize→render→evaluate→seals the 20-member L5 artifact when a caller injects a live executor; the shipped server path stays unavailable, `live_url` remains null, and the source pin is unchanged.
+
+## Local disposable verification
+
+Use a freshly created disposable PostgreSQL 17 database only. The reconciler uses PostgreSQL 17 `transaction_timeout` together with decreasing statement timeouts to bound one complete page. Never reuse a Trust CI/shared/production URL or inspect an existing `.env`.
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -e .
+FACTORY_TEST_DATABASE_URL='postgresql://factory_test:replace@127.0.0.1:5432/factory_test' \
+  .venv/bin/python -m unittest tests.test_postgres_integration -v
+```
+
+The migration runner uses a factory-only advisory lock and immutable packaged checksums. M4 migrations `001`-`013` remain unchanged. M5 migration `014` adds execution packets, manifests, stages and proposals; `015` adds canonical proposal, attestation and result persistence plus trusted finalization; `016` removes only superseded provisional constraints in the same migrator transaction; and `017` adds PostgreSQL-17 recovery jobs, claims, outcomes and fixed execution metrics. Recovery and migration paths do not fabricate proposals, results, snapshots or attestations. M6 begins at `018`.
+
+The published M4 repair supports only a fresh PostgreSQL 17 database bootstrapped directly through schema `013` for the M4-only rollout boundary. Release publication did not authorize a persistent rollout, so there is no supported deployed schema-`013` upgrade population and this repair does not add a migration. A database created from an older candidate is unsupported as an operational target: preserve or restore it only into a separately named comparison database, keep it killed, and provision a fresh schema-`013` operational database. Readiness fails closed when legacy terminal accounting has unresolved evidence without an explicit quarantine marker. M5 migrations `014` through `017` and M6 migration `018` remain additive; any future persistent-data repair requires a separately reviewed, dependency-coordinated forward migration. Never down-migrate or delete evidence.
+
+## Local API and CLI
+
+The supported composition command is `adaptive-factory-server`. It builds the store, service, authenticator and ASGI application, then pre-binds only an operator-owned Unix socket (default `/run/adaptive-factory/control.sock`) at mode `0660`; there is no TCP option. The socket parent must be owned by the process user and not group/world writable. Actor configuration and every referenced token file require an absolute, owner-pinned, no-follow descriptor walk and a mode-`0600` leaf; see `actors.example.json`. The service login must be a `NOINHERIT` member of `factory_runtime`: every store connection executes `SET ROLE factory_runtime`, while migrations use a separate owner connection.
+
+Before intake, an independently verified M0 observation (or separately approved bootstrap exception) must be provisioned into the matching immutable `factory.m0_*` table by the operator boundary. Caller JSON is only a lookup key and cannot originate authority. The stored `intent_digest` continues to bind the complete normalized request, including `request_id` and the full M0 proof, and remains the opaque task packet digest consumed by later milestones. Deduplication uses a separate `adaptive-factory.work-identity/v1` digest over semantic work fields only; transport `request_id` and the entire M0 proof are excluded so a new request with refreshed equivalent authority returns the existing task. A namespaced intake command key independently makes exact request replay stable and rejects reuse of one request ID with a different full body. Budget reservation and usage observation are authenticated worker endpoints; completion is rejected until accounting is present, settled and unblocked.
+
+All mutations require `Idempotency-Key` and `X-Correlation-ID`; intake records that correlation independently in command/audit evidence without changing full-intent, semantic-work or replay identity. Bodies are at most 1 MiB; list/reconcile pages are at most 100 and execution recovery uses a bounded two-lane page of 2-100. Authenticated `runs` and `events` reads retain the immutable M4 history model. When fully injected into a local composition, `/v1/execution/*` and additive `/v2/execution/*` expose six logical operations each; both terminal routes use the same server-owned proposal, trusted snapshot, and finalization flow. Clients cannot supply trusted snapshots or select unregistered provider profiles.
+
+Runtime-generated OpenAPI, Swagger and ReDoc routes are disabled. [`factory-control.v1.json`](contracts/openapi/factory-control.v1.json) remains the byte-identical 17-operation M4 control contract. M5 execution v1/v2 and the six-operation [`factory-semantic.v1.json`](contracts/openapi/factory-semantic.v1.json) are reviewed separately. Every response carries `X-Correlation-ID`; omitted read correlation is generated, normalized errors retain bounded `error`, `code` and `detail`, and 401 retains `WWW-Authenticate`. Credentials, raw bodies/prompts, reasoning, native streams, unrestricted output and task IDs as metric labels are prohibited.
+
+Configuration names are documented in `.env.example`; it contains placeholders only. For a newly created, explicitly disposable local database, load those names into the shell, start `docker compose up -d postgres`, and run `adaptive-factory-admin bootstrap-local`. That command applies checksum migrations with `FACTORY_MIGRATOR_DATABASE_URL`, creates or validates the bounded `FACTORY_RUNTIME_LOGIN`, grants only `factory_runtime`, and proves `FACTORY_DATABASE_URL` reaches readiness under the effective role; `adaptive-factory-admin migrate` is the migration-only interface. Do not point either command at a shared, external, Trust CI or production database. Source delivery does not run either command or activate a service.
+
+## Readiness, observation and recovery
+
+`/health/ready` checks the isolated `factory_runtime` capability and exact schema version `17`; the artifact attestor uses a separate non-inheriting login and capability. Recovery has bounded connection, lock, statement and transaction timeouts, a 30-second monotonic coordinator budget, exact-handle idempotent cleanup, durable claim fences and work-conserving fresh/retry lanes. Cancel and supersede project cleanup transactionally; stale completion is rejected and replacement M4 work receives a higher fence. Authenticated metrics remain fixed and low-cardinality, with additive execution, terminal, recovery and cleanup families. A disposable PostgreSQL 17 probe has passed two actual restarts and confirmed zero fabricated proposal/result/attestation evidence.
+
+For a separately approved local rollout, follow the [M4 / 2.0.13 local rollout and recovery runbook](../engineering/runbooks/m4-v2.0.13-local-control-plane.md). Provision PostgreSQL 17 and a fresh schema-`013` operational database, preserve the distinct owner and runtime DSNs, and start killed. Check readiness/metrics including capacity/allocation, retry-limit and claimable/positive-endpoint accounting agreement; run synthetic submit/claim/reserve/observe/release/restart/reconcile twice; then clear kill. On any invariant failure, enable global kill, stop the socket process, preserve state/audit/logs, and require a reviewed dependency-coordinated forward repair before reuse.
+
+## Live Grok / Qwen landing executors (default off)
+
+Current host requirements, pinned from this machine:
+
+| Item | Value |
+| --- | --- |
+| Python executable | `/usr/bin/python3.12` |
+| Python version | `3.12.3` |
+| Python SHA-256 | `a92f0f95e883390c7256b2e441484aac06b1002dbe1d924141a77c8d82f96223` |
+| Factory `requires-python` | `>=3.11` |
+| `httpx` | `0.28.1` |
+| Grok | `https://api.x.ai/v1` model `grok-4`, env `FACTORY_LANDING_GROK_API_KEY` |
+| Qwen | `https://dashscope.aliyuncs.com/compatible-mode/v1` model `qwen-plus`, env `FACTORY_LANDING_QWEN_API_KEY` |
+
+`compose_landing_live_grok` / `compose_landing_live_qwen` live in `landing_live_executors.py` and inject those executors into the existing auto-seal path. The dogfood landing core stays `network: none` and does not import `httpx`. The shipped server does not read these env vars. Tests use `httpx.MockTransport` and never open a real socket. `live_url` stays null.
+
+This table is the closed operator-host record for this machine, not a CI-binary guarantee. Observed here: CPython on Linux x86_64 (glibc 2.39); `/usr/bin/python3` resolves to `/usr/bin/python3.12`. Tests assert the frozen record and `factory/pyproject.toml` pins, not the SHA of a runner's `/usr/bin/python3.12`.

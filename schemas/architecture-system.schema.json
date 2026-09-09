@@ -1,0 +1,514 @@
+{
+  "$defs": {
+    "contract": {
+      "additionalProperties": false,
+      "properties": {
+        "compatibility": {
+          "enum": [
+            "consumer_accepts_old",
+            "producer_accepted_by_old",
+            "bidirectional",
+            "exact",
+            "versioned_break"
+          ],
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "openapi",
+            "asyncapi",
+            "json_schema",
+            "event",
+            "signed_payload",
+            "cli",
+            "migration"
+          ],
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "role": {
+          "enum": [
+            "producer",
+            "consumer",
+            "bidirectional"
+          ],
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "path",
+        "version",
+        "role",
+        "compatibility"
+      ],
+      "type": "object"
+    },
+    "data_classification": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted",
+            "trust_material"
+          ],
+          "type": "string"
+        },
+        "contains_secret": {
+          "type": "boolean"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "tenant_scoped": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "classification",
+        "tenant_scoped",
+        "contains_secret"
+      ],
+      "type": "object"
+    },
+    "edge": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_data": {
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "maxItems": 256,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "authentication": {
+          "enum": [
+            "none",
+            "local_os",
+            "database_role",
+            "github_app",
+            "signature",
+            "human_signature",
+            "mutual_tls",
+            "external_managed"
+          ],
+          "type": "string"
+        },
+        "direction": {
+          "const": "from_to",
+          "type": "string"
+        },
+        "failure_behavior": {
+          "$ref": "#/$defs/failure_behavior"
+        },
+        "from": {
+          "$ref": "#/$defs/id"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "network_policy": {
+          "enum": [
+            "no_network",
+            "local_only",
+            "allowlisted_egress",
+            "isolated_executor",
+            "external_managed"
+          ],
+          "type": "string"
+        },
+        "protocol": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "type": "string"
+        },
+        "sync_or_async": {
+          "enum": [
+            "synchronous",
+            "asynchronous",
+            "batch"
+          ],
+          "type": "string"
+        },
+        "to": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "enum": [
+            "dependency",
+            "control",
+            "data_flow",
+            "secret_flow",
+            "deployment",
+            "publication"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "from",
+        "to",
+        "type",
+        "protocol",
+        "direction",
+        "authentication",
+        "network_policy",
+        "sync_or_async",
+        "allowed_data",
+        "failure_behavior"
+      ],
+      "type": "object"
+    },
+    "failure_behavior": {
+      "additionalProperties": false,
+      "properties": {
+        "correlation_id": {
+          "enum": [
+            "required",
+            "not_required"
+          ],
+          "type": "string"
+        },
+        "idempotency": {
+          "enum": [
+            "required",
+            "not_required"
+          ],
+          "type": "string"
+        },
+        "max_retries": {
+          "maximum": 20,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "mode": {
+          "enum": [
+            "fail_closed",
+            "fail_open",
+            "degrade",
+            "retry_bounded"
+          ],
+          "type": "string"
+        },
+        "observable_signal": {
+          "$ref": "#/$defs/id"
+        },
+        "terminal_action": {
+          "enum": [
+            "reject",
+            "degrade",
+            "dead_letter",
+            "manual_recovery"
+          ],
+          "type": "string"
+        },
+        "timeout_ms": {
+          "maximum": 3600000,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mode",
+        "timeout_ms",
+        "max_retries",
+        "idempotency",
+        "correlation_id",
+        "terminal_action",
+        "observable_signal"
+      ],
+      "type": "object"
+    },
+    "id": {
+      "maxLength": 128,
+      "minLength": 3,
+      "pattern": "^[A-Z][A-Z0-9_-]*$",
+      "type": "string"
+    },
+    "node": {
+      "additionalProperties": false,
+      "properties": {
+        "data_classification": {
+          "$ref": "#/$defs/id"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "owner": {
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        },
+        "public_contracts": {
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "maxItems": 128,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "repository_paths": {
+          "items": {
+            "$ref": "#/$defs/path"
+          },
+          "maxItems": 128,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "runtime": {
+          "$ref": "#/$defs/runtime"
+        },
+        "secrets": {
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "maxItems": 128,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "trust_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "enum": [
+            "actor",
+            "local_component",
+            "service",
+            "worker",
+            "runner",
+            "datastore",
+            "repository",
+            "policy_bundle",
+            "external_system"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "owner",
+        "trust_domain",
+        "data_classification",
+        "secrets",
+        "runtime",
+        "repository_paths",
+        "public_contracts"
+      ],
+      "type": "object"
+    },
+    "path": {
+      "maxLength": 4096,
+      "minLength": 1,
+      "type": "string"
+    },
+    "runtime": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence": {
+          "enum": [
+            "source_described",
+            "externally_proven"
+          ],
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "none",
+            "python_process",
+            "container",
+            "postgresql",
+            "external_managed"
+          ],
+          "type": "string"
+        },
+        "lifecycle": {
+          "enum": [
+            "none",
+            "on_demand",
+            "long_running",
+            "job"
+          ],
+          "type": "string"
+        },
+        "network": {
+          "enum": [
+            "none",
+            "local_only",
+            "declared_egress",
+            "external_managed"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "lifecycle",
+        "network",
+        "evidence"
+      ],
+      "type": "object"
+    },
+    "secret_class": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "const": "trust_material",
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        }
+      },
+      "required": [
+        "id",
+        "classification"
+      ],
+      "type": "object"
+    },
+    "signal": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/id"
+        }
+      },
+      "required": [
+        "id",
+        "description"
+      ],
+      "type": "object"
+    },
+    "trust_domain": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "kind": {
+          "enum": [
+            "repository_untrusted",
+            "local_preflight",
+            "trust_ci_control",
+            "trust_ci_execution",
+            "external_policy",
+            "external_platform",
+            "production_trust"
+          ],
+          "type": "string"
+        },
+        "owner": {
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "owner"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "urn:adaptive-grok:architecture-system:v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "architecture_id": {
+      "$ref": "#/$defs/id"
+    },
+    "contracts": {
+      "items": {
+        "$ref": "#/$defs/contract"
+      },
+      "maxItems": 256,
+      "type": "array"
+    },
+    "data_classifications": {
+      "items": {
+        "$ref": "#/$defs/data_classification"
+      },
+      "maxItems": 256,
+      "minItems": 1,
+      "type": "array"
+    },
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/edge"
+      },
+      "maxItems": 512,
+      "type": "array"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/node"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "type": "integer"
+    },
+    "secret_classes": {
+      "items": {
+        "$ref": "#/$defs/secret_class"
+      },
+      "maxItems": 256,
+      "type": "array"
+    },
+    "signals": {
+      "items": {
+        "$ref": "#/$defs/signal"
+      },
+      "maxItems": 512,
+      "minItems": 1,
+      "type": "array"
+    },
+    "trust_domains": {
+      "items": {
+        "$ref": "#/$defs/trust_domain"
+      },
+      "maxItems": 128,
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "architecture_id",
+    "trust_domains",
+    "data_classifications",
+    "secret_classes",
+    "signals",
+    "contracts",
+    "nodes",
+    "edges"
+  ],
+  "type": "object"
+}

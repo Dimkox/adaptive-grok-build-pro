@@ -28,17 +28,19 @@ reviewed intent
 
 ## 2. Canonical baseline
 
-Roadmap baseline:
+Original planning baseline and current integration observation:
 
 ```text
 repository: Dimkox/adaptive-grok-build-pro
 branch: main
-baseline SHA: 73e4ae7c68a95d3a7440378964b8cc1879df9b89
-product version: 2.0.12
+original baseline SHA: 73e4ae7c68a95d3a7440378964b8cc1879df9b89
+publication snapshot main SHA: 1751b5855e46782b9a1bfceb6e1ab0102cba03b0 (2026-09-04T16:58:48Z; not a perpetual current-ref assertion)
+product version: 2.0.15 (unreleased pilot candidate; published release v2.0.14 and v2.0.13 retained as immutable history)
 Trust CI service version: 2.1.0
+required check: adaptive-trust-ci/verified@06ecf1c875bc
 ```
 
-Before implementing any milestone, compare the current `main` SHA with this baseline and update the milestone plan for intervening changes. Do not reset or discard newer work merely to match this document.
+Before implementing any milestone, compare the current `main` SHA with the recorded observation and update the milestone plan for intervening changes. Do not reset or discard newer work merely to match either historical identity.
 
 ## 3. What already exists
 
@@ -81,20 +83,13 @@ Implemented in-tree:
 
 ### 3.3 Current operational qualification
 
-The GitHub App `adaptive-trust-ci` is registered. Registration is not the same as operational proof.
+M0 Live Trust Authority is delivered. Protected `main` requires the App-owned policy-epoch check `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114`; repository source, prompts, local receipts and local grants cannot mint or replace it. The original roadmap observation predated that activation and is historical only.
 
-The following must be verified against the live environment rather than inferred from repository source:
+M1-M9 are delivered to `main` as repository product source through PR #22. Checked head `b5eba759c309a92f92f4d4003d025795c7f8a1f9` passed App-owned `adaptive-trust-ci/verified@06ecf1c875bc` and merged as `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`; release `v2.0.13` publishes ZIP SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`. Factual M8 cohort/activation, signed M9 input, operational environment/provider deployment, recovery proof, and human production authority remain separate operational gates.
 
-- App installation on `Dimkox/adaptive-grok-build-pro`;
-- live App ID and installation ID available to the worker;
-- worker-only RSA private key provisioning;
-- API-only webhook secret provisioning;
-- deployed API, worker, PostgreSQL, runner, holdout, and HTTPS endpoint;
-- a real App-owned policy-epoch Check Run on an exact pull-request SHA;
-- offline verification of the associated signed attestation;
-- `main` branch protection requiring that exact check from the App ID.
+Published `v2.0.14` adds the offline L5 multimodal landing dogfood vertical without changing M0-M9 milestone semantics. Its API/provider/render/evaluate/package path is bounded; provider and publisher defaults remain unavailable, `live_url` is unrepresentable except as null, the authoritative landing clone remains read-only, and repository publication supplied no operational provider, network, hosting, indexing, deployment, M8 activation, or production authority.
 
-At the roadmap baseline, the public branch response showed `main` without required protection. Treat operational activation as the first milestone even if parts have since been completed.
+PRs #12 and #13 remain stale old-epoch `ACTION_REQUIRED` work whose unique lazy CLI imports/tests and repository-scoped Trust CI profiles are absent from `main`. PR #15's current-epoch `adaptive-trust-ci/verified@06ecf1c875bc` conclusion is `FAILURE` while GitGuardian is `SUCCESS`; its failure cause was not inspected or inferred. Wholesale merge of its obsolete M1-M3 aggregate is superseded, while investor-demo commit `9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b` and packaging hardening remain unique. All three need clean successor extraction; no successor PR is claimed.
 
 ## 4. Consolidated gap analysis
 
@@ -104,23 +99,24 @@ At the roadmap baseline, the public branch response showed `main` without requir
 | One write owner | Implemented locally | Enforce across distributed factory workers |
 | Low-by-default reasoning | Implemented | Record effective effort in every run manifest |
 | Local verification | Implemented | Keep as preflight, never merge authority |
-| Exact-SHA external Trust CI | Source implemented | Activate and prove live authority |
-| GitHub App registration | Implemented externally | Verify installation, credentials, check ownership, and branch protection |
+| Exact-SHA external Trust CI | M0 delivered and live | Preserve exact-head/App ownership; every new M4+ SHA must earn a fresh check |
+| GitHub App registration | Delivered external authority | Keep credentials and deployed policy outside the PR trust domain |
 | Durable CI jobs | Implemented | Keep separate from implementation task state |
-| Typed business specification | Missing | Build schema, validator, traceability, and evidence mapping |
-| Executable architecture model | Missing | Replace decorative graph as authority with machine-readable architecture and fitness rules |
-| Agent-loop backpressure | Missing | Add structured findings and bounded repair cycles |
-| Semantic validator/adjudicator | Missing | Add independent requirement-level verdict separate from implementer reasoning |
-| Controlled learning | Missing | Replace automatic Markdown promotion with reviewed rule lifecycle |
-| Debt/slop ledger | Missing | Track deliberate debt, owner, cost, trigger, and deadline |
-| Durable factory task queue | Missing | Build a separate factory control plane |
-| Background implementation environment | Missing | Add isolated ephemeral workspaces independent of a laptop session |
-| Immutable implementation run manifest | Missing | Record model, prompt, tools, policy, costs, and provenance |
-| WIP, cost, and PR flood controls | Missing | Add hard per-repository and global limits |
-| Automated PR lifecycle | Missing | Create branch, commit, PR, evidence summary, and supersession logic |
-| Shadow-mode metrics | Missing | Measure quality and human disagreement before autonomy |
-| Earned auto-merge | Missing and deliberately deferred | Enable only for proven low-risk classes |
-| Preview/staging/canary delivery | Missing and deferred | Build after shadow-mode evidence |
+| Typed business specification | M1 delivered to main in v2.0.13 | Retain typed intent and evidence as change authority |
+| Executable architecture model | M2 delivered to main in v2.0.13 | Retain independent fitness enforcement |
+| Agent-loop backpressure | M6 repository source delivered in `v2.0.13` | Preserve finite repair ceilings and independent semantic authority |
+| Semantic validator/adjudicator | M6 verdict and artifact-validation boundary delivered | Retain independent verdict authority during operational qualification |
+| Controlled learning | M3 delivered to main in v2.0.13; registries intentionally empty | Activation still requires independent evidence and human governance |
+| Debt/slop ledger | M3 delivered to main in v2.0.13 | Keep empty/unapproved records non-authoritative and preserve owner/trigger/evidence requirements |
+| Durable factory task queue | M4 repository source delivered in `v2.0.13` | Require separate rollout authority before persistent operation |
+| Background implementation environment | M5 repository source delivered; live adapters disabled | Require separate rootless live-host evidence before operational acceptance |
+| Immutable implementation run manifest | M5 repository source delivered | Accept operational use only after isolation/capability/orphan and live-host evidence |
+| WIP, cost, and PR flood controls | M4 enforces durable WIP/cost; PR flood remains M7 work | Preserve M4 ceilings and add PR lifecycle bounds only at M7 |
+| Automated PR lifecycle | M7 shadow source delivered; no external PR capability | Add runtime and real outcomes before activation; human merge remains mandatory |
+| Shadow-mode metrics | Synthetic algorithm evidence only | Measure real quality and human disagreement before autonomy |
+| Earned auto-merge | Corrected M8 evaluation delivered; deliberately inactive and capped at L2 | Require an exact-profile 30-real-task cohort plus explicit activation |
+| Preview/staging/canary delivery | M9 sealed source delivered; no operational adapter | Require real signed input, environment/provider deployment and recovery evidence; production remains human-owned |
+| L5 multimodal landing dogfood | Local `2.0.14` source candidate; bounded offline fixture path only | Complete exact-source gates and deterministic package binding; operational provider, data transfer, target write, signing, hosting and production require separate authority |
 
 ## 5. Non-negotiable constraints
 
@@ -204,6 +200,20 @@ M1 + M2 + M3
 ```
 
 Milestones M1, M2, and M3 may be developed in parallel only after M0 has a live proof or an explicitly documented bootstrap exception approved by the user. M4 must consume their stable interfaces rather than inventing replacements.
+
+The dependency-ordered M4 `67dc4ddf` → M5 `85cd4343` → M6 `c6d48ffd` → M7 `00e0e4f9` → corrected M8 `a937ac8d` → M9 `64b10689` source is delivered to `main` by PR #22 and published as `v2.0.13`. M8 remains inactive pending a factual exact-profile cohort of at least 30 human-accepted tasks. M9 remains non-operational pending signed input, an operational environment/provider deployment, exercised recovery, and human production authority.
+
+## 7.1 Exact milestone handoff contracts
+
+| Edge | Producer → consumer binding | Gate and invalidation | Rollback / forbidden authority |
+| --- | --- | --- | --- |
+| M4 → M5 | M4 emits an immutable task packet bound to `task_id`, accepted base/head SHA, complete frozen-intent/spec/architecture/governance/policy digests, route and budget; M5 accepts only the exact packet digest and M4 product SHA. | Accepted M4 exact-SHA verification/reviews/Trust CI plus a suitable rootless-isolation host; any predecessor SHA, packet field, policy or authority change invalidates dispatch and requires restack/reissue. | Cancel/expire the M4 lease, preserve packet/audit and destroy only the isolated workspace; M5 receives no intake-policy, Trust CI, merge, production or cross-task authority. |
+| M5 → M6 | M5 emits an immutable execution-result/run-manifest digest bound to task packet digest, exact base/head SHA, workspace/image/tool/network/secret-scope evidence and artifacts; M6 verifies all bindings before judging. | Accepted M5 isolation/capability/orphan evidence and predecessor exact SHA; changed code, manifest, artifact, image or policy invalidates the verdict and starts a fresh bounded validation cycle. | Quarantine result/artifacts and return a structured finding to bounded repair; M6 cannot write implementation, mint Trust CI/human approval or mutate execution evidence. |
+| M6 → M7 | M6 emits a signed/immutable semantic-verdict digest bound to execution result, requirement/criterion IDs, exact head SHA, findings, repair count and residual risk; M7 consumes only a PASS verdict with matching local/external checks. | Independent adjudication, repair ceiling and exact-SHA verifier/Trust CI; any source, criterion, policy, holdout or verdict change invalidates the ready-for-PR state. | Revert to needs-human/repair or supersede the bundle while preserving evidence; M7 cannot push/open/update a PR without exact delegated authority and cannot merge or publish Trust CI. |
+| M7 → M8 | M7 emits an immutable shadow ready-for-PR bundle digest binding task/run/verdict/check/PR-head/human-decision and outcome metrics; M8 cohorts only exact trust-profile tuples. | At least 30 human-accepted tasks for the exact class/profile tuple, complete disagreement/rollback/security metrics and human merge for every PR; any tuple component or evidence mutation starts a new cohort. | Demote/discard the affected cohort and keep human merge; under current authority M8 is capped at L2, cannot auto-merge, rewrite historical decisions or activate governance. |
+| M8 → M9 | M8 emits a durable trust-profile digest and L2-or-lower decision bound to repository/class/models/prompts/policy/runner/holdout digests; M9 binds preview/staging/canary inputs to the exact merged SHA and signed artifact digest. | Accepted predecessor profiles, exact signed supply-chain artifact, reproducible preview/staging, explicit canary thresholds and exercised recovery; incident, rollback, policy/artifact/SHA change invalidates promotion and triggers demotion. | Halt/rollback the canary, preserve deployment evidence and demote the profile; production promotion remains human-owned and no agent gains production, signing-key, branch-protection or Trust CI authority. |
+
+M7-M9 repository source is delivered on exact predecessor bindings. That delivery does not establish a factual M8 cohort or activation, real M9 preview/canary evidence, operational deployment, or production authority.
 
 ---
 
@@ -327,18 +337,20 @@ approvals:
 
 ## Work items
 
-- [ ] Define a strict JSON Schema with no ambiguous free-form alternatives for identifiers, risk tiers, evidence references, and approval scopes.
-- [ ] Add `change-spec.yaml` to every durable change package.
-- [ ] Generate an initial spec from the active route without inventing unavailable facts.
-- [ ] Add CLI commands to validate, summarize, and map evidence to criterion IDs.
-- [ ] Require stable IDs for objectives, acceptance criteria, invariants, forbidden outcomes, and production signals.
-- [ ] Link Markdown `brief.md`, `requirements.md`, and `architecture.md` to the typed spec instead of duplicating authority.
-- [ ] Extend local verification receipts with criterion IDs.
-- [ ] Extend Trust CI attestations with the typed spec digest and criterion coverage summary.
-- [ ] Add external holdout checks for missing or malformed specs.
-- [ ] Define exemptions only for explicitly bounded documentation-only micro changes.
-- [ ] Fail standard/high-risk work when a required criterion has no evidence mapping.
-- [ ] Detect stale specs after a change to base/head SHA, contracts, or policy.
+- [x] Define a strict JSON Schema with no ambiguous free-form alternatives for identifiers, risk tiers, evidence references, and approval scopes.
+- [x] Add `change-spec.yaml` to every durable change package.
+- [x] Generate an initial spec from the active route without inventing unavailable facts.
+- [x] Add CLI commands to validate, summarize, and map evidence to criterion IDs.
+- [x] Require stable IDs for objectives, acceptance criteria, invariants, forbidden outcomes, and production signals.
+- [x] Link Markdown `brief.md`, `requirements.md`, and `architecture.md` to the typed spec instead of duplicating authority.
+- [x] Extend local verification receipts with criterion IDs.
+- [x] Extend Trust CI attestation source with the typed spec digest and criterion coverage summary; deployed emission remains a separate rollout.
+- [x] Add independent external holdout source checks for missing or malformed specs; deployed bundle activation remains a separate rollout.
+- [x] Define exemptions only for explicitly bounded documentation-only micro changes.
+- [x] Fail standard/high-risk work when a required criterion has no evidence mapping.
+- [x] Detect stale specs after a change to base/head SHA, contracts, or policy.
+
+The checked work items mean their source and local regression coverage exist. At the M1 checkpoint, exact source HEAD `98649e4e1e6a971fb802bc934eb5680de529e18a` passed full local verification and all four route-selected wave-7 reviews, followed only by evidence/docs/state closure. A later authorized isolated PostgreSQL run passed 10/10 database tests and the full Trust CI suite 200/200 with no skips, validating six Trust CI tables, migrations through version 3, and four bounded `NOLOGIN` roles; that remains historical local evidence, while the complete M1 source was subsequently delivered through PR #22. Deployed worker/reader/emitter/holdout/policy qualification remains separately governed.
 
 ## Exit criteria
 
@@ -364,8 +376,14 @@ The K16 graph may remain as a decorative inventory test. It must not be treated 
 ```text
 architecture/system.yaml
 architecture/rules.yaml
-schemas/architecture.schema.json
+architecture/adoption.json
+architecture/generated/*.mmd
+schemas/architecture-system.schema.json
+schemas/architecture-rules.schema.json
 .grok-stack/adaptive_grok/architecture.py
+.grok-stack/adaptive_grok/architecture_diff.py
+.grok-stack/adaptive_grok/architecture_fitness.py
+.grok-stack/adaptive_grok/architecture_diagrams.py
 scripts/grok_architecture.py
 tests/test_architecture_model.py
 tests/test_architecture_fitness.py
@@ -405,29 +423,31 @@ failure_behavior
 
 ## Mandatory fitness functions
 
-- [ ] forbidden dependency edges;
-- [ ] module/package boundary enforcement;
-- [ ] public API compatibility;
-- [ ] event/schema backward compatibility;
-- [ ] migration expand/contract rules;
-- [ ] tenant-filter and authorization invariants;
-- [ ] no new uncontrolled network clients;
-- [ ] no production imports from test/governance packages;
-- [ ] no implementation change combined with Trust CI/holdout mutation in one factory task;
-- [ ] maximum file/module size and complexity budgets for changed code;
-- [ ] background jobs require idempotency, correlation IDs, observable failure, bounded retries, and dead-letter behavior;
-- [ ] secrets may flow only across declared trusted edges;
-- [ ] runner and factory workspaces may not access production trust material.
+At the M2-A checkpoint, the checked items below meant bounded repository source and local regression coverage existed without claiming independent M2-B enforcement, deployment, merge eligibility, or a live external check. The source was subsequently delivered through PR #22; independent deployed enforcement remains a separate concern.
+
+- [x] forbidden dependency edges;
+- [x] module/package boundary enforcement;
+- [x] public API compatibility;
+- [x] event/schema backward compatibility;
+- [x] migration expand/contract rules;
+- [x] tenant-filter and authorization invariants;
+- [x] no new uncontrolled network clients;
+- [x] no production imports from test/governance packages;
+- [x] no implementation change combined with Trust CI/holdout mutation in one factory task;
+- [x] maximum file/module size and complexity budgets for changed code;
+- [x] background jobs require idempotency, correlation IDs, observable failure, bounded retries, and dead-letter behavior;
+- [x] secrets may flow only across declared trusted edges;
+- [x] runner and factory workspaces may not access production trust material.
 
 ## Work items
 
-- [ ] Create the schema and initial architecture model for the existing local stack and Trust CI.
-- [ ] Generate C4 context, container, deployment, data-flow, and trust-boundary diagrams from the model.
-- [ ] Validate repository paths and declared contracts against the actual tree.
-- [ ] Add architecture-diff output to pull requests.
-- [ ] Add post-diff risk escalation when changed files introduce a new edge, secret, network client, datastore, or trust-domain crossing.
+- [x] Create the schemas and initial architecture model for the existing local stack and Trust CI source boundaries.
+- [x] Generate C4 context, container, deployment, data-flow, and trust-boundary diagrams from the model.
+- [x] Validate repository paths and declared contracts against the actual tree.
+- [x] Add architecture-diff output to the deterministic CLI and local PR preflight evidence.
+- [x] Add post-diff risk escalation when changed files introduce a new edge, secret, network client, datastore, or trust-domain crossing.
 - [ ] Place critical fitness checks in external holdout or server policy, not only in pull-request-controlled tests.
-- [ ] Require explicit architecture approval for new services, databases, queues, frameworks, or external integrations.
+- [x] Emit the explicit local `architecture` approval scope for new services, databases, queues, frameworks, or external integrations; independently trusted approval enforcement remains M2-B.
 
 ## Exit criteria
 
@@ -437,6 +457,8 @@ failure_behavior
 - post-diff risk cannot be lower than pre-diff risk;
 - architecture drift is visible in PR evidence;
 - critical fitness rules are outside implementer control.
+
+M2-A's delivered source proves schema validation, read-only reproducible text projections, a package-aware bounded abstract interpreter for queue provenance, monotonic risk, drift/diff evidence, read-only planning for existing installer targets, and atomic materialization of absent targets. The installer emits dependency advice but never executes it, rejects `--force`, and excludes target-owned architecture authority. PR #22 supplied the release-head gate for repository delivery; prohibited-edge independence and critical rules outside implementer control remain M2-B/deployed exit work.
 
 ---
 
@@ -505,15 +527,17 @@ status
 ## Work items
 
 - [ ] Convert agent-written lessons into `candidate` records rather than immediate standing policy.
-- [ ] Require independent review or explicit human approval before promotion to `active`.
-- [ ] Generate human-readable `decisions.md` and `mistakes.md` views from approved/candidate records, or clearly mark Markdown as a non-authoritative projection.
-- [ ] Add expiration and revalidation for context-sensitive rules.
-- [ ] Add revocation and provenance audit.
+- [x] Require independent review and explicit human approval before promotion to `active`.
+- [x] Generate human-readable `decisions.md` and `mistakes.md` views from approved/candidate records, or clearly mark Markdown as a non-authoritative projection.
+- [x] Add expiration and revalidation for context-sensitive rules.
+- [x] Add revocation and provenance audit.
 - [ ] Create canonical examples for HTTP adapters, repositories, background jobs, webhook handlers, migrations, authorization checks, and error handling.
 - [ ] Require agents to prefer canonical examples or explicitly justify deviation.
-- [ ] Add duplicate-pattern and conflicting-pattern detection.
-- [ ] Introduce a debt ledger that distinguishes intentional debt from accidental slop.
-- [ ] Prevent a factory task from activating its own governance rule.
+- [x] Add duplicate-pattern and conflicting-pattern detection.
+- [x] Introduce a debt ledger that distinguishes intentional debt from accidental slop.
+- [x] Prevent a factory task from activating its own governance rule.
+
+Checked M3 items denote behavior accepted at exact merge `67714a1f1b87effcfabe55d5ca2770d0a68d17c1`; that source is an ancestor of the checked PR #22 head and is delivered in v2.0.13, but this does not denote deployment or active governance. The seven small example source files exist, while the canonical-example registry remains empty until an independent exact-record authority and real human governance approval are available; therefore the two canonical-example work items remain open. M4 consumed the exact aggregate; operational rollout remains separately gated.
 
 ## Exit criteria
 
@@ -547,21 +571,21 @@ factory/
 
 Do not add a root packaging marker.
 
+Current status: M4 is preserved at exact integrated ancestor `67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4` with migrations `001`-`013` and the complete durable control surface, delivered to `main` within PR #22. Persistent runtime rollout remains separately gated.
+
 ## Factory task state machine
 
 ```text
 inbox
 → triaged
-→ waiting_approval
+→ waiting_design_approval
 → queued
 → leased
 → analyzing
 → implementing
 → verifying
 → reviewing
-→ pr_open
-→ ready
-→ merged
+→ ready_for_human
 ```
 
 Exceptional states:
@@ -574,44 +598,65 @@ cancelled
 superseded
 ```
 
+`ready_for_human` is M4's positive terminal state. GitHub/PR states such as `pr_open` and `merged` are deliberately absent: they belong to later delivery milestones, and Trust CI remains a separate authority domain.
+
 ## Minimum durable fields
 
 ```text
+intent_id
+intent_digest
+idempotency_key
 task_id
-repository
+repository_id
 source_type
 source_id
+source_digest
 route_id
 change_id
 spec_digest
 architecture_digest
-base_sha
-head_sha
-branch
-risk_pre
-risk_post
+governance_digest
+exact_base_sha
 policy_digest
-attempt
+acceptance_ids
+task_limits
+state
+generation
+packet_digest
+run_id
+attempt_no
+role
+fence
 lease_owner
 lease_expires_at
-budget
+deadline_at
+budget_reservations
+usage_observations
+event_sequence
+audit_digest
 created_at
 updated_at
 ```
 
+The immutable accepted-intent body also freezes both producer handoffs, including their exact head SHA. M4 does not own or persist a Git branch, pull request, merge state, or Trust CI result.
+
 ## Work items
 
-- [ ] Implement GitHub Issue intake plus authenticated manual API/CLI intake.
-- [ ] Derive an idempotency key that prevents duplicate active tasks for the same source, base SHA, and policy/spec version.
-- [ ] Use PostgreSQL `FOR UPDATE SKIP LOCKED` leases.
-- [ ] Add heartbeat, lease expiry, reclaim, bounded attempts, dead-letter, and reconciliation.
-- [ ] Cancel or supersede stale tasks when issue content, base SHA, or accepted spec changes.
-- [ ] Add global and per-repository kill switches.
-- [ ] Add per-repository concurrency limits.
-- [ ] Add hard limits for active tasks, open factory PRs, runtime, tokens, cost, repair cycles, and PR age.
-- [ ] Separate read-only analysis concurrency from single-writer concurrency.
-- [ ] Persist every state transition and actor in an append-only audit log.
-- [ ] Refuse dispatch when M0 Trust CI authority is unavailable unless the user records a named bootstrap exception.
+- [x] Implement authenticated manual API/CLI intake.
+- [ ] Add a GitHub Issue connector in a later GitHub-capable milestone; M4 only accepts an already projected, authenticated source record.
+- [x] Derive an idempotency key that prevents duplicate active tasks for the same source and frozen authority.
+- [x] Use PostgreSQL `FOR UPDATE SKIP LOCKED` leases.
+- [x] Add heartbeat, lease expiry, reclaim, bounded attempts, dead-letter, and reconciliation.
+- [x] Cancel or supersede stale tasks when source content or frozen authority changes.
+- [x] Add global and per-repository kill switches.
+- [x] Add global/per-repository reader limits and a single-writer limit.
+- [x] Add hard limits for runtime, tokens, cost, output, events, and repair cycles.
+- [ ] Add open-factory-PR and PR-age limits only after a later milestone owns GitHub PR delivery.
+- [x] Separate read-only analysis concurrency from single-writer concurrency.
+- [x] Persist every state transition and actor in an append-only audit log.
+- [x] Refuse dispatch when M0 Trust CI authority is unavailable unless the user records a named bootstrap exception.
+
+Checked M4 items denote locally implemented behavior only. They do not claim final review, external Trust CI acceptance, PR delivery, merge, deployment, or production activation.
 
 ## Exit criteria
 
@@ -627,6 +672,8 @@ updated_at
 ---
 
 # M5 — Isolated Background Execution Plane
+
+Current status: M5 bounded-execution source is delivered in `v2.0.13` from checkpoint `85cd4343143915ce9342634e7fe81886b6394871` with additive migrations `014`-`017`; operational adapters remain ineligible and live-host proof is still required.
 
 ## Objective
 
@@ -701,6 +748,8 @@ output contract
 
 # M6 — Independent Semantic Validation, Meta-Review, and Bounded Repair
 
+Current status: M6 semantic-validation source is delivered in `v2.0.13` from checkpoint `c6d48ffd8594b3baab1a575021452ea5dfa2a98b` with additive migration `018`, independent verdict authority, artifact validation, and bounded repair.
+
 ## Objective
 
 Add backpressure inside the agent loop so incorrect implementations stop early, produce structured findings, and undergo a finite repair process.
@@ -771,6 +820,8 @@ needs_human
 ---
 
 # M7 — Automated Pull-Request Lifecycle and Shadow Mode
+
+Current status: M7 shadow-handoff source is delivered in `v2.0.13` from checkpoint `00e0e4f9a6f50844bf9e0ffc7139d3283dda889f`; evidence is synthetic, no external PR capability exists, and human merge remains mandatory.
 
 ## Objective
 
@@ -858,6 +909,8 @@ security escalation rate
 ---
 
 # M8 — Earned and Revocable Low-Risk Autonomy
+
+Current status: M8 earned-autonomy evaluation is delivered in `v2.0.13` from corrected checkpoint `a937ac8d200a4e143c295fabd482b19bc8cc4286` over actual M7 records. Durable currentness, a factual 30-task cohort and activation remain absent; authority is capped at L2 and deterministic L0 demotion remains mandatory.
 
 ## Objective
 
@@ -952,6 +1005,8 @@ Never initially eligible:
 ---
 
 # M9 — Preview, Staging, Canary, and Recovery-Aware Delivery
+
+Current status: M9 repository source is delivered in `v2.0.13` from code checkpoint `64b10689ce78a0464a494440f3fa981e18789687` over exact M8, with immutable records, deterministic one-step preview/staging/bounded-canary decisions, a sealed in-memory environment and least-authority recovery. Real signed input, an operational environment/provider deployment, exercised recovery and production authority remain absent; production promotion remains human-owned.
 
 ## Objective
 

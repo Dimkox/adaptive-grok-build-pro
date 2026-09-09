@@ -1,0 +1,25 @@
+{
+  "envelope": {
+    "payload": {
+      "approved_scopes": [],
+      "attestation_id": "00000000-0000-0000-0000-000000000811",
+      "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "changed_files": [
+        "docs/pre-m1-postgres.md"
+      ],
+      "command_results": [],
+      "completed_at": "2026-08-01T00:01:00+00:00",
+      "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "job_id": "00000000-0000-0000-0000-000000000812",
+      "key_id": "9f8b392f36e96003",
+      "policy_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "pr_number": 43,
+      "repository": "Dimkox/adaptive-grok-build-pro",
+      "schema_version": 1,
+      "started_at": "2026-08-01T00:00:00+00:00",
+      "status": "passed"
+    },
+    "signature": "CCY56xxS1QXO+v4Lm3IEGtIpoUzmZVFLagle9BEaaV6ApqCDj/PrhmpXgdalBL6erwU4pZNviy3NfGWrPHlICw=="
+  },
+  "public_key_pem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAsZyptmqaTnfNWh6d0gf4ruwWL1clzclqUgwNpvhDj/0=\n-----END PUBLIC KEY-----\n"
+}

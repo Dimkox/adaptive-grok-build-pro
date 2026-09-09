@@ -1,0 +1,47 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"M3 publishes a strict exact-state GovernanceHandoffV1 with no validation findings","evidence":[{"test":"tests/test_governance.py"},{"receipt":"security_review"}]},
+    {"id":"AC-002","statement":"Agent-authored governance cannot become active without independent review and human governance approval","evidence":[{"test":"tests/test_governance.py"},{"receipt":"code_review"}]},
+    {"id":"AC-003","statement":"Final M3 verification and four independent reviews bind one exact product fingerprint","evidence":[{"receipt":"verification"},{"receipt":"code_review"},{"receipt":"test_review"},{"receipt":"security_review"},{"receipt":"release_review"}]},
+    {"id":"AC-004","statement":"M4 through M9 remain separate dependency-ordered milestone changes with human production promotion","evidence":[{"test":"tests/test_structure.py"},{"receipt":"release_review"}]}
+  ],
+  "approvals": {
+    "required_scopes": ["architecture","security","release"]
+  },
+  "change_id": "20260826-m3-m9-production-delivery-continuation-355689",
+  "contracts": {
+    "events": [],
+    "json_schema": ["schemas/governance-rule.schema.json","schemas/debt-entry.schema.json","schemas/canonical-example.schema.json","schemas/governance-handoff-v1.schema.json"],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"M3 creates a factory runtime provider invocation systemd deployment credential or external write capability","evidence":[{"test":"tests/test_structure.py"},{"receipt":"security_review"}]},
+    {"id":"FORBID-002","statement":"An agent self-activates governance or treats notes prompts and repository content as authority","evidence":[{"test":"tests/test_governance.py"}]},
+    {"id":"FORBID-003","statement":"M9 grants agents unrestricted merge signing deployment or production promotion authority","evidence":[{"receipt":"security_review"},{"receipt":"release_review"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Milestones complete in dependency order M3 then M4 then M5 then M6 then M7 then M8 then M9","evidence":[{"test":"tests/test_structure.py"},{"receipt":"release_review"}]},
+    {"id":"INV-002","statement":"Factory state policy and output never substitute for external Trust CI exact-SHA merge authority","evidence":[{"test":"tests/test_change_receipts.py"},{"receipt":"security_review"}]},
+    {"id":"INV-003","statement":"At most twenty global readers ten readers per repository and one application writer are enforced by later durable control-plane state","evidence":[{"receipt":"code_review"}]},
+    {"id":"INV-004","statement":"Raw chain-of-thought secrets and unrestricted provider streams never cross the durable boundary","evidence":[{"receipt":"security_review"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Complete the current M3 governance milestone and preserve independently gated delivery through production-safe M9",
+    "success_metric": "m3_exact_fingerprint_gate_and_m9_dependency_map",
+    "target": "m3_all_checks_green_and_zero_milestone_boundary_bypasses"
+  },
+  "observability": [{"id":"SIG-001","metric":"m3_governance_validation_status","proves":["OBJ-001"]},{"id":"SIG-002","metric":"m3_exact_fingerprint_review_count","proves":["OBJ-001"]}],
+  "risk": {
+    "domains": [
+      "ai",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

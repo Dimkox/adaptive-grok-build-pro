@@ -1,0 +1,103 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect"
+  ],
+  "base_commit": "67714a1f1b87effcfabe55d5ca2770d0a68d17c1",
+  "base_fingerprint": "17f8ca8d94a118d02192e5fa0bd9cafc6e219354e390f1d640511d6e6a4fcaa2",
+  "complexity": "high-risk",
+  "created_at": "2026-08-31T20:21:57+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "data",
+    "api",
+    "integration",
+    "security"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval"
+  ],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data",
+    "integration"
+  ],
+  "rationale": [
+    "high-risk intent/domain: feature",
+    "intent=feature",
+    "domains=data,api,integration,security",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=6/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "data_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "b7f288f1e81e",
+  "schema_version": 1,
+  "session_id": "m4-accepted-m3-20260831",
+  "status": "routed",
+  "task": "Implement a new M4 application feature on exact base 67714a1f1b87effcfabe55d5ca2770d0a68d17c1: typed immutable task, run, and attempt records; PostgreSQL migrations and durable state; idempotent intake; lease fencing and capacity; bounded retry, dead-letter and budgets; kill switches, audit, reconciliation; authenticated local API and CLI; PostgreSQL integration tests. The feature remains local and has no network side effects.",
+  "task_domains": [
+    "data",
+    "api",
+    "integration",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "data-change",
+    "enterprise-integration",
+    "security-sensitive-change"
+  ],
+  "write_agent": "integration_implementer"
+}

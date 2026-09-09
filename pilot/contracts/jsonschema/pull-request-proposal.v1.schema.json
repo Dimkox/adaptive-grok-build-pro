@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.local/pilot/pull-request-proposal.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "job_id", "profile_digest", "validation_digest",
+    "repository_id", "base_ref", "base_sha", "head_ref", "head_sha",
+    "head_tree", "push_resource", "push_grant_id", "push_grant_digest",
+    "push_outcome", "proposal_resource", "proposal_grant_id",
+    "proposal_grant_digest", "pr_number", "pr_node_id", "pr_url", "draft",
+    "maintainer_can_modify", "status", "merge_eligible", "created_at",
+    "proposal_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "job_id": {"$ref": "#/$defs/id"},
+    "profile_digest": {"$ref": "#/$defs/digest"},
+    "validation_digest": {"$ref": "#/$defs/digest"},
+    "repository_id": {"const": "github.com/Dimkox/ai-dark-factory-landing"},
+    "base_ref": {"const": "main"},
+    "base_sha": {"$ref": "#/$defs/sha"},
+    "head_ref": {"type": "string", "pattern": "^adaptive-pilot/issue-[A-Za-z0-9._/-]{1,160}$", "maxLength": 200},
+    "head_sha": {"$ref": "#/$defs/sha"},
+    "head_tree": {"$ref": "#/$defs/sha"},
+    "push_resource": {"type": "string", "pattern": "^github-operation/v1/git-push-branch/[0-9a-f]{64}$"},
+    "push_grant_id": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+    "push_grant_digest": {"$ref": "#/$defs/digest"},
+    "push_outcome": {"enum": ["already_exact", "created_exact", "reconciled_exact"]},
+    "proposal_resource": {"type": "string", "pattern": "^github-operation/v1/pull-request-create/[0-9a-f]{64}$"},
+    "proposal_grant_id": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+    "proposal_grant_digest": {"$ref": "#/$defs/digest"},
+    "pr_number": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+    "pr_node_id": {"$ref": "#/$defs/id"},
+    "pr_url": {"type": "string", "pattern": "^https://github[.]com/Dimkox/ai-dark-factory-landing/pull/[1-9][0-9]*$", "maxLength": 256},
+    "draft": {"const": true},
+    "maintainer_can_modify": {"const": false},
+    "status": {"enum": ["proposal_created", "proposal_created_merge_gate_unavailable"]},
+    "merge_eligible": {"type": "boolean"},
+    "created_at": {"$ref": "#/$defs/time"},
+    "proposal_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,127}$"},
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "time": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,6})?Z$"}
+  }
+}

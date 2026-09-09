@@ -1,0 +1,13 @@
+# Tasks — M5 bounded local execution control plane on exact M4 67dc4dd
+
+Each implementation task begins with a focused failing/characterization test, makes the smallest additive change, and ends with the named GREEN command. Exact M4 remains the merge skeleton for every overlapping file.
+
+- [x] **Gate 0 — finite contract and design.** Synthesize the seven route-selected analyses into this package, bind delivery-comparison base `78ad2f6` separately from exact predecessor `67dc4dd`, validate the typed spec/state, and record explicit repository-local approval.
+- [x] **Task 1 — immutable contracts and offline boundary.** Add the four execution schemas, `execution_contracts.py`, `protocol.py`, `adapters/`, fixture streams, `brokers.py`, and `workspace.py`; prove them with `test_execution_contracts`, `test_protocol`, `test_adapters`, `test_brokers`, and `test_workspace`.
+- [x] **Task 2 — forward data topology.** Append exact migrations `014`-`017`, retain `001`-`013`, and add disjoint runtime/attestor capability validation; prove order, checksums, guards, roles, and failure atomicity with focused migration tests.
+- [x] **Task 3 — additive execution lifecycle.** Add only M5 model/store/service seams to current M4 for trusted selection, start, stage, proposal, attestation, snapshot, finalization, metrics, and cancellation/supersession projection; prove identity, tenancy, fencing, replay, accounting, and one terminal outcome.
+- [x] **Task 4 — closed API and startup gate.** Add execution OpenAPI v1/v2 and twelve capability-gated routes while preserving all seventeen M4 control operations and current error/correlation behavior; prove disabled and complete-composition startup.
+- [x] **Task 5 — factual recovery.** Add bounded recovery discovery, claim, orphan/cancel closure, exact-handle cleanup, and two-restart proof; demonstrate higher fences, concurrency safety, capacity release, and no synthetic evidence.
+- [x] **Task 6 — architecture and current-state integration.** Enroll declared contracts and owned edges without replacing current architecture logic; update only factual factory/package state documents and assertions after the product checkpoint exists.
+- [ ] **Task 7 — frozen local candidate.** The finite focused source checks, retained M4 regression slices, previously failing PostgreSQL methods, and actual two-restart probe are green. Freeze all remaining tracked finalization, then run one exact-head PR verifier and one parallel route-selected review wave.
+- [ ] **Task 8 — evidence closure.** Record all required receipts against one fingerprint and transition to `ready` only with zero gaps. Packaging and external delivery remain later separately authorized work.

@@ -53,6 +53,8 @@
   ],
   "scripts": [
     "grok_approve.py",
+    "grok_architecture.py",
+    "grok_governance.py",
     "grok_change.py",
     "grok_deploy.py",
     "grok_doctor.py",

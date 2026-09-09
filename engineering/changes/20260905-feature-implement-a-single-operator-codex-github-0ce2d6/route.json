@@ -1,0 +1,85 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "6f3b6ed2853b7a6f78804888cffca578d4dc9448",
+  "base_fingerprint": "a427d69e93d76245bc614fb979e9b14fd46618b88b7158e2322c4c142644a9b1",
+  "complexity": "standard",
+  "created_at": "2026-09-05T14:45:57+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "integration",
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "integration"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=feature",
+    "domains=integration,api",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "0ce2d62a018e",
+  "schema_version": 1,
+  "session_id": "live-design-partner-pilot-20260905",
+  "status": "routed",
+  "task": "Feature: implement a single-operator Codex GitHub issue-to-change-proposal pilot for one allowlisted external system repository. It snapshots one issue, creates a private no-local clone at an exact base SHA, runs pinned Codex once under bounded limits, seals the diff and candidate commit, runs one configured unittest command plus independent semantic checks, persists restart-safe evidence, and gates non-force branch upload and GitHub proposal creation on exact delegated grants. Human acceptance stays separate; automatic reruns and M8 or M9 activation stay disabled.",
+  "task_domains": [
+    "integration",
+    "api"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "enterprise-integration"
+  ],
+  "write_agent": "integration_implementer"
+}

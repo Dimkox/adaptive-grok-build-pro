@@ -1,0 +1,85 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "ai_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "ai_architect",
+    "integration_architect"
+  ],
+  "base_commit": "33206fa06ae4b5bfb390cb68bbf233800d2902ab",
+  "base_fingerprint": "e211545f7d4d134e318de1c5522082eba880d5fe192087f7fd9bb648ee9d19ea",
+  "complexity": "standard",
+  "created_at": "2026-09-04T18:28:38+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "ai",
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "ai"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=ai,api",
+    "repository=generic",
+    "write-owner=ai_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "eb3f80383d44",
+  "schema_version": 1,
+  "session_id": "l5-current-source-20260904",
+  "status": "routed",
+  "task": "Repair the delivered L5 exact source binding and deterministic artifact inventory for the current landing repository. Update the pinned source revision and protected style asset handling, keep generator write scope unchanged, update the versioned API contract, and add regression coverage. Preserve previously published artifacts and perform no provider calls or target mutation.",
+  "task_domains": [
+    "ai",
+    "api"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change",
+    "ai-rag-change"
+  ],
+  "write_agent": "ai_implementer"
+}

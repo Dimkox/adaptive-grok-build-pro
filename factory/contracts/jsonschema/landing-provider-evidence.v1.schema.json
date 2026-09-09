@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:landing-provider-evidence:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "input_digest", "profile_digest", "provider_id", "adapter_id", "adapter_version", "model_id", "prompt_template_digest", "tool_policy_digest", "output_schema_digest", "decoder_digest", "request_digest", "response_digest", "usage_input_units", "usage_output_units", "started_at", "completed_at", "disposition", "provider_evidence_digest"],
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,127}$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "input_digest": {"$ref": "#/$defs/digest"},
+    "profile_digest": {"$ref": "#/$defs/digest"},
+    "provider_id": {"$ref": "#/$defs/id"},
+    "adapter_id": {"$ref": "#/$defs/id"},
+    "adapter_version": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]+){1,2}([-+][A-Za-z0-9.-]+)?$"},
+    "model_id": {"$ref": "#/$defs/id"},
+    "prompt_template_digest": {"$ref": "#/$defs/digest"},
+    "tool_policy_digest": {"$ref": "#/$defs/digest"},
+    "output_schema_digest": {"$ref": "#/$defs/digest"},
+    "decoder_digest": {"$ref": "#/$defs/digest"},
+    "request_digest": {"$ref": "#/$defs/digest"},
+    "response_digest": {"$ref": "#/$defs/digest"},
+    "usage_input_units": {"type": "integer", "minimum": 0, "maximum": 10000000},
+    "usage_output_units": {"type": "integer", "minimum": 0, "maximum": 10000000},
+    "started_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "disposition": {"enum": ["fixture_ready", "provider_unavailable", "rejected"]},
+    "provider_evidence_digest": {"$ref": "#/$defs/digest"}
+  }
+}

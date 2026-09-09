@@ -1,0 +1,105 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "ai_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer",
+    "ai_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "ai_architect",
+    "integration_architect"
+  ],
+  "base_commit": "78ad2f679d38dc3244e716c586332417e610089c",
+  "base_fingerprint": "6d50f0dc484f75b2a0275dadb429d03b02db0b699dbc41633b14de8d9ce5d840",
+  "complexity": "high-risk",
+  "created_at": "2026-09-04T01:25:18+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "data",
+    "security",
+    "ai",
+    "api"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval"
+  ],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data",
+    "ai"
+  ],
+  "rationale": [
+    "high-risk signal: tenant isolation",
+    "intent=feature",
+    "domains=data,security,ai,api",
+    "repository=generic",
+    "write-owner=ai_implementer",
+    "analysis-wave=7/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "data_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "6c578a9933b3",
+  "schema_version": 1,
+  "session_id": "m5-bounded-local-20260904",
+  "status": "routed",
+  "task": "Implement the M5 bounded local AI execution control plane on exact M4 head 67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4. Preserve all M4 control behavior; add PostgreSQL database migrations 014-017, immutable execution packets, provider-neutral API contracts, fenced durable recovery, offline conformance adapters, authorization, and tenant isolation. Repository-local implementation only; no live provider calls or operational actions. Defer non-critical hardening extensions outside the defined milestone acceptance boundary.",
+  "task_domains": [
+    "data",
+    "security",
+    "ai",
+    "api"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "data-change",
+    "ai-rag-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "ai_implementer"
+}

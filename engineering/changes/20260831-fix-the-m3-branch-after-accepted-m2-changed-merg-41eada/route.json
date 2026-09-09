@@ -1,0 +1,86 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "frontend_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "022411b05924618cfde0cb97b8c8aff4955e6013",
+  "base_fingerprint": "2eae82a8493df43d6de4d9368cb1d46fae87c8b937747530e47e3bb27e0d3686",
+  "complexity": "standard",
+  "created_at": "2026-08-31T18:44:33+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "frontend",
+    "integration",
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "frontend",
+    "contracts",
+    "integration"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=frontend,integration,api",
+    "repository=generic",
+    "write-owner=frontend_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "41eadaeae674",
+  "schema_version": 1,
+  "session_id": "m3-restack-20260831",
+  "status": "routed",
+  "task": "Fix the M3 branch after accepted M2 changed: merge exact M2 head 022411b05924618cfde0cb97b8c8aff4955e6013 into M3, resolve integration conflicts without changing M3 requirements, add or update regression tests if needed, run verification and reviews, and prepare PR #11 for fresh exact-SHA Trust CI; no external writes without exact delegated grants.",
+  "task_domains": [
+    "frontend",
+    "integration"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change",
+    "enterprise-integration",
+    "frontend-change"
+  ],
+  "write_agent": "frontend_implementer"
+}

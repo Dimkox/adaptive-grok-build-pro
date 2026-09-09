@@ -1,0 +1,71 @@
+{
+  "change_id": "20260901-codex-seo-landing-side-project-23b06c",
+  "created_at": "2026-09-01T15:20:32+00:00",
+  "history": [
+    {
+      "at": "2026-09-01T15:20:32+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-01T16:59:26+00:00",
+      "from": "draft",
+      "reason": "Approved design fixes scope to the Codex skill, static noindex showcase, focused tests, and stacked delivery base",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-01T16:59:26+00:00",
+      "from": "scoped",
+      "reason": "User approved embedding the isolated side project and explicitly approved the generated HTML before validation",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-01T16:59:26+00:00",
+      "from": "approved",
+      "reason": "Protected skill batch and unprotected showcase implementation began under the route-selected sole write owner",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-01T16:59:26+00:00",
+      "from": "implementing",
+      "reason": "Implementation and review repairs are complete; focused, W3C, browser, Lighthouse, and full unittest evidence is current",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-01T17:00:59+00:00",
+      "from": "verifying",
+      "reason": "Fresh base/frontend verification passed after review repairs; dispatching route-selected independent reviews.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-01T17:08:41+00:00",
+      "from": "reviewing",
+      "reason": "Independent re-review found two focused regression-guard false negatives; returning to the sole write owner for minimal test repair.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-01T17:11:44+00:00",
+      "from": "implementing",
+      "reason": "Focused mixed-clause and external-link regressions repaired; 9 focused and 208 full tests pass.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-01T17:11:44+00:00",
+      "from": "verifying",
+      "reason": "Dispatching final independent reviews after the minimal Phase C repair.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-01T17:17:45+00:00",
+      "from": "reviewing",
+      "reason": "Route-selected code and test reviews pass with no Critical or Important findings; final evidence is coherent.",
+      "to": "ready"
+    }
+  ],
+  "route_id": "23b06c1b62a3",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Codex SEO landing side project",
+  "updated_at": "2026-09-01T17:17:45+00:00"
+}

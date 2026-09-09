@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:m8:m7-autonomy-bridge:v1",
+  "title": "Adaptive Factory M8 bridge to canonical M7 contracts",
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "provider_mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "cohort_key_digest",
+        "validator_digest",
+        "provider_digest"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "cohort_key_digest": {"$ref": "#/$defs/digest"},
+        "validator_digest": {"$ref": "#/$defs/digest"},
+        "provider_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "handoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "provider_mapping",
+        "bundles",
+        "cohort"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "provider_mapping": {"$ref": "#/$defs/provider_mapping"},
+        "bundles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {"$ref": "urn:adaptive-factory:m7:ready-for-pr-bundle:v1"}
+        },
+        "cohort": {"$ref": "urn:adaptive-factory:m7:shadow-cohort:v1"}
+      }
+    }
+  },
+  "$ref": "#/$defs/handoff"
+}

@@ -1,0 +1,77 @@
+{
+  "change_id": "20260905-feature-implement-a-single-operator-codex-github-0ce2d6",
+  "created_at": "2026-09-05T14:46:26+00:00",
+  "history": [
+    {
+      "at": "2026-09-05T14:46:26+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-05T15:08:59+00:00",
+      "from": "draft",
+      "reason": "Five-output scope, exact target epoch, red architecture boundary and finite test ceiling frozen from route-selected analysis.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-05T15:08:59+00:00",
+      "from": "scoped",
+      "reason": "User explicitly directed autonomous implementation through a real design-partner MVP; exact external effects remain separately grant-gated.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-05T15:09:24+00:00",
+      "from": "approved",
+      "reason": "Single integration_implementer begins the five finite TDD handoffs; no external effect is authorized in implementation.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-05T17:48:59+00:00",
+      "from": "implementing",
+      "reason": "Exact artifact-child verifier completed once and exposed three bounded repository-gate defects; all other suites passed.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-05T17:48:59+00:00",
+      "from": "verifying",
+      "reason": "Only the 18 failed root methods plus architecture and focused secret gates passed after the single-owner repair.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-05T17:48:59+00:00",
+      "from": "reviewing",
+      "reason": "Source repair is frozen for one replacement artifact build and one final exact-head verifier/review wave; no further tracked finalization is permitted.",
+      "to": "ready"
+    },
+    {
+      "at": "2026-09-05T18:09:12+00:00",
+      "from": "ready",
+      "reason": "Final exact-head gate found one remaining architecture fitness classification defect; all non-architecture checks passed and will not be independently rerun.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-05T18:15:42+00:00",
+      "from": "implementing",
+      "reason": "The sole remaining architecture fitness gate now passes across every category; seven affected regression methods pass.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-05T18:15:42+00:00",
+      "from": "verifying",
+      "reason": "Architecture validate, drift, diagram and exact route fitness are clean after the bounded ownership/classifier/budget repair.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-05T18:15:42+00:00",
+      "from": "reviewing",
+      "reason": "Final source is frozen for replacement artifact packaging and fingerprint-bound evidence; no further tracked writes are planned.",
+      "to": "ready"
+    }
+  ],
+  "route_id": "0ce2d62a018e",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Feature: implement a single-operator Codex GitHub issue-to-change-proposal pilot for one allowlisted external system repository. It snapshots one issue, creates a private no-local clone at an exact base SHA, runs pinned Codex once under bounded limits, seals the diff and candidate commit, runs one configured unittest command plus independent semantic checks, persists restart-safe evidence, and gates non-force branch upload and GitHub proposal creation on exact delegated grants. Human acceptance stays separate; automatic reruns and M8 or M9 activation stay disabled.",
+  "updated_at": "2026-09-05T18:15:42+00:00"
+}

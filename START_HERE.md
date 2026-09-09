@@ -4,16 +4,21 @@ This file is the zero-context entrypoint for any new agent, human, Codex/Grok/Cl
 
 ## Current project state
 
-- M0 (Live Trust Authority) is complete and merged into `main`.
+- Product identity `2.0.15` is an unreleased local pilot candidate whose final PR shape is source parent `R` plus a ZIP+sidecar-only artifact child `A`; the pair remains unpublished. The latest published repository release remains tag-bound `v2.0.14`, whose ZIP SHA-256 is `b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264`, and published `v2.0.14`/`v2.0.13` artifacts are immutable.
+- Current unreleased work is route `0ce2d62a018e` on `feature/design-partner-pilot`, exact predecessor `6f3b6ed2853b7a6f78804888cffca578d4dc9448`: the separate `pilot/` component binds issue #1 and any candidate to `Dimkox/ai-dark-factory-landing@699010380f4f90a0193a9c22090c35e6aded7d2c`. Its built-in CLI is default-unavailable and exposes only `prepare`, `publish-branch`, `publish-proposal` and read-only `status`; a closed pinned config selects one Codex app-server `gpt-6-astra` turn through opaque host ChatGPT auth, while deterministic private workspace recovery and SQLite intents make ambiguous external effects observation-only. Focused fake evidence covers the direct composition; exact artifact-child verification/reviews and the separately authorized real model/branch/PR attempt remain outside this source preparation.
+- M0 (Live Trust Authority) is delivered to `main`.
 - M0 runtime repair and policy-loop fixes are also merged into `main` through PR #7 and PR #6.
-- The independent App-owned merge gate is live as `adaptive-trust-ci/verified@6737355947c2` and protected `main` binds that check to GitHub App ID `4694114`.
-- The current development milestone is M1: Typed Intent, Acceptance Criteria, and Evidence Traceability.
-- M1 is tracked in draft PR #8 on branch `milestone/m1-typed-intent-evidence`.
-- M1 design: `docs/superpowers/specs/2026-08-26-m1-typed-intent-evidence-design.md` on the PR #8 branch.
-- M1 implementation plan: `docs/superpowers/plans/2026-08-26-m1-typed-intent-evidence.md` on the PR #8 branch.
-- M1 implementation has not started yet. The next implementation action is Task 1 in that plan: strict typed schema and zero-dependency validator, using TDD.
+- At the `2026-09-04T16:58:48Z` publication snapshot, protected `origin/main` and tag `v2.0.14` pointed to `1751b5855e46782b9a1bfceb6e1ab0102cba03b0`; this is not a perpetual current-ref assertion. The historical PR #22 / `v2.0.13` merge remains `8599d45f4f28285381b05a53feb3059de92eb2a8`. Protected merges require `adaptive-trust-ci/verified@06ecf1c875bc` from GitHub App ID `4694114` on the exact up-to-date pull-request head.
+- M1-M3 are implemented, reviewed and delivered to `main` through PR #22. Their earlier PR #4/#8 partial delivery and PR #10/#11 predecessor-stack acceptance remain historical evidence; exact M1/M2 head `022411b05924618cfde0cb97b8c8aff4955e6013`, M3 head `1e73ff9b91d9b711cafccad7ccccb1a992d5e84d` and aggregate `67714a1f1b87effcfabe55d5ca2770d0a68d17c1` are ancestors of the checked release head.
+- M4-M9 are likewise implemented and delivered to `main` as repository product source through PR #22, preserving migrations `001`-`018`. Execution and delivery remain disabled by default, and no operational provider, persistent deployment, network capability, systemd activation, or production authority is present.
+- PRs #12/#13 remain old-epoch `ACTION_REQUIRED`; their unique lazy CLI import/tests and repository-scoped Trust CI profiles are absent from `main`. PR #15's current-epoch Trust CI conclusion is `FAILURE` and GitGuardian is `SUCCESS`; the cause was not inspected or inferred. Stale PR #21 was closed as superseded at `2026-09-05T12:07:24Z` after PR #22/#24 delivery; its Trust CI and GitGuardian `FAILURE` conclusions remain preserved historical facts.
+- PR #22 checked head `b5eba759c309a92f92f4d4003d025795c7f8a1f9` passed `adaptive-trust-ci/verified@06ecf1c875bc` as check run `100955508827` with attestation `74f1bbb2-3098-4d35-a42f-d49351d81c4a`, then merged at `2026-09-04T08:31:49Z` as main commit `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`.
+- PR #19 delivered the optional SEO side project to `main` as `8ab4e57038dec2e07f01aaa0b207813a387358f4`; it is non-milestone work and is no longer an open continuation item.
+- Route `9f67efd2575c` was delivered as additive non-milestone repository work through PR #24: checked head `66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57` merged at `2026-09-04T16:56:37Z` as `1751b5855e46782b9a1bfceb6e1ab0102cba03b0`, tree `618df086920c92179aa0e22a8c8d4ad30ebd9230`, and release `v2.0.14` was published at `2026-09-04T16:58:48Z`. No repository-release action remains for that published tree; the current repair is separately tracked, the provider/publisher defaults are still unavailable, and operational provider, hosting, live/indexed-site, M8 cohort/activation and real M9 qualification require separate evidence and authority.
 
 Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
+
+Current pilot continuation: the original `2405b013` artifact received failing reviews; CSP, test-discovery and command read-isolation repairs are tracked in the active package's bounded review-repair handoff. Primary `/root` is the user-approved sole fallback writer after the agent-thread ceiling. Preserve original full-verifier/targeted-recovery evidence, verify only affected components on the rebuilt exact artifact child, and reuse the three independent reviewers. The first live attempt is separately blocked by landing `main` advancing to `80d6215`; no model turn has been consumed and the old profile must not overwrite newer analytics.
 
 ## Bootstrap from a clean clone
 
@@ -26,7 +31,7 @@ Machine-readable handoff: [`PROJECT_STATE.json`](PROJECT_STATE.json).
    - `DARK_FACTORY_ROADMAP.md`
    - `README.md`
 2. Run `git fetch --all --prune` before reasoning about active branches or pull requests.
-3. If continuing M1, inspect PR #8 and branch `milestone/m1-typed-intent-evidence`, then read the M1 design and plan before changing code.
+3. Inspect `PROJECT_STATE.json`, its `current_unreleased_change`, the active design-partner pilot package, published `v2.0.14`, prior `v2.0.13` history, and the recorded open-work inventory before continuing. Treat M4-M9 predecessor branches as historical integration evidence; their `v2.0.13` protected-main delivery remains PR #22 merge `8599d45f4f28285381b05a53feb3059de92eb2a8`.
 4. If starting a different software-development task, create/resolve the local route first. `.grok-stack/runtime/active-route.json` is runtime state and may legitimately be absent in a fresh clone; do not fabricate it.
 5. Follow `AGENTS.md`: one write owner, route-selected analysis/review agents, local verification as evidence, pull-request-only delivery, and external Trust CI as merge authority.
 6. Never add GitHub Actions.
@@ -52,20 +57,18 @@ The source and runbooks for the independent merge authority are under `trust-ci/
 
 Before changing Trust CI behavior, read the current deployed-policy/holdout constraints in `AGENTS.md` and the activation/rollout runbooks. Repository code cannot itself alter deployed trust material.
 
-## Current M1 handoff
+## Current milestone delivery handoff
 
-PR #8 contains design and plan only. Treat them as the current approved implementation contract. Do not re-design M1 from chat memory and do not skip directly to M2.
+Use one repository-level delivery ledger and one consolidated continuation route. Existing branches are evidence and integration inputs; their names, local `ready` files and GitHub `MERGED` labels do not prove protected-main delivery.
 
-Implementation order is the six tasks in the M1 plan:
-
-1. strict typed schema and zero-dependency validator;
-2. route-driven spec generation and Markdown authority links;
-3. CLI, verification integration, criterion-bound receipts and staleness;
-4. independent holdout enforcement;
-5. Trust CI attestation spec digest and criterion coverage;
-6. durable M1 package, roadmap evidence, full verification, exact-SHA Trust CI, then merge.
-
-If the PR head moves, use the branch/PR as source of truth rather than copying an old SHA from documentation.
+1. Treat the exact M4-M9 lineage named above as repository product delivered by PR #22, not as operational activation or production deployment.
+2. Treat the corrected M8 checkpoint `a937ac8d200a4e143c295fabd482b19bc8cc4286` as the exact M9 predecessor; it restores the frozen M4 control contract and separates the additive M6 semantic API without changing migrations `001`-`018`.
+3. Keep each published ZIP bound to its release tag: `v2.0.14` / `b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264` and historical `v2.0.13` / `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`; documentation-only successors do not rebuild either artifact.
+4. Preserve PR #22's exact checked-head/App-check/merge evidence as historical delivery authority; local receipts remain preflight evidence only.
+5. Do not describe M8 as active until the exact-profile factual cohort and activation record exist, and do not describe M9 as operational until signed inputs, an environment, exercised recovery and human production authority exist.
+6. Treat L5 as published repository capability plus a distinct unreleased Stage 3/5 single-operator local runtime, not an operational site. The exact landing source clone stays read-only, provider and publisher defaults stay unavailable, and live model use, cPanel, hosting, production and other external effects require separate evidence and authority.
+7. Retain open PRs #12, #13 and #15 plus the unresolved PR #14/local work identified in `PROJECT_STATE.json`; extract unique work through clean successors without claiming those successors exist. PR #17 is a closed exact duplicate of now-superseded PR #21, and PR #19 is already delivered with its predecessor staging path archival.
+8. After every protected-main merge, fetch remote refs, update the one state model, and obtain fresh exact-head verification/approvals for every branch made stale by the base change. `origin/milestone/a-plus-autopilot` remains design input, not the current M8 source branch.
 
 ## No chat dependency
 

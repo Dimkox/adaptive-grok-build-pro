@@ -11,11 +11,64 @@
 
 2. Auth: run `grok` once, sign in with SuperGrok account.
 
-3. Install this stack into your repo:
+3. Plan an update for an existing repository without changing it:
    ```bash
-   python3 scripts/install_into.py /path/to/repo
-   # installs the stack and missing required tools (use --no-deps to copy only)
+   python3 scripts/install_into.py --plan /path/to/your/repo
    ```
+
+   Existing repositories are read-only installer inputs. The plan is a deterministic managed-file manifest plus dependency advice; it performs no writes and executes no dependency command. The historical positional command and `--dry-run` are planning aliases. `--force` is rejected; update an existing consumer by applying the plan through a normal reviewed source-change commit.
+
+   To create a complete installation, choose an absent path:
+
+   ```bash
+   python3 scripts/install_into.py --materialize-new /path/to/new/repo
+   ```
+
+   This materialization mode is supported only on Linux with descriptor-relative `O_NOFOLLOW`/`O_DIRECTORY` operations and both libc and the target filesystem supporting `renameat2(RENAME_NOREPLACE)`. If any required capability is unavailable or the filesystem rejects it, materialization exits nonzero and fails closed without publishing the target; there is no fallback to replace, merge, or in-place copying. Use `--plan` plus a normal reviewed source-change for an existing consumer or for a platform/filesystem without those capabilities.
+
+   New-target materialization uses an owned sibling stage and fail-closed no-replace publication. It refuses an existing, symlink, or special-file target. If the original identity of a newly created staging entry cannot be proven after a constructor failure, the installer preserves that unresolved entry, reports `manual cleanup required: installer ownership is unresolved`, and never deletes a same-named replacement.
+
+   The payload delivers the architecture CLI, parser/evaluators, strict schemas, and non-authoritative examples. Every plan and payload excludes the target-owned `architecture/system.yaml`, `architecture/rules.yaml`, and `architecture/adoption.json`. It also excludes `trust-ci/` and `.github/workflows/`.
+
+### Optional manual executable-architecture adoption
+
+An installed repository without `architecture/adoption.json` remains backward-compatible and reports architecture as `not_configured`. Adoption is an explicit repository-owner decision: copy the examples, replace every example identity/path/policy with reviewed target truth, validate them, render/review the projections, and create the marker last. Do not use the README K16 graph or generated diagrams as model input.
+
+```bash
+cd /path/to/repo
+mkdir -p architecture
+cp .grok-stack/templates/architecture/system.example.yaml architecture/system.yaml
+cp .grok-stack/templates/architecture/rules.example.yaml architecture/rules.yaml
+
+# Review and replace ARCH-REPLACE-ME, owners, paths, contracts, trust/data/secret
+# declarations, and every applicable policy before continuing.
+python3 scripts/grok_architecture.py validate --json
+python3 scripts/grok_architecture.py summary --json
+python3 scripts/grok_architecture.py drift --json
+# This prints all five bounded artifacts and does not write repository files.
+python3 scripts/grok_architecture.py diagram --json
+# Apply approved projection text through normal reviewed source edits, then compare.
+python3 scripts/grok_architecture.py diagram --check --json
+```
+
+After review succeeds, create `architecture/adoption.json` manually with exactly the same `architecture_id` as both model documents. For the unmodified examples, the strict canonical marker bytes are exactly:
+
+```json
+{
+  "architecture_id": "ARCH-REPLACE-ME",
+  "schema_version": 1,
+  "state": "adopted"
+}
+```
+
+The marker requires sorted keys, two-space JSON, and exactly one final newline. Commit the marker with both reviewed target documents; marker present plus either missing/invalid document fails closed. The diagram command is read-only: checked-in projection changes are ordinary reviewed source edits. The marker, diagrams, Markdown, and receipts do not replace the system/rules authority, and local checks do not replace the App-owned exact-SHA Trust CI check.
+
+Exact-state evidence uses literal 40-character commit SHAs. Use `--worktree` only for diagnostics; it never claims an exact head SHA:
+
+```bash
+python3 scripts/grok_architecture.py diff --base <40-char-sha> --head <40-char-sha> --json
+python3 scripts/grok_architecture.py fitness --base <40-char-sha> --head <40-char-sha> --pre-risk red --json
+```
 
 4. Work:
    ```bash
@@ -36,7 +89,7 @@
 
 ## Scope split
 
-`install_into.py` copies the local Grok stack (skills, agents, hooks, scripts, `AGENTS.md`). It does **not** copy `trust-ci/`, this repository’s `README.md`, `QUICKSTART.md`, or `VERSION`. Consumer laptops do not stand up PostgreSQL.
+`install_into.py --plan` inspects an existing target read-only. On Linux with the descriptor and `renameat2(RENAME_NOREPLACE)` capabilities stated above, `install_into.py --materialize-new` publishes the local Grok stack (skills, agents, hooks, scripts, `AGENTS.md`) only at an absent target. It does **not** copy `trust-ci/`, `.github/workflows/`, target-owned architecture authority, this repository’s `README.md`, `QUICKSTART.md`, or `VERSION`. Consumer laptops do not stand up PostgreSQL.
 
 Local `python3 scripts/grok_verify.py --mode pr` is preflight evidence. It is **not merge authority**. Merge trust, when deployed, is the GitHub App-owned check `adaptive-trust-ci/verified@<policy-sha12>` on the exact pull-request SHA.
 

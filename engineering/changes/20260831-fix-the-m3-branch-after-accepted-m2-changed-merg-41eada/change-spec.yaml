@@ -1,0 +1,46 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"The final two-parent M3 integration head contains exact accepted M2 022411b05924618cfde0cb97b8c8aff4955e6013 without weakening M3 governance requirements","evidence":[{"test":"tests/test_architecture_fitness.py"},{"test":"tests/test_governance_fitness.py"},{"receipt":"code_review"}]},
+    {"id":"AC-002","statement":"M2 read-only packaging source invariance exact-base receipt behavior and fail-closed zombie-only cleanup survive the restack","evidence":[{"test":"tests/test_manifest_package.py"},{"test":"tests/test_change_receipts.py"},{"test":"trust-ci/tests/test_workspace.py"},{"receipt":"test_review"}]},
+    {"id":"AC-003","statement":"Architecture and governance evidence plus all local receipts are freshly derived for one final exact tree","evidence":[{"test":"tests/test_governance.py"},{"test":"tests/test_change_receipts.py"},{"receipt":"verification"},{"receipt":"security_review"}]}
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260831-fix-the-m3-branch-after-accepted-m2-changed-merg-41eada",
+  "contracts": {
+    "events": [],
+    "json_schema": ["schemas/architecture-system.schema.json","schemas/architecture-rules.schema.json","schemas/governance-rule.schema.json","schemas/debt-entry.schema.json","schemas/canonical-example.schema.json","schemas/governance-handoff-v1.schema.json"],
+    "openapi": ["engineering/contracts/openapi/trust-ci.v1.json"]
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"Conflict resolution drops either milestone regression or raises or disables the finite 10820 architecture budget","evidence":[{"test":"tests/test_architecture_fitness.py"},{"receipt":"code_review"}]},
+    {"id":"FORBID-002","statement":"Historical evidence is rewritten or local evidence is represented as external exact-SHA merge authority","evidence":[{"test":"tests/test_change_receipts.py"},{"receipt":"security_review"}]},
+    {"id":"FORBID-003","statement":"The restack changes a public API event database external integration deployed Trust-CI control or production state","evidence":[{"receipt":"code_review"},{"receipt":"security_review"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Canonical architecture and governance JSON remains authority while diagrams Markdown and local receipts remain non-authoritative projections or preflight evidence","evidence":[{"test":"tests/test_architecture_model.py"},{"test":"tests/test_governance.py"}]},
+    {"id":"INV-002","statement":"Only provable all-zombie process groups may preserve the original bounded command error after SIGKILL while live or unknown state fails closed","evidence":[{"test":"trust-ci/tests/test_workspace.py"},{"receipt":"security_review"}]},
+    {"id":"INV-003","statement":"The merged architecture change ceiling remains exactly 10820 and M3 governance promotion remains a mandatory fitness category","evidence":[{"test":"tests/test_architecture_fitness.py"},{"receipt":"test_review"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Fix the M3 branch after accepted M2 changed: merge exact M2 head 022411b05924618cfde0cb97b8c8aff4955e6013 into M3, resolve integration conflicts without changing M3 requirements, add or update regression tests if needed, run verification and reviews, and prepare PR #11 for fresh exact-SHA Trust CI; no external writes without exact delegated grants.",
+    "success_metric": "m3_restack_exact_lineage_and_fresh_evidence_status",
+    "target": "exact_m2_is_ancestor_and_all_focused_full_and_independent_checks_pass"
+  },
+  "observability": [{"id":"SIG-001","metric":"m3_restack_parent_and_ancestry_status","proves":["OBJ-001"]},{"id":"SIG-002","metric":"m3_restack_final_fingerprint_evidence_gap_count","proves":["OBJ-001"]}],
+  "risk": {
+    "domains": [
+      "api",
+      "frontend",
+      "integration"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

@@ -1,0 +1,53 @@
+{
+  "change_id": "20260906-factory-live-path-automatically-assembles-the-co-c2837b",
+  "created_at": "2026-09-06T12:05:19+00:00",
+  "history": [
+    {
+      "at": "2026-09-06T12:05:19+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-06T12:17:38+00:00",
+      "from": "draft",
+      "reason": "live auto-assembly bounded to default-off injected executor",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-06T12:17:38+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; live_url stays null",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-06T12:48:31+00:00",
+      "from": "approved",
+      "reason": "live composition implemented",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-06T12:48:31+00:00",
+      "from": "implementing",
+      "reason": "focused tests and grok_verify queued",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-06T12:48:31+00:00",
+      "from": "verifying",
+      "reason": "code_review and test_review reports present",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-06T12:48:31+00:00",
+      "from": "reviewing",
+      "reason": "independent reviews passed",
+      "to": "ready"
+    }
+  ],
+  "route_id": "c2837bf9d4a4",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Factory live path automatically assembles the complete L5 landing artifact; default-off live; no hosting/merge without grant; landing-repo writes stay grant-gated.",
+  "updated_at": "2026-09-06T12:48:31+00:00"
+}

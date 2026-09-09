@@ -74,7 +74,21 @@ def policy_data(
             ],
         },
         'approval_rules': [
-            {'scope': 'governance', 'globs': ['trust-ci/**', '.grok-stack/**', 'AGENTS.md']},
+            {
+                'scope': 'governance',
+                'globs': [
+                    'trust-ci/**',
+                    '.grok-stack/**',
+                    '.grok/**',
+                    '.github/**',
+                    '.coveragerc',
+                    'literal\\target.txt',
+                    'exact/юникод.txt',
+                    'exact/line\nname.txt',
+                    'exact/tab\tname.txt',
+                    'AGENTS.md',
+                ],
+            },
             {'scope': 'database', 'globs': ['**/*.sql']},
         ],
     }
