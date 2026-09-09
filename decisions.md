@@ -12,6 +12,10 @@ _No active governance rules._
 _No candidate governance rules._
 <!-- END ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 
+## 2026-09-09 — Port the separable capability instead of rebasing a superseded branch
+
+`mvp/investor-ready` carried 275 changed files against `main`, but only 35 were unique: the loopback demo UI, its OpenAPI contract, its tests and its change package. The other 240 were M1-M9 work that `main` already received through the squash-merged PR #22, which is why the merge produced add/add collisions on `architecture*.py`, `VERSION` and `START_HERE.md`. Porting the 35 unique files plus the two small backward-compatible core additions they need onto a fresh branch preserved the work and passed the exact gate, while rebasing 152 commits would have re-litigated already-delivered milestones.
+
 ## 2026-08-28 — Bind governance handoffs to fresh exact state
 
 Reopen the loader-bound governance root, recompute every component digest and finding, validate the complete M2 evidence envelope, and prove the Git head is exact and clean immediately before publishing the six-field handoff. Keeping projections in marked read-only blocks makes them reviewable without giving Markdown mutation or authority capability.

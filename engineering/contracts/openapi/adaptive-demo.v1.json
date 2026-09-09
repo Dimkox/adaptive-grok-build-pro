@@ -1,0 +1,135 @@
+{
+  "components": {
+    "schemas": {
+      "Error": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "forbidden_request",
+              "internal_error",
+              "invalid_json",
+              "invalid_prompt",
+              "method_not_allowed",
+              "not_found",
+              "payload_too_large",
+              "snapshot_unavailable",
+              "unsupported_media_type"
+            ],
+            "type": "string"
+          },
+          "message": {
+            "maxLength": 256,
+            "type": "string"
+          },
+          "retryable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable"
+        ],
+        "type": "object"
+      },
+      "PreviewRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "prompt": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "schema_version": {
+            "const": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "schema_version",
+          "prompt"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Closed loopback-only read interface for the local investor demo. It has no mutation or external-authority operations.",
+    "title": "Adaptive Grok Build Pro Local Demo",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "operationId": "getDemoHealth",
+        "responses": {
+          "200": {
+            "description": "Ready or partially degraded local demo"
+          },
+          "503": {
+            "description": "Bundled snapshot unavailable"
+          }
+        },
+        "summary": "Inspect local demo readiness"
+      }
+    },
+    "/api/v1/preview": {
+      "post": {
+        "operationId": "previewIntent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Computed read-only route and draft specification preview"
+          },
+          "400": {
+            "description": "Malformed JSON"
+          },
+          "403": {
+            "description": "Host origin or demo header rejected"
+          },
+          "413": {
+            "description": "Body exceeds 16 KiB"
+          },
+          "415": {
+            "description": "Unsupported content type"
+          },
+          "422": {
+            "description": "Closed request schema or prompt rejected"
+          }
+        },
+        "summary": "Compute a bounded in-memory intent preview"
+      }
+    },
+    "/api/v1/snapshot": {
+      "get": {
+        "operationId": "getDemoSnapshot",
+        "responses": {
+          "200": {
+            "description": "Bundled sample plus live read-only repository projections"
+          },
+          "503": {
+            "description": "Bundled snapshot unavailable"
+          }
+        },
+        "summary": "Load the investor walkthrough snapshot"
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Loopback only",
+      "url": "http://127.0.0.1:8765"
+    }
+  ]
+}

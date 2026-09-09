@@ -304,6 +304,14 @@
       "path": "pilot/contracts/jsonschema/design-partner-outcome.v1.schema.json",
       "role": "producer",
       "version": "1"
+    },
+    {
+      "compatibility": "producer_accepted_by_old",
+      "id": "CONTRACT-ADAPTIVE-DEMO-OPENAPI",
+      "kind": "openapi",
+      "path": "engineering/contracts/openapi/adaptive-demo.v1.json",
+      "role": "producer",
+      "version": "1"
     }
   ],
   "data_classifications": [
@@ -1285,6 +1293,52 @@
       "sync_or_async": "synchronous",
       "to": "NODE-PILOT-SANDBOX",
       "type": "control"
+    },
+    {
+      "allowed_data": [
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "local_os",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-LOCAL-DEMO-UI",
+      "id": "EDGE-DEMO-UI-READS-LOCAL-PREFLIGHT",
+      "network_policy": "no_network",
+      "protocol": "python_import",
+      "sync_or_async": "synchronous",
+      "to": "NODE-LOCAL-ROUTE-POLICY",
+      "type": "dependency"
+    },
+    {
+      "allowed_data": [
+        "DATA-REPOSITORY-SOURCE"
+      ],
+      "authentication": "none",
+      "direction": "from_to",
+      "failure_behavior": {
+        "correlation_id": "not_required",
+        "idempotency": "not_required",
+        "max_retries": 0,
+        "mode": "fail_closed",
+        "observable_signal": "SIG-LOCAL-VALIDATION-FAILURE",
+        "terminal_action": "reject",
+        "timeout_ms": 5000
+      },
+      "from": "NODE-LOCAL-DEMO-TEST-CLIENT",
+      "id": "EDGE-DEMO-TEST-CLIENT-LOOPBACK",
+      "network_policy": "local_only",
+      "protocol": "https",
+      "sync_or_async": "synchronous",
+      "to": "NODE-LOCAL-DEMO-UI",
+      "type": "dependency"
     }
   ],
   "nodes": [
@@ -2096,6 +2150,49 @@
       "secrets": [],
       "trust_domain": "TD-EXTERNAL-PLATFORM",
       "type": "external_system"
+    },
+    {
+      "data_classification": "DATA-REPOSITORY-SOURCE",
+      "id": "NODE-LOCAL-DEMO-UI",
+      "owner": "repository engineering",
+      "public_contracts": [
+        "CONTRACT-ADAPTIVE-DEMO-OPENAPI"
+      ],
+      "repository_paths": [
+        ".grok-stack/adaptive_grok/demo.py",
+        ".grok-stack/adaptive_grok/demo_http.py",
+        ".grok-stack/demo",
+        "engineering/contracts/openapi/adaptive-demo.v1.json",
+        "scripts/grok_demo.py",
+        "tests/test_demo.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "local_only"
+      },
+      "secrets": [],
+      "trust_domain": "TD-LOCAL-PREFLIGHT",
+      "type": "local_component"
+    },
+    {
+      "data_classification": "DATA-REPOSITORY-SOURCE",
+      "id": "NODE-LOCAL-DEMO-TEST-CLIENT",
+      "owner": "repository engineering",
+      "public_contracts": [],
+      "repository_paths": [
+        "tests/test_demo_http.py"
+      ],
+      "runtime": {
+        "evidence": "source_described",
+        "kind": "python_process",
+        "lifecycle": "on_demand",
+        "network": "local_only"
+      },
+      "secrets": [],
+      "trust_domain": "TD-LOCAL-PREFLIGHT",
+      "type": "local_component"
     }
   ],
   "schema_version": 1,
