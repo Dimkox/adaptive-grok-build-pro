@@ -12,6 +12,10 @@ _No active governance rules._
 _No candidate governance rules._
 <!-- END ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 
+## 2026-09-09 — Remove a misclassified import instead of declaring a false edge
+
+`FIT-DECLARED-NETWORK-ONLY` flagged `trust-ci/src/adaptive_trust_ci/settings.py` as an undeclared `tcp` client for the worker, because the fitness scanner treats any `socket` import as a network-client family. The module used `socket` for exactly one call, `socket.gethostname()`, to build a worker id. Replacing it with `platform.node()` removed a dependency the module never needed and kept the architecture model truthful; declaring a `tcp` edge would have recorded a connection that does not exist.
+
 ## 2026-08-28 — Bind governance handoffs to fresh exact state
 
 Reopen the loader-bound governance root, recompute every component digest and finding, validate the complete M2 evidence envelope, and prove the Git head is exact and clean immediately before publishing the six-field handoff. Keeping projections in marked read-only blocks makes them reviewable without giving Markdown mutation or authority capability.

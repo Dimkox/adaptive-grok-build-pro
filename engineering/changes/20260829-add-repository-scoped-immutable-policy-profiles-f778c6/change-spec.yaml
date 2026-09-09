@@ -1,79 +1,153 @@
-schema_version: 1
-change_id: "20260829-add-repository-scoped-immutable-policy-profiles-f778c6"
-objective:
-  id: OBJ-001
-  statement: "Verify multiple exact GitHub repositories with isolated immutable Trust CI profiles while preserving the legacy schema-v1 trust contract."
-  success_metric: "Automated compatibility, isolation, fail-closed, retry, and replay scenarios passing"
-  target: "100% of specified P0 scenarios"
-risk:
-  tier: "yellow"
-  domains:
-    - "api"
-    - "event"
-    - "security"
-acceptance_criteria:
-  - id: AC-001
-    statement: "Legacy schema-v1 digest and check name are unchanged"
-    evidence:
-      - kind: test
-        ref: trust-ci/tests/test_policy.py
-  - id: AC-002
-    statement: "Exact repository selection persists the effective profile digest"
-    evidence:
-      - kind: test
-        ref: trust-ci/tests/test_api.py
-  - id: AC-003
-    statement: "Unknown or stale bindings fail before checkout or commands"
-    evidence:
-      - kind: test
-        ref: trust-ci/tests/test_runner.py
-  - id: AC-004
-    statement: "Repository-specific changes do not rotate unrelated profile epochs"
-    evidence:
-      - kind: test
-        ref: trust-ci/tests/test_policy.py
-invariants:
-  - id: INV-001
-    statement: "Policy and holdout remain immutable server-mounted inputs"
-    evidence:
-      - kind: review
-        ref: engineering/changes/20260829-add-repository-scoped-immutable-policy-profiles-f778c6/evidence/code-review.md
-  - id: INV-002
-    statement: "Approvals, attestations, checks, retries, and replay bind exact repository head and profile digest"
-    evidence:
-      - kind: test
-        ref: trust-ci/tests/test_runner.py
-  - id: INV-003
-    statement: "Only an App-owned exact-SHA success can satisfy the configured epoch gate"
-    evidence:
-      - kind: test
-        ref: trust-ci/tests/test_m0_invariants.py
-forbidden_outcomes:
-  - id: FORBID-001
-    statement: "Wildcard default case-normalized or cross-repository profile fallback"
-    evidence:
-      - kind: test
-        ref: trust-ci/tests/test_policy.py
-  - id: FORBID-002
-    statement: "Database history rewritten or rebound to a new profile"
-    evidence:
-      - kind: review
-        ref: engineering/changes/20260829-add-repository-scoped-immutable-policy-profiles-f778c6/evidence/code-review.md
-  - id: FORBID-003
-    statement: "Deployed policy secrets GitHub App or branch protection modified by this change"
-    evidence:
-      - kind: review
-        ref: engineering/changes/20260829-add-repository-scoped-immutable-policy-profiles-f778c6/evidence/test-review.md
-contracts:
-  openapi: []
-  json_schema: []
-  events: []
-observability:
-  - metric: "repository_profile_contract_tests_pass"
-    proves:
-      - OBJ-001
-rollback:
-  strategy: "restore"
-  maximum_steps: 4
-approvals:
-  required_scopes: []
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "A legacy schema-v1 policy loaded through the catalog keeps its digest and status check name unchanged.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_policy.py::PolicyTests.test_legacy_policy_catalog_preserves_digest_and_check_name"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Exact repository selection persists the effective profile digest on the job it creates.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_api.py::ApiTests.test_catalog_webhook_binds_selected_repository_digest"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Unknown, case-variant or removed repository bindings fail closed before checkout or command execution.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_api.py::ApiTests.test_catalog_unknown_and_case_variant_closed_events_cannot_cancel_job"
+        },
+        {
+          "test": "trust-ci/tests/test_api.py::ApiTests.test_catalog_approval_fails_closed_when_bound_profile_is_removed"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "A change to one repository profile does not rotate the epoch of any unrelated profile, and catalog digest is order independent.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_policy.py::PolicyTests.test_catalog_digest_is_order_independent_and_profile_changes_are_scoped"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "The shipped example catalog declares two profiles whose holdout bundles are distinct, absolute and digest-bound to the committed example bundle.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_ops.py::OperationsTests.test_example_catalog_profiles_have_bound_holdouts"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260829-add-repository-scoped-immutable-policy-profiles-f778c6",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No wildcard, default, case-normalized or cross-repository profile fallback may resolve a repository.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_policy.py::PolicyTests.test_catalog_resolves_exact_isolated_profiles"
+        },
+        {
+          "test": "trust-ci/tests/test_api.py::ApiTests.test_catalog_unknown_and_case_variant_closed_events_cannot_cancel_job"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Durable job history must never be rewritten or rebound to a different profile.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "This change must not modify deployed policy, secrets, the GitHub App or branch protection.",
+      "evidence": [
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Policy and holdout stay immutable server-mounted inputs; the runner mounts each profile holdout read-only from its declared host path.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_ops.py::OperationsTests.test_sandbox_uses_daemon_host_paths_and_mounts_holdout_read_only"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Approvals, attestations, checks, retries and replay bind the exact repository head together with the effective profile digest.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_runner.py::RunnerTests.test_catalog_profiles_reach_executor_with_isolated_commands_mounts_and_attestations"
+        }
+      ]
+    },
+    {
+      "id": "INV-003",
+      "statement": "Only an App-owned exact-SHA success can satisfy the configured epoch gate; no GitHub Actions path is introduced.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_m0_invariants.py::M0InvariantTests.test_holdout_example_forbids_github_actions"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Verify multiple exact GitHub repositories through isolated immutable Trust CI profiles while preserving the legacy schema-v1 trust contract.",
+    "success_metric": "Compatibility, exact-selection, fail-closed, scoped-epoch and example-catalog scenarios all pass in trust-ci/tests.",
+    "target": "All five acceptance criteria and three invariants pass, with the legacy digest and check name unchanged."
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "repository_profile_contract_tests_pass",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "event",
+      "security"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 4,
+    "strategy": "restore"
+  },
+  "schema_version": 2
+}

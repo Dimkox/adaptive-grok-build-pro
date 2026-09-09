@@ -14,6 +14,18 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-09 — Merged a moved config section and silently dropped two required commands
+
+**Symptom:** Merging current `main` into the repository-profile branch conflicted on `trust-ci/config/policy.example.json`, and taking the branch side alone would have shipped a catalog without the `compileall` and `repository-verification` commands that `main` had made required.
+**Root cause:** The branch moved `commands` and `holdout` from global policy into per-repository profiles while `main` kept adding entries to the global list, so a structural move and a content addition collided as one text conflict.
+**Durable rule:** When a conflict is a moved section, diff both sides as data rather than text: enumerate the entries each side declares and carry every missing one into the new location before staging the file.
+
+## 2026-09-09 — A stale branch measured its architecture against a frozen base
+
+**Symptom:** After a clean merge of `main`, `grok_verify` reported `fitness=fail` with 93 677 changed lines and exceeded byte, line and complexity budgets, while a direct fitness run against `origin/main` passed.
+**Root cause:** The worktree's runtime route still carried the branch's original `base_commit`, so the architecture comparison base resolved to a `frozen_adoption` bootstrap commit and every change delivered to `main` in between was attributed to the branch.
+**Durable rule:** After merging a new base into a long-lived branch, update the runtime route `base_commit` to the exact new base before reading any architecture, fitness or budget verdict.
+
 ## 2026-08-29 — Push continued after delegated-grant failure
 
 **Symptom:** The feature branch was pushed after `grok_approve.py` rejected the requested `external-write` scope.

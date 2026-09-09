@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import os
+import platform
 import re
-import socket
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -127,7 +127,7 @@ class WorkerSettings:
         holdout_path = _trusted_root('TRUST_CI_HOLDOUT_PATH', _required('TRUST_CI_HOLDOUT_PATH'))
         if not workspace_host_root.is_absolute():
             raise SettingsError('Docker daemon paths must be absolute')
-        worker_id = os.environ.get('TRUST_CI_WORKER_ID', f'{socket.gethostname()}-{os.getpid()}').strip()
+        worker_id = os.environ.get('TRUST_CI_WORKER_ID', f'{platform.node()}-{os.getpid()}').strip()
         if not worker_id:
             raise SettingsError('TRUST_CI_WORKER_ID cannot be empty')
         return cls(
