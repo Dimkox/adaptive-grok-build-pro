@@ -1,0 +1,29 @@
+{
+  "change_id": "20260826-m3-m9-production-delivery-continuation-355689",
+  "created_at": "2026-08-28T12:58:26+00:00",
+  "history": [
+    {
+      "at": "2026-08-28T12:58:26+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-28T13:05:21+00:00",
+      "from": "draft",
+      "reason": "M3 current slice and M4-M9 dependency gates recorded with acceptance criteria",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-28T13:05:21+00:00",
+      "from": "scoped",
+      "reason": "user explicitly directed continuation to production-stage M9; production and external operations remain separately human-gated",
+      "to": "approved"
+    }
+  ],
+  "route_id": "35568941ae59",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "M3-M9 production delivery continuation",
+  "updated_at": "2026-08-28T13:05:21+00:00"
+}

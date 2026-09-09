@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import json
 import os
 import threading
 import unittest
 from datetime import timedelta
+from pathlib import Path
 
 from _support import digest, now, sha
 from adaptive_trust_ci.migrations import PostgresMigrator
-from adaptive_trust_ci.models import ApprovalPayload, AttestationPayload, JobRequest
+from adaptive_trust_ci.models import ApprovalPayload, AttestationEnvelope, AttestationPayload, JobRequest
 from adaptive_trust_ci.signing import Signer, sign_approval, sign_attestation, verify_attestation
 from adaptive_trust_ci.store import PostgresStore, ReplayError
 
@@ -179,6 +181,71 @@ class PostgresIntegrationTests(unittest.TestCase):
         verified = verify_attestation(stored, signer.public_key_pem())
         self.assertEqual(verified.job_id, job.job_id)
         self.assertEqual(verified.head_sha, job.head_sha)
+
+    def test_committed_pre_m1_golden_round_trips_exactly_through_postgres(self) -> None:
+        fixture = json.loads((Path(__file__).parent / 'fixtures/pre-m1-attestation-postgres.json').read_text(encoding='utf-8'))
+        envelope = AttestationEnvelope.from_dict(fixture['envelope'])
+        payload = verify_attestation(envelope, fixture['public_key_pem'].encode())
+        request = JobRequest(
+            repository=payload.repository,
+            pr_number=payload.pr_number,
+            base_sha=payload.base_sha,
+            head_sha=payload.head_sha,
+            head_ref='feat/pre-m1-postgres',
+            base_ref='main',
+        )
+        job, _ = self.store.enqueue(request, payload.policy_digest, 3, now=now())
+        with self.store._connect() as connection:
+            connection.execute(
+                'UPDATE trust_ci_jobs SET job_id = %s WHERE job_id = %s',
+                (payload.job_id, job.job_id),
+            )
+            connection.commit()
+        self.store.record_attestation(payload.job_id, envelope)
+        stored = PostgresStore(DATABASE_URL).get_attestation(payload.job_id)
+        self.assertIsNotNone(stored)
+        assert stored is not None
+        self.assertEqual(stored.to_dict(), fixture['envelope'])
+        verified = verify_attestation(stored, fixture['public_key_pem'].encode())
+        self.assertEqual(verified.job_id, payload.job_id)
+        self.assertIsNone(verified.spec_digest)
+
+    def test_signed_typed_metadata_round_trips_through_postgres(self) -> None:
+        job, _ = self.enqueue()
+        signer = Signer.generate()
+        payload = AttestationPayload(
+            schema_version=1,
+            attestation_id='00000000-0000-0000-0000-000000000702',
+            job_id=job.job_id,
+            repository=job.repository,
+            pr_number=job.pr_number,
+            base_sha=job.base_sha,
+            head_sha=job.head_sha,
+            policy_digest=job.policy_digest,
+            status='failed',
+            command_results=({'name': 'typed-spec-metadata', 'status': 'fail', 'exit_code': 96, 'output_sha256': digest('e')},),
+            changed_files=('engineering/changes/20260826-alpha/change-spec.yaml',),
+            approved_scopes=(),
+            started_at=now().isoformat(),
+            completed_at=(now() + timedelta(seconds=2)).isoformat(),
+            key_id=signer.key_id,
+            spec_digest=digest('f'),
+            criterion_coverage={
+                'spec_count': 2,
+                'criterion_total': 2,
+                'criterion_mapped': 1,
+                'unmapped_ids': ['engineering/changes/20260826-alpha/change-spec.yaml#AC-001'],
+            },
+        )
+        envelope = sign_attestation(payload, signer)
+        self.store.record_attestation(job.job_id, envelope)
+        stored = PostgresStore(DATABASE_URL).get_attestation(job.job_id)
+        self.assertIsNotNone(stored)
+        assert stored is not None
+        self.assertEqual(stored.to_dict(), envelope.to_dict())
+        verified = verify_attestation(stored, signer.public_key_pem())
+        self.assertEqual(verified.spec_digest, digest('f'))
+        self.assertEqual(verified.criterion_coverage, payload.criterion_coverage)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,6 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema", "$id":"urn:adaptive-factory:repair-directive:v1", "type":"object", "additionalProperties":false,
+  "required":["schema_version","subject_digest","verdict_digest","cycle","writer_id","context_digest","exact_head_sha","finding_identity_digests"],
+  "$defs":{"id":{"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"},"digest":{"type":"string","pattern":"^[0-9a-f]{64}$"}},
+  "properties":{"schema_version":{"const":1},"subject_digest":{"$ref":"#/$defs/digest"},"verdict_digest":{"$ref":"#/$defs/digest"},"cycle":{"type":"integer","minimum":1,"maximum":3},"writer_id":{"$ref":"#/$defs/id"},"context_digest":{"$ref":"#/$defs/digest"},"exact_head_sha":{"type":"string","pattern":"^[0-9a-f]{40}$"},"finding_identity_digests":{"type":"array","maxItems":256,"uniqueItems":true,"items":{"$ref":"#/$defs/digest"}}}
+}

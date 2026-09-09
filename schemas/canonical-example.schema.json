@@ -1,0 +1,67 @@
+{
+  "$defs": {
+    "approval": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_id": {"maxLength": 256, "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/-]*$", "type": "string"},
+        "actor_kind": {"const": "human", "type": "string"},
+        "approved_at": {"$ref": "#/$defs/timestamp"},
+        "scope": {"const": "governance", "type": "string"}
+      },
+      "required": ["actor_id", "actor_kind", "approved_at", "scope"],
+      "type": "object"
+    },
+    "evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {"$ref": "#/$defs/id"},
+        "path": {"$ref": "#/$defs/path"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      },
+      "required": ["evidence_id", "path", "sha256"],
+      "type": "object"
+    },
+    "example": {
+      "additionalProperties": false,
+      "properties": {
+        "approved_by": {"items": {"$ref": "#/$defs/approval"}, "maxItems": 16, "type": "array", "uniqueItems": true},
+        "category": {"enum": ["http_adapter", "repository", "background_job", "webhook_handler", "migration", "authorization", "error_handling"], "type": "string"},
+        "contract_ids": {"items": {"$ref": "#/$defs/id"}, "maxItems": 64, "type": "array", "uniqueItems": true},
+        "digest": {"$ref": "#/$defs/sha256"},
+        "evidence": {"items": {"$ref": "#/$defs/evidence"}, "maxItems": 64, "minItems": 1, "type": "array", "uniqueItems": true},
+        "example_id": {"$ref": "#/$defs/id"},
+        "repository_paths": {"items": {"$ref": "#/$defs/path"}, "maxItems": 64, "minItems": 1, "type": "array", "uniqueItems": true},
+        "reviewed_by": {"items": {"$ref": "#/$defs/review"}, "maxItems": 32, "type": "array", "uniqueItems": true},
+        "status": {"enum": ["candidate", "active", "deprecated", "revoked"], "type": "string"},
+        "supersedes": {"items": {"$ref": "#/$defs/id"}, "maxItems": 64, "type": "array", "uniqueItems": true},
+        "version": {"maximum": 1000000, "minimum": 1, "type": "integer"}
+      },
+      "required": ["example_id", "category", "version", "repository_paths", "contract_ids", "evidence", "reviewed_by", "approved_by", "status", "supersedes", "digest"],
+      "type": "object"
+    },
+    "id": {"maxLength": 128, "minLength": 3, "pattern": "^[A-Z][A-Z0-9_-]*$", "type": "string"},
+    "path": {"maxLength": 4096, "minLength": 1, "pattern": "^[^/\\\\][^\\\\]*[^/\\\\]$|^[^/\\\\]$", "type": "string"},
+    "review": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_id": {"maxLength": 256, "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/-]*$", "type": "string"},
+        "actor_kind": {"enum": ["human", "system"], "type": "string"},
+        "reviewed_at": {"$ref": "#/$defs/timestamp"}
+      },
+      "required": ["actor_id", "actor_kind", "reviewed_at"],
+      "type": "object"
+    },
+    "sha256": {"maxLength": 64, "minLength": 64, "pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "timestamp": {"maxLength": 32, "minLength": 20, "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$", "type": "string"}
+  },
+  "$id": "https://adaptive-grok.local/schemas/canonical-example.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "examples": {"items": {"$ref": "#/$defs/example"}, "maxItems": 256, "type": "array", "uniqueItems": true},
+    "governance_id": {"const": "GOV-ADAPTIVE-GROK-M3", "type": "string"},
+    "schema_version": {"const": 1, "type": "integer"}
+  },
+  "required": ["schema_version", "governance_id", "examples"],
+  "type": "object"
+}

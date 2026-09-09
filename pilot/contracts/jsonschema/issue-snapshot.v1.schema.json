@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adaptive-grok.local/pilot/issue-snapshot.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "job_id", "profile_digest", "repository_id",
+    "repository_node_id", "issue_number", "issue_node_id", "state",
+    "updated_at", "author_login", "author_association", "title", "body",
+    "title_sha256", "body_sha256", "base_ref", "base_sha", "base_tree",
+    "acceptance_ids", "source_adapter_digest", "auth_principal_digest",
+    "fetched_at", "issue_snapshot_digest"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "job_id": {"$ref": "#/$defs/id"},
+    "profile_digest": {"$ref": "#/$defs/digest"},
+    "repository_id": {"const": "github.com/Dimkox/ai-dark-factory-landing"},
+    "repository_node_id": {"$ref": "#/$defs/id"},
+    "issue_number": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+    "issue_node_id": {"$ref": "#/$defs/id"},
+    "state": {"const": "open"},
+    "updated_at": {"$ref": "#/$defs/time"},
+    "author_login": {"$ref": "#/$defs/id"},
+    "author_association": {"enum": ["COLLABORATOR", "CONTRIBUTOR", "FIRST_TIMER", "FIRST_TIME_CONTRIBUTOR", "MEMBER", "NONE", "OWNER"]},
+    "title": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "body": {"type": "string", "maxLength": 65536},
+    "title_sha256": {"$ref": "#/$defs/digest"},
+    "body_sha256": {"$ref": "#/$defs/digest"},
+    "base_ref": {"const": "refs/heads/main"},
+    "base_sha": {"$ref": "#/$defs/sha"},
+    "base_tree": {"$ref": "#/$defs/sha"},
+    "acceptance_ids": {"type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
+    "source_adapter_digest": {"$ref": "#/$defs/digest"},
+    "auth_principal_digest": {"$ref": "#/$defs/digest"},
+    "fetched_at": {"$ref": "#/$defs/time"},
+    "issue_snapshot_digest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,127}$"},
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "time": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]{1,6})?Z$"}
+  }
+}

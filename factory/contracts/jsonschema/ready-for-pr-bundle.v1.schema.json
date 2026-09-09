@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:m7:ready-for-pr-bundle:v1",
+  "title": "Adaptive Factory M7 Blocked Handoff Bundle V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "evidence", "operator_handoff", "bundle_digest"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "status": {"const": "blocked_pending_durable_lookup"},
+    "evidence": {"$ref": "urn:adaptive-factory:m7:shadow-task-evidence:v1"},
+    "operator_handoff": {"$ref": "urn:adaptive-factory:m7:operator-handoff-proposal:v1"},
+    "bundle_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

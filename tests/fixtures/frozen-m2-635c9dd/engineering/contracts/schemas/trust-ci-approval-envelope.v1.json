@@ -1,0 +1,96 @@
+{
+  "$id": "urn:adaptive-trust-ci:approval-envelope:v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "payload": {
+      "additionalProperties": false,
+      "properties": {
+        "actor": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "approval_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "base_sha": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "expires_at": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "head_sha": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "issued_at": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "key_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "nonce": {
+          "minLength": 16,
+          "type": "string"
+        },
+        "policy_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "pr_number": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "reason": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "repository": {
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+          "type": "string"
+        },
+        "schema_version": {
+          "enum": [
+            1
+          ],
+          "type": "integer"
+        },
+        "scope": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "approval_id",
+        "nonce",
+        "actor",
+        "key_id",
+        "repository",
+        "pr_number",
+        "base_sha",
+        "head_sha",
+        "policy_digest",
+        "scope",
+        "reason",
+        "issued_at",
+        "expires_at"
+      ],
+      "type": "object"
+    },
+    "signature": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "payload",
+    "signature"
+  ],
+  "type": "object"
+}

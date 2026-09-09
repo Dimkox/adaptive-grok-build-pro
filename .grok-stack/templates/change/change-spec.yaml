@@ -1,23 +1,13 @@
-schema_version: 1
-change_id: "{{CHANGE_ID}}"
-objective:
-  id: OBJ-001
-  statement: "{{OBJECTIVE_STATEMENT}}"
-  success_metric: UNKNOWN
-  target: UNKNOWN
-risk:
-  tier: "{{RISK_TIER}}"
-  domains: []
-acceptance_criteria: []
-invariants: []
-forbidden_outcomes: []
-contracts:
-  openapi: []
-  json_schema: []
-  events: []
-observability: []
-rollback:
-  strategy: "{{ROLLBACK_STRATEGY}}"
-  maximum_steps: 1
-approvals:
-  required_scopes: []
+{
+  "acceptance_criteria": [],
+  "approvals": {"required_scopes": []},
+  "change_id": "template-is-replaced-by-start-change",
+  "contracts": {"events": [], "json_schema": [], "openapi": []},
+  "forbidden_outcomes": [],
+  "invariants": [],
+  "objective": {"id": "OBJ-001", "statement": "template", "success_metric": "UNKNOWN", "target": "UNKNOWN"},
+  "observability": [],
+  "risk": {"domains": [], "tier": "green"},
+  "rollback": {"maximum_steps": 1, "strategy": "forward_fix"},
+  "schema_version": 2
+}

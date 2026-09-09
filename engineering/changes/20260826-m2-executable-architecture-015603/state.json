@@ -1,0 +1,131 @@
+{
+  "change_id": "20260826-m2-executable-architecture-015603",
+  "created_at": "2026-08-26T14:40:17+00:00",
+  "history": [
+    {
+      "at": "2026-08-26T14:40:17+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-26T15:02:02+00:00",
+      "from": "draft",
+      "reason": "Six route-selected analyses froze M2-A scope, completed-M1 adoption baseline, acceptance criteria, and M2-B separation.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-26T15:02:02+00:00",
+      "from": "scoped",
+      "reason": "User previously approved the model-agnostic roadmap and explicitly instructed Go ahead on 2026-08-26; no migration or external write is in M2-A.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-26T15:02:02+00:00",
+      "from": "approved",
+      "reason": "Begin approved M2-A plan with route-selected sole writer data_implementer.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-27T01:32:31+00:00",
+      "from": "implementing",
+      "reason": "All five M2-A implementation tasks and scoped reviews are complete; begin exact-head final verification before route review.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-27T01:38:29+00:00",
+      "from": "verifying",
+      "reason": "Fresh exact-head root tests, spec gate, architecture validation/drift/diagram checks, exact-range diff hygiene, separation, and PR verification passed; begin five route-selected independent reviews.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-27T09:49:21+00:00",
+      "from": "reviewing",
+      "reason": "Human gate required after four remediation cycles: repeated Important findings remain in transactional diagram cleanup/authority concurrency and package-relative queue provenance; automatic fifth repair is prohibited by the approved review loop.",
+      "to": "blocked"
+    },
+    {
+      "at": "2026-08-27T09:57:50+00:00",
+      "from": "blocked",
+      "reason": "User explicitly approved the design pivot on 2026-08-27: remove in-place diagram writes and replace queue detection with package-aware fail-closed provenance analysis.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-27T12:06:43+00:00",
+      "from": "implementing",
+      "reason": "Task 6 user-approved design pivot passed independent scoped code review after three fix rounds; begin fresh exact-head final verification before route reviews.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-27T12:12:12+00:00",
+      "from": "verifying",
+      "reason": "Fresh no-record PR verification passed with 331 tests and 81% coverage; exact-commit architecture fitness, diagram check, diff hygiene, and trust-ci separation passed; begin all five route-selected final reviews.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-27T12:34:29+00:00",
+      "from": "reviewing",
+      "reason": "Final route review wave found seven unique Important source defects across queue provenance, installer containment, durable adoption, code-budget unknowns, process cleanup, added-contract validation, and repository ownership; return all findings to the sole writer as one fix batch.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-27T13:31:00+00:00",
+      "from": "implementing",
+      "reason": "The single permitted final-review fix wave closed the original durable-adoption, line-budget, process-cleanup, data-contract, ownership, and schema findings, but scoped rereviews found load-bearing residuals in wildcard/mixed queue provenance, installer relocation/mode recovery, marker-only adoption history, frozen digest synchronization, and completion evidence. SDD requires a new human decision before a second final fix wave.",
+      "to": "blocked"
+    },
+    {
+      "at": "2026-08-27T13:51:20+00:00",
+      "from": "blocked",
+      "reason": "User explicitly authorized a second consolidated fix wave on 2026-08-27 and instructed autonomous delivery toward production, while preserving exact external Trust CI and signed-approval gates.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-27T14:54:57+00:00",
+      "from": "implementing",
+      "reason": "After the user-authorized second consolidated wave, scoped rereviews confirmed repeated load-bearing failures in two architectures: order-dependent queue provenance propagation and rollback-dependent in-place installer mutation. Systematic debugging requires an explicit architecture pivot before another repair; marker history and frozen digests are closed.",
+      "to": "blocked"
+    },
+    {
+      "at": "2026-08-27T15:29:15+00:00",
+      "from": "blocked",
+      "reason": "user approved queue abstract interpreter and read-only/new-target installer pivot; detailed TDD plan committed",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-27T20:12:08+00:00",
+      "from": "implementing",
+      "reason": "The single SDD final fix wave addressed all original findings, but scoped rereview found one new load-bearing queue exhaustion defect: unresolved local-import frontier is discarded and module-name heuristics can false-N/A or false-promote. A separately approved bounded repair is required.",
+      "to": "blocked"
+    },
+    {
+      "at": "2026-08-27T20:18:07+00:00",
+      "from": "blocked",
+      "reason": "User explicitly approved the bounded unresolved-frontier repair: retain exact reachable local-import frontier, resolve neutral queue and queue-named nonqueue exports, and preserve unrelated N/A.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-28T05:39:21+00:00",
+      "from": "implementing",
+      "reason": "Exact product SHA 72927ee2407cff98f9c2162fc069e4a07b5afb43 passed focused, architecture, full-suite, static, spec, diagram, protected-path, and no-record PR verification; begin exact review closure.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-28T05:39:26+00:00",
+      "from": "verifying",
+      "reason": "All five route-selected reviews PASS on exact product SHA 72927ee2407cff98f9c2162fc069e4a07b5afb43 with zero Critical, Important, or Minor findings; exact reports are materialized for final local closure.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-28T05:39:32+00:00",
+      "from": "reviewing",
+      "reason": "Five exact product-SHA PASS reports are present with zero findings; local M2-A source is ready for coordinator-owned final fingerprint receipts and PR/external gates, with no merge, release, M2-B, or deployment claim.",
+      "to": "ready"
+    }
+  ],
+  "route_id": "0156034c05bd",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "m2-executable-architecture",
+  "updated_at": "2026-08-28T05:39:32+00:00"
+}

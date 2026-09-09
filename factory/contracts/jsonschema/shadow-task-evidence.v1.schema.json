@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:m7:shadow-task-evidence:v1",
+  "title": "Adaptive Factory M7 Shadow Task Evidence V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "m4", "m5", "m6"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "m4": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/m4"},
+    "m5": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/m5"},
+    "m6": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/m6"}
+  }
+}

@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:m7:predecessor-bridges:v1",
+  "title": "Adaptive Factory M7 Predecessor Bridges V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "m4", "m5", "m6"],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "fence": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+    "m4": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "task_id",
+        "run_id",
+        "owner",
+        "role",
+        "fence",
+        "intent_digest",
+        "lease_packet_digest"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "task_id": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/identifier"},
+        "run_id": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/identifier"},
+        "owner": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/identifier"},
+        "role": {"const": "writer"},
+        "fence": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/fence"},
+        "intent_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "lease_packet_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"}
+      }
+    },
+    "m5": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "task_id",
+        "run_id",
+        "owner",
+        "role",
+        "fence",
+        "repository_id",
+        "legacy_intent_digest",
+        "task_packet_digest",
+        "run_manifest_digest",
+        "workspace_snapshot_digest",
+        "workspace_result_digest",
+        "authority_exact_head_sha",
+        "snapshot_input_head_sha",
+        "snapshot_result_head_sha",
+        "result_exact_head_sha"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "task_id": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/identifier"},
+        "run_id": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/identifier"},
+        "owner": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/identifier"},
+        "role": {"const": "writer"},
+        "fence": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/fence"},
+        "repository_id": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/identifier"},
+        "legacy_intent_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "task_packet_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "run_manifest_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "workspace_snapshot_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "workspace_result_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "authority_exact_head_sha": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/sha"},
+        "snapshot_input_head_sha": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/sha"},
+        "snapshot_result_head_sha": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/sha"},
+        "result_exact_head_sha": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/sha"}
+      }
+    },
+    "verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "subject_digest",
+        "decision",
+        "decision_source",
+        "finding_identity_digests",
+        "duplicate_identity_digests",
+        "correlated_requirement_keys",
+        "contradicted_requirement_keys",
+        "unsupported_pass_requirement_keys",
+        "residual_risk"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "subject_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "decision": {"const": "pass"},
+        "decision_source": {"const": "deterministic_adjudicator"},
+        "finding_identity_digests": {
+          "type": "array",
+          "maxItems": 0,
+          "items": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"}
+        },
+        "duplicate_identity_digests": {
+          "type": "array",
+          "maxItems": 0,
+          "items": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"}
+        },
+        "correlated_requirement_keys": {
+          "type": "array",
+          "maxItems": 0,
+          "items": {"type": "string"}
+        },
+        "contradicted_requirement_keys": {
+          "type": "array",
+          "maxItems": 0,
+          "items": {"type": "string"}
+        },
+        "unsupported_pass_requirement_keys": {
+          "type": "array",
+          "maxItems": 0,
+          "items": {"type": "string"}
+        },
+        "residual_risk": {"const": "none"}
+      }
+    },
+    "m6": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "task_id",
+        "run_id",
+        "owner",
+        "role",
+        "fence",
+        "repository_id",
+        "legacy_intent_digest",
+        "task_packet_digest",
+        "run_manifest_digest",
+        "workspace_snapshot_digest",
+        "workspace_result_digest",
+        "binding_input_head_sha",
+        "binding_exact_head_sha",
+        "subject_exact_head_sha",
+        "envelope_digest",
+        "binding_digest",
+        "validation_inputs_digest",
+        "subject_digest",
+        "evidence_set_digest",
+        "verdict_digest",
+        "verdict"
+      ],
+      "properties": {
+        "schema_version": {"const": 1},
+        "task_id": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/identifier"},
+        "run_id": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/identifier"},
+        "owner": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/identifier"},
+        "role": {"const": "writer"},
+        "fence": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/fence"},
+        "repository_id": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/identifier"},
+        "legacy_intent_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "task_packet_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "run_manifest_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "workspace_snapshot_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "workspace_result_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "binding_input_head_sha": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/sha"},
+        "binding_exact_head_sha": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/sha"},
+        "subject_exact_head_sha": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/sha"},
+        "envelope_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "binding_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "validation_inputs_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "subject_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "evidence_set_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "verdict_digest": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/digest"},
+        "verdict": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/verdict"}
+      }
+    }
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "m4": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/m4"},
+    "m5": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/m5"},
+    "m6": {"$ref": "urn:adaptive-factory:m7:predecessor-bridges:v1#/$defs/m6"}
+  }
+}

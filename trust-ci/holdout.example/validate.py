@@ -5,6 +5,8 @@ import argparse
 import ast
 from pathlib import Path
 
+from change_spec_validate import validate as validate_change_specs
+
 
 def require(condition: bool, message: str) -> None:
     if not condition:
@@ -30,6 +32,7 @@ def main() -> int:
     args = parser.parse_args()
     root = args.workspace.resolve()
     require(root.is_dir(), 'workspace is not a directory')
+    validate_change_specs(root)
 
     workflows = root / '.github' / 'workflows'
     require(not workflows.exists(), 'GitHub Actions workflows are forbidden')

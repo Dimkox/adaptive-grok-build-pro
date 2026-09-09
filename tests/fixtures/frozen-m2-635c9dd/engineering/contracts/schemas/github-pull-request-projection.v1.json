@@ -1,0 +1,88 @@
+{
+  "$id": "urn:adaptive-trust-ci:github-pull-request-projection:v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "Bounded projection consumed from GitHub pull_request webhooks; not the full GitHub payload schema.",
+  "properties": {
+    "action": {
+      "enum": [
+        "closed",
+        "opened",
+        "ready_for_review",
+        "reopened",
+        "synchronize"
+      ],
+      "type": "string"
+    },
+    "pull_request": {
+      "additionalProperties": true,
+      "properties": {
+        "base": {
+          "additionalProperties": true,
+          "properties": {
+            "ref": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "sha": {
+              "pattern": "^[0-9a-f]{40}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "sha",
+            "ref"
+          ],
+          "type": "object"
+        },
+        "head": {
+          "additionalProperties": true,
+          "properties": {
+            "ref": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "sha": {
+              "pattern": "^[0-9a-f]{40}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "sha",
+            "ref"
+          ],
+          "type": "object"
+        },
+        "number": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "number",
+        "base",
+        "head"
+      ],
+      "type": "object"
+    },
+    "repository": {
+      "additionalProperties": true,
+      "properties": {
+        "full_name": {
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "full_name"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "action",
+    "repository",
+    "pull_request"
+  ],
+  "type": "object"
+}

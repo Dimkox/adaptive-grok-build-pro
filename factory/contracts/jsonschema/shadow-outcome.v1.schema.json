@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:m7:shadow-outcome:v1",
+  "title": "Adaptive Factory M7 Shadow Outcome V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "outcome_id",
+    "bundle_digest",
+    "cohort_key_digest",
+    "human_evidence_digest",
+    "human_decision",
+    "first_pass_accepted",
+    "rework_required",
+    "validator_false_negative",
+    "validator_false_positive_or_disagreement",
+    "repair_cycles",
+    "cost_within_budget",
+    "latency_within_slo",
+    "deadline_met",
+    "token_budget_met",
+    "human_review_seconds",
+    "critical_high_miss_count",
+    "security_miss_count",
+    "unauthorized_effect_count",
+    "rollback_count",
+    "escaped_defect_count",
+    "duplicate_dispatch_count",
+    "unaccounted_call_count",
+    "injection_attempt_count",
+    "injection_contained_count"
+  ],
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+    },
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "count": {"type": "integer", "minimum": 0, "maximum": 1000000}
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "outcome_id": {"$ref": "urn:adaptive-factory:m7:shadow-outcome:v1#/$defs/identifier"},
+    "bundle_digest": {"$ref": "urn:adaptive-factory:m7:shadow-outcome:v1#/$defs/digest"},
+    "cohort_key_digest": {"$ref": "urn:adaptive-factory:m7:shadow-outcome:v1#/$defs/digest"},
+    "human_evidence_digest": {"$ref": "urn:adaptive-factory:m7:shadow-outcome:v1#/$defs/digest"},
+    "human_decision": {"enum": ["merged_accepted", "not_merged"]},
+    "first_pass_accepted": {"type": "boolean"},
+    "rework_required": {"type": "boolean"},
+    "validator_false_negative": {"type": "boolean"},
+    "validator_false_positive_or_disagreement": {"type": "boolean"},
+    "repair_cycles": {"type": "integer", "minimum": 0, "maximum": 3},
+    "cost_within_budget": {"type": "boolean"},
+    "latency_within_slo": {"type": "boolean"},
+    "deadline_met": {"type": "boolean"},
+    "token_budget_met": {"type": "boolean"},
+    "human_review_seconds": {"type": "integer", "minimum": 1, "maximum": 604800},
+    "critical_high_miss_count": {"$ref": "urn:adaptive-factory:m7:shadow-outcome:v1#/$defs/count"},
+    "security_miss_count": {"$ref": "urn:adaptive-factory:m7:shadow-outcome:v1#/$defs/count"},
+    "unauthorized_effect_count": {"$ref": "urn:adaptive-factory:m7:shadow-outcome:v1#/$defs/count"},
+    "rollback_count": {"$ref": "urn:adaptive-factory:m7:shadow-outcome:v1#/$defs/count"},
+    "escaped_defect_count": {"$ref": "urn:adaptive-factory:m7:shadow-outcome:v1#/$defs/count"},
+    "duplicate_dispatch_count": {"$ref": "urn:adaptive-factory:m7:shadow-outcome:v1#/$defs/count"},
+    "unaccounted_call_count": {"$ref": "urn:adaptive-factory:m7:shadow-outcome:v1#/$defs/count"},
+    "injection_attempt_count": {"$ref": "urn:adaptive-factory:m7:shadow-outcome:v1#/$defs/count"},
+    "injection_contained_count": {"$ref": "urn:adaptive-factory:m7:shadow-outcome:v1#/$defs/count"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"first_pass_accepted": {"const": true}}},
+      "then": {
+        "properties": {
+          "human_decision": {"const": "merged_accepted"},
+          "rework_required": {"const": false}
+        }
+      }
+    }
+  ]
+}

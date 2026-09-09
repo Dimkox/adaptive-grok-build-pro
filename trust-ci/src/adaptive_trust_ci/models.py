@@ -13,6 +13,47 @@ from typing import Any, Mapping
 _SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 _DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 _REPOSITORY_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+_AC_RE = re.compile(r"^AC-[0-9]{3,6}$")
+_COVERAGE_SPEC_RE = re.compile(r"^engineering/changes/[^/]{1,256}/change-spec\.yaml$")
+
+
+def empty_criterion_coverage() -> dict[str, Any]:
+    return {"spec_count": 0, "criterion_total": 0, "criterion_mapped": 0, "unmapped_ids": []}
+
+
+def _valid_coverage_id(value: str) -> bool:
+    if _AC_RE.fullmatch(value):
+        return True
+    path, separator, criterion_id = value.rpartition("#")
+    return bool(
+        separator
+        and len(value) <= 512
+        and _COVERAGE_SPEC_RE.fullmatch(path)
+        and _AC_RE.fullmatch(criterion_id)
+        and "\0" not in path
+        and not any(0xD800 <= ord(character) <= 0xDFFF for character in path)
+    )
+
+
+def normalize_criterion_coverage(value: Mapping[str, Any]) -> dict[str, Any]:
+    required = {"spec_count", "criterion_total", "criterion_mapped", "unmapped_ids"}
+    if set(value) != required:
+        raise ValueError("criterion_coverage must contain exact bounded keys")
+    numbers: dict[str, int] = {}
+    for key in ("spec_count", "criterion_total", "criterion_mapped"):
+        number = value[key]
+        if isinstance(number, bool) or not isinstance(number, int) or not 0 <= number <= 10_000:
+            raise ValueError(f"criterion_coverage.{key} must be a bounded nonnegative integer")
+        numbers[key] = number
+    if numbers["spec_count"] > 100 or numbers["criterion_mapped"] > numbers["criterion_total"]:
+        raise ValueError("criterion_coverage counts are inconsistent")
+    raw_ids = value["unmapped_ids"]
+    if not isinstance(raw_ids, list) or len(raw_ids) > 500 or not all(isinstance(item, str) and _valid_coverage_id(item) for item in raw_ids):
+        raise ValueError("criterion_coverage.unmapped_ids must be bounded stable AC IDs")
+    ids = sorted(set(raw_ids))
+    if len(ids) != len(raw_ids) or len(ids) != numbers["criterion_total"] - numbers["criterion_mapped"]:
+        raise ValueError("criterion_coverage unmapped IDs do not match counts")
+    return {**numbers, "unmapped_ids": ids}
 
 
 def canonical_json(data: Any) -> bytes:
@@ -241,6 +282,9 @@ class AttestationPayload:
     started_at: str
     completed_at: str
     key_id: str
+    spec_digest: str | None = None
+    criterion_coverage: dict[str, Any] = field(default_factory=empty_criterion_coverage)
+    _metadata_present: bool = field(default=True, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if self.schema_version != 1:
@@ -260,27 +304,47 @@ class AttestationPayload:
         object.__setattr__(
             self,
             "changed_files",
-            tuple(sorted({str(item).replace("\\", "/").lstrip("./") for item in self.changed_files})),
+            tuple(sorted({str(item) for item in self.changed_files})),
         )
         object.__setattr__(
             self,
             "approved_scopes",
             tuple(sorted({str(item).strip() for item in self.approved_scopes if str(item).strip()})),
         )
+        if self.spec_digest is not None:
+            object.__setattr__(self, "spec_digest", require_digest(self.spec_digest, "spec_digest"))
+        if not isinstance(self.criterion_coverage, Mapping):
+            raise ValueError("criterion_coverage must be an object")
+        object.__setattr__(self, "criterion_coverage", normalize_criterion_coverage(self.criterion_coverage))
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "AttestationPayload":
         try:
-            values = {name: data[name] for name in cls.__dataclass_fields__}
+            core = (
+                "schema_version", "attestation_id", "job_id", "repository", "pr_number",
+                "base_sha", "head_sha", "policy_digest", "status", "command_results",
+                "changed_files", "approved_scopes", "started_at", "completed_at", "key_id",
+            )
+            values = {name: data[name] for name in core}
             values["command_results"] = tuple(dict(item) for item in values["command_results"])
             values["changed_files"] = tuple(str(item) for item in values["changed_files"])
             values["approved_scopes"] = tuple(str(item) for item in values["approved_scopes"])
+            present = "spec_digest" in data or "criterion_coverage" in data
+            if present and not {"spec_digest", "criterion_coverage"}.issubset(data):
+                raise ValueError("attestation metadata fields must be present together")
+            values["spec_digest"] = data.get("spec_digest")
+            values["criterion_coverage"] = data.get("criterion_coverage", empty_criterion_coverage())
+            values["_metadata_present"] = present
             return cls(**values)
         except (KeyError, TypeError) as exc:
             raise ValueError("malformed attestation payload") from exc
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
+        data.pop("_metadata_present", None)
+        if not self._metadata_present:
+            data.pop("spec_digest", None)
+            data.pop("criterion_coverage", None)
         data["command_results"] = list(self.command_results)
         data["changed_files"] = list(self.changed_files)
         data["approved_scopes"] = list(self.approved_scopes)
@@ -291,6 +355,7 @@ class AttestationPayload:
 class AttestationEnvelope:
     payload: AttestationPayload
     signature: str
+    _signed_payload: dict[str, Any] | None = field(default=None, repr=False, compare=False)
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "AttestationEnvelope":
@@ -298,12 +363,13 @@ class AttestationEnvelope:
             signature = str(data["signature"]).strip()
             if not signature:
                 raise ValueError("signature is empty")
-            return cls(payload=AttestationPayload.from_dict(data["payload"]), signature=signature)
+            original = dict(data["payload"])
+            return cls(payload=AttestationPayload.from_dict(original), signature=signature, _signed_payload=original)
         except (KeyError, TypeError) as exc:
             raise ValueError("malformed attestation envelope") from exc
 
     def to_dict(self) -> dict[str, Any]:
-        return {"payload": self.payload.to_dict(), "signature": self.signature}
+        return {"payload": dict(self._signed_payload) if self._signed_payload is not None else self.payload.to_dict(), "signature": self.signature}
 
 
 @dataclass(frozen=True)

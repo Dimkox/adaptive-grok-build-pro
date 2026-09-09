@@ -1,0 +1,97 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "data_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer",
+    "data_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "data_architect"
+  ],
+  "base_commit": "069fe8226addb8a1922dde3db4e753434baa3a3d",
+  "base_fingerprint": "ff575f1e5c4b6fc68216137bcf43c8815e63f369e602a69861964b475c9b020b",
+  "complexity": "high-risk",
+  "created_at": "2026-08-26T14:40:01+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api",
+    "data",
+    "event",
+    "security"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval"
+  ],
+  "intent": "architecture",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data"
+  ],
+  "rationale": [
+    "high-risk intent/domain: architecture",
+    "intent=architecture",
+    "domains=api,data,event,security",
+    "repository=generic",
+    "write-owner=data_implementer",
+    "analysis-wave=6/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "data_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "0156034c05bd",
+  "schema_version": 1,
+  "session_id": "manual",
+  "status": "routed",
+  "task": "Implement M2 Living Executable Architecture and Fitness Functions from DARK_FACTORY_ROADMAP.md on top of completed M1: strict machine-readable architecture system and rules schemas, deterministic parser and CLI, reproducible diagrams, architecture diff and post-diff risk escalation, repository/contract drift validation, mandatory security/trust/data/API/background-job fitness functions, and independent Trust CI holdout validation. Keep K16 decorative only, do not add services/databases/queues/frameworks, do not perform external writes, and preserve the Trust CI boundary.",
+  "task_domains": [
+    "api",
+    "data",
+    "event",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "data-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "data_implementer"
+}

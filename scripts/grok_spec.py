@@ -11,89 +11,110 @@ sys.path.insert(0, str(ROOT / ".grok-stack"))
 
 from adaptive_grok.spec import (  # noqa: E402
     SpecError,
-    dump_yaml_subset,
+    canonical_spec_digest,
+    criterion_coverage,
+    dump_canonical_spec,
     generate_spec,
-    load_schema,
     load_spec,
     map_evidence,
+    spec_fingerprint,
     summarize_spec,
     validate_spec,
 )
-from adaptive_grok.state import get_active_route  # noqa: E402
-from adaptive_grok.util import find_root  # noqa: E402
+from adaptive_grok.state import get_active_change, get_active_route  # noqa: E402
+from adaptive_grok.util import atomic_write_text, find_root  # noqa: E402
 
 
-def _change_dir(root: Path, change_id: str) -> Path:
-    return root / "engineering" / "changes" / change_id
-
-
-def _resolve_change_id(root: Path, explicit: str | None) -> str:
+def _change_id(root: Path, explicit: str | None) -> str:
     if explicit:
         return explicit
+    active = get_active_change(root) or {}
     route = get_active_route(root) or {}
-    change_id = route.get("change_id")
-    if not change_id:
+    value = active.get("change_id") or route.get("change_id")
+    if not value:
         raise SpecError("no active change id", code="usage")
-    return str(change_id)
+    return str(value)
 
 
-def _spec_path(root: Path, change_id: str, override: str | None) -> Path:
-    if override:
-        return Path(override)
-    return _change_dir(root, change_id) / "change-spec.yaml"
+def _spec_path(root: Path, explicit_path: str | None, change_id: str | None) -> Path:
+    if explicit_path:
+        candidate = Path(explicit_path)
+        candidate = candidate if candidate.is_absolute() else root / candidate
+    else:
+        candidate = root / "engineering" / "changes" / _change_id(root, change_id) / "change-spec.yaml"
+    try:
+        candidate.resolve(strict=False).relative_to(root.resolve())
+    except ValueError as exc:
+        raise SpecError("spec path must stay inside repository", code="usage") from exc
+    return candidate
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Validate and inspect typed change specifications.")
+    sub = parser.add_subparsers(dest="command", required=True)
+    for name in ("validate", "summary", "summarize", "coverage", "map"):
+        command = sub.add_parser(name)
+        command.add_argument("path", nargs="?")
+        command.add_argument("--change-id")
+        command.add_argument("--json", action="store_true")
+        if name == "validate":
+            command.add_argument("--gate", action="store_true")
+            command.add_argument("--schema-only", action="store_true", help=argparse.SUPPRESS)
+    generate = sub.add_parser("generate")
+    generate.add_argument("--change-id")
+    generate.add_argument("--json", action="store_true")
+    return parser
+
+
+def _emit(data: object) -> None:
+    print(json.dumps(data, ensure_ascii=False, sort_keys=True, indent=2))
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Validate and generate typed change specs.")
-    sub = parser.add_subparsers(dest="command", required=True)
-    validate = sub.add_parser("validate")
-    validate.add_argument("--change-id")
-    validate.add_argument("--path")
-    validate.add_argument("--schema-only", action="store_true")
-    generate = sub.add_parser("generate")
-    generate.add_argument("--change-id")
-    summarize = sub.add_parser("summarize")
-    summarize.add_argument("--change-id")
-    mapped = sub.add_parser("map")
-    mapped.add_argument("--change-id")
-    args = parser.parse_args()
+    args = _parser().parse_args()
     try:
         root = find_root(ROOT)
+        route = get_active_route(root) or {}
         if args.command == "generate":
-            route = get_active_route(root) or {}
-            if args.change_id:
-                route = {**route, "change_id": args.change_id}
-            if not route.get("change_id"):
-                raise SpecError("no active change id", code="usage")
-            spec = generate_spec(route)
-            path = _spec_path(root, str(route["change_id"]), None)
+            change_id = _change_id(root, args.change_id)
+            generated = generate_spec({**route, "change_id": change_id})
+            path = _spec_path(root, None, change_id)
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(dump_yaml_subset(spec), encoding="utf-8")
-            result = {"ok": True, "path": str(path), "change_id": spec["change_id"], "generated": True}
-            print(json.dumps(result, ensure_ascii=False, indent=2))
+            atomic_write_text(path, dump_canonical_spec(generated))
+            _emit({"change_id": change_id, "generated": True, "ok": True, "path": path.relative_to(root).as_posix()})
             return 0
-        change_id = _resolve_change_id(root, args.change_id)
-        path = _spec_path(root, change_id, getattr(args, "path", None))
+
+        path = _spec_path(root, args.path, args.change_id)
         if not path.is_file():
             raise SpecError(f"missing spec: {path}", code="io")
-        spec = load_spec(path)
+        spec = load_spec(path, allow_legacy=args.command != "validate")
         if args.command == "validate":
-            result = validate_spec(spec, load_schema(), schema_only=args.schema_only)
-            result["path"] = str(path)
-            print(json.dumps(result, ensure_ascii=False, indent=2))
-            return 0
-        if args.command == "summarize":
-            print(json.dumps(summarize_spec(spec), ensure_ascii=False, indent=2))
-            return 0
-        print(json.dumps(map_evidence(spec), ensure_ascii=False, indent=2))
+            gate = bool(args.gate and not args.schema_only)
+            errors = validate_spec(root, path, gate=gate, route=route)
+            result = {
+                "ok": not errors,
+                "path": path.relative_to(root).as_posix(),
+                "profile": "gate" if gate else "draft",
+                "errors": errors,
+                "digest": canonical_spec_digest(spec),
+                "coverage": criterion_coverage(spec),
+            }
+            if not errors:
+                result["fingerprint"] = spec_fingerprint(root, path, spec, route)
+            _emit(result)
+            return 0 if not errors else 1
+        if args.command in {"summary", "summarize"}:
+            _emit(summarize_spec(spec))
+        elif args.command == "coverage":
+            _emit(criterion_coverage(spec))
+        else:
+            _emit(map_evidence(spec))
         return 0
     except SpecError as exc:
-        payload = {"ok": False, "error": str(exc), "code": exc.code}
-        print(json.dumps(payload, ensure_ascii=False))
+        _emit({"code": exc.code, "error": str(exc), "ok": False})
         return 2 if exc.code in {"usage", "io"} else 1
     except OSError as exc:
-        payload = {"ok": False, "error": str(exc), "code": "io"}
-        print(json.dumps(payload, ensure_ascii=False))
+        _emit({"code": "io", "error": str(exc), "ok": False})
         return 2
 
 

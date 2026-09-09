@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-factory:landing-input:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "job_id", "tenant_id", "repository_id", "exact_base_sha", "exact_base_tree", "site_id", "media_kind", "media_type", "byte_length", "content_sha256", "quarantine_ref_digest", "received_at", "expires_at", "input_digest"],
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,127}$"},
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "job_id": {"$ref": "#/$defs/id"},
+    "tenant_id": {"$ref": "#/$defs/id"},
+    "repository_id": {"$ref": "#/$defs/id"},
+    "exact_base_sha": {"$ref": "#/$defs/sha"},
+    "exact_base_tree": {"$ref": "#/$defs/sha"},
+    "site_id": {"const": "therealaidarkfactory.online"},
+    "media_kind": {"enum": ["text", "audio", "image", "pdf", "docx"]},
+    "media_type": {"enum": ["text/plain", "audio/wav", "audio/mpeg", "audio/ogg", "image/png", "image/jpeg", "image/webp", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]},
+    "byte_length": {"type": "integer", "minimum": 1, "maximum": 26214400},
+    "content_sha256": {"$ref": "#/$defs/digest"},
+    "quarantine_ref_digest": {"$ref": "#/$defs/digest"},
+    "received_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": "string", "format": "date-time"},
+    "input_digest": {"$ref": "#/$defs/digest"}
+  }
+}

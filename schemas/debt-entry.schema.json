@@ -1,0 +1,57 @@
+{
+  "$defs": {
+    "actor": {
+      "additionalProperties": false,
+      "properties": {
+        "actor_id": {"maxLength": 256, "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/-]*$", "type": "string"},
+        "actor_kind": {"enum": ["human", "agent", "system"], "type": "string"}
+      },
+      "required": ["actor_id", "actor_kind"],
+      "type": "object"
+    },
+    "entry": {
+      "additionalProperties": false,
+      "properties": {
+        "behavior_preserving_tests": {"items": {"$ref": "#/$defs/path"}, "maxItems": 128, "minItems": 1, "type": "array", "uniqueItems": true},
+        "created_at": {"$ref": "#/$defs/timestamp"},
+        "deadline": {"$ref": "#/$defs/timestamp"},
+        "debt_id": {"$ref": "#/$defs/id"},
+        "evidence": {"items": {"$ref": "#/$defs/evidence"}, "maxItems": 64, "minItems": 1, "type": "array", "uniqueItems": true},
+        "interest": {"maxLength": 2000, "minLength": 1, "type": "string"},
+        "introduced_by": {"$ref": "#/$defs/actor"},
+        "owner": {"$ref": "#/$defs/actor"},
+        "reason": {"maxLength": 4000, "minLength": 1, "type": "string"},
+        "repayment_trigger": {"maxLength": 2000, "minLength": 1, "type": "string"},
+        "revision": {"maximum": 1000000, "minimum": 1, "type": "integer"},
+        "status": {"enum": ["open", "repaying", "repaid", "accepted"], "type": "string"},
+        "updated_at": {"$ref": "#/$defs/timestamp"}
+      },
+      "required": ["debt_id", "introduced_by", "reason", "owner", "interest", "repayment_trigger", "deadline", "behavior_preserving_tests", "status", "evidence", "created_at", "updated_at", "revision"],
+      "type": "object"
+    },
+    "evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {"$ref": "#/$defs/id"},
+        "path": {"$ref": "#/$defs/path"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      },
+      "required": ["evidence_id", "path", "sha256"],
+      "type": "object"
+    },
+    "id": {"maxLength": 128, "minLength": 3, "pattern": "^[A-Z][A-Z0-9_-]*$", "type": "string"},
+    "path": {"maxLength": 4096, "minLength": 1, "pattern": "^[^/\\\\][^\\\\]*[^/\\\\]$|^[^/\\\\]$", "type": "string"},
+    "sha256": {"maxLength": 64, "minLength": 64, "pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "timestamp": {"maxLength": 32, "minLength": 20, "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$", "type": "string"}
+  },
+  "$id": "https://adaptive-grok.local/schemas/debt-entry.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "entries": {"items": {"$ref": "#/$defs/entry"}, "maxItems": 2048, "type": "array", "uniqueItems": true},
+    "governance_id": {"const": "GOV-ADAPTIVE-GROK-M3", "type": "string"},
+    "schema_version": {"const": 1, "type": "integer"}
+  },
+  "required": ["schema_version", "governance_id", "entries"],
+  "type": "object"
+}

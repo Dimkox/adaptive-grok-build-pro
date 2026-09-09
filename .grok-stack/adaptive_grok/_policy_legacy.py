@@ -3,6 +3,7 @@ from __future__ import annotations
 import fnmatch
 import re
 import shlex
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -46,6 +47,7 @@ DESTRUCTIVE_COMMANDS = [
 ]
 _COMMAND_SPLIT = re.compile(r'(?:&&|\|\||[;|\n])')
 _WRAPPERS = {'sudo', 'doas', 'command', 'time', 'nohup', 'nice'}
+_EXECUTION_WRAPPERS = {'command', 'nice', 'nohup', 'setsid', 'time', 'timeout'}
 _UNWRAP_SHELL = re.compile(
     r'''^\s*(?:(?:sudo|doas)\s+)?(?:/(?:usr/)?bin/)?(?:bash|sh|zsh|dash|ksh)\s+-\S*c\S*\s+(?P<rest>.+?)\s*$''',
     re.IGNORECASE | re.VERBOSE | re.DOTALL,
@@ -167,6 +169,55 @@ def _command_chunks(command: str) -> list[str]:
     return [part for part in _COMMAND_SPLIT.split(command) if part.strip()]
 
 
+def _unwrap_execution_wrappers(tokens: list[str]) -> tuple[list[str], bool]:
+    """Return a command behind a small literal wrapper grammar, or flag unsafe syntax."""
+    remaining = list(tokens)
+    for _depth in range(8):
+        if not remaining:
+            return [], True
+        wrapper = Path(remaining[0]).name.lower()
+        if wrapper not in _EXECUTION_WRAPPERS:
+            return remaining, False
+        index = 1
+        if wrapper == 'nice':
+            while index < len(remaining):
+                option = remaining[index]
+                if option == '--':
+                    index += 1
+                    break
+                if option in {'-n', '--adjustment'}:
+                    if index + 1 >= len(remaining):
+                        return [], True
+                    index += 2
+                    continue
+                if option.startswith('--adjustment='):
+                    index += 1
+                    continue
+                if option.startswith('-'):
+                    return [], True
+                break
+        elif wrapper == 'time':
+            while index < len(remaining) and remaining[index] == '-p':
+                index += 1
+            if index < len(remaining) and remaining[index] == '--':
+                index += 1
+            elif index < len(remaining) and remaining[index].startswith('-'):
+                return [], True
+        elif wrapper in {'command', 'nohup', 'setsid'}:
+            if index < len(remaining) and remaining[index] == '--':
+                index += 1
+            elif index < len(remaining) and remaining[index].startswith('-'):
+                return [], True
+        elif wrapper == 'timeout':
+            if index < len(remaining) and remaining[index] == '--':
+                index += 1
+            if index >= len(remaining) or remaining[index].startswith('-'):
+                return [], True
+            index += 1  # duration
+        remaining = remaining[index:]
+    return [], True
+
+
 def _leading_argv(chunk: str) -> list[str]:
     stripped = chunk.split('#', 1)[0].strip()
     try:
@@ -175,12 +226,35 @@ def _leading_argv(chunk: str) -> list[str]:
         tokens = stripped.split()
     while tokens and re.match(r'^[A-Za-z_][A-Za-z0-9_]*=', tokens[0]):
         tokens = tokens[1:]
-    while tokens and tokens[0].lower() in _WRAPPERS:
-        tokens = tokens[1:]
+    if tokens and Path(tokens[0]).name.lower() in {'sudo', 'doas', 'env'}:
+        commands = {'git', 'gh', 'docker', 'npm', 'bash', 'sh', 'zsh', 'dash', 'ksh'}
+        command_index = next(
+            (index for index, token in enumerate(tokens[1:], 1) if Path(token).name.lower() in commands),
+            None,
+        )
+        if command_index is not None:
+            tokens = tokens[command_index:]
+    tokens, ambiguous_wrapper = _unwrap_execution_wrappers(tokens)
+    if ambiguous_wrapper:
+        return []
+    if tokens:
+        tokens[0] = Path(tokens[0]).name
     return [token.lower() for token in tokens]
 
 
 def _unwrap_shell(chunk: str) -> str:
+    try:
+        tokens = shlex.split(chunk)
+    except ValueError:
+        tokens = []
+    shells = {'bash', 'sh', 'zsh', 'dash', 'ksh'}
+    for index, token in enumerate(tokens):
+        if Path(token).name.lower() not in shells:
+            continue
+        for option_index in range(index + 1, len(tokens) - 1):
+            if re.fullmatch(r'-[A-Za-z]*c[A-Za-z]*', tokens[option_index]):
+                return tokens[option_index + 1]
+        break
     match = _UNWRAP_SHELL.match(chunk)
     if not match:
         return chunk
@@ -191,6 +265,17 @@ def _unwrap_shell(chunk: str) -> str:
 
 
 def _production_action(argv: list[str]) -> str | None:
+    if argv and argv[0] == 'git':
+        index = 1
+        while index < len(argv):
+            if index + 1 < len(argv) and argv[index] in {'-c', '--git-dir', '--work-tree'}:
+                index += 2
+                continue
+            if argv[index].startswith(('--git-dir=', '--work-tree=')):
+                index += 1
+                continue
+            break
+        argv = ['git', *argv[index:]]
     if argv[:2] == ['git', 'push']:
         if '--tags' in argv or any(item.startswith('refs/tags/') for item in argv[2:]):
             return 'git-push-tag'
@@ -211,14 +296,236 @@ def _production_action(argv: list[str]) -> str | None:
     return None
 
 
-def production_action(command: str) -> str | None:
-    for chunk in _command_chunks(command):
-        inner = _unwrap_shell(chunk)
-        for piece in _command_chunks(inner):
-            action = _production_action(_leading_argv(piece))
-            if action:
-                return action
+@dataclass(frozen=True)
+class AuthorityAnalysis:
+    actions: tuple[str, ...]
+    ambiguous: bool
+    context_proven: bool
+
+
+_AUTHORITY_EXECUTABLES = {'git', 'gh', 'docker', 'npm'}
+_AUTHORITY_META = re.compile(r'[$`*?\[\]{}()]')
+_INERT_EXECUTABLES = {'echo', 'printf'}
+_SHELL_EXECUTABLES = {'bash', 'sh', 'zsh', 'dash', 'ksh'}
+
+
+def _authority_token_is_dynamic(token: str) -> bool:
+    return _AUTHORITY_META.search(token) is not None
+
+
+def _literal_xargs_target(tokens: list[str]) -> list[str] | None:
+    index = 1
+    while index < len(tokens):
+        token = tokens[index]
+        if token == '--':  # nosec B105
+            return tokens[index + 1:]
+        if token in {'-a', '--arg-file'}:
+            if index + 1 >= len(tokens):
+                return None
+            index += 2
+            continue
+        if token.startswith('--arg-file='):
+            index += 1
+            continue
+        if token.startswith('-'):
+            return None
+        return tokens[index:]
+    return []
+
+
+def _git_selector_index(argv: list[str]) -> int:
+    index = 1
+    while index < len(argv):
+        token = argv[index]
+        if token in {'-C', '-c', '--git-dir', '--work-tree'}:
+            if index + 1 >= len(argv):
+                return len(argv)
+            index += 2
+            continue
+        if token.startswith(('--git-dir=', '--work-tree=')):
+            index += 1
+            continue
+        break
+    return index
+
+
+def _candidate_authority(argv: list[str]) -> tuple[str | None, bool]:
+    if not argv:
+        return None, False
+    executable = Path(argv[0]).name.lower()
+    normalized = [executable, *[token.lower() for token in argv[1:]]]
+    action = _production_action(normalized)
+    if executable == 'git':
+        selector_index = _git_selector_index(argv)
+        if selector_index >= len(argv):
+            return action, False
+        if _authority_token_is_dynamic(argv[selector_index]):
+            return action, True
+        if argv[selector_index].lower() == 'push' and any(
+            _authority_token_is_dynamic(token) for token in argv[selector_index + 1:]
+        ):
+            return action, True
+    elif executable in {'docker', 'npm'}:
+        if len(argv) > 1 and _authority_token_is_dynamic(argv[1]):
+            return action, True
+        if action and any(_authority_token_is_dynamic(token) for token in argv[2:]):
+            return action, True
+    elif executable == 'gh':
+        if len(argv) > 1 and _authority_token_is_dynamic(argv[1]):
+            return action, True
+        if len(argv) > 2 and argv[1].lower() in {'pr', 'release', 'workflow'}:
+            if _authority_token_is_dynamic(argv[2]):
+                return action, True
+            if action and any(_authority_token_is_dynamic(token) for token in argv[3:]):
+                return action, True
+    return action, False
+
+
+def _command_tokens(chunk: str) -> list[str] | None:
+    try:
+        tokens = shlex.split(chunk)
+    except ValueError:
+        return None
+    while tokens and re.match(r'^[A-Za-z_][A-Za-z0-9_]*=', tokens[0]):
+        tokens = tokens[1:]
+    return tokens
+
+
+def _bounded_command(tokens: list[str]) -> tuple[list[str], bool]:
+    remaining = list(tokens)
+    if remaining and Path(remaining[0]).name.lower() == 'sudo':
+        index = 1
+        if index < len(remaining) and remaining[index] == '-E':
+            index += 1
+        if index >= len(remaining) or remaining[index].startswith('-'):
+            return remaining, False
+        remaining = remaining[index:]
+    elif remaining and Path(remaining[0]).name.lower() == 'doas':
+        index = 1
+        if index + 1 < len(remaining) and remaining[index] == '-u':
+            index += 2
+        if index >= len(remaining) or remaining[index].startswith('-'):
+            return remaining, False
+        remaining = remaining[index:]
+    elif remaining and Path(remaining[0]).name.lower() == 'env':
+        index = 1
+        while index < len(remaining) and re.match(
+            r'^[A-Za-z_][A-Za-z0-9_]*=', remaining[index]
+        ):
+            index += 1
+        if index >= len(remaining) or remaining[index].startswith('-'):
+            return remaining, False
+        remaining = remaining[index:]
+    remaining, ambiguous_wrapper = _unwrap_execution_wrappers(remaining)
+    return remaining, not ambiguous_wrapper
+
+
+def _literal_shell_payload(tokens: list[str]) -> str | None:
+    if not tokens or Path(tokens[0]).name.lower() not in _SHELL_EXECUTABLES:
+        return None
+    if len(tokens) == 3 and tokens[1] in {'-c', '-lc'}:
+        return tokens[2]
+    if len(tokens) == 4 and tokens[1] == '--noprofile' and tokens[2] in {'-c', '-lc'}:
+        return tokens[3]
     return None
+
+
+def _exact_outer_shell_payload(raw_command: str) -> str | None:
+    tokens = _command_tokens(raw_command)
+    if tokens is None:
+        return None
+    bounded, proven = _bounded_command(tokens)
+    if not proven:
+        return None
+    return _literal_shell_payload(bounded)
+
+
+def _analyze_authority_pieces(
+    raw_command: str,
+    *,
+    shell_depth: int = 0,
+) -> AuthorityAnalysis:
+    actions: list[str] = []
+    ambiguous = False
+    context_proven = True
+
+    def record(argv: list[str], *, proven: bool) -> None:
+        nonlocal ambiguous, context_proven
+        action, candidate_ambiguous = _candidate_authority(argv)
+        if action and action not in actions:
+            actions.append(action)
+        if candidate_ambiguous:
+            ambiguous = True
+        if (action or candidate_ambiguous) and not proven:
+            context_proven = False
+
+    for chunk in _command_chunks(raw_command):
+        raw_tokens = _command_tokens(chunk)
+        if raw_tokens is None:
+            if re.search(r'\b(?:git|gh|docker|npm)\b', chunk, re.IGNORECASE):
+                ambiguous = True
+                context_proven = False
+            continue
+        tokens, bounded = _bounded_command(raw_tokens)
+        if not tokens:
+            continue
+        outer = Path(tokens[0]).name.lower()
+        if outer in _INERT_EXECUTABLES:
+            continue
+        if outer == 'xargs':
+            target = _literal_xargs_target(tokens)
+            if target is None:
+                if any(Path(token).name.lower() in _AUTHORITY_EXECUTABLES for token in tokens[1:]):
+                    ambiguous = True
+                    context_proven = False
+                continue
+            target, target_bounded = _bounded_command(target)
+            if not target or Path(target[0]).name.lower() in _INERT_EXECUTABLES:
+                continue
+            if Path(target[0]).name.lower() in _AUTHORITY_EXECUTABLES:
+                record(target, proven=False)
+            elif any(Path(token).name.lower() in _AUTHORITY_EXECUTABLES for token in target):
+                for index, token in enumerate(target):
+                    if Path(token).name.lower() in _AUTHORITY_EXECUTABLES:
+                        record(target[index:], proven=False)
+            if not target_bounded:
+                context_proven = False
+            continue
+        if outer in _SHELL_EXECUTABLES:
+            payload = _literal_shell_payload(tokens)
+            if payload is None or shell_depth > 0:
+                continue
+            inner = _analyze_authority_pieces(payload, shell_depth=shell_depth + 1)
+            for action in inner.actions:
+                if action not in actions:
+                    actions.append(action)
+            ambiguous = ambiguous or inner.ambiguous
+            if (inner.actions or inner.ambiguous) and (not bounded or not inner.context_proven):
+                context_proven = False
+            continue
+        if outer in _AUTHORITY_EXECUTABLES:
+            record(tokens, proven=bounded)
+            continue
+        for index, token in enumerate(tokens[1:], 1):
+            if Path(token).name.lower() in _AUTHORITY_EXECUTABLES:
+                record(tokens[index:], proven=False)
+
+    return AuthorityAnalysis(tuple(actions), ambiguous, context_proven)
+
+
+def analyze_command_authority(raw_command: str) -> AuthorityAnalysis:
+    """Conservatively classify production authority without evaluating shell syntax."""
+    shell_payload = _exact_outer_shell_payload(raw_command)
+    if shell_payload is not None:
+        return _analyze_authority_pieces(shell_payload, shell_depth=1)
+    return _analyze_authority_pieces(raw_command)
+
+
+def production_action(command: str) -> str | None:
+    analysis = analyze_command_authority(command)
+    if analysis.ambiguous or not analysis.context_proven:
+        return None
+    return analysis.actions[0] if analysis.actions else None
 
 
 def is_production_invocation(command: str) -> bool:
@@ -252,7 +559,12 @@ def _agent_type(tool_input: Any) -> str | None:
     return None
 
 
-def evaluate_pre_tool(root: Path, event: dict[str, Any]) -> tuple[bool, str | None]:
+def evaluate_pre_tool(
+    root: Path,
+    event: dict[str, Any],
+    *,
+    _skip_substring_control_plane_guard: bool = False,
+) -> tuple[bool, str | None]:
     tool = str(event.get('tool_name', ''))
     tool_input = event.get('tool_input') or {}
     route = get_active_route(root)
@@ -265,7 +577,10 @@ def evaluate_pre_tool(root: Path, event: dict[str, Any]) -> tuple[bool, str | No
 
     if tool == 'Bash':
         command = str(tool_input.get('command', '')) if isinstance(tool_input, dict) else str(tool_input)
-        if _is_control_plane_shell_mutation(command, control_plane):
+        if (
+            not _skip_substring_control_plane_guard
+            and _is_control_plane_shell_mutation(command, control_plane)
+        ):
             return False, 'Blocked control-plane shell mutation; use a structured write with an exact protected-path grant.'
         for pattern in _configured_patterns(config, 'destructive_command_patterns', DESTRUCTIVE_COMMANDS):
             if re.search(pattern, command, flags=re.IGNORECASE):
