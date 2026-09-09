@@ -1,7 +1,28 @@
 {
   "change_id": "20260907-optional-env-landing-composition-e98249",
-  "status": "implementing",
-  "schema_version": 1,
+  "history": [
+    {
+      "at": "2026-09-09T10:46:01+00:00",
+      "from": "implementing",
+      "reason": "change-spec migrated to schema v2 and full pr gate passed in CI-equivalent capability",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-09T10:47:38+00:00",
+      "from": "verifying",
+      "reason": "spec v2 validated, pr gate passed, lesson and decision recorded",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-09T10:47:38+00:00",
+      "from": "reviewing",
+      "reason": "change-spec schema v2 evidence complete for exact head",
+      "to": "ready"
+    }
+  ],
   "route_id": "e98249ed2c64",
-  "title": "Optional env landing composition for operator-injected live Grok/Qwen"
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Optional env landing composition for operator-injected live Grok/Qwen",
+  "updated_at": "2026-09-09T10:47:38+00:00"
 }
