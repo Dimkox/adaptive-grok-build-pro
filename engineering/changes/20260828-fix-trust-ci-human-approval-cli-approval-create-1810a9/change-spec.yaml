@@ -1,35 +1,115 @@
-schema_version: 1
-change_id: "20260828-fix-trust-ci-human-approval-cli-approval-create-1810a9"
-objective:
-  id: OBJ-001
-  statement: "Make human approval CLI commands runnable without server-only imports while preserving Trust CI approval semantics"
-  success_metric: "isolated human-command regressions and unchanged approval contract tests"
-  target: "all pass"
-risk:
-  tier: "medium"
-  domains: [api, data, security]
-acceptance_criteria:
-  - id: AC-001
-    statement: "approval-create and approval-submit parse without FastAPI, psycopg or uvicorn"
-  - id: AC-002
-    statement: "approval-create preserves exact policy, SHA, scope, TTL and signature semantics"
-  - id: AC-003
-    statement: "operator setup is reproducible from a reviewed source checkout"
-invariants:
-  - "Human private keys remain unreadable by agents, API and worker"
-  - "POST /approvals and PostgreSQL schema remain unchanged"
-  - "No approval scope or exact-SHA check is weakened"
-forbidden_outcomes:
-  - "automatic or simulated human approval"
-  - "private-key discovery or submission by an agent"
-  - "deployed policy, trust store, holdout, image or database mutation"
-contracts:
-  openapi: []
-  json_schema: []
-  events: []
-observability: []
-rollback:
-  strategy: "revert the CLI-only commit; no data recovery"
-  maximum_steps: 1
-approvals:
-  required_scopes: []
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "approval-create and approval-submit parse and run without importing FastAPI, psycopg or uvicorn.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_cli.py::HumanApprovalCliIsolationTests.test_human_command_help_is_stdlib_only"
+        },
+        {
+          "test": "trust-ci/tests/test_cli.py::HumanApprovalCliIsolationTests.test_approval_create_runs_without_server_imports_and_preserves_envelope_contract"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "approval-create preserves the exact policy digest, head SHA, scope, TTL and signature semantics of the approval envelope.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_cli.py::HumanApprovalCliIsolationTests.test_approval_create_runs_without_server_imports_and_preserves_envelope_contract"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "approval-submit posts the exact signed bytes without server or crypto imports, so submission cannot alter the envelope.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_cli.py::HumanApprovalCliIsolationTests.test_approval_submit_posts_exact_bytes_without_server_or_crypto_imports"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Every relocated non-human command still imports only its own dependency slice and reaches its safe effect.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_cli.py::CommandBranchImportTests.test_every_relocated_non_human_command_imports_only_its_slice_and_reaches_safe_effect"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260828-fix-trust-ci-human-approval-cli-approval-create-1810a9",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No command path may generate, read, request or simulate a human approval signature.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_cli.py::HumanApprovalCliIsolationTests.test_approval_create_runs_without_server_imports_and_preserves_envelope_contract"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "The human commands must not reach deployed policy, trust store, holdout, image or database state.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_cli.py::HumanApprovalCliIsolationTests.test_human_command_help_is_stdlib_only"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Human private keys stay unreadable by the agent environment, the API and the worker; the CLI only consumes an already-signed envelope.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_cli.py::HumanApprovalCliIsolationTests.test_approval_submit_posts_exact_bytes_without_server_or_crypto_imports"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "The POST /approvals contract and the PostgreSQL approval schema remain unchanged, so no approval scope or exact-SHA requirement is weakened.",
+      "evidence": [
+        {
+          "test": "trust-ci/tests/test_cli.py::HumanApprovalCliIsolationTests.test_approval_create_runs_without_server_imports_and_preserves_envelope_contract"
+        },
+        {
+          "test": "trust-ci/tests/test_api.py"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Make the human approval CLI commands runnable from a stdlib-only process while preserving every Trust CI approval semantic.",
+    "success_metric": "Human commands run under a blocked-import finder that rejects FastAPI, psycopg and uvicorn, and the approval envelope contract tests stay unchanged.",
+    "target": "All four acceptance criteria and both invariants pass in trust-ci/tests, with no change to the approvals endpoint or database schema."
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api",
+      "data",
+      "security"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "restore"
+  },
+  "schema_version": 2
+}
