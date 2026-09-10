@@ -475,3 +475,12 @@ NODE-FACTORY-LANDING-DOGFOOD stays network: none. Grok/Qwen httpx adapters live 
 ## 2026-09-07 — Keep shipped factory server off httpx; compose live landing from env in operator injection
 
 NODE-FACTORY-LOCAL-API is network: none and owns server.py. Live Grok/Qwen stay in landing_live_executors via compose_env_landing, which returns None when FACTORY_LANDING_PROVIDER is unset. Local composition injects that helper or an offline fixture executor so landing assembly is a factory byproduct without importing httpx into the API module.
+
+
+## 2026-09-10 — Reconstruct historical delivery from actual refs
+
+Compare a consumer repository’s selected delivery ref with every observed PR head before classifying open work as undelivered; default branches can retain an obsolete baseline. This resolved stale-open history without inventing additional task acceptances, and keeps project evidence distinct from profile-qualified M8 records.
+
+## 2026-09-10 — Keep historical denominators and profile metadata explicit
+
+Separate PR pagination completeness from task-inventory completeness, and report observed records alongside nullable full-history totals. This preserves existing work without turning missing acceptance/session evidence into zeros; complete profile metadata remains bucketed accounting with no M8 authority.

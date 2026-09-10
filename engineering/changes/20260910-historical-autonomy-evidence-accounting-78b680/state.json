@@ -1,0 +1,65 @@
+{
+  "change_id": "20260910-historical-autonomy-evidence-accounting-78b680",
+  "created_at": "2026-09-10T19:08:36+00:00",
+  "history": [
+    {
+      "at": "2026-09-10T19:08:36+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-10T19:17:55+00:00",
+      "from": "draft",
+      "reason": "Five analysis reports and bounded design written; test paths are planned until implementation",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-10T19:17:55+00:00",
+      "from": "scoped",
+      "reason": "User do-it consent covers evidence reconstruction; route has no named design gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-10T19:29:52+00:00",
+      "from": "approved",
+      "reason": "Bounded design approved by user do-it instruction; sole route-selected owner implementing offline accounting and synthetic validation.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-10T19:33:32+00:00",
+      "from": "implementing",
+      "reason": "Sole implementation owner completed stable handoff: 93 focused tests, Ruff, whitespace validation and private source reconciliation passed; run full route verification next.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-10T19:48:20+00:00",
+      "from": "verifying",
+      "reason": "Full preflight passed all checks except three existing factory landing artifact-ready assertions. Investigate and repair a reproduced fixture defect without weakening product checks.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-10T19:51:13+00:00",
+      "from": "implementing",
+      "reason": "Confirmed blob_expired from mixed fixture clocks; two test-only injections repaired all three failures and all 18 surrounding tests. Full disposable factory rerun is in progress.",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-10T19:56:47+00:00",
+      "from": "verifying",
+      "reason": "All initially passing components retained; two fixture-only fixes passed 18 focused tests and the full 546-test disposable PostgreSQL component with real restart/reconciliation. Independent review next; final full verification will bind committed candidate.",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-09-10T20:04:11+00:00",
+      "from": "reviewing",
+      "reason": "Independent code/test/security reviews PASS; corrected full factory component PASS and source bindings unchanged. Freeze candidate now, then obtain final exact-commit full verification and current local receipts before declaring completion.",
+      "to": "ready"
+    }
+  ],
+  "route_id": "78b680187560",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Historical autonomy evidence accounting",
+  "updated_at": "2026-09-10T20:04:11+00:00"
+}

@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-09-10T12:00:00Z",
+  "repositories": [
+    {
+      "repository_id": "synthetic/project",
+      "default_branch": "main",
+      "delivery_ref": "delivery",
+      "delivery_sha": "1111111111111111111111111111111111111111",
+      "pagination_complete": true,
+      "task_inventory_complete": false,
+      "source_refs": ["synthetic:complete-pr-inventory"],
+      "pull_requests": [
+        {
+          "number": 1,
+          "state": "open",
+          "base_ref": "main",
+          "head_sha": "2222222222222222222222222222222222222222",
+          "merge_sha": null,
+          "merged_at": null,
+          "merged_by_account_type": null,
+          "delivered_at_ref": true,
+          "delivery_kind": "product_change",
+          "source_refs": ["synthetic:request-1", "synthetic:head-ancestry"]
+        },
+        {
+          "number": 2,
+          "state": "merged",
+          "base_ref": "delivery",
+          "head_sha": "3333333333333333333333333333333333333333",
+          "merge_sha": "4444444444444444444444444444444444444444",
+          "merged_at": "2026-09-09T12:00:00Z",
+          "merged_by_account_type": "User",
+          "delivered_at_ref": true,
+          "delivery_kind": "product_change",
+          "source_refs": ["synthetic:request-2"]
+        },
+        {
+          "number": 3,
+          "state": "merged",
+          "base_ref": "delivery",
+          "head_sha": null,
+          "merge_sha": "5555555555555555555555555555555555555555",
+          "merged_at": "2026-09-09T13:00:00Z",
+          "merged_by_account_type": "User",
+          "delivered_at_ref": true,
+          "delivery_kind": "branch_sync",
+          "source_refs": ["synthetic:request-3-branch-sync"]
+        }
+      ],
+      "tasks": [
+        {
+          "task_id": "synthetic-work-unit-a",
+          "pull_request_numbers": [1, 2],
+          "acceptance": "explicit_human_acceptance",
+          "acceptance_source_refs": ["synthetic:acceptance-a"],
+          "operator_interventions": 2,
+          "intervention_coverage": "partial",
+          "intervention_source_refs": ["synthetic:partial-event-log-a"],
+          "session_started_at": null,
+          "session_ended_at": null,
+          "cost_usd_micros": null,
+          "latency_ms": null,
+          "regression_count": null,
+          "rollback_count": null,
+          "profile": {"repository_id": "synthetic/project", "task_class": "code_change"},
+          "source_refs": ["synthetic:work-ledger-a"]
+        },
+        {
+          "task_id": "synthetic-work-unit-b",
+          "pull_request_numbers": [2],
+          "acceptance": "documented_validation",
+          "acceptance_source_refs": ["synthetic:validation-b"],
+          "operator_interventions": 0,
+          "intervention_coverage": "complete",
+          "intervention_source_refs": ["synthetic:complete-event-log-b"],
+          "session_started_at": "2026-09-09T10:00:00Z",
+          "session_ended_at": "2026-09-09T11:00:00Z",
+          "cost_usd_micros": 1000000,
+          "latency_ms": 3600000,
+          "regression_count": 0,
+          "rollback_count": 0,
+          "profile": null,
+          "source_refs": ["synthetic:work-ledger-b", "synthetic:measurements-b"]
+        }
+      ]
+    }
+  ]
+}
