@@ -1,0 +1,130 @@
+{
+  "schema_version": 2,
+  "change_id": "20260910-m7-durable-acceptance-and-currentness-lookup-des-18ea63",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Add a separate durable M7 lookup/preflight over canonical producer records and independently sourced observations, preserving all existing V1 authority semantics.",
+    "success_metric": "Restart-stable exact-subject evidence retrieval with explicit partial/unavailable/rejected states and no qualification effect.",
+    "target": "All scoped binding, replay, privilege, freshness and restart acceptance tests pass after implementation; design checkpoint alone claims no implementation."
+  },
+  "risk": {
+    "tier": "red",
+    "domains": [
+      "ai",
+      "api",
+      "data",
+      "security"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Resolve immutable completed producer records with exact repository/task/run/result/profile bindings.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_shadow_lookup.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Store acceptance independently of incomplete outcome/profile metrics; distinguish rejection, missing source and stale evidence.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_shadow_lookup.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Persist idempotent source observations and reject conflicts, cross-subject swaps and out-of-order revivals.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_shadow_lookup_postgres.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Resolve currentness from independently authenticated latest context and bounded time, never a caller-selected old green check.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_shadow_lookup_postgres.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Recover facts and invalidations after real PostgreSQL and process restart without privilege escalation.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_shadow_lookup_postgres.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "Preserve V1 blocked/false semantics, M8 L2 ceiling and M9 restrictions even with complete synthetic preflight evidence.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_shadow_lookup.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Preflight has no M8 qualification, activation, merge or deployment authority.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_shadow_lookup.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Existing migrations and V1 wire meanings remain unchanged; imported claims cannot authenticate their own source.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        },
+        {
+          "test": "factory/tests/test_shadow_lookup_postgres.py"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Read human approval private keys, create external authority, mutate deployed trust material, fabricate missing measurements or publish private consumer evidence.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "events": [],
+    "json_schema": []
+  },
+  "approvals": {
+    "required_scopes": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Bounded lookup reason, source coverage, replay/conflict, latency and restart-recovery evidence; no private body logging.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 2
+  }
+}

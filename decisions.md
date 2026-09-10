@@ -477,3 +477,15 @@ Compare a consumer repository’s selected delivery ref with every observed PR h
 ## 2026-09-10 — Keep historical denominators and profile metadata explicit
 
 Separate PR pagination completeness from task-inventory completeness, and report observed records alongside nullable full-history totals. This preserves existing work without turning missing acceptance/session evidence into zeros; complete profile metadata remains bucketed accounting with no M8 authority.
+
+## 2026-09-10 — Preserve M7 V1 boundaries while adding durable lookup
+
+Trace producer and consumer contracts before treating fixed unavailable properties as missing implementation: M7's blocked digest and M8's false availability are also enforced by M9. The next slice uses a separate observation-only preflight and immutable completed-run bindings, because completion clears the active lease pointer; this avoids a silent cross-milestone contract change.
+
+## 2026-09-10 — Separate historical proof from current trust context
+
+The signed Trust CI command result can bind a historical holdout digest, while current App/PR/deployed epoch and explicit business acceptance require their own authenticated observations. Resolving the latest trusted context before comparing the requested policy prevents an old green check from being selected as current; storing acceptance independently also preserves unknown profile and intervention metrics.
+
+## 2026-09-10 — Project GitHub milestones from evidence of delivery
+
+GitHub milestone and issue inventories were empty even though M0–M9 source and subsequent work were delivered through PRs. A retrospective source-delivery milestone plus separately open operational stages preserves that work and exposes the remaining M7/M8/M9 and L3–L5 criteria without treating a source merge as operational qualification.

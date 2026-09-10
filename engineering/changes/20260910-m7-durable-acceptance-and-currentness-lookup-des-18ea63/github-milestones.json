@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "repository": "Dimkox/adaptive-grok-build-pro",
+  "status": "proposed_not_applied",
+  "source_commit": "64378d28c7b78cace463d96470c1898294b8f196",
+  "observation": {
+    "milestones_all_states": 0,
+    "issues_all_states": 0,
+    "pr32_state": "MERGED",
+    "source": "Authenticated gh API and PR reads during 2026-09-10 continuation; see evidence/analysis-docs_researcher.md."
+  },
+  "proposed_operation": {
+    "method": "POST",
+    "resource": "https://api.github.com/repos/Dimkox/adaptive-grok-build-pro/milestones",
+    "count": 7,
+    "updates_to_existing_objects": 0,
+    "issues_to_create": 0,
+    "pr_assignments": 0,
+    "authorization": "pending_explicit_user_delegation"
+  },
+  "milestones": [
+    {
+      "title": "M0–M9 — Поставленная базовая реализация",
+      "state": "closed",
+      "description": "Ретроспективный учёт поставленного исходного кода M0–M9. Поставка основной реализации подтверждена PR #22 и историей main; эта отметка не означает завершённую эксплуатационную квалификацию, действующий M8 или автономный production deploy.\n\nКритерии завершения: Ссылки на исходную дорожную карту, записи поставки и PR #22. Отдельные эксплуатационные требования перенесены в открытые этапы.\n\nЗависимости: нет предварительного этапа в этой проекции.\n\nОснование: [дорожная карта](https://github.com/Dimkox/adaptive-grok-build-pro/blob/64378d28c7b78cace463d96470c1898294b8f196/DARK_FACTORY_ROADMAP.md), [учёт поставки](https://github.com/Dimkox/adaptive-grok-build-pro/blob/64378d28c7b78cace463d96470c1898294b8f196/PROJECT_STATE.json), [PR #22](https://github.com/Dimkox/adaptive-grok-build-pro/pull/22), [PR #32](https://github.com/Dimkox/adaptive-grok-build-pro/pull/32).\n\nПлановая дата пока не установлена: сначала зависимости и критерии; private consumer details здесь не публикуются."
+    },
+    {
+      "title": "M7.1 — Постоянное хранение доказательств и preflight",
+      "state": "open",
+      "description": "Ближайший срез: сохранять канонические bundle/outcome и отдельно полученные наблюдения о приёмке и актуальности, связывая их с repository/task/run/result SHA. Добавить отдельный результат preflight; существующие блокировки V1, потолок L2 и отсутствие эксплуатационных полномочий сохранить.\n\nКритерии завершения: Контракты и миграция; проверенные связи с M4–M6; идемпотентные повторы; отклонение подмен, устаревших наблюдений и конфликтов; восстановление после рестарта PostgreSQL; точные причины отсутствия доказательств. Локальная проверка, независимые ревью и внешний Trust CI на SHA PR.\n\nЗависимости: нет предварительного этапа в этой проекции.\n\nОснование: [дорожная карта](https://github.com/Dimkox/adaptive-grok-build-pro/blob/64378d28c7b78cace463d96470c1898294b8f196/DARK_FACTORY_ROADMAP.md), [учёт поставки](https://github.com/Dimkox/adaptive-grok-build-pro/blob/64378d28c7b78cace463d96470c1898294b8f196/PROJECT_STATE.json), [PR #22](https://github.com/Dimkox/adaptive-grok-build-pro/pull/22), [PR #32](https://github.com/Dimkox/adaptive-grok-build-pro/pull/32).\n\nПлановая дата пока не установлена: сначала зависимости и критерии; private consumer details здесь не публикуются."
+    },
+    {
+      "title": "M7.2 — Рабочий shadow-цикл и измерения",
+      "state": "open",
+      "description": "Демонстрировать ограниченный цикл задача → изолированное выполнение → независимая проверка → PR → человеческое решение, с наблюдаемыми расходами и вмешательствами.\n\nКритерии завершения: Реальные связные task/run/profile/outcome; контроль WIP, возраста PR и стоимости; восстановление после неоднозначного внешнего действия; полные либо явно неполные измерения. Реальные исторические записи использовать при доказанных связях; неизвестные показатели не заменять нулями.\n\nЗависимости: M7.1.\n\nОснование: [дорожная карта](https://github.com/Dimkox/adaptive-grok-build-pro/blob/64378d28c7b78cace463d96470c1898294b8f196/DARK_FACTORY_ROADMAP.md), [учёт поставки](https://github.com/Dimkox/adaptive-grok-build-pro/blob/64378d28c7b78cace463d96470c1898294b8f196/PROJECT_STATE.json), [PR #22](https://github.com/Dimkox/adaptive-grok-build-pro/pull/22), [PR #32](https://github.com/Dimkox/adaptive-grok-build-pro/pull/32).\n\nПлановая дата пока не установлена: сначала зависимости и критерии; private consumer details здесь не публикуются."
+    },
+    {
+      "title": "M8.1 — Квалификация точных профилей до L2",
+      "state": "open",
+      "description": "Собирать и проверять фактические когорты для точной комбинации класса задачи, агента, модели, промпта, валидатора, политики, runner и holdout. Рекомендация отделена от активации.\n\nКритерии завершения: Выполнены действующие требования к размеру когорты, аудиту, качеству, стоимости, задержкам и безопасности; актуальность и понижение уровня проверены. Старые записи допускаются при доказанной совместимости профиля. Этот этап не вводит L3–L5.\n\nЗависимости: M7.1, M7.2.\n\nОснование: [дорожная карта](https://github.com/Dimkox/adaptive-grok-build-pro/blob/64378d28c7b78cace463d96470c1898294b8f196/DARK_FACTORY_ROADMAP.md), [учёт поставки](https://github.com/Dimkox/adaptive-grok-build-pro/blob/64378d28c7b78cace463d96470c1898294b8f196/PROJECT_STATE.json), [PR #22](https://github.com/Dimkox/adaptive-grok-build-pro/pull/22), [PR #32](https://github.com/Dimkox/adaptive-grok-build-pro/pull/32).\n\nПлановая дата пока не установлена: сначала зависимости и критерии; private consumer details здесь не публикуются."
+    },
+    {
+      "title": "M9.1 — Повторяемая доставка и восстановление",
+      "state": "open",
+      "description": "Проверить preview/staging/canary и восстановление из подписанного артефакта точного merged SHA в явно разрешённой среде.\n\nКритерии завершения: Воспроизводимый запуск артефакта, измеримые пороги успеха/остановки, фактически выполненное восстановление и связь инцидента с профилем доверия. Допуск к production остаётся отдельным решением.\n\nЗависимости: M8.1.\n\nОснование: [дорожная карта](https://github.com/Dimkox/adaptive-grok-build-pro/blob/64378d28c7b78cace463d96470c1898294b8f196/DARK_FACTORY_ROADMAP.md), [учёт поставки](https://github.com/Dimkox/adaptive-grok-build-pro/blob/64378d28c7b78cace463d96470c1898294b8f196/PROJECT_STATE.json), [PR #22](https://github.com/Dimkox/adaptive-grok-build-pro/pull/22), [PR #32](https://github.com/Dimkox/adaptive-grok-build-pro/pull/32).\n\nПлановая дата пока не установлена: сначала зависимости и критерии; private consumer details здесь не публикуются."
+    },
+    {
+      "title": "L3–L4 — Ограниченная автоматизация и отзыв полномочий",
+      "state": "open",
+      "description": "Предложение будущего этапа, заблокированное до отдельного утверждения границ полномочий. Определить допустимые классы автоматического merge, аудит, мониторинг и автоматический отзыв.\n\nКритерии завершения: Утверждённый контракт классов и действий; независимый exact-SHA Trust CI и обязательные подписи; проверенные сценарии инцидентов, ошибочного merge, дрейфа доказательств и отзыва. Создание milestone не является разрешением этих действий.\n\nЗависимости: M8.1.\n\nОснование: [дорожная карта](https://github.com/Dimkox/adaptive-grok-build-pro/blob/64378d28c7b78cace463d96470c1898294b8f196/DARK_FACTORY_ROADMAP.md), [учёт поставки](https://github.com/Dimkox/adaptive-grok-build-pro/blob/64378d28c7b78cace463d96470c1898294b8f196/PROJECT_STATE.json), [PR #22](https://github.com/Dimkox/adaptive-grok-build-pro/pull/22), [PR #32](https://github.com/Dimkox/adaptive-grok-build-pro/pull/32).\n\nПлановая дата пока не установлена: сначала зависимости и критерии; private consumer details здесь не публикуются."
+    },
+    {
+      "title": "L5 — Критерии и эксплуатационное доказательство автономности",
+      "state": "open",
+      "description": "Сначала утвердить измеримое определение L5: классы задач, среды, допустимые эффекты и границы человеческого вмешательства. Затем показать повторяемую работу полного цикла по этому протоколу.\n\nКритерии завершения: Утверждённые критерии; серия фактических выполнений с проверкой качества, стоимости, вмешательств и восстановления; опубликованный итог с границами применимости. Название L5 у отдельной функции не доказывает уровень.\n\nЗависимости: M7.2, M8.1, M9.1, L3–L4.\n\nОснование: [дорожная карта](https://github.com/Dimkox/adaptive-grok-build-pro/blob/64378d28c7b78cace463d96470c1898294b8f196/DARK_FACTORY_ROADMAP.md), [учёт поставки](https://github.com/Dimkox/adaptive-grok-build-pro/blob/64378d28c7b78cace463d96470c1898294b8f196/PROJECT_STATE.json), [PR #22](https://github.com/Dimkox/adaptive-grok-build-pro/pull/22), [PR #32](https://github.com/Dimkox/adaptive-grok-build-pro/pull/32).\n\nПлановая дата пока не установлена: сначала зависимости и критерии; private consumer details здесь не публикуются."
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "ai_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "ai_architect",
+    "integration_architect"
+  ],
+  "base_commit": "64378d28c7b78cace463d96470c1898294b8f196",
+  "base_fingerprint": "6543bcff9332a92994e8d6eac0bee3b14b5e87364ecc444c08aec91c3ade2dac",
+  "complexity": "high-risk",
+  "created_at": "2026-09-10T21:19:19+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "data",
+    "ai",
+    "api",
+    "security"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval",
+    "production_action_approval"
+  ],
+  "intent": "review",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data",
+    "ai"
+  ],
+  "rationale": [
+    "high-risk signal: production, deploy",
+    "intent=review",
+    "domains=data,ai,api,security",
+    "repository=generic",
+    "write-owner=none",
+    "analysis-wave=6/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "data_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "18ea639b9d02",
+  "schema_version": 1,
+  "session_id": "m7-durable-evidence-20260910",
+  "status": "routed",
+  "task": "Implement the next bounded autonomy milestone: durable M7 acceptance and currentness lookup over existing factory task/run records and observed exact-SHA external Trust CI evidence, with typed contracts, existing PostgreSQL storage, replay/staleness rejection, and restart tests. Preserve fail-closed unavailable defaults and the current L2 authority ceiling; do not activate providers, change deployed policy, merge, deploy, or mutate production. Record a reviewable design before implementation.",
+  "task_domains": [
+    "data",
+    "ai",
+    "api",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "verification-evidence",
+    "api-event-change",
+    "data-change",
+    "ai-rag-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": null
+}

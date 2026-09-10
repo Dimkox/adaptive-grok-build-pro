@@ -750,3 +750,7 @@ Root cause: both live-composition fixture families froze service time but left t
 ## 2026-09-10 — Name replacement did not remove private source facts
 
 Root cause: public analysis replaced source names with case labels while retaining private inventory quantities and operational history. Export only transferable implementation requirements; preserve detailed source findings and reconciliation evidence privately.
+
+## 2026-09-10 — Mixed routing wording selected review without a write owner
+
+Root cause: the new task text mixed implementation with “reviewable” and negative production/deploy scope, while the keyword router does not distinguish intent or negation; it selected review and no write owner. Preserve the resulting design gate and finish a scoped proposal, then route the positively stated approved implementation instead of manually removing gates or assigning an unselected writer.
