@@ -195,6 +195,7 @@ class LandingLiveGrokQwenCompositionTests(unittest.TestCase):
         self.blobs = PrivateLandingBlobStore(
             self.root / "blobs",
             repository_root=REPO_ROOT,
+            clock=lambda: FIXED_TIME,
         )
 
     def _profile(self) -> CodexLandingProfile:

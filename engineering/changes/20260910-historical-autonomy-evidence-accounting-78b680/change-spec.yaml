@@ -1,0 +1,113 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_history.py"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "Count observed delivery independently from task acceptance and unknown historical totals."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_history.py"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "Reject duplicate conflicts and malformed inputs; preserve incomplete inventory and deterministic ordering."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_history.py"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "Keep unknown interventions and outcomes distinct from measured zero; do not pool profiles or grant M8 authority."
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_history.py"
+        }
+      ],
+      "id": "AC-004",
+      "statement": "Deliver a working offline explicit-file CLI through the existing installer."
+    },
+    {
+      "id": "AC-005",
+      "statement": "Existing landing composition fixtures use the same fixed clock in service and blob store, preserving production expiry enforcement.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live.py"
+        },
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260910-historical-autonomy-evidence-accounting-78b680",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "Private source identifiers or contents enter the public product diff."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_history.py"
+        },
+        {
+          "receipt": "security_review"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "Imported local history cannot activate M8, modify factory contracts or authorize external effects."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Reconstruct historical delivery evidence with explicit acceptance, intervention and exact-profile coverage, preserving unknown facts and existing authority.",
+    "success_metric": "Deterministic validated inventory plus three privately reconciled case reports.",
+    "target": "All focused tests pass and all three source histories are reconciled."
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Inventory completeness, missing profile fields and metric coverage in deterministic JSON output.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "ai",
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}
