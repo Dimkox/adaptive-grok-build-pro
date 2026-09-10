@@ -107,6 +107,7 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - Integrated M5 execution, M6 validation, M7 shadow, and M8 autonomy boundaries under `factory/`, local-only M9 staged delivery under `delivery/`, and the offline L5 landing dogfood source candidate
 - Separate operator-owned `pilot/` boundary with built-in default-off phased CLI, one exact repository/base, one Codex start, one test command, literal GitHub effect resources, deterministic restart recovery, and no automatic write retry
 - Local verification / review receipts via `scripts/grok_*.py`
+- Offline [historical evidence accounting](engineering/runbooks/historical-autonomy-evidence.md) via `scripts/grok_history.py` separates observed PRs, source-identified work units, acceptance, intervention coverage and exact-profile metadata; imported history has no M8 qualification or authority effect.
 - Multi-agent discipline described in `AGENTS.md`
 - `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`
 - Optional independently deployed Trust CI that removes merge trust from prompts, agents and local runtime

@@ -41,6 +41,7 @@ MANAGED_FILES = (
     "factory/tests/test_state.py",
     "scripts/grok_architecture.py",
     "scripts/grok_governance.py",
+    "scripts/grok_history.py",
     "scripts/grok_route.py",
     "scripts/grok_change.py",
     "scripts/grok_spec.py",

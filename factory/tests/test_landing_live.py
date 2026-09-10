@@ -51,6 +51,7 @@ class FactoryLiveAutoLandingTests(unittest.TestCase):
         self.blobs = PrivateLandingBlobStore(
             self.root / "blobs",
             repository_root=Path(__file__).resolve().parents[2],
+            clock=lambda: FIXED_TIME,
         )
 
     def _profile(self) -> CodexLandingProfile:
