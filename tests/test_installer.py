@@ -157,6 +157,8 @@ class InstallerTests(unittest.TestCase):
             ".grok-stack/templates/change/architecture.md",
             ".grok-stack/templates/change/requirements.md",
             "scripts/grok_governance.py",
+            "scripts/grok_history.py",
+            ".grok-stack/adaptive_grok/history.py",
             "schemas/canonical-example.schema.json",
             "schemas/debt-entry.schema.json",
             "schemas/governance-handoff-v1.schema.json",
@@ -276,6 +278,16 @@ class InstallerTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+            history_help = subprocess.run(
+                [sys.executable, "scripts/grok_history.py", "--help"],
+                cwd=target,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(history_help.returncode, 0, history_help.stdout + history_help.stderr)
+            self.assertIn("Offline historical evidence", history_help.stdout)
 
     def test_materialize_new_rejects_existing_symlink_and_special_targets(self) -> None:
         for kind in ("directory", "symlink", "fifo"):

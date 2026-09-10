@@ -468,3 +468,12 @@ httpx is already a factory dependency, but FIT-FACTORY-LANDING-DOGFOOD-BOUNDARY 
 ## 2026-09-06 — Live landing HTTP sits in its own factory node
 
 NODE-FACTORY-LANDING-DOGFOOD stays network: none. Grok/Qwen httpx adapters live in NODE-FACTORY-LANDING-LIVE-EXECUTORS with a declared HTTPS edge to NODE-FACTORY-LANDING-MODEL-PROVIDER inside TD-FACTORY-CONTROL, so fitness can own the new file without giving the dogfood core live network or a Trust-CI/external-platform crossing.
+
+
+## 2026-09-10 — Reconstruct historical delivery from actual refs
+
+Compare a consumer repository’s selected delivery ref with every observed PR head before classifying open work as undelivered; default branches can retain an obsolete baseline. This resolved stale-open history without inventing additional task acceptances, and keeps project evidence distinct from profile-qualified M8 records.
+
+## 2026-09-10 — Keep historical denominators and profile metadata explicit
+
+Separate PR pagination completeness from task-inventory completeness, and report observed records alongside nullable full-history totals. This preserves existing work without turning missing acceptance/session evidence into zeros; complete profile metadata remains bucketed accounting with no M8 authority.
