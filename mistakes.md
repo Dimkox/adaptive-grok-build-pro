@@ -746,3 +746,20 @@ reported Markdown trailing spaces. Commit gates must stop on the first nonzero r
 
 **Symptom:** `test_sqlite_service_restart_retains_revalidates_and_never_replays_artifact` returned `needs_human`/`internal_failure` after 2026-09-06 14:00 UTC.
 **Root cause:** The service used `FIXED_TIME` 2026-09-05 14:00 (24h expiry) while `PrivateLandingBlobStore` defaulted to `datetime.now()`. Bind the blob store to the same frozen clock.
+
+
+## 2026-09-10 — Separate empty qualification accounting from absent delivery
+
+Root cause: a controller-only status assessment treated missing M8 records as a complete inventory of real engineering work. Reconstruct source-project history, merge targets, task acceptance and intervention coverage separately; missing qualified records and User-account merges do not establish zero real tasks or human-operated actions.
+
+## 2026-09-10 — Retain descriptor ownership during rejected snapshot reads
+
+Root cause: handing an opened descriptor to `os.fdopen` before validating its file type assumed the wrapper always took ownership; wrapper construction can fail for a directory and leave it open. Validate with `fstat`, retain an explicit `finally` close, and check rejected reads against a descriptor-count regression; strict timezone offset ranges also need validation before Python normalizes malformed offset minutes.
+
+## 2026-09-10 — Live composition fixtures repeated the mixed-clock expiry defect
+
+Root cause: both live-composition fixture families froze service time but left their private blob stores on wall time, so all three successful-artifact paths began returning `blob_expired` after the fixture date. Inject the same `FIXED_TIME` into each fixture blob store; the original three failures and all 18 surrounding tests then pass with production expiry enforcement unchanged.
+
+## 2026-09-10 — Name replacement did not remove private source facts
+
+Root cause: public analysis replaced source names with case labels while retaining private inventory quantities and operational history. Export only transferable implementation requirements; preserve detailed source findings and reconciliation evidence privately.
