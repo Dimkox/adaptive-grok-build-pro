@@ -22,6 +22,7 @@ from .execution_contracts import ExecutionContractError
 from .landing_contracts import MAX_INPUT_BYTES, MEDIA_TYPES
 from .landing_service import LandingApplicationService, LandingServiceError
 from .models import Actor, ExecutionStage, LeaseGrant, RunRole, TaskStatus
+from .protocol import PROTOCOL_VERSION, PROTOCOL_VERSION_V2
 from .service import (
     AuthorizationError,
     SnapshotBrokerIntegrityError,
@@ -834,6 +835,7 @@ def create_app(
         proposal_payload: Mapping[str, Any],
         idempotency_key: str | None,
         correlation_id: str | None,
+        protocol_version: str = PROTOCOL_VERSION,
     ):
         key = _execution_command_key(idempotency_key)
         correlation = _execution_request_id(correlation_id, "X-Correlation-ID")
@@ -846,6 +848,7 @@ def create_app(
             actor=actor,
             idempotency_key=key,
             correlation_id=correlation,
+            protocol_version=protocol_version,
         )
         return JSONResponse(_json({"proposal": proposal}), headers={"X-Correlation-ID": correlation})
 
@@ -882,9 +885,8 @@ def create_app(
             idempotency_key=idempotency_key, correlation_id=x_correlation_id,
         )
 
-    @app.post("/v2/execution/usage", tags=["execution"])
     @app.post("/v1/execution/usage", tags=["execution"])
-    def execution_usage(
+    def execution_usage_v1(
         payload: dict,
         authorization: str | None = Header(None),
         idempotency_key: str | None = Header(None),
@@ -900,6 +902,27 @@ def create_app(
             payload, actor=actor, event_type="usage.reported",
             proposal_payload={name: payload[name] for name in fields - {"grant", "packet_digest", "sequence"}},
             idempotency_key=idempotency_key, correlation_id=x_correlation_id,
+        )
+
+    @app.post("/v2/execution/usage", tags=["execution"])
+    def execution_usage_v2(
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:execute")
+        fields = {
+            "grant", "packet_digest", "sequence", "provider_call_id", "price_table",
+            "price_table_digest", "input_tokens", "output_tokens", "reasoning_tokens",
+            "cached_input_tokens", "cache_write_tokens", "output_bytes",
+        }
+        payload = _closed(payload, fields)
+        return execution_proposal(
+            payload, actor=actor, event_type="usage.reported",
+            proposal_payload={name: payload[name] for name in fields - {"grant", "packet_digest", "sequence"}},
+            idempotency_key=idempotency_key, correlation_id=x_correlation_id,
+            protocol_version=PROTOCOL_VERSION_V2,
         )
 
     @app.post("/v2/execution/terminal", tags=["execution"])

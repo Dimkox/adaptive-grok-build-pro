@@ -14,7 +14,7 @@ from .execution_contracts import (
     WorkspaceResultV1,
 )
 from .models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskStatus
-from .protocol import CanonicalEvent
+from .protocol import CanonicalEvent, PROTOCOL_VERSION
 from .semantic_adjudication import adjudicate
 from .semantic_bridge import SemanticValidationInputsV1, build_semantic_subject
 from .semantic_contracts import (
@@ -550,6 +550,7 @@ class FactoryService:
         actor: Actor,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
+        protocol_version: str = PROTOCOL_VERSION,
     ):
         self._require_grant_actor(grant, actor, "task:execute")
         if stage in {
@@ -579,6 +580,7 @@ class FactoryService:
         actor: Actor,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
+        protocol_version: str = PROTOCOL_VERSION,
     ):
         self._require_grant_actor(grant, actor, "task:execute")
         replay = self.store.execution_finalization_replay(
@@ -685,6 +687,7 @@ class FactoryService:
             sequence=sequence,
             event_type=event_type,
             payload=payload,
+            protocol_version=protocol_version,
         )
         self._require_grant_actor(grant, actor, "task:execute")
         self._fenced(
@@ -739,6 +742,7 @@ class FactoryService:
             sequence=sequence,
             event_type=event_type,
             payload=payload,
+            protocol_version=protocol_version,
         )
         replay = self.store.execution_proposal_replay(
             grant, event, actor, idempotency_key=idempotency_key
