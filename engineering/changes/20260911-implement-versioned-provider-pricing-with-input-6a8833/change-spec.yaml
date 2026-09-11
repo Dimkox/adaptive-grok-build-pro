@@ -3,12 +3,12 @@
     {
       "id": "AC-001",
       "statement": "A closed schema-v1 price table and five nonnegative token buckets produce the exact floor-summed micro-USD cost and reject digest, shape, and overflow errors.",
-      "evidence": [{"test": "factory/tests/test_pricing.py"}]
+      "evidence": [{"test": "factory/tests/test_execution_persistence_postgres.py"}]
     },
     {
       "id": "AC-002",
       "statement": "V1 usage remains aggregate-compatible while V2 requires all five token buckets and a price table, rejects provider-supplied cost, and derives the returned cost server-side.",
-      "evidence": [{"test": "factory/tests/test_protocol.py"}, {"test": "factory/tests/test_brokers.py"}, {"test": "factory/tests/test_api.py"}]
+      "evidence": [{"test": "factory/tests/test_protocol.py"}, {"test": "factory/tests/test_execution_persistence_postgres.py"}, {"test": "factory/tests/test_api.py"}]
     },
     {
       "id": "AC-003",
