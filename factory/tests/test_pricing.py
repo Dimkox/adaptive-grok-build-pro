@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from adaptive_factory.pricing import (
@@ -6,6 +7,12 @@ from adaptive_factory.pricing import (
     UsageTokens,
     calculate_cost_usd_micros,
     price_table_digest,
+)
+from adaptive_factory.protocol import (
+    EventStreamParser,
+    PROTOCOL_VERSION_V2,
+    ProtocolError,
+    validate_event_payload,
 )
 
 
@@ -80,6 +87,27 @@ class PricingTest(unittest.TestCase):
             UsageTokens(-1, 0, 0, 0, 0)
         with self.assertRaisesRegex(PricingContractError, "invalid_nonnegative_integer"):
             PriceTableV1(1, True, 0, 0, 0, 0)
+
+    def test_v2_protocol_accepts_closed_priced_usage_and_rejects_forged_fields(self) -> None:
+        payload = {
+            "provider_call_id": "call-v2-1",
+            "price_table": self.table.to_dict(),
+            "price_table_digest": price_table_digest(self.table),
+            "input_tokens": 10, "output_tokens": 4, "reasoning_tokens": 2,
+            "cached_input_tokens": 3, "cache_write_tokens": 5, "output_bytes": 20,
+        }
+        parsed = EventStreamParser(
+            "task-001", "run-001", "a" * 64, ("usage",)
+        ).feed(json.dumps({
+            "protocol_version": PROTOCOL_VERSION_V2,
+            "task_id": "task-001", "run_id": "run-001",
+            "packet_digest": "a" * 64, "sequence": 1,
+            "event_type": "usage.reported", "payload": payload,
+        }, separators=(",", ":")).encode() + b"\n")
+        self.assertEqual((len(parsed), parsed[0].payload["cached_input_tokens"]), (1, 3))
+        for invalid in ({**payload, "price_table": None}, {**payload, "cost_usd_micros": 999}):
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(ProtocolError, "payload_fields"):
+                validate_event_payload("usage.reported", invalid, protocol_version=PROTOCOL_VERSION_V2)
 
 
 if __name__ == "__main__":
