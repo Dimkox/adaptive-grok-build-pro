@@ -3318,7 +3318,10 @@ class PostgresFactoryStore:
         if (
             kind != expected_kind
             or event.protocol_version not in {PROTOCOL_VERSION, PROTOCOL_VERSION_V2}
-            or (isinstance(proposal, UsageProposalV2) != (event.protocol_version == PROTOCOL_VERSION_V2))
+            or (
+                kind == "usage"
+                and (isinstance(proposal, UsageProposalV2) != (event.protocol_version == PROTOCOL_VERSION_V2))
+            )
             or event.task_id != grant.task_id
             or event.run_id != grant.run_id
             or proposal.task_id != grant.task_id

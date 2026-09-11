@@ -31,7 +31,7 @@ from adaptive_factory.store import (
     StoreError,
     StoreUnavailable,
 )
-from adaptive_factory.protocol import CanonicalEvent
+from adaptive_factory.protocol import CanonicalEvent, PROTOCOL_VERSION_V2
 from adaptive_factory.recovery import (
     ExecutionRecovery,
     ExecutionRecoveryCandidate,
@@ -5456,6 +5456,33 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             )
             self.assertEqual(cursor.fetchone(), (10, 4, 2, 3, 5))
         self.assertEqual(self.store.get_task(task.task_id).tokens_observed, 24)
+
+    def test_v2_non_usage_proposals_commit_through_the_store(self):
+        """V2 versioning must not require non-usage facts to become usage values."""
+        task, execution = self.claim_execution(
+            "v2-non-usage", capabilities=["notes", "structured_output"]
+        )
+        for sequence, event_type, payload in (
+            (1, "note.proposed", {"note_type": "finding", "body": "bounded", "evidence": []}),
+            (2, "run.completed", {"summary": "complete"}),
+        ):
+            with self.subTest(event_type=event_type):
+                event = CanonicalEvent.from_payload(
+                    task_id=execution.lease.task_id, run_id=execution.lease.run_id,
+                    packet_digest=execution.packet_digest, sequence=sequence,
+                    event_type=event_type, payload=payload,
+                    protocol_version=PROTOCOL_VERSION_V2,
+                )
+                proposal = ProposalBroker().accept(
+                    event, self.store.proposal_context(execution.lease, execution.packet_digest),
+                    owner=WORKER.actor_id, fence=execution.lease.fence,
+                )
+                self.assertEqual(
+                    self.store.commit_execution_proposal(
+                        execution.lease, proposal, WORKER, event=event
+                    ),
+                    proposal,
+                )
 
 
 FRESH_CLUSTER_DATABASE_URL = os.environ.get("FACTORY_FRESH_CLUSTER_DATABASE_URL")
