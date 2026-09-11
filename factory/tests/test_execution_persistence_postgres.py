@@ -114,6 +114,20 @@ class RecordingSnapshotBroker:
         )
 
 
+class UsageTokenComponentMigrationTests(unittest.TestCase):
+    def test_forward_migration_adds_defaulted_nonnegative_usage_components(self):
+        """A missing component column would make V2 pricing unrecoverable."""
+        migration = discover_migrations()[-1]
+
+        self.assertEqual(migration.version, 19)
+        for column in (
+            "input_tokens", "output_tokens", "reasoning_tokens",
+            "cached_input_tokens", "cache_write_tokens",
+        ):
+            self.assertIn(f"ADD COLUMN {column} bigint NOT NULL DEFAULT 0", migration.sql)
+            self.assertIn(f"{column} >= 0", migration.sql)
+
+
 @unittest.skipUnless(
     DATABASE_URL, "FACTORY_TEST_DATABASE_URL must name a disposable database"
 )
@@ -5412,6 +5426,38 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         self.assertEqual(execution.stage.value, "prepared")
 
 
+    def test_usage_component_columns_bind_duplicate_evidence_and_task_totals(self):
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "usage-components", capabilities=["structured_output", "usage"]
+        )
+        first = self.store.observe_usage(
+            execution.lease, "component-call", "a" * 64, 26, 24, 20, WORKER,
+            input_tokens=10, output_tokens=4, reasoning_tokens=2,
+            cached_input_tokens=3, cache_write_tokens=5,
+        )
+        duplicate = self.store.observe_usage(
+            execution.lease, "component-call", "a" * 64, 26, 24, 20, WORKER,
+            input_tokens=10, output_tokens=4, reasoning_tokens=2,
+            cached_input_tokens=3, cache_write_tokens=5,
+        )
+        self.assertEqual((first.observation_id, duplicate.created), (duplicate.observation_id, False))
+        with self.assertRaisesRegex(StoreError, "provider call id reused"):
+            self.store.observe_usage(
+                execution.lease, "component-call", "a" * 64, 26, 24, 20, WORKER,
+                input_tokens=9, output_tokens=5, reasoning_tokens=2,
+                cached_input_tokens=3, cache_write_tokens=5,
+            )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT input_tokens,output_tokens,reasoning_tokens,cached_input_tokens,cache_write_tokens FROM factory.usage_observations WHERE observation_id=%s",
+                (first.observation_id,),
+            )
+            self.assertEqual(cursor.fetchone(), (10, 4, 2, 3, 5))
+        self.assertEqual(self.store.get_task(task.task_id).tokens_observed, 24)
+
+
 FRESH_CLUSTER_DATABASE_URL = os.environ.get("FACTORY_FRESH_CLUSTER_DATABASE_URL")
 
 
@@ -5425,8 +5471,8 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
         import psycopg
 
         migrations = discover_migrations()
-        if len(migrations) != 18:
-            raise AssertionError("fresh-cluster test requires migrations 001..018")
+        if len(migrations) != 19:
+            raise AssertionError("fresh-cluster test requires migrations 001..019")
         with psycopg.connect(FRESH_CLUSTER_DATABASE_URL) as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT to_regnamespace('factory'),to_regrole('factory_artifact_attestor')")
@@ -5554,8 +5600,7 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
                     {connection.info.user, "factory_artifact_attestor"},
                 )
                 cursor.execute("SELECT max(version) FROM factory.schema_migrations")
-                self.assertEqual(cursor.fetchone()[0], 18)
-
+                self.assertEqual(cursor.fetchone()[0], 19)
 
 if __name__ == "__main__":
     unittest.main()

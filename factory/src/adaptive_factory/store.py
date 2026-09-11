@@ -18,6 +18,7 @@ from .brokers import (
     ProposalContext,
     TerminalProposal,
     UsageProposal,
+    UsageProposalV2,
     proposal_idempotency_key,
 )
 from .execution_contracts import RunManifestV1, TaskPacketV1, WorkspaceResultV1, workspace_evidence_digest
@@ -39,7 +40,8 @@ from .models import (
     TaskProjection,
     TaskStatus,
 )
-from .protocol import CanonicalEvent, PROTOCOL_VERSION
+from .protocol import CanonicalEvent, PROTOCOL_VERSION, PROTOCOL_VERSION_V2
+from .pricing import PriceTableV1
 from .recovery import (
     ExecutionRecoveryCandidate,
     ExecutionRecoveryClaim,
@@ -3139,9 +3141,12 @@ class PostgresFactoryStore:
         classes = {
             "note": NoteProposal,
             "artifact": ArtifactProposal,
-            "usage": UsageProposal,
             "terminal": TerminalProposal,
         }
+        if kind == "usage":
+            classes["usage"] = (
+                UsageProposalV2 if event.protocol_version == PROTOCOL_VERSION_V2 else UsageProposal
+            )
         proposal_type = classes.get(kind)
         if proposal_type is None or not isinstance(body, dict) or set(body) != set(proposal_type.__dataclass_fields__):
             raise StoreError("persisted execution proposal is corrupt")
@@ -3150,6 +3155,8 @@ class PostgresFactoryStore:
                 if not isinstance(body.get("evidence"), list):
                     raise TypeError("invalid persisted evidence")
                 body["evidence"] = tuple(body["evidence"])
+            if proposal_type is UsageProposalV2:
+                body["price_table"] = PriceTableV1.from_dict(body["price_table"])
             proposal = proposal_type(**body)
         except (TypeError, ValueError) as exc:
             raise StoreError("persisted execution proposal is corrupt") from exc
@@ -3301,6 +3308,7 @@ class PostgresFactoryStore:
             NoteProposal: "note",
             ArtifactProposal: "artifact",
             UsageProposal: "usage",
+            UsageProposalV2: "usage",
             TerminalProposal: "terminal",
         }
         kind = kinds.get(type(proposal))
@@ -3309,7 +3317,8 @@ class PostgresFactoryStore:
         expected_kind = self._proposal_kind(event.event_type)
         if (
             kind != expected_kind
-            or event.protocol_version != PROTOCOL_VERSION
+            or event.protocol_version not in {PROTOCOL_VERSION, PROTOCOL_VERSION_V2}
+            or (isinstance(proposal, UsageProposalV2) != (event.protocol_version == PROTOCOL_VERSION_V2))
             or event.task_id != grant.task_id
             or event.run_id != grant.run_id
             or proposal.task_id != grant.task_id
@@ -4229,6 +4238,11 @@ class PostgresFactoryStore:
         *,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
+        input_tokens: int | None = None,
+        output_tokens: int | None = None,
+        reasoning_tokens: int | None = None,
+        cached_input_tokens: int | None = None,
+        cache_write_tokens: int | None = None,
     ) -> UsageResult:
         if (
             not isinstance(provider_call_id, str)
@@ -4236,6 +4250,20 @@ class PostgresFactoryStore:
             or any(type(value) is not int or value < 0 for value in (cost, tokens, output))
         ):
             raise BudgetError("invalid usage evidence")
+        component_values = (
+            input_tokens,
+            output_tokens,
+            reasoning_tokens,
+            cached_input_tokens,
+            cache_write_tokens,
+        )
+        if any(value is not None for value in component_values):
+            if any(type(value) is not int or value < 0 for value in component_values):
+                raise BudgetError("invalid usage components")
+            if sum(component_values) != tokens:
+                raise BudgetError("usage component total mismatch")
+        else:
+            component_values = (0, 0, 0, 0, 0)
         blocked_reason = None
         result = None
         with self._transaction() as cursor:
@@ -4243,6 +4271,10 @@ class PostgresFactoryStore:
                 "task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence,
                 "provider_call_id": provider_call_id, "price_table_digest": price_table_digest,
                 "cost_usd_micros": cost, "token_units": tokens, "output_bytes": output,
+                "input_tokens": component_values[0], "output_tokens": component_values[1],
+                "reasoning_tokens": component_values[2],
+                "cached_input_tokens": component_values[3],
+                "cache_write_tokens": component_values[4],
             }
             replay, prior, request_digest = self._command_replay(
                 cursor, idempotency_key, actor, "observe_usage", command
@@ -4256,13 +4288,17 @@ class PostgresFactoryStore:
                 blocked_reason = "missing_price_table"
             else:
                 cursor.execute(
-                    """SELECT observation_id,price_table_digest,cost_usd_micros,token_units,output_bytes
+                    """SELECT observation_id,price_table_digest,cost_usd_micros,token_units,output_bytes,
+                    input_tokens,output_tokens,reasoning_tokens,cached_input_tokens,cache_write_tokens
                     FROM factory.usage_observations WHERE run_id=%s AND provider_call_id=%s""",
                     (grant.run_id, provider_call_id),
                 )
                 duplicate = cursor.fetchone()
                 if duplicate:
-                    if (duplicate[1].strip(), duplicate[2], duplicate[3], duplicate[4]) != (price_table_digest, cost, tokens, output):
+                    if (
+                        duplicate[1].strip(), duplicate[2], duplicate[3], duplicate[4],
+                        duplicate[5], duplicate[6], duplicate[7], duplicate[8], duplicate[9],
+                    ) != (price_table_digest, cost, tokens, output, *component_values):
                         raise StoreError("provider call id reused with different usage evidence")
                     result = UsageResult(str(duplicate[0]), False)
                     self._record_command(
@@ -4304,8 +4340,9 @@ class PostgresFactoryStore:
                     observation_id = uuid.uuid4()
                     cursor.execute(
                         """INSERT INTO factory.usage_observations
-                        (observation_id,task_id,run_id,provider_call_id,price_table_digest,cost_usd_micros,token_units,output_bytes)
-                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+                        (observation_id,task_id,run_id,provider_call_id,price_table_digest,cost_usd_micros,token_units,output_bytes,
+                         input_tokens,output_tokens,reasoning_tokens,cached_input_tokens,cache_write_tokens)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
                         (
                             observation_id,
                             grant.task_id,
@@ -4315,6 +4352,7 @@ class PostgresFactoryStore:
                             cost,
                             tokens,
                             output,
+                            *component_values,
                         ),
                     )
                     cursor.execute(
