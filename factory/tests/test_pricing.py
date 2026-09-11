@@ -1,6 +1,8 @@
 import json
 import unittest
 
+from fastapi.testclient import TestClient
+
 from adaptive_factory.pricing import (
     PriceTableV1,
     PricingContractError,
@@ -14,6 +16,28 @@ from adaptive_factory.protocol import (
     ProtocolError,
     validate_event_payload,
 )
+from adaptive_factory.api import Authenticator, create_app
+from adaptive_factory.models import Actor
+from factory.tests.test_api import FakeService
+
+
+class PricedUsageService(FakeService):
+    @staticmethod
+    def _proposal(grant, **kwargs):
+        proposal = FakeService._proposal(grant, **kwargs)
+        payload = kwargs["payload"]
+        if kwargs["event_type"] == "usage.reported" and "price_table" in payload:
+            table = PriceTableV1.from_dict(payload["price_table"])
+            proposal["cost_usd_micros"] = calculate_cost_usd_micros(
+                UsageTokens(
+                    payload["input_tokens"], payload["output_tokens"],
+                    payload["reasoning_tokens"], payload["cached_input_tokens"],
+                    payload["cache_write_tokens"],
+                ),
+                table,
+                payload["price_table_digest"],
+            )
+        return proposal
 
 
 class PricingTest(unittest.TestCase):
@@ -108,6 +132,26 @@ class PricingTest(unittest.TestCase):
         for invalid in ({**payload, "price_table": None}, {**payload, "cost_usd_micros": 999}):
             with self.subTest(invalid=invalid), self.assertRaisesRegex(ProtocolError, "payload_fields"):
                 validate_event_payload("usage.reported", invalid, protocol_version=PROTOCOL_VERSION_V2)
+
+    def test_v3_usage_endpoint_derives_cost_and_v2_terminal_uses_v2_protocol(self) -> None:
+        token = "priced-usage-token"
+        actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
+        service = PricedUsageService()
+        client = TestClient(create_app(service, Authenticator({token: actor})))
+        headers = {"Authorization": f"Bearer {token}", "Idempotency-Key": "priced-usage-001", "X-Correlation-ID": "priced-usage"}
+        grant = {"task_id": "00000000-0000-0000-0000-000000000001", "run_id": "00000000-0000-0000-0000-000000000002", "owner": "worker-01", "role": "writer", "fence": 7, "expires_at": "2026-09-02T01:00:00Z", "packet_digest": "0" * 64}
+        common = {"grant": grant, "packet_digest": "d" * 64, "sequence": 3}
+        response = client.post("/v3/execution/usage", headers=headers, json={
+            **common, "provider_call_id": "priced-call", "price_table": self.table.to_dict(),
+            "price_table_digest": price_table_digest(self.table), "input_tokens": 1,
+            "output_tokens": 2, "reasoning_tokens": 0, "cached_input_tokens": 0,
+            "cache_write_tokens": 0, "output_bytes": 4,
+        })
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["proposal"]["cost_usd_micros"], 5)
+        self.assertEqual(service.calls[-1][2]["protocol_version"], PROTOCOL_VERSION_V2)
+        terminal = client.post("/v2/execution/terminal", headers={**headers, "Idempotency-Key": "v2-terminal-001"}, json={**common, "terminal_type": "run.completed", "summary": "complete"})
+        self.assertEqual((terminal.status_code, service.calls[-1][2]["protocol_version"]), (200, PROTOCOL_VERSION_V2))
 
 
 if __name__ == "__main__":
