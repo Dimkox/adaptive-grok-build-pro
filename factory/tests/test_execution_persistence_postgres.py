@@ -489,6 +489,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             "execution_start",
             "execution_advance",
             "execution_propose",
+            "execution_propose_v1",
             "execution_proposal_context",
             "execution_result_for_run",
             "execution_result_by_digest",
@@ -1567,9 +1568,22 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 self.assertEqual(
                     cursor.fetchone(), (20, 1, 1, 1, True, 1, True)
                 )
+                after_functions = self.replaced_execution_function_metadata(cursor)
+                propose_name = next(
+                    name for name in before_functions
+                    if name.startswith("execution_propose(")
+                )
+                v1_propose_name = propose_name.replace(
+                    "execution_propose(", "execution_propose_v1(", 1
+                )
                 self.assertEqual(
-                    self.replaced_execution_function_metadata(cursor),
-                    before_functions,
+                    {name: metadata for name, metadata in after_functions.items()
+                     if name != propose_name and name != v1_propose_name},
+                    {name: metadata for name, metadata in before_functions.items()
+                     if name != propose_name},
+                )
+                self.assertEqual(
+                    after_functions[v1_propose_name], before_functions[propose_name]
                 )
                 for metadata in before_functions.values():
                     _oid, security_definer, config, runtime, attestor, public = metadata
@@ -1578,6 +1592,12 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     self.assertTrue(runtime)
                     self.assertFalse(attestor)
                     self.assertFalse(public)
+                _oid, security_definer, config, runtime, attestor, public = after_functions[propose_name]
+                self.assertTrue(security_definer)
+                self.assertEqual(config, ["search_path=pg_catalog, factory"])
+                self.assertTrue(runtime)
+                self.assertFalse(attestor)
+                self.assertFalse(public)
                 cursor.execute(
                     """SELECT conname FROM pg_constraint
                     WHERE conrelid='factory.workspace_results'::regclass
