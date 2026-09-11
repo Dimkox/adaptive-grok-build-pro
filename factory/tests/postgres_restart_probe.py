@@ -324,7 +324,7 @@ def _assert_capability_roles(
             "status": "ready",
             "session_user": runtime_login,
             "database_role": "factory_runtime",
-            "schema_version": 18,
+            "schema_version": 20,
             "capacity_consistent": True,
             "accounting_consistent": True,
         },
@@ -1198,7 +1198,7 @@ def main() -> int:
     identity_before = _database_identity(owner_url)
     _require(
         identity_before[1] >= 170_000
-        and tuple(row[0] for row in identity_before[2]) == tuple(range(1, 19)),
+        and tuple(row[0] for row in identity_before[2]) == tuple(range(1, 21)),
         "restart probe requires the complete PostgreSQL 17 schema",
     )
 

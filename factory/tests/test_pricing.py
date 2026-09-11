@@ -134,11 +134,11 @@ class PricingTest(unittest.TestCase):
                 validate_event_payload("usage.reported", invalid, protocol_version=PROTOCOL_VERSION_V2)
 
     def test_v3_usage_endpoint_derives_cost_and_v2_terminal_uses_v2_protocol(self) -> None:
-        token = "priced-usage-token"
+        credential = "fixture"
         actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
         service = PricedUsageService()
-        client = TestClient(create_app(service, Authenticator({token: actor})))
-        headers = {"Authorization": f"Bearer {token}", "Idempotency-Key": "priced-usage-001", "X-Correlation-ID": "priced-usage"}
+        client = TestClient(create_app(service, Authenticator({credential: actor})))
+        headers = {"Authorization": f"Bearer {credential}", "Idempotency-Key": "priced-usage-001", "X-Correlation-ID": "priced-usage"}
         grant = {"task_id": "00000000-0000-0000-0000-000000000001", "run_id": "00000000-0000-0000-0000-000000000002", "owner": "worker-01", "role": "writer", "fence": 7, "expires_at": "2026-09-02T01:00:00Z", "packet_digest": "0" * 64}
         common = {"grant": grant, "packet_digest": "d" * 64, "sequence": 3}
         response = client.post("/v3/execution/usage", headers=headers, json={
