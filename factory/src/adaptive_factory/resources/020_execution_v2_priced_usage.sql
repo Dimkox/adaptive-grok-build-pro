@@ -26,6 +26,7 @@ BEGIN
       AND p.packet_digest=p_packet_digest AND p.legacy_packet_digest=p_legacy_packet_digest
     JOIN factory.execution_manifests m ON m.run_id=r.run_id AND m.packet_digest=p.packet_digest
     WHERE t.task_id=p_task_id AND r.run_id=p_run_id AND r.owner_id=p_owner AND r.fence=p_fence
+      AND r.packet_digest=p_legacy_packet_digest
       AND t.packet_digest=p_legacy_packet_digest AND t.current_fence=p_fence
       AND t.state='leased' AND r.state='leased'
       AND r.released_at IS NULL AND a.released_at IS NULL AND m.terminal_at IS NULL
@@ -51,7 +52,8 @@ BEGIN
       'cache_write_usd_micros_per_million'
     ]) OR v_price_table->>'schema_version'<>'1'
     OR EXISTS (SELECT 1 FROM jsonb_each(v_price_table) x WHERE x.key<>'schema_version'
-      AND (jsonb_typeof(x.value)<>'number' OR x.value#>>'{}' !~ '^(0|[1-9][0-9]{0,18})$'))
+      AND (jsonb_typeof(x.value)<>'number' OR x.value#>>'{}' !~ '^(0|[1-9][0-9]{0,18})$'
+        OR (x.value#>>'{}')::numeric>9223372036854775807))
     OR EXISTS (SELECT 1 FROM jsonb_each(p_body) x WHERE x.key IN (
       'input_tokens','output_tokens','reasoning_tokens','cached_input_tokens','cache_write_tokens',
       'cost_usd_micros','output_bytes','fence','sequence'
