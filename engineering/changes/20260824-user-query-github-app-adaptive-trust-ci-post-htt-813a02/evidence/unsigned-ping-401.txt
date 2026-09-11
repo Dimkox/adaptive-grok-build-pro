@@ -1,0 +1,14 @@
+HTTP/2 401
+content-type: application/json
+server: uvicorn
+content-length: 51
+
+{"detail":"missing or malformed webhook signature"}
+
+Probed: POST https://claw.taild9f611.ts.net/webhooks/github
+Headers: Content-Type: application/json; X-GitHub-Event: ping
+Body: {}
+TLS: Funnel ingress A 176.58.88.82 (--resolve; host resolv.conf has MagicDNS disabled)
+Funnel target actually dialed from tailscaled netns vpn: http://10.200.200.1:18080/webhooks/github
+Host forwarder: 10.200.200.1:18080 -> 127.0.0.1:18080 (docker-proxy)
+Never ran: tailscale funnel reset

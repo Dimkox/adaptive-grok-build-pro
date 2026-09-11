@@ -1,0 +1,26 @@
+# Funnel on:
+#     - https://claw.taild9f611.ts.net
+
+https://claw.taild9f611.ts.net (Funnel on)
+|-- /webhooks/github proxy http://10.200.200.1:18080/webhooks/github
+
+JSON:
+{
+  "TCP": { "443": { "HTTPS": true } },
+  "Web": {
+    "claw.taild9f611.ts.net:443": {
+      "Handlers": {
+        "/webhooks/github": {
+          "Proxy": "http://10.200.200.1:18080/webhooks/github"
+        }
+      }
+    }
+  },
+  "AllowFunnel": {
+    "claw.taild9f611.ts.net:443": true
+  }
+}
+
+Preflight before add: {} / No serve config (n8n /webhook was not present; not reset).
+TLS cert: tailscaled "got cert" for claw.taild9f611.ts.net (dns-01).
+Public A (8.8.8.8): 176.58.88.82 176.58.88.108 176.58.92.199

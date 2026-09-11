@@ -1,0 +1,23 @@
+{
+  "change_id": "20260830-implement-m4-durable-factory-task-control-plane-e50471",
+  "created_at": "2026-08-30T23:19:30+00:00",
+  "history": [
+    {
+      "at": "2026-08-30T23:19:30+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-31T12:54:30+00:00",
+      "from": "draft",
+      "reason": "Approved M4 design reconstructed and six-role analysis recorded; implementation awaits exact-SHA M2/M3 Trust CI approvals and a route on the accepted M3 head",
+      "to": "scoped"
+    }
+  ],
+  "route_id": "e50471553166",
+  "schema_version": 1,
+  "status": "scoped",
+  "title": "Implement M4 Durable Factory Task Control Plane from the approved design and plan: typed immutable task/run/attempt contracts, PostgreSQL durable state, idempotent intake, leases and fencing and capacity, bounded retries and dead letter and budgets, kill switches and audit and reconciliation, authenticated local API and CLI, real PostgreSQL tests; no external writes or production mutation.",
+  "updated_at": "2026-08-31T12:54:30+00:00"
+}

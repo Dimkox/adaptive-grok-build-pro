@@ -1,0 +1,108 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "data_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer",
+    "frontend_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "data_architect"
+  ],
+  "base_commit": "48cb9737fac7f26fb70b425957a3ed64d4c1eb55",
+  "base_fingerprint": "3d4570d7e75480ef3b5f64708fb34e4e2f43e224330241932cc53b52d235c54a",
+  "complexity": "high-risk",
+  "created_at": "2026-08-24T13:15:39+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api",
+    "security",
+    "data",
+    "event",
+    "frontend",
+    "infra",
+    "integration"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval"
+  ],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "frontend",
+    "contracts",
+    "data",
+    "integration",
+    "infra"
+  ],
+  "rationale": [
+    "high-risk signal: secret",
+    "intent=feature",
+    "domains=api,security,data,event,frontend,infra,integration",
+    "repository=generic",
+    "write-owner=frontend_implementer",
+    "analysis-wave=6/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "data_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "01096425a38d",
+  "schema_version": 1,
+  "session_id": "01a0333f-a6c1-73e1-8dda-d345a265eedd",
+  "status": "routed",
+  "task": "<user_query>\nСейчас у тебя уже работает всё внутри:\n\nFastAPI API → 127.0.0.1:18080\nPostgreSQL → healthy\nworker → running через host-socket overlay\nGitHub App ID → 4694114\nInstallation ID → 156003193\nлокальный HMAC → Check Run создаётся\n\nНе хватает только публичного TLS-edge:\n\nGitHub App\n  → https://trust-ci.ii-tonya.ru/webhooks/github\n  → Apache :443\n  → http://127.0.0.1:18080/webhooks/github\n\nИ второй публичный endpoint для M0.2:\n\nhuman workstation\n  → https://trust-ci.ii-tonya.ru/approvals\n  → Apache\n  → http://127.0.0.1:18080/approvals\n\nТекущий activation report подтверждает, что API слушает 127.0.0.1:18080, App и Installation ID установлены, Check Run через локальный HMAC уже был, но публичного webhook пока нет.\n\nGitHub рекомендует HTTPS с включённой проверкой сертификата, webhook secret и проверку X-Hub-Signature-256. Ответ endpoint должен возвращаться быстрее 30 секунд. Твой API уже проверяет HMAC до обработки JSON, а /approvals проверяет Ed25519 envelope и replay protection.\n\n1. Создай DNS\n\nИспользуем:\n\ntrust-ci.ii-tonya.ru\n\nВ DNS FirstVDS:\n\nType:  A\nName:  trust-ci\nValue: <публичный IPv4 сервера claw>\nTTL:   300\n\nAAAA пока не создавай, если IPv6 на claw не настроен.\n\nПроверка с сервера:\n\nsudo apt-get update && sudo apt-get install -y dnsutils\ndig +short A trust-ci.ii-tonya.ru\ndig +short AAAA trust-ci.ii-tonya.ru\n\nA должен вернуть публичный IP claw. AAAA должен быть пустым, пока IPv6 не используется.\n\n2. Проверь, кто держит 80 и 443\n\nНа claw уже был Apache, поэтому не ставим поверх него Caddy и не устраиваем драку за порты:\n\nsudo ss -ltnp | grep -E ':(80|443)\\s' || true\nsudo apache2ctl -S\nsudo systemctl status apache2 --no-pager\n\nAPI-контейнер по-прежнему оставляем привязанным только к loopback:\n\n127.0.0.1:18080:8080\n\nНе меняй его на 0.0.0.0:18080. Внешним должен быть только Apache.\n\nApache штатно поддерживает reverse proxy через ProxyPass и ProxyPassReverse; ProxyRequests для такой схемы должен оставаться выключенным.\n\n3. Поставь Certbot и модули Apache\nsudo apt-get update &&\nsudo apt-get install -y certbot python3-certbot-apache &&\nsudo a2enmod ssl proxy proxy_http headers rewrite\n\nОткрой HTTP/HTTPS в локальном firewall:\n\nsudo ufw allow 80/tcp\nsudo ufw allow 443/tcp\nsudo ufw status\n\nЕсли у FirstVDS есть отдельный внешний firewall, там тоже должны быть открыты TCP 80 и 443.\n\n4. Создай временный HTTP-vhost для сертификата\nsudo install -d -m 0755 \\\n  /var/www/trust-ci-acme/.well-known/acme-challenge \\\n  /var/www/trust-ci-empty\nsudo tee /etc/apache2/sites-available/trust-ci.conf >/dev/null <<'APACHE'\n<VirtualHost *:80>\n    ServerName trust-ci.ii-tonya.ru\n\n    DocumentRoot /var/www/trust-ci-acme\n\n    <Directory \"/var/www/trust-ci-acme\">\n        Options -Indexes\n        AllowOverride None\n        Require all granted\n    </Directory>\n\n    ErrorLog ${APACHE_LOG_DIR}/trust-ci-error.log\n    CustomLog ${APACHE_LOG_DIR}/trust-ci-access.log combined\n</VirtualHost>\nAPACHE\n\nВключи сайт:\n\nsudo a2ensite trust-ci.conf &&\nsudo apache2ctl configtest &&\nsudo systemctl reload apache2\n\nПроверь доступ снаружи:\n\ncurl -I http://trust-ci.ii-tonya.ru/\n\nЗдесь допустим 200, 403 или 404. Главное — запрос должен попасть на claw, а не зависнуть по timeout.\n\n5. Получи сертификат Let’s Encrypt\n\nУкажи реальный email:\n\nEMAIL='ТВОЙ_EMAIL'\nsudo certbot certonly \\\n  --webroot \\\n  -w /var/www/trust-ci-acme \\\n  -d trust-ci.ii-tonya.ru \\\n  --agree-tos \\\n  --non-interactive \\\n  -m \"$EMAIL\"\n\nПосле успеха должны существовать:\n\n/etc/letsencrypt/live/trust-ci.ii-tonya.ru/fullchain.pem\n/etc/letsencrypt/live/trust-ci.ii-tonya.ru/privkey.pem\n\nПроверка:\n\nsudo ls -l /etc/letsencrypt/live/trust-ci.ii-tonya.ru/\n6. Установи окончательный Apache reverse proxy\nsudo tee /etc/apache2/sites-available/trust-ci.conf >/dev/null <<'APACHE'\n<VirtualHost *:80>\n    ServerName trust-ci.ii-tonya.ru\n\n    Alias \"/.well-known/acme-challenge/\" \\\n          \"/var/www/trust-ci-acme/.well-known/acme-challenge/\"\n\n    <Directory \"/var/www/trust-ci-acme/.well-known/acme-challenge/\">\n        Options None\n        AllowOverride None\n        Require all granted\n    </Directory>\n\n    RewriteEngine On\n    RewriteCond %{REQUEST_URI} !^/\\.well-known/acme-challenge/\n    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=308,L]\n\n    ErrorLog ${APACHE_LOG_DIR}/trust-ci-error.log\n    CustomLog ${APACHE_LOG_DIR}/trust-ci-access.log combined\n</VirtualHost>\n\n<VirtualHost *:443>\n    ServerName trust-ci.ii-tonya.ru\n\n    SSLEngine On\n    SSLCertificateFile /etc/letsencrypt/live/trust-ci.ii-tonya.ru/fullchain.pem\n    SSLCertificateKeyFile /etc/letsencrypt/live/trust-ci.ii-tonya.ru/privkey.pem\n    Include /etc/letsencrypt/options-ssl-apache.conf\n\n    ProxyRequests Off\n    ProxyPreserveHost On\n    ProxyTimeout 25\n\n    RequestHeader unset Proxy early\n    RequestHeader set X-Forwarded-Proto \"https\"\n    RequestHeader set X-Forwarded-Port \"443\"\n\n    LimitRequestBody 10485760\n\n    # GitHub App webhook. Raw body and GitHub headers pass to FastAPI.\n    ProxyPass \"/webhooks/github\" \\\n        \"http://127.0.0.1:18080/webhooks/github\" \\\n        connectiontimeout=3 timeout=25 retry=0\n    ProxyPassReverse \"/webhooks/github\" \\\n        \"http://127.0.0.1:18080/webhooks/github\"\n\n    # Human Ed25519 approval submission.\n    ProxyPass \"/approvals\" \\\n        \"http://127.0.0.1:18080/approvals\" \\\n        connectiontimeout=3 timeout=25 retry=0\n    ProxyPassReverse \"/approvals\" \\\n        \"http://127.0.0.1:18080/approvals\"\n\n    # Operator/read endpoints. Authentication remains enforced by FastAPI.\n    ProxyPass \"/jobs/\" \\\n        \"http://127.0.0.1:18080/jobs/\" \\\n        connectiontimeout=3 timeout=25 retry=0\n    ProxyPassReverse \"/jobs/\" \\\n        \"http://127.0.0.1:18080/jobs/\"\n\n    ProxyPass \"/attestations/\" \\\n        \"http://127.0.0.1:18080/attestations/\" \\\n        connectiontimeout=3 timeout=25 retry=0\n    ProxyPassReverse \"/attestations/\" \\\n        \"http://127.0.0.1:18080/attestations/\"\n\n    ProxyPass \"/metrics\" \\\n        \"http://127.0.0.1:18080/metrics\" \\\n        connectiontimeout=3 timeout=25 retry=0\n    ProxyPassReverse \"/metrics\" \\\n        \"http://127.0.0.1:18080/metrics\"\n\n    ProxyPass \"/health/\" \\\n        \"http://127.0.0.1:18080/health/\" \\\n        connectiontimeout=3 timeout=10 retry=0\n    ProxyPassReverse \"/health/\" \\\n        \"http://127.0.0.1:18080/health/\"\n\n    <Location \"/webhooks/github\">\n        Require all granted\n        <LimitExcept POST>\n            Require all denied\n        </LimitExcept>\n    </Location>\n\n    <Location \"/approvals\">\n        Require all granted\n        <LimitExcept POST>\n            Require all denied\n        </LimitExcept>\n    </Location>\n\n    DocumentRoot /var/www/trust-ci-empty\n\n    <Directory \"/var/www/trust-ci-empty\">\n        Options -Indexes\n        AllowOverride None\n        Require all denied\n    </Directory>\n\n    Header always set Strict-Transport-Security \"max-age=31536000\"\n    Header always set X-Content-Type-Options \"nosniff\"\n    Header always set Referrer-Policy \"no-referrer\"\n\n    LogFormat \"%a %t \\\"%r\\\" %>s %b delivery=%{X-GitHub-Delivery}i event=%{X-GitHub-Event}i\" trustci\n    ErrorLog ${APACHE_LOG_DIR}/trust-ci-error.log\n    CustomLog ${APACHE_LOG_DIR}/trust-ci-access.log trustci\n</VirtualHost>\nAPACHE\n\nПроверка и reload:\n\nsudo apache2ctl configtest &&\nsudo systemctl reload apache2\n7. Замени loopback public URL в Trust CI\n\nСейчас в отчёте:\n\nTRUST_CI_PUBLIC_BASE_URL=http://127.0.0.1:18080\n\nОн должен стать:\n\nTRUST_CI_PUBLIC_BASE_URL=https://trust-ci.ii-tonya.ru\n\nНа claw:\n\ncd ~/grok-projects/adaptive-grok-build-pro/trust-ci\n\nsed -i \\\n  's#^TRUST_CI_PUBLIC_BASE_URL=.*#TRUST_CI_PUBLIC_BASE_URL=https://trust-ci.ii-tonya.ru#' \\\n  env/common.env\n\ngrep '^TRUST_CI_PUBLIC_BASE_URL=' env/common.env\n\nCommonSettings уже запрещает внешний HTTP URL и принимает только HTTPS вне localhost.\n\nПересоздай api и worker с тем же untracked host-socket overlay, который уже используется:\n\nfind \"$HOME\" -name 'compose.host-socket.yaml' -type f -print\n\nЗатем подставь найденный путь:\n\nHOST_SOCKET_OVERLAY='/АБСОЛЮТНЫЙ/ПУТЬ/compose.host-socket.yaml'\n\ndocker compose \\\n  -f compose.yaml \\\n  -f \"$HOST_SOCKET_OVERLAY\" \\\n  up -d --force-recreate api worker\n\nПроверь локально:\n\ncurl -fsS http://127.0.0.1:18080/health/ready\n\nИ публично:\n\ncurl -fsS https://trust-ci.ii-tonya.ru/health/ready\n\nОба должны вернуть status: ready.\n\n8. Проверь TLS и HMAC gate\n\nЗапрос без подписи должен дойти до FastAPI и получить именно 401, а не 404, 502 или timeout:\n\ncurl -sS \\\n  -o /tmp/trust-ci-webhook-test.out \\\n  -w 'HTTP=%{http_code} TLS_VERIFY=%{ssl_verify_result}\\n' \\\n  -X POST \\\n  https://trust-ci.ii-tonya.ru/webhooks/github \\\n  -H 'Content-Type: application/json' \\\n  -H 'X-GitHub-Event: ping' \\\n  --data '{}'\n\ncat /tmp/trust-ci-webhook-test.out\n\nОжидаемо:\n\nHTTP=401\nTLS_VERIFY=0\n\nЭто означает:\n\nDNS работает\nTLS валиден\nApache проксирует\nFastAPI доступен\nHMAC-защита не пропускает неподписанный запрос\n\nПроверь автоматическое продление:\n\nsudo certbot renew --dry-run\n</user_query>",
+  "task_domains": [
+    "api",
+    "security",
+    "data",
+    "event",
+    "frontend",
+    "infra",
+    "integration"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "data-change",
+    "enterprise-integration",
+    "frontend-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "frontend_implementer"
+}

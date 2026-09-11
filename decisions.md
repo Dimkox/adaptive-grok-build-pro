@@ -118,3 +118,23 @@ Reuse the active route only when `FOLLOW_UP_RE` matches the whole prompt, or the
 ## 2026-08-14 — Bind receipts after the last change-package write
 
 `tree_fingerprint` hashes every non-runtime changed file, including `engineering/changes/**/state.json`. Transition the durable package to `ready` first, then run `grok_verify` and `grok_review`. Recording evidence before that last write guarantees stale receipts and a second verification loop.
+# 2026-08-31 — Stack dependent milestones only on accepted prerequisite heads
+
+When a routed base lacks frozen prerequisite handoffs, compare ancestry and external exact-SHA checks before implementation. This worked for M4 because it exposed that `1c062998` diverged from M3 and prevented substitute contracts or work on an unapproved base.
+
+## 2026-08-31 — Bind the M0–M9 program to 2026-09-15 00:00 UTC+3
+
+Compress the critical path through continuous execution, minimum exit-criterion scope, and read-only preparation of successor milestones, with feature freeze at 2026-09-14 20:00. The deadline never overrides exact-SHA Trust CI, signed approvals, security, migration, evidence-cohort, or recovery gates; threatened delivery is reported immediately instead of fabricating completion.
+
+## 2026-08-31 — Supersede the M0–M9 deadline with 2026-09-08 00:00 UTC+3
+
+The 2026-09-15 decision remains historical but is superseded by the management deadline of 2026-09-08 00:00 UTC+3; compress through continuous handoffs, read-only successor preparation, one frozen documentation-only M8 candidate class with at least 30 human-accepted tasks, and non-production M9 validation. The deadline does not waive exact-SHA Trust CI, signed approvals, sequential integration, PostgreSQL/security/review, evidence-cohort, or recovery gates; promote M8 or claim M9 only when evidence passes, otherwise report the exact blocker.
+
+## 2026-09-06 — Root decisions.md and mistakes.md may be appended in every worktree
+
+The user explicitly allowed additive writes to `decisions.md` and `mistakes.md` in every project tree, including the repository root. This is append-only self-learning, not a grant to rewrite history, merge, or edit other protected paths.
+
+
+## 2026-09-10 — Include three consumer cases in autonomy assessment
+
+Use Puls Pump Selector (stand acceptance), Google Ads Automation main (Ads/Postgres/n8n integration) and ii-Tonya (native deployment and Claw verification) as existing real project evidence alongside the factory controller. This worked because cross-repository inspection corrected the false first-real-case gap and exposed evidence that controller handoff files do not aggregate. Reconstruct qualifying accepted tasks and operator-intervention metrics from existing history before proposing new cohort work; do not infer an M8 count or activation from project count, PR count, or product runtime automation alone.

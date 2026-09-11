@@ -1,0 +1,29 @@
+{
+  "change_id": "20260817-user-query-вычисти-и-оставь-только-2-0-10-в-гите-33e0c2",
+  "created_at": "2026-08-17T00:02:24+00:00",
+  "history": [
+    {
+      "at": "2026-08-17T00:02:24+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-17T00:03:28+00:00",
+      "from": "draft",
+      "reason": "clean working tree to v2.0.10; no tag/zip delete",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-17T00:03:28+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; bounded cleanup ruling",
+      "to": "approved"
+    }
+  ],
+  "route_id": "33e0c2404a15",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "<user_query>\nвычисти и оставь только 2.0.10 в гите\n</user_query>",
+  "updated_at": "2026-08-17T00:03:28+00:00"
+}

@@ -26,3 +26,18 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 
 **Symptom:** First `grok_verify --mode pr` could not be the completion receipt; reports and `state.json` still had to be written.
 **Root cause:** Verification was used as a mid-implementation checkpoint. The receipt fingerprint is the whole dirty tree, so any later change-package or review-report write invalidates it. Evidence must be recorded only after the last file that will remain in that tree.
+
+## 2026-09-06 — Treated local extraction as GitHub delivery
+
+**Symptom:** The session started a side worktree and copied CLI source before answering whether GitHub PRs, checks, and `main` were aligned; the user had to ask twice.
+**Root cause:** “Continue to final stage” was read as local file work first. Merge authority is the App-owned check on an exact PR SHA, so GitHub open-PR/check/`main`/tag facts are the first coordination step, not a follow-up after a worktree.
+
+## 2026-09-06 — Treated append-only self-learning files as blocked protected paths
+
+**Symptom:** Root `decisions.md` / `mistakes.md` structured edits were denied, so facts were delayed or written only in side worktrees.
+**Root cause:** A PreToolUse protected-path deny was read as a standing ban. The user later allowed append-only writes to those two files in every tree, including root. Other protected paths stay blocked.
+
+
+## 2026-09-10 — Do not infer absent real delivery from an empty factory cohort
+
+Root cause: the autonomy assessment treated the controller repository and its landing pilot as the complete evidence universe, overlooking the user-named consumer projects Puls Pump Selector, Google Ads Automation and ii-Tonya. Their GitHub histories and evidence contain real implementation, integration, stand acceptance and native deployment; an unpopulated M8 ledger means qualifying tasks have not been accounted for, not that no real tasks exist. Future assessments must inspect actual delivery branches (Ads uses main while its default branch is codex/bootstrap) and distinguish observed project outcomes from exact-profile autonomy qualification.

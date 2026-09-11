@@ -1,0 +1,105 @@
+schema_version: 1
+change_id: "20260830-implement-m4-durable-factory-task-control-plane-e50471"
+objective:
+  id: OBJ-001
+  statement: "Create a separate durable local factory task control plane with immutable intake, fenced PostgreSQL scheduling, bounded recovery, and authenticated administration."
+  success_metric: "m4_durable_control_plane_exit_gate"
+  target: "All M4 acceptance criteria, real PostgreSQL invariants, final verifier, five reviews, and exact-head external Trust CI pass."
+risk:
+  tier: red
+  domains:
+    - data
+    - api
+    - security
+acceptance_criteria:
+  - id: AC-001
+    statement: "Immutable M1/M2/M3-bound intake deduplicates identical active work and supersedes stale frozen inputs."
+    evidence:
+      - kind: test
+        ref: factory/tests/test_contracts.py
+      - kind: test
+        ref: factory/tests/test_postgres_integration.py
+  - id: AC-002
+    statement: "PostgreSQL leases, monotonic fences, capacity, retries, budgets, kills, audit, and reconciliation enforce bounded durable behavior."
+    evidence:
+      - kind: test
+        ref: factory/tests/test_postgres_integration.py
+      - kind: command
+        ref: factory/tests/postgres_restart_probe.py
+  - id: AC-003
+    statement: "Authenticated Unix-socket API and CLI expose bounded local control without execution, external-write, systemd, production, or Trust-CI authority."
+    evidence:
+      - kind: test
+        ref: factory/tests/test_api.py
+      - kind: review
+        ref: engineering/changes/20260830-implement-m4-durable-factory-task-control-plane-e50471/evidence/security-review.md
+  - id: AC-004
+    statement: "The final product fingerprint passes repository verification and code, test, security, data, and release review."
+    evidence:
+      - kind: receipt
+        ref: verification
+      - kind: review
+        ref: engineering/changes/20260830-implement-m4-durable-factory-task-control-plane-e50471/evidence/code-review.md
+invariants:
+  - id: INV-001
+    statement: "Factory operational state, roles, migrations, credentials, and authority remain separate from Trust CI."
+    evidence:
+      - kind: test
+        ref: factory/tests/test_postgres_integration.py
+      - kind: review
+        ref: engineering/changes/20260830-implement-m4-durable-factory-task-control-plane-e50471/evidence/data-review.md
+  - id: INV-002
+    statement: "At most 20 global readers, 10 readers per repository, and one live application writer are allocated."
+    evidence:
+      - kind: test
+        ref: factory/tests/test_postgres_integration.py
+  - id: INV-003
+    statement: "No worker mutation succeeds without the current task, run, packet digest, owner, fence, state, live lease, deadline, budget, and idempotency key."
+    evidence:
+      - kind: test
+        ref: factory/tests/test_postgres_integration.py
+forbidden_outcomes:
+  - id: FORBID-001
+    statement: "M4 must not execute providers or repository commands, perform GitHub/external/production writes, activate systemd, or publish Trust CI authority."
+    evidence:
+      - kind: test
+        ref: factory/tests/test_api.py
+      - kind: review
+        ref: engineering/changes/20260830-implement-m4-durable-factory-task-control-plane-e50471/evidence/security-review.md
+  - id: FORBID-002
+    statement: "M4 must not implement against routed base 1c062998 or invent substitutes for missing M2/M3 handoffs."
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260830-implement-m4-durable-factory-task-control-plane-e50471/evidence/analysis-repo_explorer.md
+contracts:
+  openapi:
+    - factory/contracts/openapi/factory-control.v1.json
+  json_schema:
+    - factory.TaskIntakeV1
+    - factory.ArchitectureHandoffV1
+    - factory.GovernanceHandoffV1
+  events:
+    - factory.task-event.v1
+    - factory.audit-event.v1
+observability:
+  - metric: factory_intake_outcomes_total
+    proves:
+      - OBJ-001
+  - metric: factory_lease_reclaims_total
+    proves:
+      - OBJ-001
+  - metric: factory_fence_rejections_total
+    proves:
+      - OBJ-001
+  - metric: factory_capacity_and_budget_stops_total
+    proves:
+      - OBJ-001
+rollback:
+  strategy: forward_fix
+  maximum_steps: 5
+approvals:
+  required_scopes:
+    - security
+    - data
+    - architecture
+    - release

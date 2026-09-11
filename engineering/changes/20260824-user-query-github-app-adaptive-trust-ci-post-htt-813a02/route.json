@@ -1,0 +1,76 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "48cb9737fac7f26fb70b425957a3ed64d4c1eb55",
+  "base_fingerprint": "76cbbcddf085e34d3e735c36ade2f17038b45f8ae4a5023d3f689b895f7ec163",
+  "complexity": "standard",
+  "created_at": "2026-08-24T15:22:13+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api",
+    "event"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=feature",
+    "domains=api,event",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "813a02b06dfc",
+  "schema_version": 1,
+  "session_id": "01a0333f-a6c1-73e1-8dda-d345a265eedd",
+  "status": "routed",
+  "task": "<user_query>\nGitHub App adaptive-trust-ci\n  ↓ POST HTTPS\nhttps://claw.taild9f611.ts.net/webhooks/github\n  ↓ Tailscale Funnel\nhttp://127.0.0.1:18080/webhooks/github\n\nИтоговый Webhook URL:\n\nhttps://claw.taild9f611.ts.net/webhooks/github\n\nЭто именно адрес публичного веб-сервера, который GitHub требует указать в регистрации приложения.\n\nКоманда на claw\n\nСначала смотрим текущую конфигурацию, ничего не сбрасывая:\n\nsudo tailscale funnel status --json\n\nЗатем добавляем отдельный маршрут рядом с существующим /webhook для n8n:\n\nsudo tailscale funnel --bg --https=443 \\\n  --set-path=/webhooks/github \\\n  http://127.0.0.1:18080/webhooks/github\n\nПроверяем:\n\nsudo tailscale funnel status\n\nЦелевой путь указан дважды не случайно. Tailscale удаляет публичный mount point перед проксированием, поэтому /webhooks/github должен присутствовать и в target URL, чтобы FastAPI получил запрос именно на свой маршрут.\n\nНе выполнять:\n\nsudo tailscale funnel reset\n\nЭто снесёт существующий маршрут TikTok/n8n.\n\nТакже не нужна старая команда из TikTok RUNBOOK:\n\nsudo tailscale funnel --bg 443 on\n\nОна относится к старой схеме CLI. Современная команда с target сама создаёт handler и включает Funnel.\n\nПроверка до настройки GitHub\n\nЛокальное приложение:\n\ncurl -i http://127.0.0.1:18080/health/live\n\nОжидается 200.\n\nПубличный endpoint без подписи:\n\ncurl -i -X POST \\\n  -H 'Content-Type: application/json' \\\n  -H 'X-GitHub-Event: ping' \\\n  --data '{}' \\\n  https://claw.taild9f611.ts.net/webhooks/github\n\nОжидается:\n\nHTTP/2 401\nmissing or malformed webhook signature\n\nЭто хороший результат: Tailscale довёл запрос до приложения, а HMAC-защита его отклонила.\n\nВ коде уже существует POST /webhooks/github; он сначала проверяет X-Hub-Signature-256, затем обрабатывает pull_request. Неподдерживаемый, но корректно подписанный ping возвращает HTTP 200 с ignored-event.\n\n\n</user_query>",
+  "task_domains": [
+    "api",
+    "event"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "integration_implementer"
+}

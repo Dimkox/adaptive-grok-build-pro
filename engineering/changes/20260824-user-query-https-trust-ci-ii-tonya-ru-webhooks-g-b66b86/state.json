@@ -1,0 +1,53 @@
+{
+  "change_id": "20260824-user-query-https-trust-ci-ii-tonya-ru-webhooks-g-b66b86",
+  "created_at": "2026-08-24T14:13:28+00:00",
+  "history": [
+    {
+      "at": "2026-08-24T14:13:28+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-24T14:20:22+00:00",
+      "from": "draft",
+      "reason": "scope and acceptance criteria written: retract ChatGPT webhook URL; FastAPI/host/App frozen",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-24T14:20:22+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; bounded retraction from user correction",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-24T14:27:41+00:00",
+      "from": "approved",
+      "reason": "retraction applied; parent wrote after write-agent spawn denied",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-24T14:27:41+00:00",
+      "from": "implementing",
+      "reason": "implementation complete",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-24T14:27:41+00:00",
+      "from": "verifying",
+      "reason": "grok_verify pass; independent reviews written",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-24T14:27:47+00:00",
+      "from": "reviewing",
+      "reason": "reviews pass; bind evidence to ready tree",
+      "to": "ready"
+    }
+  ],
+  "route_id": "b66b867ba5ab",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "<user_query>\n https://trust-ci.ii-tonya.ru/webhooks/github нет , не трогаем, это ошибка chatgpt\n</user_query>",
+  "updated_at": "2026-08-24T14:27:47+00:00"
+}

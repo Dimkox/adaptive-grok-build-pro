@@ -1,0 +1,96 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer",
+    "data_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "data_architect",
+    "integration_architect"
+  ],
+  "base_commit": "1c06299894279a88b881defa3f19b004fa742223",
+  "base_fingerprint": "8dcb519137c85ea6b3b7d8272bb758df46dc59aad55565ed826b202f3bbe64da",
+  "complexity": "high-risk",
+  "created_at": "2026-08-30T22:47:26+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "data",
+    "api",
+    "security"
+  ],
+  "human_gates": [
+    "scope_and_design_approval",
+    "migration_or_external_write_approval",
+    "production_action_approval"
+  ],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "data"
+  ],
+  "rationale": [
+    "high-risk signal: production",
+    "intent=feature",
+    "domains=data,api,security",
+    "repository=generic",
+    "write-owner=data_implementer",
+    "analysis-wave=6/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "data_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer",
+    "data_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "e50471553166",
+  "schema_version": 1,
+  "session_id": "m4-local-20260830",
+  "status": "routed",
+  "task": "Implement M4 Durable Factory Task Control Plane from the approved design and plan: typed immutable task/run/attempt contracts, PostgreSQL durable state, idempotent intake, leases and fencing and capacity, bounded retries and dead letter and budgets, kill switches and audit and reconciliation, authenticated local API and CLI, real PostgreSQL tests; no external writes or production mutation.",
+  "task_domains": [
+    "data",
+    "api",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change",
+    "data-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": "data_implementer"
+}

@@ -1,0 +1,53 @@
+{
+  "change_id": "20260824-user-query-забудь-вообще-нахуй-про-ii-tonya-прил-0db5b7",
+  "created_at": "2026-08-24T14:31:40+00:00",
+  "history": [
+    {
+      "at": "2026-08-24T14:31:40+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-24T14:37:12+00:00",
+      "from": "draft",
+      "reason": "scope: GitHub App is the application; forget public-domain website",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-24T14:37:12+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; bounded operator-memory correction",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-24T14:38:44+00:00",
+      "from": "approved",
+      "reason": "operator-memory correction applied",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-24T14:38:45+00:00",
+      "from": "implementing",
+      "reason": "implementation complete",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-24T14:40:50+00:00",
+      "from": "verifying",
+      "reason": "independent reviews written",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-24T14:40:50+00:00",
+      "from": "reviewing",
+      "reason": "reviews pass; bind evidence to ready tree",
+      "to": "ready"
+    }
+  ],
+  "route_id": "0db5b77a9bf3",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "<user_query>\nзабудь вообще нахуй про ii-tonya, приложуха - это приложение github https://github.com/apps/adaptive-trust-ci\n</user_query>",
+  "updated_at": "2026-08-24T14:40:50+00:00"
+}

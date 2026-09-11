@@ -1,0 +1,115 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "Host requirements pin Python 3.12.3 at /usr/bin/python3.12 with the recorded SHA-256 and httpx 0.28.1."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "Missing or blank Grok/Qwen API keys fail closed without HTTP."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "Mocked Grok and Qwen chat completions return landing draft JSON as executor stdout."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ],
+      "id": "AC-004",
+      "statement": "compose_landing_live_grok and compose_landing_live_qwen seal the complete 20-member artifact with live_url null using MockTransport."
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260906-add-default-off-live-grok-and-live-qwen-landing-4a8bbb",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "Tests or default server composition opening a real Grok or Qwen network socket."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ],
+      "id": "FORBID-002",
+      "statement": "Reading .env or writing a non-null live_url."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "Live Grok/Qwen executors are constructor-injected and default-off."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ],
+      "id": "INV-002",
+      "statement": "Landing HTTP adapters live outside the landing dogfood no-httpx fitness prefix."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Add default-off live Grok and Qwen landing executors and pin current Python/system requirements.",
+    "success_metric": "factory.tests.test_landing_live_executors pass with mocked HTTP only",
+    "target": "feat/factory-live-auto-landing on fd51dcf"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "landing_job.state",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "generic"
+    ],
+    "tier": "green"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "restore"
+  },
+  "schema_version": 2
+}

@@ -1,0 +1,29 @@
+{
+  "change_id": "20260906-d5-m8-factual-cohort-and-m9-operational-qualific-4a3636",
+  "created_at": "2026-09-06T10:48:57+00:00",
+  "history": [
+    {
+      "at": "2026-09-06T10:48:57+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-06T10:57:48+00:00",
+      "from": "draft",
+      "reason": "D5 bounded as fail-closed qualification accounting on fd51dcf",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-06T10:57:48+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; D5 ops remain human-blocked",
+      "to": "approved"
+    }
+  ],
+  "route_id": "4a3636699111",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "D5: M8 factual cohort and M9 operational qualification on published 2.0.15 main; fail-closed activation; no fabricated tasks, no production grant, no merge.",
+  "updated_at": "2026-09-06T10:57:48+00:00"
+}

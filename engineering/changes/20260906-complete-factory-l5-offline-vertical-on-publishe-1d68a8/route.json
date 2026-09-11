@@ -1,0 +1,68 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher"
+  ],
+  "base_commit": "fd51dcfed6b33f4a8707c0db602328146df17cc9",
+  "base_fingerprint": "0fc9896bfbb5f327037d834d23e7ebefc886d0fb8a98d5b88fc660cd00834ae4",
+  "complexity": "standard",
+  "created_at": "2026-09-06T12:01:08+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "generic"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base"
+  ],
+  "rationale": [
+    "bounded change without high-risk signals",
+    "intent=feature",
+    "domains=generic",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "low",
+  "route_id": "1d68a89159c3",
+  "schema_version": 1,
+  "session_id": "01a0763f-13e8-7c02-93f2-b6d11d956861",
+  "status": "routed",
+  "task": "лендинг в жопу сильно напотом добивай фабоику до L5",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow"
+  ],
+  "write_agent": "general_implementer"
+}

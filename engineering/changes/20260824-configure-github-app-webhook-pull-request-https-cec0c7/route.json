@@ -1,0 +1,84 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "48cb9737fac7f26fb70b425957a3ed64d4c1eb55",
+  "base_fingerprint": "5af5d02ca8b0dd3d6a3ba508b58ec5fe8659c63aaeb2bc261d74cc2cdf5a6e49",
+  "complexity": "high-risk",
+  "created_at": "2026-08-24T13:39:42+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api",
+    "event",
+    "security"
+  ],
+  "human_gates": [
+    "scope_and_design_approval"
+  ],
+  "intent": "review",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "high-risk signal: secret",
+    "intent=review",
+    "domains=api,event,security",
+    "repository=generic",
+    "write-owner=none",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review",
+    "security_review",
+    "release_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer",
+    "security_reviewer",
+    "release_reviewer"
+  ],
+  "risk": "high",
+  "route_id": "cec0c7622133",
+  "schema_version": 1,
+  "session_id": "01a0333f-a6c1-73e1-8dda-d345a265eedd",
+  "status": "routed",
+  "task": "<user_query>\nПоскольку adaptive-trust-ci уже зарегистрирована и есть Installation ID, отдельный repository webhook не нужен. Настрой webhook в самой GitHub App. GitHub Apps могут получать выбранные события через Webhook URL; для PR нужно подписаться на событие Pull request.\n\nНа странице настроек adaptive-trust-ci:\n\nWebhooks: Active\n\nWebhook URL:\nhttps://trust-ci.ii-tonya.ru/webhooks/github\n\nWebhook secret:\nточно то же значение, что TRUST_CI_WEBHOOK_SECRET в trust-ci/env/api.env\n\nSSL verification:\nEnabled\n\nSubscribe to events:\nPull request\n</user_query>",
+  "task_domains": [
+    "api",
+    "event",
+    "security"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "verification-evidence",
+    "api-event-change",
+    "security-sensitive-change"
+  ],
+  "write_agent": null
+}

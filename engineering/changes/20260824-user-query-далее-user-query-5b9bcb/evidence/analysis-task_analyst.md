@@ -1,0 +1,8 @@
+# task_analyst — YES: only `git-push-branch` of existing `92ddbd9`
+
+**Verdict: YES.** This slice is only `production --action git-push-branch --resource milestone/m0-live-trust-authority` of already-committed `92ddbd9f69c5c560f257fd61fa9c902f43f67e50` onto open draft PR #5. Do not `git add`/`commit` the dirty tree (including this change package). Do not claim M0.2 complete. Do not protect `main`.
+Operator prior: App `events=["pull_request"]`; named next was push to fire GitHub `pull_request`/`synchronize` to Funnel. User «далее» is sequential acceptance of that one operation (same weak delegation as beee95), not “finish M0”, merge, or M0.3.
+Facts: HEAD `92ddbd9` is 1 commit ahead of origin/PR head `ce03c87`; PR #5 draft, base `48cb973`/`main`; Funnel `/webhooks/github` live; `main` unprotected. Dirty/untracked docs, plan, leftover packages, and `test_m0_invariants.py` must stay uncommitted so the proven SHA remains `92ddbd9` (infinite-SHA if committed).
+Acceptance: mint the grant after the last local write (no new commit); non-force push this branch only; PR #5 `head.sha` = `92ddbd9`; GitHub Recent Delivery `pull_request`/`synchronize` HTTP 200 (`accepted`+`job_id`). Loopback HMAC is not webhook proof; if GitHub posts nothing, STOP — do not HMAC-substitute.
+Out of scope: merge, `gh pr edit`, mark ready, repo webhook, PEM, compose, policy/holdout retitle, human Ed25519, source-mutation, attestation, `branch-protect`. `action_required` is expected. Plan docs-cell rewrites after the 200 are a later slice.
+Write owner `general_implementer`. This analyst does not push, merge, read `.env`/PEM, or deploy.

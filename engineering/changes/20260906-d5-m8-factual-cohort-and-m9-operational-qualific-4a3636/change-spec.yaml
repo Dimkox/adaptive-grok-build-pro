@@ -1,0 +1,156 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_factual_cohort.py"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "Missing and empty factual ledgers report factual_accepted_task_count 0 for an AutonomyTupleV1."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_factual_cohort.py"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "Synthetic 30-row algorithm fixtures do not increment the factual count and evaluate_activation remains activated false with L2 cap and no external action."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_factual_cohort.py"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "append_factual_acceptance rejects synthetic records and missing M7 acceptance or currentness and writes no row."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_factual_cohort.py"
+        }
+      ],
+      "id": "AC-004",
+      "statement": "Mutating any AutonomyTupleV1 component opens a new empty cohort."
+    },
+    {
+      "evidence": [
+        {
+          "test": "delivery/tests/test_operational_qualification.py"
+        }
+      ],
+      "id": "AC-005",
+      "statement": "evaluate_m9_operational_qualification remains unqualified for the sealed FakeEnvironmentAdapter and inactive M8, including after the superseded 2026-09-08 deadline."
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260906-d5-m8-factual-cohort-and-m9-operational-qualific-4a3636",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_factual_cohort.py"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "Fabricating 30 human-accepted tasks or counting synthetics toward the M8 floor."
+    },
+    {
+      "evidence": [
+        {
+          "test": "delivery/tests/test_operational_qualification.py"
+        }
+      ],
+      "id": "FORBID-002",
+      "statement": "Claiming M8 activated, auto-merge, or M9 operational or production-ready on this tree."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_factual_cohort.py"
+        }
+      ],
+      "id": "FORBID-003",
+      "statement": "Flipping M7 external_acceptance_available or currentness_available to true."
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_factual_cohort.py"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "M8 evaluation remains recommendation-only, L2-capped, separately activated, and non-operative."
+    },
+    {
+      "evidence": [
+        {
+          "test": "delivery/tests/test_operational_qualification.py"
+        }
+      ],
+      "id": "INV-002",
+      "statement": "M9 sealed in-memory adapter remains the only delivery adapter and production stays unreachable."
+    },
+    {
+      "evidence": [
+        {
+          "test": "factory/tests/test_factual_cohort.py"
+        }
+      ],
+      "id": "INV-003",
+      "statement": "The 2026-09-08 deadline does not waive Trust CI, activation, or operational gates."
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Add fail-closed M8 factual-cohort and M9 operational-qualification accounting on published 2.0.15 main so empty/synthetic inputs report count 0, not activated, and not operational.",
+    "success_metric": "factory.tests.test_factual_cohort and delivery.tests.test_operational_qualification pass without asserting activation or operational qualification",
+    "target": "origin/main fd51dcfed6b33f4a8707c0db602328146df17cc9"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "factual_accepted_task_count",
+      "proves": [
+        "OBJ-001"
+      ]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "activation.activated",
+      "proves": [
+        "OBJ-001"
+      ]
+    },
+    {
+      "id": "SIG-003",
+      "metric": "m9.qualified",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "generic"
+    ],
+    "tier": "green"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "restore"
+  },
+  "schema_version": 2
+}

@@ -1,0 +1,17 @@
+{
+  "change_id": "20260906-complete-factory-l5-offline-vertical-on-publishe-1d68a8",
+  "created_at": "2026-09-06T12:01:39+00:00",
+  "history": [
+    {
+      "at": "2026-09-06T12:01:39+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    }
+  ],
+  "route_id": "1d68a89159c3",
+  "schema_version": 1,
+  "status": "draft",
+  "title": "Complete factory L5 offline vertical on published 2.0.15 main: exact-source gates and deterministic package binding; landing/hosting/live provider later; no M8 activation.",
+  "updated_at": "2026-09-06T12:01:39+00:00"
+}

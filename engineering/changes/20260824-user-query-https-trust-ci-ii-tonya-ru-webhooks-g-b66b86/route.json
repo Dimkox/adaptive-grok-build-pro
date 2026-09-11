@@ -1,0 +1,72 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "integration_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "48cb9737fac7f26fb70b425957a3ed64d4c1eb55",
+  "base_fingerprint": "efd80e81a9a185fc6f3cc9d1d46a46d721c990ce9f6f1c8b3e406d9632a30102",
+  "complexity": "standard",
+  "created_at": "2026-08-24T14:11:58+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "bugfix",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=bugfix",
+    "domains=api",
+    "repository=generic",
+    "write-owner=integration_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": []
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "b66b867ba5ab",
+  "schema_version": 1,
+  "session_id": "01a0333f-a6c1-73e1-8dda-d345a265eedd",
+  "status": "routed",
+  "task": "<user_query>\n https://trust-ci.ii-tonya.ru/webhooks/github нет , не трогаем, это ошибка chatgpt\n</user_query>",
+  "task_domains": [
+    "api"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "bugfix-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "integration_implementer"
+}

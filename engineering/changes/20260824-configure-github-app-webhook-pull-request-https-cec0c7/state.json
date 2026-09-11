@@ -1,0 +1,53 @@
+{
+  "change_id": "20260824-configure-github-app-webhook-pull-request-https-cec0c7",
+  "created_at": "2026-08-24T13:40:31+00:00",
+  "history": [
+    {
+      "at": "2026-08-24T13:40:31+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-08-24T13:45:45+00:00",
+      "from": "draft",
+      "reason": "user specified App webhook settings; JWT/PEM path is forbidden",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-08-24T13:45:59+00:00",
+      "from": "scoped",
+      "reason": "user query is the named App webhook design; no write owner",
+      "to": "approved"
+    },
+    {
+      "at": "2026-08-24T13:52:29+00:00",
+      "from": "approved",
+      "reason": "no write owner; operational App hook is JWT-only UI",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-08-24T13:52:34+00:00",
+      "from": "implementing",
+      "reason": "verify PASS; no App JWT mutation",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-08-24T13:52:41+00:00",
+      "from": "verifying",
+      "reason": "code test security release reviews PASS",
+      "to": "reviewing"
+    },
+    {
+      "at": "2026-08-24T13:52:47+00:00",
+      "from": "reviewing",
+      "reason": "App webhook is operator UI; agent cannot mint JWT from PEM",
+      "to": "ready"
+    }
+  ],
+  "route_id": "cec0c7622133",
+  "schema_version": 1,
+  "status": "ready",
+  "title": "Configure GitHub App webhook pull_request HTTPS",
+  "updated_at": "2026-08-24T13:52:47+00:00"
+}
