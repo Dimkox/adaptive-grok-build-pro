@@ -1,0 +1,156 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Normal toolkit verification distributes each existing Core test once across bounded logical-CPU workers with explicit repository opt-in and configurable serial rollback.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Parallel and serial executions preserve the configured measured sources, branch mode and fail_under74; fresh per-run data prevents stale or nested coverage reuse.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Assertion, collection, worker, timeout, dependency and configuration failures remain visible failures with no silent successful retry.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Generic consumer behavior, existing report identities, other Python suites and exclusive PostgreSQL/restart lanes remain compatible.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Pinned development-only tooling ships with the managed stack; a measured full verification and independent code/test reviews precede exact-head external Trust CI.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "Trust CI runs in its own cwd/import context with loadfile and explicit serial rollback; combined Make execution preserves either failure, and external runner tooling is an explicit separate rollout prerequisite.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": [
+      "governance"
+    ]
+  },
+  "change_id": "20260911-prioritize-parallel-python-verification-with-pre-49ad08",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No skipped mandatory coverage, duplicated full suites, shared-database parallel mutation, Actions dependency, deployed-policy change or direct protected-branch push.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Local runners and evidence do not create merge authority or alter the deployed external Trust CI boundary.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Accelerate the normal local Python verification path using pytest-xdist, preserving test meaning and coverage.",
+    "success_metric": "Core elapsed runtime on the same host and selected test inventory, with identical pass/skip semantics and configured branch-aware coverage >=74.",
+    "target": "Materially faster full Core verification; retain measured observations rather than promise a universal8.5x."
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Backend, effective workers, command exits, collected outcomes, elapsed time and branch-aware coverage results.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "strategy": "feature_flag",
+    "maximum_steps": 1
+  },
+  "schema_version": 2
+}

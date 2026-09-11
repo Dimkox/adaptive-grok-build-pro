@@ -750,3 +750,11 @@ Root cause: both live-composition fixture families froze service time but left t
 ## 2026-09-10 — Name replacement did not remove private source facts
 
 Root cause: public analysis replaced source names with case labels while retaining private inventory quantities and operational history. Export only transferable implementation requirements; preserve detailed source findings and reconciliation evidence privately.
+
+## 2026-09-11: Route the implementation, then document delivery context
+
+Including pull-request, negated production and coverage background in the classifier input selected unrelated review/AI domains because the router matches keywords. Re-routing the concise actual local-runner implementation through the unchanged router produced49ad08e34053; complete scope, user delegation and external trust constraints remain explicit in the change package.
+
+- 2026-09-11 parallel runner: checking only file size allowed a FIFO configuration to block before a test timeout could apply; require a regular file before reading. A completed controller also caused cleanup to return early while its owned descendant survived; signal the owned group even after controller exit and verify termination with bounded polling.
+
+- 2026-09-11 runner tooling: I initially combined the runner-image pin update with local implementation; the existing FIT-TRUST-CI-SEPARATION invariant correctly rejected the mixed diff. Check change-separation rules before adding CI-source prerequisites, and deliver those prerequisites through a separate reviewed bootstrap PR.

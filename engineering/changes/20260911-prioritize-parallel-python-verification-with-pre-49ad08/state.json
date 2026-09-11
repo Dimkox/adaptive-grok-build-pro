@@ -1,0 +1,35 @@
+{
+  "change_id": "20260911-prioritize-parallel-python-verification-with-pre-49ad08",
+  "created_at": "2026-09-11T00:53:16+00:00",
+  "history": [
+    {
+      "at": "2026-09-11T00:53:16+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-11T01:03:45+00:00",
+      "from": "draft",
+      "reason": "Bounded runner design, acceptance, coverage and ownership fallback documented",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-11T01:03:45+00:00",
+      "from": "scoped",
+      "reason": "Explicit user priority and sole-root-writer independent-review authorization; route has no scope gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-11T01:03:45+00:00",
+      "from": "approved",
+      "reason": "Proceed with failing regression and bounded local-runner implementation",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "49ad08e34053",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Prioritize parallel Python verification with preserved coverage",
+  "updated_at": "2026-09-11T01:03:45+00:00"
+}
