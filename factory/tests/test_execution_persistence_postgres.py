@@ -130,6 +130,10 @@ class UsageTokenComponentMigrationTests(unittest.TestCase):
         v2_overlay = next(item for item in discover_migrations() if item.version == 20)
         self.assertIn("execution_propose_v2", v2_overlay.sql)
         self.assertIn("execution_propose_v1", v2_overlay.sql)
+        self.assertIn("a.repository_id=t.repository_id AND a.role=r.role", v2_overlay.sql)
+        self.assertIn("t.packet_digest=p_legacy_packet_digest", v2_overlay.sql)
+        self.assertIn("v_max_events IS DISTINCT FROM v_authoritative_max_events", v2_overlay.sql)
+        self.assertIn("9223372036854775807/GREATEST", v2_overlay.sql)
 
 
 @unittest.skipUnless(

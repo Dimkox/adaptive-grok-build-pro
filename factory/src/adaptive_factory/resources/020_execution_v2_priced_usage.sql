@@ -8,7 +8,7 @@ CREATE FUNCTION factory.execution_propose_v2(
 ) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,factory AS $$
 DECLARE
-  v_role text; v_packet jsonb; v_max_events bigint; v_expected_key text; v_existing boolean;
+  v_role text; v_packet jsonb; v_max_events bigint; v_authoritative_max_events bigint; v_expected_key text; v_existing boolean;
   v_cost bigint; v_tokens bigint; v_price_table jsonb;
 BEGIN
   IF p_kind<>'usage' OR p_body IS NULL OR jsonb_typeof(p_body)<>'object'
@@ -17,19 +17,22 @@ BEGIN
       'price_table','price_table_digest','input_tokens','output_tokens','reasoning_tokens',
       'cached_input_tokens','cache_write_tokens','cost_usd_micros','output_bytes','idempotency_key'
     ]) THEN RETURN false; END IF;
-  SELECT r.role,p.body,(p.body#>>'{limits,max_events}')::bigint
-    INTO v_role,v_packet,v_max_events
+  SELECT r.role,p.body,(p.body#>>'{limits,max_events}')::bigint,t.event_limit
+    INTO v_role,v_packet,v_max_events,v_authoritative_max_events
     FROM factory.tasks t JOIN factory.runs r ON r.run_id=t.current_run_id AND r.task_id=t.task_id
     JOIN factory.capacity_allocations a ON a.run_id=r.run_id AND a.task_id=t.task_id
+      AND a.repository_id=t.repository_id AND a.role=r.role
     JOIN factory.execution_packets p ON p.run_id=r.run_id AND p.task_id=t.task_id
       AND p.packet_digest=p_packet_digest AND p.legacy_packet_digest=p_legacy_packet_digest
     JOIN factory.execution_manifests m ON m.run_id=r.run_id AND m.packet_digest=p.packet_digest
     WHERE t.task_id=p_task_id AND r.run_id=p_run_id AND r.owner_id=p_owner AND r.fence=p_fence
-      AND t.current_fence=p_fence AND t.state='leased' AND r.state='leased'
+      AND t.packet_digest=p_legacy_packet_digest AND t.current_fence=p_fence
+      AND t.state='leased' AND r.state='leased'
       AND r.released_at IS NULL AND a.released_at IS NULL AND m.terminal_at IS NULL
       AND r.lease_expires_at>clock_timestamp() AND t.deadline_at>clock_timestamp()
     FOR UPDATE OF t,r,m;
-  IF NOT FOUND OR p_sequence NOT BETWEEN 1 AND COALESCE(v_max_events,0)
+  IF NOT FOUND OR v_max_events IS DISTINCT FROM v_authoritative_max_events
+    OR p_sequence NOT BETWEEN 1 AND COALESCE(v_max_events,0)
     OR NOT (v_packet#>'{provider,capabilities}' ? 'usage')
     OR p_body->>'task_id' IS DISTINCT FROM p_task_id::text
     OR p_body->>'run_id' IS DISTINCT FROM p_run_id::text
@@ -53,6 +56,19 @@ BEGIN
       'input_tokens','output_tokens','reasoning_tokens','cached_input_tokens','cache_write_tokens',
       'cost_usd_micros','output_bytes','fence','sequence'
     ) AND (jsonb_typeof(x.value)<>'number' OR x.value#>>'{}' !~ '^(0|[1-9][0-9]{0,18})$'))
+    OR (p_body->>'input_tokens')::numeric+(p_body->>'output_tokens')::numeric+
+       (p_body->>'reasoning_tokens')::numeric+(p_body->>'cached_input_tokens')::numeric+
+       (p_body->>'cache_write_tokens')::numeric>9223372036854775807
+    OR (p_body->>'input_tokens')::numeric>
+       9223372036854775807/GREATEST((v_price_table->>'input_usd_micros_per_million')::numeric,1)
+    OR (p_body->>'output_tokens')::numeric>
+       9223372036854775807/GREATEST((v_price_table->>'output_usd_micros_per_million')::numeric,1)
+    OR (p_body->>'reasoning_tokens')::numeric>
+       9223372036854775807/GREATEST((v_price_table->>'reasoning_usd_micros_per_million')::numeric,1)
+    OR (p_body->>'cached_input_tokens')::numeric>
+       9223372036854775807/GREATEST((v_price_table->>'cached_input_usd_micros_per_million')::numeric,1)
+    OR (p_body->>'cache_write_tokens')::numeric>
+       9223372036854775807/GREATEST((v_price_table->>'cache_write_usd_micros_per_million')::numeric,1)
   THEN RETURN false; END IF;
   v_tokens=(p_body->>'input_tokens')::bigint+(p_body->>'output_tokens')::bigint+
     (p_body->>'reasoning_tokens')::bigint+(p_body->>'cached_input_tokens')::bigint+
