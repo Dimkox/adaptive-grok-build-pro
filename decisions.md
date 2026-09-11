@@ -477,3 +477,5 @@ Compare a consumer repository’s selected delivery ref with every observed PR h
 ## 2026-09-10 — Keep historical denominators and profile metadata explicit
 
 Separate PR pagination completeness from task-inventory completeness, and report observed records alongside nullable full-history totals. This preserves existing work without turning missing acceptance/session evidence into zeros; complete profile metadata remains bucketed accounting with no M8 authority.
+
+- 2026-09-11 test tooling bootstrap: extracting only runner image pins and its existing operations assertion preserves FIT-TRUST-CI-SEPARATION while making the parallel-runner prerequisite reviewable. Source preparation and independent image deployment remain separate facts.
