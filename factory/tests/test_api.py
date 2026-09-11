@@ -390,7 +390,6 @@ class ApiTests(unittest.TestCase):
             "packet_digest": "0" * 64,
         }
         common = {"grant": grant, "packet_digest": "d" * 64, "sequence": 3}
-        usage_table = PriceTableV1(1, 1_000_000, 2_000_000, 3_000_000, 250_000, 500_000)
         cases = {
             "claims": self.execution_claim_payload(),
             "stages": {"grant": grant, "packet_digest": "d" * 64, "stage": "running"},
@@ -719,6 +718,7 @@ class ApiTests(unittest.TestCase):
             "expires_at": "2026-09-02T01:00:00Z", "packet_digest": "0" * 64,
         }
         common = {"grant": grant, "packet_digest": "d" * 64, "sequence": 3}
+        usage_table = PriceTableV1(1, 1_000_000, 2_000_000, 3_000_000, 250_000, 500_000)
         cases = {
             "notes": {"note_type": "finding", "body": "safe", "evidence": []},
             "artifacts": {"artifact_class": "patch", "path": "factory/change.patch", "sha256": "e" * 64, "size_bytes": 12, "media_type": "text/plain"},
