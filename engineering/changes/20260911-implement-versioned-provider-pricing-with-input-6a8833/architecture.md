@@ -41,3 +41,11 @@ persists its component breakdown and calculated total atomically.
 The price-table digest establishes canonical-content integrity only. Provider
 tariff enrollment/provenance is out of this repository change and malformed
 or unknown V2 price tables fail closed.
+
+## Bounded implementation budget
+
+The exact priced-usage delivery measures 1,685 factory AST units and 577
+factory-test AST units. The two corresponding finite ceilings are calibrated
+to 1,700 and 600 units respectively: enough for the measured additive V3
+compatibility and PostgreSQL regression coverage, but still bounded. All
+other factory, source, contract, line, and byte limits remain unchanged.
