@@ -14,8 +14,9 @@ integer micro-USD rates. Its SHA-256 canonical digest must equal
 `price_table_digest`. The server calculates `cost_usd_micros` with floor
 division of each component; adapters may not supply a total cost.
 
-The change is a v2 execution-contract addition. Existing v1 durable records
-remain readable; only v2 producers may submit the expanded usage payload.
+The change uses execution protocol v2 on a new HTTP v3 usage route. Existing
+v1 and published HTTP v2 records and payloads remain readable; only protocol
+v2 producers may submit the expanded usage payload.
 
 ## Persistence
 

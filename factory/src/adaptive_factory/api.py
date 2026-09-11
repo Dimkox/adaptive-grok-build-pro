@@ -913,6 +913,25 @@ def create_app(
     ):
         actor = authenticator.authenticate(authorization, "task:execute")
         fields = {
+            "grant", "packet_digest", "sequence", "provider_call_id", "price_table_digest",
+            "input_tokens", "output_tokens", "reasoning_tokens", "cost_usd_micros", "output_bytes",
+        }
+        payload = _closed(payload, fields)
+        return execution_proposal(
+            payload, actor=actor, event_type="usage.reported",
+            proposal_payload={name: payload[name] for name in fields - {"grant", "packet_digest", "sequence"}},
+            idempotency_key=idempotency_key, correlation_id=x_correlation_id,
+        )
+
+    @app.post("/v3/execution/usage", tags=["execution"])
+    def execution_usage_v3(
+        payload: dict,
+        authorization: str | None = Header(None),
+        idempotency_key: str | None = Header(None),
+        x_correlation_id: str | None = Header(None),
+    ):
+        actor = authenticator.authenticate(authorization, "task:execute")
+        fields = {
             "grant", "packet_digest", "sequence", "provider_call_id", "price_table",
             "price_table_digest", "input_tokens", "output_tokens", "reasoning_tokens",
             "cached_input_tokens", "cache_write_tokens", "output_bytes",
@@ -1350,6 +1369,7 @@ def create_app(
             "/v2/execution/artifacts",
             "/v2/execution/usage",
             "/v2/execution/terminal",
+            "/v3/execution/usage",
         }
         app.router.routes = [
             route

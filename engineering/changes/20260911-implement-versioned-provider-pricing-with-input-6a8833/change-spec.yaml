@@ -28,7 +28,7 @@
   "contracts": {
     "events": [],
     "json_schema": [],
-    "openapi": ["factory/contracts/openapi/factory-execution.v2.json"]
+    "openapi": ["factory/contracts/openapi/factory-execution.v2.json","factory/contracts/openapi/factory-execution.v3.json"]
   },
   "forbidden_outcomes": [
     {
@@ -52,7 +52,7 @@
   "objective": {
     "id": "OBJ-001",
     "statement": "Implement versioned provider pricing with input, output, reasoning, cached-input and cache-write token accounting plus deterministic cost calculation and durable usage storage.",
-    "success_metric": "v2_priced_usage_contract_and_atomic_persistence_tests",
+    "success_metric": "v3_priced_usage_contract_and_atomic_persistence_tests",
     "target": "All four acceptance criteria pass: V2 derives integer micro-USD cost from exactly five token buckets, persists its proposal and usage aggregate atomically, and leaves V1 usage behavior unchanged."
   },
   "observability": [],

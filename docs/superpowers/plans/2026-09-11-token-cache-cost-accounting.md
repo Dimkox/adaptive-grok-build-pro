@@ -39,7 +39,7 @@
 **Files:**
 - Modify: `factory/src/adaptive_factory/protocol.py`
 - Modify: `factory/src/adaptive_factory/brokers.py`
-- Modify: `factory/contracts/openapi/factory-execution.v2.json`
+- Create: `factory/contracts/openapi/factory-execution.v3.json`
 - Test: `factory/tests/test_protocol.py`
 - Test: `factory/tests/test_brokers.py`
 
@@ -48,8 +48,8 @@
 
 - [ ] **Step 1: Write failing protocol/broker tests** for cache fields, missing price table, and forged total cost.
 - [ ] **Step 2: Run** focused unittest cases and confirm the old payload validator rejects the new contract.
-- [ ] **Step 3: Implement** v2-only closed payload validation and broker pricing; remove caller-supplied cost acceptance.
-- [ ] **Step 4: Update** OpenAPI with required token component and price-table fields.
+- [ ] **Step 3: Implement** protocol-v2 closed payload validation and broker pricing; remove caller-supplied cost acceptance.
+- [ ] **Step 4: Publish** the new HTTP v3 OpenAPI route while preserving HTTP v2.
 - [ ] **Step 5: Re-run** protocol and broker tests, then commit.
 
 ### Task 3: Durable migration and accounting store

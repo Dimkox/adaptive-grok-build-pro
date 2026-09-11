@@ -724,10 +724,9 @@ class ApiTests(unittest.TestCase):
             "artifacts": {"artifact_class": "patch", "path": "factory/change.patch", "sha256": "e" * 64, "size_bytes": 12, "media_type": "text/plain"},
             "usage": {
                 "provider_call_id": "fixture-call",
-                "price_table": usage_table.to_dict(),
                 "price_table_digest": price_table_digest(usage_table),
                 "input_tokens": 1, "output_tokens": 2, "reasoning_tokens": 0,
-                "cached_input_tokens": 0, "cache_write_tokens": 0, "output_bytes": 4,
+                "cost_usd_micros": 3, "output_bytes": 4,
             },
             "terminal": {"terminal_type": "run.completed", "summary": "fixture complete"},
         }
@@ -767,6 +766,36 @@ class ApiTests(unittest.TestCase):
                 )
             else:
                 self.assertEqual(set(response.json()), {"proposal"})
+        priced_response = client.post(
+            "/v3/execution/usage",
+            headers={**headers, "Idempotency-Key": "priced-proposal-001"},
+            json={
+                **common,
+                "provider_call_id": "priced-fixture-call",
+                "price_table": usage_table.to_dict(),
+                "price_table_digest": price_table_digest(usage_table),
+                "input_tokens": 1,
+                "output_tokens": 2,
+                "reasoning_tokens": 0,
+                "cached_input_tokens": 0,
+                "cache_write_tokens": 0,
+                "output_bytes": 4,
+            },
+        )
+        self.assertEqual(priced_response.status_code, 200, priced_response.text)
+        priced_schemas = json.loads(
+            (contract_root / "openapi/factory-execution.v3.json").read_text(
+                encoding="utf-8"
+            )
+        )["components"]["schemas"]
+        self.assertEqual(
+            set(priced_response.json()["proposal"]),
+            set(priced_schemas["PricedUsageProposal"]["required"]),
+        )
+        self.assertEqual(
+            self.service.calls[-1][2].get("protocol_version"),
+            "adaptive-factory.execution/v2",
+        )
         legacy_terminal = client.post(
             "/v1/execution/terminal",
             headers=headers,
