@@ -1388,6 +1388,7 @@
       "repository_paths": [
         "factory/contracts/schemas",
         "factory/src/adaptive_factory/execution_contracts.py",
+        "factory/src/adaptive_factory/pricing.py",
         "factory/src/adaptive_factory/protocol.py",
         "factory/src/adaptive_factory/semantic_bridge.py"
       ],

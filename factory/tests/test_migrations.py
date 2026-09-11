@@ -357,8 +357,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 20)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 19)
+        self.assertEqual([item.version for item in migrations], list(range(1, 21)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 20)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())

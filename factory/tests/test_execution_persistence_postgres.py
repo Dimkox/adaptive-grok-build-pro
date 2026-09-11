@@ -118,7 +118,7 @@ class RecordingSnapshotBroker:
 class UsageTokenComponentMigrationTests(unittest.TestCase):
     def test_forward_migration_adds_defaulted_nonnegative_usage_components(self):
         """A missing component column would make V2 pricing unrecoverable."""
-        migration = discover_migrations()[-1]
+        migration = next(item for item in discover_migrations() if item.version == 19)
 
         self.assertEqual(migration.version, 19)
         for column in (
@@ -127,6 +127,9 @@ class UsageTokenComponentMigrationTests(unittest.TestCase):
         ):
             self.assertIn(f"ADD COLUMN {column} bigint NOT NULL DEFAULT 0", migration.sql)
             self.assertIn(f"{column} >= 0", migration.sql)
+        v2_overlay = next(item for item in discover_migrations() if item.version == 20)
+        self.assertIn("execution_propose_v2", v2_overlay.sql)
+        self.assertIn("execution_propose_v1", v2_overlay.sql)
 
 
 @unittest.skipUnless(
@@ -5567,8 +5570,8 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
         import psycopg
 
         migrations = discover_migrations()
-        if len(migrations) != 19:
-            raise AssertionError("fresh-cluster test requires migrations 001..019")
+        if len(migrations) != 20:
+            raise AssertionError("fresh-cluster test requires migrations 001..020")
         with psycopg.connect(FRESH_CLUSTER_DATABASE_URL) as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT to_regnamespace('factory'),to_regrole('factory_artifact_attestor')")
