@@ -34,7 +34,7 @@
     {
       "id": "FORBID-001",
       "statement": "A provider-supplied V2 cost, partial price table, or malformed price-table digest must not become durable usage evidence.",
-      "evidence": [{"test": "factory/tests/test_protocol.py"}, {"test": "factory/tests/test_brokers.py"}]
+      "evidence": [{"test": "factory/tests/test_execution_persistence_postgres.py"}]
     }
   ],
   "invariants": [
