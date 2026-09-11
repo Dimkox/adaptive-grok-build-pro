@@ -61,7 +61,7 @@ _DATABASE_ID = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,62}$")
 
 def _database_url_for_login(database_url: str, login: str, password: str) -> str:
     parsed = urlsplit(database_url)
-    if parsed.scheme not in {"postgres", "postgresql"} or parsed.hostname is None:
+    if (parsed.scheme in {"postgres", "postgresql"}, parsed.hostname is not None) != (True, True):
         raise ValueError("database URL must be a PostgreSQL URI")
     host = f"[{parsed.hostname}]" if ":" in parsed.hostname else parsed.hostname
     port = f":{parsed.port}" if parsed.port is not None else ""
@@ -72,14 +72,11 @@ def _database_url_for_login(database_url: str, login: str, password: str) -> str
 
 
 def _database_url_at_port(database_url: str, port: int) -> str:
-    if type(port) is not int or not 1 <= port <= 65_535:
+    if (type(port) is int, 1 <= port <= 65_535) != (True, True):
         raise ValueError("invalid PostgreSQL port")
     parsed = urlsplit(database_url)
-    if (
-        parsed.scheme not in {"postgres", "postgresql"}
-        or parsed.username is None
-        or parsed.password is None
-    ):
+    if (parsed.scheme in {"postgres", "postgresql"}, parsed.username is not None,
+        parsed.password is not None) != (True, True, True):
         raise ValueError("database URL must include PostgreSQL credentials")
     userinfo = (
         f"{quote(unquote(parsed.username), safe='')}:"
@@ -130,13 +127,8 @@ def _assert_disposable_target(
     container_id: str,
     nonce: str,
 ) -> None:
-    """Fail before mutation unless the URL is bound to the named disposable DB."""
-
-    if (
-        not re.fullmatch(r"adaptive-factory-exit-[0-9a-f]{12}", container_name)
-        or not _CONTAINER_ID.fullmatch(container_id)
-        or not _NONCE.fullmatch(nonce)
-    ):
+    if (re.fullmatch(r"adaptive-factory-exit-[0-9a-f]{12}", container_name) is not None,
+        _CONTAINER_ID.fullmatch(container_id) is not None, _NONCE.fullmatch(nonce) is not None) != (True, True, True):
         raise RuntimeError("invalid disposable PostgreSQL identity")
     metadata = subprocess.run(
         [
@@ -518,8 +510,6 @@ def _registry(selection: ExecutionSelectionV1) -> AdapterRegistry:
 
 
 class WorkspaceBackend:
-    """Persistent broker state, independent of rebuilt recovery clients."""
-
     def __init__(self) -> None:
         self.delegate = FakeWorkspaceBroker()
         self.known: set[WorkspaceHandle] = set()
@@ -539,8 +529,6 @@ class WorkspaceBackend:
 
 
 class AmbiguousWorkspaceReleaser:
-    """Fresh bounded client over persistent exact-handle broker state."""
-
     def __init__(
         self,
         backend: WorkspaceBackend,
@@ -569,15 +557,13 @@ class AmbiguousWorkspaceReleaser:
         self.backend.outcomes.append(
             (handle, float(timeout_seconds), outcome.status)
         )
-        if handle == self.ambiguous and not self.failed_once:
+        if (handle == self.ambiguous, self.failed_once) == (True, False):
             self.failed_once = True
             raise TimeoutError("ambiguous workspace cleanup")
         return outcome
 
 
 class RecordingRecoveryStore:
-    """Record the exact claim objects returned by the runtime capability."""
-
     def __init__(self, delegate: PostgresFactoryStore) -> None:
         self.delegate = delegate
         self.claims: list[ExecutionRecoveryClaim] = []
@@ -631,8 +617,6 @@ def _immutable_authority(database_url: str, run_ids: tuple[str, str]):
 
 
 def _late_fence_state(database_url: str, run_ids: tuple[str, ...]):
-    """Fingerprint every execution relation a stale holder could mutate."""
-
     import psycopg
 
     run_values = list(run_ids)
@@ -801,8 +785,6 @@ def _assert_first_restart_state(
     cancelled_task: str,
     orphaned_task: str,
 ) -> None:
-    """Prove each first-restart transition before retry time or restart two."""
-
     import psycopg
 
     run_ids = [cancelled_run, orphaned_run]
@@ -950,8 +932,6 @@ def _assert_active_replacement(
     fence: int,
     owner_id: str,
 ) -> None:
-    """Prove the replacement authority remains live while stale calls fail."""
-
     import psycopg
 
     with psycopg.connect(database_url) as connection:
@@ -1161,7 +1141,7 @@ def main() -> int:
     container_name = os.environ.get(args.container_name_env)
     container_id = os.environ.get(args.container_id_env)
     nonce = os.environ.get(args.nonce_env)
-    if not owner_url or not container_name or not container_id or not nonce:
+    if not all((owner_url, container_name, container_id, nonce)):
         raise SystemExit(
             f"{args.database_url_env}, {args.container_name_env}, "
             f"{args.container_id_env} and {args.nonce_env} are required"
@@ -1197,8 +1177,8 @@ def main() -> int:
     )
     identity_before = _database_identity(owner_url)
     _require(
-        identity_before[1] >= 170_000
-        and tuple(row[0] for row in identity_before[2]) == tuple(range(1, 21)),
+        (identity_before[1] >= 170_000,
+         tuple(row[0] for row in identity_before[2]) == tuple(range(1, 21))) == (True, True),
         "restart probe requires the complete PostgreSQL 17 schema",
     )
 
@@ -1302,8 +1282,7 @@ def main() -> int:
     )
     identity_first = _database_identity(owner_url)
     _require(
-        identity_first[0] > identity_before[0]
-        and identity_first[1:] == identity_before[1:],
+        (identity_first[0] > identity_before[0], identity_first[1:] == identity_before[1:]) == (True, True),
         "first restart changed migration identity or server version",
     )
     recording_store = RecordingRecoveryStore(runtime_store)
@@ -1325,22 +1304,21 @@ def main() -> int:
         "first restart did not recover both independent lanes",
     )
     _require(
-        first.cursor is not None and first.cursor.run_id == execution_b.lease.run_id,
+        (first.cursor is not None, getattr(first.cursor, "run_id", None) == execution_b.lease.run_id) == (True, True),
         "full raw page did not preserve the authoritative fresh watermark",
     )
     _require(
-        [(handle, status) for handle, _timeout, status in workspace_backend.outcomes]
-        == [(handle_b, "released"), (handle_a, "released")]
-        and all(0 < timeout < 30 for _handle, timeout, _status in workspace_backend.outcomes)
-        and workspace_backend.active == set(),
+        ([(handle, status) for handle, _timeout, status in workspace_backend.outcomes],
+         all(0 < timeout < 30 for _handle, timeout, _status in workspace_backend.outcomes),
+         workspace_backend.active) == ([(handle_b, "released"), (handle_a, "released")], True, set()),
         "first restart cleanup was not exact-handle bounded",
     )
     claims_by_run: dict[str, list[ExecutionRecoveryClaim]] = {}
     for claim in recording_store.claims:
         claims_by_run.setdefault(claim.candidate.run_id, []).append(claim)
     _require(
-        set(claims_by_run) == set(run_ids)
-        and all(len(claims) == 1 for claims in claims_by_run.values()),
+        (set(claims_by_run), [len(claims) for claims in claims_by_run.values()])
+        == (set(run_ids), [1, 1]),
         "first restart did not expose exactly one claim for each execution",
     )
     stale_a = claims_by_run[execution_a.lease.run_id][0]
@@ -1387,13 +1365,12 @@ def main() -> int:
     )
     identity_second = _database_identity(owner_url)
     _require(
-        identity_second[0] > identity_first[0]
-        and identity_second[1:] == identity_before[1:],
+        (identity_second[0] > identity_first[0], identity_second[1:] == identity_before[1:]) == (True, True),
         "second restart changed migration identity or server version",
     )
     _require(
-        _late_fence_state(owner_url, run_ids) == first_phase_state
-        and _legacy_metrics(owner_url) == first_phase_legacy,
+        (_late_fence_state(owner_url, run_ids), _legacy_metrics(owner_url))
+        == (first_phase_state, first_phase_legacy),
         "second restart mutated the exact first-phase recovery state",
     )
     second_releaser = AmbiguousWorkspaceReleaser(workspace_backend)
@@ -1413,17 +1390,10 @@ def main() -> int:
         "second restart did not resume the durable cleanup retry",
     )
     _require(
-        [
-            (handle, status)
-            for handle, _timeout, status in workspace_backend.outcomes
-        ]
-        == [
-            (handle_b, "released"),
-            (handle_a, "released"),
-            (handle_a, "already_absent"),
-        ]
-        and all(0 < timeout < 30 for _handle, timeout, _status in workspace_backend.outcomes)
-        and workspace_backend.active == set(),
+        ([(handle, status) for handle, _timeout, status in workspace_backend.outcomes],
+         all(0 < timeout < 30 for _handle, timeout, _status in workspace_backend.outcomes),
+         workspace_backend.active) == ([(handle_b, "released"), (handle_a, "released"),
+                                        (handle_a, "already_absent")], True, set()),
         "cleanup retry was not deterministic and idempotent",
     )
     before_stale_cleanup = _late_fence_state(owner_url, run_ids)
@@ -1470,8 +1440,8 @@ def main() -> int:
         task_b.task_id,
     )
     _require(
-        runtime_store.verify_audit_chain(task_a.task_id)
-        and runtime_store.verify_audit_chain(task_b.task_id),
+        (runtime_store.verify_audit_chain(task_a.task_id),
+         runtime_store.verify_audit_chain(task_b.task_id)) == (True, True),
         "restart recovery broke the task audit hash chain",
     )
 
@@ -1492,9 +1462,8 @@ def main() -> int:
         idempotency_key="d" * 64,
     )
     _require(
-        replacement is not None
-        and replacement.task_id == task_b.task_id
-        and replacement.fence > execution_b.lease.fence,
+        (replacement is not None, getattr(replacement, "task_id", None) == task_b.task_id,
+         getattr(replacement, "fence", -1) > execution_b.lease.fence) == (True, True, True),
         "retryable execution did not receive a higher M4 fence",
     )
     fenced_run_ids = (*run_ids, replacement.run_id)
@@ -1558,13 +1527,13 @@ def main() -> int:
             "COALESCE((SELECT sum(active_count) FROM factory.capacity_counters),0)"
         ).fetchone()
     _require(
-        (live_allocations, active_capacity) == (0, 0)
-        and runtime_store.readiness()["capacity_consistent"] is True,
+        ((live_allocations, active_capacity), runtime_store.readiness()["capacity_consistent"])
+        == ((0, 0), True),
         "replacement cleanup did not return capacity to zero",
     )
     _require(
-        runtime_store.verify_audit_chain(task_a.task_id)
-        and runtime_store.verify_audit_chain(task_b.task_id),
+        (runtime_store.verify_audit_chain(task_a.task_id),
+         runtime_store.verify_audit_chain(task_b.task_id)) == (True, True),
         "replacement/late-fence proof broke the task audit hash chain",
     )
     print(

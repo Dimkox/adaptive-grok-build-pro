@@ -8,6 +8,9 @@ import time
 import unittest
 import uuid
 
+from fastapi.testclient import TestClient
+
+from adaptive_factory.api import Authenticator, create_app
 from adaptive_factory.contracts import canonical_digest
 from adaptive_factory.execution_contracts import WorkspaceResultV1, workspace_evidence_digest
 from adaptive_factory.brokers import BrokerError, ProposalBroker, proposal_idempotency_key
@@ -32,7 +35,14 @@ from adaptive_factory.store import (
     StoreUnavailable,
 )
 from adaptive_factory.protocol import CanonicalEvent, PROTOCOL_VERSION_V2
-from adaptive_factory.pricing import PriceTableV1, price_table_digest
+from adaptive_factory.pricing import (
+    PriceTableV1,
+    PricingContractError,
+    UsageTokens,
+    calculate_cost_usd_micros,
+    price_table_digest,
+)
+from adaptive_factory.protocol import EventStreamParser, ProtocolError, validate_event_payload
 from adaptive_factory.recovery import (
     ExecutionRecovery,
     ExecutionRecoveryCandidate,
@@ -48,8 +58,15 @@ from adaptive_factory.workspace import (
     WorkspaceSnapshotV1,
 )
 from factory.tests.test_contracts import valid_intake
+from factory.tests.test_api import FakeService
+from factory.tests.test_brokers import PACKET, RUN, TASK, context
 from factory.tests.test_execution_contracts import valid_packet
-from factory.tests.test_execution_service import trusted_registry
+from factory.tests.test_execution_service import (
+    FakeExecutionStore,
+    GRANT,
+    WORKER as EXECUTION_WORKER,
+    trusted_registry,
+)
 from factory.tests.test_postgres_integration import DATABASE_URL, NOW, OPERATOR, WORKER
 
 
@@ -136,6 +153,92 @@ class UsageTokenComponentMigrationTests(unittest.TestCase):
         self.assertIn("v_max_events IS DISTINCT FROM v_authoritative_max_events", v2_overlay.sql)
         self.assertIn("9223372036854775807/GREATEST", v2_overlay.sql)
         self.assertIn("(x.value#>>'{}')::numeric>9223372036854775807", v2_overlay.sql)
+
+
+class PricedUsageService(FakeService):
+    @staticmethod
+    def _proposal(grant, **kwargs):
+        proposal = FakeService._proposal(grant, **kwargs)
+        payload = kwargs["payload"]
+        if kwargs["event_type"] == "usage.reported" and "price_table" in payload:
+            proposal["cost_usd_micros"] = calculate_cost_usd_micros(
+                UsageTokens(*(payload[name] for name in (
+                    "input_tokens", "output_tokens", "reasoning_tokens",
+                    "cached_input_tokens", "cache_write_tokens",
+                ))), PriceTableV1.from_dict(payload["price_table"]),
+                payload["price_table_digest"],
+            )
+        return proposal
+
+
+class PricedUsageContractTests(unittest.TestCase):
+    def setUp(self):
+        self.table = PriceTableV1(1, 1_000_000, 2_000_000, 3_000_000, 250_000, 500_000)
+
+    def test_pricing_contract_rejects_unbound_or_invalid_facts(self):
+        usage = UsageTokens(2_000_000, 3_000_000, 4_000_000, 5_000_000, 6_000_000)
+        self.assertEqual(calculate_cost_usd_micros(usage, self.table, price_table_digest(self.table)), 24_250_000)
+        self.assertEqual(price_table_digest(self.table), "4d554ab3d98a6a993d6801c3033a8102e2fe6e84bd5e582e377096cac0a8e12b")
+        self.assertEqual(calculate_cost_usd_micros(UsageTokens(1_000_000, 1_000_000, 0, 0, 0), self.table, price_table_digest(self.table)), 3_000_000)
+        with self.assertRaisesRegex(PricingContractError, "price_table_digest_mismatch"):
+            calculate_cost_usd_micros(UsageTokens(1, 1, 1, 1, 1), self.table, "0" * 64)
+        with self.assertRaisesRegex(PricingContractError, "invalid_nonnegative_integer"):
+            UsageTokens(-1, 0, 0, 0, 0)
+        with self.assertRaisesRegex(PricingContractError, "invalid_nonnegative_integer"):
+            PriceTableV1(1, True, 0, 0, 0, 0)
+        fractional = PriceTableV1(1, 500_000, 500_000, 500_000, 500_000, 500_000)
+        self.assertEqual(calculate_cost_usd_micros(UsageTokens(1, 1, 1, 1, 1), fractional, price_table_digest(fractional)), 0)
+
+    def test_v2_protocol_broker_and_service_replay_bind_all_cost_facts(self):
+        payload = {"provider_call_id": "call-v2-1", "price_table": self.table.to_dict(),
+                   "price_table_digest": price_table_digest(self.table), "input_tokens": 10,
+                   "output_tokens": 4, "reasoning_tokens": 2, "cached_input_tokens": 3,
+                   "cache_write_tokens": 5, "output_bytes": 20}
+        encoded = json.dumps({"protocol_version": PROTOCOL_VERSION_V2, "task_id": TASK,
+            "run_id": RUN, "packet_digest": PACKET, "sequence": 1, "event_type": "usage.reported",
+            "payload": payload}, separators=(",", ":")).encode() + b"\n"
+        parsed = EventStreamParser(TASK, RUN, PACKET, ("usage",)).feed(encoded)
+        self.assertEqual((len(parsed), parsed[0].payload["cached_input_tokens"]), (1, 3))
+        with self.assertRaisesRegex(ProtocolError, "payload_fields"):
+            validate_event_payload("usage.reported", {**payload, "price_table": None}, protocol_version=PROTOCOL_VERSION_V2)
+        with self.assertRaisesRegex(ProtocolError, "payload_fields"):
+            validate_event_payload("usage.reported", {**payload, "cost_usd_micros": 999}, protocol_version=PROTOCOL_VERSION_V2)
+        event = CanonicalEvent(PROTOCOL_VERSION_V2, TASK, RUN, PACKET, 1, "usage.reported", payload)
+        usage = ProposalBroker().accept(event, context(), owner="writer-01", fence=7)
+        self.assertEqual((usage.total_tokens, usage.cost_usd_micros, usage.cached_input_tokens,
+                          usage.cache_write_tokens), (24, 26, 3, 5))
+        with self.assertRaisesRegex(BrokerError, "missing_usage"):
+            ProposalBroker().accept(CanonicalEvent(PROTOCOL_VERSION_V2, TASK, RUN, PACKET, 1,
+                                    "usage.reported", {**payload, "cost_usd_micros": 999}), context(),
+                                    owner="writer-01", fence=7)
+        store = FakeExecutionStore()
+        service = FactoryService(store)
+        first = service.commit_execution_proposal(
+            GRANT, packet_digest="d" * 64, sequence=1, event_type="usage.reported", payload=payload,
+            actor=EXECUTION_WORKER, idempotency_key="c" * 64, protocol_version=PROTOCOL_VERSION_V2)
+        self.assertEqual(service.commit_execution_proposal(
+            GRANT, packet_digest="d" * 64, sequence=1, event_type="usage.reported", payload=dict(payload),
+            actor=EXECUTION_WORKER, idempotency_key="c" * 64, protocol_version=PROTOCOL_VERSION_V2), first)
+        self.assertEqual(tuple(item[0] for item in store.calls),
+                         ("proposal_replay", "proposal_context", "proposal", "proposal_replay"))
+
+    def test_priced_v3_endpoint_and_v2_terminal_are_closed_additions(self):
+        credential = "fixture"
+        actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
+        service = PricedUsageService()
+        client = TestClient(create_app(service, Authenticator({credential: actor})))
+        headers = {"Authorization": f"Bearer {credential}", "Idempotency-Key": "priced-usage-001", "X-Correlation-ID": "priced-usage"}
+        grant = {"task_id": "00000000-0000-0000-0000-000000000001", "run_id": "00000000-0000-0000-0000-000000000002", "owner": "worker-01", "role": "writer", "fence": 7, "expires_at": "2026-09-02T01:00:00Z", "packet_digest": "0" * 64}
+        common = {"grant": grant, "packet_digest": "d" * 64, "sequence": 3}
+        response = client.post("/v3/execution/usage", headers=headers, json={**common,
+            "provider_call_id": "priced-call", "price_table": self.table.to_dict(),
+            "price_table_digest": price_table_digest(self.table), "input_tokens": 1,
+            "output_tokens": 2, "reasoning_tokens": 0, "cached_input_tokens": 0,
+            "cache_write_tokens": 0, "output_bytes": 4})
+        self.assertEqual((response.status_code, response.json()["proposal"]["cost_usd_micros"]), (200, 5))
+        self.assertEqual(service.calls[-1][2]["protocol_version"], PROTOCOL_VERSION_V2)
+        terminal = client.post("/v2/execution/terminal", headers={**headers, "Idempotency-Key": "v2-terminal-001"}, json={**common, "terminal_type": "run.completed", "summary": "complete"})
+        self.assertEqual((terminal.status_code, service.calls[-1][2]["protocol_version"]), (200, PROTOCOL_VERSION_V2))
 
 
 @unittest.skipUnless(

@@ -12,7 +12,6 @@ from adaptive_factory.service import (
     SnapshotBrokerUnavailable,
 )
 from adaptive_factory.brokers import ProposalContext
-from adaptive_factory.protocol import PROTOCOL_VERSION_V2
 from adaptive_factory.store import FenceError, StoreError
 from adaptive_factory.workspace import (
     ArtifactAttestationUnavailable,
@@ -141,10 +140,6 @@ class FakeExecutionStore:
             self.proposal_commands[key] = (kwargs["event"].to_dict(), proposal)
         return proposal
 
-    def observe_usage(self, grant, *args, **kwargs):
-        self.calls.append(("observe_usage", grant, args, kwargs))
-        return None
-
     def execution_proposal_replay(self, grant, event, actor, *, idempotency_key):
         self.calls.append(("proposal_replay", grant, event, actor, idempotency_key))
         if idempotency_key not in self.proposal_commands:
@@ -268,49 +263,6 @@ class TrustedTestArtifactAttestationStore:
 
 
 class ExecutionServiceTests(unittest.TestCase):
-    def test_v2_usage_uses_one_atomic_store_command_and_replays_it(self):
-        """A v2 replay cannot expose a proposal without its budget observation."""
-        store = FakeExecutionStore()
-        service = FactoryService(store)
-        payload = {
-            "provider_call_id": "provider-call-001",
-            "price_table": {
-                "schema_version": 1,
-                "input_usd_micros_per_million": 1_000_000,
-                "output_usd_micros_per_million": 2_000_000,
-                "reasoning_usd_micros_per_million": 3_000_000,
-                "cached_input_usd_micros_per_million": 500_000,
-                "cache_write_usd_micros_per_million": 250_000,
-            },
-            "price_table_digest": "a" * 64,
-            "input_tokens": 10,
-            "output_tokens": 4,
-            "reasoning_tokens": 2,
-            "cached_input_tokens": 3,
-            "cache_write_tokens": 5,
-            "output_bytes": 20,
-        }
-        from adaptive_factory.pricing import PriceTableV1, price_table_digest
-
-        payload["price_table_digest"] = price_table_digest(
-            PriceTableV1.from_dict(payload["price_table"])
-        )
-        first = service.commit_execution_proposal(
-            GRANT, packet_digest="d" * 64, sequence=1,
-            event_type="usage.reported", payload=payload, actor=WORKER,
-            idempotency_key="c" * 64, protocol_version=PROTOCOL_VERSION_V2,
-        )
-        replay = service.commit_execution_proposal(
-            GRANT, packet_digest="d" * 64, sequence=1,
-            event_type="usage.reported", payload=dict(payload), actor=WORKER,
-            idempotency_key="c" * 64, protocol_version=PROTOCOL_VERSION_V2,
-        )
-        self.assertEqual(replay, first)
-        self.assertEqual(
-            tuple(item[0] for item in store.calls),
-            ("proposal_replay", "proposal_context", "proposal", "proposal_replay"),
-        )
-
     def test_self_asserted_selection_is_rejected_without_trusted_registry(self):
         store = FakeExecutionStore()
         with self.assertRaisesRegex(ExecutionContractError, "provider_ineligible"):
