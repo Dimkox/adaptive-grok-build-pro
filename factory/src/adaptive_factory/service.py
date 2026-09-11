@@ -821,19 +821,6 @@ class FactoryService:
                 idempotency_key=idempotency_key,
                 correlation_id=correlation_id,
             )
-            if protocol_version != PROTOCOL_VERSION and event_type == "usage.reported":
-                self.store.observe_usage(
-                    grant, proposal.provider_call_id, proposal.price_table_digest,
-                    proposal.cost_usd_micros, proposal.total_tokens, proposal.output_bytes, actor,
-                    idempotency_key=(
-                        canonical_digest({"usage_observation": idempotency_key})
-                        if idempotency_key is not None else None
-                    ), correlation_id=correlation_id,
-                    input_tokens=proposal.input_tokens, output_tokens=proposal.output_tokens,
-                    reasoning_tokens=proposal.reasoning_tokens,
-                    cached_input_tokens=proposal.cached_input_tokens,
-                    cache_write_tokens=proposal.cache_write_tokens,
-                )
             return committed
         except FenceError as error:
             try:

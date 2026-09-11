@@ -32,6 +32,7 @@ from adaptive_factory.store import (
     StoreUnavailable,
 )
 from adaptive_factory.protocol import CanonicalEvent, PROTOCOL_VERSION_V2
+from adaptive_factory.pricing import PriceTableV1, price_table_digest
 from adaptive_factory.recovery import (
     ExecutionRecovery,
     ExecutionRecoveryCandidate,
@@ -5483,6 +5484,74 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     ),
                     proposal,
                 )
+
+    def test_v2_usage_rolls_back_proposal_when_observation_write_fails_then_retries(self):
+        """The v2 proposal and its accounting observation are one transaction."""
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "v2-usage-atomic-retry", capabilities=["structured_output", "usage"]
+        )
+        table = PriceTableV1(1, 1_000_000, 2_000_000, 3_000_000, 250_000, 500_000)
+        payload = {
+            "provider_call_id": "atomic-v2-call",
+            "price_table": table.to_dict(),
+            "price_table_digest": price_table_digest(table),
+            "input_tokens": 10,
+            "output_tokens": 4,
+            "reasoning_tokens": 2,
+            "cached_input_tokens": 3,
+            "cache_write_tokens": 5,
+            "output_bytes": 20,
+        }
+        key = "a" * 64
+        original = self.store._observe_usage_locked
+
+        def fail_after_observation(*args, **kwargs):
+            original(*args, **kwargs)
+            raise StoreUnavailable("fault after observation")
+
+        self.store._observe_usage_locked = fail_after_observation
+        try:
+            with self.assertRaisesRegex(StoreUnavailable, "fault after observation"):
+                self.service.commit_execution_proposal(
+                    execution.lease, packet_digest=execution.packet_digest, sequence=1,
+                    event_type="usage.reported", payload=payload, actor=WORKER,
+                    idempotency_key=key, protocol_version=PROTOCOL_VERSION_V2,
+                )
+        finally:
+            self.store._observe_usage_locked = original
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+            cursor.execute(
+                "SELECT count(*) FROM factory.usage_observations WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+        proposal = self.service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest, sequence=1,
+            event_type="usage.reported", payload=payload, actor=WORKER,
+            idempotency_key=key, protocol_version=PROTOCOL_VERSION_V2,
+        )
+        self.assertEqual((proposal.total_tokens, proposal.cost_usd_micros), (24, 26))
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+            cursor.execute(
+                """SELECT cost_usd_micros,token_units,cached_input_tokens,cache_write_tokens
+                FROM factory.usage_observations WHERE run_id=%s""",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone(), (26, 24, 3, 5))
+        projection = self.store.get_task(task.task_id)
+        self.assertEqual((projection.cost_observed_micros, projection.tokens_observed), (26, 24))
 
 
 FRESH_CLUSTER_DATABASE_URL = os.environ.get("FACTORY_FRESH_CLUSTER_DATABASE_URL")

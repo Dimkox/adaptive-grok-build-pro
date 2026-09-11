@@ -957,6 +957,11 @@ def create_app(
             actor=actor,
             idempotency_key=key,
             correlation_id=correlation,
+            protocol_version=(
+                PROTOCOL_VERSION_V2
+                if getattr(request.scope.get("route"), "path", None) == "/v2/execution/terminal"
+                else PROTOCOL_VERSION
+            ),
         )
         response = {"proposal": completion.proposal}
         matched_route = request.scope.get("route")

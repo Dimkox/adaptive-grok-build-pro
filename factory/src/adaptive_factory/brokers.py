@@ -548,7 +548,12 @@ class ProposalBroker:
             or payload["output_bytes"] > context.max_output_bytes
         ):
             raise BrokerError("budget_exceeded")
-        values = {**dict(payload), "author_role": context.role, "cost_usd_micros": cost}
+        values = {
+            **dict(payload),
+            "price_table": table.to_dict(),
+            "author_role": context.role,
+            "cost_usd_micros": cost,
+        }
         return _bounded_proposal(UsageProposalV2(
             context.task_id, context.run_id, context.packet_digest, context.fence,
             event.sequence, context.role, provider_call_id, table,

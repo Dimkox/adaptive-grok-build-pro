@@ -27,6 +27,7 @@ from adaptive_factory.models import (
     TaskProjection,
     TaskStatus,
 )
+from adaptive_factory.pricing import PriceTableV1, price_table_digest
 from adaptive_factory.service import (
     FactoryService,
     SnapshotBrokerIntegrityError,
@@ -203,6 +204,26 @@ class FakeService:
         if event_type == "artifact.proposed":
             return {**common, **payload, "artifact_attestation_digest": "b" * 64}
         if event_type == "usage.reported":
+            if "price_table" in payload:
+                from adaptive_factory.pricing import (
+                    PriceTableV1,
+                    UsageTokens,
+                    calculate_cost_usd_micros,
+                )
+
+                table = PriceTableV1.from_dict(payload["price_table"])
+                payload = {
+                    **payload,
+                    "cost_usd_micros": calculate_cost_usd_micros(
+                        UsageTokens(
+                            payload["input_tokens"], payload["output_tokens"],
+                            payload["reasoning_tokens"], payload["cached_input_tokens"],
+                            payload["cache_write_tokens"],
+                        ),
+                        table,
+                        payload["price_table_digest"],
+                    ),
+                }
             return {**common, **payload}
         if event_type == "run.completed":
             return {
@@ -369,6 +390,7 @@ class ApiTests(unittest.TestCase):
             "packet_digest": "0" * 64,
         }
         common = {"grant": grant, "packet_digest": "d" * 64, "sequence": 3}
+        usage_table = PriceTableV1(1, 1_000_000, 2_000_000, 3_000_000, 250_000, 500_000)
         cases = {
             "claims": self.execution_claim_payload(),
             "stages": {"grant": grant, "packet_digest": "d" * 64, "stage": "running"},
@@ -700,7 +722,13 @@ class ApiTests(unittest.TestCase):
         cases = {
             "notes": {"note_type": "finding", "body": "safe", "evidence": []},
             "artifacts": {"artifact_class": "patch", "path": "factory/change.patch", "sha256": "e" * 64, "size_bytes": 12, "media_type": "text/plain"},
-            "usage": {"provider_call_id": "fixture-call", "price_table_digest": "f" * 64, "input_tokens": 1, "output_tokens": 2, "reasoning_tokens": 0, "cost_usd_micros": 3, "output_bytes": 4},
+            "usage": {
+                "provider_call_id": "fixture-call",
+                "price_table": usage_table.to_dict(),
+                "price_table_digest": price_table_digest(usage_table),
+                "input_tokens": 1, "output_tokens": 2, "reasoning_tokens": 0,
+                "cached_input_tokens": 0, "cache_write_tokens": 0, "output_bytes": 4,
+            },
             "terminal": {"terminal_type": "run.completed", "summary": "fixture complete"},
         }
         contract_root = Path(__file__).resolve().parents[1] / "contracts"
@@ -809,6 +837,12 @@ class ApiTests(unittest.TestCase):
                 )
                 self.assertEqual(response.status_code, 200, response.text)
                 self.assertEqual(set(response.json()), expected_fields)
+                call = self.service.calls[-1]
+                self.assertEqual(call[0], "commit_terminal_and_finalize")
+                self.assertEqual(
+                    call[2].get("protocol_version"),
+                    "adaptive-factory.execution/v2" if path.startswith("/v2/") else "adaptive-factory.execution/v1",
+                )
 
     def test_execution_usage_authenticates_exactly_once(self):
         token = "execution-" + "usage-credential"
