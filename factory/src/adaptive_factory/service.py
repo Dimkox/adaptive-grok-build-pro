@@ -550,7 +550,6 @@ class FactoryService:
         actor: Actor,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
-        protocol_version: str = PROTOCOL_VERSION,
     ):
         self._require_grant_actor(grant, actor, "task:execute")
         if stage in {
@@ -580,7 +579,6 @@ class FactoryService:
         actor: Actor,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
-        protocol_version: str = PROTOCOL_VERSION,
     ):
         self._require_grant_actor(grant, actor, "task:execute")
         replay = self.store.execution_finalization_replay(
@@ -661,6 +659,7 @@ class FactoryService:
         actor: Actor,
         idempotency_key: str,
         correlation_id: str | None = None,
+        protocol_version: str = PROTOCOL_VERSION,
     ) -> ExecutionTerminalCompletion:
         if (
             type(idempotency_key) is not str
@@ -710,6 +709,7 @@ class FactoryService:
             actor=actor,
             idempotency_key=proposal_key,
             correlation_id=correlation_id,
+            protocol_version=protocol_version,
         )
         result = self.finalize_execution(
             grant,
@@ -731,6 +731,7 @@ class FactoryService:
         actor: Actor,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
+        protocol_version: str = PROTOCOL_VERSION,
     ):
         self._require_grant_actor(grant, actor, "task:execute")
         if type(sequence) is not int or sequence < 1:
@@ -812,7 +813,7 @@ class FactoryService:
                 fence=grant.fence,
                 artifact_attestation_digest=artifact_attestation_digest,
             )
-            return self.store.commit_execution_proposal(
+            committed = self.store.commit_execution_proposal(
                 grant,
                 proposal,
                 actor,
@@ -820,6 +821,20 @@ class FactoryService:
                 idempotency_key=idempotency_key,
                 correlation_id=correlation_id,
             )
+            if protocol_version != PROTOCOL_VERSION and event_type == "usage.reported":
+                self.store.observe_usage(
+                    grant, proposal.provider_call_id, proposal.price_table_digest,
+                    proposal.cost_usd_micros, proposal.total_tokens, proposal.output_bytes, actor,
+                    idempotency_key=(
+                        canonical_digest({"usage_observation": idempotency_key})
+                        if idempotency_key is not None else None
+                    ), correlation_id=correlation_id,
+                    input_tokens=proposal.input_tokens, output_tokens=proposal.output_tokens,
+                    reasoning_tokens=proposal.reasoning_tokens,
+                    cached_input_tokens=proposal.cached_input_tokens,
+                    cache_write_tokens=proposal.cache_write_tokens,
+                )
+            return committed
         except FenceError as error:
             try:
                 replay = self.store.execution_proposal_replay(
