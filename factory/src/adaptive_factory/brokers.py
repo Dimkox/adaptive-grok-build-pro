@@ -12,10 +12,13 @@ from .models import FailureClass
 from .protocol import (
     CanonicalEvent,
     MAX_DURABLE_PATH_BYTES,
+    PROTOCOL_VERSION,
+    PROTOCOL_VERSION_V2,
     ProtocolError,
     contains_structural_secret,
     validate_note_type,
 )
+from .pricing import PriceTableV1, PricingContractError, UsageTokens, calculate_cost_usd_micros
 
 
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -123,6 +126,34 @@ class UsageProposal:
 
 
 @dataclass(frozen=True)
+class UsageProposalV2:
+    task_id: str
+    run_id: str
+    packet_digest: str
+    fence: int
+    sequence: int
+    author_role: str
+    provider_call_id: str
+    price_table: PriceTableV1
+    price_table_digest: str
+    input_tokens: int
+    output_tokens: int
+    reasoning_tokens: int
+    cached_input_tokens: int
+    cache_write_tokens: int
+    cost_usd_micros: int
+    output_bytes: int
+    idempotency_key: str
+
+    @property
+    def total_tokens(self) -> int:
+        return (
+            self.input_tokens + self.output_tokens + self.reasoning_tokens
+            + self.cached_input_tokens + self.cache_write_tokens
+        )
+
+
+@dataclass(frozen=True)
 class TerminalProposal:
     task_id: str
     run_id: str
@@ -226,7 +257,7 @@ def _key(event: CanonicalEvent, context: ProposalContext, body: Mapping[str, Any
 
 
 def proposal_idempotency_key(
-    proposal: NoteProposal | ArtifactProposal | UsageProposal | TerminalProposal,
+    proposal: NoteProposal | ArtifactProposal | UsageProposal | UsageProposalV2 | TerminalProposal,
 ) -> str:
     if isinstance(proposal, NoteProposal):
         event_type = "note.proposed"
@@ -245,6 +276,21 @@ def proposal_idempotency_key(
             "media_type": proposal.media_type,
             "author_role": proposal.author_role,
             "artifact_attestation_digest": proposal.artifact_attestation_digest,
+        }
+    elif isinstance(proposal, UsageProposalV2):
+        event_type = "usage.reported"
+        body = {
+            "provider_call_id": proposal.provider_call_id,
+            "price_table": proposal.price_table.to_dict(),
+            "price_table_digest": proposal.price_table_digest,
+            "input_tokens": proposal.input_tokens,
+            "output_tokens": proposal.output_tokens,
+            "reasoning_tokens": proposal.reasoning_tokens,
+            "cached_input_tokens": proposal.cached_input_tokens,
+            "cache_write_tokens": proposal.cache_write_tokens,
+            "cost_usd_micros": proposal.cost_usd_micros,
+            "output_bytes": proposal.output_bytes,
+            "author_role": proposal.author_role,
         }
     elif isinstance(proposal, UsageProposal):
         event_type = "usage.reported"
@@ -295,7 +341,7 @@ class ProposalBroker:
         owner: str,
         fence: int,
         artifact_attestation_digest: str | None = None,
-    ) -> NoteProposal | ArtifactProposal | UsageProposal | TerminalProposal:
+    ) -> NoteProposal | ArtifactProposal | UsageProposal | UsageProposalV2 | TerminalProposal:
         if (event.task_id, event.run_id, event.packet_digest) != (
             context.task_id,
             context.run_id,
@@ -420,7 +466,15 @@ class ProposalBroker:
         ))
 
     @staticmethod
-    def _usage(event: CanonicalEvent, context: ProposalContext) -> UsageProposal:
+    def _usage(event: CanonicalEvent, context: ProposalContext) -> UsageProposal | UsageProposalV2:
+        if event.protocol_version == PROTOCOL_VERSION:
+            return ProposalBroker._usage_v1(event, context)
+        if event.protocol_version == PROTOCOL_VERSION_V2:
+            return ProposalBroker._usage_v2(event, context)
+        raise BrokerError("unsupported_version")
+
+    @staticmethod
+    def _usage_v1(event: CanonicalEvent, context: ProposalContext) -> UsageProposal:
         payload = event.payload
         required = {
             "provider_call_id",
@@ -461,6 +515,46 @@ class ProposalBroker:
             numbers[3],
             numbers[4],
             _key(event, context, values),
+        ))
+
+    @staticmethod
+    def _usage_v2(event: CanonicalEvent, context: ProposalContext) -> UsageProposalV2:
+        payload = event.payload
+        required = {
+            "provider_call_id", "price_table", "price_table_digest", "input_tokens",
+            "output_tokens", "reasoning_tokens", "cached_input_tokens",
+            "cache_write_tokens", "output_bytes",
+        }
+        if set(payload) != required:
+            raise BrokerError("missing_usage")
+        provider_call_id = payload["provider_call_id"]
+        if not isinstance(provider_call_id, str) or not provider_call_id:
+            raise BrokerError("missing_usage")
+        _secret_free(provider_call_id, 128)
+        if type(payload["output_bytes"]) is not int or payload["output_bytes"] < 0:
+            raise BrokerError("invalid_usage")
+        try:
+            table = PriceTableV1.from_dict(payload["price_table"])
+            usage = UsageTokens(
+                payload["input_tokens"], payload["output_tokens"], payload["reasoning_tokens"],
+                payload["cached_input_tokens"], payload["cache_write_tokens"],
+            )
+            cost = calculate_cost_usd_micros(usage, table, payload["price_table_digest"])
+        except PricingContractError as exc:
+            raise BrokerError(exc.code) from exc
+        if (
+            usage.total_tokens > context.max_token_units
+            or cost > context.max_cost_usd_micros
+            or payload["output_bytes"] > context.max_output_bytes
+        ):
+            raise BrokerError("budget_exceeded")
+        values = {**dict(payload), "author_role": context.role, "cost_usd_micros": cost}
+        return _bounded_proposal(UsageProposalV2(
+            context.task_id, context.run_id, context.packet_digest, context.fence,
+            event.sequence, context.role, provider_call_id, table,
+            payload["price_table_digest"], usage.input_tokens, usage.output_tokens,
+            usage.reasoning_tokens, usage.cached_input_tokens, usage.cache_write_tokens,
+            cost, payload["output_bytes"], _key(event, context, values),
         ))
 
     def _terminal_proposal(self, event: CanonicalEvent, context: ProposalContext) -> TerminalProposal:

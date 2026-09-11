@@ -8,6 +8,10 @@ from types import MappingProxyType
 from typing import Any, Iterable, Mapping
 
 from .execution_contracts import PROTOCOL_VERSION
+from .pricing import PriceTableV1, PricingContractError, UsageTokens, calculate_cost_usd_micros
+
+
+PROTOCOL_VERSION_V2 = "adaptive-factory.execution/v2"
 
 
 _TERMINAL = frozenset({"run.completed", "run.failed", "run.needs_human"})
@@ -54,6 +58,19 @@ _STRUCTURAL_SECRET = re.compile(
     r"password|credential|secret[_-]?key|private[_-]?key|token|secret)"
     r"(?:[_-][a-z0-9]+)*(?:[\"'])?(?![A-Za-z0-9_-])[ \t]*[:=])"
 )
+_V1_USAGE_FIELDS = frozenset(
+    {
+        "provider_call_id", "price_table_digest", "input_tokens", "output_tokens",
+        "reasoning_tokens", "cost_usd_micros", "output_bytes",
+    }
+)
+_V2_USAGE_FIELDS = frozenset(
+    {
+        "provider_call_id", "price_table", "price_table_digest", "input_tokens",
+        "output_tokens", "reasoning_tokens", "cached_input_tokens",
+        "cache_write_tokens", "output_bytes",
+    }
+)
 _PAYLOAD_FIELDS = {
     "adapter.ready": frozenset(
         {"provider_id", "adapter_id", "adapter_version", "native_version", "model_id", "capabilities"}
@@ -62,17 +79,7 @@ _PAYLOAD_FIELDS = {
     "stage.reported": frozenset({"stage", "status"}),
     "note.proposed": frozenset({"note_type", "body", "evidence"}),
     "artifact.proposed": frozenset({"artifact_class", "path", "sha256", "size_bytes", "media_type"}),
-    "usage.reported": frozenset(
-        {
-            "provider_call_id",
-            "price_table_digest",
-            "input_tokens",
-            "output_tokens",
-            "reasoning_tokens",
-            "cost_usd_micros",
-            "output_bytes",
-        }
-    ),
+    "usage.reported": _V1_USAGE_FIELDS,
     "run.completed": frozenset({"summary"}),
     "run.failed": frozenset({"failure_class", "diagnostic"}),
     "run.needs_human": frozenset({"reason", "diagnostic"}),
@@ -175,12 +182,20 @@ def validate_event_payload(
     event_type: str,
     payload: Any,
     limits: ProtocolLimits | None = None,
+    *,
+    protocol_version: str = PROTOCOL_VERSION,
 ) -> None:
     limits = limits or ProtocolLimits()
+    if protocol_version not in {PROTOCOL_VERSION, PROTOCOL_VERSION_V2}:
+        raise ProtocolError("unsupported_version")
     if not isinstance(event_type, str) or event_type not in _EVENTS:
         raise ProtocolError("unknown_event")
     _walk(payload, limits)
-    allowed = _PAYLOAD_FIELDS.get(event_type)
+    allowed = (
+        _V2_USAGE_FIELDS
+        if event_type == "usage.reported" and protocol_version == PROTOCOL_VERSION_V2
+        else _PAYLOAD_FIELDS.get(event_type)
+    )
     if allowed is None or not isinstance(payload, dict) or not set(payload).issubset(allowed):
         raise ProtocolError("payload_fields")
     if event_type == "adapter.ready":
@@ -222,6 +237,20 @@ def validate_event_payload(
         ):
             raise ProtocolError("payload_fields")
     elif event_type == "usage.reported":
+        if protocol_version == PROTOCOL_VERSION_V2:
+            try:
+                table = PriceTableV1.from_dict(payload["price_table"])
+                usage = UsageTokens(
+                    payload["input_tokens"], payload["output_tokens"],
+                    payload["reasoning_tokens"], payload["cached_input_tokens"],
+                    payload["cache_write_tokens"],
+                )
+                calculate_cost_usd_micros(usage, table, payload["price_table_digest"])
+            except PricingContractError as exc:
+                raise ProtocolError("payload_fields") from exc
+            if not isinstance(payload["provider_call_id"], str) or type(payload["output_bytes"]) is not int:
+                raise ProtocolError("payload_fields")
+            return
         if (
             not isinstance(payload["provider_call_id"], str)
             or not isinstance(payload["price_table_digest"], str)
@@ -277,12 +306,13 @@ class CanonicalEvent:
         event_type: str,
         payload: Any,
         limits: ProtocolLimits | None = None,
+        protocol_version: str = PROTOCOL_VERSION,
     ) -> "CanonicalEvent":
         if type(sequence) is not int or sequence < 1:
             raise ProtocolError("invalid_sequence")
-        validate_event_payload(event_type, payload, limits)
+        validate_event_payload(event_type, payload, limits, protocol_version=protocol_version)
         return cls(
-            PROTOCOL_VERSION,
+            protocol_version,
             task_id,
             run_id,
             packet_digest,

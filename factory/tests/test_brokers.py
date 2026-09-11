@@ -11,6 +11,8 @@ from adaptive_factory.brokers import (
     proposal_idempotency_key,
 )
 from adaptive_factory.protocol import CanonicalEvent
+from adaptive_factory.pricing import PriceTableV1, price_table_digest
+from adaptive_factory.protocol import PROTOCOL_VERSION_V2
 
 
 TASK = "task-001"
@@ -53,7 +55,43 @@ def event(sequence, event_type, payload, **identity):
     )
 
 
+def v2_usage_event(sequence=1, **overrides):
+    table = PriceTableV1(1, 1_000_000, 2_000_000, 3_000_000, 250_000, 500_000)
+    payload = {
+        "provider_call_id": "call-v2-1",
+        "price_table": table.to_dict(),
+        "price_table_digest": price_table_digest(table),
+        "input_tokens": 10,
+        "output_tokens": 4,
+        "reasoning_tokens": 2,
+        "cached_input_tokens": 3,
+        "cache_write_tokens": 5,
+        "output_bytes": 20,
+    }
+    payload.update(overrides)
+    return CanonicalEvent(
+        PROTOCOL_VERSION_V2, TASK, RUN, PACKET, sequence, "usage.reported", payload
+    )
+
+
 class BrokerTests(unittest.TestCase):
+    def test_v2_usage_derives_cost_from_all_five_token_buckets(self):
+        """Dropping a cache bucket or trusting a caller total corrupts accounting."""
+        usage = ProposalBroker().accept(
+            v2_usage_event(), context(), owner="writer-01", fence=7
+        )
+
+        self.assertEqual(usage.total_tokens, 24)
+        self.assertEqual(usage.cost_usd_micros, 26)
+        self.assertEqual((usage.cached_input_tokens, usage.cache_write_tokens), (3, 5))
+
+    def test_v2_usage_rejects_a_forged_caller_cost_field(self):
+        """A provider-supplied total must not enter the derived-cost contract."""
+        with self.assertRaisesRegex(BrokerError, "missing_usage"):
+            ProposalBroker().accept(
+                v2_usage_event(cost_usd_micros=999), context(), owner="writer-01", fence=7
+            )
+
     def test_note_is_bounded_redacted_and_provenance_bound(self):
         proposal = ProposalBroker().accept(
             event(1, "note.proposed", {"note_type": "conclusion", "body": "token sk-secret conclusion", "evidence": ["factory/src/a.py"]}),

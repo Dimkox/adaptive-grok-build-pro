@@ -1,7 +1,15 @@
 import json
 import unittest
 
-from adaptive_factory.protocol import CanonicalEvent, EventStreamParser, ProtocolError, ProtocolLimits
+from adaptive_factory.pricing import PriceTableV1, price_table_digest
+from adaptive_factory.protocol import (
+    CanonicalEvent,
+    EventStreamParser,
+    PROTOCOL_VERSION_V2,
+    ProtocolError,
+    ProtocolLimits,
+    validate_event_payload,
+)
 
 
 TASK = "task-001"
@@ -35,7 +43,50 @@ def parser(**limit_overrides):
     )
 
 
+def v2_usage_payload(**overrides):
+    table = PriceTableV1(1, 1_000_000, 2_000_000, 3_000_000, 250_000, 500_000)
+    payload = {
+        "provider_call_id": "call-v2-1",
+        "price_table": table.to_dict(),
+        "price_table_digest": price_table_digest(table),
+        "input_tokens": 10,
+        "output_tokens": 4,
+        "reasoning_tokens": 2,
+        "cached_input_tokens": 3,
+        "cache_write_tokens": 5,
+        "output_bytes": 20,
+    }
+    payload.update(overrides)
+    return payload
+
+
 class ProtocolTests(unittest.TestCase):
+    def test_v2_usage_requires_the_closed_price_table_and_rejects_caller_cost(self):
+        """V2 must neither accept an unpriced payload nor a provider-authored total."""
+        with self.assertRaisesRegex(ProtocolError, "payload_fields"):
+            validate_event_payload(
+                "usage.reported",
+                v2_usage_payload(price_table=None),
+                protocol_version=PROTOCOL_VERSION_V2,
+            )
+        with self.assertRaisesRegex(ProtocolError, "payload_fields"):
+            validate_event_payload(
+                "usage.reported",
+                v2_usage_payload(cost_usd_micros=999),
+                protocol_version=PROTOCOL_VERSION_V2,
+            )
+
+        event = CanonicalEvent.from_payload(
+            task_id=TASK,
+            run_id=RUN,
+            packet_digest=PACKET,
+            sequence=1,
+            event_type="usage.reported",
+            payload=v2_usage_payload(),
+            protocol_version=PROTOCOL_VERSION_V2,
+        )
+        self.assertEqual(event.protocol_version, PROTOCOL_VERSION_V2)
+
     def test_complete_stream_returns_only_canonical_events(self):
         stream = parser()
         values = [
