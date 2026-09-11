@@ -17,9 +17,9 @@ RUN = "run-001"
 PACKET = "a" * 64
 
 
-def event(sequence, event_type, payload):
+def event(sequence, event_type, payload, *, protocol_version="adaptive-factory.execution/v1"):
     return {
-        "protocol_version": "adaptive-factory.execution/v1",
+        "protocol_version": protocol_version,
         "task_id": TASK,
         "run_id": RUN,
         "packet_digest": PACKET,
@@ -61,6 +61,19 @@ def v2_usage_payload(**overrides):
 
 
 class ProtocolTests(unittest.TestCase):
+    def test_parser_preserves_and_validates_v2_usage_events(self):
+        """Rejecting a valid V2 line prevents adapters from reporting priced usage."""
+        parsed = parser().feed(line(event(
+            1,
+            "usage.reported",
+            v2_usage_payload(),
+            protocol_version=PROTOCOL_VERSION_V2,
+        )))
+
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(parsed[0].protocol_version, PROTOCOL_VERSION_V2)
+        self.assertEqual(parsed[0].payload["cached_input_tokens"], 3)
+
     def test_v2_usage_requires_the_closed_price_table_and_rejects_caller_cost(self):
         """V2 must neither accept an unpriced payload nor a provider-authored total."""
         with self.assertRaisesRegex(ProtocolError, "payload_fields"):

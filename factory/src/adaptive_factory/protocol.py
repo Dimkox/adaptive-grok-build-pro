@@ -395,7 +395,8 @@ class EventStreamParser:
         }
         if set(value) != fields:
             raise ProtocolError("event_fields")
-        if value["protocol_version"] != PROTOCOL_VERSION:
+        protocol_version = value["protocol_version"]
+        if protocol_version not in {PROTOCOL_VERSION, PROTOCOL_VERSION_V2}:
             raise ProtocolError("unsupported_version")
         if (value["task_id"], value["run_id"], value["packet_digest"]) != (
             self.task_id,
@@ -412,7 +413,9 @@ class EventStreamParser:
         if required_capability and required_capability not in self.capabilities:
             raise ProtocolError("undeclared_capability", required_capability)
         payload = value["payload"]
-        validate_event_payload(event_type, payload, self.limits)
+        validate_event_payload(
+            event_type, payload, self.limits, protocol_version=protocol_version
+        )
         if event_type == "adapter.ready":
             capabilities = payload["capabilities"]
             if not set(capabilities).issubset(self.capabilities):
@@ -427,6 +430,7 @@ class EventStreamParser:
             event_type=event_type,
             payload=payload,
             limits=self.limits,
+            protocol_version=protocol_version,
         )
 
     def finish(self) -> tuple[CanonicalEvent, ...]:
