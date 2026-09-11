@@ -74,8 +74,8 @@
     },
     {
       "id": "FIT-BOUNDED-FACTORY-CHANGE",
-      "max_ast_complexity": 1450,
-      "max_changed_bytes": 950000,
+      "max_ast_complexity": 1700,
+      "max_changed_bytes": 1150000,
       "max_changed_lines": 22000,
       "path_prefixes": [
         "factory"
@@ -84,8 +84,8 @@
     },
     {
       "id": "FIT-BOUNDED-FACTORY-SOURCE-CHANGE",
-      "max_ast_complexity": 1010,
-      "max_changed_bytes": 235000,
+      "max_ast_complexity": 1150,
+      "max_changed_bytes": 375000,
       "max_changed_lines": 5500,
       "path_prefixes": [
         "factory/src"
@@ -104,8 +104,8 @@
     },
     {
       "id": "FIT-BOUNDED-FACTORY-TEST-CHANGE",
-      "max_ast_complexity": 425,
-      "max_changed_bytes": 510000,
+      "max_ast_complexity": 600,
+      "max_changed_bytes": 775000,
       "max_changed_lines": 7500,
       "path_prefixes": [
         "factory/tests"

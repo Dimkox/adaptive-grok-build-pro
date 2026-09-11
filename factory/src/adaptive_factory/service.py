@@ -14,7 +14,7 @@ from .execution_contracts import (
     WorkspaceResultV1,
 )
 from .models import Actor, ExecutionStage, FailureClass, LeaseGrant, RunRole, TaskStatus
-from .protocol import CanonicalEvent
+from .protocol import CanonicalEvent, PROTOCOL_VERSION
 from .semantic_adjudication import adjudicate
 from .semantic_bridge import SemanticValidationInputsV1, build_semantic_subject
 from .semantic_contracts import (
@@ -659,6 +659,7 @@ class FactoryService:
         actor: Actor,
         idempotency_key: str,
         correlation_id: str | None = None,
+        protocol_version: str = PROTOCOL_VERSION,
     ) -> ExecutionTerminalCompletion:
         if (
             type(idempotency_key) is not str
@@ -685,6 +686,7 @@ class FactoryService:
             sequence=sequence,
             event_type=event_type,
             payload=payload,
+            protocol_version=protocol_version,
         )
         self._require_grant_actor(grant, actor, "task:execute")
         self._fenced(
@@ -707,6 +709,7 @@ class FactoryService:
             actor=actor,
             idempotency_key=proposal_key,
             correlation_id=correlation_id,
+            protocol_version=protocol_version,
         )
         result = self.finalize_execution(
             grant,
@@ -728,6 +731,7 @@ class FactoryService:
         actor: Actor,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
+        protocol_version: str = PROTOCOL_VERSION,
     ):
         self._require_grant_actor(grant, actor, "task:execute")
         if type(sequence) is not int or sequence < 1:
@@ -739,6 +743,7 @@ class FactoryService:
             sequence=sequence,
             event_type=event_type,
             payload=payload,
+            protocol_version=protocol_version,
         )
         replay = self.store.execution_proposal_replay(
             grant, event, actor, idempotency_key=idempotency_key
@@ -808,7 +813,7 @@ class FactoryService:
                 fence=grant.fence,
                 artifact_attestation_digest=artifact_attestation_digest,
             )
-            return self.store.commit_execution_proposal(
+            committed = self.store.commit_execution_proposal(
                 grant,
                 proposal,
                 actor,
@@ -816,6 +821,7 @@ class FactoryService:
                 idempotency_key=idempotency_key,
                 correlation_id=correlation_id,
             )
+            return committed
         except FenceError as error:
             try:
                 replay = self.store.execution_proposal_replay(

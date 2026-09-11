@@ -357,8 +357,8 @@ class MigrationTests(unittest.TestCase):
 
     def test_packaged_migrations_are_contiguous_and_factory_only(self):
         migrations = discover_migrations()
-        self.assertEqual([item.version for item in migrations], list(range(1, 19)))
-        self.assertEqual(len({item.sha256 for item in migrations}), 18)
+        self.assertEqual([item.version for item in migrations], list(range(1, 21)))
+        self.assertEqual(len({item.sha256 for item in migrations}), 20)
         for item in migrations:
             self.assertIn("factory.", item.sql)
             self.assertNotIn("trust_ci", item.sql.lower())
@@ -514,7 +514,10 @@ class MigrationTests(unittest.TestCase):
         self.assertNotIn("create or replace function", recovery_sql)
 
     def test_semantic_migration_is_additive_append_only_and_capability_shaped(self):
-        migration = discover_migrations()[-1]
+        migration = next(
+            item for item in discover_migrations()
+            if item.name == "018_semantic_validation_bridge.sql"
+        )
         self.assertEqual(migration.name, "018_semantic_validation_bridge.sql")
         lowered = migration.sql.lower()
         for forbidden in (
@@ -561,7 +564,10 @@ class MigrationTests(unittest.TestCase):
             self.assertIn(marker, lowered)
 
     def test_semantic_evidence_functions_are_reserved_to_distinct_capabilities(self):
-        migration = discover_migrations()[-1].sql.lower()
+        migration = next(
+            item.sql.lower() for item in discover_migrations()
+            if item.name == "018_semantic_validation_bridge.sql"
+        )
         self.assertIn(
             "grant execute on function factory.semantic_create_assignment",
             migration,

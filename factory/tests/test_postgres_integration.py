@@ -4037,7 +4037,7 @@ class PostgresFactoryTests(unittest.TestCase):
 
                     self.assertEqual(
                         [item.version for item in self.migrate(upgrade_url)],
-                        [13, 14, 15, 16, 17, 18],
+                        [13, 14, 15, 16, 17, 18, 19, 20],
                     )
                     upgraded_store = self.runtime_store(upgrade_url)
                     upgraded_service = FactoryService(upgraded_store)
@@ -4328,7 +4328,7 @@ class PostgresFactoryTests(unittest.TestCase):
                     upgraded_store.get_task(str(ready_new_task_id)).status,
                 ),
                 (
-                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18], "ready", 18, True,
+                    [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], "ready", 20, True,
                     TaskStatus.NEEDS_HUMAN, TaskStatus.NEEDS_HUMAN, TaskStatus.SUPERSEDED,
                     TaskStatus.QUEUED,
                 ),
@@ -5023,7 +5023,7 @@ class PostgresFactoryTests(unittest.TestCase):
             self.runtime_url,
         )
         self.assertEqual(result["database_role"], "factory_runtime")
-        self.assertEqual(result["schema_version"], 18)
+        self.assertEqual(result["schema_version"], 20)
         self.assertEqual(
             PostgresMigrator(DATABASE_URL).apply(
                 expected_runtime_login=self.runtime_login
@@ -7219,6 +7219,29 @@ class PostgresFactoryTests(unittest.TestCase):
                 self.assertIn("Index Cond", scan, claimable_plan)
                 self.assertIn("child_proposal_digest", scan["Index Cond"])
                 self.assertIn("source_digest", scan["Index Cond"])
+
+    def test_usage_observations_exposes_defaulted_v2_component_columns(self):
+        import psycopg
+
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT column_name,column_default,is_nullable
+                FROM information_schema.columns
+                WHERE table_schema='factory' AND table_name='usage_observations'
+                  AND column_name IN ('input_tokens','output_tokens','reasoning_tokens',
+                                      'cached_input_tokens','cache_write_tokens')
+                ORDER BY column_name"""
+            )
+            self.assertEqual(
+                cursor.fetchall(),
+                [
+                    ("cache_write_tokens", "0", "NO"),
+                    ("cached_input_tokens", "0", "NO"),
+                    ("input_tokens", "0", "NO"),
+                    ("output_tokens", "0", "NO"),
+                    ("reasoning_tokens", "0", "NO"),
+                ],
+            )
 
 
 if __name__ == "__main__":

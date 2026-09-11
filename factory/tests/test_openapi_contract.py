@@ -18,7 +18,11 @@ SEMANTIC_CONTRACT = (
 )
 EXECUTION_CONTRACTS = tuple(
     Path(__file__).resolve().parents[1] / f"contracts/openapi/{name}"
-    for name in ("factory-execution.v1.json", "factory-execution.v2.json")
+    for name in (
+        "factory-execution.v1.json",
+        "factory-execution.v2.json",
+        "factory-execution.v3.json",
+    )
 )
 LANDING_CONTRACT = (
     Path(__file__).resolve().parents[1]
@@ -208,7 +212,7 @@ class CheckedOpenApiContractTests(unittest.TestCase):
         execution_operations = [
             dict(_operations(document)) for document in self.execution_documents
         ]
-        self.assertTrue(all(len(items) == 6 for items in execution_operations))
+        self.assertEqual([len(items) for items in execution_operations], [6, 6, 1])
         self.assertTrue(
             all(
                 len({item.get("operationId") for item in items.values()}) == len(items)
