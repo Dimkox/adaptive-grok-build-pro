@@ -1,0 +1,131 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Unset FACTORY_LANDING_PROVIDER makes compose_env_landing return None without any HTTP call.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py::LandingLiveGrokQwenCompositionTests.test_compose_env_landing_unset_provider_returns_none"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "An unknown FACTORY_LANDING_PROVIDER value fails closed as landing_provider instead of selecting a default executor.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py::LandingLiveGrokQwenCompositionTests.test_compose_env_landing_unknown_provider_fails_closed"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "compose_env_landing with grok env and httpx.MockTransport seals the complete L5 artifact while live_url stays null.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py::LandingLiveGrokQwenCompositionTests.test_compose_env_landing_grok_seals_with_mocked_http"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "FACTORY_LANDING_PROVIDER accepts only grok or qwen and requires absolute quarantine, source, scratch and output paths.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_server.py::ServerTests.test_landing_quarantine_setting_is_optional_absolute_and_append_only"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260907-optional-env-landing-composition-e98249",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "adaptive_factory.server must not import httpx or landing_live_executors, so the shipped server path ships no live HTTP.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py::LandingLiveExecutorTests.test_factory_server_does_not_import_httpx_or_live_executors"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "The landing runtime core must not import httpx, keeping the dogfood composition network-free.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py::LandingLiveExecutorTests.test_landing_runtime_does_not_import_httpx"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "A missing or empty provider API key fails closed before any request is built, so no unauthenticated live call is attempted.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py::LandingLiveExecutorTests.test_missing_env_key_fails_closed"
+        },
+        {
+          "test": "factory/tests/test_landing_live_executors.py::LandingLiveExecutorTests.test_empty_constructor_key_fails_closed"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "A non-HTTPS provider base URL fails closed, and provider transport, status and body faults never produce a sealed artifact.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py::LandingLiveExecutorTests.test_non_https_base_url_fails_closed"
+        },
+        {
+          "test": "factory/tests/test_landing_live_executors.py::LandingLiveExecutorTests.test_http_error_status_fails_closed"
+        },
+        {
+          "test": "factory/tests/test_landing_live_executors.py::LandingLiveExecutorTests.test_transport_error_fails_closed"
+        },
+        {
+          "test": "factory/tests/test_landing_live_executors.py::LandingLiveExecutorTests.test_malformed_body_fails_closed"
+        }
+      ]
+    },
+    {
+      "id": "INV-003",
+      "statement": "The frozen operator host record and factory pyproject pins stay in agreement, so the env seam claims no unverified runtime.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py::LandingLiveExecutorTests.test_host_requirements_match_current_python_and_httpx"
+        },
+        {
+          "test": "factory/tests/test_landing_live_executors.py::LandingLiveExecutorTests.test_pyproject_pins_match_host_record"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Add an optional environment-driven landing composition seam for an operator-injected live Grok or Qwen executor without shipping live HTTP in the server path.",
+    "success_metric": "Env composition returns None when the provider is unset, fails closed on an unknown provider, and seals the artifact with live_url null under mocked HTTP; server imports stay free of httpx.",
+    "target": "All four acceptance criteria and every invariant pass in factory/tests, and no shipped server route gains live HTTP, hosting, publication or indexing."
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "generic"
+    ],
+    "tier": "green"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "restore"
+  },
+  "schema_version": 2
+}
