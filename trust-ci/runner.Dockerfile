@@ -18,6 +18,9 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 RUN python -m pip install --no-cache-dir ".[test]" \
         coverage==7.15.4 \
+        pytest==9.1.1 \
+        pytest-xdist==3.8.0 \
+        pytest-cov==7.1.0 \
         ruff==0.16.2 \
         bandit==1.9.4 \
         tomli==2.4.1

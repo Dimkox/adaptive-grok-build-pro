@@ -1,0 +1,4 @@
+{
+  "trust-ci/runner.Dockerfile": "631912e7c7de05f241763e0139730e244452bbc80755a239345699e144c2ff1e",
+  "trust-ci/tests/test_ops.py": "9ceb508d8067284bed11e81d0d55a8f9dcc295a1998b63e58817b1025a563a93"
+}
