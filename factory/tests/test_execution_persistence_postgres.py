@@ -283,7 +283,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             )
         database_url = make_conninfo(**{**connection_values, "dbname": database})
         migrations = tuple(PostgresMigrator(DATABASE_URL).status())
-        self.assertEqual(len(migrations), 18)
+        self.assertEqual(len(migrations), 20)
         from adaptive_factory.migrations import discover_migrations
 
         packaged = discover_migrations()
@@ -5471,7 +5471,11 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 (first.observation_id,),
             )
             self.assertEqual(cursor.fetchone(), (10, 4, 2, 3, 5))
-        self.assertEqual(self.store.get_task(task.task_id).tokens_observed, 24)
+            cursor.execute(
+                "SELECT cost_observed_micros,tokens_observed FROM factory.tasks WHERE task_id=%s",
+                (task.task_id,),
+            )
+            self.assertEqual(cursor.fetchone(), (26, 24))
 
     def test_v2_non_usage_proposals_commit_through_the_store(self):
         """V2 versioning must not require non-usage facts to become usage values."""
@@ -5565,8 +5569,11 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 (execution.lease.run_id,),
             )
             self.assertEqual(cursor.fetchone(), (26, 24, 3, 5))
-        projection = self.store.get_task(task.task_id)
-        self.assertEqual((projection.cost_observed_micros, projection.tokens_observed), (26, 24))
+            cursor.execute(
+                "SELECT cost_observed_micros,tokens_observed FROM factory.tasks WHERE task_id=%s",
+                (task.task_id,),
+            )
+            self.assertEqual(cursor.fetchone(), (26, 24))
 
 
 FRESH_CLUSTER_DATABASE_URL = os.environ.get("FACTORY_FRESH_CLUSTER_DATABASE_URL")
