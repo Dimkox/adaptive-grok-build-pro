@@ -38,6 +38,10 @@ GROK_API_KEY_ENV = "FACTORY_LANDING_GROK_API_KEY"
 QWEN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 QWEN_MODEL_ID = "qwen-plus"
 QWEN_API_KEY_ENV = "FACTORY_LANDING_QWEN_API_KEY"
+LANDING_PROVIDER_ENV = "FACTORY_LANDING_PROVIDER"
+LANDING_SOURCE_ENV = "FACTORY_LANDING_SOURCE_PATH"
+LANDING_SCRATCH_ENV = "FACTORY_LANDING_SCRATCH_PATH"
+LANDING_OUTPUT_ENV = "FACTORY_LANDING_OUTPUT_PATH"
 
 
 @dataclass(frozen=True)
@@ -247,6 +251,55 @@ def compose_landing_live_qwen(
         blobs=blobs,
         store=store,
         clock=clock,
+    )
+
+
+def _absolute_env_path(environ: Mapping[str, str], name: str) -> Path:
+    raw = environ.get(name, "").strip()
+    if not raw:
+        raise LandingProviderError("landing_path")
+    path = Path(raw)
+    if not path.is_absolute() or ".." in path.parts:
+        raise LandingProviderError("landing_path")
+    return path
+
+
+def compose_env_landing(
+    blobs: PrivateLandingBlobStore,
+    *,
+    profile: CodexLandingProfile,
+    environ: Mapping[str, str] | None = None,
+    store: LandingJobStore | None = None,
+    clock: Callable[[], datetime] | None = None,
+    transport: httpx.BaseTransport | None = None,
+) -> LandingApplicationService | None:
+    """Compose live Grok/Qwen landing when FACTORY_LANDING_PROVIDER is set.
+
+    Unset provider returns None so the caller keeps the unavailable default.
+    Does not read files named .env; only the provided mapping or process env.
+    """
+    source_env = os.environ if environ is None else environ
+    provider = source_env.get(LANDING_PROVIDER_ENV, "").strip()
+    if not provider:
+        return None
+    if provider not in {"grok", "qwen"}:
+        raise LandingProviderError("landing_provider")
+    key_name = GROK_API_KEY_ENV if provider == "grok" else QWEN_API_KEY_ENV
+    api_key = api_key_from_environ(key_name, source_env)
+    from .landing_runtime import implemented_live_binding
+
+    composer = compose_landing_live_grok if provider == "grok" else compose_landing_live_qwen
+    return composer(
+        api_key=api_key,
+        binding=implemented_live_binding(enabled=True),
+        profile=profile,
+        source_repository=_absolute_env_path(source_env, LANDING_SOURCE_ENV),
+        scratch_root=_absolute_env_path(source_env, LANDING_SCRATCH_ENV),
+        output_directory=_absolute_env_path(source_env, LANDING_OUTPUT_ENV),
+        blobs=blobs,
+        store=store,
+        clock=clock,
+        transport=transport,
     )
 
 

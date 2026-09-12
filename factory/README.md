@@ -55,6 +55,8 @@ Current host requirements, pinned from this machine:
 | Grok | `https://api.x.ai/v1` model `grok-4`, env `FACTORY_LANDING_GROK_API_KEY` |
 | Qwen | `https://dashscope.aliyuncs.com/compatible-mode/v1` model `qwen-plus`, env `FACTORY_LANDING_QWEN_API_KEY` |
 
+`compose_env_landing` is the operator composition entry: export `FACTORY_LANDING_PROVIDER=grok` or `qwen` plus absolute quarantine/source/scratch/output paths and the matching API key. Unset provider returns `None` so the shipped `adaptive-factory-server` path stays on `UnavailableLandingProvider` (constructor injection only; the API process does not import `httpx`). Tests still use `httpx.MockTransport`.
+
 `compose_landing_live_grok` / `compose_landing_live_qwen` live in `landing_live_executors.py` and inject those executors into the existing auto-seal path. The dogfood landing core stays `network: none` and does not import `httpx`. The shipped server does not read these env vars. Tests use `httpx.MockTransport` and never open a real socket. `live_url` stays null.
 
 This table is the closed operator-host record for this machine, not a CI-binary guarantee. Observed here: CPython on Linux x86_64 (glibc 2.39); `/usr/bin/python3` resolves to `/usr/bin/python3.12`. Tests assert the frozen record and `factory/pyproject.toml` pins, not the SHA of a runner's `/usr/bin/python3.12`.
