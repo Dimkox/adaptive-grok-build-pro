@@ -12,6 +12,10 @@ _No active governance rules._
 _No candidate governance rules._
 <!-- END ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 
+## 2026-09-09 — Reproduce the runner capability instead of trusting a bare local gate
+
+Running `grok_verify --mode pr` without `GROK_VERIFY_CAPABILITY=repository-sandbox` fails `factory-postgres-exit` on any host that lacks `uv` or nested containers, which the runner skips by design. Setting the runner-equivalent capability makes the local result comparable to the exact-SHA check and keeps environment gaps from being read as product failures.
+
 ## 2026-08-28 — Bind governance handoffs to fresh exact state
 
 Reopen the loader-bound governance root, recompute every component digest and finding, validate the complete M2 evidence envelope, and prove the Git head is exact and clean immediately before publishing the six-field handoff. Keeping projections in marked read-only blocks makes them reviewable without giving Markdown mutation or authority capability.
@@ -472,6 +476,9 @@ httpx is already a factory dependency, but FIT-FACTORY-LANDING-DOGFOOD-BOUNDARY 
 ## 2026-09-06 — Live landing HTTP sits in its own factory node
 
 NODE-FACTORY-LANDING-DOGFOOD stays network: none. Grok/Qwen httpx adapters live in NODE-FACTORY-LANDING-LIVE-EXECUTORS with a declared HTTPS edge to NODE-FACTORY-LANDING-MODEL-PROVIDER inside TD-FACTORY-CONTROL, so fitness can own the new file without giving the dogfood core live network or a Trust-CI/external-platform crossing.
+## 2026-09-07 — Keep shipped factory server off httpx; compose live landing from env in operator injection
+
+NODE-FACTORY-LOCAL-API is network: none and owns server.py. Live Grok/Qwen stay in landing_live_executors via compose_env_landing, which returns None when FACTORY_LANDING_PROVIDER is unset. Local composition injects that helper or an offline fixture executor so landing assembly is a factory byproduct without importing httpx into the API module.
 
 
 ## 2026-09-10 — Reconstruct historical delivery from actual refs

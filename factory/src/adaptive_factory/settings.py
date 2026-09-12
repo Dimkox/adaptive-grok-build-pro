@@ -79,6 +79,10 @@ class FactorySettings:
     semantic_validator_database_url: str | None = None
     semantic_adjudicator_database_url: str | None = None
     landing_quarantine_path: Path | None = None
+    landing_provider: str | None = None
+    landing_source_path: Path | None = None
+    landing_scratch_path: Path | None = None
+    landing_output_path: Path | None = None
 
     @classmethod
     def from_environment(cls) -> "FactorySettings":
@@ -103,6 +107,15 @@ class FactorySettings:
         landing_quarantine_path = (
             Path(landing_quarantine_raw) if landing_quarantine_raw else None
         )
+        landing_provider = os.environ.get("FACTORY_LANDING_PROVIDER", "").strip() or None
+        if landing_provider not in {None, "grok", "qwen"}:
+            raise SettingsError("FACTORY_LANDING_PROVIDER must be grok or qwen")
+        landing_source_raw = os.environ.get("FACTORY_LANDING_SOURCE_PATH")
+        landing_scratch_raw = os.environ.get("FACTORY_LANDING_SCRATCH_PATH")
+        landing_output_raw = os.environ.get("FACTORY_LANDING_OUTPUT_PATH")
+        landing_source_path = Path(landing_source_raw) if landing_source_raw else None
+        landing_scratch_path = Path(landing_scratch_raw) if landing_scratch_raw else None
+        landing_output_path = Path(landing_output_raw) if landing_output_raw else None
         actors_file = os.environ.get("FACTORY_ACTORS_FILE", "")
         socket_path = Path(os.environ.get("FACTORY_SOCKET_PATH", "/run/adaptive-factory/control.sock"))
         if (
@@ -121,12 +134,22 @@ class FactorySettings:
             raise SettingsError(
                 "enabled execution requires a separate artifact attestor database URL"
             )
-        if landing_quarantine_path is not None and (
-            not landing_quarantine_path.is_absolute()
-            or ".." in landing_quarantine_path.parts
+        for label, path in (
+            ("FACTORY_LANDING_QUARANTINE_PATH", landing_quarantine_path),
+            ("FACTORY_LANDING_SOURCE_PATH", landing_source_path),
+            ("FACTORY_LANDING_SCRATCH_PATH", landing_scratch_path),
+            ("FACTORY_LANDING_OUTPUT_PATH", landing_output_path),
+        ):
+            if path is not None and (not path.is_absolute() or ".." in path.parts):
+                raise SettingsError(f"{label} must be absolute and normalized")
+        if landing_provider is not None and (
+            landing_quarantine_path is None
+            or landing_source_path is None
+            or landing_scratch_path is None
+            or landing_output_path is None
         ):
             raise SettingsError(
-                "FACTORY_LANDING_QUARANTINE_PATH must be absolute and normalized"
+                "FACTORY_LANDING_PROVIDER requires quarantine, source, scratch and output paths"
             )
         return cls(
             database_url=database_url,
@@ -138,4 +161,8 @@ class FactorySettings:
             semantic_validator_database_url=semantic_validator_database_url,
             semantic_adjudicator_database_url=semantic_adjudicator_database_url,
             landing_quarantine_path=landing_quarantine_path,
+            landing_provider=landing_provider,
+            landing_source_path=landing_source_path,
+            landing_scratch_path=landing_scratch_path,
+            landing_output_path=landing_output_path,
         )
