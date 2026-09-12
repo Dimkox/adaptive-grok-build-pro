@@ -25,6 +25,11 @@ Root causes, not symptoms. Record only mistakes that caused a real problem.
 **Symptom:** A worktree checkout reported VERSION 2.0.12 while the published release was 2.0.15, and the local `main` ref sat four releases behind at v2.0.11.
 **Root cause:** Every worktree tracked a feature branch and no worktree tracked `main`, so `git fetch` updated only remote refs while every readable checkout stayed on old work.
 **Durable rule:** Keep one worktree pinned to fast-forwarded `main` as the state-reading entry point and treat any feature-branch checkout as work in progress, never as product identity.
+## 2026-09-09 — Shipped a legacy-schema change spec into the exact PR gate
+
+**Symptom:** PR #30 head `a41cd28` failed `repository-verification` on `change-spec` alone; compileall, external holdout, ruff, bandit, architecture, governance and every unittest step passed.
+**Root cause:** The change package was authored against compatibility-only `schema_version: 1`, which the decoder accepts for historical reads but refuses as current gate evidence, and no exact `grok_verify --mode pr` run was made before the branch was published.
+**Durable rule:** Author every new change spec against the current `schemas/change-spec.schema.json` version and run the exact PR gate with the runner-equivalent `GROK_VERIFY_CAPABILITY` before publishing a branch.
 
 ## 2026-09-05 — Mistook architecture validity for route fitness
 

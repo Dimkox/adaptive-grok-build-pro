@@ -15,6 +15,9 @@ _No candidate governance rules._
 ## 2026-09-09 — Port the separable capability instead of rebasing a superseded branch
 
 `mvp/investor-ready` carried 275 changed files against `main`, but only 35 were unique: the loopback demo UI, its OpenAPI contract, its tests and its change package. The other 240 were M1-M9 work that `main` already received through the squash-merged PR #22, which is why the merge produced add/add collisions on `architecture*.py`, `VERSION` and `START_HERE.md`. Porting the 35 unique files plus the two small backward-compatible core additions they need onto a fresh branch preserved the work and passed the exact gate, while rebasing 152 commits would have re-litigated already-delivered milestones.
+## 2026-09-09 — Reproduce the runner capability instead of trusting a bare local gate
+
+Running `grok_verify --mode pr` without `GROK_VERIFY_CAPABILITY=repository-sandbox` fails `factory-postgres-exit` on any host that lacks `uv` or nested containers, which the runner skips by design. Setting the runner-equivalent capability makes the local result comparable to the exact-SHA check and keeps environment gaps from being read as product failures.
 
 ## 2026-08-28 — Bind governance handoffs to fresh exact state
 
@@ -472,6 +475,9 @@ httpx is already a factory dependency, but FIT-FACTORY-LANDING-DOGFOOD-BOUNDARY 
 ## 2026-09-06 — Live landing HTTP sits in its own factory node
 
 NODE-FACTORY-LANDING-DOGFOOD stays network: none. Grok/Qwen httpx adapters live in NODE-FACTORY-LANDING-LIVE-EXECUTORS with a declared HTTPS edge to NODE-FACTORY-LANDING-MODEL-PROVIDER inside TD-FACTORY-CONTROL, so fitness can own the new file without giving the dogfood core live network or a Trust-CI/external-platform crossing.
+## 2026-09-07 — Keep shipped factory server off httpx; compose live landing from env in operator injection
+
+NODE-FACTORY-LOCAL-API is network: none and owns server.py. Live Grok/Qwen stay in landing_live_executors via compose_env_landing, which returns None when FACTORY_LANDING_PROVIDER is unset. Local composition injects that helper or an offline fixture executor so landing assembly is a factory byproduct without importing httpx into the API module.
 
 
 ## 2026-09-10 — Reconstruct historical delivery from actual refs
