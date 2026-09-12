@@ -481,3 +481,11 @@ Compare a consumer repository’s selected delivery ref with every observed PR h
 ## 2026-09-10 — Keep historical denominators and profile metadata explicit
 
 Separate PR pagination completeness from task-inventory completeness, and report observed records alongside nullable full-history totals. This preserves existing work without turning missing acceptance/session evidence into zeros; complete profile metadata remains bucketed accounting with no M8 authority.
+
+- 2026-09-11 test tooling bootstrap: extracting only runner image pins and its existing operations assertion preserves FIT-TRUST-CI-SEPARATION while making the parallel-runner prerequisite reviewable. Source preparation and independent image deployment remain separate facts.
+
+- 2026-09-11 price-table identity: use SHA-256 over the complete closed, compact sorted-key UTF-8 JSON table and floor each token bucket before summing. This keeps price identity reproducible and prevents fractional remainders from one billing category changing another category's price.
+
+- 2026-09-11 explicit usage protocol split: preserve the exact V1 usage payload and model V2 as a separate protocol/versioned proposal with a table-bound derived total. This prevents an expanded payload from silently changing legacy billing semantics while carrying all V2 facts into idempotency.
+
+- 2026-09-11 parser version propagation: validate accepted JSONL events using their supported protocol version and preserve that version in the canonical event. This keeps the adapter-facing entrypoint aligned with the V1/V2 contract split rather than testing V2 only through constructed values.

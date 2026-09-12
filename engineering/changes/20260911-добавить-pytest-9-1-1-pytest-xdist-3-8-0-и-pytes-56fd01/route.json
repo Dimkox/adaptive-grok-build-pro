@@ -1,0 +1,80 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "test_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "task_analyst",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "64378d28c7b78cace463d96470c1898294b8f196",
+  "base_fingerprint": "6543bcff9332a92994e8d6eac0bee3b14b5e87364ecc444c08aec91c3ade2dac",
+  "complexity": "standard",
+  "created_at": "2026-09-11T01:46:31+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "infra",
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "feature",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts",
+    "infra"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=feature",
+    "domains=infra,api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=5/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review",
+    "test_review"
+  ],
+  "review_agents": [
+    "code_reviewer",
+    "test_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "56fd015ff1f0",
+  "schema_version": 1,
+  "session_id": "priority-xdist-tools-20260911",
+  "status": "routed",
+  "task": "Добавить pytest==9.1.1, pytest-xdist==3.8.0 и pytest-cov==7.1.0 в исходный Trust CI runner.Dockerfile и существующий список pin assertions в tests/test_ops.py. Подготовка исходников инфраструктурного образа для параллельных Python-тестов.",
+  "task_domains": [
+    "infra"
+  ],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "feature-workflow",
+    "api-event-change"
+  ],
+  "write_agent": "general_implementer"
+}
