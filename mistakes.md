@@ -756,3 +756,5 @@ Root cause: both live-composition fixture families froze service time but left t
 ## 2026-09-10 — Name replacement did not remove private source facts
 
 Root cause: public analysis replaced source names with case labels while retaining private inventory quantities and operational history. Export only transferable implementation requirements; preserve detailed source findings and reconciliation evidence privately.
+
+- 2026-09-11 test tooling: the first acceleration diff mixed local implementation and Trust CI source; FIT-TRUST-CI-SEPARATION rejected it. Extract the image prerequisite into its own branch and verify the complete PR diff rather than relying on separate commits.

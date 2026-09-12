@@ -1,0 +1,35 @@
+{
+  "change_id": "20260911-добавить-pytest-9-1-1-pytest-xdist-3-8-0-и-pytes-56fd01",
+  "created_at": "2026-09-11T01:46:41+00:00",
+  "history": [
+    {
+      "at": "2026-09-11T01:46:41+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-11T01:48:07+00:00",
+      "from": "draft",
+      "reason": "Two-file source-only bootstrap and exact acceptance recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-11T01:48:07+00:00",
+      "from": "scoped",
+      "reason": "Existing explicit user acceleration delegation and root/reviewer exception; no named local human gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-11T01:48:07+00:00",
+      "from": "approved",
+      "reason": "Root is sole product writer under the existing explicit capacity exception",
+      "to": "implementing"
+    }
+  ],
+  "route_id": "56fd015ff1f0",
+  "schema_version": 1,
+  "status": "implementing",
+  "title": "Добавить pytest==9.1.1, pytest-xdist==3.8.0 и pytest-cov==7.1.0 в исходный Trust CI runner.Dockerfile и существующий список pin assertions в tests/test_ops.py. Подготовка исходников инфраструктурного образа для параллельных Python-тестов.",
+  "updated_at": "2026-09-11T01:48:07+00:00"
+}

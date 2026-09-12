@@ -131,7 +131,8 @@ class OperationsTests(unittest.TestCase):
 
     def test_runner_tools_and_build_backend_are_exactly_pinned(self) -> None:
         runner = (ROOT / 'trust-ci/runner.Dockerfile').read_text(encoding='utf-8')
-        for pin in ('coverage==7.15.4', 'ruff==0.16.2', 'bandit==1.9.4', 'tomli==2.4.1'):
+        for pin in ('coverage==7.15.4', 'pytest==9.1.1', 'pytest-xdist==3.8.0',
+                    'pytest-cov==7.1.0', 'ruff==0.16.2', 'bandit==1.9.4', 'tomli==2.4.1'):
             self.assertIn(pin, runner)
         pyproject = (ROOT / 'trust-ci/pyproject.toml').read_text(encoding='utf-8')
         self.assertIn('setuptools==84.0.0', pyproject)

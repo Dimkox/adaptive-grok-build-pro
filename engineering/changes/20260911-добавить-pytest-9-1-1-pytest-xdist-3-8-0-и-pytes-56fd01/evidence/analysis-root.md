@@ -1,0 +1,3 @@
+# Scope ruling
+
+The official initial route classified publication wording as review; rerouting the actual implementation task through the unmodified router yielded feature/medium with infra+contracts+base and no human gates. Read the active route and apply adaptive-delivery. Only the two available analysis actors are reused; root synthesizes repository/task/integration facts under the recorded capacity exception. This prerequisite has only two product files under trust-ci/, keeping FIT-TRUST-CI-SEPARATION intact. Existing tool versions were actually installed in a disposable local environment; no active image identity or rollout is inferred.
