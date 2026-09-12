@@ -23,8 +23,13 @@ from adaptive_factory.landing_live_executors import (
     OpenAICompatibleLandingExecutor,
     QWEN_API_KEY_ENV,
     api_key_from_environ,
+    compose_env_landing,
     compose_landing_live_grok,
     compose_landing_live_qwen,
+    LANDING_OUTPUT_ENV,
+    LANDING_PROVIDER_ENV,
+    LANDING_SCRATCH_ENV,
+    LANDING_SOURCE_ENV,
     grok_landing_executor,
     qwen_landing_executor,
 )
@@ -102,6 +107,18 @@ class LandingLiveExecutorTests(unittest.TestCase):
         project = document["project"]
         self.assertEqual(CURRENT_LANDING_HOST_REQUIREMENTS.factory_requires_python, project["requires-python"])
         self.assertIn("httpx==0.28.1", project["dependencies"])
+
+    def test_factory_server_does_not_import_httpx_or_live_executors(self) -> None:
+        source = (FACTORY_ROOT / "src/adaptive_factory/server.py").read_text(encoding="utf-8")
+        imported = set()
+        for node in ast.walk(ast.parse(source)):
+            if isinstance(node, ast.Import):
+                imported.update(alias.name.split(".")[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported.add(node.module.split(".")[0])
+                imported.add(node.module.split(".")[-1])
+        self.assertNotIn("httpx", imported)
+        self.assertNotIn("landing_live_executors", imported)
 
     def test_landing_runtime_does_not_import_httpx(self) -> None:
         source = (FACTORY_ROOT / "src/adaptive_factory/landing_runtime.py").read_text(encoding="utf-8")
@@ -294,6 +311,57 @@ class LandingLiveGrokQwenCompositionTests(unittest.TestCase):
                 tuple(sorted(DEPLOY_MEMBERS)),
                 created.job.sealed_artifact.member_names,
             )
+
+    def test_compose_env_landing_unset_provider_returns_none(self) -> None:
+        self.assertIsNone(
+            compose_env_landing(self.blobs, profile=self._profile(), environ={})
+        )
+
+    def test_compose_env_landing_unknown_provider_fails_closed(self) -> None:
+        with self.assertRaises(LandingProviderError) as raised:
+            compose_env_landing(
+                self.blobs,
+                profile=self._profile(),
+                environ={LANDING_PROVIDER_ENV: "claude"},
+            )
+        self.assertEqual("landing_provider", str(raised.exception))
+
+    def test_compose_env_landing_grok_seals_with_mocked_http(self) -> None:
+        payload = b"Build a bounded landing candidate"
+        with sealed_target() as (target, base_sha, base_tree), patch.multiple(
+            "adaptive_factory.landing_renderer",
+            TARGET_BASE_SHA=base_sha,
+            TARGET_BASE_TREE=base_tree,
+        ), patch.multiple(
+            "adaptive_factory.landing_service",
+            TARGET_BASE_SHA=base_sha,
+            TARGET_BASE_TREE=base_tree,
+        ):
+            service = compose_env_landing(
+                self.blobs,
+                profile=self._profile(),
+                environ={
+                    LANDING_PROVIDER_ENV: "grok",
+                    GROK_API_KEY_ENV: "test-grok",
+                    LANDING_SOURCE_ENV: str(target),
+                    LANDING_SCRATCH_ENV: str(self.root / "scratch"),
+                    LANDING_OUTPUT_ENV: str(self.root / "artifacts"),
+                },
+                clock=lambda: FIXED_TIME,
+                transport=_transport("grok-4"),
+            )
+            self.assertIsNotNone(service)
+            created = service.submit(
+                job_id="job-env-grok",
+                repository_id=TARGET_REPOSITORY_ID,
+                exact_base_sha=base_sha,
+                exact_base_tree=base_tree,
+                media_type="text/plain",
+                chunks=(payload,),
+                actor=self.actor,
+            )
+            self.assertEqual("artifact_ready", created.job.state)
+            self.assertIsNone(created.job.result_view()["live_url"])
 
 
 if __name__ == "__main__":

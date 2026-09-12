@@ -14,6 +14,12 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-09 — Shipped a legacy-schema change spec into the exact PR gate
+
+**Symptom:** PR #30 head `a41cd28` failed `repository-verification` on `change-spec` alone; compileall, external holdout, ruff, bandit, architecture, governance and every unittest step passed.
+**Root cause:** The change package was authored against compatibility-only `schema_version: 1`, which the decoder accepts for historical reads but refuses as current gate evidence, and no exact `grok_verify --mode pr` run was made before the branch was published.
+**Durable rule:** Author every new change spec against the current `schemas/change-spec.schema.json` version and run the exact PR gate with the runner-equivalent `GROK_VERIFY_CAPABILITY` before publishing a branch.
+
 ## 2026-09-05 — Mistook architecture validity for route fitness
 
 **Symptom:** Architecture validate, repository drift, and diagram checks passed, but exact route fitness rejected a local pilot import as external and treated `pilot/tests/**` as production source.
@@ -758,3 +764,4 @@ Including pull-request, negated production and coverage background in the classi
 - 2026-09-11 parallel runner: checking only file size allowed a FIFO configuration to block before a test timeout could apply; require a regular file before reading. A completed controller also caused cleanup to return early while its owned descendant survived; signal the owned group even after controller exit and verify termination with bounded polling.
 
 - 2026-09-11 runner tooling: I initially combined the runner-image pin update with local implementation; the existing FIT-TRUST-CI-SEPARATION invariant correctly rejected the mixed diff. Check change-separation rules before adding CI-source prerequisites, and deliver those prerequisites through a separate reviewed bootstrap PR.
+- 2026-09-11 test tooling: the first acceleration diff mixed local implementation and Trust CI source; FIT-TRUST-CI-SEPARATION rejected it. Extract the image prerequisite into its own branch and verify the complete PR diff rather than relying on separate commits.

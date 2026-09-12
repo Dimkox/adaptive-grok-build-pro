@@ -74,6 +74,14 @@
       "version": "2"
     },
     {
+      "compatibility": "bidirectional",
+      "id": "CONTRACT-FACTORY-EXECUTION-OPENAPI-V3",
+      "kind": "openapi",
+      "path": "factory/contracts/openapi/factory-execution.v3.json",
+      "role": "bidirectional",
+      "version": "3"
+    },
+    {
       "compatibility": "consumer_accepts_old",
       "id": "CONTRACT-FACTORY-EXECUTION-EVENT",
       "kind": "event",
@@ -1296,6 +1304,7 @@
         "CONTRACT-FACTORY-CONTROL-OPENAPI",
         "CONTRACT-FACTORY-EXECUTION-OPENAPI",
         "CONTRACT-FACTORY-EXECUTION-OPENAPI-V2",
+        "CONTRACT-FACTORY-EXECUTION-OPENAPI-V3",
         "CONTRACT-FACTORY-LANDING-OPENAPI-V1",
         "CONTRACT-FACTORY-SEMANTIC-OPENAPI"
       ],
@@ -1388,6 +1397,7 @@
       "repository_paths": [
         "factory/contracts/schemas",
         "factory/src/adaptive_factory/execution_contracts.py",
+        "factory/src/adaptive_factory/pricing.py",
         "factory/src/adaptive_factory/protocol.py",
         "factory/src/adaptive_factory/semantic_bridge.py"
       ],

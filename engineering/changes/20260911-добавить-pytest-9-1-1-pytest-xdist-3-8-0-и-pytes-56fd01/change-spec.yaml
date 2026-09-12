@@ -1,0 +1,98 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "The runner image source installs pytest9.1.1, pytest-xdist3.8.0 and pytest-cov7.1.0 alongside existing coverage7.15.4, and the existing operations test checks those pins.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Only Trust CI source and bounded documentation change; implementation, policy, holdout, deployed images, keys and branch protection remain outside this source preparation.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        },
+        {
+          "receipt": "test_review"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": [
+      "governance",
+      "production"
+    ]
+  },
+  "change_id": "20260911-\u0434\u043e\u0431\u0430\u0432\u0438\u0442\u044c-pytest-9-1-1-pytest-xdist-3-8-0-\u0438-pytes-56fd01",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No skipped mandatory coverage, duplicated full suites, shared-database parallel mutation, Actions dependency, deployed-policy change or direct protected-branch push.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        },
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Local runners and evidence do not create merge authority or alter the deployed external Trust CI boundary.",
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Prepare exact parallel Python test dependencies in the existing Trust CI runner image recipe.",
+    "success_metric": "All three tested tool pins present alongside unchanged coverage and existing runner isolation.",
+    "target": "A separately reviewed bootstrap source change; image deployment remains independently operated."
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Backend, effective workers, command exits, collected outcomes, elapsed time and branch-aware coverage results.",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "infra",
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "strategy": "feature_flag",
+    "maximum_steps": 1
+  },
+  "schema_version": 2
+}

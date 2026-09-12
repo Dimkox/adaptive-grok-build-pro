@@ -12,6 +12,10 @@ _No active governance rules._
 _No candidate governance rules._
 <!-- END ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 
+## 2026-09-09 — Reproduce the runner capability instead of trusting a bare local gate
+
+Running `grok_verify --mode pr` without `GROK_VERIFY_CAPABILITY=repository-sandbox` fails `factory-postgres-exit` on any host that lacks `uv` or nested containers, which the runner skips by design. Setting the runner-equivalent capability makes the local result comparable to the exact-SHA check and keeps environment gaps from being read as product failures.
+
 ## 2026-08-28 — Bind governance handoffs to fresh exact state
 
 Reopen the loader-bound governance root, recompute every component digest and finding, validate the complete M2 evidence envelope, and prove the Git head is exact and clean immediately before publishing the six-field handoff. Keeping projections in marked read-only blocks makes them reviewable without giving Markdown mutation or authority capability.
@@ -468,6 +472,9 @@ httpx is already a factory dependency, but FIT-FACTORY-LANDING-DOGFOOD-BOUNDARY 
 ## 2026-09-06 — Live landing HTTP sits in its own factory node
 
 NODE-FACTORY-LANDING-DOGFOOD stays network: none. Grok/Qwen httpx adapters live in NODE-FACTORY-LANDING-LIVE-EXECUTORS with a declared HTTPS edge to NODE-FACTORY-LANDING-MODEL-PROVIDER inside TD-FACTORY-CONTROL, so fitness can own the new file without giving the dogfood core live network or a Trust-CI/external-platform crossing.
+## 2026-09-07 — Keep shipped factory server off httpx; compose live landing from env in operator injection
+
+NODE-FACTORY-LOCAL-API is network: none and owns server.py. Live Grok/Qwen stay in landing_live_executors via compose_env_landing, which returns None when FACTORY_LANDING_PROVIDER is unset. Local composition injects that helper or an offline fixture executor so landing assembly is a factory byproduct without importing httpx into the API module.
 
 
 ## 2026-09-10 — Reconstruct historical delivery from actual refs
@@ -483,3 +490,10 @@ Separate PR pagination completeness from task-inventory completeness, and report
 The user prioritized pytest-xdist delivery and explicitly authorized root as sole writer with the available architect and docs researcher performing independent code/test review after service thread-capacity errors. A separate branch from exactmain64378d2 preserves pending M7 work; repository-local opt-in and run-local coverage preserve consumer behavior and the existing74 threshold.
 
 - 2026-09-11 parallel runner: one opt-in helper with separate Core and Trust entrypoints kept coverage ownership and imports explicit; real tiny process tests proved Core method sharding and Trust file grouping. Pinning the same tools in the runner recipe made the external provisioning prerequisite reviewable without changing deployed policy or weakening tests.
+- 2026-09-11 test tooling bootstrap: extracting only runner image pins and its existing operations assertion preserves FIT-TRUST-CI-SEPARATION while making the parallel-runner prerequisite reviewable. Source preparation and independent image deployment remain separate facts.
+
+- 2026-09-11 price-table identity: use SHA-256 over the complete closed, compact sorted-key UTF-8 JSON table and floor each token bucket before summing. This keeps price identity reproducible and prevents fractional remainders from one billing category changing another category's price.
+
+- 2026-09-11 explicit usage protocol split: preserve the exact V1 usage payload and model V2 as a separate protocol/versioned proposal with a table-bound derived total. This prevents an expanded payload from silently changing legacy billing semantics while carrying all V2 facts into idempotency.
+
+- 2026-09-11 parser version propagation: validate accepted JSONL events using their supported protocol version and preserve that version in the canonical event. This keeps the adapter-facing entrypoint aligned with the V1/V2 contract split rather than testing V2 only through constructed values.
