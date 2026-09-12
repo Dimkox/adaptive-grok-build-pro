@@ -87,6 +87,16 @@ python3 scripts/grok_architecture.py fitness --base <40-char-sha> --head <40-cha
 
 7. Trust project hooks in the TUI: `/hooks-trust`
 
+## Try the local browser demo
+
+From this checkout, start the Python-only dashboard with no install and no frontend build:
+
+```bash
+python3 scripts/grok_demo.py --open
+```
+
+It serves `http://127.0.0.1:8765/` on loopback only. The tour uses bundled sample evidence, a fixed non-authoritative route seed, in-memory computed previews and read-only summaries from this checkout; it invokes no Git command and makes no external request or write. `--open` may ask the operating system to open your local browser. Press `Ctrl-C` to stop. See [docs/INVESTOR_DEMO.md](docs/INVESTOR_DEMO.md) for the walkthrough and port troubleshooting.
+
 ## Scope split
 
 `install_into.py --plan` inspects an existing target read-only. On Linux with the descriptor and `renameat2(RENAME_NOREPLACE)` capabilities stated above, `install_into.py --materialize-new` publishes the local Grok stack (skills, agents, hooks, scripts, `AGENTS.md`) only at an absent target. It does **not** copy `trust-ci/`, `.github/workflows/`, target-owned architecture authority, this repository’s `README.md`, `QUICKSTART.md`, or `VERSION`. Consumer laptops do not stand up PostgreSQL.

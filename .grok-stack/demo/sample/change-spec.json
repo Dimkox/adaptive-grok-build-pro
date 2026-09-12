@@ -1,0 +1,116 @@
+{
+  "acceptance_criteria": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_demo.py"
+        }
+      ],
+      "id": "AC-001",
+      "statement": "The local dashboard explains a reviewed intent through real repository logic"
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_demo_http.py"
+        }
+      ],
+      "id": "AC-002",
+      "statement": "The loopback API is closed bounded and read only"
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_demo.py"
+        }
+      ],
+      "id": "AC-003",
+      "statement": "Every evidence panel identifies its provenance and digest"
+    },
+    {
+      "evidence": [
+        {
+          "receipt": "code_review"
+        }
+      ],
+      "id": "AC-004",
+      "statement": "Local sample evidence never claims external merge authority"
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260830-demo-reviewed-intent-v1",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_demo_http.py"
+        }
+      ],
+      "id": "FORBID-001",
+      "statement": "The demo cannot mutate route receipt Git or release state"
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_demo.py"
+        }
+      ],
+      "id": "FORBID-002",
+      "statement": "Bundled evidence cannot be presented as App-owned Trust CI evidence"
+    }
+  ],
+  "invariants": [
+    {
+      "evidence": [
+        {
+          "test": "tests/test_demo.py"
+        }
+      ],
+      "id": "INV-001",
+      "statement": "Routing and typed-spec outputs remain derived from repository code"
+    },
+    {
+      "evidence": [
+        {
+          "test": "tests/test_demo_http.py"
+        }
+      ],
+      "id": "INV-002",
+      "statement": "Browser input influences only bounded in-memory preview computation"
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Explain the Adaptive Grok control stack in a truthful five-minute local tour",
+    "success_metric": "demo_panels_with_provenance",
+    "target": "five_of_five"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "demo_panels_with_provenance",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "frontend"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

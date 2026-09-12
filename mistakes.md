@@ -14,6 +14,17 @@ _No overdue governance debt._
 
 Root causes, not symptoms. Record only mistakes that caused a real problem.
 
+## 2026-09-09 — Rewrote a whole architecture model to add three entries
+
+**Symptom:** Declaring one demo node, contract and edge produced a 1889-line diff in `architecture/system.yaml` instead of the 57 lines actually added.
+**Root cause:** The writer re-serialized the model with sorted collections, but the committed model stores `contracts`, `edges` and `nodes` in insertion order, so every element moved.
+**Durable rule:** When editing a canonical JSON model, append in place and re-serialize with the file's existing key and element order; verify the diff size matches the intended change before running any gate.
+
+## 2026-09-09 — Read a stale local branch as the current product
+
+**Symptom:** A worktree checkout reported VERSION 2.0.12 while the published release was 2.0.15, and the local `main` ref sat four releases behind at v2.0.11.
+**Root cause:** Every worktree tracked a feature branch and no worktree tracked `main`, so `git fetch` updated only remote refs while every readable checkout stayed on old work.
+**Durable rule:** Keep one worktree pinned to fast-forwarded `main` as the state-reading entry point and treat any feature-branch checkout as work in progress, never as product identity.
 ## 2026-09-09 — Shipped a legacy-schema change spec into the exact PR gate
 
 **Symptom:** PR #30 head `a41cd28` failed `repository-verification` on `change-spec` alone; compileall, external holdout, ruff, bandit, architecture, governance and every unittest step passed.

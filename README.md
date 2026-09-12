@@ -24,6 +24,8 @@ Execution usage accounting supports the legacy V1 aggregate payload and a closed
 - Do not add `pyproject.toml` / `requirements.txt` / `setup.py` at repository root (flips repo detect). `trust-ci/pyproject.toml` is intentionally scoped to the independent service.
 - Optional SEO side project: PR #19 delivered it to `main` as `8ab4e57038dec2e07f01aaa0b207813a387358f4`; [`.agents/skills/seo-landing/`](.agents/skills/seo-landing/) provides repository-scoped `$seo-landing` generation/audit/fix modes, while [`side-projects/seo-landing-showcase/`](side-projects/seo-landing-showcase/) is its Russian static showcase and stays non-indexable until a production origin is supplied. This is delivered non-milestone work, not M0-M9 progress.
 
+- Local browser demo: `python3 scripts/grok_demo.py --open` serves a loopback-only dashboard at `http://127.0.0.1:8765/` with read-only route, typed-spec, architecture and governance projections plus bundled sample verification evidence. It makes no external request and no write; bundled and local evidence is not merge authority and is not the App-owned exact-SHA check. See [the five-minute guide](docs/INVESTOR_DEMO.md).
+
 ## Read first
 
 1. [START_HERE.md](START_HERE.md)
@@ -84,6 +86,10 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - [`scripts/grok_approve.py`](scripts/grok_approve.py) — exact action/resource delegated local grant only
 - [`scripts/grok_deploy.py`](scripts/grok_deploy.py)
 - [`scripts/grok_doctor.py`](scripts/grok_doctor.py)
+- [`scripts/grok_demo.py`](scripts/grok_demo.py)
+- [local demo assets and fixtures](.grok-stack/demo/index.html)
+- [local demo OpenAPI v1 contract](engineering/contracts/openapi/adaptive-demo.v1.json)
+- [investor demo guide](docs/INVESTOR_DEMO.md)
 - [`scripts/install_into.py`](scripts/install_into.py)
 - [`trust-ci/`](trust-ci/) — external merge trust, deployed independently
 - [`factory/`](factory/) — delivered M4-M8 control/evaluation source plus the unreleased Stage 3/5 L5 normalizer, single-operator SQLite state and deterministic local artifact runtime; operational providers remain disabled by default
@@ -111,6 +117,7 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - Local verification / review receipts via `scripts/grok_*.py`
 - Offline [historical evidence accounting](engineering/runbooks/historical-autonomy-evidence.md) via `scripts/grok_history.py` separates observed PRs, source-identified work units, acceptance, intervention coverage and exact-profile metadata; imported history has no M8 qualification or authority effect.
 - Multi-agent discipline described in `AGENTS.md`
+- One-command local browser tour backed by the same read-only route, spec, architecture and governance logic
 - `AGENTS.md` starts with the self-learning rule and writes to `decisions.md` / `mistakes.md`
 - Optional independently deployed Trust CI that removes merge trust from prompts, agents and local runtime
 - GitHub App-owned policy-epoch Checks, external holdout validation and signed exact-SHA attestations
@@ -534,8 +541,19 @@ Local loop: route → change → verify → independent reviews → `ready` → 
 | `scripts/grok_approve.py` | Delegated local action/resource grant bound to repository, route, change, exact HEAD and tree fingerprint; not accepted by Trust CI |
 | `scripts/grok_deploy.py` | Prepare-only human last mile |
 | `scripts/grok_doctor.py` | Local health check |
+| `scripts/grok_demo.py` | Start the loopback-only read-only product tour using bundled sample and checkout-derived evidence |
 | `scripts/install_into.py` | Plan an existing repository read-only or atomically materialize an absent new target |
 | `adaptive-trust-ci` | External API, worker, migration, signed approvals, holdout verification, attestation verification and app-bound branch protection |
+
+## Local browser demo
+
+```bash
+python3 scripts/grok_demo.py --open
+```
+
+The command binds only `127.0.0.1`, prints `http://127.0.0.1:8765/`, and needs no frontend build, package installation, database, credential or Git query. The tour computes route and typed-spec previews in memory, reads architecture and governance summaries from this checkout, and shows bundled sample verification evidence. Nothing is written and nothing leaves the host. Press `Ctrl-C` to stop.
+
+Browser assets are same-origin only under `default-src 'self'`, render text through `textContent`, and use system font stacks, so the page works offline. See [docs/INVESTOR_DEMO.md](docs/INVESTOR_DEMO.md) for the five-minute walkthrough, expected states and port troubleshooting.
 
 ## Hooks
 

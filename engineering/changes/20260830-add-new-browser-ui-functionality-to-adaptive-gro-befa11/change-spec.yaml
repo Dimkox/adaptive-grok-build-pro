@@ -1,0 +1,50 @@
+{
+  "acceptance_criteria": [
+    {"id":"AC-001","statement":"One Python command starts a polished loopback dashboard without dependency installation or a frontend build","evidence":[{"test":"tests/test_demo_http.py"},{"receipt":"code_review"}]},
+    {"id":"AC-002","statement":"Route spec architecture and governance results derive from real repository logic with explicit provenance","evidence":[{"test":"tests/test_demo.py"},{"receipt":"code_review"}]},
+    {"id":"AC-003","statement":"The local API is closed bounded same-origin read-only and performs no repository runtime shell network or external mutation","evidence":[{"test":"tests/test_demo_http.py"},{"receipt":"test_review"}]},
+    {"id":"AC-004","statement":"The responsive dashboard has accessible loading validation degraded offline stale success mobile keyboard and reduced-motion states","evidence":[{"test":"tests/test_demo.py"},{"receipt":"test_review"}]},
+    {"id":"AC-005","statement":"Installer documentation and package include a reproducible truthful five-minute investor demo","evidence":[{"test":"tests/test_installer.py"},{"test":"tests/test_manifest_package.py"},{"receipt":"code_review"}]}
+  ],
+  "approvals": {
+    "required_scopes": ["architecture"]
+  },
+  "change_id": "20260830-add-new-browser-ui-functionality-to-adaptive-gro-befa11",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": ["engineering/contracts/openapi/adaptive-demo.v1.json"]
+  },
+  "forbidden_outcomes": [
+    {"id":"FORBID-001","statement":"The demo exposes mutation shell arbitrary path GitHub Trust CI approval merge release deployment or production capability","evidence":[{"test":"tests/test_demo_http.py"},{"receipt":"code_review"}]},
+    {"id":"FORBID-002","statement":"Bundled or local evidence is presented as an authoritative App-owned Trust CI verdict or merge eligibility","evidence":[{"test":"tests/test_demo.py"},{"receipt":"test_review"}]},
+    {"id":"FORBID-003","statement":"The MVP adds a root packaging marker JavaScript dependency tree database provider adapter or background service","evidence":[{"test":"tests/test_structure.py"},{"receipt":"code_review"}]}
+  ],
+  "invariants": [
+    {"id":"INV-001","statement":"Existing CLI installer and verification behavior remain backward compatible","evidence":[{"test":"tests/test_installer.py"},{"receipt":"verification"}]},
+    {"id":"INV-002","statement":"Browser input influences only bounded pure route and draft-spec computation","evidence":[{"test":"tests/test_demo_http.py"},{"receipt":"code_review"}]},
+    {"id":"INV-003","statement":"Dynamic browser values use text-only rendering and every evidence panel carries source identity and digest","evidence":[{"test":"tests/test_demo.py"},{"receipt":"test_review"}]}
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Provide an investor-ready five-minute product demonstration using real read-only Adaptive Grok Build Pro logic",
+    "success_metric": "investor_demo_critical_path",
+    "target": "one_command_zero_external_writes_all_five_panels_with_provenance"
+  },
+  "observability": [
+    {"id":"SIG-001","metric":"demo_panel_readiness","proves":["OBJ-001"]},
+    {"id":"SIG-002","metric":"demo_source_provenance_coverage","proves":["OBJ-001"]}
+  ],
+  "risk": {
+    "domains": [
+      "api",
+      "frontend"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

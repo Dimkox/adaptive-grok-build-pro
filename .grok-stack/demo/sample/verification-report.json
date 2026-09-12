@@ -1,0 +1,32 @@
+{
+  "checks": [
+    {
+      "name": "route-selection",
+      "status": "pass",
+      "summary": "Deterministic route selected for the reviewed sample intent."
+    },
+    {
+      "name": "typed-spec",
+      "status": "pass",
+      "summary": "Bundled sample specification is complete and criterion-mapped."
+    },
+    {
+      "name": "architecture",
+      "status": "pass",
+      "summary": "Bundled walkthrough expects a valid local architecture projection."
+    },
+    {
+      "name": "governance",
+      "status": "pass",
+      "summary": "Bundled walkthrough expects governed repository evidence."
+    },
+    {
+      "name": "portable-browser-e2e",
+      "status": "skip",
+      "summary": "Optional because the product adds no browser-runner dependency."
+    }
+  ],
+  "sample_id": "investor-demo-reviewed-intent-v1",
+  "schema_version": 1,
+  "status": "sample_evidence"
+}
