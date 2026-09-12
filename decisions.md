@@ -489,6 +489,11 @@ Compare a consumer repository’s selected delivery ref with every observed PR h
 
 Separate PR pagination completeness from task-inventory completeness, and report observed records alongside nullable full-history totals. This preserves existing work without turning missing acceptance/session evidence into zeros; complete profile metadata remains bucketed accounting with no M8 authority.
 
+## 2026-09-11: Priority test acceleration with explicit ownership
+
+The user prioritized pytest-xdist delivery and explicitly authorized root as sole writer with the available architect and docs researcher performing independent code/test review after service thread-capacity errors. A separate branch from exactmain64378d2 preserves pending M7 work; repository-local opt-in and run-local coverage preserve consumer behavior and the existing74 threshold.
+
+- 2026-09-11 parallel runner: one opt-in helper with separate Core and Trust entrypoints kept coverage ownership and imports explicit; real tiny process tests proved Core method sharding and Trust file grouping. Pinning the same tools in the runner recipe made the external provisioning prerequisite reviewable without changing deployed policy or weakening tests.
 - 2026-09-11 test tooling bootstrap: extracting only runner image pins and its existing operations assertion preserves FIT-TRUST-CI-SEPARATION while making the parallel-runner prerequisite reviewable. Source preparation and independent image deployment remain separate facts.
 
 - 2026-09-11 price-table identity: use SHA-256 over the complete closed, compact sorted-key UTF-8 JSON table and floor each token bucket before summing. This keeps price identity reproducible and prevents fractional remainders from one billing category changing another category's price.

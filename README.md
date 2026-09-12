@@ -26,6 +26,54 @@ Execution usage accounting supports the legacy V1 aggregate payload and a closed
 
 ## Read first
 
+### Parallel Python verification
+
+This checkout opts into process-parallel Core tests through
+[`.grok-test-runner.json`](.grok-test-runner.json). In an activated Python environment,
+run `make test-tools` once, then `make verify` or
+`python3 scripts/grok_verify.py --mode pr`. The scoped
+[test-tool pins](.grok-stack/config/python-test-requirements.txt) install pytest,
+pytest-xdist, pytest-cov and coverage; verification never installs packages itself.
+
+`auto` uses the logical CPUs available to the process, capped at 28 workers.
+Each Core test is assigned to one worker using `worksteal`.
+`GROK_TEST_WORKERS=4 make verify` sets a smaller pool;
+`make verify-serial` selects the original unittest engine with the same coverage gate.
+Overrides accept `auto` or integers from 0 to 64. Missing or incompatible required
+tools and failed workers produce failed checks; a failed parallel run is not retried
+silently. Start with fewer workers if memory pressure increases elapsed time.
+
+PR/release runs preserve [`.coveragerc`](.coveragerc): the same sources, branch
+measurement and 74% minimum combined coverage. Every invocation owns fresh temporary
+coverage data, including nested verifier calls. Existing `python-unittest` and
+`coverage` check names remain stable and report the actual engine and worker count.
+Installed consumer projects retain their existing runner. Marker-free unittest trees
+can opt in; projects with Python project markers retain the existing pytest path.
+The installer ships the helper and dependency advice without this checkout's opt-in.
+
+`make trust-ci-test` runs Trust CI separately, from `trust-ci/`, with `loadfile`:
+methods in one file stay on one worker. The same worker override applies, including
+`GROK_TEST_WORKERS=0 make trust-ci-test` for serial execution. Without
+`TRUST_CI_TEST_DATABASE_URL`, the ten PostgreSQL tests remain explicitly skipped.
+Use only a disposable test database; `loadfile` does not create a database per worker.
+The full disposable PostgreSQL harness remains `make trust-ci-postgres-test`, with
+immutable `TRUST_CI_POSTGRES_IMAGE` and `TRUST_CI_PYTHON_BASE_IMAGE` configured.
+This suite also needs the existing service/test dependencies described in
+[`trust-ci/README.md`](trust-ci/README.md); `make test-tools` installs only runner tools.
+
+`make test-python` runs normal verification and then Trust CI, including when the
+first command fails, and returns failure if either fails. The two pools run sequentially.
+Pilot, Factory and PostgreSQL/restart verification commands and ordering remain unchanged.
+Factory's shared tables and cluster-wide roles require its exclusive database lane.
+
+The independently operated Trust CI runner must provide the same test-tool pins
+before checking this source. Its image recipe is delivered separately under the
+repository's Trust CI change-separation rule; local setup does not update a deployed
+image or policy epoch.
+Local acceleration does not replace the independent exact-SHA Trust CI merge check.
+
+### Repository orientation
+
 1. [START_HERE.md](START_HERE.md)
 2. [PROJECT_STATE.json](PROJECT_STATE.json)
 3. [AGENTS.md](AGENTS.md)

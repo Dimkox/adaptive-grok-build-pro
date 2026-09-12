@@ -242,6 +242,9 @@ class InstallerTests(unittest.TestCase):
 
             self.assertEqual(result, plan)
             self.assertEqual(result["target_state"], "absent")
+            self.assertTrue((target / '.grok-stack/adaptive_grok/python_test_runner.py').is_file())
+            self.assertTrue((target / '.grok-stack/config/python-test-requirements.txt').is_file())
+            self.assertFalse((target / '.grok-test-runner.json').exists())
             for item in result["entries"]:
                 installed = target / item["path"]
                 self.assertTrue(installed.is_file(), item["path"])
