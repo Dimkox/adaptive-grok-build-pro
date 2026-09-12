@@ -214,21 +214,13 @@ def compose_landing_live(
         raise LandingRuntimeError("profile_unavailable")
     if executor is None:
         raise LandingRuntimeError("executor_required")
-    source = Path(source_repository)
-    scratch = Path(scratch_root)
-    output = Path(output_directory)
-    if not source.is_absolute() or not scratch.is_absolute() or not output.is_absolute():
-        raise LandingRuntimeError("output_path")
     tick = clock or (lambda: datetime.now(timezone.utc))
-    builder = CoordinatedLandingArtifactBuilder(
-        LandingCoordinator(
-            ExactGitLandingWorkspace(source, scratch_root=scratch),
-            DeterministicLandingRenderer(),
-            DeterministicLandingEvaluator(clock=tick),
-            clock=tick,
-        ),
-        LandingArtifactPackager(ExactGitLandingArtifactSource(source)),
-        output,
+    builder = create_landing_artifact_builder(
+        binding=binding,
+        source_repository=source_repository,
+        scratch_root=scratch_root,
+        output_directory=output_directory,
+        clock=tick,
     )
     return LandingApplicationService(
         store or InMemoryLandingJobStore(),
@@ -237,4 +229,38 @@ def compose_landing_live(
         profile_digest=profile.profile_digest,
         artifact_builder=builder,
         clock=tick,
+    )
+
+
+def create_landing_artifact_builder(
+    *,
+    binding: LandingLiveBindingV1,
+    source_repository: Path,
+    scratch_root: Path,
+    output_directory: Path,
+    clock: Callable[[], datetime] | None = None,
+) -> CoordinatedLandingArtifactBuilder:
+    """Share the exact-source artifact pipeline across separately identified providers."""
+    if not isinstance(binding, LandingLiveBindingV1) or not binding.enabled:
+        raise LandingRuntimeError("live_disabled")
+    if (
+        binding.exact_base_sha != landing_pins.TARGET_BASE_SHA
+        or binding.exact_base_tree != landing_pins.TARGET_BASE_TREE
+    ):
+        raise LandingRuntimeError("source_binding_unimplemented")
+    source = Path(source_repository)
+    scratch = Path(scratch_root)
+    output = Path(output_directory)
+    if not source.is_absolute() or not scratch.is_absolute() or not output.is_absolute():
+        raise LandingRuntimeError("output_path")
+    tick = clock or (lambda: datetime.now(timezone.utc))
+    return CoordinatedLandingArtifactBuilder(
+        LandingCoordinator(
+            ExactGitLandingWorkspace(source, scratch_root=scratch),
+            DeterministicLandingRenderer(),
+            DeterministicLandingEvaluator(clock=tick),
+            clock=tick,
+        ),
+        LandingArtifactPackager(ExactGitLandingArtifactSource(source)),
+        output,
     )

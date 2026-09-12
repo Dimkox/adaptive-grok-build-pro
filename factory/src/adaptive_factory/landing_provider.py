@@ -251,12 +251,12 @@ def validate_landing_normalization_outcome(
     ):
         raise LandingProviderError("normalization_spec")
     expected_disposition = {
-        "normalized": "fixture_ready",
-        "provider_unavailable": "provider_unavailable",
-        "needs_human": "provider_unavailable",
-        "rejected": "rejected",
+        "normalized": {"fixture_ready", "normalized"},
+        "provider_unavailable": {"provider_unavailable"},
+        "needs_human": {"provider_unavailable"},
+        "rejected": {"rejected"},
     }[outcome.state]
-    if outcome.evidence.disposition != expected_disposition:
+    if outcome.evidence.disposition not in expected_disposition:
         raise LandingProviderError("normalization_evidence")
 
 

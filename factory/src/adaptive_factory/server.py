@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 import json
 import os
 from pathlib import Path
@@ -9,9 +10,7 @@ import stat
 import uvicorn
 
 from .api import TEXT_ID, Authenticator, create_app
-from .landing_intake import PrivateLandingBlobStore
-from .landing_provider import UnavailableLandingProvider, unavailable_landing_profile
-from .landing_service import InMemoryLandingJobStore, LandingApplicationService
+from .landing_server import compose_server_landing
 from .migrations import discover_migrations
 from .models import Actor
 from .service import FactoryService
@@ -131,6 +130,7 @@ def build_app(
     snapshot_broker=None,
     landing_service=None,
 ):
+    settings.validate_landing()
     if settings.execution_enabled and (
         execution_registry is None
         or not callable(getattr(execution_registry, "resolve", None))
@@ -180,37 +180,47 @@ def build_app(
         ):
             raise ServerError("database capabilities are not ready")
 
-    # Live landing composition is constructor-injected only (compose_landing_live).
-    if landing_service is None and settings.landing_quarantine_path is not None:
-        profile = unavailable_landing_profile()
-        try:
-            landing_service = LandingApplicationService(
-                InMemoryLandingJobStore(),
-                PrivateLandingBlobStore(
-                    settings.landing_quarantine_path,
-                    repository_root=Path(__file__).resolve().parents[3],
-                ),
-                UnavailableLandingProvider(profile),
-                profile_digest=profile.profile_digest,
+    owned_landing = None
+    try:
+        if landing_service is None:
+            owned_landing = compose_server_landing(
+                settings, repository_root=Path(__file__).resolve().parents[3]
             )
-        except Exception as exc:
-            raise ServerError("landing composition is unavailable") from exc
+            if owned_landing is not None:
+                landing_service = owned_landing.service
+        app = create_app(
+            FactoryService(
+                store,
+                execution_registry=execution_registry if settings.execution_enabled else None,
+                artifact_broker=artifact_broker if settings.execution_enabled else None,
+                artifact_attestation_store=attestation_store,
+                snapshot_broker=snapshot_broker if settings.execution_enabled else None,
+                semantic_store=semantic_store,
+                semantic_validator_store=semantic_validator_store,
+                semantic_adjudicator_store=semantic_adjudicator_store,
+            ),
+            Authenticator(load_actors(settings.actors_file)),
+            execution_enabled=settings.execution_enabled,
+            landing_service=landing_service,
+        )
+        if owned_landing is not None:
+            previous_lifespan = app.router.lifespan_context
 
-    return create_app(
-        FactoryService(
-            store,
-            execution_registry=execution_registry if settings.execution_enabled else None,
-            artifact_broker=artifact_broker if settings.execution_enabled else None,
-            artifact_attestation_store=attestation_store,
-            snapshot_broker=snapshot_broker if settings.execution_enabled else None,
-            semantic_store=semantic_store,
-            semantic_validator_store=semantic_validator_store,
-            semantic_adjudicator_store=semantic_adjudicator_store,
-        ),
-        Authenticator(load_actors(settings.actors_file)),
-        execution_enabled=settings.execution_enabled,
-        landing_service=landing_service,
-    )
+            @asynccontextmanager
+            async def lifespan(application):
+                try:
+                    async with previous_lifespan(application) as state:
+                        yield state
+                finally:
+                    owned_landing.close()
+
+            app.router.lifespan_context = lifespan
+            app.state.owned_landing_runtime = owned_landing
+        return app
+    except BaseException:
+        if owned_landing is not None:
+            owned_landing.close()
+        raise
 
 
 def main(
@@ -228,14 +238,19 @@ def main(
         snapshot_broker=snapshot_broker,
         landing_service=landing_service,
     )
-    listener = prepare_unix_socket(settings.socket_path)
+    listener = None
     try:
+        listener = prepare_unix_socket(settings.socket_path)
         config = uvicorn.Config(app, access_log=False, log_config=None, server_header=False)
         uvicorn.Server(config).run(sockets=[listener])
     finally:
-        listener.close()
+        if listener is not None:
+            listener.close()
+        owned_landing = getattr(app.state, "owned_landing_runtime", None)
+        if owned_landing is not None:
+            owned_landing.close()
         try:
-            if stat.S_ISSOCK(settings.socket_path.lstat().st_mode):
+            if listener is not None and stat.S_ISSOCK(settings.socket_path.lstat().st_mode):
                 settings.socket_path.unlink()
         except FileNotFoundError:
             pass

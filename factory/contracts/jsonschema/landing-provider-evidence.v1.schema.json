@@ -26,7 +26,7 @@
     "usage_output_units": {"type": "integer", "minimum": 0, "maximum": 10000000},
     "started_at": {"type": "string", "format": "date-time"},
     "completed_at": {"type": "string", "format": "date-time"},
-    "disposition": {"enum": ["fixture_ready", "provider_unavailable", "rejected"]},
+    "disposition": {"enum": ["fixture_ready", "normalized", "provider_unavailable", "rejected"]},
     "provider_evidence_digest": {"$ref": "#/$defs/digest"}
   }
 }

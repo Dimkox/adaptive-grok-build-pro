@@ -16,6 +16,7 @@ from .landing_artifact import (
     ARCHIVE_TIMESTAMP,
     CONTROL_REPOSITORY_ID,
     DEPLOY_MEMBERS,
+    deploy_members_for_source,
     MAX_ARCHIVE_BYTES,
     LandingArtifactError,
     LandingArtifactResult,
@@ -173,7 +174,7 @@ class RetainedLandingArtifact:
             or not isinstance(evidence, LandingProviderEvidenceV1)
             or not isinstance(attempt, LandingAttemptV1)
             or not isinstance(evaluation, LandingEvaluationV1)
-            or evidence.disposition != "fixture_ready"
+            or evidence.disposition not in {"fixture_ready", "normalized"}
             or evidence.input_digest != source.input_digest
             or artifact.source_sha != source.exact_base_sha
             or artifact.source_tree != source.exact_base_tree
@@ -214,7 +215,7 @@ class RetainedLandingArtifact:
             or self.sidecar_name != f"{expected_zip}.sha256"
             or Path(self.zip_name).name != self.zip_name
             or Path(self.sidecar_name).name != self.sidecar_name
-            or self.member_names != DEPLOY_MEMBERS
+            or self.member_names != deploy_members_for_source(artifact.source_sha, artifact.source_tree)
             or artifact.member_count != len(self.member_names)
         ):
             raise LandingArtifactError("artifact_integrity")
@@ -286,7 +287,7 @@ class RetainedLandingArtifact:
             != {
                 "compression": "deflate-9",
                 "dos_timestamp": "2000-01-01T00:00:00Z",
-                "member_count": len(DEPLOY_MEMBERS),
+                "member_count": len(self.member_names),
                 "member_mode": "0644",
                 "members_sorted": True,
             }

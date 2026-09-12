@@ -1,0 +1,185 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "HTTP normalization binds actual provider/model/endpoint/adapter without fictional Codex executable provenance.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "HTTP response memory/time is bounded and usage is factual; unsupported media is refused before transfer.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Explicit server configuration enables private durable landing state and opt-in provider composition.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_server.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Owned runtime resources close on failures/shutdown and concurrent service writers are excluded.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_server.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Native Codex, old fixtures, v1 public API and historical retained-artifact inventories remain compatible across the selected source epoch.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_runtime.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-006",
+      "statement": "Landing source policy binds fde60e040167c10975b00d11f578c4da6763069a / 21817e70e079b772e1f3114a80dfc0320d1ada91, preserving source-owned analytics/privacy and all 24 delivery members.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-007",
+      "statement": "Explicit Qwen Omni/Grok vision profiles handle supported media with bounded payloads/streams and factual usage; isolated PDF extraction preserves explicit scanned/empty outcomes.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-008",
+      "statement": "Separate versioned filesystem publication persists intent before effects, stages immutable releases, activates atomically, retains the predecessor and uses observation-only ambiguity recovery.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-009",
+      "statement": "Dedicated Claw runtime uses its own user, SQLite, Unix socket, pinned source checkout and coherent backup/restore/install operations without a neighboring project database.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "AC-010",
+      "statement": "II-Tonya/Pump evidence preserves exact identities, partial results and cost gaps; Git delivery and hosting blockers remain explicit without fabricated production acceptance.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260912-l5-production-completion-verification-deferred-b-8632a3",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Claiming tests, reviews, deployment or production acceptance passed during the user-deferred phase.",
+      "evidence": [
+        {
+          "test": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/test-plan.md"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Implicit provider calls, unsafe response buffering, invented usage or automatic ambiguous-call replay.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_live_executors.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "Bypassing external exact-head Trust CI, required signed scopes or host-key trust, fabricating cost/acceptance facts, or creating a PR that launches checks while their explicit pause remains active.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Provider capability stays disabled without explicit operator configuration.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_server.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Landing v1 live_url remains null; new jobs bind the selected exact source epoch and historical retained artifacts preserve their recorded inventory.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_runtime.py"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "доделывай L5 до продакшена; проверки пока не проводим",
+    "success_metric": "Source for bounded multimedia HTTP intake, durable standalone runtime, current landing source epoch, versioned recoverable publication and native operations is prepared; two-project evidence gaps and pending operational acceptance remain explicit",
+    "target": "feat/l5-production-completion from a730ee9"
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "landing_job.state",
+      "proves": [
+        "OBJ-001"
+      ]
+    },
+    {
+      "id": "SIG-002",
+      "metric": "landing_provider_evidence.usage_input_units",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 8,
+    "strategy": "restore"
+  },
+  "schema_version": 2
+}

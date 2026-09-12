@@ -1901,7 +1901,16 @@
       "owner": "local factory operators",
       "public_contracts": [],
       "repository_paths": [
+        "factory/src/adaptive_factory/landing_http.py",
+        "factory/src/adaptive_factory/landing_host.py",
+        "factory/src/adaptive_factory/landing_backup.py",
         "factory/src/adaptive_factory/landing_live_executors.py",
+        "factory/src/adaptive_factory/landing_media.py",
+        "factory/src/adaptive_factory/landing_publication_cli.py",
+        "factory/src/adaptive_factory/landing_server.py",
+        "factory/src/adaptive_factory/landing_sse.py",
+        "factory/src/adaptive_factory/resources/landing_pdf_worker.py",
+        "factory/runtime/",
         "factory/tests/test_landing_live_executors.py"
       ],
       "runtime": {
@@ -1954,6 +1963,7 @@
       "owner": "repository engineering",
       "public_contracts": [],
       "repository_paths": [
+        "delivery/contracts/jsonschema/landing-publication-request.v1.schema.json",
         "delivery/pyproject.toml",
         "delivery/src/adaptive_delivery",
         "delivery/tests"

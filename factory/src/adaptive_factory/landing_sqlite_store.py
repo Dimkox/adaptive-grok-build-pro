@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from dataclasses import replace
 from datetime import datetime, timezone
+import fcntl
 import os
 from pathlib import Path
 import sqlite3
@@ -113,6 +114,7 @@ class SQLiteLandingJobStore:
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self._lock = threading.RLock()
         self._closed = False
+        self._writer_descriptor = _acquire_writer(self._root)
         previous = os.umask(0o077)
         try:
             self._connection = sqlite3.connect(
@@ -122,16 +124,19 @@ class SQLiteLandingJobStore:
                 check_same_thread=False,
             )
         except sqlite3.Error as exc:
+            os.close(self._writer_descriptor)
+            self._closed = True
             raise LandingServiceError("store_open", 500, "landing store unavailable") from exc
         finally:
             os.umask(previous)
-        os.chmod(self._database_path, 0o600)
         try:
+            os.chmod(self._database_path, 0o600)
             self._configure(busy_timeout_ms)
             self._initialize_schema()
             self._recover_interrupted(recovery_limit)
         except Exception:
             self._connection.close()
+            os.close(self._writer_descriptor)
             self._closed = True
             raise
 
@@ -143,9 +148,14 @@ class SQLiteLandingJobStore:
         with self._lock:
             if self._closed:
                 return
-            self._connection.execute("PRAGMA wal_checkpoint(PASSIVE)")
-            self._connection.close()
-            self._closed = True
+            try:
+                self._connection.execute("PRAGMA wal_checkpoint(PASSIVE)")
+            finally:
+                try:
+                    self._connection.close()
+                finally:
+                    os.close(self._writer_descriptor)
+                    self._closed = True
 
     def get(
         self, tenant_id: str, repository_id: str, job_id: str
@@ -466,6 +476,36 @@ class SQLiteLandingJobStore:
     def _ensure_open(self) -> None:
         if self._closed:
             raise LandingServiceError("store_closed", 500, "landing store closed")
+
+
+def _acquire_writer(root: Path) -> int:
+    """Keep the advisory lifetime lock until the connection has been closed."""
+    descriptor = None
+    try:
+        path = root / "landing.writer.lock"
+        descriptor = os.open(
+            path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600
+        )
+        metadata = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(metadata.st_mode)
+            or metadata.st_uid != os.geteuid()
+            or metadata.st_nlink != 1
+            or stat.S_IMODE(metadata.st_mode) != 0o600
+        ):
+            raise LandingServiceError("store_lock_file", 500, "landing writer lock invalid")
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise LandingServiceError("store_writer_active", 503, "landing writer already active") from None
+        current = path.lstat()
+        if (metadata.st_dev, metadata.st_ino) != (current.st_dev, current.st_ino):
+            raise LandingServiceError("store_lock_file", 500, "landing writer lock replaced")
+        return descriptor
+    except Exception:
+        if descriptor is not None:
+            os.close(descriptor)
+        raise
 
 
 def _private_root(root: Path, repository_root: Path) -> Path:

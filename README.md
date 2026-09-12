@@ -4,6 +4,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## Current state
 
+- Active L5 preparation, 2026-09-12: route `8632a3272f03` on `feat/l5-production-completion` adds a dedicated SQLite/Unix-socket host, Qwen Omni normalization for five media classes, explicit Grok vision, isolated PDF parsing, factual HTTP/SSE usage, and a separate durable filesystem publication coordinator with atomic promotion/restore. Landing source is refreshed to `fde60e0` / tree `21817e7`, preserving approved analytics and a 24-member artifact inventory. Native install/service and offline backup/restore source target a dedicated user on Claw; live mode stays off. This source is **unverified**: checks and test work are paused. Public-site activation is still blocked by untrusted SSH host identity and unknown cPanel docroot. See the [runtime handoff](engineering/runbooks/l5-production-runtime.md) and [publication runbook](engineering/runbooks/l5-filesystem-publication.md). Prior release/pilot records below are historical context.
 - Fresh-agent bootstrap: start with [`START_HERE.md`](START_HERE.md), then [`PROJECT_STATE.json`](PROJECT_STATE.json). A clean clone must be sufficient to understand the current milestone without chat history.
 - Identity: **2.0.15** (`VERSION`, README H1) is the unreleased design-partner pilot candidate. Its final local PR shape is source parent `R` plus an artifact-only child `A` containing the `2.0.15` ZIP+sidecar; the pair remains unpublished. The latest published release remains tag-bound [`v2.0.14`](packages/adaptive-grok-build-pro-v2.0.14.zip), SHA-256 `b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264`, and published `v2.0.14`/`v2.0.13` artifacts remain immutable.
 - Unreleased pilot: route `0ce2d62a018e` on `feature/design-partner-pilot` adds the separate [`pilot/`](pilot/) component for exactly `Dimkox/ai-dark-factory-landing@699010380f4f90a0193a9c22090c35e6aded7d2c`. Its built-in, default-off CLI exposes `prepare`, `publish-branch`, `publish-proposal` and read-only `status`: one pinned Codex app-server thread/turn uses opaque host ChatGPT auth, an independent private Git workspace is recovered and revalidated across processes, one exact candidate is sealed/tested, and separately granted narrow GitHub adapters permit only a non-force branch and one draft PR with observation-only recovery. Local evidence uses fakes, issue #1 already exists externally, and this source preparation made no model, landing-repository mutation, push, PR, release, deployment, or credential read/copy action.
@@ -84,8 +85,8 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - [`scripts/grok_doctor.py`](scripts/grok_doctor.py)
 - [`scripts/install_into.py`](scripts/install_into.py)
 - [`trust-ci/`](trust-ci/) — external merge trust, deployed independently
-- [`factory/`](factory/) — delivered M4-M8 control/evaluation source plus the unreleased Stage 3/5 L5 normalizer, single-operator SQLite state and deterministic local artifact runtime; operational providers remain disabled by default
-- [`delivery/`](delivery/) — delivered M9 staged-delivery/recovery source plus the transport-free unavailable landing publisher; no production authority
+- [`factory/`](factory/) — delivered M4-M8 control/evaluation plus L5 HTTP/SSE media normalization, exact-source artifacts, dedicated SQLite/Unix-socket host and offline backup/restore; native templates in `factory/runtime/`, providers default off
+- [`delivery/`](delivery/) — delivered M9 staged-delivery/recovery plus separate versioned landing publication intents, immutable local releases and atomic pointer activation/restore; v1 unavailable publisher preserved, no production authority
 - [`pilot/`](pilot/) — unreleased single-operator exact-issue/Codex/candidate/validation/draft-proposal vertical; disabled by default and without merge/deploy authority
 - [`DARK_FACTORY_ROADMAP.md`](DARK_FACTORY_ROADMAP.md) — dependency-ordered M0-M9 program status and acceptance-relative schedule
 - [`engineering/runbooks/`](engineering/runbooks/)
@@ -128,12 +129,12 @@ graph TD
   Runner["isolated runner"]
   Holdout["external holdout"]
   GitHubApp["GitHub App Checks"]
-  Factory["local factory + L5 landing"]
+  Factory["factory + L5 media/socket/state"]
   M5Execution["M5 isolated execution"]
   M6Semantic["M6 semantic validation"]
   M7Shadow["M7 shadow PR bundle"]
   M8Autonomy["M8 trust profile"]
-  M9Delivery["M9 preview/canary/recovery"]
+  M9Delivery["M9 + L5 publication/recovery"]
   Route --- Skills
   Route --- Agents
   Route --- Hooks
@@ -385,12 +386,12 @@ graph TD
 | Runner | Isolated no-network runner container; `policy.sandbox.image` must equal `TRUST_CI_RUNNER_IMAGE` |
 | Holdout | External digest-pinned bundle, outside the PR checkout |
 | GitHubApp | App-owned Checks `adaptive-trust-ci/verified@<policy-sha12>` bound to the App ID |
-| Factory | Integrated local M4-M8 control/evaluation plus offline L5 landing intake/render/evaluation/artifact source under `factory/`; no operational provider, external write, deployment or merge authority |
+| Factory | M4-M8 control/evaluation and L5 media normalization, source-preserving artifacts, dedicated Unix-socket/SQLite host, native service/install templates and offline backup/restore under `factory/`; default off and unverified, no merge or production authority |
 | M5Execution | Integrated bounded execution packet/result, offline adapter, broker and workspace boundary; disabled by default and no live provider capability |
 | M6Semantic | Integrated independent semantic verdict, artifact validation and bounded-repair boundary; cannot self-approve implementation |
 | M7Shadow | Integrated deterministic shadow bundle/outcome/cohort boundary; human merge remains mandatory |
 | M8Autonomy | Integrated earned-autonomy profile/recommendation boundary over actual M7 records; no factual cohort or activation and authority is capped at L2 |
-| M9Delivery | Integrated immutable staged-delivery/recovery source plus an unavailable landing publisher; sealed local environment only, with no transport, signed real input, operational adapter or production authority |
+| M9Delivery | M9 staged-delivery/recovery plus separate versioned durable L5 filesystem stage/activate/observe/restore/reconcile under `delivery/`; unavailable v1 preserved, real host configuration and operational acceptance pending |
 
 oneshots `migrate` / `runner-loader` reuse API/worker images; privileged rootless DinD is an execution edge of Runner.
 

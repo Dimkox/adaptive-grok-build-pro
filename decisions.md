@@ -1,5 +1,17 @@
 # Decisions
 
+## 2026-09-12 — Use II-Tonya and Pump as the L5 evidence basis
+
+The user selected these two existing projects and delegated deployment/provider choices, so preserve their saved task/PR/acceptance records and read actual DB telemetry instead of manufacturing new proof or using project counts as accepted-task counts. Use local Claw for the new isolated runtime and the native immutable-release/systemd pattern from II-Tonya. Keep private cost/session records outside the public checkout; cumulative tokens without currency or cache/output breakdown are not measured dollar costs.
+
+## 2026-09-12 — Continue L5 from main with verification explicitly deferred
+
+Use isolated `feat/l5-production-completion` from `a730ee9` because the original checkout contains older shell-policy work while the merged L5 runtime lives on main. The user's «прверки пока не проводим» defers tests, builds, verification and reviews; implementation evidence must remain unverified, and no live operation or release is implied. Complete durable server composition and truthful bounded HTTP provider handling before attempting operational activation.
+
+## 2026-09-12 — Separate HTTP provenance from the native Codex profile
+
+HTTP calls must bind the actual provider/model/endpoint and record observed time and reported usage; the existing Codex executable profile and fixed 25 ms / 1-token counters cannot describe that transport. Reuse strict draft reconstruction and the existing SQLite runtime while preserving native Codex and fixture compatibility. Saved implementation and hosting/source/media follow-ups live in `engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/`; tests and new test authoring remain deferred.
+
 <!-- BEGIN ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 > **NON-AUTHORITATIVE PROJECTION.** Canonical JSON governance records remain authority; this Markdown cannot approve, activate, repay, or accept any record.
 

@@ -268,7 +268,10 @@ def create_app(
     *,
     execution_enabled: bool = True,
     landing_service: LandingApplicationService | None = None,
+    landing_only: bool = False,
 ) -> FastAPI:
+    if landing_only and (service is not None or landing_service is None or execution_enabled):
+        raise ValueError("landing-only composition requires only a landing service")
     app = FastAPI(
         title="Adaptive Factory Local Control API",
         version="1.0.0",
@@ -460,6 +463,8 @@ def create_app(
 
     @app.get("/health/ready", tags=["health"])
     def ready():
+        if landing_only:
+            return {"status": "ready", "component": "landing-local", "production_verified": False}
         result = service.readiness()
         if result.get("status") != "ready":
             raise HTTPException(503, "schema not ready")
@@ -467,6 +472,8 @@ def create_app(
 
     @app.get("/metrics", tags=["operator"])
     def metrics(authorization: str | None = Header(None)):
+        if landing_only:
+            raise HTTPException(404, "not found")
         actor = authenticator.authenticate(authorization, "factory:reconcile")
         result = dict(service.metrics(actor=actor))
         family = dict(result["factory_capacity_budget_kill_and_reconcile_outcomes_total"])
@@ -615,6 +622,9 @@ def create_app(
         return JSONResponse(
             record.result_view(), headers={"X-Correlation-ID": correlation}
         )
+
+    if landing_only:
+        return app
 
     @app.post("/v1/tasks", tags=["tasks"])
     def submit(

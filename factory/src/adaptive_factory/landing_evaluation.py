@@ -18,12 +18,13 @@ from .landing_renderer import (
     LANDING_WRITE_PATHS,
     LandingCandidateSnapshot,
     LandingRenderError,
+    approved_source_scripts,
     source_surface_facts,
 )
 
 
 EVALUATOR_ID = "independent-landing-evaluator"
-EVALUATOR_VERSION = "1.0.0"
+EVALUATOR_VERSION = "1.1.0"
 EVALUATOR_IDENTITY_DIGEST = landing_digest(
     "evaluator-identity",
     {"evaluator_id": EVALUATOR_ID, "version": EVALUATOR_VERSION},
@@ -31,7 +32,7 @@ EVALUATOR_IDENTITY_DIGEST = landing_digest(
 POLICY_DIGEST = landing_digest(
     "evaluation-policy",
     {
-        "policy": "preserve-source-static-no-active-content",
+        "policy": "preserve-source-approved-analytics-only",
         "version": EVALUATOR_VERSION,
     },
 )
@@ -183,11 +184,12 @@ class DeterministicLandingEvaluator:
             rendered_html = ""
             rendered_css = ""
         lowered = rendered_html.lower()
-        scripts = re.findall(r"<script(?:\s[^>]*)?>.*?</script>", rendered_html, re.DOTALL)
+        try:
+            approved_source_scripts(rendered_html)
+        except LandingRenderError:
+            reasons.add("active_content")
         if (
-            len(scripts) != 1
-            or not scripts[0].startswith('<script type="application/ld+json">')
-            or any(
+            any(
                 forbidden in lowered
                 for forbidden in ("<form", "google-analytics", "gtag(", "javascript:")
             )
