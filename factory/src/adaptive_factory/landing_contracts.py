@@ -440,7 +440,9 @@ class LandingProviderEvidenceV1(_LandingRecord):
         version = _text(data["adapter_version"], "adapter_version", 64)
         if not _VERSION.fullmatch(version):
             raise LandingContractError("adapter_version")
-        if data["disposition"] not in {"fixture_ready", "provider_unavailable", "rejected"}:
+        if data["disposition"] not in {
+            "fixture_ready", "normalized", "provider_unavailable", "rejected"
+        }:
             raise LandingContractError("provider_disposition")
         started = _time(data["started_at"], "started_at")
         completed = _time(data["completed_at"], "completed_at")

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "control_repository": "/opt/adaptive-l5/releases/REPLACE_EXACT_CONTROL_SHA/repository",
+  "socket_path": "/run/adaptive-l5/control.sock",
+  "actors_file": "/etc/adaptive-l5/actors.json",
+  "state_path": "/var/lib/adaptive-l5/state",
+  "quarantine_path": "/var/lib/adaptive-l5/quarantine",
+  "source_path": "/opt/adaptive-l5/sources/fde60e040167c10975b00d11f578c4da6763069a",
+  "scratch_path": "/var/lib/adaptive-l5/scratch",
+  "output_path": "/var/lib/adaptive-l5/artifacts",
+  "publication_state_path": "/var/lib/adaptive-l5/publication",
+  "live_enabled": false,
+  "selected_profile": "qwen-omni"
+}

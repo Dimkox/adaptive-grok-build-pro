@@ -212,7 +212,7 @@ class CodexLandingExecutor(Protocol):
 
 
 class CodexLandingNormalizer:
-    """Native-Codex request seam; the repository ships no live executor."""
+    """Native-Codex request seam, separate from the HTTP provider adapter."""
 
     def __init__(
         self,
@@ -381,26 +381,10 @@ class CodexLandingNormalizer:
             or not 0 <= result.usage_output_units <= 10_000_000
         ):
             raise LandingProviderError("executor_result")
-        draft = strict_json_object(
-            result.stdout, maximum=self._profile.max_stdout_bytes
-        )
-        if set(draft) != {"locale", "direction", "title", "description", "sections"}:
-            raise LandingProviderError("draft_fields")
-        return StaticLandingSpecV1.from_facts(
-            {
-                "schema_version": 1,
-                "input_digest": request.source.input_digest,
-                "site_id": SITE_ID,
-                "canonical_origin": CANONICAL_ORIGIN,
-                "locale": draft["locale"],
-                "direction": draft["direction"],
-                "title": draft["title"],
-                "description": draft["description"],
-                "robots_policy": "preserve_source",
-                "sections": draft["sections"],
-                "assets": [],
-                "source_claim_refs": [f"source:{request.source.input_digest}"],
-            }
+        return decode_landing_draft(
+            request.source.input_digest,
+            result.stdout,
+            maximum=self._profile.max_stdout_bytes,
         )
 
     def _terminal(
@@ -475,6 +459,40 @@ class CodexLandingNormalizer:
         if not isinstance(value, datetime) or value.tzinfo is None:
             raise LandingProviderError("provider_clock")
         return value.astimezone(timezone.utc)
+
+
+def decode_landing_draft(
+    input_digest: str, payload: bytes, *, maximum: int
+) -> StaticLandingSpecV1:
+    """Reconstruct source-owned facts independently of the model transport."""
+    draft = strict_json_object(payload, maximum=maximum)
+    if set(draft) != {"locale", "direction", "title", "description", "sections"}:
+        raise LandingProviderError("draft_fields")
+    return StaticLandingSpecV1.from_facts(
+        {
+            "schema_version": 1,
+            "input_digest": input_digest,
+            "site_id": SITE_ID,
+            "canonical_origin": CANONICAL_ORIGIN,
+            "locale": draft["locale"],
+            "direction": draft["direction"],
+            "title": draft["title"],
+            "description": draft["description"],
+            "robots_policy": "preserve_source",
+            "sections": draft["sections"],
+            "assets": [],
+            "source_claim_refs": [f"source:{input_digest}"],
+        }
+    )
+
+
+def normalize_landing_text(media_kind: str, payload: bytes) -> str:
+    """The HTTP boundary currently supports only text and safe DOCX extraction."""
+    if media_kind == "text":
+        return _normalize_text(payload)
+    if media_kind == "docx":
+        return _extract_docx_text(payload)
+    raise LandingContractError("media_kind")
 
 
 def _normalize_text(payload: bytes) -> str:
