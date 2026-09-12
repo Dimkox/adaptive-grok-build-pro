@@ -196,8 +196,10 @@ The configurator uses `required_status_checks.checks` with both the exact policy
 The runner derives external approval scopes from the actual base/head diff. An approval binds:
 
 ```text
+schema_version
+approval_id
 repository
-pull_request
+pr_number
 base_sha
 head_sha
 policy_digest
@@ -205,6 +207,7 @@ scope
 actor
 key_id
 nonce
+reason
 issued_at
 expires_at
 signature
@@ -212,28 +215,152 @@ signature
 
 Any new commit, base change, holdout change or policy change invalidates it.
 
-Create and submit an approval from the human workstation:
+### Source-checkout operator setup
+
+Run this only on the human-controlled workstation from an exact reviewed checkout.
+The private key, copied deployed policy, operator virtual environment and signed
+envelopes must all stay outside the checkout and every agent/service workspace. The
+service installation continues to use the full dependency set from `pyproject.toml`;
+this minimal environment is only for human approval commands.
 
 ```bash
-adaptive-trust-ci approval-create \
-  --private-key ~/.config/adaptive-trust-ci/dmitry.pem \
-  --policy ./policy.downloaded-from-server.json \
+TRUST_CI_CHECKOUT=/absolute/path/to/reviewed/adaptive-grok-build-pro
+TRUST_CI_OPERATOR_DIR=/absolute/human-controlled/path/outside-the-checkout
+TRUST_CI_OPERATOR_VENV="$TRUST_CI_OPERATOR_DIR/venv"
+install -d -m 700 "$TRUST_CI_OPERATOR_DIR"
+python3 -m venv "$TRUST_CI_OPERATOR_VENV"
+"$TRUST_CI_OPERATOR_VENV/bin/python" -m pip install 'cryptography==46.0.4'
+
+cd "$TRUST_CI_CHECKOUT"
+PYTHONPATH="$TRUST_CI_CHECKOUT/trust-ci/src" \
+  "$TRUST_CI_OPERATOR_VENV/bin/python" -m adaptive_trust_ci.cli approval-create --help
+PYTHONPATH="$TRUST_CI_CHECKOUT/trust-ci/src" \
+  "$TRUST_CI_OPERATOR_VENV/bin/python" -m adaptive_trust_ci.cli approval-submit --help
+```
+
+Record and inspect `git -C "$TRUST_CI_CHECKOUT" rev-parse HEAD` before use. Do not
+silently update this checkout between review and signing.
+
+### Verify the policy epoch and exact review target
+
+The service administrator exports the exact deployed policy and delivers it to the
+human through the organization's authenticated, human-owned file-transfer channel.
+The human places that handoff outside the checkout; this API intentionally does not
+publish the policy document. A repository example policy is not a valid substitute.
+
+```bash
+TRUST_CI_POLICY_HANDOFF=/absolute/path/from-authenticated-human-handoff/policy.json
+TRUST_CI_POLICY="$TRUST_CI_OPERATOR_DIR/deployed-policy.json"
+TRUST_CI_URL=https://ci.example.com
+install -m 600 "$TRUST_CI_POLICY_HANDOFF" "$TRUST_CI_POLICY"
+
+TRUST_CI_POLICY_DIGEST="$(
+  PYTHONPATH="$TRUST_CI_CHECKOUT/trust-ci/src" \
+    "$TRUST_CI_OPERATOR_VENV/bin/python" -c \
+    'import sys; from pathlib import Path; from adaptive_trust_ci.policy import Policy; print(Policy.load(Path(sys.argv[1])).digest)' \
+    "$TRUST_CI_POLICY"
+)"
+TRUST_CI_READY_DIGEST="$(
+  curl -fsS "$TRUST_CI_URL/health/ready" | \
+    "$TRUST_CI_OPERATOR_VENV/bin/python" -c \
+    'import json, sys; print(json.load(sys.stdin)["policy_digest"])'
+)"
+if [ "$TRUST_CI_POLICY_DIGEST" != "$TRUST_CI_READY_DIGEST" ]; then
+  echo 'STOP: the reviewed policy does not match the deployed policy epoch' >&2
+  exit 1
+fi
+```
+
+Raw-file `sha256sum` is not equivalent: Trust CI digests normalized canonical policy
+JSON. Before signing, the human independently checks in GitHub the repository, PR
+number, exact base SHA, exact head SHA, actual diff, missing scopes, Check Run owner
+and policy-epoch check name. A new commit, base update, policy/holdout epoch change or
+expired envelope requires a fresh review and fresh envelope.
+
+### Create and submit one envelope per scope
+
+Each envelope authorizes exactly one scope. The two-scope example below must be run
+by the human only, after the checks above. It intentionally uses separate output
+files, approval IDs and nonces for `database` and `governance`; never edit or reuse a
+signed envelope.
+
+```bash
+TRUST_CI_REPOSITORY=Dimkox/adaptive-grok-build-pro
+TRUST_CI_PR_NUMBER=123
+TRUST_CI_BASE_SHA='<40-hex-base-sha-reviewed-by-the-human>'
+TRUST_CI_HEAD_SHA='<40-hex-head-sha-reviewed-by-the-human>'
+TRUST_CI_HUMAN_KEY=/absolute/human-only/path/dmitry.pem
+umask 077
+
+PYTHONPATH="$TRUST_CI_CHECKOUT/trust-ci/src" \
+"$TRUST_CI_OPERATOR_VENV/bin/python" -m adaptive_trust_ci.cli approval-create \
+  --private-key "$TRUST_CI_HUMAN_KEY" \
+  --policy "$TRUST_CI_POLICY" \
   --actor dmitry \
-  --repository Dimkox/adaptive-grok-build-pro \
-  --pr-number 123 \
-  --base-sha '<40-hex-base-sha>' \
-  --head-sha '<40-hex-head-sha>' \
+  --repository "$TRUST_CI_REPOSITORY" \
+  --pr-number "$TRUST_CI_PR_NUMBER" \
+  --base-sha "$TRUST_CI_BASE_SHA" \
+  --head-sha "$TRUST_CI_HEAD_SHA" \
+  --scope database \
+  --reason 'Reviewed the exact database diff and deployed policy epoch' \
+  --ttl 900 \
+  --output "$TRUST_CI_OPERATOR_DIR/approval-database-$TRUST_CI_HEAD_SHA.json"
+
+PYTHONPATH="$TRUST_CI_CHECKOUT/trust-ci/src" \
+"$TRUST_CI_OPERATOR_VENV/bin/python" -m adaptive_trust_ci.cli approval-submit \
+  --approval "$TRUST_CI_OPERATOR_DIR/approval-database-$TRUST_CI_HEAD_SHA.json" \
+  --url "$TRUST_CI_URL"
+
+PYTHONPATH="$TRUST_CI_CHECKOUT/trust-ci/src" \
+"$TRUST_CI_OPERATOR_VENV/bin/python" -m adaptive_trust_ci.cli approval-create \
+  --private-key "$TRUST_CI_HUMAN_KEY" \
+  --policy "$TRUST_CI_POLICY" \
+  --actor dmitry \
+  --repository "$TRUST_CI_REPOSITORY" \
+  --pr-number "$TRUST_CI_PR_NUMBER" \
+  --base-sha "$TRUST_CI_BASE_SHA" \
+  --head-sha "$TRUST_CI_HEAD_SHA" \
   --scope governance \
   --reason 'Reviewed the exact governance diff and deployed policy epoch' \
   --ttl 900 \
-  --output approval.json
+  --output "$TRUST_CI_OPERATOR_DIR/approval-governance-$TRUST_CI_HEAD_SHA.json"
 
-adaptive-trust-ci approval-submit \
-  --approval approval.json \
-  --url https://ci.example.com
+PYTHONPATH="$TRUST_CI_CHECKOUT/trust-ci/src" \
+"$TRUST_CI_OPERATOR_VENV/bin/python" -m adaptive_trust_ci.cli approval-submit \
+  --approval "$TRUST_CI_OPERATOR_DIR/approval-governance-$TRUST_CI_HEAD_SHA.json" \
+  --url "$TRUST_CI_URL"
 ```
 
-The API verifies the signature against its server-mounted public-key store, rejects ID/nonce replay, and requeues only the matching exact SHA. The worker restarts the same durable App-owned Check Run rather than creating a duplicate.
+Create only the scopes actually reported missing. Each scope must be authorized for
+the signing key in the server-side public trust store. The API verifies the signature,
+exact target, policy/TTL and replay state before accepting it. A successful response
+contains `accepted`, `approval_id`, `scope`, `requeued_jobs` and
+`status_publisher`; `requeued_jobs: 0` can mean the accepted scope arrived while the
+job was already queued or running.
+
+Do not automatically retry an ambiguous timeout: a committed envelope is single-use.
+HTTP 400 means malformed input or an unconfigured scope; 403 means the key, actor,
+scope, signature, exact target, policy or TTL check failed; 404 means no applicable
+job exists; 409 means approval-ID/nonce replay; and 503 means the kill switch or
+control plane is unavailable. Understand the mismatch and create a fresh envelope
+only after re-reviewing the current target.
+
+After all missing scopes are accepted, verify in GitHub that the same durable Check
+Run, owned by the configured Trust CI GitHub App and named for the current policy
+epoch, resumes on the exact head SHA and succeeds. HTTP acceptance alone is not merge
+authority. Retain or delete expired envelope files according to the human audit
+policy; if this CLI release is faulty, stop signing and return to the previous
+reviewed operator CLI version without weakening policy, trust-store, branch
+protection or approval scopes.
+
+The minimal operator-path regression is safe to run without operational credentials;
+it creates only a disposable test key and submits only to a loopback test server:
+
+```bash
+cd "$TRUST_CI_CHECKOUT"
+PYTHONPATH=trust-ci/src:trust-ci/tests \
+  "$TRUST_CI_OPERATOR_VENV/bin/python" -m unittest -v trust-ci/tests/test_cli.py
+```
 
 ## Delegated local operational consent
 

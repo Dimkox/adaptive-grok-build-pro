@@ -8,19 +8,6 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from .api import create_app
-from .backup import create_backup, prune_backups, restore_drill, verify_backup
-from .github import GitHubClient
-from .github_app import generate_app_jwt
-from .holdout import bundle_digest, verify_bundle
-from .migrations import PostgresMigrator
-from .models import ApprovalEnvelope, ApprovalPayload, AttestationEnvelope, utc_now
-from .policy import Policy
-from .settings import ApiSettings, CommonSettings, WorkerSettings
-from .signing import Signer, TrustStore, sign_approval, verify_approval, verify_attestation
-from .store import PostgresStore
-from .worker import Worker, install_signal_handlers
-
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog='adaptive-trust-ci')
@@ -116,33 +103,50 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == 'api':
         import uvicorn
 
+        from .api import create_app
+        from .settings import ApiSettings
+
         settings = ApiSettings.load()
         uvicorn.run(create_app(settings), host=args.host, port=args.port, access_log=True)
         return 0
 
     if args.command == 'worker':
+        from .settings import WorkerSettings
+        from .worker import Worker, install_signal_handlers
+
         worker = Worker.build(WorkerSettings.load())
         install_signal_handlers(worker)
         return worker.run(once=args.once)
 
     if args.command == 'migrate':
+        from .migrations import PostgresMigrator
+        from .settings import CommonSettings
+
         settings = CommonSettings.load()
         plan = PostgresMigrator(settings.database_url).apply()
         print(json.dumps({'status': 'schema-applied', **plan.to_dict()}, ensure_ascii=False, indent=2))
         return 0
 
     if args.command == 'migration-status':
+        from .migrations import PostgresMigrator
+        from .settings import CommonSettings
+
         settings = CommonSettings.load()
         plan = PostgresMigrator(settings.database_url).status()
         print(json.dumps(plan.to_dict(), ensure_ascii=False, indent=2))
         return 1 if plan.pending else 0
 
     if args.command == 'policy-digest':
+        from .policy import Policy
+        from .settings import CommonSettings
+
         settings = CommonSettings.load()
         print(Policy.load(settings.policy_path).digest)
         return 0
 
     if args.command == 'holdout-digest':
+        from .holdout import bundle_digest
+
         print(bundle_digest(args.path))
         return 0
 
@@ -150,17 +154,26 @@ def main(argv: list[str] | None = None) -> int:
         return _doctor()
 
     if args.command == 'keygen':
+        from .signing import Signer
+
         signer = Signer.generate()
         signer.write_keypair(args.private, args.public)
         print(json.dumps({'key_id': signer.key_id, 'private': str(args.private), 'public': str(args.public)}))
         return 0
 
     if args.command == 'trust-store-validate':
+        from .models import utc_now
+        from .signing import TrustStore
+
         report = TrustStore.load(args.trust_store).report(utc_now())
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 1 if not any(item['status'] == 'active' for item in report['keys']) else 0
 
     if args.command == 'approval-create':
+        from .models import ApprovalPayload
+        from .policy import Policy
+        from .signing import Signer, sign_approval
+
         policy = Policy.load(args.policy)
         if args.scope not in policy.approval_scopes:
             raise SystemExit(f'scope is not configured by policy: {args.scope}')
@@ -185,6 +198,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == 'approval-verify':
+        from .models import ApprovalEnvelope, utc_now
+        from .policy import Policy
+        from .signing import TrustStore, verify_approval
+
         policy = Policy.load(args.policy)
         envelope = ApprovalEnvelope.from_dict(_read_json(args.approval))
         verified = verify_approval(
@@ -219,12 +236,18 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == 'attestation-verify':
+        from .models import AttestationEnvelope
+        from .signing import verify_attestation
+
         envelope = AttestationEnvelope.from_dict(_read_json(args.attestation))
         verified = verify_attestation(envelope, args.public_key.read_bytes())
         print(json.dumps(verified.to_dict(), ensure_ascii=False, indent=2))
         return 0
 
     if args.command == 'branch-protect':
+        from .github import GitHubClient
+        from .policy import Policy
+
         policy_path = args.policy or _required_path_env('TRUST_CI_POLICY_PATH')
         if not policy_path.is_file():
             raise SystemExit('--policy or TRUST_CI_POLICY_PATH must name the deployed policy')
@@ -245,6 +268,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == 'backup-create':
+        from .backup import create_backup
+        from .settings import CommonSettings
+
         settings = CommonSettings.load()
         output_dir = args.output_dir.resolve() if args.output_dir else _required_path_env('TRUST_CI_BACKUP_DIR')
         result = create_backup(
@@ -267,10 +293,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == 'backup-verify':
+        from .backup import verify_backup
+
         print(json.dumps(verify_backup(args.dump, args.manifest), ensure_ascii=False, indent=2))
         return 0
 
     if args.command == 'backup-prune':
+        from .backup import prune_backups
+
         directory = args.directory.resolve() if args.directory else _required_path_env('TRUST_CI_BACKUP_DIR')
         report = prune_backups(
             directory,
@@ -281,6 +311,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == 'restore-drill':
+        from .backup import restore_drill
+
         target = os.environ.get('TRUST_CI_RESTORE_DATABASE_URL', '').strip()
         if not target:
             raise SystemExit('TRUST_CI_RESTORE_DATABASE_URL is required for a disposable restore target')
@@ -294,6 +326,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == 'kill-switch':
+        from .models import utc_now
+        from .settings import CommonSettings
+
         settings = CommonSettings.load()
         path = settings.kill_switch_path
         if args.action == 'status':
@@ -314,6 +349,15 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _doctor() -> int:
+    from .github_app import generate_app_jwt
+    from .holdout import verify_bundle
+    from .migrations import PostgresMigrator
+    from .models import utc_now
+    from .policy import Policy
+    from .settings import ApiSettings, CommonSettings, WorkerSettings
+    from .signing import Signer, TrustStore
+    from .store import PostgresStore
+
     role = os.environ.get('TRUST_CI_ROLE', 'all').strip().lower()
     common = CommonSettings.load()
     policy = Policy.load(common.policy_path)
