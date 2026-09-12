@@ -12,6 +12,10 @@ _No active governance rules._
 _No candidate governance rules._
 <!-- END ADAPTIVE GROK GOVERNANCE PROJECTION: decisions.md -->
 
+## 2026-09-09 — Remove a misclassified import instead of declaring a false edge
+
+`FIT-DECLARED-NETWORK-ONLY` flagged `trust-ci/src/adaptive_trust_ci/settings.py` as an undeclared `tcp` client for the worker, because the fitness scanner treats any `socket` import as a network-client family. The module used `socket` for exactly one call, `socket.gethostname()`, to build a worker id. Replacing it with `platform.node()` removed a dependency the module never needed and kept the architecture model truthful; declaring a `tcp` edge would have recorded a connection that does not exist.
+
 ## 2026-08-28 — Bind governance handoffs to fresh exact state
 
 Reopen the loader-bound governance root, recompute every component digest and finding, validate the complete M2 evidence envelope, and prove the Git head is exact and clean immediately before publishing the six-field handoff. Keeping projections in marked read-only blocks makes them reviewable without giving Markdown mutation or authority capability.
@@ -206,6 +210,10 @@ Reuse the active route only when `FOLLOW_UP_RE` matches the whole prompt, or the
 ## 2026-08-14 — Bind receipts after the last change-package write
 
 `tree_fingerprint` hashes every non-runtime changed file, including `engineering/changes/**/state.json`. Transition the durable package to `ready` first, then run `grok_verify` and `grok_review`. Recording evidence before that last write guarantees stale receipts and a second verification loop.
+
+## 2026-08-29 — Bind repository profiles by effective digest
+
+Exact repository plus effective content digest works because the existing job, store, approval, and attestation fields already preserve immutable identity, avoiding a migration. Catalog mode therefore selects isolated commands and holdouts while legacy schema-v1 parsing remains unchanged.
 
 ## 2026-08-24 — M0 CI host is claw, not a laptop
 
