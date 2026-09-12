@@ -8,6 +8,9 @@ import time
 import unittest
 import uuid
 
+from fastapi.testclient import TestClient
+
+from adaptive_factory.api import Authenticator, create_app
 from adaptive_factory.contracts import canonical_digest
 from adaptive_factory.execution_contracts import WorkspaceResultV1, workspace_evidence_digest
 from adaptive_factory.brokers import BrokerError, ProposalBroker, proposal_idempotency_key
@@ -31,7 +34,15 @@ from adaptive_factory.store import (
     StoreError,
     StoreUnavailable,
 )
-from adaptive_factory.protocol import CanonicalEvent
+from adaptive_factory.protocol import CanonicalEvent, PROTOCOL_VERSION_V2
+from adaptive_factory.pricing import (
+    PriceTableV1,
+    PricingContractError,
+    UsageTokens,
+    calculate_cost_usd_micros,
+    price_table_digest,
+)
+from adaptive_factory.protocol import EventStreamParser, ProtocolError, validate_event_payload
 from adaptive_factory.recovery import (
     ExecutionRecovery,
     ExecutionRecoveryCandidate,
@@ -47,8 +58,15 @@ from adaptive_factory.workspace import (
     WorkspaceSnapshotV1,
 )
 from factory.tests.test_contracts import valid_intake
+from factory.tests.test_api import FakeService
+from factory.tests.test_brokers import PACKET, RUN, TASK, context
 from factory.tests.test_execution_contracts import valid_packet
-from factory.tests.test_execution_service import trusted_registry
+from factory.tests.test_execution_service import (
+    FakeExecutionStore,
+    GRANT,
+    WORKER as EXECUTION_WORKER,
+    trusted_registry,
+)
 from factory.tests.test_postgres_integration import DATABASE_URL, NOW, OPERATOR, WORKER
 
 
@@ -112,6 +130,115 @@ class RecordingSnapshotBroker:
                 "source": "trusted_git_broker",
             }
         )
+
+
+class UsageTokenComponentMigrationTests(unittest.TestCase):
+    def test_forward_migration_adds_defaulted_nonnegative_usage_components(self):
+        """A missing component column would make V2 pricing unrecoverable."""
+        migration = next(item for item in discover_migrations() if item.version == 19)
+
+        self.assertEqual(migration.version, 19)
+        for column in (
+            "input_tokens", "output_tokens", "reasoning_tokens",
+            "cached_input_tokens", "cache_write_tokens",
+        ):
+            self.assertIn(f"ADD COLUMN {column} bigint NOT NULL DEFAULT 0", migration.sql)
+            self.assertIn(f"{column} >= 0", migration.sql)
+        v2_overlay = next(item for item in discover_migrations() if item.version == 20)
+        self.assertIn("execution_propose_v2", v2_overlay.sql)
+        self.assertIn("execution_propose_v1", v2_overlay.sql)
+        self.assertIn("a.repository_id=t.repository_id AND a.role=r.role", v2_overlay.sql)
+        self.assertIn("t.packet_digest=p_legacy_packet_digest", v2_overlay.sql)
+        self.assertIn("r.packet_digest=p_legacy_packet_digest", v2_overlay.sql)
+        self.assertIn("v_max_events IS DISTINCT FROM v_authoritative_max_events", v2_overlay.sql)
+        self.assertIn("9223372036854775807/GREATEST", v2_overlay.sql)
+        self.assertIn("(x.value#>>'{}')::numeric>9223372036854775807", v2_overlay.sql)
+
+
+class PricedUsageService(FakeService):
+    @staticmethod
+    def _proposal(grant, **kwargs):
+        proposal = FakeService._proposal(grant, **kwargs)
+        payload = kwargs["payload"]
+        if kwargs["event_type"] == "usage.reported" and "price_table" in payload:
+            proposal["cost_usd_micros"] = calculate_cost_usd_micros(
+                UsageTokens(*(payload[name] for name in (
+                    "input_tokens", "output_tokens", "reasoning_tokens",
+                    "cached_input_tokens", "cache_write_tokens",
+                ))), PriceTableV1.from_dict(payload["price_table"]),
+                payload["price_table_digest"],
+            )
+        return proposal
+
+
+class PricedUsageContractTests(unittest.TestCase):
+    def setUp(self):
+        self.table = PriceTableV1(1, 1_000_000, 2_000_000, 3_000_000, 250_000, 500_000)
+
+    def test_pricing_contract_rejects_unbound_or_invalid_facts(self):
+        usage = UsageTokens(2_000_000, 3_000_000, 4_000_000, 5_000_000, 6_000_000)
+        self.assertEqual(calculate_cost_usd_micros(usage, self.table, price_table_digest(self.table)), 24_250_000)
+        self.assertEqual(price_table_digest(self.table), "4d554ab3d98a6a993d6801c3033a8102e2fe6e84bd5e582e377096cac0a8e12b")
+        self.assertEqual(calculate_cost_usd_micros(UsageTokens(1_000_000, 1_000_000, 0, 0, 0), self.table, price_table_digest(self.table)), 3_000_000)
+        with self.assertRaisesRegex(PricingContractError, "price_table_digest_mismatch"):
+            calculate_cost_usd_micros(UsageTokens(1, 1, 1, 1, 1), self.table, "0" * 64)
+        with self.assertRaisesRegex(PricingContractError, "invalid_nonnegative_integer"):
+            UsageTokens(-1, 0, 0, 0, 0)
+        with self.assertRaisesRegex(PricingContractError, "invalid_nonnegative_integer"):
+            PriceTableV1(1, True, 0, 0, 0, 0)
+        fractional = PriceTableV1(1, 500_000, 500_000, 500_000, 500_000, 500_000)
+        self.assertEqual(calculate_cost_usd_micros(UsageTokens(1, 1, 1, 1, 1), fractional, price_table_digest(fractional)), 0)
+
+    def test_v2_protocol_broker_and_service_replay_bind_all_cost_facts(self):
+        payload = {"provider_call_id": "call-v2-1", "price_table": self.table.to_dict(),
+                   "price_table_digest": price_table_digest(self.table), "input_tokens": 10,
+                   "output_tokens": 4, "reasoning_tokens": 2, "cached_input_tokens": 3,
+                   "cache_write_tokens": 5, "output_bytes": 20}
+        encoded = json.dumps({"protocol_version": PROTOCOL_VERSION_V2, "task_id": TASK,
+            "run_id": RUN, "packet_digest": PACKET, "sequence": 1, "event_type": "usage.reported",
+            "payload": payload}, separators=(",", ":")).encode() + b"\n"
+        parsed = EventStreamParser(TASK, RUN, PACKET, ("usage",)).feed(encoded)
+        self.assertEqual((len(parsed), parsed[0].payload["cached_input_tokens"]), (1, 3))
+        with self.assertRaisesRegex(ProtocolError, "payload_fields"):
+            validate_event_payload("usage.reported", {**payload, "price_table": None}, protocol_version=PROTOCOL_VERSION_V2)
+        with self.assertRaisesRegex(ProtocolError, "payload_fields"):
+            validate_event_payload("usage.reported", {**payload, "cost_usd_micros": 999}, protocol_version=PROTOCOL_VERSION_V2)
+        event = CanonicalEvent(PROTOCOL_VERSION_V2, TASK, RUN, PACKET, 1, "usage.reported", payload)
+        usage = ProposalBroker().accept(event, context(), owner="writer-01", fence=7)
+        self.assertEqual((usage.total_tokens, usage.cost_usd_micros, usage.cached_input_tokens,
+                          usage.cache_write_tokens), (24, 26, 3, 5))
+        with self.assertRaisesRegex(BrokerError, "missing_usage"):
+            ProposalBroker().accept(CanonicalEvent(PROTOCOL_VERSION_V2, TASK, RUN, PACKET, 1,
+                                    "usage.reported", {**payload, "cost_usd_micros": 999}), context(),
+                                    owner="writer-01", fence=7)
+        store = FakeExecutionStore()
+        service = FactoryService(store)
+        first = service.commit_execution_proposal(
+            GRANT, packet_digest="d" * 64, sequence=1, event_type="usage.reported", payload=payload,
+            actor=EXECUTION_WORKER, idempotency_key="c" * 64, protocol_version=PROTOCOL_VERSION_V2)
+        self.assertEqual(service.commit_execution_proposal(
+            GRANT, packet_digest="d" * 64, sequence=1, event_type="usage.reported", payload=dict(payload),
+            actor=EXECUTION_WORKER, idempotency_key="c" * 64, protocol_version=PROTOCOL_VERSION_V2), first)
+        self.assertEqual(tuple(item[0] for item in store.calls),
+                         ("proposal_replay", "proposal_context", "proposal", "proposal_replay"))
+
+    def test_priced_v3_endpoint_and_v2_terminal_are_closed_additions(self):
+        credential = "fixture"
+        actor = Actor("worker-01", "worker", frozenset({"task:execute"}), frozenset({"owner/repository"}))
+        service = PricedUsageService()
+        client = TestClient(create_app(service, Authenticator({credential: actor})))
+        headers = {"Authorization": f"Bearer {credential}", "Idempotency-Key": "priced-usage-001", "X-Correlation-ID": "priced-usage"}
+        grant = {"task_id": "00000000-0000-0000-0000-000000000001", "run_id": "00000000-0000-0000-0000-000000000002", "owner": "worker-01", "role": "writer", "fence": 7, "expires_at": "2026-09-02T01:00:00Z", "packet_digest": "0" * 64}
+        common = {"grant": grant, "packet_digest": "d" * 64, "sequence": 3}
+        response = client.post("/v3/execution/usage", headers=headers, json={**common,
+            "provider_call_id": "priced-call", "price_table": self.table.to_dict(),
+            "price_table_digest": price_table_digest(self.table), "input_tokens": 1,
+            "output_tokens": 2, "reasoning_tokens": 0, "cached_input_tokens": 0,
+            "cache_write_tokens": 0, "output_bytes": 4})
+        self.assertEqual((response.status_code, response.json()["proposal"]["cost_usd_micros"]), (200, 5))
+        self.assertEqual(service.calls[-1][2]["protocol_version"], PROTOCOL_VERSION_V2)
+        terminal = client.post("/v2/execution/terminal", headers={**headers, "Idempotency-Key": "v2-terminal-001"}, json={**common, "terminal_type": "run.completed", "summary": "complete"})
+        self.assertEqual((terminal.status_code, service.calls[-1][2]["protocol_version"]), (200, PROTOCOL_VERSION_V2))
 
 
 @unittest.skipUnless(
@@ -259,7 +386,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             )
         database_url = make_conninfo(**{**connection_values, "dbname": database})
         migrations = tuple(PostgresMigrator(DATABASE_URL).status())
-        self.assertEqual(len(migrations), 18)
+        self.assertEqual(len(migrations), 20)
         from adaptive_factory.migrations import discover_migrations
 
         packaged = discover_migrations()
@@ -465,6 +592,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             "execution_start",
             "execution_advance",
             "execution_propose",
+            "execution_propose_v1",
             "execution_proposal_context",
             "execution_result_for_run",
             "execution_result_by_digest",
@@ -1323,7 +1451,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
             artifact_attestor_url=self.attestor_url,
         )
         self.assertEqual(readiness["database_role"], "factory_runtime")
-        self.assertEqual(readiness["schema_version"], 18)
+        self.assertEqual(readiness["schema_version"], 20)
         self.assertEqual(
             readiness["artifact_attestor_database_role"],
             "factory_artifact_attestor",
@@ -1522,6 +1650,8 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (16, "016_contract_execution_canonical_persistence.sql"),
                     (17, "017_execution_recovery_topology.sql"),
                     (18, "018_semantic_validation_bridge.sql"),
+                    (19, "019_usage_token_components.sql"),
+                    (20, "020_execution_v2_priced_usage.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -1539,11 +1669,24 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     FROM factory.schema_migrations"""
                 )
                 self.assertEqual(
-                    cursor.fetchone(), (18, 1, 1, 1, True, 1, True)
+                    cursor.fetchone(), (20, 1, 1, 1, True, 1, True)
+                )
+                after_functions = self.replaced_execution_function_metadata(cursor)
+                propose_name = next(
+                    name for name in before_functions
+                    if name.startswith("execution_propose(")
+                )
+                v1_propose_name = propose_name.replace(
+                    "execution_propose(", "execution_propose_v1(", 1
                 )
                 self.assertEqual(
-                    self.replaced_execution_function_metadata(cursor),
-                    before_functions,
+                    {name: metadata for name, metadata in after_functions.items()
+                     if name != propose_name and name != v1_propose_name},
+                    {name: metadata for name, metadata in before_functions.items()
+                     if name != propose_name},
+                )
+                self.assertEqual(
+                    after_functions[v1_propose_name], before_functions[propose_name]
                 )
                 for metadata in before_functions.values():
                     _oid, security_definer, config, runtime, attestor, public = metadata
@@ -1552,6 +1695,12 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     self.assertTrue(runtime)
                     self.assertFalse(attestor)
                     self.assertFalse(public)
+                _oid, security_definer, config, runtime, attestor, public = after_functions[propose_name]
+                self.assertTrue(security_definer)
+                self.assertEqual(config, ["search_path=pg_catalog, factory"])
+                self.assertTrue(runtime)
+                self.assertFalse(attestor)
+                self.assertFalse(public)
                 cursor.execute(
                     """SELECT conname FROM pg_constraint
                     WHERE conrelid='factory.workspace_results'::regclass
@@ -1675,7 +1824,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     )
             self.assertEqual(
                 [item.version for item in self.migrate(database_url)],
-                [15, 16, 17, 18],
+                [15, 16, 17, 18, 19, 20],
             )
         finally:
             with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
@@ -1731,6 +1880,8 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                 [
                     (17, "017_execution_recovery_topology.sql"),
                     (18, "018_semantic_validation_bridge.sql"),
+                    (19, "019_usage_token_components.sql"),
+                    (20, "020_execution_v2_priced_usage.sql"),
                 ],
             )
             with psycopg.connect(database_url) as connection, connection.cursor() as cursor:
@@ -1745,7 +1896,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                      FROM factory.execution_metric_counters WHERE singleton)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (18, 1, 1, 1, 1, True))
+                self.assertEqual(cursor.fetchone(), (20, 1, 1, 1, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -1838,6 +1989,8 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                     (16, "016_contract_execution_canonical_persistence.sql"),
                     (17, "017_execution_recovery_topology.sql"),
                     (18, "018_semantic_validation_bridge.sql"),
+                    (19, "019_usage_token_components.sql"),
+                    (20, "020_execution_v2_priced_usage.sql"),
                 ],
             )
             result = FactoryService(
@@ -1862,7 +2015,7 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
                       FROM factory.workspace_results)
                     FROM factory.schema_migrations"""
                 )
-                self.assertEqual(cursor.fetchone(), (18, 1, True))
+                self.assertEqual(cursor.fetchone(), (20, 1, True))
         finally:
             self.drop_disposable_database(database_url, admin_url)
 
@@ -5412,6 +5565,140 @@ class ExecutionPersistencePostgresTests(unittest.TestCase):
         self.assertEqual(execution.stage.value, "prepared")
 
 
+    def test_usage_component_columns_bind_duplicate_evidence_and_task_totals(self):
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "usage-components", capabilities=["structured_output", "usage"]
+        )
+        first = self.store.observe_usage(
+            execution.lease, "component-call", "a" * 64, 26, 24, 20, WORKER,
+            input_tokens=10, output_tokens=4, reasoning_tokens=2,
+            cached_input_tokens=3, cache_write_tokens=5,
+        )
+        duplicate = self.store.observe_usage(
+            execution.lease, "component-call", "a" * 64, 26, 24, 20, WORKER,
+            input_tokens=10, output_tokens=4, reasoning_tokens=2,
+            cached_input_tokens=3, cache_write_tokens=5,
+        )
+        self.assertEqual((first.observation_id, duplicate.created), (duplicate.observation_id, False))
+        with self.assertRaisesRegex(StoreError, "provider call id reused"):
+            self.store.observe_usage(
+                execution.lease, "component-call", "a" * 64, 26, 24, 20, WORKER,
+                input_tokens=9, output_tokens=5, reasoning_tokens=2,
+                cached_input_tokens=3, cache_write_tokens=5,
+            )
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT input_tokens,output_tokens,reasoning_tokens,cached_input_tokens,cache_write_tokens FROM factory.usage_observations WHERE observation_id=%s",
+                (first.observation_id,),
+            )
+            self.assertEqual(cursor.fetchone(), (10, 4, 2, 3, 5))
+            cursor.execute(
+                "SELECT cost_observed_micros,tokens_observed FROM factory.tasks WHERE task_id=%s",
+                (task.task_id,),
+            )
+            self.assertEqual(cursor.fetchone(), (26, 24))
+
+    def test_v2_non_usage_proposals_commit_through_the_store(self):
+        """V2 versioning must not require non-usage facts to become usage values."""
+        task, execution = self.claim_execution(
+            "v2-non-usage", capabilities=["notes", "structured_output"]
+        )
+        for sequence, event_type, payload in (
+            (1, "note.proposed", {"note_type": "finding", "body": "bounded", "evidence": []}),
+            (2, "run.completed", {"summary": "complete"}),
+        ):
+            with self.subTest(event_type=event_type):
+                event = CanonicalEvent.from_payload(
+                    task_id=execution.lease.task_id, run_id=execution.lease.run_id,
+                    packet_digest=execution.packet_digest, sequence=sequence,
+                    event_type=event_type, payload=payload,
+                    protocol_version=PROTOCOL_VERSION_V2,
+                )
+                proposal = ProposalBroker().accept(
+                    event, self.store.proposal_context(execution.lease, execution.packet_digest),
+                    owner=WORKER.actor_id, fence=execution.lease.fence,
+                )
+                self.assertEqual(
+                    self.store.commit_execution_proposal(
+                        execution.lease, proposal, WORKER, event=event
+                    ),
+                    proposal,
+                )
+
+    def test_v2_usage_rolls_back_proposal_when_observation_write_fails_then_retries(self):
+        """The v2 proposal and its accounting observation are one transaction."""
+        import psycopg
+
+        task, execution = self.claim_execution(
+            "v2-usage-atomic-retry", capabilities=["structured_output", "usage"]
+        )
+        table = PriceTableV1(1, 1_000_000, 2_000_000, 3_000_000, 250_000, 500_000)
+        payload = {
+            "provider_call_id": "atomic-v2-call",
+            "price_table": table.to_dict(),
+            "price_table_digest": price_table_digest(table),
+            "input_tokens": 10,
+            "output_tokens": 4,
+            "reasoning_tokens": 2,
+            "cached_input_tokens": 3,
+            "cache_write_tokens": 5,
+            "output_bytes": 20,
+        }
+        key = "a" * 64
+        original = self.store._observe_usage_locked
+
+        def fail_after_observation(*args, **kwargs):
+            original(*args, **kwargs)
+            raise StoreUnavailable("fault after observation")
+
+        self.store._observe_usage_locked = fail_after_observation
+        try:
+            with self.assertRaisesRegex(StoreUnavailable, "fault after observation"):
+                self.service.commit_execution_proposal(
+                    execution.lease, packet_digest=execution.packet_digest, sequence=1,
+                    event_type="usage.reported", payload=payload, actor=WORKER,
+                    idempotency_key=key, protocol_version=PROTOCOL_VERSION_V2,
+                )
+        finally:
+            self.store._observe_usage_locked = original
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+            cursor.execute(
+                "SELECT count(*) FROM factory.usage_observations WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 0)
+        proposal = self.service.commit_execution_proposal(
+            execution.lease, packet_digest=execution.packet_digest, sequence=1,
+            event_type="usage.reported", payload=payload, actor=WORKER,
+            idempotency_key=key, protocol_version=PROTOCOL_VERSION_V2,
+        )
+        self.assertEqual((proposal.total_tokens, proposal.cost_usd_micros), (24, 26))
+        with psycopg.connect(DATABASE_URL) as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM factory.execution_proposals WHERE run_id=%s",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone()[0], 1)
+            cursor.execute(
+                """SELECT cost_usd_micros,token_units,cached_input_tokens,cache_write_tokens
+                FROM factory.usage_observations WHERE run_id=%s""",
+                (execution.lease.run_id,),
+            )
+            self.assertEqual(cursor.fetchone(), (26, 24, 3, 5))
+            cursor.execute(
+                "SELECT cost_observed_micros,tokens_observed FROM factory.tasks WHERE task_id=%s",
+                (task.task_id,),
+            )
+            self.assertEqual(cursor.fetchone(), (26, 24))
+
+
 FRESH_CLUSTER_DATABASE_URL = os.environ.get("FACTORY_FRESH_CLUSTER_DATABASE_URL")
 
 
@@ -5425,8 +5712,8 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
         import psycopg
 
         migrations = discover_migrations()
-        if len(migrations) != 18:
-            raise AssertionError("fresh-cluster test requires migrations 001..018")
+        if len(migrations) != 20:
+            raise AssertionError("fresh-cluster test requires migrations 001..020")
         with psycopg.connect(FRESH_CLUSTER_DATABASE_URL) as connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT to_regnamespace('factory'),to_regrole('factory_artifact_attestor')")
@@ -5494,6 +5781,8 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
                 (16, "016_contract_execution_canonical_persistence.sql"),
                 (17, "017_execution_recovery_topology.sql"),
                 (18, "018_semantic_validation_bridge.sql"),
+                (19, "019_usage_token_components.sql"),
+                (20, "020_execution_v2_priced_usage.sql"),
             ],
         )
         self.assertEqual(PostgresMigrator(FRESH_CLUSTER_DATABASE_URL).apply(), ())
@@ -5554,8 +5843,7 @@ class FreshClusterArtifactAttestorMigrationTests(unittest.TestCase):
                     {connection.info.user, "factory_artifact_attestor"},
                 )
                 cursor.execute("SELECT max(version) FROM factory.schema_migrations")
-                self.assertEqual(cursor.fetchone()[0], 18)
-
+                self.assertEqual(cursor.fetchone()[0], 20)
 
 if __name__ == "__main__":
     unittest.main()
