@@ -1,0 +1,6 @@
+interface:
+  display_name: "SEO Landing"
+  short_description: "Generate, audit, and optimize static SEO landings"
+  default_prompt: "Use $seo-landing to generate, audit, or optimize the requested SEO landing with measured evidence."
+policy:
+  allow_implicit_invocation: true

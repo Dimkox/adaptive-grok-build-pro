@@ -138,3 +138,8 @@ The user explicitly allowed additive writes to `decisions.md` and `mistakes.md` 
 ## 2026-09-10 — Include three consumer cases in autonomy assessment
 
 Use Puls Pump Selector (stand acceptance), Google Ads Automation main (Ads/Postgres/n8n integration) and ii-Tonya (native deployment and Claw verification) as existing real project evidence alongside the factory controller. This worked because cross-repository inspection corrected the false first-real-case gap and exposed evidence that controller handoff files do not aggregate. Reconstruct qualifying accepted tasks and operator-intervention metrics from existing history before proposing new cohort work; do not infer an M8 count or activation from project count, PR count, or product runtime automation alone.
+
+
+## 2026-09-01 — Keep SEO landing generation isolated and repository-scoped
+
+Embedding the Codex skill under `.agents/skills/` and its showcase under `side-projects/` makes the capability available on demand without changing Trust CI runtime behavior. The showcase remains `noindex, nofollow` until a real production origin is supplied and verified.

@@ -1,0 +1,67 @@
+schema_version: 1
+change_id: "20260901-codex-seo-landing-side-project-23b06c"
+objective:
+  id: OBJ-001
+  statement: "Provide a repository-local Codex skill and isolated Russian showcase for safe on-demand SEO landing work"
+  success_metric: focused_contract_and_repository_verification_pass
+  target: all_selected_checks_exit_zero
+risk:
+  tier: green
+  domains:
+    - frontend
+acceptance_criteria:
+  - id: AC-001
+    statement: "Codex validates the local skill and all three mode contracts are explicit"
+    evidence:
+      - kind: test
+        ref: tests/test_seo_landing_side_project.py
+      - kind: command
+        ref: skill-creator/scripts/quick_validate.py
+  - id: AC-002
+    statement: "Upstream MIT provenance and exact source commit are retained"
+    evidence:
+      - kind: test
+        ref: tests/test_seo_landing_side_project.py
+  - id: AC-003
+    statement: "The Russian showcase is accessible dependency-free and non-indexable without a production origin"
+    evidence:
+      - kind: test
+        ref: tests/test_seo_landing_side_project.py
+  - id: AC-004
+    statement: "Selected repository verification and independent reviews pass for the final tree"
+    evidence:
+      - kind: receipt
+        ref: .grok-stack/runtime/receipts
+      - kind: review
+        ref: engineering/changes/20260901-codex-seo-landing-side-project-23b06c/evidence
+invariants:
+  - id: INV-001
+    statement: "Trust CI behavior GitHub Actions and existing runtime behavior remain unchanged"
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260901-codex-seo-landing-side-project-23b06c/evidence
+  - id: INV-002
+    statement: "Audit-only mode performs no writes and generated claims are never invented"
+    evidence:
+      - kind: test
+        ref: tests/test_seo_landing_side_project.py
+forbidden_outcomes:
+  - id: FORBID-001
+    statement: "An invented production origin fabricated metric secret read unauthorized external write or Trust CI mutation"
+    evidence:
+      - kind: review
+        ref: engineering/changes/20260901-codex-seo-landing-side-project-23b06c/evidence
+contracts:
+  openapi: []
+  json_schema: []
+  events: []
+observability:
+  - metric: focused_contract_and_repository_verification_pass
+    proves:
+      - OBJ-001
+rollback:
+  strategy: restore
+  maximum_steps: 1
+approvals:
+  required_scopes:
+    - protected-path
