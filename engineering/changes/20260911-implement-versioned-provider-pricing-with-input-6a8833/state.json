@@ -1,0 +1,29 @@
+{
+  "change_id": "20260911-implement-versioned-provider-pricing-with-input-6a8833",
+  "created_at": "2026-09-11T09:57:18+00:00",
+  "history": [
+    {
+      "at": "2026-09-11T09:57:18+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-11T10:02:13+00:00",
+      "from": "draft",
+      "reason": "six independent analyses and explicit v1/v2 compatibility design recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-11T10:02:13+00:00",
+      "from": "scoped",
+      "reason": "no named human gate; live provider activation remains out of scope",
+      "to": "approved"
+    }
+  ],
+  "route_id": "6a88338ed69e",
+  "schema_version": 1,
+  "status": "approved",
+  "title": "Implement versioned provider pricing with input, output, reasoning, cached-input and cache-write token accounting plus deterministic cost calculation and durable usage storage.",
+  "updated_at": "2026-09-11T10:02:13+00:00"
+}

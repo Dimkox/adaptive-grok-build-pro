@@ -1,0 +1,71 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "A closed schema-v1 price table and five nonnegative token buckets produce the exact floor-summed micro-USD cost and reject digest, shape, and overflow errors.",
+      "evidence": [{"test": "factory/tests/test_execution_persistence_postgres.py"}]
+    },
+    {
+      "id": "AC-002",
+      "statement": "V1 usage remains aggregate-compatible while V2 requires all five token buckets and a price table, rejects provider-supplied cost, and derives the returned cost server-side.",
+      "evidence": [{"test": "factory/tests/test_protocol.py"}, {"test": "factory/tests/test_execution_persistence_postgres.py"}, {"test": "factory/tests/test_api.py"}]
+    },
+    {
+      "id": "AC-003",
+      "statement": "V2 usage persists five component columns, price-table digest, derived cost, and task cost/token aggregates atomically; a failed write leaves neither a proposal nor an observation and an identical retry succeeds.",
+      "evidence": [{"test": "factory/tests/test_execution_persistence_postgres.py"}]
+    },
+    {
+      "id": "AC-004",
+      "statement": "The additive migration preserves legacy observations without backfill and enforces nonnegative cache-token component columns for new V2 observations.",
+      "evidence": [{"test": "factory/tests/test_migrations.py"}, {"test": "factory/tests/test_execution_persistence_postgres.py"}]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260911-implement-versioned-provider-pricing-with-input-6a8833",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": ["factory/contracts/openapi/factory-execution.v2.json","factory/contracts/openapi/factory-execution.v3.json"]
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "A provider-supplied V2 cost, partial price table, or malformed price-table digest must not become durable usage evidence.",
+      "evidence": [{"test": "factory/tests/test_execution_persistence_postgres.py"}]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "V1 usage payload and aggregate durable semantics remain readable and unchanged while V2 accounting adds component detail.",
+      "evidence": [{"test": "factory/tests/test_protocol.py"}, {"test": "factory/tests/test_execution_persistence_postgres.py"}]
+    },
+    {
+      "id": "INV-002",
+      "statement": "V2 proposal persistence, usage observation persistence, and task budget aggregation commit or roll back as one PostgreSQL transaction.",
+      "evidence": [{"test": "factory/tests/test_execution_persistence_postgres.py"}]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Implement versioned provider pricing with input, output, reasoning, cached-input and cache-write token accounting plus deterministic cost calculation and durable usage storage.",
+    "success_metric": "v3_priced_usage_contract_and_atomic_persistence_tests",
+    "target": "All four acceptance criteria pass: V2 derives integer micro-USD cost from exactly five token buckets, persists its proposal and usage aggregate atomically, and leaves V1 usage behavior unchanged."
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "ai",
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

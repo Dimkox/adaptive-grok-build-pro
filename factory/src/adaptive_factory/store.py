@@ -18,6 +18,7 @@ from .brokers import (
     ProposalContext,
     TerminalProposal,
     UsageProposal,
+    UsageProposalV2,
     proposal_idempotency_key,
 )
 from .execution_contracts import RunManifestV1, TaskPacketV1, WorkspaceResultV1, workspace_evidence_digest
@@ -39,7 +40,8 @@ from .models import (
     TaskProjection,
     TaskStatus,
 )
-from .protocol import CanonicalEvent, PROTOCOL_VERSION
+from .protocol import CanonicalEvent, PROTOCOL_VERSION, PROTOCOL_VERSION_V2
+from .pricing import PriceTableV1
 from .recovery import (
     ExecutionRecoveryCandidate,
     ExecutionRecoveryClaim,
@@ -3139,9 +3141,12 @@ class PostgresFactoryStore:
         classes = {
             "note": NoteProposal,
             "artifact": ArtifactProposal,
-            "usage": UsageProposal,
             "terminal": TerminalProposal,
         }
+        if kind == "usage":
+            classes["usage"] = (
+                UsageProposalV2 if event.protocol_version == PROTOCOL_VERSION_V2 else UsageProposal
+            )
         proposal_type = classes.get(kind)
         if proposal_type is None or not isinstance(body, dict) or set(body) != set(proposal_type.__dataclass_fields__):
             raise StoreError("persisted execution proposal is corrupt")
@@ -3150,6 +3155,8 @@ class PostgresFactoryStore:
                 if not isinstance(body.get("evidence"), list):
                     raise TypeError("invalid persisted evidence")
                 body["evidence"] = tuple(body["evidence"])
+            if proposal_type is UsageProposalV2:
+                body["price_table"] = PriceTableV1.from_dict(body["price_table"])
             proposal = proposal_type(**body)
         except (TypeError, ValueError) as exc:
             raise StoreError("persisted execution proposal is corrupt") from exc
@@ -3217,7 +3224,7 @@ class PostgresFactoryStore:
             or "task:execute" not in actor.scopes
             or not isinstance(idempotency_key, str)
             or not HEX64.fullmatch(idempotency_key)
-            or event.protocol_version != PROTOCOL_VERSION
+            or event.protocol_version not in {PROTOCOL_VERSION, PROTOCOL_VERSION_V2}
             or event.task_id != grant.task_id
             or event.run_id != grant.run_id
             or self._proposal_kind(event.event_type) != "terminal"
@@ -3301,6 +3308,7 @@ class PostgresFactoryStore:
             NoteProposal: "note",
             ArtifactProposal: "artifact",
             UsageProposal: "usage",
+            UsageProposalV2: "usage",
             TerminalProposal: "terminal",
         }
         kind = kinds.get(type(proposal))
@@ -3309,7 +3317,11 @@ class PostgresFactoryStore:
         expected_kind = self._proposal_kind(event.event_type)
         if (
             kind != expected_kind
-            or event.protocol_version != PROTOCOL_VERSION
+            or event.protocol_version not in {PROTOCOL_VERSION, PROTOCOL_VERSION_V2}
+            or (
+                kind == "usage"
+                and (isinstance(proposal, UsageProposalV2) != (event.protocol_version == PROTOCOL_VERSION_V2))
+            )
             or event.task_id != grant.task_id
             or event.run_id != grant.run_id
             or proposal.task_id != grant.task_id
@@ -3327,6 +3339,7 @@ class PostgresFactoryStore:
             raise StoreError("execution proposal does not match command")
         body = asdict(proposal)
         command = self._execution_proposal_command(grant, event)
+        blocked_reason = None
         with self._transaction() as cursor:
             cursor.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='5s'")
             replay, prior, request_digest = self._command_replay(
@@ -3354,25 +3367,43 @@ class PostgresFactoryStore:
                 raise StoreError("execution proposal event semantics are invalid") from exc
             if expected_proposal != proposal:
                 raise StoreError("execution proposal does not match event semantics")
-            cursor.execute(
-                "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb)",
-                (
-                    grant.task_id, grant.run_id, grant.owner, grant.fence, grant.packet_digest,
-                    proposal.packet_digest, proposal.sequence, proposal.idempotency_key, kind,
-                    json.dumps(body, sort_keys=True, separators=(",", ":")),
-                ),
-            )
-            if not cursor.fetchone()[0]:
-                raise FenceError("stale execution proposal or fence")
-            self._record_command(
-                cursor, idempotency_key, actor, "execution_propose", request_digest,
-                correlation_id, {
-                    "proposal_kind": kind,
-                    "sequence": proposal.sequence,
-                    "proposal_idempotency_key": proposal.idempotency_key,
-                },
-            )
-            return proposal
+            if isinstance(proposal, UsageProposalV2):
+                _usage, blocked_reason = self._observe_usage_locked(
+                    cursor, grant, proposal.provider_call_id, proposal.price_table_digest,
+                    proposal.cost_usd_micros, proposal.total_tokens, proposal.output_bytes, actor,
+                    idempotency_key=(
+                        canonical_digest({"usage_observation": idempotency_key})
+                        if idempotency_key is not None else None
+                    ),
+                    correlation_id=correlation_id,
+                    component_values=(
+                        proposal.input_tokens, proposal.output_tokens,
+                        proposal.reasoning_tokens, proposal.cached_input_tokens,
+                        proposal.cache_write_tokens,
+                    ),
+                )
+            if blocked_reason is None:
+                cursor.execute(
+                    "SELECT factory.execution_propose(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb)",
+                    (
+                        grant.task_id, grant.run_id, grant.owner, grant.fence, grant.packet_digest,
+                        proposal.packet_digest, proposal.sequence, proposal.idempotency_key, kind,
+                        json.dumps(body, sort_keys=True, separators=(",", ":")),
+                    ),
+                )
+                if not cursor.fetchone()[0]:
+                    raise FenceError("stale execution proposal or fence")
+                self._record_command(
+                    cursor, idempotency_key, actor, "execution_propose", request_digest,
+                    correlation_id, {
+                        "proposal_kind": kind,
+                        "sequence": proposal.sequence,
+                        "proposal_idempotency_key": proposal.idempotency_key,
+                    },
+                )
+        if blocked_reason is not None:
+            raise BudgetError("accounting blocked")
+        return proposal
 
     @staticmethod
     def _workspace_bundle(value) -> tuple[WorkspaceResultV1, WorkspaceSnapshotV1, TaskPacketV1, RunManifestV1] | None:
@@ -4229,6 +4260,11 @@ class PostgresFactoryStore:
         *,
         idempotency_key: str | None = None,
         correlation_id: str | None = None,
+        input_tokens: int | None = None,
+        output_tokens: int | None = None,
+        reasoning_tokens: int | None = None,
+        cached_input_tokens: int | None = None,
+        cache_write_tokens: int | None = None,
     ) -> UsageResult:
         if (
             not isinstance(provider_call_id, str)
@@ -4236,40 +4272,74 @@ class PostgresFactoryStore:
             or any(type(value) is not int or value < 0 for value in (cost, tokens, output))
         ):
             raise BudgetError("invalid usage evidence")
+        component_values = (
+            input_tokens,
+            output_tokens,
+            reasoning_tokens,
+            cached_input_tokens,
+            cache_write_tokens,
+        )
+        if any(value is not None for value in component_values):
+            if any(type(value) is not int or value < 0 for value in component_values):
+                raise BudgetError("invalid usage components")
+            if sum(component_values) != tokens:
+                raise BudgetError("usage component total mismatch")
+        else:
+            component_values = (0, 0, 0, 0, 0)
+        with self._transaction() as cursor:
+            result, blocked_reason = self._observe_usage_locked(
+                cursor, grant, provider_call_id, price_table_digest, cost, tokens,
+                output, actor, idempotency_key=idempotency_key,
+                correlation_id=correlation_id, component_values=component_values,
+            )
+        if blocked_reason:
+            raise BudgetError("accounting blocked")
+        assert result is not None
+        return result
+
+    def _observe_usage_locked(
+        self, cursor, grant: LeaseGrant, provider_call_id: str,
+        price_table_digest: str | None, cost: int, tokens: int, output: int,
+        actor: Actor, *, idempotency_key: str | None, correlation_id: str | None,
+        component_values: tuple[int, int, int, int, int],
+    ) -> tuple[UsageResult | None, str | None]:
+        """Record one usage observation using the caller's active transaction."""
+        command = {
+            "task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence,
+            "provider_call_id": provider_call_id, "price_table_digest": price_table_digest,
+            "cost_usd_micros": cost, "token_units": tokens, "output_bytes": output,
+            "input_tokens": component_values[0], "output_tokens": component_values[1],
+            "reasoning_tokens": component_values[2],
+            "cached_input_tokens": component_values[3], "cache_write_tokens": component_values[4],
+        }
+        replay, prior, request_digest = self._command_replay(
+            cursor, idempotency_key, actor, "observe_usage", command
+        )
+        if replay:
+            if "error" in prior:
+                return None, "accounting_blocked"
+            return UsageResult(prior["observation_id"], prior["created"]), None
+        self._lock_grant(cursor, grant)
         blocked_reason = None
         result = None
-        with self._transaction() as cursor:
-            command = {
-                "task_id": grant.task_id, "run_id": grant.run_id, "fence": grant.fence,
-                "provider_call_id": provider_call_id, "price_table_digest": price_table_digest,
-                "cost_usd_micros": cost, "token_units": tokens, "output_bytes": output,
-            }
-            replay, prior, request_digest = self._command_replay(
-                cursor, idempotency_key, actor, "observe_usage", command
+        if not isinstance(price_table_digest, str) or not HEX64.fullmatch(price_table_digest):
+            blocked_reason = "missing_price_table"
+        else:
+            cursor.execute(
+                """SELECT observation_id,price_table_digest,cost_usd_micros,token_units,output_bytes,
+                input_tokens,output_tokens,reasoning_tokens,cached_input_tokens,cache_write_tokens
+                FROM factory.usage_observations WHERE run_id=%s AND provider_call_id=%s""",
+                (grant.run_id, provider_call_id),
             )
-            if replay:
-                if "error" in prior:
-                    raise BudgetError(prior["error"])
-                return UsageResult(prior["observation_id"], prior["created"])
-            self._lock_grant(cursor, grant)
-            if not isinstance(price_table_digest, str) or not HEX64.fullmatch(price_table_digest):
-                blocked_reason = "missing_price_table"
+            duplicate = cursor.fetchone()
+            if duplicate:
+                if (
+                    duplicate[1].strip(), duplicate[2], duplicate[3], duplicate[4],
+                    duplicate[5], duplicate[6], duplicate[7], duplicate[8], duplicate[9],
+                ) != (price_table_digest, cost, tokens, output, *component_values):
+                    raise StoreError("provider call id reused with different usage evidence")
+                result = UsageResult(str(duplicate[0]), False)
             else:
-                cursor.execute(
-                    """SELECT observation_id,price_table_digest,cost_usd_micros,token_units,output_bytes
-                    FROM factory.usage_observations WHERE run_id=%s AND provider_call_id=%s""",
-                    (grant.run_id, provider_call_id),
-                )
-                duplicate = cursor.fetchone()
-                if duplicate:
-                    if (duplicate[1].strip(), duplicate[2], duplicate[3], duplicate[4]) != (price_table_digest, cost, tokens, output):
-                        raise StoreError("provider call id reused with different usage evidence")
-                    result = UsageResult(str(duplicate[0]), False)
-                    self._record_command(
-                        cursor, idempotency_key, actor, "observe_usage", request_digest, correlation_id,
-                        {"observation_id": result.observation_id, "created": result.created},
-                    )
-                    return result
                 cursor.execute(
                     """SELECT COALESCE(sum(cost_usd_micros),0),COALESCE(sum(token_units),0),COALESCE(sum(wall_seconds),0)
                     FROM factory.budget_reservations WHERE task_id=%s AND run_id=%s AND released_at IS NULL""",
@@ -4291,68 +4361,42 @@ class PostgresFactoryStore:
                     FROM factory.tasks t WHERE task_id=%s FOR UPDATE""",
                     (grant.task_id,),
                 )
-                cost_limit, token_limit, output_limit, observed_cost, observed_tokens, observed_output = (
-                    cursor.fetchone()
-                )
-                if (
-                    observed_cost + cost > cost_limit
-                    or observed_tokens + tokens > token_limit
-                    or observed_output + output > output_limit
-                ):
+                cost_limit, token_limit, output_limit, observed_cost, observed_tokens, observed_output = cursor.fetchone()
+                if (observed_cost + cost > cost_limit or observed_tokens + tokens > token_limit
+                        or observed_output + output > output_limit):
                     blocked_reason = "usage_limit_exceeded"
                 else:
                     observation_id = uuid.uuid4()
                     cursor.execute(
                         """INSERT INTO factory.usage_observations
-                        (observation_id,task_id,run_id,provider_call_id,price_table_digest,cost_usd_micros,token_units,output_bytes)
-                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
-                        (
-                            observation_id,
-                            grant.task_id,
-                            grant.run_id,
-                            provider_call_id,
-                            price_table_digest,
-                            cost,
-                            tokens,
-                            output,
-                        ),
+                        (observation_id,task_id,run_id,provider_call_id,price_table_digest,cost_usd_micros,token_units,output_bytes,
+                         input_tokens,output_tokens,reasoning_tokens,cached_input_tokens,cache_write_tokens)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                        (observation_id, grant.task_id, grant.run_id, provider_call_id,
+                         price_table_digest, cost, tokens, output, *component_values),
                     )
                     cursor.execute(
                         "UPDATE factory.tasks SET cost_observed_micros=cost_observed_micros+%s,tokens_observed=tokens_observed+%s WHERE task_id=%s",
                         (cost, tokens, grant.task_id),
                     )
                     result = UsageResult(str(observation_id), True)
-            if blocked_reason:
-                cursor.execute(
-                    "UPDATE factory.tasks SET accounting_blocked=true,updated_at=clock_timestamp() WHERE task_id=%s",
-                    (grant.task_id,),
-                )
-                key = canonical_digest(
-                    {"action": "accounting_blocked", "run_id": grant.run_id, "reason": blocked_reason}
-                )
-                self._audit(
-                    cursor,
-                    grant.task_id,
-                    actor,
-                    "accounting_blocked",
-                    f"run:{grant.run_id}",
-                    blocked_reason,
-                    correlation_id or key,
-                    run_id=grant.run_id,
-                )
-                self._record_command(
-                    cursor, idempotency_key, actor, "observe_usage", request_digest, correlation_id,
-                    {"error": "accounting blocked"},
-                )
-            elif result is not None:
-                self._record_command(
-                    cursor, idempotency_key, actor, "observe_usage", request_digest, correlation_id,
-                    {"observation_id": result.observation_id, "created": result.created},
-                )
         if blocked_reason:
-            raise BudgetError("accounting blocked")
-        assert result is not None
-        return result
+            cursor.execute(
+                "UPDATE factory.tasks SET accounting_blocked=true,updated_at=clock_timestamp() WHERE task_id=%s",
+                (grant.task_id,),
+            )
+            key = canonical_digest(
+                {"action": "accounting_blocked", "run_id": grant.run_id, "reason": blocked_reason}
+            )
+            self._audit(cursor, grant.task_id, actor, "accounting_blocked", f"run:{grant.run_id}",
+                        blocked_reason, correlation_id or key, run_id=grant.run_id)
+            self._record_command(cursor, idempotency_key, actor, "observe_usage", request_digest,
+                                 correlation_id, {"error": "accounting blocked"})
+        else:
+            assert result is not None
+            self._record_command(cursor, idempotency_key, actor, "observe_usage", request_digest,
+                                 correlation_id, {"observation_id": result.observation_id, "created": result.created})
+        return result, blocked_reason
 
     def set_kill(self, scope: str, enabled: bool, reason: str, key: str, actor: Actor, now: datetime, *, correlation_id: str | None = None) -> bool:
         if scope != "global" and not scope.startswith("repository:"):

@@ -424,13 +424,20 @@ class LandingApiTests(unittest.TestCase):
                 digest.update(body)
             return len(values), digest.hexdigest()
 
-        migrations = Path("factory/src/adaptive_factory/resources").glob("[0-9][0-9][0-9]_*.sql")
+        migrations = (
+            path
+            for path in Path("factory/src/adaptive_factory/resources").glob(
+                "[0-9][0-9][0-9]_*.sql"
+            )
+            if int(path.name[:3]) <= 18
+        )
         predecessor_contracts = (
             path
             for path in Path("factory/contracts").rglob("*")
             if path.is_file()
             and "landing-" not in path.name
             and path.name != "static-landing-spec.v1.schema.json"
+            and path.name != "factory-execution.v3.json"
         )
         showcase = (
             path for path in Path("side-projects/seo-landing-showcase").rglob("*") if path.is_file()
