@@ -7,8 +7,10 @@ rlimits, private selector loop) executes and its structured protocol is asserted
 """
 
 from __future__ import annotations
-from importlib import metadata
 import io
+from pathlib import Path
+import subprocess
+import sys
 import unittest
 from unittest import mock
 
@@ -17,12 +19,23 @@ from adaptive_factory.landing_media import LandingMediaError, extract_pdf_text
 
 CURRENT_EPOCH_SHA = "fde60e040167c10975b00d11f578c4da6763069a"
 
+# Mirror the worker's isolated environment exactly (landing_media.py spawns
+# `python -B -I worker.py` with only PATH/LANG/LC_ALL); a parent-side probe
+# would over-count a `pip install --user pypdf` and turn the parser-present
+# tests red when the child still cannot import it.
+_CHILD_ENV = {"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"}
+
 
 def _pypdf_pinned() -> bool:
-    try:
-        return metadata.version("pypdf") == "6.18.1"
-    except metadata.PackageNotFoundError:
-        return False
+    probe = subprocess.run(
+        (
+            str(Path(sys.executable).absolute()), "-B", "-I", "-c",
+            "import importlib.metadata as m; import pypdf; "
+            "raise SystemExit(0 if m.version('pypdf')=='6.18.1' else 1)",
+        ),
+        cwd="/", env=_CHILD_ENV, capture_output=True, timeout=30,
+    )
+    return probe.returncode == 0
 
 
 def _single_page_pdf(text: str) -> bytes:

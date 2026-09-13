@@ -1322,6 +1322,10 @@ class ArchitectureModelTests(unittest.TestCase):
         declared_paths = {str(contract["path"]) for contract in snapshot.system["contracts"]}
         self.assertEqual({record.id for record in records}, declared_ids)
         self.assertEqual({record.path for record in records}, declared_paths)
+        self.assertEqual(
+            len(records), len(declared_ids),
+            "duplicate contract ids in system.yaml would corrupt contract_inventory_digest",
+        )
         self.assertGreaterEqual(
             len(records), 41,
             "seed-completeness floor; a PR may add contracts but never retire one silently",
