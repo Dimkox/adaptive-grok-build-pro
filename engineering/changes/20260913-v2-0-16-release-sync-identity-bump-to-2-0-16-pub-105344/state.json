@@ -19,11 +19,29 @@
       "from": "scoped",
       "reason": "user standing delegation to full production; no named human gate on this route",
       "to": "approved"
+    },
+    {
+      "at": "2026-09-13T21:20:53+00:00",
+      "from": "approved",
+      "reason": "three commits on branch; artifact child authored",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-13T21:20:53+00:00",
+      "from": "implementing",
+      "reason": "bytes+record+tests authored; trio green",
+      "to": "verifying"
+    },
+    {
+      "at": "2026-09-13T21:20:53+00:00",
+      "from": "verifying",
+      "reason": "R reviews PASS; A addenda in flight",
+      "to": "reviewing"
     }
   ],
   "route_id": "105344d0728b",
   "schema_version": 1,
-  "status": "approved",
+  "status": "reviewing",
   "title": "v2.0.16 release sync: identity bump to 2.0.16, published_release demotion to v2.0.15 with re-derived facts, delivered-change history archive, lockstep test anchors",
-  "updated_at": "2026-09-13T20:14:55+00:00"
+  "updated_at": "2026-09-13T21:20:53+00:00"
 }

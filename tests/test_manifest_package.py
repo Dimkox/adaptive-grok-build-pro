@@ -1423,18 +1423,27 @@ module.main()
         self.assertEqual(state['product_version'], candidate_version)
         self.assertEqual(
             state['local_candidate']['artifact_status'],
-            'pending_unpublished_artifact_child',
+            'pending_tag_and_release',
         )
         candidate_pair = tuple(
             ROOT / path
             for path in state['local_candidate']['artifact_child']['delta_paths']
         )
-        # A pending candidate names the pair the artifact child will add; only a
-        # published local_candidate may claim bytes that are already in the tree.
-        if state['local_candidate']['published']:
-            self.assertEqual(len(tuple(p for p in candidate_pair if p.exists())), 2)
-        else:
+        # Existence is gated on byte delivery, not release publication: the pending
+        # unpublished slot must claim no bytes; once the artifact child delivers
+        # them, both must exist and the sidecar must match the zip digest.
+        if state['local_candidate']['artifact_status'] == 'pending_unpublished_artifact_child':
             self.assertEqual(tuple(p for p in candidate_pair if p.exists()), ())
+        else:
+            self.assertEqual(len(tuple(p for p in candidate_pair if p.exists())), 2)
+            zip_bytes = candidate_pair[0].read_bytes()
+            import hashlib as _hl
+            digest = _hl.sha256(zip_bytes).hexdigest()
+            self.assertEqual(digest, state['local_candidate']['artifact_child']['zip_sha256'])
+            self.assertEqual(
+                candidate_pair[1].read_text(encoding='ascii'),
+                f"{digest}  {candidate_pair[1].name.removesuffix('.sha256')}\n",
+            )
         published_version = published['tag'].removeprefix('v')
         self.assertEqual(published_version, '2.0.15')
         self.assertEqual(state['latest_published_release'], published['tag'])

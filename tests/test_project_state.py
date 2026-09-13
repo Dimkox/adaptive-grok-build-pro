@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CURRENT_CHECK = "adaptive-trust-ci/verified@06ecf1c875bc"
 CURRENT_APP_ID = 4694114
 CURRENT_MAIN_SHA = "1751b5855e46782b9a1bfceb6e1ab0102cba03b0"  # v2.0.14 merge
-OBSERVED_MAIN_SHA = "1a8c89170349fcc2597be0a1665b0e0a31d124e0"  # current main tip (PR #77 merge)
+OBSERVED_MAIN_SHA = "287b27ac507a1089726c7cb8ce461f1c550f0b07"  # current main tip (PR #78 release-sync merge)
 V2015_CHECKED_HEAD = "9fcc9d943c74260c02a920a59490143f91cb38b2"
 V2015_MERGE_COMMIT = "fd51dcfed6b33f4a8707c0db602328146df17cc9"
 V2015_TREE = "f01e9b0d1f80fb6731c68079540fd98e5c1f64ac"
@@ -369,23 +369,35 @@ class ProjectStateTests(unittest.TestCase):
         self.assertEqual(prior[1]["artifact"]["sha256"], RELEASE_ZIP_SHA256)
         local = state["local_candidate"]
         self.assertEqual(local["version"], "2.0.16")
-        self.assertEqual(local["status"], "pending_release")
+        self.assertEqual(local["status"], "artifact_bytes_delivered")
         self.assertIsNone(local["route_id"])
         self.assertIsNone(local["branch"])
         self.assertIsNone(local["pull_request"])
         self.assertIsNone(local["change_package"])
-        self.assertEqual(local["artifact_status"], "pending_unpublished_artifact_child")
+        self.assertEqual(local["artifact_status"], "pending_tag_and_release")
         self.assertFalse(local["published"])
         self.assertFalse(local["external_effect"])
         self.assertFalse(local["operational_activation"])
-        self.assertIsNone(local["artifact_child"]["zip_sha256"])
-        self.assertIsNone(local["artifact_child"]["sidecar_sha256"])
+        self.assertEqual(
+            local["artifact_child"]["zip_sha256"],
+            "71f63a1089f4009cc65ed0afb5b755418fa5a8bf1dd4ce2aebae2f1b8cc746d7",
+        )
+        self.assertEqual(
+            local["artifact_child"]["sidecar_sha256"],
+            "14e3753aadf21f29119fdc059d4c65791833144d8de1ece0b7d83adf1b254fb8",
+        )
         for key in ("reviewed_product_head", "reviewed_product_tree",
                     "checked_head", "merge_commit", "tree"):
             self.assertIsNone(local[key], f"pending candidate must not name {key}")
-        for key in ("source_parent", "source_parent_tree", "commit", "tree"):
+        # source_parent/source_parent_tree are the KNOWN release-sync base once the
+        # artifact child delivers bytes; only the child's own identities, which it
+        # cannot self-record, must stay null until the post-merge successor.
+        if local["artifact_status"] == "pending_unpublished_artifact_child":
+            for key in ("source_parent", "source_parent_tree"):
+                self.assertIsNone(local["artifact_child"][key])
+        for key in ("commit", "tree"):
             self.assertIsNone(local["artifact_child"][key],
-                              f"pending artifact child must not name {key}")
+                              "the artifact child cannot self-record its own identities")
         self.assertEqual(local["source_base"], OBSERVED_MAIN_SHA)
         self.assertEqual(
             local["artifact_child"]["delta_paths"],
