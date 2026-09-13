@@ -1,0 +1,27 @@
+{
+  "source_head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
+  "tree_fingerprint": "d462d16bbd7f26d6f2dac6fc4b2ae4c5b9bc44d437898297cf3ca524c7b0028b",
+  "route_id": "2a890b6485a5",
+  "local_grant_id": "eeb826a1ffc1f9e6",
+  "started_at": "2026-09-13T16:10:53.178993+00:00",
+  "operation": "one fixed synthetic gardening-brief normalization",
+  "endpoint": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+  "live_network": true,
+  "project_or_customer_input_sent": false,
+  "service_activation": false,
+  "publication_performed": false,
+  "result": {
+    "state": "normalized",
+    "profile_id": "qwen-intl",
+    "model_id": "qwen-plus",
+    "profile_digest": "2616a276a5a6257515dc30e40d27fe32a667aa7d75f8205990c567166116de08",
+    "input_digest": "02121c7d20f0c3c2f48bce38dd507c565b047534a070f148d579a272e446ec6d",
+    "spec_digest": "d4346473ec8f73ff940bb27e52adc9a717fd48e06c49a4cb8e2b96db5f49e287",
+    "response_digest": "f5833d478795cb260b09fc489c3f5fd9cf72121f963e80ef4c10f4683e823953",
+    "usage_input_units": 735,
+    "usage_output_units": 116,
+    "elapsed_ms": 3352
+  },
+  "completed_at": "2026-09-13T16:10:56.534018+00:00",
+  "source_clean_after": true
+}

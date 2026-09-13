@@ -1,0 +1,43 @@
+{
+  "source_head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
+  "tree_fingerprint": "d462d16bbd7f26d6f2dac6fc4b2ae4c5b9bc44d437898297cf3ca524c7b0028b",
+  "local_grant_id": "cdf7552c8648f669",
+  "started_at": "2026-09-13T16:15:52.864506+00:00",
+  "runtime_root": "/tmp/agbp-qwen-live-4eblhv45",
+  "pid": 2817448,
+  "profile_id": "qwen-intl",
+  "model_id": "qwen-plus",
+  "listen": "private Unix socket only",
+  "production_installation": false,
+  "site_publication": false,
+  "automatic_model_requests": false,
+  "health": {
+    "status": "ready",
+    "component": "landing-local",
+    "production_verified": false
+  },
+  "submit_http_status": 202,
+  "job": {
+    "schema_version": 1,
+    "job_id": "qwen-live-32496951a94c9096",
+    "state": "needs_human",
+    "input_digest": "939842f0143fda5d73fe9bf373947bf9d49b2c72771f472543a493330e34dbf6"
+  },
+  "result_http_status": 200,
+  "result": {
+    "schema_version": 1,
+    "job_id": "qwen-live-32496951a94c9096",
+    "state": "needs_human",
+    "artifact_digest": null,
+    "live_url": null
+  },
+  "unauthenticated_job_status": 401,
+  "service_running_after": false,
+  "completed_at": "2026-09-13T16:15:57.551252+00:00",
+  "source_clean_after": true,
+  "stopped_at": "2026-09-13T16:17:58.500757+00:00",
+  "stop_reason": "User questioned expanded scope; temporary local host stopped and original PR closure resumed.",
+  "observed_job_reason": "http_outcome_unusable",
+  "artifact_created": false,
+  "socket_removed": false
+}

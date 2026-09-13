@@ -39,7 +39,7 @@
         "number": 65,
         "state": "OPEN"
       },
-      "external_observed_at": "2026-09-13T15:55:35.645526+00:00",
+      "external_observed_at": "2026-09-13T16:33:48.521255+00:00",
       "all_observed_checks": [
         {
           "id": 103739437925,
@@ -101,7 +101,7 @@
         "number": 66,
         "state": "OPEN"
       },
-      "external_observed_at": "2026-09-13T15:55:35.645526+00:00",
+      "external_observed_at": "2026-09-13T16:33:48.521255+00:00",
       "all_observed_checks": [
         {
           "id": 103741784270,
@@ -163,7 +163,7 @@
         "number": 67,
         "state": "OPEN"
       },
-      "external_observed_at": "2026-09-13T15:55:35.645526+00:00",
+      "external_observed_at": "2026-09-13T16:33:48.521255+00:00",
       "all_observed_checks": [
         {
           "id": 103744221871,
@@ -228,7 +228,7 @@
         "number": 68,
         "state": "OPEN"
       },
-      "external_observed_at": "2026-09-13T15:55:35.645526+00:00",
+      "external_observed_at": "2026-09-13T16:33:48.521255+00:00",
       "all_observed_checks": [
         {
           "id": 103746737270,
@@ -274,10 +274,10 @@
         "name": "adaptive-trust-ci/verified@06ecf1c875bc",
         "app_id": 4694114,
         "head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
-        "status": "in_progress",
-        "conclusion": null,
+        "status": "completed",
+        "conclusion": "success",
         "started_at": "2026-09-13T15:51:13Z",
-        "completed_at": null,
+        "completed_at": "2026-09-13T16:09:30Z",
         "details_url": "http://127.0.0.1:18080/jobs/a97927da-1700-4e8d-859d-48ffb4d81f02"
       },
       "pr_base_head": "bb93885034e52b80653efd96602fec182f7db10a",
@@ -290,17 +290,17 @@
         "number": 69,
         "state": "OPEN"
       },
-      "external_observed_at": "2026-09-13T15:55:35.645526+00:00",
+      "external_observed_at": "2026-09-13T16:33:48.521255+00:00",
       "all_observed_checks": [
         {
           "id": 103749191245,
           "name": "adaptive-trust-ci/verified@06ecf1c875bc",
           "app_id": 4694114,
           "head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
-          "status": "in_progress",
-          "conclusion": null,
+          "status": "completed",
+          "conclusion": "success",
           "started_at": "2026-09-13T15:51:13Z",
-          "completed_at": null,
+          "completed_at": "2026-09-13T16:09:30Z",
           "details_url": "http://127.0.0.1:18080/jobs/a97927da-1700-4e8d-859d-48ffb4d81f02"
         },
         {
@@ -335,9 +335,15 @@
       },
       "pull_request": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/70",
       "external_gate": {
-        "status": "not_observed",
+        "id": 103751615594,
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "app_id": 4694114,
         "head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
-        "reason": "No App-owned policy-epoch Check Run observed yet; queue admission is not inferred"
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-09-13T16:09:30Z",
+        "completed_at": "2026-09-13T16:27:56Z",
+        "details_url": "http://127.0.0.1:18080/jobs/2f1cd1c9-315a-4ddd-a3c6-0f83a4412362"
       },
       "pr_base_head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
       "tree_fingerprint": "aa60705bc8c9bbae34517a480ed842254c8b67db86b8b0a6cd3a119b6740cff5",
@@ -349,8 +355,19 @@
         "number": 70,
         "state": "OPEN"
       },
-      "external_observed_at": "2026-09-13T15:55:35.645526+00:00",
+      "external_observed_at": "2026-09-13T16:33:48.521255+00:00",
       "all_observed_checks": [
+        {
+          "id": 103751615594,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T16:09:30Z",
+          "completed_at": "2026-09-13T16:27:56Z",
+          "details_url": "http://127.0.0.1:18080/jobs/2f1cd1c9-315a-4ddd-a3c6-0f83a4412362"
+        },
         {
           "id": 103748857521,
           "name": "GitGuardian Security Checks",
@@ -382,9 +399,15 @@
       },
       "pull_request": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/71",
       "external_gate": {
-        "status": "not_observed",
+        "id": 103754091998,
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "app_id": 4694114,
         "head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
-        "reason": "No App-owned policy-epoch Check Run observed yet; queue admission is not inferred"
+        "status": "in_progress",
+        "conclusion": null,
+        "started_at": "2026-09-13T16:27:57Z",
+        "completed_at": null,
+        "details_url": "http://127.0.0.1:18080/jobs/a954971e-6e3e-4195-99b9-a21b8ffb117a"
       },
       "assembly_audit": "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b/evidence/split-g3-final-tree-audit.json",
       "tree_fingerprint": "d462d16bbd7f26d6f2dac6fc4b2ae4c5b9bc44d437898297cf3ca524c7b0028b",
@@ -396,8 +419,19 @@
         "number": 71,
         "state": "OPEN"
       },
-      "external_observed_at": "2026-09-13T15:55:35.645526+00:00",
+      "external_observed_at": "2026-09-13T16:33:48.521255+00:00",
       "all_observed_checks": [
+        {
+          "id": 103754091998,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
+          "status": "in_progress",
+          "conclusion": null,
+          "started_at": "2026-09-13T16:27:57Z",
+          "completed_at": null,
+          "details_url": "http://127.0.0.1:18080/jobs/a954971e-6e3e-4195-99b9-a21b8ffb117a"
+        },
         {
           "id": 103749698672,
           "name": "GitGuardian Security Checks",
@@ -498,5 +532,26 @@
       }
     ]
   },
-  "delivery_state": "seven_draft_pull_requests_open_all_local_evidence_current_waiting_external_checks"
+  "current_source_live_verification": {
+    "source_head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
+    "tree_fingerprint": "d462d16bbd7f26d6f2dac6fc4b2ae4c5b9bc44d437898297cf3ca524c7b0028b",
+    "observed_at": "2026-09-13T16:31:00+00:00",
+    "authorization": "Two separate expiring user-delegated local grants on the exact G head; no merge, publication or service-activation authority",
+    "records": {
+      "provider_probe": "engineering/reviews/l5-current-qwen-live-probe.json",
+      "provider_probe_grant": "engineering/reviews/l5-current-qwen-probe-grant.json",
+      "host_first_attempt_failed_closed": "engineering/reviews/l5-local-qwen-runtime-before-private-clone.json",
+      "host_disposable_run": "engineering/reviews/l5-local-qwen-runtime.json",
+      "host_grant": "engineering/reviews/l5-local-qwen-runtime-grant.json"
+    },
+    "outcomes": {
+      "provider_probe": "One fixed synthetic brief on current head reached state normalized via the explicit Singapore profile: 735 input / 116 output units in 3,352 ms. Not Omni/multimodal or hosting acceptance.",
+      "host_first_attempt": "Startup refused before credential acquisition or provider request because the original source checkout and its parent directory were mode 0775, violating dedicated-host trusted ancestry. Fail-closed, source clean after.",
+      "host_disposable_run": "A private 0700 clone served the fixed synthetic gardening task over a private Unix socket: health ready, submit HTTP 202, job closed needs_human with reason http_outcome_unusable, no artifact, unauthenticated job status HTTP 401, no service persistence; the operator stopped the disposable host at 16:17:58 UTC when scope was questioned.",
+      "grants_expired": true,
+      "production_installation": false,
+      "site_publication": false
+    }
+  },
+  "delivery_state": "seven_draft_pull_requests_open_all_local_evidence_current_with_source_live_verification_waiting_external_checks"
 }
