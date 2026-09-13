@@ -1,0 +1,21 @@
+{
+  "route_id": "d20205a1a318",
+  "base_commit": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
+  "frozen_source": "f31406e970d67f7cd59694da5de88915adb0fa68",
+  "changed_product_sha256": {
+    ".grok-stack/adaptive_grok/architecture_fitness.py": "618ed8e70af181bf25b92627aa1d88acdbd534ba8f6212060a8aabf02f5101c9",
+    "architecture/rules.yaml": "73283d6720e3f553a424439bd7c47af3c0d49bee628940171e94118faf312b6f",
+    "schemas/architecture-rules.schema.json": "0df0966097c8494de993342a49987776b3b81cdd904b2915843d0013233daea0",
+    "tests/test_architecture_fitness.py": "ccd11db831d4a5b6d16fcfc2743df0dd373ad05c074a3c573428bec075feb20e",
+    "tests/test_architecture_model.py": "7fb2ce2b809078ace56207cd77d97f16191a669cea3c3e686062a1e0e69824a3",
+    "tests/test_landing_architecture_boundaries.py": "78faf9acdd65ddfdb72b3a54b6d6a6ec61e986f3810bf4d289bd8759f04619df"
+  },
+  "invariants": {
+    "frozen_checker_bytes": true,
+    "frozen_schema_bytes": true,
+    "all_code_budgets_unchanged": true,
+    "production_imports_unchanged": true,
+    "generic_imports_unchanged": true,
+    "architecture_system_unchanged": true
+  }
+}

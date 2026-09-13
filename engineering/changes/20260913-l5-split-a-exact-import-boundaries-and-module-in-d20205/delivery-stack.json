@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "reference": "f31406e970d67f7cd59694da5de88915adb0fa68",
+  "initial_main": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
+  "units": [
+    {
+      "id": "A",
+      "branch": "feat/l5-split-a-boundaries",
+      "scope": "Direct imports and present-module inventory",
+      "state": "constructing",
+      "predecessor": "main",
+      "commit": null,
+      "pull_request": null,
+      "external_acceptance": null
+    },
+    {
+      "id": "B",
+      "branch": "feat/l5-split-b-source-epoch",
+      "scope": "Sealed source epoch and retained layouts",
+      "state": "planned",
+      "predecessor": "A",
+      "commit": null,
+      "pull_request": null,
+      "external_acceptance": null
+    },
+    {
+      "id": "C",
+      "branch": "feat/l5-split-c-evidence-v2",
+      "scope": "Frozen v1 and independent v2 readers",
+      "state": "planned",
+      "predecessor": "B",
+      "commit": null,
+      "pull_request": null,
+      "external_acceptance": null
+    },
+    {
+      "id": "D",
+      "branch": "feat/l5-split-d-http-runtime",
+      "scope": "Bounded HTTP/media/Qwen and durable composition",
+      "state": "planned",
+      "predecessor": "C",
+      "commit": null,
+      "pull_request": null,
+      "external_acceptance": null
+    },
+    {
+      "id": "E",
+      "branch": "feat/l5-split-e-landing-host",
+      "scope": "Dedicated Unix host",
+      "state": "planned",
+      "predecessor": "D",
+      "commit": null,
+      "pull_request": null,
+      "external_acceptance": null
+    },
+    {
+      "id": "F",
+      "branch": "feat/l5-split-f-publication",
+      "scope": "Filesystem publication and exact authority",
+      "state": "planned",
+      "predecessor": "E",
+      "commit": null,
+      "pull_request": null,
+      "external_acceptance": null
+    },
+    {
+      "id": "G",
+      "branch": "feat/l5-split-g-backup-install",
+      "scope": "Offline backup/restore and installed assembly",
+      "state": "planned",
+      "predecessor": "F",
+      "commit": null,
+      "pull_request": null,
+      "external_acceptance": null
+    }
+  ],
+  "notes": [
+    "Each genuine source predecessor is preserved; no budget or ref spoofing.",
+    "Full tracked-tree manifests for base2136 and reference2260 entries retained outside repository during construction.",
+    "Source-only commits may precede documentation/review evidence commits; source bindings and actual PR heads are recorded separately.",
+    "No merge/deployment/release is included."
+  ]
+}

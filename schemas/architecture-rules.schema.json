@@ -144,6 +144,12 @@
     "path_boundary": {
       "additionalProperties": false,
       "properties": {
+        "allowed_dependency_modules": {
+          "items": {"type": "string", "maxLength": 256, "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*$"},
+          "maxItems": 32,
+          "type": "array",
+          "uniqueItems": true
+        },
         "forbidden_dependency_prefixes": {"$ref": "#/$defs/path_set"},
         "id": {"$ref": "#/$defs/id"},
         "severity": {"$ref": "#/$defs/severity"},

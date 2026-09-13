@@ -659,6 +659,57 @@ def _imports(tree: ast.AST) -> tuple[str, ...]:
     return tuple(sorted(values))
 
 
+
+def _boundary_imports(python: _PythonInventory, path: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """Direct imports with snapshot-bound relative identities, separate from queue analysis.
+
+    The first field is the imported module; selected symbols are additional
+    forbidden-prefix candidates, not module exceptions. Dynamic imports and
+    transitive re-exports are outside this bounded direct-import analysis.
+    """
+    package: tuple[str, ...] | None = None
+    records: set[tuple[str, tuple[str, ...]]] = set()
+    for node in ast.walk(python.tree(path)):
+        if isinstance(node, ast.Import):
+            records.update((alias.name, ()) for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            if node.level:
+                if package is None:
+                    directories = Path(path).parent.parts
+                    if len(directories) > 64:
+                        raise ArchitectureError("Python package ancestry limit exceeded", code="limit")
+                    # A conventional src root takes precedence over package
+                    # markers above it: factory/__init__.py cannot rename the
+                    # runtime adaptive_factory package to factory.src.*.
+                    src_roots = [index + 1 for index, part in enumerate(directories)
+                                 if part == "src" and index + 1 < len(directories)]
+                    if len(src_roots) > 1:
+                        raise SyntaxError(f"ambiguous relative source root: {path}")
+                    if src_roots:
+                        # src-layout namespace packages are valid without an
+                        # initializer (the real adaptive_delivery package).
+                        package = directories[src_roots[0]:]
+                    else:
+                        # Ordinary packages need a snapshot initializer to
+                        # establish their root; nested namespace dirs remain.
+                        for index in range(len(directories)):
+                            initializer = "/".join((*directories[:index + 1], "__init__.py"))
+                            if read_diff_file(python.root, python.diff, initializer) is not None:
+                                package = directories[index:]
+                                break
+                    if not package or any(not part.isidentifier() for part in package):
+                        raise SyntaxError(f"relative package context unavailable: {path}")
+                remove = node.level - 1
+                if remove >= len(package):
+                    raise SyntaxError(f"relative import escapes package: {path}")
+                prefix = package[:len(package) - remove]
+                module = ".".join((*prefix, *(() if not module else module.split("."))))
+            selected = tuple(sorted(alias.name for alias in node.names))
+            records.add((module, selected))
+    return tuple(sorted(records))
+
+
 def _network_protocol(imported: str) -> str | None:
     if imported == "urllib.parse" or imported.startswith("urllib.parse."):
         return None
@@ -749,7 +800,7 @@ def _module_boundaries(
     findings: list[str] = []
     try:
         for path in applicable:
-            imports = _imports(python.tree(path))
+            imports = _boundary_imports(python, path)
             for rule in rules:
                 if not _matches(path, rule["source_prefixes"]):
                     continue
@@ -759,9 +810,14 @@ def _module_boundaries(
                 }
                 if "trust_ci" in forbidden:
                     forbidden.add("adaptive_trust_ci")
-                for imported in imports:
-                    if any(imported == prefix or imported.startswith(prefix + ".") for prefix in forbidden):
-                        findings.append(f"{rule['id']}: {path} imports forbidden {imported}")
+                allowed = set(rule.get("allowed_dependency_modules", ()))
+                for module, selected in imports:
+                    if module in allowed:
+                        continue
+                    candidates = {module, *(f"{module}.{name}" for name in selected)}
+                    for imported in sorted(candidates):
+                        if any(imported == prefix or imported.startswith(prefix + ".") for prefix in forbidden):
+                            findings.append(f"{rule['id']}: {path} imports forbidden {imported}")
     except SyntaxError as exc:
         return _result(
             "module_boundary",
