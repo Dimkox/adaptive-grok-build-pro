@@ -754,5 +754,57 @@
     "PostgreSQL runtime state",
     "runtime approvals and receipts",
     "host-local deployment overlays and scratch"
-  ]
+  ],
+  "l5_production_preparation": {
+    "status": "assembled_source_candidate_pending_exact_head_evidence",
+    "branch": "feat/l5-split-g-final-runtime",
+    "route_id": "2a890b6485a5",
+    "source_predecessor": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+    "actual_main_observation": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
+    "frozen_reconstruction_reference": "f31406e970d67f7cd59694da5de88915adb0fa68",
+    "change_package": "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b",
+    "evidence_branch": "docs/l5-split-verification-evidence",
+    "evidence_index": "engineering/reviews/l5-delivery-stack.json",
+    "next_action": "Read exact-source per-slice reports and live PR checks; local preflight does not authorize merge or operational activation.",
+    "slice_branches": [
+      "feat/l5-split-a-boundaries",
+      "feat/l5-split-b-source-epoch",
+      "feat/l5-split-c-evidence-v2",
+      "feat/l5-split-d-http-runtime",
+      "feat/l5-split-e-unix-host",
+      "feat/l5-split-f-publication-current-base",
+      "feat/l5-split-g-final-runtime"
+    ],
+    "landing_source": {
+      "commit": "fde60e040167c10975b00d11f578c4da6763069a",
+      "tree": "21817e70e079b772e1f3114a80dfc0320d1ada91"
+    },
+    "landing_artifact_members": 22,
+    "retained_historical_member_counts": [
+      19,
+      20
+    ],
+    "selected_profile": "qwen-omni",
+    "selected_model": "qwen3.5-omni-plus-2026-03-15",
+    "live_enabled": false,
+    "actual_development_cost_usd": null,
+    "operational_activation": false,
+    "historical_qwen_probe": {
+      "profile": "qwen-intl",
+      "model": "qwen-plus",
+      "state": "normalized",
+      "input_units": 735,
+      "output_units": 117,
+      "elapsed_ms": 8598,
+      "external_effect": true,
+      "scope": "one fixed synthetic normalization on prior source, not current-head or multimodal acceptance",
+      "evidence": "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b/evidence/historical-qwen-probe.json"
+    },
+    "moderation_rejection": {
+      "code": "data_inspection_failed",
+      "source": "user-supplied earlier Qwen error",
+      "trigger": "undetermined"
+    },
+    "current_verification": "recorded separately after source freeze; no historical counts promoted"
+  }
 }

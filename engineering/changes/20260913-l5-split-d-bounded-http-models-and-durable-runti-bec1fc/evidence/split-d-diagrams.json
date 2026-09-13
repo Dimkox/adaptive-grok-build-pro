@@ -1,0 +1,12 @@
+{
+  "checked": true,
+  "digests": {
+    "container.mmd": "797023582e3e786ea104d25318a2d2bec06fa4f25c1bc732eaa609ea973fcdf8",
+    "context.mmd": "5d7e865fe6abfbfcdc726936e927f0ddfb7b1a5c89e6a8a76e64503df1e6d551",
+    "data-flow.mmd": "00ec505ee277056c8cb31c1575717df4e37ee29a40ccb51343ed89f4991586b7",
+    "deployment.mmd": "5d0391098401fa0a8c0fe0a9380c394486fd5d8eec1eb52d515498dcfa147c53",
+    "trust-boundary.mmd": "0aff206dc15e0ef14960bc50d049cbf06003f3602f35fd1588419d055709ea43"
+  },
+  "mismatches": [],
+  "ok": true
+}

@@ -1,0 +1,6 @@
+{
+  "encoding": "utf-8",
+  "original_filename": "split-g2-backup-frozen-deviation.patch",
+  "raw_sha256": "7ba33d78074ad6b01f59cce7b88090c1ac1109e25b2a1e5f94668a7817b3c06a",
+  "raw_text": "diff --git a/tmp/agbp-sweep/split-g2-backup-frozen.py b/factory/src/adaptive_factory/landing_backup.py\nindex bd7b429..314968a 100644\n--- a/tmp/agbp-sweep/split-g2-backup-frozen.py\n+++ b/factory/src/adaptive_factory/landing_backup.py\n@@ -270,6 +270,9 @@ def restore_snapshot(config, snapshot, manifest_sha256):\n             raise BackupError(\"restore_content_digest\")\n     if (\"landing\", \"landing.sqlite3\") not in seen:\n         raise BackupError(\"restore_landing_missing\")\n+    budget.consume()\n+    if budget.total + sum(entry[\"size\"] for entry in manifest[\"entries\"]) > MAX_TOTAL:\n+        raise BackupError(\"snapshot_budget\")\n     # Retained artifacts contain absolute output paths. Preserve their exact\n     # locations and restore only after operators move old inactive roots away.\n     # Never rewrite sealed records or overwrite an existing data root.\n"
+}

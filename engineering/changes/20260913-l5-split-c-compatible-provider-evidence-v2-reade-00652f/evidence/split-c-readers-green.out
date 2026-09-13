@@ -1,0 +1,14 @@
+..............................E..
+======================================================================
+ERROR: test_mixed_evidence_readers_persist_restart_and_reject_tampering_without_http (factory.tests.test_landing_runtime.CoordinatedLandingArtifactBuilderTests.test_mixed_evidence_readers_persist_restart_and_reject_tampering_without_http)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-c/factory/tests/test_landing_runtime.py", line 204, in test_mixed_evidence_readers_persist_restart_and_reject_tampering_without_http
+    loaded = reopened.get(actor.tenant_id, TARGET_REPOSITORY_ID, f"job-reader-v{version}")
+                          ^^^^^^^^^^^^^^^
+AttributeError: 'Actor' object has no attribute 'tenant_id'
+
+----------------------------------------------------------------------
+Ran 33 tests in 2.111s
+
+FAILED (errors=1)

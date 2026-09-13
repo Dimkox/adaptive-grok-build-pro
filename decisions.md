@@ -503,3 +503,80 @@ Separate PR pagination completeness from task-inventory completeness, and report
 ## 2026-09-13 — Reconstruct delivery slices against genuine predecessors
 
 The import-only prerequisite can be extracted onto actual main while later slices introduce their modules, schemas and test dependencies together. Keep architecture fitness on each new route's genuine predecessor and retain the separate cumulative main inventory; neither refs nor budgets need to change.
+
+## 2026-09-13 — Keep final review evidence beside an immutable source checkout
+
+A dedicated same-repository evidence worktree can hold the exact change-package reports while source commits stay unchanged. Recording fresh independent reviews by absolute report path preserves the original verification fingerprint and avoids rerunning the product suite for paperwork; the evidence checkout's commit is never represented as a tested source identity.
+
+- 2026-09-13: Direct FactorySettings with real temporary SQLite isolates runtime ownership tests from the later dedicated-host slice. Data analysis additionally found an initialization-interruption cleanup gap; reproducing and narrowly fixing it before delivery gives independently reviewable ownership behavior without changing the schema.
+
+- 2026-09-13: Writer ownership is tested with a second real SQLite opener after injected startup failures, rather than by inspecting private descriptor flags. Four reproduced interruption/close-failure paths required only three cleanup hunks, retaining schema and durable reader bytes.
+
+- 2026-09-13: Complete the helper-only host_config in E together with its dedicated host tests, keeping D independently runnable. Runtime templates stay deferred until their publication/backup entrypoints exist in G.
+
+- 2026-09-13: After an independent predecessor repair, recreate the remaining unsubmitted publication slice on the actual corrected predecessor and verify its unchanged product projection. Preserving the old route/failure and starting from a clean real base avoids attributing an inherited server change to publication or inventing comparison authority.
+
+
+## Preserved L5 reconstruction history
+
+These dated notes retain earlier decisions and mistakes. Temporary deferrals and old active-package references describe past phases; current G scope/evidence takes precedence.
+
+## 2026-09-12 — Use II-Tonya and Pump as the L5 evidence basis
+
+The user selected these two existing projects and delegated deployment/provider choices, so preserve their saved task/PR/acceptance records and read actual DB telemetry instead of manufacturing new proof or using project counts as accepted-task counts. Use local Claw for the new isolated runtime and the native immutable-release/systemd pattern from II-Tonya. Keep private cost/session records outside the public checkout; cumulative tokens without currency or cache/output breakdown are not measured dollar costs.
+
+## 2026-09-12 — Continue L5 from main with verification explicitly deferred
+
+Use isolated `feat/l5-production-completion` from `a730ee9` because the original checkout contains older shell-policy work while the merged L5 runtime lives on main. The user's «прверки пока не проводим» defers tests, builds, verification and reviews; implementation evidence must remain unverified, and no live operation or release is implied. Complete durable server composition and truthful bounded HTTP provider handling before attempting operational activation.
+
+## 2026-09-12 — Separate HTTP provenance from the native Codex profile
+
+HTTP calls must bind the actual provider/model/endpoint and record observed time and reported usage; the existing Codex executable profile and fixed 25 ms / 1-token counters cannot describe that transport. Reuse strict draft reconstruction and the existing SQLite runtime while preserving native Codex and fixture compatibility. Saved implementation and hosting/source/media follow-ups live in `engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/`; tests and new test authoring remain deferred.
+
+## 2026-09-13 — Resume the host audit from its actual test baseline
+
+The interrupted L5 work already contained SSE tests at `3324504`; a fresh pinned-dependency baseline reproduced nine executor failures and found no dedicated host tests. Continuing with a bounded host regression slice preserves that evidence and avoids treating inherited failures as newly introduced defects.
+
+## 2026-09-13 — Separate URI parsing from transport in boundary findings
+
+L5's new modules share a provider-egress architecture node but miss the landing file-boundary list; `urllib.parse.quote` only escapes SQLite file URIs. Inspecting both ownership and import semantics identifies the classification gap without falsely reporting pure parsing as network activity.
+
+## 2026-09-13 — Exercise host ownership with real offline resources
+
+Private temporary sibling roots and synthetic actor injection allow real FastAPI, SQLite persistence, writer exclusion and lifespan tests without a provider or PostgreSQL. The control directory must exist even with live mode disabled, while the source checkout may remain absent.
+
+## 2026-09-13 — Compare parallel runners only with matching prerequisites
+
+Archived PR33 sandbox failures include missing pytest and an unreadable worktree Git index, so they do not establish a CPU-capacity cause. This host exposes all 28 CPUs to explicitly configured test children despite the shell's inherited 22-CPU affinity; retain real dependency and source bindings when using that parallelism.
+
+## 2026-09-13 — Keep host cleanup attempts independent
+
+Red/green host tests reproduced skipped runtime/socket cleanup when an earlier close raised. Nested `finally` blocks preserved the existing socket identity guard and made every cleanup stage run, while retaining idempotent SQLite shutdown and exception chaining.
+
+## 2026-09-13 — Declare socket tests under their existing API owner
+
+The new host test inherited the broad factory-control owner and failed the network fitness rule for Unix sockets. Assigning its exact path to the existing local API node, alongside the server test, made the declaration accurate without adding network permissions, nodes, edges or exemptions.
+
+### 2026-09-13 — Qwen credentials and region are separate inputs
+
+A minimal synthetic request distinguished a region mismatch from an unusable key: the same authorized DashScope key was rejected by Beijing and accepted by Singapore. Declare Singapore as a separate closed profile and pass an explicit private credential file through the existing live-only composition seam; this preserves earlier profile identities and makes the actual local connection reproducible.
+
+### 2026-09-13 — Own child cleanup before configuring I/O
+
+Register child termination, reaping and pipe closure immediately after Popen, before constructing the selector. ExitStack keeps later cleanup callbacks running when selector setup or closure fails; bounded real-child regression tests verified that no process or open pipe survives these failure paths.
+
+## 2026-09-13 — Preserve producer versions before extending schema checks
+
+An unsupported compatibility result can conceal a real producer break: compare the changed value domain in its declared direction before changing the checker. The HTTP success value widened provider-evidence v1, so a separately versioned v2 with dual-version retained readers preserves truthful provenance and original v1 identities.
+
+## 2026-09-13 — Resolve imports from their actual source root
+
+Static boundary checks must resolve relative imports in namespace packages as well as regular packages. Negative tests with module-less imports and an ancestor initializer reproduced an escape from the intended source root; explicit canonical src-root resolution closed those cases without changing unrelated import scanners or widening network access.
+
+## 2026-09-13 — Keep immutable source separate from completed evidence
+
+Freezing each actual predecessor before verification lets independent reports and receipts bind unchanged source while the matching evidence checkout records results. Genuine predecessor re-extraction resolved inherited-route provenance without altering a base or weakening architecture budgets.
+
+## 2026-09-13 — Check known recovery cost before creating roots
+
+Restore knows the complete validated payload size, so preflight its second copy against remaining accounted I/O before creating destination roots. A reduced-cap fixture proves early refusal and the exact successful two-pass boundary without increasing limits or allocating large files.

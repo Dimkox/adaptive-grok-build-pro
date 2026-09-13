@@ -14,7 +14,11 @@ from adaptive_factory.landing_normalizer import (
     LANDING_NORMALIZER_PROMPT_SHA256,
     CodexLandingProfile,
 )
-from adaptive_factory.landing_renderer import TARGET_REPOSITORY_ID
+from adaptive_factory.landing_renderer import (
+    TARGET_BASE_SHA,
+    TARGET_BASE_TREE,
+    TARGET_REPOSITORY_ID,
+)
 from adaptive_factory.landing_runtime import (
     LandingLiveBindingV1,
     LandingRuntimeError,
@@ -81,8 +85,8 @@ class FactoryLiveAutoLandingTests(unittest.TestCase):
         created = service.submit(
             job_id="job-live-unavailable",
             repository_id=TARGET_REPOSITORY_ID,
-            exact_base_sha="699010380f4f90a0193a9c22090c35e6aded7d2c",
-            exact_base_tree="f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4",
+            exact_base_sha=TARGET_BASE_SHA,
+            exact_base_tree=TARGET_BASE_TREE,
             media_type="text/plain",
             chunks=(b"Build a bounded landing candidate",),
             actor=self.actor,

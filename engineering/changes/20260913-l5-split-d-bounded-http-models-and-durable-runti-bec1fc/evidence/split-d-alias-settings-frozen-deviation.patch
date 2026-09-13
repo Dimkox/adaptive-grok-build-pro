@@ -1,0 +1,14 @@
+diff --git a/factory/src/adaptive_factory/settings.py b/factory/src/adaptive_factory/settings.py
+index 37e11ca..ac121c1 100644
+--- a/factory/src/adaptive_factory/settings.py
++++ b/factory/src/adaptive_factory/settings.py
+@@ -104,7 +104,8 @@ class FactorySettings:
+         )
+         for path in paths:
+             if path is not None and (
+-                not isinstance(path, Path) or not path.is_absolute() or ".." in path.parts
++                not isinstance(path, Path) or not path.is_absolute()
++                or path.anchor == "//" or ".." in path.parts
+             ):
+                 raise SettingsError("landing paths must be absolute and normalized")
+         supplied = [path for path in paths if path is not None]

@@ -116,6 +116,7 @@ class SemanticContractTests(unittest.TestCase):
             "landing-evaluation.v1.schema.json",
             "landing-input.v1.schema.json",
             "landing-provider-evidence.v1.schema.json",
+            "landing-provider-evidence.v2.schema.json",
             "landing-site-artifact.v1.schema.json",
             "m7-autonomy-bridge.v1.schema.json",
             "m7-predecessor-bridges.v1.schema.json",
@@ -127,13 +128,15 @@ class SemanticContractTests(unittest.TestCase):
             "static-landing-spec.v1.schema.json",
         }
         self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, names)
-        for name in semantic_names:
+        versions = {name: 1 for name in semantic_names}
+        versions["landing-provider-evidence.v2.schema.json"] = 2
+        for name, version in versions.items():
             with self.subTest(name=name):
                 schema = json.loads((SCHEMAS / name).read_text(encoding="utf-8"))
                 self.assertEqual(schema["$schema"], "https://json-schema.org/draft/2020-12/schema")
                 self.assertFalse(schema["additionalProperties"])
                 self.assertIn("schema_version", schema["required"])
-                self.assertEqual(schema["properties"]["schema_version"], {"const": 1})
+                self.assertEqual(schema["properties"]["schema_version"], {"const": version})
 
     def test_subject_is_closed_sorted_typed_and_digest_stable(self):
         parsed = SemanticSubjectV1.from_dict(subject())

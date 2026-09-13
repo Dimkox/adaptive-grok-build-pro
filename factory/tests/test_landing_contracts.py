@@ -14,6 +14,8 @@ from adaptive_factory.landing_contracts import (
     SiteArtifactV1,
     StaticLandingSpecV1,
 )
+from adaptive_factory import landing_contracts
+from adaptive_factory.contracts import canonical_json
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -165,6 +167,36 @@ def artifact_facts(**changes):
 
 
 class LandingContractTests(unittest.TestCase):
+    def test_published_v1_provider_evidence_digest_and_schema_remain_unchanged(self):
+        record = LandingProviderEvidenceV1.from_facts(provider_facts())
+        self.assertEqual("0f08d024a95891259d848f99e0a3c6232533da283732cf664d8856dd26825b42", record.digest)
+        self.assertEqual({**provider_facts(), "provider_evidence_digest": record.digest}, record.to_dict())
+        with self.assertRaisesRegex(LandingContractError, "provider_disposition"):
+            LandingProviderEvidenceV1.from_facts(provider_facts(disposition="normalized"))
+        # Frozen bytes from PR base 4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102.
+        self.assertEqual("67ab4380cf6f5a465c0aa6e60223e77beba28f785af6088867a3acbc33ec8afd",
+                         sha256((SCHEMAS / "landing-provider-evidence.v1.schema.json").read_bytes()).hexdigest())
+        self.assertEqual(["fixture_ready", "provider_unavailable", "rejected"],
+                         json.loads((SCHEMAS / "landing-provider-evidence.v1.schema.json").read_bytes())["properties"]["disposition"]["enum"])
+
+    def test_v2_evidence_roundtrip_uses_independent_version_domain(self):
+        facts = provider_facts(schema_version=2, disposition="normalized")
+        record = landing_contracts.LandingProviderEvidenceV2.from_facts(facts)
+        self.assertNotIsInstance(record, LandingProviderEvidenceV1)
+        expected = sha256(canonical_json({"contract": "adaptive-factory.landing-provider-evidence/v2", **facts})).hexdigest()
+        self.assertEqual(expected, record.digest)
+        self.assertEqual(record, landing_contracts.decode_provider_evidence(record.to_dict()))
+        legacy = LandingProviderEvidenceV1.from_facts(provider_facts(disposition="provider_unavailable"))
+        new = landing_contracts.LandingProviderEvidenceV2.from_facts(provider_facts(schema_version=2, disposition="provider_unavailable"))
+        self.assertNotEqual(legacy.digest, new.digest)
+        self.assertEqual(legacy, landing_contracts.decode_provider_evidence(legacy.to_dict()))
+        for version in (True, 0, 3, "2", None):
+            with self.subTest(version=version), self.assertRaises(LandingContractError):
+                landing_contracts.decode_provider_evidence({**record.to_dict(), "schema_version": version})
+        for changed in ({"provider_evidence_digest": legacy.digest}, {"schema_version": 1}, {"disposition": "fixture_ready"}):
+            with self.subTest(changed=changed), self.assertRaises(LandingContractError):
+                landing_contracts.LandingProviderEvidenceV2.from_dict({**record.to_dict(), **changed})
+
     def test_input_binds_the_authoritative_repository_sha_and_tree(self):
         record = LandingInputV1.from_facts(input_facts())
         self.assertEqual(record.repository_id, "github.com/Dimkox/ai-dark-factory-landing")

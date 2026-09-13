@@ -1,0 +1,16 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/pall/grok-projects/adaptive-grok-build-pro-l5-split-b/factory
+configfile: pyproject.toml
+plugins: xdist-3.8.0, cov-7.1.0, anyio-4.15.1
+created: 28/28 workers
+28 workers [59 items]
+
+...........................................................              [100%]
+=============================== warnings summary ===============================
+../../../../tmp/agbp-venv/lib/python3.12/site-packages/starlette/testclient.py:45: 28 warnings
+  /tmp/agbp-venv/lib/python3.12/site-packages/starlette/testclient.py:45: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 59 passed, 28 warnings in 6.55s ========================

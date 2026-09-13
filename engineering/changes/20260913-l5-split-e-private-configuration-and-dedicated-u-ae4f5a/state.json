@@ -1,0 +1,41 @@
+{
+  "change_id": "20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a",
+  "created_at": "2026-09-13T14:21:08+00:00",
+  "history": [
+    {
+      "at": "2026-09-13T14:21:08+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-13T14:21:54+00:00",
+      "from": "draft",
+      "reason": "Approved E scope and typed acceptance criteria recorded from five-role analysis.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-13T14:21:54+00:00",
+      "from": "scoped",
+      "reason": "User approved complete seven-PR plan; current route has no named human gate.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-13T14:21:55+00:00",
+      "from": "approved",
+      "reason": "Selected integration_implementer owns the dedicated host extraction.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-13T14:26:55+00:00",
+      "from": "implementing",
+      "reason": "Eight-path source extraction frozen after focused host/API/lifecycle and architecture checks.",
+      "to": "verifying"
+    }
+  ],
+  "route_id": "ae4f5afb69ca",
+  "schema_version": 1,
+  "status": "verifying",
+  "title": "L5 split E: private configuration and dedicated Unix landing host",
+  "updated_at": "2026-09-13T14:26:55+00:00"
+}
