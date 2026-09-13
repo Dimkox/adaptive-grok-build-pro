@@ -147,3 +147,7 @@ Embedding the Codex skill under `.agents/skills/` and its showcase under `side-p
 ## 2026-09-13 — Absent Trust CI check run on a fresh head means queued, not lost
 
 The self-hosted runner processes policy-epoch verifications serially (~18–20 min per PR head); the stacked L5 heads A–G each verified only after the predecessor's job completed. A missing `adaptive-trust-ci/verified@…` run was confirmed queue state via the live `TRUST_CI_PR_NUMBER` job, so no head re-push or dispatch retry was attempted. Never churn a PR head to "wake" a check — a new commit invalidates the exact-SHA attestation chain.
+
+## 2026-09-13 — Land append-coupled stacked slices as one tree-identical union with a fresh gate
+
+Squash-merging the bottom slice of a stacked chain destroys the commit identities the upper PRs need (shared append files then guarantee three-way conflicts), so the remaining six L5 slices landed as a single commit whose tree equals the attested top head `e6a813e`: `merge-tree` proved conflict-freedom and final-tree identity before push, the union got its own exact-SHA Trust CI success, and post-merge `tree(main)==tree(top head)` was re-verified. Per-slice attestations stay recorded in the ledger as historical content evidence. Rule adopted: for stacks that append to shared documents, landing is all-or-nothing — a merge-commit chain (GitHub rejected `--merge` as disallowed even though the settings API reported it enabled, so a second read of live behavior, not just config, is required) or one union with a fresh gate; never a partial squash cascade.
