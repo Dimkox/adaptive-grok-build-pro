@@ -20,6 +20,7 @@ from .landing_contracts import (
     LandingContractError,
     LandingInputV1,
     LandingProviderEvidenceV1,
+    LandingProviderEvidence,
     StaticLandingSpecV1,
     landing_digest,
     strict_json_object,
@@ -224,7 +225,7 @@ class LandingNormalizationRequest:
 @dataclass(frozen=True)
 class LandingNormalizationOutcome:
     spec: StaticLandingSpecV1 | None
-    evidence: LandingProviderEvidenceV1
+    evidence: LandingProviderEvidence
     state: str = "normalized"
     reason_code: str = "normalized"
 
@@ -242,7 +243,8 @@ def validate_landing_normalization_outcome(
         "rejected",
     }:
         raise LandingProviderError("normalization_state")
-    if not isinstance(outcome.evidence, LandingProviderEvidenceV1):
+    if (not isinstance(outcome.evidence, LandingProviderEvidence)
+            or outcome.evidence.schema_version != (1 if isinstance(outcome.evidence, LandingProviderEvidenceV1) else 2)):
         raise LandingProviderError("normalization_evidence")
     if not _IDENTIFIER.fullmatch(outcome.reason_code):
         raise LandingProviderError("normalization_reason")
@@ -251,12 +253,12 @@ def validate_landing_normalization_outcome(
     ):
         raise LandingProviderError("normalization_spec")
     expected_disposition = {
-        "normalized": "fixture_ready",
-        "provider_unavailable": "provider_unavailable",
-        "needs_human": "provider_unavailable",
-        "rejected": "rejected",
+        "normalized": {"fixture_ready" if isinstance(outcome.evidence, LandingProviderEvidenceV1) else "normalized"},
+        "provider_unavailable": {"provider_unavailable"},
+        "needs_human": {"provider_unavailable"},
+        "rejected": {"rejected"},
     }[outcome.state]
-    if outcome.evidence.disposition != expected_disposition:
+    if outcome.evidence.disposition not in expected_disposition:
         raise LandingProviderError("normalization_evidence")
 
 

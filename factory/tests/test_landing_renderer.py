@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from adaptive_factory.landing_artifact import DEPLOY_MEMBERS
 from adaptive_factory.landing_contracts import StaticLandingSpecV1
 from adaptive_factory.landing_renderer import (
     DeterministicLandingRenderer,
@@ -23,9 +24,13 @@ from adaptive_factory.landing_renderer import (
 
 
 WRITE_PATHS = frozenset({"index.html", "content.css"})
-CURRENT_BASE_SHA = "699010380f4f90a0193a9c22090c35e6aded7d2c"
-CURRENT_BASE_TREE = "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4"
+CURRENT_BASE_SHA = "fde60e040167c10975b00d11f578c4da6763069a"
+CURRENT_BASE_TREE = "21817e70e079b772e1f3114a80dfc0320d1ada91"
 SOURCE_INDEX_CSS = "body { color: #fff; background: #07090d; }\n"
+SOURCE_ANALYTICS_CSS = "/* analytics surface styles */\n"
+SOURCE_ANALYTICS_JS = "export const analyticsSettingsAnchor = '#future';\n"
+SOURCE_ASSETS_MD = "# Assets\n\nFixture asset inventory.\n"
+SOURCE_SERVER_SETUP_MD = "# Server setup\n\nFixture deployment notes.\n"
 
 
 SOURCE_INDEX = """<!doctype html>
@@ -42,11 +47,13 @@ SOURCE_INDEX = """<!doctype html>
   <link rel="alternate" hreflang="km-KH" href="https://therealaidarkfactory.online/km/">
   <link rel="alternate" hreflang="x-default" href="https://therealaidarkfactory.online/">
   <link rel="stylesheet" href="/index.css">
+  <link rel="stylesheet" href="/analytics.css">
+  <script src="/analytics.js" defer></script>
 </head>
 <body>
   <header><a href="/roadmap.html">Roadmap</a></header>
   <main id="content"><h1>Original</h1></main>
-  <footer><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a></footer>
+  <footer><a href="/cookies.html#future" data-analytics-settings>Analytics settings</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a></footer>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite"}</script>
 </body>
 </html>
@@ -89,6 +96,10 @@ def sealed_target():
         files = {
             ".gitattributes": "* text=auto eol=lf\n",
             ".htaccess": "Header always set Content-Security-Policy \"default-src 'self'; script-src 'self' 'sha256-fixture'; style-src 'self'\"\n",
+            "ASSETS.md": SOURCE_ASSETS_MD,
+            "SERVER-SETUP.md": SOURCE_SERVER_SETUP_MD,
+            "analytics.css": SOURCE_ANALYTICS_CSS,
+            "analytics.js": SOURCE_ANALYTICS_JS,
             "content.css": ":root { color-scheme: dark; }\nbody { margin: 0; }\n",
             "index.css": SOURCE_INDEX_CSS,
             "index.html": SOURCE_INDEX,
@@ -136,6 +147,9 @@ def sealed_target():
             "adaptive_factory.landing_renderer",
             TARGET_BASE_SHA=sha,
             TARGET_BASE_TREE=tree,
+        ), patch(
+            "adaptive_factory.landing_artifact_retention.deploy_members_for_source",
+            return_value=DEPLOY_MEMBERS,
         ):
             yield repository, sha, tree
 
@@ -192,7 +206,7 @@ class LandingRendererTests(unittest.TestCase):
     def test_current_source_identity_and_external_stylesheet_contract_are_exact(self):
         self.assertEqual(CURRENT_BASE_SHA, TARGET_BASE_SHA)
         self.assertEqual(CURRENT_BASE_TREE, TARGET_BASE_TREE)
-        self.assertEqual("1.0.1", RENDERER_VERSION)
+        self.assertEqual("1.1.0", RENDERER_VERSION)
         self.assertEqual(WRITE_PATHS, LANDING_WRITE_PATHS)
 
         facts = source_surface_facts(SOURCE_INDEX)
@@ -307,7 +321,7 @@ class LandingRendererTests(unittest.TestCase):
         self.assertIn("Build &amp; verify", candidate_html)
         self.assertIn("Input &#x27;quoted&#x27; &amp; bounded.", candidate_html)
         self.assertNotIn("Trust & \"proof\"", candidate_html)
-        self.assertEqual(candidate_html.count("<script"), 1)
+        self.assertEqual(candidate_html.count("<script"), 2)
         self.assertIn('<script type="application/ld+json">', candidate_html)
         for forbidden in ("<form", "google-analytics", "gtag(", "javascript:"):
             with self.subTest(forbidden=forbidden):

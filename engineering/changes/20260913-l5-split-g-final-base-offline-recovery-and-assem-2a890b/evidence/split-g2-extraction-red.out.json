@@ -1,0 +1,6 @@
+{
+  "encoding": "utf-8",
+  "original_filename": "split-g2-extraction-red.out",
+  "raw_sha256": "17f30bb80f926a9c9b58ad3d1b51244370f947d2ca2e6d60604e67806cbcf03d",
+  "raw_text": "\n==================================== ERRORS ====================================\n____________ ERROR collecting factory/tests/test_landing_backup.py _____________\nImportError while importing test module '/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g2/factory/tests/test_landing_backup.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n/usr/lib/python3.12/importlib/__init__.py:90: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nfactory/tests/test_landing_backup.py:13: in <module>\n    from adaptive_factory import landing_backup\nE   ImportError: cannot import name 'landing_backup' from 'adaptive_factory' (/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g2/factory/src/adaptive_factory/__init__.py)\n=========================== short test summary info ============================\nERROR factory/tests/test_landing_backup.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.20s\n"
+}

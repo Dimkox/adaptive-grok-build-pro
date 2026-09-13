@@ -1,0 +1,3 @@
+# Test plan
+
+First reproduce the reduced-cap restore preflight gap with disposable small fixtures. Add independent active-writer rejection/release, committed WAL-only content and populated publication-state roundtrip tests. Preserve all C/D/F regressions and restore the exact final mocked Qwen cross-feature tail. Run focused suites with up to 28 workers, architecture inventory, genuine-base fitness, Ruff, shell syntax and whitespace. Freeze source before unchanged full scripts/grok_verify.py --mode pr. Then selected code/test/data reviewers inspect the same exact tree. Actual reports are kept in the matching package of docs/l5-split-verification-evidence so recording receipts does not mutate checked source.

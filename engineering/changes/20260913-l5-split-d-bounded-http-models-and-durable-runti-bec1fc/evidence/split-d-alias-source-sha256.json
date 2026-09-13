@@ -1,0 +1,155 @@
+{
+  "base_commit": "a75b3cd639a1483533069e8634759cdfc6612310",
+  "checkout_head": "d1fdb7aec61b242c1a2fc5fc0ced1809e1b79c76",
+  "frozen_reference": "f31406e970d67f7cd59694da5de88915adb0fa68",
+  "route_id": "bec1fcdde794",
+  "paths": {
+    "architecture/rules.yaml": {
+      "sha256": "30d11d294c1a4336633f9d1c80ddaa859b43e271d8dff65743f99ba6df0d4d45",
+      "git_blob": "90a5e47899d7ae2d5d08a1cfa68347b698fcdac7",
+      "selection": "only D offline prefixes and HOST rule for landing_server"
+    },
+    "architecture/system.yaml": {
+      "sha256": "a9eb0db56d01021d2b5052d448f9d5b5f65e8dc67709f4153f8cfe0e38c3b21b",
+      "git_blob": "d58d98f3518ef5d5c3f9949aa4b5e33aea515adb",
+      "selection": "only D production and independent test ownership"
+    },
+    "factory/pyproject.toml": {
+      "sha256": "7821d3485cbd1fd6f9a7d1842a07ac692fa2386f60c88ac57f30019bff566b55",
+      "git_blob": "337b9a4c28428a0e39ad5889e4fcacc583b086c5",
+      "selection": "pypdf and PDF package-data only; console scripts deferred"
+    },
+    "factory/src/adaptive_factory/landing_host_config.py": {
+      "sha256": "ab1cc6e1f29b2f9a710b63f3ee84082ba39d6e1b0cfd15f29fff6f3564dfe00d",
+      "git_blob": "b1e1122f7cd5045dd22264b1982a4504bcc70632",
+      "selection": "helper-only configuration seam until E"
+    },
+    "factory/src/adaptive_factory/landing_http.py": {
+      "sha256": "ad1ec53d953df1e383f17acb0d7effeac7152cd3da5cb9bdeb2b5f4527abe55f",
+      "git_blob": "c8730a8ffcb65f003d4eae73ef4f3c9ad22bb41c",
+      "selection": "whole_frozen"
+    },
+    "factory/src/adaptive_factory/landing_intake.py": {
+      "sha256": "b7e19e75a0014be85b098bb8c9b4bdd0b5b87def83ffd5e3e47a43db13f0cc19",
+      "git_blob": "c50a638e545276b407c196f3ce23995038b28e62",
+      "selection": "whole_frozen"
+    },
+    "factory/src/adaptive_factory/landing_live_executors.py": {
+      "sha256": "bc5d65baac30e8b0447c965df89af2a73f29627025955ef60e01552ed527a620",
+      "git_blob": "45f70c92cb2ae9ee33e2163e80707a12d45d1021",
+      "selection": "whole_frozen"
+    },
+    "factory/src/adaptive_factory/landing_media.py": {
+      "sha256": "fde1e88a2b22edc58b598b8ec4a5ddda14414cd78e93dfe9e01303fb44cf8efa",
+      "git_blob": "2f9e1d1e16df61410add428a3e4d7042274f49ec",
+      "selection": "whole_frozen"
+    },
+    "factory/src/adaptive_factory/landing_normalizer.py": {
+      "sha256": "9efc109b97d8769f5ea347752edbe6ccc632c63521275f95bb3a54893c6c2e96",
+      "git_blob": "600f646e4e0d4141667d2a540989f91c3cf20fbe",
+      "selection": "whole_frozen"
+    },
+    "factory/src/adaptive_factory/landing_runtime.py": {
+      "sha256": "22a8f6996096d495157dd5b9a7b21cbceeb1691c6ed27310296326d64f3af533",
+      "git_blob": "1fadba9a1eb298b303dd0e5d2a53c3ed6ee8a664",
+      "selection": "whole_frozen"
+    },
+    "factory/src/adaptive_factory/landing_server.py": {
+      "sha256": "c29e34644d20d8fb8ce4edcb74070310da8aaddfab9795b3ebaa5cb9838f70b8",
+      "git_blob": "f4908c812c7212a5dbc3e6462839720401881da9",
+      "selection": "whole_frozen"
+    },
+    "factory/src/adaptive_factory/landing_sqlite_store.py": {
+      "sha256": "7b9e677d1d1b04a87b62a2c985be026c71420c64eb559bab9d5fb6bb3f44806a",
+      "git_blob": "af13e460d0dab16261315caf6a9cce34b22a1907",
+      "selection": "approved startup descriptor cleanup repair against frozen"
+    },
+    "factory/src/adaptive_factory/landing_sse.py": {
+      "sha256": "e9b92b75601d67aaf478c1f7bf702578c223773156d3cc4b6883821f00c75861",
+      "git_blob": "e6010225c29e9e9b30221e253d6303d04010e723",
+      "selection": "whole_frozen"
+    },
+    "factory/src/adaptive_factory/resources/landing_pdf_worker.py": {
+      "sha256": "55d527a6fbaa3e54340cb0fba9764c4b3682610b38c6b4d7555304b9432454ae",
+      "git_blob": "611c9cae0cb37633bf05a6d4f5e341fd6c61dffd",
+      "selection": "whole_frozen"
+    },
+    "factory/src/adaptive_factory/server.py": {
+      "sha256": "825e594624e35b4459cf66d35873eaf62c854391aba70ea31f94c7ec41dae358",
+      "git_blob": "7952366ebb31c3e1e9bdac86500e70d5ef8275f8",
+      "selection": "frozen plus independent nested listener/runtime/socket cleanup stages"
+    },
+    "factory/src/adaptive_factory/settings.py": {
+      "sha256": "0241a3e27200444bc3114da6e9c2940c6551d6db9e2112e74d6ab4c056c6dd02",
+      "git_blob": "ac121c1828fbeabf590351711c9e78f97487d605",
+      "selection": "frozen plus shared validation rejects double-slash landing-root anchors"
+    },
+    "factory/tests/test_landing_live_executors.py": {
+      "sha256": "3e8ac9c037309b14c154359098d9de5fd6ffb1220f67d3e7e7ff8e972d1afa67",
+      "git_blob": "25abef93af5d54a28fd431bfc41e9a6636b2d040",
+      "selection": "frozen except G backup/host/publication tail lines339-372"
+    },
+    "factory/tests/test_landing_media.py": {
+      "sha256": "39cfc6a4d491e00eba2d4db7c101cd1d2d4747c5b07d4b7276641c256a5ab7d3",
+      "git_blob": "ae6cfd56e4e9def06f30ebf02dc0dc48b99d79d3",
+      "selection": "whole_frozen"
+    },
+    "factory/tests/test_landing_normalizer.py": {
+      "sha256": "f267dd1ee0856b375b1c2b805d998a4eea4c5f0c048af256863cd0edbe86462f",
+      "git_blob": "b3c7b78d375809ed052f14da348e3eb34f3846a8",
+      "selection": "whole_frozen"
+    },
+    "factory/tests/test_landing_server.py": {
+      "sha256": "1a70c29bc8a5436017cb1b25d5b7ec2d780f90a15210af3249e5e1885dfcd671",
+      "git_blob": "7cfdb666fc62b45bb966e4d22836e185adc10eef",
+      "selection": "independent ownership regression strengthening, including alias and main cleanup review fixes"
+    },
+    "factory/tests/test_landing_sse.py": {
+      "sha256": "9218d4cbde9c7ce11e9e27ed38ade06ad1c61aa9616844e4ac5bf5b5e36d3e67",
+      "git_blob": "098755d0f9a5e5659cdf1e06652701dd6bcad19a",
+      "selection": "whole_frozen"
+    },
+    "factory/tests/test_server.py": {
+      "sha256": "de267f7d063326310bf60004cf4bf5e205bb57d4032937a37fd8a58e5f969d68",
+      "git_blob": "f64198f489ec7da0d29664010a37d12bbd2195ee",
+      "selection": "whole_frozen"
+    },
+    "factory/uv.lock": {
+      "sha256": "27e8a6001da8598cb0765412e07b4ae9112b69b621b23a8d4f8c0ae0a10b0c28",
+      "git_blob": "960a957febe25461730c46366c492f1584394b85",
+      "selection": "whole_frozen"
+    },
+    "tests/test_landing_architecture_boundaries.py": {
+      "sha256": "5df7246f54b7d8ad48e215e93297daabe6a036973f00df03cf94615316ba26b3",
+      "git_blob": "5b5cfa2f66dc87d2fb37cc4d61696928eed3728d",
+      "selection": "actual D 19-module inventory, retained A overlap fixture"
+    }
+  },
+  "schema_and_reader_identity": "unchanged from C",
+  "production_deviations": [
+    {
+      "path": "factory/src/adaptive_factory/landing_sqlite_store.py",
+      "evidence": "split-d-sqlite-frozen-deviation.patch",
+      "reason": "Release lifetime writer on BaseException during lock acquisition/connect/initialization and if connection close fails during initialization unwind."
+    },
+    {
+      "path": "factory/src/adaptive_factory/settings.py",
+      "evidence": "split-d-alias-settings-frozen-deviation.patch",
+      "reason": "Reject // aliases before shared landing-root disjointness and I/O."
+    },
+    {
+      "path": "factory/src/adaptive_factory/server.py",
+      "evidence": "split-d-alias-server-frozen-deviation.patch",
+      "reason": "Run owned-runtime close and socket cleanup despite failures in preceding cleanup stages."
+    }
+  ],
+  "review_repairs": {
+    "reviewed_head": "d1fdb7aec61b242c1a2fc5fc0ced1809e1b79c76",
+    "changed_paths": [
+      "factory/src/adaptive_factory/server.py",
+      "factory/src/adaptive_factory/settings.py",
+      "factory/tests/test_landing_server.py"
+    ],
+    "frozen_reference": "f31406e970d67f7cd59694da5de88915adb0fa68"
+  }
+}

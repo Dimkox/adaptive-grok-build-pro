@@ -1,0 +1,6 @@
+{
+  "encoding": "utf-8",
+  "original_filename": "split-g2-factory-focused28.out",
+  "raw_sha256": "3269aac85a53eb314c40d0529fd30fd08752f96b13f6fb8e71d96a3f6a094543",
+  "raw_text": "bringing up nodes...\nbringing up nodes...\n\n...u......uu.u.......uuu.uuuuuuuuuuuuuuuuuuuuuuuuuuu....uu.uuuuu.u.u...u [ 37%]\n....uu.u.uuu....uuuuuuuuuu...uu........u.u.uu.uuu..uuu.uuuuuuu..uuu...uu [ 79%]\n...uuu...uuuu.....uu.uuuuuuuuuuu.uu.uu.uuuuuuuuuuuuuuuuuuuuuuuuuu.uuuuuu. [100%]\n=============================== warnings summary ===============================\n../../../../tmp/agbp-venv/lib/python3.12/site-packages/starlette/testclient.py:45: 28 warnings\n  /tmp/agbp-venv/lib/python3.12/site-packages/starlette/testclient.py:45: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.\n    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n77 passed, 28 warnings, 140 subtests passed in 17.85s\n"
+}

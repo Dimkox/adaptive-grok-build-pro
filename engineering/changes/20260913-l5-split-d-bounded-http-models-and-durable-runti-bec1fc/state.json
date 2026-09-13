@@ -1,0 +1,41 @@
+{
+  "change_id": "20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc",
+  "created_at": "2026-09-13T14:02:18+00:00",
+  "history": [
+    {
+      "at": "2026-09-13T14:02:18+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-13T14:08:53+00:00",
+      "from": "draft",
+      "reason": "Approved seven-unit D scope and typed acceptance criteria recorded; two future D test evidence paths await extraction.",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-13T14:08:54+00:00",
+      "from": "scoped",
+      "reason": "User explicitly approved detailed seven-PR plan with Делай; no migration or external operation is performed by this source extraction.",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-13T14:08:54+00:00",
+      "from": "approved",
+      "reason": "Selected data_implementer owns D extraction and narrowly reproduced SQLite cleanup repair.",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-13T14:20:50+00:00",
+      "from": "implementing",
+      "reason": "D sole writer finished; focused regressions and unchanged budgets pass; freezing source before full verification and independent reviews.",
+      "to": "verifying"
+    }
+  ],
+  "route_id": "bec1fcdde794",
+  "schema_version": 1,
+  "status": "verifying",
+  "title": "L5 split D: bounded HTTP models and durable runtime composition",
+  "updated_at": "2026-09-13T14:20:50+00:00"
+}

@@ -503,10 +503,23 @@ class ServerTests(unittest.TestCase):
         with patch.dict(os.environ, base, clear=True):
             settings = FactorySettings.from_environment()
         self.assertIsNone(settings.landing_quarantine_path)
+        # Settings fields are append-only: the landing block published by the env-landing
+        # composition change keeps its exact order and stays a contiguous tail. Asserting the
+        # last field by name would forbid adding any setting at all, so the invariant is stated
+        # directly instead (same failure mode as the architecture node count in #60).
+        fields = tuple(FactorySettings.__dataclass_fields__)
+        landing_fields = [name for name in fields if name.startswith("landing_")]
         self.assertEqual(
-            tuple(FactorySettings.__dataclass_fields__)[-1],
-            "landing_output_path",
+            landing_fields[:5],
+            [
+                "landing_quarantine_path",
+                "landing_provider",
+                "landing_source_path",
+                "landing_scratch_path",
+                "landing_output_path",
+            ],
         )
+        self.assertEqual(fields[-len(landing_fields):], tuple(landing_fields))
 
         with patch.dict(
             os.environ,
@@ -526,18 +539,36 @@ class ServerTests(unittest.TestCase):
         ), self.assertRaisesRegex(SettingsError, "absolute and normalized"):
             FactorySettings.from_environment()
 
+        # Unknown provider is still refused at parse time. The wording names the whole closed set
+        # now that the HTTP executors added vision/omni profiles, so assert the prefix instead of
+        # the two-name list that this assertion was written against.
         with patch.dict(
             os.environ,
             {**base, "FACTORY_LANDING_PROVIDER": "claude"},
             clear=True,
-        ), self.assertRaisesRegex(SettingsError, "must be grok or qwen"):
+        ), self.assertRaisesRegex(SettingsError, "FACTORY_LANDING_PROVIDER must be"):
             FactorySettings.from_environment()
 
+        # Deliberate behaviour change from the L5 landing model: a named provider is refused until
+        # live landing is explicitly enabled, so the first complaint is the missing enablement
+        # rather than the missing quarantine directory. Both inputs stay rejected; only the
+        # diagnostic moved, and the durable-path requirement is asserted below.
         with patch.dict(
             os.environ,
             {**base, "FACTORY_LANDING_PROVIDER": "grok"},
             clear=True,
-        ), self.assertRaisesRegex(SettingsError, "requires quarantine"):
+        ), self.assertRaisesRegex(SettingsError, "live enablement"):
+            FactorySettings.from_environment()
+
+        with patch.dict(
+            os.environ,
+            {
+                **base,
+                "FACTORY_LANDING_PROVIDER": "grok",
+                "FACTORY_LANDING_LIVE_ENABLED": "true",
+            },
+            clear=True,
+        ), self.assertRaisesRegex(SettingsError, "durable paths"):
             FactorySettings.from_environment()
 
     def test_authenticated_request_reaches_real_unix_socket(self):

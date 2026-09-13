@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:adaptive-delivery:landing-publication-request:v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "request_id", "action", "target_digest", "artifact_ref", "artifact_digest", "desired_release", "desired_manifest", "baseline_release", "baseline_manifest", "restore_from", "request_digest", "resource"],
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nullableDigest": {"oneOf": [{"$ref": "#/$defs/digest"}, {"type": "null"}]}
+  },
+  "properties": {
+    "schema_version": {"const": 1},
+    "request_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"},
+    "action": {"enum": ["stage", "activate", "restore"]},
+    "target_digest": {"$ref": "#/$defs/digest"},
+    "artifact_ref": {"oneOf": [{"type": "null"}, {"type": "object", "additionalProperties": false, "required": ["tenant_id", "repository_id", "job_id"], "properties": {"tenant_id": {"type": "string", "minLength": 1, "maxLength": 256}, "repository_id": {"type": "string", "minLength": 1, "maxLength": 256}, "job_id": {"type": "string", "minLength": 1, "maxLength": 256}}}]},
+    "artifact_digest": {"$ref": "#/$defs/nullableDigest"},
+    "desired_release": {"$ref": "#/$defs/nullableDigest"},
+    "desired_manifest": {"$ref": "#/$defs/nullableDigest"},
+    "baseline_release": {"$ref": "#/$defs/nullableDigest"},
+    "baseline_manifest": {"$ref": "#/$defs/nullableDigest"},
+    "restore_from": {"$ref": "#/$defs/nullableDigest"},
+    "request_digest": {"$ref": "#/$defs/digest"},
+    "resource": {"type": "string", "pattern": "^landing-publication/v1/(stage|activate|restore)/[0-9a-f]{64}$"}
+  },
+  "allOf": [
+    {"if": {"properties": {"action": {"const": "restore"}}}, "then": {"properties": {"artifact_ref": {"type": "null"}, "artifact_digest": {"type": "null"}, "restore_from": {"$ref": "#/$defs/digest"}}}, "else": {"properties": {"artifact_ref": {"type": "object"}, "artifact_digest": {"$ref": "#/$defs/digest"}, "desired_release": {"$ref": "#/$defs/digest"}, "desired_manifest": {"$ref": "#/$defs/digest"}, "restore_from": {"type": "null"}}}},
+    {"if": {"properties": {"baseline_release": {"type": "null"}}}, "then": {"properties": {"baseline_manifest": {"type": "null"}}}, "else": {"properties": {"baseline_manifest": {"$ref": "#/$defs/digest"}}}},
+    {"if": {"properties": {"desired_release": {"type": "null"}}}, "then": {"properties": {"desired_manifest": {"type": "null"}}}, "else": {"properties": {"desired_manifest": {"$ref": "#/$defs/digest"}}}}
+  ]
+}

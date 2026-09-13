@@ -1,0 +1,109 @@
+{
+  "route_id": "ae4f5afb69ca",
+  "base_commit": "d1fdb7aec61b242c1a2fc5fc0ced1809e1b79c76",
+  "frozen_source": "f31406e970d67f7cd59694da5de88915adb0fa68",
+  "selection_manifest": [
+    {
+      "path": "factory/src/adaptive_factory/landing_host_config.py",
+      "sha256": "eaafbfb3de12a1813090dc4a3f3f8be1d7ef82b6e46a9fb2efd6b3b7c15ee945",
+      "blob": "b844bca2240c767d1e4a57a70dc4a54b2196f5a6",
+      "frozen_blob": "b844bca2240c767d1e4a57a70dc4a54b2196f5a6",
+      "exact_frozen_file": true,
+      "selection": "complete frozen helper-only file with dataclass and private closed loader"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_host.py",
+      "sha256": "e6a81070e98d3a85769c5213c0cd9a3df2751387d1965b1805432053b4c59ebf",
+      "blob": "747ab6a6cc77b22dd481a445ca0fb647002de51e",
+      "frozen_blob": "747ab6a6cc77b22dd481a445ca0fb647002de51e",
+      "exact_frozen_file": true,
+      "selection": "exact frozen new host"
+    },
+    {
+      "path": "factory/src/adaptive_factory/api.py",
+      "sha256": "057319cdbe6b36483da18ae0a20cda858eafd0dfb52ab380be42b684189153ed",
+      "blob": "21358680db1ba20160973b9a8b12b93625855380",
+      "frozen_blob": "21358680db1ba20160973b9a8b12b93625855380",
+      "exact_frozen_file": true,
+      "selection": "all frozen landing_only hunks; exact frozen final API"
+    },
+    {
+      "path": "factory/tests/test_landing_host.py",
+      "sha256": "6d4e8942adbc5e918d3db7f4fe428e67d4a1d98ee56aa8dd330caa9cd7f2552e",
+      "blob": "aceabde2a29222bcfa6a0546da82b2c2c2e17a75",
+      "frozen_blob": "aceabde2a29222bcfa6a0546da82b2c2c2e17a75",
+      "exact_frozen_file": true,
+      "selection": "exact frozen new host tests"
+    },
+    {
+      "path": "factory/pyproject.toml",
+      "sha256": "ed1909b4db850de77164b2bede110174331fc644e8dec4a31b610c0ea9a9293d",
+      "blob": "8bf318c5e9437dd5f02b259bb5df1ec94ba89012",
+      "frozen_blob": "1470d1925f164425878923d8958792e765bc26f8",
+      "exact_frozen_file": false,
+      "selection": "only adaptive-landing-server script; state entrypoint remains deferred to G"
+    },
+    {
+      "path": "architecture/rules.yaml",
+      "sha256": "7c9fe6b4d83badf7bab9d329321077af4cdf9de5f3925ca6540972d66d8572e6",
+      "blob": "f71d87e7ff33159a3e78d2c8e9ba8e91104d623f",
+      "frozen_blob": "1ac466a110a13c0913fe5043b727ddab29c7fb18",
+      "exact_frozen_file": false,
+      "selection": "add actual landing_host to existing HOST rule"
+    },
+    {
+      "path": "architecture/system.yaml",
+      "sha256": "7da4656d765d815861a476f7b83464d4c3c97dd11f24966a033732427825f44f",
+      "blob": "0d3fa734d2e065dcb56e7517835b8a348bff39cd",
+      "frozen_blob": "264a540c46cccb830b7f6edfd28fa8f6f38792c8",
+      "exact_frozen_file": false,
+      "selection": "add host source and test to LOCAL-API; retain D direct server-test owner and prior corrections"
+    },
+    {
+      "path": "tests/test_landing_architecture_boundaries.py",
+      "sha256": "225bd365e0ec121065b464dcfa57c273d06471cf4edb06c8cde4a77b3279cedf",
+      "blob": "ed4b536fdf5940d84acf8cd35f45510790f87338",
+      "frozen_blob": "207267f60b54e08bb9d4c803c4cc3a5b47415723",
+      "exact_frozen_file": false,
+      "selection": "add landing_host to host group; retain artifact overlap fixture and future F/G exclusions"
+    }
+  ],
+  "changed_product_sha256": {
+    "factory/src/adaptive_factory/landing_host_config.py": "eaafbfb3de12a1813090dc4a3f3f8be1d7ef82b6e46a9fb2efd6b3b7c15ee945",
+    "factory/src/adaptive_factory/landing_host.py": "e6a81070e98d3a85769c5213c0cd9a3df2751387d1965b1805432053b4c59ebf",
+    "factory/src/adaptive_factory/api.py": "057319cdbe6b36483da18ae0a20cda858eafd0dfb52ab380be42b684189153ed",
+    "factory/tests/test_landing_host.py": "6d4e8942adbc5e918d3db7f4fe428e67d4a1d98ee56aa8dd330caa9cd7f2552e",
+    "factory/pyproject.toml": "ed1909b4db850de77164b2bede110174331fc644e8dec4a31b610c0ea9a9293d",
+    "architecture/rules.yaml": "7c9fe6b4d83badf7bab9d329321077af4cdf9de5f3925ca6540972d66d8572e6",
+    "architecture/system.yaml": "7da4656d765d815861a476f7b83464d4c3c97dd11f24966a033732427825f44f",
+    "tests/test_landing_architecture_boundaries.py": "225bd365e0ec121065b464dcfa57c273d06471cf4edb06c8cde4a77b3279cedf"
+  },
+  "invariants": {
+    "all_code_budgets_unchanged": true,
+    "all_predecessor_runtime_and_tests_unchanged_except_host_config_api": true,
+    "production_inventory_count": 20,
+    "sqlite_and_C_D_regressions_preserved": true
+  },
+  "actual_landing_inventory": [
+    "factory/src/adaptive_factory/landing_artifact.py",
+    "factory/src/adaptive_factory/landing_artifact_retention.py",
+    "factory/src/adaptive_factory/landing_contracts.py",
+    "factory/src/adaptive_factory/landing_coordinator.py",
+    "factory/src/adaptive_factory/landing_evaluation.py",
+    "factory/src/adaptive_factory/landing_host.py",
+    "factory/src/adaptive_factory/landing_host_config.py",
+    "factory/src/adaptive_factory/landing_http.py",
+    "factory/src/adaptive_factory/landing_intake.py",
+    "factory/src/adaptive_factory/landing_live_executors.py",
+    "factory/src/adaptive_factory/landing_media.py",
+    "factory/src/adaptive_factory/landing_normalizer.py",
+    "factory/src/adaptive_factory/landing_provider.py",
+    "factory/src/adaptive_factory/landing_renderer.py",
+    "factory/src/adaptive_factory/landing_runtime.py",
+    "factory/src/adaptive_factory/landing_server.py",
+    "factory/src/adaptive_factory/landing_service.py",
+    "factory/src/adaptive_factory/landing_sqlite_store.py",
+    "factory/src/adaptive_factory/landing_sse.py",
+    "factory/src/adaptive_factory/resources/landing_pdf_worker.py"
+  ]
+}

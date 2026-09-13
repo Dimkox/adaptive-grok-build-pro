@@ -12,7 +12,11 @@ import unittest
 from adaptive_factory.landing_contracts import LandingInputV1
 from adaptive_factory.contracts import canonical_json
 from adaptive_factory.landing_intake import PrivateLandingBlobStore
-from adaptive_factory.landing_renderer import TARGET_REPOSITORY_ID
+from adaptive_factory.landing_renderer import (
+    TARGET_BASE_SHA,
+    TARGET_BASE_TREE,
+    TARGET_REPOSITORY_ID,
+)
 from adaptive_factory.landing_service import (
     LandingApplicationService,
     LandingJobRecord,
@@ -23,8 +27,10 @@ from adaptive_factory.models import Actor
 
 
 REPOSITORY_ID = "github.com/Dimkox/ai-dark-factory-landing"
-BASE_SHA = "699010380f4f90a0193a9c22090c35e6aded7d2c"
-BASE_TREE = "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4"
+# Derived from the renderer's single source of truth so an epoch advance cannot leave this
+# suite asserting a stale identity.
+BASE_SHA = TARGET_BASE_SHA
+BASE_TREE = TARGET_BASE_TREE
 
 
 def source(

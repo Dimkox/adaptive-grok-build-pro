@@ -1,0 +1,30 @@
+FEE
+======================================================================
+ERROR: test_dedicated_host_imports (__main__.DedicatedHostSeamTests.test_dedicated_host_imports)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/agbp-sweep/split-e-red.py", line 16, in test_dedicated_host_imports
+    from adaptive_factory import landing_host
+ImportError: cannot import name 'landing_host' from 'adaptive_factory' (/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-e/factory/src/adaptive_factory/__init__.py)
+
+======================================================================
+ERROR: test_landing_only_composition_omits_task_routes (__main__.DedicatedHostSeamTests.test_landing_only_composition_omits_task_routes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/agbp-sweep/split-e-red.py", line 10, in test_landing_only_composition_omits_task_routes
+    app = api.create_app(None, object(), execution_enabled=False, landing_service=object(), landing_only=True)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: create_app() got an unexpected keyword argument 'landing_only'
+
+======================================================================
+FAIL: test_completed_config_loader_exists (__main__.DedicatedHostSeamTests.test_completed_config_loader_exists)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/agbp-sweep/split-e-red.py", line 7, in test_completed_config_loader_exists
+    self.assertTrue(callable(getattr(landing_host_config, "load_host_config", None)))
+AssertionError: False is not true
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+FAILED (failures=1, errors=2)

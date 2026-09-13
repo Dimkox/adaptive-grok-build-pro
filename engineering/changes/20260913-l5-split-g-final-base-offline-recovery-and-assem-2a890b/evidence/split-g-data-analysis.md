@@ -1,0 +1,66 @@
+# G data architecture analysis
+
+Selected read-only role `data_architect`, route `0e93bc421bdb`, target `/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g`. Genuine repaired F predecessor: `517741da6e883c5feacbd2f029d745ffc5e2fec0`; immutable reference: `f31406e970d67f7cd59694da5de88915adb0fa68`. I read G's active route, the prior final-source G split, frozen `landing_backup.py`, its full tests, the deferred Qwen integration tail, repaired D constructor ownership, repaired F schema validation and the frozen recovery runbook. Previously read adaptive-delivery/data-change skills apply. No source edit, SQL execution, operator-state backup, credential read, grant creation, provider call or external operation was performed. Only this report was written. This is pre-implementation analysis, not a passing data review.
+
+## Suitability of the exact extraction
+
+The planned G boundary is coherent: backup depends on E's offline `landing_host_config` loader, D's landing lifetime lock and F's publication filesystem locks/application ID. Its tests legitimately inherit E's `HostFixture`; all prerequisites now exist. Preserve the D and F repairs in the assembled branch rather than recopying their frozen older files. G adds no database schema migration, SQL index change or provider producer. It copies existing database state and immutable retained artifacts; current D/F readers remain responsible for their respective application/version/schema and retained-evidence validation.
+
+The final Qwen test tail is now independently runnable in G. It restores the previously deferred imports of backup, E's host-config re-export, Factory publication `_bundle` and the delivery target contract. It snapshots retained v1 and HTTP-produced v2, moves old inactive roots, restores at the original paths, reopens the landing store and builds publication bundles for both versions. Its transport remains a mock and `live_url` remains absent. The snapshot pathname contains spaces, percent/question/fragment characters and Unicode. Preserve this tail instead of treating D's earlier self-contained test as equivalent end-to-end recovery evidence.
+
+## Snapshot and SQLite/WAL consistency
+
+`create_snapshot` validates absolute normalized destination paths, disjointness from data/control/source roots and private existing input roots. Before creating the snapshot destination it acquires the same landing `landing.writer.lock` and publication `.intent-writer.lock` used by the owning runtimes. Publication lock acquisition occurs even if no publication database exists. Both locks remain held through database copy, artifact copy and final manifest/fsync. An active cooperative landing owner or publication writer therefore rejects the operation before destination creation. The locks are scoped to their actual roots and do not certify that a differently configured store, a raw SQLite client or an already-renamed old root has stopped.
+
+SQLite inputs are opened with `Path.as_uri()` and `mode=ro`, `query_only=ON` and `trusted_schema=OFF`. Their application/version identities must match the landing or publication contract. The SQLite backup API copies the committed WAL-visible database into a separate target; it is not a raw copy of the main database file. The target is switched to DELETE journaling and closed before hashing, so a completed snapshot is standalone and does not require source WAL/SHM files. Publication state is optional; landing SQLite is mandatory. The code does not call landing startup recovery or publication reconciliation during capture.
+
+The two databases are copied sequentially, not in one SQLite transaction. The shared exclusive runtime locks provide the intended cross-component quiescence for cooperative writers while the snapshot is taken. Artifact files are copied under that same ownership interval, with exact private-file modes, regular-file/link/owner checks, per-file size limits, descriptor stability checks, SHA256 and fsync. This protects the supported immutable artifact store; it is not a claim of a transactional snapshot of arbitrary concurrent filesystem writers.
+
+Only landing SQLite, optional publication SQLite and exact retained `.zip`/`.zip.sha256` artifact names are included. Raw quarantine, scratch, source checkout, credentials/configuration and the publication deployment target are excluded. The final canonical manifest records exact original roots, inventory, sizes, SHA256s and explicit no-replay/no-target flags. It is written last, followed by directory fsync. A failure intentionally preserves a partial destination, which is not complete without the returned manifest digest and successfully finalized manifest. No broad automatic cleanup is justified.
+
+## Restore semantics and operator limits
+
+`restore_snapshot` requires the separately supplied exact manifest digest, a closed manifest, unique allowed inventory, valid content hashes and a mandatory landing DB entry. It rejects enabled live-provider configuration. It compares manifest roots to the current configuration exactly: retained artifacts contain absolute paths, so restoration is to the same original locations without rewriting sealed v1/v2 records. All destination roots must be absent, including absence of symlinks; all parents must be private. Only after preflight does it create roots, acquire both runtime locks and exclusively create destination files.
+
+Existing state is never overwritten. Partial new roots can remain after a copy, capacity, interruption or I/O failure, and a second restore attempt cannot silently replace them. Operators must preserve and inspect partial roots and keep the runtime stopped. The new-path locks do not prove an old process stopped after an operator moved its original root away: stopping the runtime before moving roots is an explicit runbook prerequisite, not something path recreation can infer. Do not claim restore is atomic across three directories or automatically reversible.
+
+The completed result is `restored_inactive`, with `provider_replay=false` and `publication_reconciliation_required=true`. It starts no service, obtains no key, requests no model result and changes no current publication pointer. Publication SQLite may contain an inflight or terminal intent while the external target has a different observed state. F's observation-only reconciliation must inspect the target before any separately authorized subsequent effect. Restoring state is not the same as rolling back the published site, and code rollback before C still requires a compatible reader or pre-v2 snapshot.
+
+The repaired F schema validator survives SQLite backup/DELETE normalization because its logical table/type/STRICT/PK/UNIQUE/index contracts are unchanged by that operation. G itself validates only application/version when creating snapshots, rather than importing live application stores to run recovery or new validation work. A later reopen uses the normal strict readers. No migration or schema downgrade is needed.
+
+## Concrete budget issue and bounded RED scenario
+
+The frozen runbook explicitly calls the cap **4 GiB total I/O accounting**, not a 4 GiB restore payload promise. Keep that distinction and do not silently increase the cap or reset its deadline. `Budget` additionally bounds 512 MiB per file, 4,096 files and 180 seconds.
+
+There is nevertheless a deterministic recovery gap: create counts the complete snapshot payload approximately once (`_hash_file` for each copied SQLite database and `_copy` for artifacts), whereas restore uses one `Budget` first for `_hash_file` of every entry and then `_copy` of the same entries. For payload sum `S` with `MAX_TOTAL / 2 < S <= MAX_TOTAL`, snapshot creation can succeed and restore preflight can completely validate it, but the second pass necessarily exceeds the cap **after destination roots have already been created**. This is source-level control-flow/accounting evidence; I did not execute a restore during read-only analysis. The existing small roundtrip tests do not exercise the boundary.
+
+Bounded RED: use the existing disposable backup fixture and a small successful probe snapshot; read its manifest and sum entry sizes as `S`. Under `patch.object(landing_backup, "MAX_TOTAL", S + 1)`, create a second snapshot of the same quiescent fixture at a new temporary destination and verify it saves. Move only the fixture's original roots to inactive sibling names and restore the second snapshot under the same cap. Frozen code passes all content checks, creates new roots and then raises `BackupError("snapshot_budget")` while copying. No GiB allocation or actual operator state is needed. A stricter preflight test should assert that a deterministically insufficient full-operation budget is refused before any destination root is created.
+
+A minimal repair can preserve the existing I/O/deadline caps while accounting for both restore passes before mutation, then clearly document the resulting maximum restorable payload. If the product promise is that every successfully saved snapshot fits the normal restore cap, backup admission must also reserve a matching restore budget. That is a bounded semantic choice for the parent/sole writer; do not hide it by redefining I/O as logical bytes or loosening limits. Any reproduced repair must be recorded as a disclosed deviation from frozen source, then verified and independently reviewed.
+
+Parent's accepted bounded decision: preserve the existing 4-GiB I/O cap and deadline, reproduce the reduced-cap case, and add an early `snapshot_budget` rejection before restore-root creation when the remaining budget cannot cover the known second pass. Document the real I/O-bound restore payload limit and partial-failure behavior; do not raise or reset the cap. G implementation had not started when this decision was recorded.
+
+## Focused missing evidence to add in G
+
+The frozen backup tests prove a real landing DB/artifact roundtrip, path aliases and overlap rejection, no overwrite, link rejection, manifest/content tampering, duplicate inventory and offline import isolation. The final Qwen tail adds mixed evidence and publication-bundle preflight after restore. Both fixtures leave publication SQLite absent, and neither establishes actual committed WAL-only content, active-writer rejection or a populated publication-intent roundtrip. These are concrete coverage limits, not evidence that the corresponding implementation is broken.
+
+Small independently useful G checks are:
+
+1. Hold the actual landing store and separately the actual F `PublicationStore`, then call snapshot and assert writer conflict before a destination exists. Release the owner and verify a later snapshot can proceed, so rejection does not leak an acquired earlier lock.
+2. Create committed but uncheckpointed WAL content in a disposable SQLite source, keep that controlled source quiescent, exercise `_snapshot`, and verify the copied standalone database sees it without WAL/SHM dependencies. Use only test-owned files; do not start an operator runtime or bypass its locks.
+3. Prepare a synthetic publication request in the actual repaired F store, close it, snapshot/restore through G, then open publication state read-only and assert exact request digest/body/phase. Require no filesystem publication call. This proves F's strict schema and persisted intent survive backup normalization.
+4. Add the reduced-cap preflight regression above and retain unknown/mismatched manifest, same-path, no-overwrite and provider-disabled assertions. Preserve all prior D/F ownership and schema regression tests.
+
+The source extraction itself neither invokes a backup against operator state nor authorizes a runtime install/start, publication, deployment or external write. The sole selected writer remains `data_implementer`; code/test/data reviews and full prescribed verification determine G's actual local completion. No broader redesign is required by this analysis.
+
+## Frozen analysis provenance for route reconstruction
+
+After this analysis the parent reported that F must be reconstructed on its genuine repaired E predecessor so inherited D review fixes are not incorrectly charged to F's route budget. G will then receive a fresh route on that actual reconstructed F. The original route/base above records the tree inspected here and is not a claim about the future final route. The parent states F's product contents are unchanged by that reconstruction. Reuse this analysis with explicit fresh route/base attribution and a hash comparison; do not relabel the old route as the final one.
+
+Observed source SHA256 values for that comparison:
+
+- Repaired predecessor `factory/src/adaptive_factory/landing_sqlite_store.py`: `7b9e677d1d1b04a87b62a2c985be026c71420c64eb559bab9d5fb6bb3f44806a`.
+- Repaired predecessor `delivery/src/adaptive_delivery/landing_publication.py`: `1ff0576faa5953596a2447e855742afd4926c91b09189b524e0627b2e09cd9c9`.
+- Frozen `factory/src/adaptive_factory/landing_backup.py`: `2c58731a22fc2224e0d30d087d002b81161c7d4459d5cfb973a5a07d41aad119`.
+- Frozen `factory/tests/test_landing_backup.py`: `4237b4f05ed6b063a040da001ffb350792d02c9aa2d3f90530d0601532f09be7`.
+- Frozen complete `factory/tests/test_landing_live_executors.py`: `2cc7b45945f05a2cc15bf87c8a0462e32e86ba4c51785252a3a9bd7be085a71c`.

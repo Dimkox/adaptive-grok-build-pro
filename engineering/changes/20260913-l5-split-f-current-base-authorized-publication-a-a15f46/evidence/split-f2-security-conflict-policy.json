@@ -1,0 +1,32 @@
+{
+  "head": "5a2ead6e6e1eff5c5df28a8d4bcb91a209975187",
+  "scope": "temporary databases only; no filesystem publication, credentials, grant or network",
+  "observations": [
+    {
+      "conflict": "REPLACE",
+      "open_accepted": true,
+      "first_digest": "d96460a2f8304d0256f3641aa5005effffc5481c20764da8000ee5888560d71e",
+      "second_digest": "a58b5f8b6f314d426adf6b5e264f900425cdda27a70a7b5896b1a6a9b4050ec3",
+      "second_prepare_result": "a58b5f8b6f314d426adf6b5e264f900425cdda27a70a7b5896b1a6a9b4050ec3",
+      "rows": [
+        [
+          "a58b5f8b6f314d426adf6b5e264f900425cdda27a70a7b5896b1a6a9b4050ec3",
+          "same-request-id"
+        ]
+      ]
+    },
+    {
+      "conflict": "IGNORE",
+      "open_accepted": true,
+      "first_digest": "d96460a2f8304d0256f3641aa5005effffc5481c20764da8000ee5888560d71e",
+      "second_digest": "a58b5f8b6f314d426adf6b5e264f900425cdda27a70a7b5896b1a6a9b4050ec3",
+      "second_prepare_result": "PublicationError: publication_request_unavailable",
+      "rows": [
+        [
+          "d96460a2f8304d0256f3641aa5005effffc5481c20764da8000ee5888560d71e",
+          "same-request-id"
+        ]
+      ]
+    }
+  ]
+}

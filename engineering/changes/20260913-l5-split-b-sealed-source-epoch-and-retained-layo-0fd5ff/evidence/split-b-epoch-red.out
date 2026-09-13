@@ -1,0 +1,16 @@
+F
+======================================================================
+FAIL: test_current_source_identity_and_external_stylesheet_contract_are_exact (factory.tests.test_landing_renderer.LandingRendererTests.test_current_source_identity_and_external_stylesheet_contract_are_exact)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-b/factory/tests/test_landing_renderer.py", line 207, in test_current_source_identity_and_external_stylesheet_contract_are_exact
+    self.assertEqual(CURRENT_BASE_SHA, TARGET_BASE_SHA)
+AssertionError: 'fde60e040167c10975b00d11f578c4da6763069a' != '699010380f4f90a0193a9c22090c35e6aded7d2c'
+- fde60e040167c10975b00d11f578c4da6763069a
++ 699010380f4f90a0193a9c22090c35e6aded7d2c
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (failures=1)

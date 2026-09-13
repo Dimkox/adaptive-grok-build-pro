@@ -154,6 +154,7 @@ class SemanticBridgeTests(unittest.TestCase):
             "landing-evaluation.v1.schema.json",
             "landing-input.v1.schema.json",
             "landing-provider-evidence.v1.schema.json",
+            "landing-provider-evidence.v2.schema.json",
             "landing-site-artifact.v1.schema.json",
             "m7-autonomy-bridge.v1.schema.json",
             "m7-predecessor-bridges.v1.schema.json",
@@ -172,11 +173,16 @@ class SemanticBridgeTests(unittest.TestCase):
             "static-landing-spec.v1.schema.json",
         }
         self.assertEqual({path.name for path in SCHEMAS.glob("*.json")}, expected)
-        for name in ("semantic-execution-binding.v1.schema.json", "semantic-validation-inputs.v1.schema.json"):
+        versions = {
+            "semantic-execution-binding.v1.schema.json": 1,
+            "semantic-validation-inputs.v1.schema.json": 1,
+            "landing-provider-evidence.v2.schema.json": 2,
+        }
+        for name, version in versions.items():
             schema = json.loads((SCHEMAS / name).read_text(encoding="utf-8"))
             self.assertEqual(schema["$schema"], "https://json-schema.org/draft/2020-12/schema")
             self.assertFalse(schema["additionalProperties"])
-            self.assertEqual(schema["properties"]["schema_version"], {"const": 1})
+            self.assertEqual(schema["properties"]["schema_version"], {"const": version})
         built = self.build()
         for name, value in (
             ("semantic-execution-binding.v1.schema.json", built.binding.to_dict()),
