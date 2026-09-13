@@ -1,0 +1,65 @@
+{
+  "schema_version": 2,
+  "change_id": "20260913-post-landing-hardening-60-derived-invariant-61-p-353f1a",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Remove the post-landing collision debt of the L5 union on main and seal two production invariants that today live only in test scope: the architecture contract inventory stops pinning an exact record count (issue #60), the deploy inventory enforces prohibited-member disjointness in production code (issue #61), and the digest-pinned PDF worker executes end-to-end in tests instead of only its python -c stub (issue #63).",
+    "success_metric": "tests.test_architecture_model, factory test_landing_artifact and factory test_landing_pdf_worker green plus grok_verify --mode pr green on the PR head",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "yellow",
+    "domains": ["governance", "landing-runtime", "test-infra"]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Contract inventory assertions derive from architecture/system.yaml with a seed floor; adding contracts needs no test edit, silently retiring one still fails.",
+      "evidence": [{"test": "tests/test_architecture_model.py"}]
+    },
+    {
+      "id": "AC-002",
+      "statement": "landing_artifact exports PROHIBITED_DEPLOY_MEMBERS, self-checks DEPLOY_MEMBERS at import and every epoch resolution fails closed naming the offending member.",
+      "evidence": [{"test": "factory/tests/test_landing_artifact.py"}]
+    },
+    {
+      "id": "AC-003",
+      "statement": "The sealed PDF worker child runs for real under tests: input guards, decoder-drift guard and parser-unavailable branch execute on hosts without pypdf; blank/corrupt/page-limit/text branches execute on the pinned runner image.",
+      "evidence": [{"test": "factory/tests/test_landing_pdf_worker.py"}]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "No deployable epoch inventory ever intersects PROHIBITED_DEPLOY_MEMBERS.",
+      "evidence": [{"test": "factory/tests/test_landing_artifact.py"}]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Contract inventory ids and paths equal exactly the contracts declared in architecture/system.yaml.",
+      "evidence": [{"test": "tests/test_architecture_model.py"}]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No credential value is read, logged, echoed or committed by this change or its verification.",
+      "evidence": [{"receipt": "verification"}]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "No behavior change to sealed artifact bytes: packager, member selection content and digests stay identical for all valid epochs.",
+      "evidence": [{"test": "factory/tests/test_landing_artifact.py"}]
+    }
+  ],
+  "contracts": {"openapi": [], "json_schema": [], "events": []},
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Exact-head adaptive-trust-ci/verified outcome for this PR (root-unittest, repository-verification, compileall)",
+      "proves": ["OBJ-001"]
+    }
+  ],
+  "rollback": {"strategy": "forward_fix", "maximum_steps": 2},
+  "approvals": {"required_scopes": ["pull-request-merge"]}
+}

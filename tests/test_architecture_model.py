@@ -1318,7 +1318,14 @@ class ArchitectureModelTests(unittest.TestCase):
         )
         self.assertEqual(ARCH.validate_repository_drift(ROOT, snapshot), ())
         records = ARCH.contract_inventory(ROOT, snapshot)
-        self.assertEqual(len(records), 41)
+        declared_ids = {str(contract["id"]) for contract in snapshot.system["contracts"]}
+        declared_paths = {str(contract["path"]) for contract in snapshot.system["contracts"]}
+        self.assertEqual({record.id for record in records}, declared_ids)
+        self.assertEqual({record.path for record in records}, declared_paths)
+        self.assertGreaterEqual(
+            len(records), 41,
+            "seed-completeness floor; a PR may add contracts but never retire one silently",
+        )
         evidence_records = {record.id: (record.version, record.path) for record in records
                             if record.id.startswith("CONTRACT-FACTORY-LANDING-PROVIDER-EVIDENCE-")}
         self.assertEqual(evidence_records, {

@@ -66,21 +66,43 @@ _PRIOR_DEPLOY_MEMBERS = tuple(
     if member not in {"analytics.js", "analytics.css"}
 )
 
+PROHIBITED_DEPLOY_MEMBERS = frozenset(
+    {
+        "ASSETS.md",
+        "SERVER-SETUP.md",
+        "og-image.jpg",
+        "dist",
+        "docs",
+        "reports",
+        "research",
+        "tests",
+    }
+)
+
+
+def _approved_deploy_members(members: tuple[str, ...]) -> tuple[str, ...]:
+    overlap = sorted(PROHIBITED_DEPLOY_MEMBERS.intersection(members))
+    if overlap:
+        raise LandingArtifactError(f"prohibited_deploy_member:{','.join(overlap)}")
+    return members
+
 
 def deploy_members_for_source(source_sha: str, source_tree: str) -> tuple[str, ...]:
     """Retain old sealed artifacts without accepting an unknown source epoch."""
     if (source_sha, source_tree) == (
         "699010380f4f90a0193a9c22090c35e6aded7d2c", "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4"
     ):
-        return _PRIOR_DEPLOY_MEMBERS
+        return _approved_deploy_members(_PRIOR_DEPLOY_MEMBERS)
     if (source_sha, source_tree) == (
         "176efcaab931c2482781ff163c621b10aa05dee9", "f2bdcecc6dbe9ecc82007610d398ca12bd75e07f"
     ):
-        return tuple(member for member in _PRIOR_DEPLOY_MEMBERS if member != "index.css")
+        return _approved_deploy_members(
+            tuple(member for member in _PRIOR_DEPLOY_MEMBERS if member != "index.css")
+        )
     if (source_sha, source_tree) == (
         "fde60e040167c10975b00d11f578c4da6763069a", "21817e70e079b772e1f3114a80dfc0320d1ada91"
     ):
-        return DEPLOY_MEMBERS
+        return _approved_deploy_members(DEPLOY_MEMBERS)
     raise LandingArtifactError("source_identity")
 
 
@@ -93,6 +115,9 @@ _HEX40 = re.compile(r"^[0-9a-f]{40}$")
 
 class LandingArtifactError(RuntimeError):
     pass
+
+
+_approved_deploy_members(DEPLOY_MEMBERS)
 
 
 @dataclass(frozen=True)

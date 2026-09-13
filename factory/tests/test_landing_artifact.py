@@ -10,14 +10,18 @@ from pathlib import Path
 import stat
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 
+from adaptive_factory import landing_artifact
 from adaptive_factory.landing_artifact import (
     CONTROL_REPOSITORY_ID,
     DEPLOY_MEMBERS,
     ExactGitLandingArtifactSource,
     LandingArtifactError,
     LandingArtifactPackager,
+    PROHIBITED_DEPLOY_MEMBERS,
+    deploy_members_for_source,
 )
 from adaptive_factory.landing_contracts import strict_json_object
 from adaptive_factory.landing_coordinator import LandingCoordinator
@@ -32,18 +36,7 @@ from factory.tests.test_landing_renderer import landing_spec, sealed_target
 
 FIXED_TIME = datetime(2026, 9, 4, 0, 0, tzinfo=timezone.utc)
 PROFILE_DIGEST = "2" * 64
-PROHIBITED_MEMBERS = frozenset(
-    {
-        "ASSETS.md",
-        "SERVER-SETUP.md",
-        "og-image.jpg",
-        "dist",
-        "docs",
-        "reports",
-        "research",
-        "tests",
-    }
-)
+PROHIBITED_MEMBERS = PROHIBITED_DEPLOY_MEMBERS
 
 
 @contextmanager
@@ -282,6 +275,24 @@ class LandingArtifactTests(unittest.TestCase):
                             bad_evaluation,
                             Path(output),
                         )
+
+    def test_every_epoch_inventory_is_disjoint_from_production_prohibited_set(self):
+        for members in (
+            DEPLOY_MEMBERS,
+            landing_artifact._PRIOR_DEPLOY_MEMBERS,
+            tuple(m for m in landing_artifact._PRIOR_DEPLOY_MEMBERS if m != "index.css"),
+        ):
+            self.assertTrue(PROHIBITED_DEPLOY_MEMBERS.isdisjoint(members))
+
+    def test_epoch_resolution_fails_closed_on_a_prohibited_member(self):
+        injected = DEPLOY_MEMBERS + ("SERVER-SETUP.md",)
+        with mock.patch.object(landing_artifact, "DEPLOY_MEMBERS", injected):
+            with self.assertRaises(LandingArtifactError) as current:
+                deploy_members_for_source(
+                    "fde60e040167c10975b00d11f578c4da6763069a",
+                    "21817e70e079b772e1f3114a80dfc0320d1ada91",
+                )
+        self.assertIn("prohibited_deploy_member:SERVER-SETUP.md", str(current.exception))
 
 
 if __name__ == "__main__":

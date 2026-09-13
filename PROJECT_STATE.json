@@ -9,8 +9,30 @@
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
-  "delivered_milestones_on_main": ["M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9"],
-  "implemented_milestones": ["M0", "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9"],
+  "delivered_milestones_on_main": [
+    "M0",
+    "M1",
+    "M2",
+    "M3",
+    "M4",
+    "M5",
+    "M6",
+    "M7",
+    "M8",
+    "M9"
+  ],
+  "implemented_milestones": [
+    "M0",
+    "M1",
+    "M2",
+    "M3",
+    "M4",
+    "M5",
+    "M6",
+    "M7",
+    "M8",
+    "M9"
+  ],
   "published_release": {
     "tag": "v2.0.14",
     "published_at": "2026-09-04T16:58:48Z",
@@ -307,7 +329,14 @@
           "protected_merge_and_acceptance_record"
         ]
       },
-      "sequential_acceptance_order": ["M4", "M5", "M6", "M7", "M8", "M9"],
+      "sequential_acceptance_order": [
+        "M4",
+        "M5",
+        "M6",
+        "M7",
+        "M8",
+        "M9"
+      ],
       "m8_calendar": {
         "status": "indeterminate",
         "minimum_human_accepted_tasks": 30
@@ -376,7 +405,9 @@
       "review": {
         "status": "passed",
         "commit": "9590db4db14838ab534958aaa0842f5523f043ae",
-        "evidence": ["engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-docs-researcher.md"]
+        "evidence": [
+          "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-docs-researcher.md"
+        ]
       },
       "stack_integration": {
         "status": "not_applicable",
@@ -429,7 +460,10 @@
         "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8",
         "checked_head": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
         "historical_status": "partial",
-        "pull_requests": [4, 8],
+        "pull_requests": [
+          4,
+          8
+        ],
         "merge_commits": [
           "48cb9737fac7f26fb70b425957a3ed64d4c1eb55",
           "e81ae72766972e1dda38f20bc7b3dece62319fd0"
@@ -452,7 +486,9 @@
       "review": {
         "status": "passed",
         "commit": "022411b05924618cfde0cb97b8c8aff4955e6013",
-        "evidence": ["engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-architect.md"]
+        "evidence": [
+          "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-architect.md"
+        ]
       },
       "stack_integration": {
         "status": "merged",
@@ -487,7 +523,9 @@
       "review": {
         "status": "passed",
         "commit": "1e73ff9b91d9b711cafccad7ccccb1a992d5e84d",
-        "evidence": ["engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-architect.md"]
+        "evidence": [
+          "engineering/changes/20260901-consolidate-milestone-branch-state-and-delivery-944abd/evidence/analysis-architect.md"
+        ]
       },
       "stack_integration": {
         "status": "merged",
@@ -609,39 +647,173 @@
       }
     },
     "M5": {
-      "implementation": {"status": "delivered_to_main", "commit": "85cd4343143915ce9342634e7fe81886b6394871", "evidence": "engineering/changes/20260904-m5-bounded-local-execution-control-plane-on-exac-6c578a", "notes": "M5 execution v1/v2, offline adapters, brokers/workspace, artifact binding, terminal flow and bounded recovery are delivered in v2.0.13; execution remains disabled by default."},
-      "review": {"status": "passed_for_release_head", "commit": "b5eba759c309a92f92f4d4003d025795c7f8a1f9", "evidence": [], "notes": "The final verification and route-selected review wave completed before PR 22 delivery."},
-      "stack_integration": {"status": "included_in_v2.0.13_delivery", "base_branch": "integration/m5-m4-final-20260904", "base_commit": "67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4", "pull_request": 22, "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8", "notes": "Migrations 014-017 are additive and retained in the published release tree."},
-      "main_delivery": {"status": "delivered", "pull_request": 22, "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"},
-      "external_gate": {"status": "success", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": "b5eba759c309a92f92f4d4003d025795c7f8a1f9", "check_run_id": 100955508827, "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a"}
+      "implementation": {
+        "status": "delivered_to_main",
+        "commit": "85cd4343143915ce9342634e7fe81886b6394871",
+        "evidence": "engineering/changes/20260904-m5-bounded-local-execution-control-plane-on-exac-6c578a",
+        "notes": "M5 execution v1/v2, offline adapters, brokers/workspace, artifact binding, terminal flow and bounded recovery are delivered in v2.0.13; execution remains disabled by default."
+      },
+      "review": {
+        "status": "passed_for_release_head",
+        "commit": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+        "evidence": [],
+        "notes": "The final verification and route-selected review wave completed before PR 22 delivery."
+      },
+      "stack_integration": {
+        "status": "included_in_v2.0.13_delivery",
+        "base_branch": "integration/m5-m4-final-20260904",
+        "base_commit": "67dc4ddfc8043608aa7a0ef6396c7c0e158d18f4",
+        "pull_request": 22,
+        "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8",
+        "notes": "Migrations 014-017 are additive and retained in the published release tree."
+      },
+      "main_delivery": {
+        "status": "delivered",
+        "pull_request": 22,
+        "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"
+      },
+      "external_gate": {
+        "status": "success",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+        "check_run_id": 100955508827,
+        "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a"
+      }
     },
     "M6": {
-      "implementation": {"status": "delivered_to_main", "commit": "c6d48ffd8594b3baab1a575021452ea5dfa2a98b", "evidence": "integration/m6-m5-final-20260904", "notes": "M6 semantic contracts, validation, adjudication and repair are delivered in v2.0.13 with additive migration 018."},
-      "review": {"status": "passed_for_release_head", "commit": "b5eba759c309a92f92f4d4003d025795c7f8a1f9", "evidence": [], "notes": "The final verification and route-selected review wave completed before PR 22 delivery."},
-      "stack_integration": {"status": "included_in_v2.0.13_delivery", "base_branch": "integration/m6-m5-final-20260904", "pull_request": 22, "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"},
-      "main_delivery": {"status": "delivered", "pull_request": 22, "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"},
-      "external_gate": {"status": "success", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": "b5eba759c309a92f92f4d4003d025795c7f8a1f9", "check_run_id": 100955508827, "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a"}
+      "implementation": {
+        "status": "delivered_to_main",
+        "commit": "c6d48ffd8594b3baab1a575021452ea5dfa2a98b",
+        "evidence": "integration/m6-m5-final-20260904",
+        "notes": "M6 semantic contracts, validation, adjudication and repair are delivered in v2.0.13 with additive migration 018."
+      },
+      "review": {
+        "status": "passed_for_release_head",
+        "commit": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+        "evidence": [],
+        "notes": "The final verification and route-selected review wave completed before PR 22 delivery."
+      },
+      "stack_integration": {
+        "status": "included_in_v2.0.13_delivery",
+        "base_branch": "integration/m6-m5-final-20260904",
+        "pull_request": 22,
+        "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"
+      },
+      "main_delivery": {
+        "status": "delivered",
+        "pull_request": 22,
+        "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"
+      },
+      "external_gate": {
+        "status": "success",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+        "check_run_id": 100955508827,
+        "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a"
+      }
     },
     "M7": {
-      "implementation": {"status": "delivered_to_main", "commit": "00e0e4f9a6f50844bf9e0ffc7139d3283dda889f", "evidence": "engineering/changes/20260904-m7-bounded-shadow-handoff-on-exact-m6-c6d48ff-03b8e2", "notes": "M7 immutable ready bundle, shadow outcomes/cohort and deterministic human-review recommendation are delivered in v2.0.13. Existing evidence remains non-operational."},
-      "review": {"status": "passed_for_release_head", "commit": "b5eba759c309a92f92f4d4003d025795c7f8a1f9", "evidence": [], "notes": "The final verification and route-selected review wave completed before PR 22 delivery."},
-      "stack_integration": {"status": "included_in_v2.0.13_delivery", "base_branch": "integration/m7-m6-final-20260904", "pull_request": 22, "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"},
-      "main_delivery": {"status": "delivered", "pull_request": 22, "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"},
-      "external_gate": {"status": "success", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": "b5eba759c309a92f92f4d4003d025795c7f8a1f9", "check_run_id": 100955508827, "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a"}
+      "implementation": {
+        "status": "delivered_to_main",
+        "commit": "00e0e4f9a6f50844bf9e0ffc7139d3283dda889f",
+        "evidence": "engineering/changes/20260904-m7-bounded-shadow-handoff-on-exact-m6-c6d48ff-03b8e2",
+        "notes": "M7 immutable ready bundle, shadow outcomes/cohort and deterministic human-review recommendation are delivered in v2.0.13. Existing evidence remains non-operational."
+      },
+      "review": {
+        "status": "passed_for_release_head",
+        "commit": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+        "evidence": [],
+        "notes": "The final verification and route-selected review wave completed before PR 22 delivery."
+      },
+      "stack_integration": {
+        "status": "included_in_v2.0.13_delivery",
+        "base_branch": "integration/m7-m6-final-20260904",
+        "pull_request": 22,
+        "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"
+      },
+      "main_delivery": {
+        "status": "delivered",
+        "pull_request": 22,
+        "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"
+      },
+      "external_gate": {
+        "status": "success",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+        "check_run_id": 100955508827,
+        "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a"
+      }
     },
     "M8": {
-      "implementation": {"status": "delivered_to_main", "commit": "a937ac8d200a4e143c295fabd482b19bc8cc4286", "evidence": "engineering/changes/20260904-m8-earned-autonomy-on-exact-m7-00e0e4f-3ec8b3", "notes": "M8 earned-autonomy contracts, actual-M7 bridge, one-level L2-capped recommendation and deterministic L0 demotion are delivered in v2.0.13. The factual 30-task cohort, durable currentness and activation remain absent."},
-      "review": {"status": "passed_for_release_head", "commit": "b5eba759c309a92f92f4d4003d025795c7f8a1f9", "evidence": [], "notes": "Repository release review passed; no factual trust profile, 30-real-task cohort or activation is claimed."},
-      "stack_integration": {"status": "included_in_v2.0.13_delivery", "base_branch": "repair/m8-contract-boundary-20260904", "pull_request": 22, "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"},
-      "main_delivery": {"status": "delivered", "pull_request": 22, "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"},
-      "external_gate": {"status": "success", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": "b5eba759c309a92f92f4d4003d025795c7f8a1f9", "check_run_id": 100955508827, "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a", "notes": "This gate establishes repository merge eligibility only; it does not activate M8 autonomy."}
+      "implementation": {
+        "status": "delivered_to_main",
+        "commit": "a937ac8d200a4e143c295fabd482b19bc8cc4286",
+        "evidence": "engineering/changes/20260904-m8-earned-autonomy-on-exact-m7-00e0e4f-3ec8b3",
+        "notes": "M8 earned-autonomy contracts, actual-M7 bridge, one-level L2-capped recommendation and deterministic L0 demotion are delivered in v2.0.13. The factual 30-task cohort, durable currentness and activation remain absent."
+      },
+      "review": {
+        "status": "passed_for_release_head",
+        "commit": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+        "evidence": [],
+        "notes": "Repository release review passed; no factual trust profile, 30-real-task cohort or activation is claimed."
+      },
+      "stack_integration": {
+        "status": "included_in_v2.0.13_delivery",
+        "base_branch": "repair/m8-contract-boundary-20260904",
+        "pull_request": 22,
+        "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"
+      },
+      "main_delivery": {
+        "status": "delivered",
+        "pull_request": 22,
+        "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"
+      },
+      "external_gate": {
+        "status": "success",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+        "check_run_id": 100955508827,
+        "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a",
+        "notes": "This gate establishes repository merge eligibility only; it does not activate M8 autonomy."
+      }
     },
     "M9": {
-      "implementation": {"status": "delivered_to_main", "commit": "64b10689ce78a0464a494440f3fa981e18789687", "evidence": "engineering/changes/20260904-m9-staged-delivery-on-exact-m8-f53275d-331ca7", "notes": "M9 closed delivery records, actual-M8 bridge, deterministic one-step preview/staging/bounded-canary evaluation, sealed in-memory adapter, evidence chain and least-authority recovery are delivered in v2.0.13. A real signed environment/provider deployment remains absent."},
-      "review": {"status": "passed_for_release_head", "commit": "b5eba759c309a92f92f4d4003d025795c7f8a1f9", "evidence": [], "notes": "The final verification and all five route-selected reviews completed before PR 22 delivery."},
-      "stack_integration": {"status": "included_in_v2.0.13_delivery", "base_branch": "integration/m9-m8-final-20260904", "base_commit": "a937ac8d200a4e143c295fabd482b19bc8cc4286", "pull_request": 22, "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"},
-      "main_delivery": {"status": "delivered", "pull_request": 22, "checked_head": "b5eba759c309a92f92f4d4003d025795c7f8a1f9", "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8", "merged_at": "2026-09-04T08:31:49Z", "release": "v2.0.13", "published_at": "2026-09-04T08:33:19Z"},
-      "external_gate": {"status": "success", "name": "adaptive-trust-ci/verified@06ecf1c875bc", "head_sha": "b5eba759c309a92f92f4d4003d025795c7f8a1f9", "check_run_id": 100955508827, "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a", "notes": "This gate establishes repository merge eligibility only; an operational environment/provider and human production authority remain required."}
+      "implementation": {
+        "status": "delivered_to_main",
+        "commit": "64b10689ce78a0464a494440f3fa981e18789687",
+        "evidence": "engineering/changes/20260904-m9-staged-delivery-on-exact-m8-f53275d-331ca7",
+        "notes": "M9 closed delivery records, actual-M8 bridge, deterministic one-step preview/staging/bounded-canary evaluation, sealed in-memory adapter, evidence chain and least-authority recovery are delivered in v2.0.13. A real signed environment/provider deployment remains absent."
+      },
+      "review": {
+        "status": "passed_for_release_head",
+        "commit": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+        "evidence": [],
+        "notes": "The final verification and all five route-selected reviews completed before PR 22 delivery."
+      },
+      "stack_integration": {
+        "status": "included_in_v2.0.13_delivery",
+        "base_branch": "integration/m9-m8-final-20260904",
+        "base_commit": "a937ac8d200a4e143c295fabd482b19bc8cc4286",
+        "pull_request": 22,
+        "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8"
+      },
+      "main_delivery": {
+        "status": "delivered",
+        "pull_request": 22,
+        "checked_head": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+        "merge_commit": "8599d45f4f28285381b05a53feb3059de92eb2a8",
+        "merged_at": "2026-09-04T08:31:49Z",
+        "release": "v2.0.13",
+        "published_at": "2026-09-04T08:33:19Z"
+      },
+      "external_gate": {
+        "status": "success",
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "head_sha": "b5eba759c309a92f92f4d4003d025795c7f8a1f9",
+        "check_run_id": 100955508827,
+        "attestation_id": "74f1bbb2-3098-4d35-a42f-d49351d81c4a",
+        "notes": "This gate establishes repository merge eligibility only; an operational environment/provider and human production authority remain required."
+      }
     }
   },
   "work_inventory": {
@@ -704,21 +876,100 @@
       }
     ],
     "open_pull_requests": [
-      {"pull_request": 12, "branch": "fix/human-approval-cli", "base": "main", "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Lazy CLI imports and tests are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
-      {"pull_request": 13, "branch": "feat/trust-ci-repository-profiles", "base": "main", "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80", "status": "blocked_old_epoch_action_required", "observed_check_conclusion": "ACTION_REQUIRED", "unique_scope": "Repository-scoped Trust CI profiles are absent from main.", "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."},
-      {"pull_request": 15, "branch": "mvp/investor-ready", "base": "main", "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14", "status": "blocked_current_epoch_failure", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "SUCCESS", "failure_cause": "not inspected or inferred", "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b", "unique_scope": "Investor demo and packaging hardening are absent from main.", "disposition": "Wholesale merge is superseded; extract the unique scope into a clean successor. No successor PR exists."}
+      {
+        "pull_request": 12,
+        "branch": "fix/human-approval-cli",
+        "base": "main",
+        "head": "0f7f508945ccce7dc4f1bffc463247633e9e8f58",
+        "status": "blocked_old_epoch_action_required",
+        "observed_check_conclusion": "ACTION_REQUIRED",
+        "unique_scope": "Lazy CLI imports and tests are absent from main.",
+        "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."
+      },
+      {
+        "pull_request": 13,
+        "branch": "feat/trust-ci-repository-profiles",
+        "base": "main",
+        "head": "f2fd8a7a00a731fbb7acb90e3c7c7881568c8d80",
+        "status": "blocked_old_epoch_action_required",
+        "observed_check_conclusion": "ACTION_REQUIRED",
+        "unique_scope": "Repository-scoped Trust CI profiles are absent from main.",
+        "disposition": "Keep stale; extract the unique scope into a clean successor. No successor PR exists."
+      },
+      {
+        "pull_request": 15,
+        "branch": "mvp/investor-ready",
+        "base": "main",
+        "head": "165d5dd90a2fc2831a3b85be2562a2bb241c8b14",
+        "status": "blocked_current_epoch_failure",
+        "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "observed_check_conclusion": "FAILURE",
+        "gitguardian_conclusion": "SUCCESS",
+        "failure_cause": "not inspected or inferred",
+        "unique_commit": "9dcdf5880b619f29c01dbe76e0f598ff1fad9f9b",
+        "unique_scope": "Investor demo and packaging hardening are absent from main.",
+        "disposition": "Wholesale merge is superseded; extract the unique scope into a clean successor. No successor PR exists."
+      }
     ],
     "retained_unresolved": [
-      {"pull_request": 14, "local_head": "cb2fe7ce637c464179e20b5b37aae334e56c1838", "purpose": "Unique closed production-promotion work requiring explicit re-evaluation."},
-      {"branch": "feature/workflow-artifact-adapters", "local_head": "dccaeec2a6b79c73663765f5909243e468e4b070", "purpose": "Local-only work requiring comparison before cleanup."},
-      {"branch": "origin/milestone/a-plus-autopilot", "head": "90a5da294ec06e9fbbf8ea97d1c27c64484b9069", "purpose": "Design-only reference; not M8 implementation."}
+      {
+        "pull_request": 14,
+        "local_head": "cb2fe7ce637c464179e20b5b37aae334e56c1838",
+        "purpose": "Unique closed production-promotion work requiring explicit re-evaluation."
+      },
+      {
+        "branch": "feature/workflow-artifact-adapters",
+        "local_head": "dccaeec2a6b79c73663765f5909243e468e4b070",
+        "purpose": "Local-only work requiring comparison before cleanup."
+      },
+      {
+        "branch": "origin/milestone/a-plus-autopilot",
+        "head": "90a5da294ec06e9fbbf8ea97d1c27c64484b9069",
+        "purpose": "Design-only reference; not M8 implementation."
+      }
     ],
     "superseded": [
-      {"pull_request": 1, "branch": "hardening/trust-boundary-v2-1", "reason": "Closed Actions-era trust design; never merge."},
-      {"pull_request": 17, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "milestone/m2-executable-architecture", "head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89", "status": "closed_duplicate", "closed_at": "2026-09-02T10:08:38Z", "duplicate_of": 21, "reason": "Closed because it exactly duplicated open PR 21 at the same head; it provides no separate delivery authority."},
-      {"pull_request": 18, "branch": "feature/seo-landing-codex-side-project", "reason": "Stacked staging integration only; PR 19 delivered the SEO source to main and this path is archival."},
-      {"pull_request": 21, "branch": "milestone/m4-durable-control-plane-accepted-m3", "base": "main", "head": "571cad7877431ac5ab5779b53fe9f7effd6859ce", "status": "closed_superseded", "closed_at": "2026-09-05T12:07:24Z", "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc", "observed_check_conclusion": "FAILURE", "gitguardian_conclusion": "FAILURE", "failure_cause": "not inspected or inferred", "disposition": "Closed as stale after PR 22 delivered M1-M9 in v2.0.13 and PR 24 delivered additive L5 in v2.0.14; preserved failure conclusions are historical evidence, not current delivery blockers."},
-      {"branches": ["feat/m4-durable-factory-control-plane", "milestone/m4-durable-control-plane-local", "fix/m3-restack-accepted-m2"], "reason": "Local aliases carry no source beyond accepted M2/M3 and historical M4 source head 460a8a01; published main and tag v2.0.13 are authoritative for delivered product identity."}
+      {
+        "pull_request": 1,
+        "branch": "hardening/trust-boundary-v2-1",
+        "reason": "Closed Actions-era trust design; never merge."
+      },
+      {
+        "pull_request": 17,
+        "branch": "milestone/m4-durable-control-plane-accepted-m3",
+        "base": "milestone/m2-executable-architecture",
+        "head": "460a8a01a6394cac710b4e3f9eea3d94d4beef89",
+        "status": "closed_duplicate",
+        "closed_at": "2026-09-02T10:08:38Z",
+        "duplicate_of": 21,
+        "reason": "Closed because it exactly duplicated open PR 21 at the same head; it provides no separate delivery authority."
+      },
+      {
+        "pull_request": 18,
+        "branch": "feature/seo-landing-codex-side-project",
+        "reason": "Stacked staging integration only; PR 19 delivered the SEO source to main and this path is archival."
+      },
+      {
+        "pull_request": 21,
+        "branch": "milestone/m4-durable-control-plane-accepted-m3",
+        "base": "main",
+        "head": "571cad7877431ac5ab5779b53fe9f7effd6859ce",
+        "status": "closed_superseded",
+        "closed_at": "2026-09-05T12:07:24Z",
+        "observed_check": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "observed_check_conclusion": "FAILURE",
+        "gitguardian_conclusion": "FAILURE",
+        "failure_cause": "not inspected or inferred",
+        "disposition": "Closed as stale after PR 22 delivered M1-M9 in v2.0.13 and PR 24 delivered additive L5 in v2.0.14; preserved failure conclusions are historical evidence, not current delivery blockers."
+      },
+      {
+        "branches": [
+          "feat/m4-durable-factory-control-plane",
+          "milestone/m4-durable-control-plane-local",
+          "fix/m3-restack-accepted-m2"
+        ],
+        "reason": "Local aliases carry no source beyond accepted M2/M3 and historical M4 source head 460a8a01; published main and tag v2.0.13 are authoritative for delivered product identity."
+      }
     ]
   },
   "trust_ci": {
@@ -756,16 +1007,15 @@
     "host-local deployment overlays and scratch"
   ],
   "l5_production_preparation": {
-    "status": "assembled_source_candidate_pending_exact_head_evidence",
-    "branch": "feat/l5-split-g-final-runtime",
+    "status": "landed_main_eb9df64_release_and_activation_separate",
+    "branch": "main",
     "route_id": "2a890b6485a5",
-    "source_predecessor": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
     "actual_main_observation": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
     "frozen_reconstruction_reference": "f31406e970d67f7cd59694da5de88915adb0fa68",
     "change_package": "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b",
     "evidence_branch": "docs/l5-split-verification-evidence",
     "evidence_index": "engineering/reviews/l5-delivery-stack.json",
-    "next_action": "Read exact-source per-slice reports and live PR checks; local preflight does not authorize merge or operational activation.",
+    "next_action": "Post-landing hardening (#60 derived invariant, #61 production prohibited-member assertion, #63 real PDF worker execution test) in flight; then release sync (VERSION/CHANGELOG/README + tag) and operator activation on the dedicated host under separate exact delegations.",
     "slice_branches": [
       "feat/l5-split-a-boundaries",
       "feat/l5-split-b-source-epoch",
@@ -805,6 +1055,9 @@
       "source": "user-supplied earlier Qwen error",
       "trigger": "undetermined"
     },
-    "current_verification": "recorded separately after source freeze; no historical counts promoted"
+    "current_verification": "recorded separately after source freeze; no historical counts promoted",
+    "landed_main_commit": "eb9df64bca333f30ec58f8c725a021360e22ed92",
+    "landed_at": "2026-09-13T17:35:51Z",
+    "landing_method": "slice A squash #65 + tree-identical union #75 (tree == attested e6a813e); slices B-G closed landed-by-content"
   }
 }
