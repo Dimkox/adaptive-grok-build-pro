@@ -499,3 +499,7 @@ Separate PR pagination completeness from task-inventory completeness, and report
 - 2026-09-11 explicit usage protocol split: preserve the exact V1 usage payload and model V2 as a separate protocol/versioned proposal with a table-bound derived total. This prevents an expanded payload from silently changing legacy billing semantics while carrying all V2 facts into idempotency.
 
 - 2026-09-11 parser version propagation: validate accepted JSONL events using their supported protocol version and preserve that version in the canonical event. This keeps the adapter-facing entrypoint aligned with the V1/V2 contract split rather than testing V2 only through constructed values.
+
+## 2026-09-13 — Reconstruct delivery slices against genuine predecessors
+
+The import-only prerequisite can be extracted onto actual main while later slices introduce their modules, schemas and test dependencies together. Keep architecture fitness on each new route's genuine predecessor and retain the separate cumulative main inventory; neither refs nor budgets need to change.

@@ -1,0 +1,66 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Resolve absolute, relative and module-less imports against canonical src roots; reject package escapes and ancestor initializer spoofing.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Optional module exceptions match exact dotted names only; no existing forbidden network capability is widened.",
+      "evidence": [
+        {
+          "test": "tests/test_architecture_fitness.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Every landing module present in this slice has exactly one classification and owner; new unclassified modules are detected.",
+      "evidence": [
+        {
+          "test": "tests/test_landing_architecture_boundaries.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": []
+  },
+  "change_id": "20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205",
+  "contracts": {
+    "events": [],
+    "json_schema": [],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    "Unclassified landing module silently escapes the inventory.",
+    "Comparison refs or existing route baselines are substituted to hide cumulative changes."
+  ],
+  "invariants": [
+    "All code budgets and deployed trust boundaries remain unchanged.",
+    "Future L5 modules and schemas are introduced only in their owning delivery slice."
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Implement the approved L5 delivery split A: preserve existing behavior while adding exact-module import exceptions, qualified relative import validation and complete landing module inventory; no API change",
+    "success_metric": "bounded source extraction with passing direct-import regressions and complete module inventory",
+    "target": "all scoped acceptance criteria pass without changing any code budget"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api"
+    ],
+    "tier": "yellow"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

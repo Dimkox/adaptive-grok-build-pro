@@ -1,0 +1,668 @@
+{
+  "frozen_source": "f31406e970d67f7cd59694da5de88915adb0fa68",
+  "actual_start_base": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
+  "path_count": 165,
+  "paths": [
+    {
+      "path": ".grok-stack/adaptive_grok/architecture_fitness.py",
+      "source_tree_entry": "100644 blob 622069a4777125711bc7a8e0c879ad205e935dd5\t.grok-stack/adaptive_grok/architecture_fitness.py"
+    },
+    {
+      "path": "PROJECT_STATE.json",
+      "source_tree_entry": "100644 blob 34092775a7f4da93ef48534e45c6eda5e1a20a3e\tPROJECT_STATE.json"
+    },
+    {
+      "path": "README.md",
+      "source_tree_entry": "100644 blob 4a1e9ca4d71bbbe2942ee327fbb5d2e6e48d3298\tREADME.md"
+    },
+    {
+      "path": "START_HERE.md",
+      "source_tree_entry": "100644 blob 65cc3fd261fe1ec71eff6580d2c2ea7d1c31c988\tSTART_HERE.md"
+    },
+    {
+      "path": "architecture/rules.yaml",
+      "source_tree_entry": "100644 blob 1ac466a110a13c0913fe5043b727ddab29c7fb18\tarchitecture/rules.yaml"
+    },
+    {
+      "path": "architecture/system.yaml",
+      "source_tree_entry": "100644 blob 264a540c46cccb830b7f6edfd28fa8f6f38792c8\tarchitecture/system.yaml"
+    },
+    {
+      "path": "decisions.md",
+      "source_tree_entry": "100644 blob 1e573ba28082846518cd520cf6aeb39a99b16694\tdecisions.md"
+    },
+    {
+      "path": "delivery/contracts/jsonschema/landing-publication-request.v1.schema.json",
+      "source_tree_entry": "100644 blob 77296e30976fa5c11ebcb3876fac4f77eb0090d3\tdelivery/contracts/jsonschema/landing-publication-request.v1.schema.json"
+    },
+    {
+      "path": "delivery/src/adaptive_delivery/landing_filesystem.py",
+      "source_tree_entry": "100644 blob 70b43abc0c55908286082a62fa9ca7c07a4d2a00\tdelivery/src/adaptive_delivery/landing_filesystem.py"
+    },
+    {
+      "path": "delivery/src/adaptive_delivery/landing_publication.py",
+      "source_tree_entry": "100644 blob 1a4fbe0f129f7e5de2c5dac84043354c26a59807\tdelivery/src/adaptive_delivery/landing_publication.py"
+    },
+    {
+      "path": "delivery/src/adaptive_delivery/landing_publication_contracts.py",
+      "source_tree_entry": "100644 blob eba47143979c6a9f51d2320c90b113eee9df9d0b\tdelivery/src/adaptive_delivery/landing_publication_contracts.py"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-09-12-l5-production-runtime.md",
+      "source_tree_entry": "100644 blob 013973540e18f266c6da92ab46a9e82d9bdce542\tdocs/superpowers/plans/2026-09-12-l5-production-runtime.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/architecture-continuation-plan.md",
+      "source_tree_entry": "100644 blob c6e0aacf2c1afce6bc57c760a7d1a798d33181c7\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/architecture-continuation-plan.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/architecture.md",
+      "source_tree_entry": "100644 blob 0b5952e0ed99766ddba1f33d333097ef84abb45a\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/architecture.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/brief.md",
+      "source_tree_entry": "100644 blob 254330a462867bb8135d95b38d620c47dc0046d2\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/brief.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/change-spec.yaml",
+      "source_tree_entry": "100644 blob 6ef066b72f042380f775eecce70006a493455090\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/change-spec.yaml"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/README.md",
+      "source_tree_entry": "100644 blob 79cef33e3bc46ab0f24df3a1319b2e121871f0d8\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/README.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-architect.md",
+      "source_tree_entry": "100644 blob 54d3375e020530b2bd103108d3578bbcdb32e69d\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-architect.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-docs_researcher.md",
+      "source_tree_entry": "100644 blob 3f88b3dc88d6ba6c25e5f867b6fb3ebf82db4ab1\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-docs_researcher.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-integration_architect.md",
+      "source_tree_entry": "100644 blob 91f9cdb61987c31b2353d30bc6a9fbe2fe0f5c1a\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-integration_architect.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-repo_explorer.md",
+      "source_tree_entry": "100644 blob cf86ee63152ef7c403695749974074939466488c\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-repo_explorer.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-task_analyst.md",
+      "source_tree_entry": "100644 blob 3b47e4aa457a524390bf68c832958b8dc0fd2cf4\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/analysis-task_analyst.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-authority-identity-red.out",
+      "source_tree_entry": "100644 blob e99b17d28a1e27507df37a95bfe697a46bf6d08f\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-authority-identity-red.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-authority-red.out",
+      "source_tree_entry": "100644 blob 4ca3b20defa531cfd7e1b60960619ed735019ad2\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-authority-red.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-boundary-red.out",
+      "source_tree_entry": "100644 blob d320ede7bfb4f7ae3fe4bef33cd7de0fcfa97a73\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-boundary-red.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-code-review.md",
+      "source_tree_entry": "100644 blob 54701cd2da20c7b4ee7cee8b5253938d881d1004\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-code-review.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-continuation-slice.json",
+      "source_tree_entry": "100644 blob 0e4d8b86451d382544a67accc1dbe715305bddbe\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-continuation-slice.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-continuation-verification.md",
+      "source_tree_entry": "100644 blob e95f52cbedd4f43bc8b791c8f95d08c8ff5e378b\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-continuation-verification.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-core28-final.out",
+      "source_tree_entry": "100644 blob 6441119ed8d2a68dab710e99f6878462ae691ab9\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-core28-final.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-delivery28-verified.out",
+      "source_tree_entry": "100644 blob a8f6ce84c6baf6bf203ce8942f17de33b490d095\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-delivery28-verified.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-evidence-v2-red.out",
+      "source_tree_entry": "100644 blob 7e0f5ca875a81daed755a2f4f1acef3551c3cf22\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-evidence-v2-red.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-factory28-verified.out",
+      "source_tree_entry": "100644 blob 3942f303cd77fe042f974f85dcee9776a3cb906a\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-factory28-verified.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-final-focused.out",
+      "source_tree_entry": "100644 blob a76eceb09b1c378fc58e8feeeabc22f23369f50b\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-final-focused.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-frozen-source-complete.json",
+      "source_tree_entry": "100644 blob f09c0ba3c307896842f523bc4043a2e915f0b2c9\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-frozen-source-complete.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-full-verifier-complete.json",
+      "source_tree_entry": "100644 blob 3eee197b3aba8d206e364d487fc4d8f182ab23ea\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-full-verifier-complete.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-implementation-report.md",
+      "source_tree_entry": "100644 blob 560903a1786aa43bbc434fb254503ea7b3d54c31\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-implementation-report.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-io-inventory-red.out",
+      "source_tree_entry": "100644 blob 18124cd4507ce5a1731b9945675c3d24807cfd74\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-io-inventory-red.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-namespace-final-green.out",
+      "source_tree_entry": "100644 blob 07cb38b7f8e1f36365c2d9bd7d4ac53a6b424831\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-namespace-final-green.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-package-root-spoof-red.out",
+      "source_tree_entry": "100644 blob 66d551d9b3d7ea152ce19de171e908cfbb88064a\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-package-root-spoof-red.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-pr-complete-fitness.json",
+      "source_tree_entry": "100644 blob bb1893b6550927bdb9ebbf58e1f86a75320d3036\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-pr-complete-fitness.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-publication-alias-remote-red.out",
+      "source_tree_entry": "100644 blob 8c5313f128e3bd9bd41aa7556ca97f8dd4c376af\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-publication-alias-remote-red.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-remote-double-suffix-red.out",
+      "source_tree_entry": "100644 blob 412afb462a4f225b37497a1f770b6edae4800161\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-remote-double-suffix-red.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-route-complete-fitness.json",
+      "source_tree_entry": "100644 blob 852c348c059c61ed608eb6e6c6003b12cbba90ae\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-route-complete-fitness.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-schema-catalog-green.out",
+      "source_tree_entry": "100644 blob 8fdaa50050dcc714ec82deab151d952b26396979\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-schema-catalog-green.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-test-review.md",
+      "source_tree_entry": "100644 blob 5085c6a7bc2e634f53ef68c11487a9b5dc9f4d1a\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-test-review.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-verification-interrupted.json",
+      "source_tree_entry": "100644 blob 87000be58b579797a12cd926a4a3532fee3a0539\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/architecture-verification-interrupted.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-architect.md",
+      "source_tree_entry": "100644 blob a4e888400f8e53ff591cb1af670071caccf277dc\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-architect.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-docs_researcher.md",
+      "source_tree_entry": "100644 blob 0a2c77b5e4e0957f3165f3e9596e1f75e7c3e8d9\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-docs_researcher.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-integration_architect.md",
+      "source_tree_entry": "100644 blob 58e9eb895c15233975b0831604c5458fa0f05e70\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-integration_architect.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-repo_explorer.md",
+      "source_tree_entry": "100644 blob 16a216cc5aee0f1e50c36c7d7ebf159630a89109\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-repo_explorer.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-task_analyst.md",
+      "source_tree_entry": "100644 blob 89dde4b6548232acca148e6be4c1ebe0e6bead87\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-analysis-task_analyst.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-boundary-design.md",
+      "source_tree_entry": "100644 blob 5f76e1662c98012e8d4db566aed62c72dc5e8713\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-boundary-design.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-budget-analysis.md",
+      "source_tree_entry": "100644 blob f27e13d10343c1f6ddf39b6f40ffea36690ace6f\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-budget-analysis.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-delivery-split-estimates.json",
+      "source_tree_entry": "100644 blob 0e32abba9b18241b3a08419501fef8c4a2ebac2a\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-delivery-split-estimates.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-delivery-split.md",
+      "source_tree_entry": "100644 blob 4a86b3a01ebcc8f66743ebd5c91ccf19f2c34301\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-delivery-split.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-integration-analysis.md",
+      "source_tree_entry": "100644 blob 5df7e8cdbebaf2879d8af5e747fc93685808f071\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-integration-analysis.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-publication-alias-red.json",
+      "source_tree_entry": "100644 blob 976ce5fb1733b0df14510a13b45a37c09400c5f3\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-publication-alias-red.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-repo-analysis.md",
+      "source_tree_entry": "100644 blob 66fa65bbb3afecf47113188cafda873a6001dbb2\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/continuation-repo-analysis.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/executor-followup-analysis.md",
+      "source_tree_entry": "100644 blob 24dbd0b85c5c175ea6bc2cb1972f69fb5e7ff175\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/executor-followup-analysis.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-code-review.md",
+      "source_tree_entry": "100644 blob 05e0afcd5790ff0ebba60b1e552c4bc88059236f\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-code-review.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-continuation-verification.md",
+      "source_tree_entry": "100644 blob 5ba2808450908d47dece88e2c288295f837d5611\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-continuation-verification.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-coverage.json",
+      "source_tree_entry": "100644 blob ffd678c0038a0b349f1425d9cf6914989844b1db\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-coverage.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-final-tests.txt",
+      "source_tree_entry": "100644 blob 4556f2eb9e6dd7edc7d5d35eb1466e729aa57f7a\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-final-tests.txt"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-fitness-followup.json",
+      "source_tree_entry": "100644 blob ff7938bb6c725a3fb106f99b9000cff529265832\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-fitness-followup.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-full-verifier-before-followups.json",
+      "source_tree_entry": "100644 blob 4f597639a1dfc98303618d6c89603f0df7430c98\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-full-verifier-before-followups.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-red-confirmed.txt",
+      "source_tree_entry": "100644 blob f839c97964a6b59949baa9b790e7e81bac603957\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-red-confirmed.txt"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-slice-evidence.json",
+      "source_tree_entry": "100644 blob 70ea14cea9377eb040380402d29064764209a9ec\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-slice-evidence.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-test-review.md",
+      "source_tree_entry": "100644 blob 139f8983bd934851c7c4e78c2275bd0f301568af\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/host-test-review.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/implementation-progress.md",
+      "source_tree_entry": "100644 blob c35f44bbc3a2281f8d973ac524c81c936609b917\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/implementation-progress.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-analysis.md",
+      "source_tree_entry": "100644 blob b3d77d7c461ec45db864522c698096292883cc53\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-analysis.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-code-review.md",
+      "source_tree_entry": "100644 blob ebd68a2acecb6af60a99c1c84214393bd3ca196c\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-code-review.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-connector-focused28.out",
+      "source_tree_entry": "100644 blob f84c73e168404823d8e0de8e4af87f437922ef36\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-connector-focused28.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-connector-slice.json",
+      "source_tree_entry": "100644 blob 2ed0c604dc8d2b0e1fa87d1afefd66beb1906d9c\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-connector-slice.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-factory28-final.out",
+      "source_tree_entry": "100644 blob db3357fa6fd6994d0aa56b4a82b693c1d2a581ab\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-factory28-final.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-final-live-probe.json",
+      "source_tree_entry": "100644 blob 7068ef1718ac7527eb1c5650559a30d31cd65e26\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-final-live-probe.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-live-probe.json",
+      "source_tree_entry": "100644 blob ccac919624739547bebf77c7d6de204e50c4e41a\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-live-probe.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-region-green.out",
+      "source_tree_entry": "100644 blob 41d514b4576b0d52f3f0d3d92966bd0e70348647\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-region-green.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-region-red.out",
+      "source_tree_entry": "100644 blob d7f9098d5f561c96437be77eb64710b7ce7f84aa\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-region-red.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-test-review.md",
+      "source_tree_entry": "100644 blob 7a2c14b64b316d6167af4cf15fadf4ca2866ee7a\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/qwen-test-review.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-architecture-analysis.md",
+      "source_tree_entry": "100644 blob 0de0cd531b1cf3f92771a957aafa38131313f98c\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-architecture-analysis.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-backup-red-confirmed.out",
+      "source_tree_entry": "100644 blob 194898f010e27db5d85c3c559c80e95ed87352ec\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-backup-red-confirmed.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-backup-red.out",
+      "source_tree_entry": "100644 blob 8de8e4cdc3831e2696f78df21032c7c3fd4bdb3e\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-backup-red.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-code-review.md",
+      "source_tree_entry": "100644 blob 2dba1537f1119d66d5698e992402756d74868581\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-code-review.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-factory28-final.out",
+      "source_tree_entry": "100644 blob f6ce7e8fa509cdddb45bb310b884c490aad06cf5\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-factory28-final.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-final-live-probe.json",
+      "source_tree_entry": "100644 blob bf334fb9a8eb1a96d4bb6ea02c21c075b5fa91d6\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-final-live-probe.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-first-four-green.out",
+      "source_tree_entry": "100644 blob a7dd0c4e77091c84eccacf39b7a14bd3ab6598e6\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-first-four-green.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-full-verifier.json",
+      "source_tree_entry": "100644 blob b2cad1e42f45454a54d876d636974c7fa71e335e\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-full-verifier.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-harness-red.out",
+      "source_tree_entry": "100644 blob 93a49037a791c3bc3ca7c7024ea0c4f0baea65cd\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-harness-red.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-pdf-docx-red-confirmed.out",
+      "source_tree_entry": "100644 blob acf66138810bb6c6e60df9acbed1ae013646be38\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-pdf-docx-red-confirmed.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-pdf-docx-red.out",
+      "source_tree_entry": "100644 blob 6616eb485e3efe5548bd3c57f0e98ce9698b7713\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-pdf-docx-red.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-priority-slice.json",
+      "source_tree_entry": "100644 blob b888097e5601ece57acf4e0f5751b0e2b8056147\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-priority-slice.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-priority-verification.md",
+      "source_tree_entry": "100644 blob b33336f2b8dafd3b4f71e75e8631f3ae4a997092\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-priority-verification.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-sse-unicode-red.out",
+      "source_tree_entry": "100644 blob cefed2f5e2936fd7bdf9bf0accaee39edb478b54\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-sse-unicode-red.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-test-review.md",
+      "source_tree_entry": "100644 blob 13b76cd7c1bdcaf760fa8bcb1478fa2241176ae3\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-test-review.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-unicode-red.out",
+      "source_tree_entry": "100644 blob 77f281bc03f79df3941674e66590bd61fd069c08\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/evidence/security-unicode-red.out"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/git-delivery.md",
+      "source_tree_entry": "100644 blob 07f585470c5fcd40001be84966167722d97354f3\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/git-delivery.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/host-continuation-plan.md",
+      "source_tree_entry": "100644 blob 1c562f134053b32113077d27083f5b253392f631\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/host-continuation-plan.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/production-followup.md",
+      "source_tree_entry": "100644 blob c568dfec90abf5ff7b0a1cde91b1dac76be89e4a\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/production-followup.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/pull-request-body.md",
+      "source_tree_entry": "100644 blob 8d5c4ca0cd1fc8a207ffb0172e5d93dfd702f1eb\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/pull-request-body.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/qwen-connector-plan.md",
+      "source_tree_entry": "100644 blob 25c73e8f82e5c95ba07475f01441368dc570f6d2\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/qwen-connector-plan.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/release.md",
+      "source_tree_entry": "100644 blob dc585cb587a1dd158b44e5b3d74e4345f6b37ef4\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/release.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/requirements.md",
+      "source_tree_entry": "100644 blob 2087688b78959a06799871882a7d2ffdad8bc0e8\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/requirements.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/rollback.md",
+      "source_tree_entry": "100644 blob 6363289697b7a0a1020f03e3b897bc2f75ac8aa8\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/rollback.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/route.json",
+      "source_tree_entry": "100644 blob 6f74e458d97e3c24d77b7e17e8e978e14a682b91\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/route.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/security-priority-plan.md",
+      "source_tree_entry": "100644 blob f3bc2dfba9bf832538bec245727b9598cb191938\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/security-priority-plan.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/six-point-continuation.md",
+      "source_tree_entry": "100644 blob de52a2fcec63d9b0f0101e5de5cbe57b0da28dce\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/six-point-continuation.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/state.json",
+      "source_tree_entry": "100644 blob d6e4e685c8c28b9d8ee2f59923398515d5354592\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/state.json"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/tasks.md",
+      "source_tree_entry": "100644 blob 4a67dae7b681aece525d041b5bd5108b76c62bf5\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/tasks.md"
+    },
+    {
+      "path": "engineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/test-plan.md",
+      "source_tree_entry": "100644 blob c5fc6e654893c846de014aecb6a81229d32ef3c7\tengineering/changes/20260912-l5-production-completion-verification-deferred-b-8632a3/test-plan.md"
+    },
+    {
+      "path": "engineering/runbooks/l5-filesystem-publication.md",
+      "source_tree_entry": "100644 blob 43c75c9ad05e6b728f13e8ad36a3b47e85ad7a46\tengineering/runbooks/l5-filesystem-publication.md"
+    },
+    {
+      "path": "engineering/runbooks/l5-production-runtime.md",
+      "source_tree_entry": "100644 blob f2b4ecccceba8e5375f86e27e557ac06afe19a0e\tengineering/runbooks/l5-production-runtime.md"
+    },
+    {
+      "path": "factory/README.md",
+      "source_tree_entry": "100644 blob 1cd19ad0fefa2fc69dcaf34fb759a07a5e41f238\tfactory/README.md"
+    },
+    {
+      "path": "factory/contracts/jsonschema/landing-provider-evidence.v2.schema.json",
+      "source_tree_entry": "100644 blob ee40c1860df65aad00effcb12ed06aab169a415a\tfactory/contracts/jsonschema/landing-provider-evidence.v2.schema.json"
+    },
+    {
+      "path": "factory/pyproject.toml",
+      "source_tree_entry": "100644 blob 1470d1925f164425878923d8958792e765bc26f8\tfactory/pyproject.toml"
+    },
+    {
+      "path": "factory/runtime/adaptive-l5.service.in",
+      "source_tree_entry": "100644 blob ebf78186e934cad9f565fa8eddd3083063ec3ebe\tfactory/runtime/adaptive-l5.service.in"
+    },
+    {
+      "path": "factory/runtime/install-claw.sh",
+      "source_tree_entry": "100644 blob d8bcd8325addccde05edbad49d6b0f688b10e621\tfactory/runtime/install-claw.sh"
+    },
+    {
+      "path": "factory/runtime/landing-host.example.json",
+      "source_tree_entry": "100644 blob 46076857760ff2e5145a951e6209a99883bec777\tfactory/runtime/landing-host.example.json"
+    },
+    {
+      "path": "factory/src/adaptive_factory/api.py",
+      "source_tree_entry": "100644 blob 21358680db1ba20160973b9a8b12b93625855380\tfactory/src/adaptive_factory/api.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_artifact.py",
+      "source_tree_entry": "100644 blob e7aad41d1f2f4aee8fa4163e6f6fbfddacb11b77\tfactory/src/adaptive_factory/landing_artifact.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_artifact_retention.py",
+      "source_tree_entry": "100644 blob b4d85b9accd00054076cd5a1027cede37075606d\tfactory/src/adaptive_factory/landing_artifact_retention.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_backup.py",
+      "source_tree_entry": "100644 blob bd7b42909512fde6b53382516d29adb19de0c1d5\tfactory/src/adaptive_factory/landing_backup.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_contracts.py",
+      "source_tree_entry": "100644 blob 2409a1ef92d90e03d00740a9ca79b33695d64739\tfactory/src/adaptive_factory/landing_contracts.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_evaluation.py",
+      "source_tree_entry": "100644 blob 7535e4d10fc2d6cdfd4ebd4aeb4c8912cbe61994\tfactory/src/adaptive_factory/landing_evaluation.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_host.py",
+      "source_tree_entry": "100644 blob 747ab6a6cc77b22dd481a445ca0fb647002de51e\tfactory/src/adaptive_factory/landing_host.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_host_config.py",
+      "source_tree_entry": "100644 blob b844bca2240c767d1e4a57a70dc4a54b2196f5a6\tfactory/src/adaptive_factory/landing_host_config.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_http.py",
+      "source_tree_entry": "100644 blob c8730a8ffcb65f003d4eae73ef4f3c9ad22bb41c\tfactory/src/adaptive_factory/landing_http.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_intake.py",
+      "source_tree_entry": "100644 blob c50a638e545276b407c196f3ce23995038b28e62\tfactory/src/adaptive_factory/landing_intake.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_live_executors.py",
+      "source_tree_entry": "100644 blob 45f70c92cb2ae9ee33e2163e80707a12d45d1021\tfactory/src/adaptive_factory/landing_live_executors.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_media.py",
+      "source_tree_entry": "100644 blob 2f9e1d1e16df61410add428a3e4d7042274f49ec\tfactory/src/adaptive_factory/landing_media.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_normalizer.py",
+      "source_tree_entry": "100644 blob 600f646e4e0d4141667d2a540989f91c3cf20fbe\tfactory/src/adaptive_factory/landing_normalizer.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_provider.py",
+      "source_tree_entry": "100644 blob 61b3b6f1ea1e6574a536a1cae605b8d045edfd72\tfactory/src/adaptive_factory/landing_provider.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_publication_cli.py",
+      "source_tree_entry": "100644 blob d110abbf00ed2ca6995018c2e426adbf0b4fe3c1\tfactory/src/adaptive_factory/landing_publication_cli.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_renderer.py",
+      "source_tree_entry": "100644 blob bcf35122a71274093f48e599bc086a0d83b6dd3b\tfactory/src/adaptive_factory/landing_renderer.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_runtime.py",
+      "source_tree_entry": "100644 blob 1fadba9a1eb298b303dd0e5d2a53c3ed6ee8a664\tfactory/src/adaptive_factory/landing_runtime.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_server.py",
+      "source_tree_entry": "100644 blob f4908c812c7212a5dbc3e6462839720401881da9\tfactory/src/adaptive_factory/landing_server.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_service.py",
+      "source_tree_entry": "100644 blob face482d20776fa44d7faeaed2940ed994edaf33\tfactory/src/adaptive_factory/landing_service.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_sqlite_store.py",
+      "source_tree_entry": "100644 blob 8bfbcc02b2218fb4192cad0351e0d559fe365019\tfactory/src/adaptive_factory/landing_sqlite_store.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/landing_sse.py",
+      "source_tree_entry": "100644 blob e6010225c29e9e9b30221e253d6303d04010e723\tfactory/src/adaptive_factory/landing_sse.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/resources/landing_pdf_worker.py",
+      "source_tree_entry": "100644 blob 611c9cae0cb37633bf05a6d4f5e341fd6c61dffd\tfactory/src/adaptive_factory/resources/landing_pdf_worker.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/server.py",
+      "source_tree_entry": "100644 blob a4f08e80c7b22bf0dd1263129022edff02a497f3\tfactory/src/adaptive_factory/server.py"
+    },
+    {
+      "path": "factory/src/adaptive_factory/settings.py",
+      "source_tree_entry": "100644 blob 37e11ca1057ca7188670aabf3b0283c3f860241b\tfactory/src/adaptive_factory/settings.py"
+    },
+    {
+      "path": "factory/tests/__init__.py",
+      "source_tree_entry": "100644 blob 7017c81dfe7030fa4b428ba0e0be22991886dbea\tfactory/tests/__init__.py"
+    },
+    {
+      "path": "factory/tests/test_landing_api.py",
+      "source_tree_entry": "100644 blob e2bd51971fa55fd5d7021837382732deb9bf322f\tfactory/tests/test_landing_api.py"
+    },
+    {
+      "path": "factory/tests/test_landing_artifact.py",
+      "source_tree_entry": "100644 blob 63e470577fbaa17fc58b86b0d61303a583edb1f4\tfactory/tests/test_landing_artifact.py"
+    },
+    {
+      "path": "factory/tests/test_landing_backup.py",
+      "source_tree_entry": "100644 blob a442229838ebcc64ea86524fc9a583dbfef7452c\tfactory/tests/test_landing_backup.py"
+    },
+    {
+      "path": "factory/tests/test_landing_contracts.py",
+      "source_tree_entry": "100644 blob 7d5009f84a2de41079b591f285875fc26a201c7f\tfactory/tests/test_landing_contracts.py"
+    },
+    {
+      "path": "factory/tests/test_landing_host.py",
+      "source_tree_entry": "100644 blob aceabde2a29222bcfa6a0546da82b2c2c2e17a75\tfactory/tests/test_landing_host.py"
+    },
+    {
+      "path": "factory/tests/test_landing_live.py",
+      "source_tree_entry": "100644 blob fc0c5df5bfb32cd18f7fb6652e4dd1abdcffaaf4\tfactory/tests/test_landing_live.py"
+    },
+    {
+      "path": "factory/tests/test_landing_live_executors.py",
+      "source_tree_entry": "100644 blob 088f7937b5ffa1a3e593da413a5d1109509398ed\tfactory/tests/test_landing_live_executors.py"
+    },
+    {
+      "path": "factory/tests/test_landing_media.py",
+      "source_tree_entry": "100644 blob ae6cfd56e4e9def06f30ebf02dc0dc48b99d79d3\tfactory/tests/test_landing_media.py"
+    },
+    {
+      "path": "factory/tests/test_landing_normalizer.py",
+      "source_tree_entry": "100644 blob b3c7b78d375809ed052f14da348e3eb34f3846a8\tfactory/tests/test_landing_normalizer.py"
+    },
+    {
+      "path": "factory/tests/test_landing_publication_cli.py",
+      "source_tree_entry": "100644 blob 49e8c50f64987095cb1cb531561aa7032e9b68b8\tfactory/tests/test_landing_publication_cli.py"
+    },
+    {
+      "path": "factory/tests/test_landing_renderer.py",
+      "source_tree_entry": "100644 blob 722a966ea75a8d32a60b2f4d759d6f5ad4834f56\tfactory/tests/test_landing_renderer.py"
+    },
+    {
+      "path": "factory/tests/test_landing_sqlite_store.py",
+      "source_tree_entry": "100644 blob 15e0f33d9fbd18f9368c20d34d274dee0d62bc77\tfactory/tests/test_landing_sqlite_store.py"
+    },
+    {
+      "path": "factory/tests/test_landing_sse.py",
+      "source_tree_entry": "100644 blob 098755d0f9a5e5659cdf1e06652701dd6bcad19a\tfactory/tests/test_landing_sse.py"
+    },
+    {
+      "path": "factory/tests/test_semantic_bridge.py",
+      "source_tree_entry": "100644 blob a76a02298b25ceaf0f924c81082ab0a792e470b9\tfactory/tests/test_semantic_bridge.py"
+    },
+    {
+      "path": "factory/tests/test_semantic_contracts.py",
+      "source_tree_entry": "100644 blob 563777238363c49ee2f87ead089cbd602d9264ee\tfactory/tests/test_semantic_contracts.py"
+    },
+    {
+      "path": "factory/tests/test_server.py",
+      "source_tree_entry": "100644 blob f64198f489ec7da0d29664010a37d12bbd2195ee\tfactory/tests/test_server.py"
+    },
+    {
+      "path": "factory/uv.lock",
+      "source_tree_entry": "100644 blob 960a957febe25461730c46366c492f1584394b85\tfactory/uv.lock"
+    },
+    {
+      "path": "mistakes.md",
+      "source_tree_entry": "100644 blob 1aa556a945c7d1c4cc6eb83c2b2c71ea05f32ce5\tmistakes.md"
+    },
+    {
+      "path": "schemas/architecture-rules.schema.json",
+      "source_tree_entry": "100644 blob df813e5837b3cd9700dff0b82725c9c7d42f24ea\tschemas/architecture-rules.schema.json"
+    },
+    {
+      "path": "scripts/grok_landing_publish.py",
+      "source_tree_entry": "100644 blob 86a91bcfc4603c315bf808a15e799c9c2c576536\tscripts/grok_landing_publish.py"
+    },
+    {
+      "path": "tests/test_architecture_fitness.py",
+      "source_tree_entry": "100644 blob 7649ba9c5d55654f7cc05583ea8833eb1d7191cd\ttests/test_architecture_fitness.py"
+    },
+    {
+      "path": "tests/test_architecture_model.py",
+      "source_tree_entry": "100644 blob 5bd53c70caf33070a9b1a171088015a94930df3b\ttests/test_architecture_model.py"
+    },
+    {
+      "path": "tests/test_landing_architecture_boundaries.py",
+      "source_tree_entry": "100644 blob 207267f60b54e08bb9d4c803c4cc3a5b47415723\ttests/test_landing_architecture_boundaries.py"
+    }
+  ],
+  "final_comparison": "Compare all product/test/schema/rule/template/lock paths and file modes; enumerate exact permitted documentation/evidence differences separately."
+}

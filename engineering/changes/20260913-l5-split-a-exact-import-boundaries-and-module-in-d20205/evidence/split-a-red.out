@@ -1,0 +1,522 @@
+bringing up nodes...
+bringing up nodes...
+
+uu.uuuuuuuuuuuuuuuFu.uuu.uuuuuuuuuuuFuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu.uuuu.uuuuu.u. [100%]
+=================================== FAILURES ===================================
+_ LandingArchitectureBoundaryTests.test_uri_exception_is_declared_only_for_staged_delivery _
+[gw8] linux -- Python 3.12.3 /tmp/agbp-venv/bin/python
+
+self = <tests.test_landing_architecture_boundaries.LandingArchitectureBoundaryTests testMethod=test_uri_exception_is_declared_only_for_staged_delivery>
+
+    def test_uri_exception_is_declared_only_for_staged_delivery(self):
+        snapshot = fixture.ARCHITECTURE.load_architecture(ROOT)
+        allowed = {rule["id"]: rule["allowed_dependency_modules"]
+                   for rule in snapshot.rules["path_boundaries"] if rule.get("allowed_dependency_modules")}
+>       self.assertEqual(allowed, {"FIT-STAGED-DELIVERY-SOURCE-BOUNDARY": ["urllib.parse"]})
+E       AssertionError: {} != {'FIT-STAGED-DELIVERY-SOURCE-BOUNDARY': ['urllib.parse']}
+E       - {}
+E       + {'FIT-STAGED-DELIVERY-SOURCE-BOUNDARY': ['urllib.parse']}
+
+tests/test_landing_architecture_boundaries.py:98: AssertionError
+_ LandingArchitectureBoundaryTests.test_every_actual_landing_source_has_exact_owner_and_boundary (group="'live'", path="'factory/src/adaptive_factory/landing_live_executors.py'") _
+[gw6] linux -- Python 3.12.3 /tmp/agbp-venv/bin/python
+
+self = <tests.test_landing_architecture_boundaries.LandingArchitectureBoundaryTests testMethod=test_every_actual_landing_source_has_exact_owner_and_boundary>
+
+    def test_every_actual_landing_source_has_exact_owner_and_boundary(self):
+        inventory = {str(path.relative_to(ROOT)) for path in (ROOT / PREFIX).rglob("landing*.py")}
+        classified_inventory(inventory, GROUPS)
+        snapshot = fixture.ARCHITECTURE.load_architecture(ROOT)
+        for group, paths in GROUPS.items():
+            for path in paths:
+                with self.subTest(group=group, path=path):
+                    owners = {node["id"] for node in snapshot.system["nodes"] if path in node["repository_paths"]}
+                    rules = {rule["id"] for rule in snapshot.rules["path_boundaries"] if path in rule["source_prefixes"]}
+                    self.assertEqual(owners, {OWNERS[group]})
+>                   self.assertEqual(rules, {RULES[group]})
+E                   AssertionError: Items in the second set but not the first:
+E                   'FIT-FACTORY-LANDING-LIVE-BOUNDARY'
+
+tests/test_landing_architecture_boundaries.py:57: AssertionError
+_ ArchitectureFitnessTests.test_boundary_relative_escape_or_missing_package_context_fails_closed (path="'factory/src/adaptive_factory/worker.py'") _
+[gw3] linux -- Python 3.12.3 /tmp/agbp-venv/bin/python
+
+self = <tests.test_architecture_fitness.ArchitectureFitnessTests testMethod=test_boundary_relative_escape_or_missing_package_context_fails_closed>
+
+    def test_boundary_relative_escape_or_missing_package_context_fails_closed(self) -> None:
+        for source_path, source, package in (
+            ("factory/src/adaptive_factory/worker.py", "from .. import store\n", True),
+            ("factory/src/adaptive_factory/resources/worker.py", "from ... import store\n", True),
+            ("src/worker.py", "from . import store\n", False),
+        ):
+            with self.subTest(path=source_path):
+                rules = _rules()
+                rules["path_boundaries"] = [{
+                    "id": "FIT-MODULE", "source_prefixes": ["factory/src", "src"],
+                    "forbidden_dependency_prefixes": ["adaptive_factory.store"], "severity": "error",
+                }]
+                repo, base = self._repo(rules=rules)
+                if package:
+                    repo.write_text("factory/src/adaptive_factory/__init__.py", "")
+                repo.write_text(source_path, source)
+                report = self._evaluate(repo, base, repo.commit("relative escape"))
+>               self.assertEqual(self._results(report)["module_boundary"].status, "unsupported")
+E               AssertionError: 'pass' != 'unsupported'
+E               - pass
+E               + unsupported
+
+tests/test_architecture_fitness.py:730: AssertionError
+_ ArchitectureFitnessTests.test_boundary_src_namespace_packages_keep_runtime_module_identity _
+[gw4] linux -- Python 3.12.3 /tmp/agbp-venv/bin/python
+
+self = <tests.test_architecture_fitness.ArchitectureFitnessTests testMethod=test_boundary_src_namespace_packages_keep_runtime_module_identity>
+
+    def test_boundary_src_namespace_packages_keep_runtime_module_identity(self) -> None:
+        rules = _rules()
+        rules["path_boundaries"] = [{
+            "id": "FIT-MODULE", "source_prefixes": ["delivery/src"], "severity": "error",
+            "forbidden_dependency_prefixes": ["adaptive_delivery.landing_publication"],
+        }]
+        repo, base = self._repo(rules=rules)
+        # The real delivery package is a namespace package: no __init__.py.
+        repo.write_text("delivery/__init__.py", "")
+        sources = {
+            "worker": "from . import landing_publication\n",
+            "resources/worker": "from ..landing_publication import X\n",
+            "safe": "from .landing_publication_contracts import X\n",
+        }
+        for name, source in sources.items():
+            repo.write_text(f"delivery/src/adaptive_delivery/{name}.py", source)
+        result = self._results(self._evaluate(repo, base, repo.commit("namespace import boundaries")))["module_boundary"]
+>       self.assertEqual(result.status, "fail")
+E       AssertionError: 'pass' != 'fail'
+E       - pass
+E       + fail
+
+tests/test_architecture_fitness.py:707: AssertionError
+_ ArchitectureFitnessTests.test_boundary_qualified_relative_and_module_none_imports_are_checked (source="'selected'") _
+[gw2] linux -- Python 3.12.3 /tmp/agbp-venv/bin/python
+
+self = <tests.test_architecture_fitness.ArchitectureFitnessTests testMethod=test_boundary_qualified_relative_and_module_none_imports_are_checked>
+
+    def test_boundary_qualified_relative_and_module_none_imports_are_checked(self) -> None:
+        rules = _rules()
+        rules["path_boundaries"] = [{
+            "id": "FIT-MODULE", "source_prefixes": ["factory/src"],
+            "forbidden_dependency_prefixes": ["adaptive_factory.store", "adaptive_factory.service",
+                                               "adaptive_factory.landing_live_executors", "trust-ci"],
+            "severity": "error",
+        }]
+        repo, base = self._repo(rules=rules)
+        repo.write_text("factory/src/adaptive_factory/__init__.py", "from . import store\n")
+        # A package marker above the real src root must not change runtime
+        # identity or conceal adaptive_factory.store from the boundary rule.
+        repo.write_text("factory/__init__.py", "")
+        sources = {
+            "absolute": "from adaptive_factory.store import X\n",
+            "selected": "from adaptive_factory import service as s\n",
+            "relative": "from .store import X\n",
+            "module_none": "from . import service as s\n",
+            "transport": "from . import landing_live_executors\n",
+            "trust": "from adaptive_trust_ci import policy\n",
+            "resources/worker": "from ..store import X\n",
+            "safe": "from .landing_contracts import X\n",
+        }
+        for name, source in sources.items():
+            repo.write_text(f"factory/src/adaptive_factory/{name}.py", source)
+        head = repo.commit("qualified boundaries")
+        result = self._results(self._evaluate(repo, base, head))["module_boundary"]
+        self.assertEqual(result.status, "fail")
+        for name in (*sources, "__init__"):
+            with self.subTest(source=name):
+                found = any(f"adaptive_factory/{name}.py imports" in item for item in result.findings)
+>               self.assertEqual(found, name != "safe")
+E               AssertionError: False != True
+
+tests/test_architecture_fitness.py:688: AssertionError
+_ ArchitectureFitnessTests.test_boundary_qualified_relative_and_module_none_imports_are_checked (source="'relative'") _
+[gw2] linux -- Python 3.12.3 /tmp/agbp-venv/bin/python
+
+self = <tests.test_architecture_fitness.ArchitectureFitnessTests testMethod=test_boundary_qualified_relative_and_module_none_imports_are_checked>
+
+    def test_boundary_qualified_relative_and_module_none_imports_are_checked(self) -> None:
+        rules = _rules()
+        rules["path_boundaries"] = [{
+            "id": "FIT-MODULE", "source_prefixes": ["factory/src"],
+            "forbidden_dependency_prefixes": ["adaptive_factory.store", "adaptive_factory.service",
+                                               "adaptive_factory.landing_live_executors", "trust-ci"],
+            "severity": "error",
+        }]
+        repo, base = self._repo(rules=rules)
+        repo.write_text("factory/src/adaptive_factory/__init__.py", "from . import store\n")
+        # A package marker above the real src root must not change runtime
+        # identity or conceal adaptive_factory.store from the boundary rule.
+        repo.write_text("factory/__init__.py", "")
+        sources = {
+            "absolute": "from adaptive_factory.store import X\n",
+            "selected": "from adaptive_factory import service as s\n",
+            "relative": "from .store import X\n",
+            "module_none": "from . import service as s\n",
+            "transport": "from . import landing_live_executors\n",
+            "trust": "from adaptive_trust_ci import policy\n",
+            "resources/worker": "from ..store import X\n",
+            "safe": "from .landing_contracts import X\n",
+        }
+        for name, source in sources.items():
+            repo.write_text(f"factory/src/adaptive_factory/{name}.py", source)
+        head = repo.commit("qualified boundaries")
+        result = self._results(self._evaluate(repo, base, head))["module_boundary"]
+        self.assertEqual(result.status, "fail")
+        for name in (*sources, "__init__"):
+            with self.subTest(source=name):
+                found = any(f"adaptive_factory/{name}.py imports" in item for item in result.findings)
+>               self.assertEqual(found, name != "safe")
+E               AssertionError: False != True
+
+tests/test_architecture_fitness.py:688: AssertionError
+_ ArchitectureFitnessTests.test_boundary_relative_escape_or_missing_package_context_fails_closed (path="'factory/src/adaptive_factory/resources/worker.py'") _
+[gw3] linux -- Python 3.12.3 /tmp/agbp-venv/bin/python
+
+self = <tests.test_architecture_fitness.ArchitectureFitnessTests testMethod=test_boundary_relative_escape_or_missing_package_context_fails_closed>
+
+    def test_boundary_relative_escape_or_missing_package_context_fails_closed(self) -> None:
+        for source_path, source, package in (
+            ("factory/src/adaptive_factory/worker.py", "from .. import store\n", True),
+            ("factory/src/adaptive_factory/resources/worker.py", "from ... import store\n", True),
+            ("src/worker.py", "from . import store\n", False),
+        ):
+            with self.subTest(path=source_path):
+                rules = _rules()
+                rules["path_boundaries"] = [{
+                    "id": "FIT-MODULE", "source_prefixes": ["factory/src", "src"],
+                    "forbidden_dependency_prefixes": ["adaptive_factory.store"], "severity": "error",
+                }]
+                repo, base = self._repo(rules=rules)
+                if package:
+                    repo.write_text("factory/src/adaptive_factory/__init__.py", "")
+                repo.write_text(source_path, source)
+                report = self._evaluate(repo, base, repo.commit("relative escape"))
+>               self.assertEqual(self._results(report)["module_boundary"].status, "unsupported")
+E               AssertionError: 'pass' != 'unsupported'
+E               - pass
+E               + unsupported
+
+tests/test_architecture_fitness.py:730: AssertionError
+_ ArchitectureFitnessTests.test_boundary_qualified_relative_and_module_none_imports_are_checked (source="'module_none'") _
+[gw2] linux -- Python 3.12.3 /tmp/agbp-venv/bin/python
+
+self = <tests.test_architecture_fitness.ArchitectureFitnessTests testMethod=test_boundary_qualified_relative_and_module_none_imports_are_checked>
+
+    def test_boundary_qualified_relative_and_module_none_imports_are_checked(self) -> None:
+        rules = _rules()
+        rules["path_boundaries"] = [{
+            "id": "FIT-MODULE", "source_prefixes": ["factory/src"],
+            "forbidden_dependency_prefixes": ["adaptive_factory.store", "adaptive_factory.service",
+                                               "adaptive_factory.landing_live_executors", "trust-ci"],
+            "severity": "error",
+        }]
+        repo, base = self._repo(rules=rules)
+        repo.write_text("factory/src/adaptive_factory/__init__.py", "from . import store\n")
+        # A package marker above the real src root must not change runtime
+        # identity or conceal adaptive_factory.store from the boundary rule.
+        repo.write_text("factory/__init__.py", "")
+        sources = {
+            "absolute": "from adaptive_factory.store import X\n",
+            "selected": "from adaptive_factory import service as s\n",
+            "relative": "from .store import X\n",
+            "module_none": "from . import service as s\n",
+            "transport": "from . import landing_live_executors\n",
+            "trust": "from adaptive_trust_ci import policy\n",
+            "resources/worker": "from ..store import X\n",
+            "safe": "from .landing_contracts import X\n",
+        }
+        for name, source in sources.items():
+            repo.write_text(f"factory/src/adaptive_factory/{name}.py", source)
+        head = repo.commit("qualified boundaries")
+        result = self._results(self._evaluate(repo, base, head))["module_boundary"]
+        self.assertEqual(result.status, "fail")
+        for name in (*sources, "__init__"):
+            with self.subTest(source=name):
+                found = any(f"adaptive_factory/{name}.py imports" in item for item in result.findings)
+>               self.assertEqual(found, name != "safe")
+E               AssertionError: False != True
+
+tests/test_architecture_fitness.py:688: AssertionError
+_ ArchitectureFitnessTests.test_boundary_exact_module_exception_never_permits_siblings_or_children (allowed="['urllib.parse']") _
+[gw0] linux -- Python 3.12.3 /tmp/agbp-venv/bin/python
+
+value = {'architecture_id': 'ARCH-TEST', 'background_job_policies': [], 'change_separation_policies': [], 'code_budgets': [], ...}
+schema = {'$defs': {'background_job_policy': {'additionalProperties': False, 'properties': {'id': {'$ref': '#/$defs/id'}, 'max_...:architecture-rules:v1', '$schema': 'https://json-schema.org/draft/2020-12/schema', 'additionalProperties': False, ...}
+label = 'architecture rules'
+
+    def _validate_against_schema(value: dict[str, Any], schema: dict[str, Any], *, label: str) -> None:
+        try:
+>           validate_schema(value, schema)
+
+.grok-stack/adaptive_grok/architecture.py:338: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.grok-stack/adaptive_grok/spec.py:364: in validate_schema
+    validate_schema(value, props[key], root, path=f"{path}.{key}")
+.grok-stack/adaptive_grok/spec.py:369: in validate_schema
+    validate_schema(item, schema["items"], root, path=f"{path}[{index}]")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+instance = {'allowed_dependency_modules': ['urllib.parse'], 'forbidden_dependency_prefixes': ['urllib'], 'id': 'FIT-MODULE', 'severity': 'error', ...}
+schema = {'additionalProperties': False, 'properties': {'forbidden_dependency_prefixes': {'$ref': '#/$defs/path_set'}, 'id': {'...defs/path_set'}}, 'required': ['id', 'source_prefixes', 'forbidden_dependency_prefixes', 'severity'], 'type': 'object'}
+root = {'$defs': {'background_job_policy': {'additionalProperties': False, 'properties': {'id': {'$ref': '#/$defs/id'}, 'max_...:architecture-rules:v1', '$schema': 'https://json-schema.org/draft/2020-12/schema', 'additionalProperties': False, ...}
+path = '$.path_boundaries[0]'
+
+    def validate_schema(
+        instance: Any,
+        schema: dict[str, Any],
+        root: dict[str, Any] | None = None,
+        *,
+        path: str = "$",
+    ) -> None:
+        root = root or schema
+        schema = resolve_ref(schema, root)
+        extra = set(schema) - ALLOWED_SCHEMA_KEYS
+        if extra:
+            raise SpecError(f"{path}: unsupported schema keywords: {sorted(extra)}")
+        if "const" in schema and instance != schema["const"]:
+            raise SpecError(f"{path}: expected const {schema['const']!r}")
+        if "enum" in schema and instance not in schema["enum"]:
+            raise SpecError(f"{path}: value {instance!r} not in enum")
+        expected = schema.get("type")
+        if "type" in schema:
+            if not _type_matches(instance, expected):
+                raise SpecError(f"{path}: expected type {expected}")
+        if expected == "object" or ("properties" in schema and isinstance(instance, dict)):
+            if not isinstance(instance, dict):
+                raise SpecError(f"{path}: expected object")
+            additional = schema.get("additionalProperties", True)
+            props = schema.get("properties", {})
+            if additional is False:
+                extra_keys = set(instance) - set(props)
+                if extra_keys:
+>                   raise SpecError(f"{path}: additional properties not allowed: {sorted(extra_keys)}")
+E                   adaptive_grok.spec.SpecError: $.path_boundaries[0]: additional properties not allowed: ['allowed_dependency_modules']
+
+.grok-stack/adaptive_grok/spec.py:354: SpecError
+
+The above exception was the direct cause of the following exception:
+
+self = <tests.test_architecture_fitness.ArchitectureFitnessTests testMethod=test_boundary_exact_module_exception_never_permits_siblings_or_children>
+
+    def test_boundary_exact_module_exception_never_permits_siblings_or_children(self) -> None:
+        for allowed in ([], ["urllib.parse"]):
+            with self.subTest(allowed=allowed):
+                rules = _rules()
+                rules["path_boundaries"] = [{
+                    "id": "FIT-MODULE", "source_prefixes": ["src"],
+                    "forbidden_dependency_prefixes": ["urllib"], "severity": "error",
+                    **({"allowed_dependency_modules": allowed} if allowed else {}),
+                }]
+                repo, base = self._repo(rules=rules)
+                sources = {
+                    "exact": "import urllib.parse as parser\n",
+                    "symbol": "from urllib.parse import urlsplit\n",
+                    "parent": "import urllib\n",
+                    "sibling": "import urllib.request as parse\n",
+                    "from_sibling": "from urllib import request as parse\n",
+                    "mixed": "from urllib import parse, request\n",
+                    "star": "from urllib import *\n",
+                    "child": "import urllib.parse.child\n",
+                    "nested": "def bad():\n    import urllib.request\n",
+                }
+                for name, source in sources.items():
+                    repo.write_text(f"src/{name}.py", source)
+                head = repo.commit("exact module boundaries")
+>               result = self._results(self._evaluate(repo, base, head))["module_boundary"]
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_architecture_fitness.py:650: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_architecture_fitness.py:111: in _evaluate
+    diff = FIT.diff_architecture(repo.root, base_sha=base, head_sha=head)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.grok-stack/adaptive_grok/architecture_diff.py:868: in diff_architecture
+    head_state = _materialized_state(repository, head)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.grok-stack/adaptive_grok/architecture_diff.py:439: in _materialized_state
+    snapshot = load_architecture(materialized)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.grok-stack/adaptive_grok/architecture.py:540: in load_architecture
+    _validate_against_schema(rules, rules_schema, label="architecture rules")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = {'architecture_id': 'ARCH-TEST', 'background_job_policies': [], 'change_separation_policies': [], 'code_budgets': [], ...}
+schema = {'$defs': {'background_job_policy': {'additionalProperties': False, 'properties': {'id': {'$ref': '#/$defs/id'}, 'max_...:architecture-rules:v1', '$schema': 'https://json-schema.org/draft/2020-12/schema', 'additionalProperties': False, ...}
+label = 'architecture rules'
+
+    def _validate_against_schema(value: dict[str, Any], schema: dict[str, Any], *, label: str) -> None:
+        try:
+            validate_schema(value, schema)
+        except SpecError as exc:
+>           raise ArchitectureError(f"{label}: {exc}", code="schema") from exc
+E           adaptive_grok.architecture.ArchitectureError: architecture rules: $.path_boundaries[0]: additional properties not allowed: ['allowed_dependency_modules']
+
+.grok-stack/adaptive_grok/architecture.py:340: ArchitectureError
+_ ArchitectureFitnessTests.test_boundary_qualified_relative_and_module_none_imports_are_checked (source="'transport'") _
+[gw2] linux -- Python 3.12.3 /tmp/agbp-venv/bin/python
+
+self = <tests.test_architecture_fitness.ArchitectureFitnessTests testMethod=test_boundary_qualified_relative_and_module_none_imports_are_checked>
+
+    def test_boundary_qualified_relative_and_module_none_imports_are_checked(self) -> None:
+        rules = _rules()
+        rules["path_boundaries"] = [{
+            "id": "FIT-MODULE", "source_prefixes": ["factory/src"],
+            "forbidden_dependency_prefixes": ["adaptive_factory.store", "adaptive_factory.service",
+                                               "adaptive_factory.landing_live_executors", "trust-ci"],
+            "severity": "error",
+        }]
+        repo, base = self._repo(rules=rules)
+        repo.write_text("factory/src/adaptive_factory/__init__.py", "from . import store\n")
+        # A package marker above the real src root must not change runtime
+        # identity or conceal adaptive_factory.store from the boundary rule.
+        repo.write_text("factory/__init__.py", "")
+        sources = {
+            "absolute": "from adaptive_factory.store import X\n",
+            "selected": "from adaptive_factory import service as s\n",
+            "relative": "from .store import X\n",
+            "module_none": "from . import service as s\n",
+            "transport": "from . import landing_live_executors\n",
+            "trust": "from adaptive_trust_ci import policy\n",
+            "resources/worker": "from ..store import X\n",
+            "safe": "from .landing_contracts import X\n",
+        }
+        for name, source in sources.items():
+            repo.write_text(f"factory/src/adaptive_factory/{name}.py", source)
+        head = repo.commit("qualified boundaries")
+        result = self._results(self._evaluate(repo, base, head))["module_boundary"]
+        self.assertEqual(result.status, "fail")
+        for name in (*sources, "__init__"):
+            with self.subTest(source=name):
+                found = any(f"adaptive_factory/{name}.py imports" in item for item in result.findings)
+>               self.assertEqual(found, name != "safe")
+E               AssertionError: False != True
+
+tests/test_architecture_fitness.py:688: AssertionError
+_ ArchitectureFitnessTests.test_boundary_qualified_relative_and_module_none_imports_are_checked (source="'resources/worker'") _
+[gw2] linux -- Python 3.12.3 /tmp/agbp-venv/bin/python
+
+self = <tests.test_architecture_fitness.ArchitectureFitnessTests testMethod=test_boundary_qualified_relative_and_module_none_imports_are_checked>
+
+    def test_boundary_qualified_relative_and_module_none_imports_are_checked(self) -> None:
+        rules = _rules()
+        rules["path_boundaries"] = [{
+            "id": "FIT-MODULE", "source_prefixes": ["factory/src"],
+            "forbidden_dependency_prefixes": ["adaptive_factory.store", "adaptive_factory.service",
+                                               "adaptive_factory.landing_live_executors", "trust-ci"],
+            "severity": "error",
+        }]
+        repo, base = self._repo(rules=rules)
+        repo.write_text("factory/src/adaptive_factory/__init__.py", "from . import store\n")
+        # A package marker above the real src root must not change runtime
+        # identity or conceal adaptive_factory.store from the boundary rule.
+        repo.write_text("factory/__init__.py", "")
+        sources = {
+            "absolute": "from adaptive_factory.store import X\n",
+            "selected": "from adaptive_factory import service as s\n",
+            "relative": "from .store import X\n",
+            "module_none": "from . import service as s\n",
+            "transport": "from . import landing_live_executors\n",
+            "trust": "from adaptive_trust_ci import policy\n",
+            "resources/worker": "from ..store import X\n",
+            "safe": "from .landing_contracts import X\n",
+        }
+        for name, source in sources.items():
+            repo.write_text(f"factory/src/adaptive_factory/{name}.py", source)
+        head = repo.commit("qualified boundaries")
+        result = self._results(self._evaluate(repo, base, head))["module_boundary"]
+        self.assertEqual(result.status, "fail")
+        for name in (*sources, "__init__"):
+            with self.subTest(source=name):
+                found = any(f"adaptive_factory/{name}.py imports" in item for item in result.findings)
+>               self.assertEqual(found, name != "safe")
+E               AssertionError: False != True
+
+tests/test_architecture_fitness.py:688: AssertionError
+_ ArchitectureFitnessTests.test_boundary_relative_escape_or_missing_package_context_fails_closed (path="'src/worker.py'") _
+[gw3] linux -- Python 3.12.3 /tmp/agbp-venv/bin/python
+
+self = <tests.test_architecture_fitness.ArchitectureFitnessTests testMethod=test_boundary_relative_escape_or_missing_package_context_fails_closed>
+
+    def test_boundary_relative_escape_or_missing_package_context_fails_closed(self) -> None:
+        for source_path, source, package in (
+            ("factory/src/adaptive_factory/worker.py", "from .. import store\n", True),
+            ("factory/src/adaptive_factory/resources/worker.py", "from ... import store\n", True),
+            ("src/worker.py", "from . import store\n", False),
+        ):
+            with self.subTest(path=source_path):
+                rules = _rules()
+                rules["path_boundaries"] = [{
+                    "id": "FIT-MODULE", "source_prefixes": ["factory/src", "src"],
+                    "forbidden_dependency_prefixes": ["adaptive_factory.store"], "severity": "error",
+                }]
+                repo, base = self._repo(rules=rules)
+                if package:
+                    repo.write_text("factory/src/adaptive_factory/__init__.py", "")
+                repo.write_text(source_path, source)
+                report = self._evaluate(repo, base, repo.commit("relative escape"))
+>               self.assertEqual(self._results(report)["module_boundary"].status, "unsupported")
+E               AssertionError: 'pass' != 'unsupported'
+E               - pass
+E               + unsupported
+
+tests/test_architecture_fitness.py:730: AssertionError
+_ ArchitectureFitnessTests.test_boundary_qualified_relative_and_module_none_imports_are_checked (source="'__init__'") _
+[gw2] linux -- Python 3.12.3 /tmp/agbp-venv/bin/python
+
+self = <tests.test_architecture_fitness.ArchitectureFitnessTests testMethod=test_boundary_qualified_relative_and_module_none_imports_are_checked>
+
+    def test_boundary_qualified_relative_and_module_none_imports_are_checked(self) -> None:
+        rules = _rules()
+        rules["path_boundaries"] = [{
+            "id": "FIT-MODULE", "source_prefixes": ["factory/src"],
+            "forbidden_dependency_prefixes": ["adaptive_factory.store", "adaptive_factory.service",
+                                               "adaptive_factory.landing_live_executors", "trust-ci"],
+            "severity": "error",
+        }]
+        repo, base = self._repo(rules=rules)
+        repo.write_text("factory/src/adaptive_factory/__init__.py", "from . import store\n")
+        # A package marker above the real src root must not change runtime
+        # identity or conceal adaptive_factory.store from the boundary rule.
+        repo.write_text("factory/__init__.py", "")
+        sources = {
+            "absolute": "from adaptive_factory.store import X\n",
+            "selected": "from adaptive_factory import service as s\n",
+            "relative": "from .store import X\n",
+            "module_none": "from . import service as s\n",
+            "transport": "from . import landing_live_executors\n",
+            "trust": "from adaptive_trust_ci import policy\n",
+            "resources/worker": "from ..store import X\n",
+            "safe": "from .landing_contracts import X\n",
+        }
+        for name, source in sources.items():
+            repo.write_text(f"factory/src/adaptive_factory/{name}.py", source)
+        head = repo.commit("qualified boundaries")
+        result = self._results(self._evaluate(repo, base, head))["module_boundary"]
+        self.assertEqual(result.status, "fail")
+        for name in (*sources, "__init__"):
+            with self.subTest(source=name):
+                found = any(f"adaptive_factory/{name}.py imports" in item for item in result.findings)
+>               self.assertEqual(found, name != "safe")
+E               AssertionError: False != True
+
+tests/test_architecture_fitness.py:688: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_landing_architecture_boundaries.py::LandingArchitectureBoundaryTests::test_uri_exception_is_declared_only_for_staged_delivery
+SUBFAILED(group="'live'", path="'factory/src/adaptive_factory/landing_live_executors.py'") tests/test_landing_architecture_boundaries.py::LandingArchitectureBoundaryTests::test_every_actual_landing_source_has_exact_owner_and_boundary
+SUBFAILED(path="'factory/src/adaptive_factory/worker.py'") tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_boundary_relative_escape_or_missing_package_context_fails_closed
+FAILED tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_boundary_src_namespace_packages_keep_runtime_module_identity
+SUBFAILED(source="'selected'") tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_boundary_qualified_relative_and_module_none_imports_are_checked
+SUBFAILED(source="'relative'") tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_boundary_qualified_relative_and_module_none_imports_are_checked
+SUBFAILED(path="'factory/src/adaptive_factory/resources/worker.py'") tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_boundary_relative_escape_or_missing_package_context_fails_closed
+SUBFAILED(source="'module_none'") tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_boundary_qualified_relative_and_module_none_imports_are_checked
+SUBFAILED(allowed="['urllib.parse']") tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_boundary_exact_module_exception_never_permits_siblings_or_children
+SUBFAILED(source="'transport'") tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_boundary_qualified_relative_and_module_none_imports_are_checked
+SUBFAILED(source="'resources/worker'") tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_boundary_qualified_relative_and_module_none_imports_are_checked
+SUBFAILED(path="'src/worker.py'") tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_boundary_relative_escape_or_missing_package_context_fails_closed
+SUBFAILED(source="'__init__'") tests/test_architecture_fitness.py::ArchitectureFitnessTests::test_boundary_qualified_relative_and_module_none_imports_are_checked
+13 failed, 7 passed, 93 subtests passed in 3.52s

@@ -566,6 +566,9 @@
       ]
     },
     {
+      "allowed_dependency_modules": [
+        "urllib.parse"
+      ],
       "forbidden_dependency_prefixes": [
         "adaptive_factory.adapters",
         "adaptive_factory.api",
@@ -595,19 +598,29 @@
     {
       "forbidden_dependency_prefixes": [
         "adaptive_factory.adapters",
+        "adaptive_factory.api",
         "adaptive_factory.brokers",
+        "adaptive_factory.landing_host",
+        "adaptive_factory.landing_live_executors",
+        "adaptive_factory.landing_server",
         "adaptive_factory.migrations",
+        "adaptive_factory.server",
         "adaptive_factory.service",
         "adaptive_factory.store",
+        "adaptive_grok",
         "adaptive_trust_ci",
-        "trust_ci",
         "celery",
+        "fastapi",
         "httpx",
         "psycopg",
         "requests",
         "rq",
+        "scripts",
         "socket",
-        "urllib"
+        "tests",
+        "trust_ci",
+        "urllib",
+        "uvicorn"
       ],
       "id": "FIT-FACTORY-LANDING-DOGFOOD-BOUNDARY",
       "severity": "error",
@@ -643,6 +656,45 @@
         "pilot/contracts.py",
         "pilot/profile.py",
         "pilot/store.py"
+      ]
+    },
+    {
+      "forbidden_dependency_prefixes": [
+        "adaptive_factory.adapters",
+        "adaptive_factory.api",
+        "adaptive_factory.brokers",
+        "adaptive_factory.landing_host",
+        "adaptive_factory.landing_server",
+        "adaptive_factory.migrations",
+        "adaptive_factory.server",
+        "adaptive_factory.service",
+        "adaptive_factory.store",
+        "adaptive_grok",
+        "adaptive_trust_ci",
+        "aiohttp",
+        "celery",
+        "fastapi",
+        "ftplib",
+        "http.client",
+        "imaplib",
+        "poplib",
+        "psycopg",
+        "psycopg2",
+        "requests",
+        "rq",
+        "scripts",
+        "smtplib",
+        "socket",
+        "tests",
+        "trust_ci",
+        "urllib",
+        "uvicorn",
+        "xmlrpc.client"
+      ],
+      "id": "FIT-FACTORY-LANDING-LIVE-BOUNDARY",
+      "severity": "error",
+      "source_prefixes": [
+        "factory/src/adaptive_factory/landing_live_executors.py"
       ]
     }
   ],
