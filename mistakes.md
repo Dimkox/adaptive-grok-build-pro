@@ -53,3 +53,19 @@ Root cause: the autonomy assessment treated the controller repository and its la
 **Symptom:** The L5 delivery ledger `l5-split-delivery.md` lost its current-head live-probe paragraph (committed in `3eac0f8`) after a later single-row table edit; the regression reached the remote in `7966240` and was caught only by a `git show HEAD:<path>` audit of the committed blob.
 **Root cause:** Re-editing the same file after only an `offset/limit` partial read let the edit tool reconstruct the file from a stale pre-edit snapshot, overwriting intervening content; the tool's ambiguous "modified since last read"/empty results hid whether each attempt applied, so no full-content checkpoint existed between edits.
 **Rule:** Before editing a file again in a session, full-read it (no offset/limit) or reconstruct deterministically from a committed blob (`git show <commit>:<path>` plus asserted string replacements); after any edit with ambiguous tool status, verify the committed blob — not the working tree — before pushing; never trust a freshness error as proof that nothing was written (see tracker issues #74 and its inverse: both false-failure and silent-clobber directions exist).
+
+## 2026-09-13 — Broke my own verification windows twice while the verifier ran
+
+**Symptom:** `grok_verify --mode pr` reported `source-stability: repository changed during verification checks` on the hardening tree (reviewer reports landed as untracked files mid-run) and again on the release-sync tree, where the second culprit was my own `grok_change transition` editing the tracked `state.json` minutes into the run.
+
+**Root cause:** the running verifier was treated as background rather than as an exclusive read-lock over the tracked tree; package transitions and evidence commits are tracked writes and fall inside the window, and receipts-only runtime state made the distinction easy to forget.
+
+**Rule:** the moment any serial or parallel verification starts, the tracked tree is FROZEN until it ends — transitions, report copies into the package, and receipts that re-bind fingerprints all run strictly after completion; when in doubt, sequence verify last on a committed, quiescent tree.
+
+## 2026-09-13 — `pkill -f` matched my own command line and killed the edit script
+
+**Symptom:** a compound command began `pkill -f 'grok_verify.py --mode pr'`; the heredoc being executed contained that substring, so the wrapper `bash -c` received SIGTERM mid-script and seven asserted edits never ran.
+
+**Root cause:** pattern-based process matching includes the invoking shell's own command line; combining "stop other process" and "do work" in one compound command lets the stop phase destroy the work phase silently.
+
+**Rule:** kill by explicit PID from `pgrep` filtered against self, or use a pattern that cannot match the current command line; never place a process-termination step in the same compound command as the payload it could terminate.
