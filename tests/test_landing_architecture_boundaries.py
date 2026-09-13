@@ -14,21 +14,26 @@ OFFLINE = frozenset(PREFIX + name for name in (
     "landing_artifact.py", "landing_artifact_retention.py", "landing_contracts.py",
     "landing_coordinator.py", "landing_evaluation.py", "landing_intake.py",
     "landing_normalizer.py", "landing_provider.py", "landing_renderer.py",
-    "landing_runtime.py", "landing_service.py",
+    "landing_runtime.py", "landing_service.py", "landing_http.py",
+    "landing_media.py", "landing_sse.py", "landing_host_config.py",
+    "resources/landing_pdf_worker.py",
 ))
 GROUPS = {
     "offline": OFFLINE,
     "sqlite": frozenset({PREFIX + "landing_sqlite_store.py"}),
+    "host": frozenset({PREFIX + "landing_server.py"}),
     "live": frozenset({PREFIX + "landing_live_executors.py"}),
 }
 OWNERS = {
     "offline": "NODE-FACTORY-LANDING-DOGFOOD",
     "sqlite": "NODE-FACTORY-LANDING-SQLITE",
+    "host": "NODE-FACTORY-LOCAL-API",
     "live": "NODE-FACTORY-LANDING-LIVE-EXECUTORS",
 }
 RULES = {
     "offline": "FIT-FACTORY-LANDING-DOGFOOD-BOUNDARY",
     "sqlite": "FIT-FACTORY-LANDING-DOGFOOD-BOUNDARY",
+    "host": "FIT-FACTORY-LANDING-HOST-BOUNDARY",
     "live": "FIT-FACTORY-LANDING-LIVE-BOUNDARY",
 }
 

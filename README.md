@@ -4,7 +4,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## Current state
 
-Active L5 split C (`feat/l5-split-c-evidence-v2`) follows the sealed source update and introduces strict provider-evidence v2 readers alongside the unchanged v1 schema and digest domain. Retained envelopes require matching versions; native/fixture producers remain v1. The HTTP producer and later runtime/publication/backup slices are still separate. See [the slice C package](engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/brief.md). Local checks do not establish external Trust CI acceptance or operational readiness.
+Active L5 split D (`feat/l5-split-d-http-runtime`) adds bounded Qwen/Grok HTTP normalization, isolated PDF extraction, media/SSE validation and durable SQLite composition to the existing server. Provider execution remains disabled by default; explicit opt-in selects a pinned profile after source and writer-ownership checks. HTTP evidence uses v2 while retained v1 remains readable. Dedicated host, publication and backup follow in E–G. See [the slice D package](engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/brief.md). Local evidence does not establish external Trust CI acceptance or operational readiness.
 
 
 Execution usage accounting supports the legacy V1 aggregate payload and a closed V2 payload with input, output, reasoning, cached-input, and cache-write buckets. V2 binds a canonical price table digest and derives integer micro-USD cost server-side; it never accepts an adapter total.
@@ -95,7 +95,7 @@ For a fresh clone, bootstrap state comes from `START_HERE.md` / `PROJECT_STATE.j
 - [investor demo guide](docs/INVESTOR_DEMO.md)
 - [`scripts/install_into.py`](scripts/install_into.py)
 - [`trust-ci/`](trust-ci/) — external merge trust, deployed independently
-- [`factory/`](factory/) — delivered M4-M8 control/evaluation source plus the unreleased Stage 3/5 L5 normalizer, single-operator SQLite state and deterministic local artifact runtime; operational providers remain disabled by default
+- [`factory/`](factory/) — delivered M4-M8 control/evaluation source plus the L5 HTTP/media normalizer, single-owner SQLite runtime and deterministic local artifact pipeline; operational providers remain disabled by default
 - [`delivery/`](delivery/) — delivered M9 staged-delivery/recovery source plus the transport-free unavailable landing publisher; no production authority
 - [`pilot/`](pilot/) — unreleased single-operator exact-issue/Codex/candidate/validation/draft-proposal vertical; disabled by default and without merge/deploy authority
 - [`DARK_FACTORY_ROADMAP.md`](DARK_FACTORY_ROADMAP.md) — dependency-ordered M0-M9 program status and acceptance-relative schedule

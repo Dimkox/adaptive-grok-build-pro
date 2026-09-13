@@ -1,6 +1,6 @@
-# Adaptive Factory M4-M8 control/evaluation and offline L5 landing source
+# Adaptive Factory M4-M8 control/evaluation and default-off L5 landing runtime
 
-L5 delivery slice C preserves original evidence v1 identities and adds strict independent v2 readers and matching retained envelopes. Native and fixture producers still emit v1; live HTTP production arrives in D. The sealed source remains `fde60e040167c10975b00d11f578c4da6763069a` / `21817e70e079b772e1f3114a80dfc0320d1ada91` with 22 publishable files. After v2 records exist, rollback requires a compatible reader or a consistent pre-v2 snapshot.
+L5 delivery slice D adds bounded HTTP/media normalization and durable runtime composition. HTTP evidence emits v2; native and fixture evidence retains v1, and retained readers accept both. The sealed source is `fde60e040167c10975b00d11f578c4da6763069a` / `21817e70e079b772e1f3114a80dfc0320d1ada91` with 22 publishable files. Rollback after v2 records exist requires a compatible reader or a consistent pre-v2 snapshot.
 
 
 This nested Python package is a source-only, local control plane. It validates immutable M1/M2/M3/M0-bound intake, stores operational truth in an isolated PostgreSQL `factory` schema, schedules work with database leases and monotonic fences, enforces 20 global readers / 10 readers per repository / one writer, bounds retries and budgets, retains hash-chained audit, and performs restart-safe reconciliation.
@@ -9,7 +9,7 @@ It does not make a live provider call, execute repository commands, access Git/G
 
 Current status is bounded by the [root current-state summary](../README.md), [program roadmap](../DARK_FACTORY_ROADMAP.md), and milestone change packages. This M4-M8 source was delivered to `main` by PR #22 and published in `v2.0.13`; the checked head was `b5eba759c309a92f92f4d4003d025795c7f8a1f9` and the merge was `8599d45f4f28285381b05a53feb3059de92eb2a8`. Repository delivery does not authorize deployment, live-provider action, persistent database mutation, M8 activation, or production acceptance.
 
-Published `v2.0.14` added a separate L5 landing state/store and four authenticated routes for bounded multimodal intake, status, cancellation and local artifact results. The unreleased Stage 3/5 local runtime retains exact landing source `699010380f4f90a0193a9c22090c35e6aded7d2c` / tree `f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4`, protected source-owned `index.css`, the 20-member deploy inventory, and exact renderer writes `index.html`/`content.css`; it adds a default-unavailable injected native-Codex normalizer seam, private single-operator SQLite replay/recovery, and a concrete coordinator-to-packager artifact builder. PDF/audio stop at `needs_human`, the publisher still has no transport, every result keeps `live_url` null, and no live model, target mutation, deployment, publication, or indexing is claimed. Default-off `compose_landing_live` automatically normalize→render→evaluate→seals the 20-member L5 artifact when a caller injects a live executor; the shipped server path stays unavailable, `live_url` remains null, and the source pin is unchanged.
+Published `v2.0.14` introduced the separate L5 store and four authenticated local operations. This branch advances the exact source and current deploy inventory to 22 files while retaining historical 19/20-member layouts. Default-off composition can persist unavailable operation in SQLite; explicitly enabled HTTP composition normalizes, renders, evaluates and seals candidates. The publication port remains unavailable here and every result has `live_url` null. Dedicated host, filesystem publication and backup are subsequent delivery slices.
 
 ## Local disposable verification
 
@@ -46,20 +46,19 @@ For a separately approved local rollout, follow the [M4 / 2.0.13 local rollout a
 
 ## Live Grok / Qwen landing executors (default off)
 
-Current host requirements, pinned from this machine:
+`landing_live_executors.py` owns provider transport; `landing_http.py` defines the closed profiles and bounded response decoder. Profiles are explicit: Beijing `qwen` / `qwen-plus`, Singapore `qwen-intl` / `qwen-plus`, `qwen-omni` / `qwen3.5-omni-plus-2026-03-15`, `grok` / `grok-4`, and `grok-vision` / `grok-4.6`. Region or model failures do not cause automatic fallback. Legacy profiles and qwen-intl accept text/safe DOCX; Omni adds textual PDF, PNG/JPEG and WAV/MP3, while grok-vision adds PDF/images. These are implemented profiles, not a claim that every modality has passed a live provider probe.
 
-| Item | Value |
-| --- | --- |
-| Python executable | `/usr/bin/python3.12` |
-| Python version | `3.12.3` |
-| Python SHA-256 | `a92f0f95e883390c7256b2e441484aac06b1002dbe1d924141a77c8d82f96223` |
-| Factory `requires-python` | `>=3.11` |
-| `httpx` | `0.28.1` |
-| Grok | `https://api.x.ai/v1` model `grok-4`, env `FACTORY_LANDING_GROK_API_KEY` |
-| Qwen | `https://dashscope.aliyuncs.com/compatible-mode/v1` model `qwen-plus`, env `FACTORY_LANDING_QWEN_API_KEY` |
+PDF text extraction uses packaged `pypdf==6.18.1` in a bounded child process. Scanned, encrypted or oversized inputs remain `needs_human`, without OCR. Requests have an absolute asynchronous timeout and bounded streaming. SSE requires terminal text, final factual usage and DONE; invalid identity/usage, refusal and uncertain outcomes remain explicit failures. Automated executor tests use `httpx.MockTransport`.
 
-`compose_env_landing` is the operator composition entry: export `FACTORY_LANDING_PROVIDER=grok` or `qwen` plus absolute quarantine/source/scratch/output paths and the matching API key. Unset provider returns `None` so the shipped `adaptive-factory-server` path stays on `UnavailableLandingProvider` (constructor injection only; the API process does not import `httpx`). Tests still use `httpx.MockTransport`.
+The existing `adaptive-factory-server` composes durable unavailable mode when `FACTORY_LANDING_STATE_PATH` and the private runtime paths are set. Explicit `FACTORY_LANDING_LIVE_ENABLED=true`, a named provider and complete state/quarantine/source/scratch/output paths select HTTP execution. The source is validated before credentials, and the SQLite lifetime writer lock precedes quarantine recovery and credential acquisition. Source delivery does not activate the server or call a provider.
 
-`compose_landing_live_grok` / `compose_landing_live_qwen` live in `landing_live_executors.py` and inject those executors into the existing auto-seal path. The dogfood landing core stays `network: none` and does not import `httpx`. The shipped server does not read these env vars. Tests use `httpx.MockTransport` and never open a real socket. `live_url` stays null.
+`compose_server_landing` accepts an explicit `qwen_env_file` for Qwen profiles. It must remain outside the control repository and runtime/source roots and pass private-file validation. Only `DASHSCOPE_API_KEY` is selected; the file is not executed or imported into the process environment. Explicit file errors fail closed and disabled mode does not read it. Otherwise the selected provider uses its existing environment credential loader. Dedicated host CLI support arrives in E.
 
-This table is the closed operator-host record for this machine, not a CI-binary guarantee. Observed here: CPython on Linux x86_64 (glibc 2.39); `/usr/bin/python3` resolves to `/usr/bin/python3.12`. Tests assert the frozen record and `factory/pyproject.toml` pins, not the SHA of a runner's `/usr/bin/python3.12`.
+The explicit synthetic probe is available when separately invoked with factory dependencies installed:
+
+```bash
+PYTHONPATH=factory/src python -m adaptive_factory.landing_live_executors \
+  --profile qwen-intl --qwen-env-file "$HOME/.qwen/.env"
+```
+
+It sends one fixed synthetic request and prints bounded status, profile/model, digests, usage and elapsed time. It does not start a service or publish a site. This command is documentation; the source extraction and automated tests do not execute it.

@@ -794,3 +794,7 @@ Earlier L5 handoff text repeated a 24-member inventory without checking DEPLOY_M
 ## 2026-09-13 — Validate typed change documents before a long verifier run
 
 I generated invariant/forbidden-outcome strings although change-spec v2 requires objects with IDs and evidence mappings, and skipped the available gate validator. The full A verifier then raised during receipt recording instead of returning its report; B was interrupted before the same failure. Correct the object shape and validate every newly generated spec before source freeze; neither attempt is passing evidence.
+
+- 2026-09-13: A shell-tool result with nonzero exit status was treated as successful, starting verification and creating a successor before its source commit existed. Root cause was assuming returned command errors throw; all dependent operations now inspect exit_code before proceeding, and the interrupted run is retained as invalid evidence.
+
+- 2026-09-13: Validating only the staged delta missed whitespace already committed in inherited raw RED logs; A/B full suites passed but cumulative git-diff-check failed. Preserve noisy logs losslessly in JSON and check both genuine route and actual-main ranges before starting a full verification run.

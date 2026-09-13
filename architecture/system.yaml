@@ -1375,8 +1375,10 @@
         "factory/contracts/openapi",
         "factory/src/adaptive_factory/api.py",
         "factory/src/adaptive_factory/cli.py",
+        "factory/src/adaptive_factory/landing_server.py",
         "factory/src/adaptive_factory/server.py",
         "factory/src/adaptive_factory/settings.py",
+        "factory/tests/test_landing_server.py",
         "factory/tests/test_server.py"
       ],
       "runtime": {
@@ -1951,13 +1953,18 @@
         "factory/src/adaptive_factory/landing_contracts.py",
         "factory/src/adaptive_factory/landing_coordinator.py",
         "factory/src/adaptive_factory/landing_evaluation.py",
+        "factory/src/adaptive_factory/landing_host_config.py",
+        "factory/src/adaptive_factory/landing_http.py",
         "factory/src/adaptive_factory/landing_intake.py",
+        "factory/src/adaptive_factory/landing_media.py",
         "factory/src/adaptive_factory/landing_normalizer.py",
         "factory/src/adaptive_factory/landing_provider.py",
         "factory/src/adaptive_factory/landing_renderer.py",
         "factory/src/adaptive_factory/landing_runtime.py",
         "factory/src/adaptive_factory/landing_service.py",
-        "factory/src/adaptive_factory/resources/landing-normalization-draft.v1.schema.json"
+        "factory/src/adaptive_factory/landing_sse.py",
+        "factory/src/adaptive_factory/resources/landing-normalization-draft.v1.schema.json",
+        "factory/src/adaptive_factory/resources/landing_pdf_worker.py"
       ],
       "runtime": {
         "evidence": "source_described",

@@ -528,6 +528,8 @@ class PrivateLandingBlobStore:
                 if not 1 <= len(entries) <= MAX_DOCX_ENTRIES:
                     raise LandingContractError("docx_entries")
                 names = {entry.filename for entry in entries}
+                if len({entry.filename.casefold() for entry in entries}) != len(entries):
+                    raise LandingContractError("docx_path")
                 if "[Content_Types].xml" not in names or "word/document.xml" not in names:
                     raise LandingContractError("docx_shape")
                 expanded = 0

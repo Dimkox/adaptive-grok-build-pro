@@ -10,6 +10,13 @@ class SettingsError(RuntimeError):
     pass
 
 
+# Closed operator set for FACTORY_LANDING_PROVIDER. "unavailable" is the default and keeps the
+# landing path dark unless an explicit provider is named.
+LANDING_PROVIDERS = frozenset(
+    {"unavailable", "grok", "qwen", "grok-vision", "qwen-omni", "qwen-intl"}
+)
+
+
 def read_private_file(path: Path, maximum: int) -> bytes:
     if not path.is_absolute() or ".." in path.parts:
         raise SettingsError("private file path must be absolute and normalized")
@@ -79,10 +86,40 @@ class FactorySettings:
     semantic_validator_database_url: str | None = None
     semantic_adjudicator_database_url: str | None = None
     landing_quarantine_path: Path | None = None
-    landing_provider: str | None = None
+    landing_provider: str = "unavailable"
     landing_source_path: Path | None = None
     landing_scratch_path: Path | None = None
     landing_output_path: Path | None = None
+    # New settings fields are appended only: the block above keeps the order published by the
+    # env-landing composition change, so positional construction stays compatible.
+    landing_state_path: Path | None = None
+    landing_live_enabled: bool = False
+
+    def validate_landing(self) -> None:
+        if type(self.landing_live_enabled) is not bool or self.landing_provider not in LANDING_PROVIDERS:
+            raise SettingsError("invalid landing enablement or provider")
+        paths = (
+            self.landing_quarantine_path, self.landing_state_path,
+            self.landing_source_path, self.landing_scratch_path, self.landing_output_path,
+        )
+        for path in paths:
+            if path is not None and (
+                not isinstance(path, Path) or not path.is_absolute() or ".." in path.parts
+            ):
+                raise SettingsError("landing paths must be absolute and normalized")
+        supplied = [path for path in paths if path is not None]
+        if any(
+            left == right or left in right.parents or right in left.parents
+            for index, left in enumerate(supplied) for right in supplied[index + 1:]
+        ):
+            raise SettingsError("landing paths must be disjoint")
+        if self.landing_state_path is not None and self.landing_quarantine_path is None:
+            raise SettingsError("landing state requires quarantine")
+        if self.landing_live_enabled:
+            if self.landing_provider == "unavailable" or any(path is None for path in paths):
+                raise SettingsError("live landing requires provider and all durable paths")
+        elif self.landing_provider != "unavailable":
+            raise SettingsError("landing provider requires explicit live enablement")
 
     @classmethod
     def from_environment(cls) -> "FactorySettings":
@@ -107,15 +144,18 @@ class FactorySettings:
         landing_quarantine_path = (
             Path(landing_quarantine_raw) if landing_quarantine_raw else None
         )
-        landing_provider = os.environ.get("FACTORY_LANDING_PROVIDER", "").strip() or None
-        if landing_provider not in {None, "grok", "qwen"}:
-            raise SettingsError("FACTORY_LANDING_PROVIDER must be grok or qwen")
-        landing_source_raw = os.environ.get("FACTORY_LANDING_SOURCE_PATH")
-        landing_scratch_raw = os.environ.get("FACTORY_LANDING_SCRATCH_PATH")
-        landing_output_raw = os.environ.get("FACTORY_LANDING_OUTPUT_PATH")
-        landing_source_path = Path(landing_source_raw) if landing_source_raw else None
-        landing_scratch_path = Path(landing_scratch_raw) if landing_scratch_raw else None
-        landing_output_path = Path(landing_output_raw) if landing_output_raw else None
+        landing_provider = os.environ.get("FACTORY_LANDING_PROVIDER", "").strip() or "unavailable"
+        if landing_provider not in LANDING_PROVIDERS:
+            raise SettingsError(
+                "FACTORY_LANDING_PROVIDER must be one of " + ", ".join(sorted(LANDING_PROVIDERS - {"unavailable"}))
+            )
+        landing_paths = {}
+        for name in ("state", "source", "scratch", "output"):
+            value = os.environ.get(f"FACTORY_LANDING_{name.upper()}_PATH")
+            landing_paths[f"landing_{name}_path"] = Path(value) if value else None
+        landing_flag = os.environ.get("FACTORY_LANDING_LIVE_ENABLED", "false")
+        if landing_flag not in {"true", "false"}:
+            raise SettingsError("FACTORY_LANDING_LIVE_ENABLED must be true or false")
         actors_file = os.environ.get("FACTORY_ACTORS_FILE", "")
         socket_path = Path(os.environ.get("FACTORY_SOCKET_PATH", "/run/adaptive-factory/control.sock"))
         if (
@@ -134,24 +174,10 @@ class FactorySettings:
             raise SettingsError(
                 "enabled execution requires a separate artifact attestor database URL"
             )
-        for label, path in (
-            ("FACTORY_LANDING_QUARANTINE_PATH", landing_quarantine_path),
-            ("FACTORY_LANDING_SOURCE_PATH", landing_source_path),
-            ("FACTORY_LANDING_SCRATCH_PATH", landing_scratch_path),
-            ("FACTORY_LANDING_OUTPUT_PATH", landing_output_path),
-        ):
-            if path is not None and (not path.is_absolute() or ".." in path.parts):
-                raise SettingsError(f"{label} must be absolute and normalized")
-        if landing_provider is not None and (
-            landing_quarantine_path is None
-            or landing_source_path is None
-            or landing_scratch_path is None
-            or landing_output_path is None
-        ):
-            raise SettingsError(
-                "FACTORY_LANDING_PROVIDER requires quarantine, source, scratch and output paths"
-            )
-        return cls(
+        # Landing path shape, disjointness and the provider/enablement pairing are enforced by
+        # FactorySettings.validate_landing(), which covers quarantine, state, source, scratch and
+        # output together.
+        result = cls(
             database_url=database_url,
             socket_path=socket_path,
             actors_file=Path(actors_file),
@@ -161,8 +187,9 @@ class FactorySettings:
             semantic_validator_database_url=semantic_validator_database_url,
             semantic_adjudicator_database_url=semantic_adjudicator_database_url,
             landing_quarantine_path=landing_quarantine_path,
+            **landing_paths,
+            landing_live_enabled=landing_flag == "true",
             landing_provider=landing_provider,
-            landing_source_path=landing_source_path,
-            landing_scratch_path=landing_scratch_path,
-            landing_output_path=landing_output_path,
         )
+        result.validate_landing()
+        return result
