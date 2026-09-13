@@ -1,0 +1,71 @@
+{
+  "allowed_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect",
+    "code_reviewer",
+    "general_implementer"
+  ],
+  "analysis_agents": [
+    "repo_explorer",
+    "architect",
+    "docs_researcher",
+    "integration_architect"
+  ],
+  "base_commit": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
+  "base_fingerprint": "0e33c43193d91bf4d79eb1eb6a4b7226e1116ccbf8815be9b5809ed316aa3efc",
+  "complexity": "standard",
+  "created_at": "2026-09-13T11:57:49+00:00",
+  "delivery_expected": true,
+  "domains": [
+    "api"
+  ],
+  "human_gates": [],
+  "intent": "docs",
+  "primary_skill": "adaptive-delivery",
+  "quality_profiles": [
+    "base",
+    "contracts"
+  ],
+  "rationale": [
+    "medium-risk integration, contract, data, AI, or modernization work",
+    "intent=docs",
+    "domains=api",
+    "repository=generic",
+    "write-owner=general_implementer",
+    "analysis-wave=4/10"
+  ],
+  "repo": {
+    "bitrix_modules": [],
+    "domains": [
+      "api"
+    ],
+    "kind": "generic",
+    "languages": [],
+    "package_scripts": [],
+    "signals": [
+      "contract:engineering/contracts/openapi"
+    ]
+  },
+  "required_evidence": [
+    "verification",
+    "code_review"
+  ],
+  "review_agents": [
+    "code_reviewer"
+  ],
+  "risk": "medium",
+  "route_id": "f9b49845f0f6",
+  "schema_version": 1,
+  "session_id": "caroline-m8-confirmation-20260913",
+  "status": "routed",
+  "task": "Add a Caroline cross-project case study to the Factory documentation and index it for M8 evaluation; include pinned GitHub facts, test limits, and explicit non-qualifying status. Implement documentation only.",
+  "task_domains": [],
+  "workflow_skills": [
+    "adaptive-delivery",
+    "task-triage",
+    "api-event-change"
+  ],
+  "write_agent": "general_implementer"
+}
