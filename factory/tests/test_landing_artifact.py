@@ -36,7 +36,20 @@ from factory.tests.test_landing_renderer import landing_spec, sealed_target
 
 FIXED_TIME = datetime(2026, 9, 4, 0, 0, tzinfo=timezone.utc)
 PROFILE_DIGEST = "2" * 64
-PROHIBITED_MEMBERS = PROHIBITED_DEPLOY_MEMBERS
+# Independent oracle: keep the expected set here so the production constant cannot
+# silently redefine what the test checks. A drift between the two is a real failure.
+PROHIBITED_MEMBERS = frozenset(
+    {
+        "ASSETS.md",
+        "SERVER-SETUP.md",
+        "og-image.jpg",
+        "dist",
+        "docs",
+        "reports",
+        "research",
+        "tests",
+    }
+)
 
 
 @contextmanager
@@ -277,22 +290,25 @@ class LandingArtifactTests(unittest.TestCase):
                         )
 
     def test_every_epoch_inventory_is_disjoint_from_production_prohibited_set(self):
+        self.assertEqual(PROHIBITED_DEPLOY_MEMBERS, PROHIBITED_MEMBERS)
         for members in (
             DEPLOY_MEMBERS,
             landing_artifact._PRIOR_DEPLOY_MEMBERS,
             tuple(m for m in landing_artifact._PRIOR_DEPLOY_MEMBERS if m != "index.css"),
         ):
-            self.assertTrue(PROHIBITED_DEPLOY_MEMBERS.isdisjoint(members))
+            self.assertTrue(PROHIBITED_MEMBERS.isdisjoint(members))
 
     def test_epoch_resolution_fails_closed_on_a_prohibited_member(self):
-        injected = DEPLOY_MEMBERS + ("SERVER-SETUP.md",)
-        with mock.patch.object(landing_artifact, "DEPLOY_MEMBERS", injected):
-            with self.assertRaises(LandingArtifactError) as current:
-                deploy_members_for_source(
-                    "fde60e040167c10975b00d11f578c4da6763069a",
-                    "21817e70e079b772e1f3114a80dfc0320d1ada91",
-                )
-        self.assertIn("prohibited_deploy_member:SERVER-SETUP.md", str(current.exception))
+        for injected_name in ("SERVER-SETUP.md", "docs/internal-notes.md", "research/x.json"):
+            with mock.patch.object(
+                landing_artifact, "DEPLOY_MEMBERS", DEPLOY_MEMBERS + (injected_name,)
+            ):
+                with self.assertRaises(LandingArtifactError) as current:
+                    deploy_members_for_source(
+                        "fde60e040167c10975b00d11f578c4da6763069a",
+                        "21817e70e079b772e1f3114a80dfc0320d1ada91",
+                    )
+            self.assertIn(f"prohibited_deploy_member:{injected_name}", str(current.exception))
 
 
 if __name__ == "__main__":

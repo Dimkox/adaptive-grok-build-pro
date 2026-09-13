@@ -81,7 +81,11 @@ PROHIBITED_DEPLOY_MEMBERS = frozenset(
 
 
 def _approved_deploy_members(members: tuple[str, ...]) -> tuple[str, ...]:
-    overlap = sorted(PROHIBITED_DEPLOY_MEMBERS.intersection(members))
+    overlap = sorted(
+        member
+        for member in members
+        if PROHIBITED_DEPLOY_MEMBERS.intersection(PurePosixPath(member).parts)
+    )
     if overlap:
         raise LandingArtifactError(f"prohibited_deploy_member:{','.join(overlap)}")
     return members
