@@ -244,19 +244,23 @@ def main(
         config = uvicorn.Config(app, access_log=False, log_config=None, server_header=False)
         uvicorn.Server(config).run(sockets=[listener])
     finally:
-        if listener is not None:
-            listener.close()
-        # Cleanup must not depend on the application object being a FastAPI instance: an
-        # unguarded app.state lookup here raised AttributeError inside `finally` and replaced the
-        # real startup outcome with a teardown error.
-        owned_landing = getattr(getattr(app, "state", None), "owned_landing_runtime", None)
-        if owned_landing is not None:
-            owned_landing.close()
         try:
-            if listener is not None and stat.S_ISSOCK(settings.socket_path.lstat().st_mode):
-                settings.socket_path.unlink()
-        except FileNotFoundError:
-            pass
+            if listener is not None:
+                listener.close()
+        finally:
+            try:
+                # Cleanup must not depend on the application object being a FastAPI instance: an
+                # unguarded app.state lookup here raised AttributeError inside `finally` and replaced the
+                # real startup outcome with a teardown error.
+                owned_landing = getattr(getattr(app, "state", None), "owned_landing_runtime", None)
+                if owned_landing is not None:
+                    owned_landing.close()
+            finally:
+                try:
+                    if listener is not None and stat.S_ISSOCK(settings.socket_path.lstat().st_mode):
+                        settings.socket_path.unlink()
+                except FileNotFoundError:
+                    pass
     return 0
 
 

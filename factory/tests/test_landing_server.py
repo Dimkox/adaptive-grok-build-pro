@@ -7,13 +7,14 @@ from dataclasses import replace
 import os
 from pathlib import Path
 import sqlite3
+import stat
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from adaptive_factory import landing_server, landing_sqlite_store, server
 from adaptive_factory.models import Actor
-from adaptive_factory.settings import FactorySettings
+from adaptive_factory.settings import FactorySettings, SettingsError
 from adaptive_factory.landing_service import LandingServiceError
 from adaptive_factory.landing_sqlite_store import SQLiteLandingJobStore
 
@@ -64,6 +65,32 @@ class LandingServerOwnershipTests(unittest.TestCase):
         owned.close()
         owned.close()
         self.open_store()
+
+    def test_default_off_rejects_double_slash_alias_of_state_as_quarantine(self):
+        state = self.settings.landing_state_path
+        alias = Path("/" + str(state))
+        self.assertNotEqual(state, alias)
+        self.assertTrue(state.samefile(alias))
+        with self.assertRaisesRegex(SettingsError, "absolute and normalized"):
+            self.compose(replace(self.settings, landing_quarantine_path=alias))
+        self.assertEqual([], list(state.iterdir()))
+
+    def test_every_landing_root_rejects_double_slash_before_io_for_all_profiles(self):
+        for field in ("landing_state_path", "landing_quarantine_path", "landing_source_path",
+                      "landing_scratch_path", "landing_output_path"):
+            alias = Path("/" + str(getattr(self.settings, field)))
+            for provider in ("unavailable", "grok", "qwen", "grok-vision", "qwen-omni", "qwen-intl"):
+                settings = replace(self.settings, **{field: alias}, landing_provider=provider,
+                                   landing_live_enabled=provider != "unavailable")
+                with (
+                    self.subTest(field=field, provider=provider),
+                    patch.object(landing_server, "_private_directory", side_effect=AssertionError("root I/O")),
+                    patch.object(landing_server, "_trusted_source", side_effect=AssertionError("source I/O")),
+                    patch.object(landing_server, "SQLiteLandingJobStore", side_effect=AssertionError("state I/O")),
+                    patch.object(landing_server, "PrivateLandingBlobStore", side_effect=AssertionError("blob I/O")),
+                    self.assertRaisesRegex(SettingsError, "absolute and normalized"),
+                ):
+                    self.compose(settings)
 
     def test_competing_writer_never_initializes_quarantine(self):
         self.open_store()
@@ -163,6 +190,49 @@ class LandingServerOwnershipTests(unittest.TestCase):
         with patch.object(server, "create_app", side_effect=RuntimeError("application construction")), self.assertRaisesRegex(RuntimeError, "application construction"):
             self.build_app()
         self.open_store()
+
+    def test_existing_server_main_cleanup_stages_survive_listener_or_runtime_close_failure(self):
+        for failed_stage in ("listener", "runtime"):
+            with self.subTest(failed_stage=failed_stage):
+                app = self.build_app()
+                owned = app.state.owned_landing_runtime
+                self.addCleanup(owned.close)
+                close_runtime = owned.close
+                failure = OSError(failed_stage + " close failed")
+                events = []
+
+                def close_listener():
+                    events.append("listener")
+                    if failed_stage == "listener":
+                        raise failure
+
+                def close_owned():
+                    events.append("runtime")
+                    close_runtime()
+                    if failed_stage == "runtime":
+                        raise failure
+
+                listener = Mock()
+                listener.close.side_effect = close_listener
+                socket_path = Mock()
+                socket_path.lstat.return_value.st_mode = stat.S_IFSOCK
+                socket_path.unlink.side_effect = lambda: events.append("unlink")
+                with (
+                    patch.object(server.FactorySettings, "from_environment", return_value=replace(self.settings, socket_path=socket_path)),
+                    patch.object(server, "build_app", return_value=app),
+                    patch.object(server, "prepare_unix_socket", return_value=listener),
+                    patch.object(server.uvicorn, "Config", return_value=object()),
+                    patch.object(server.uvicorn, "Server"),
+                    patch.object(owned, "close", side_effect=close_owned),
+                    self.assertRaises(OSError) as raised,
+                ):
+                    server.main()
+                self.assertIs(raised.exception, failure)
+                try:
+                    self.open_store().close()
+                finally:
+                    close_runtime()
+                self.assertEqual(["listener", "runtime", "unlink"], events)
 
     def test_interruption_after_flock_releases_unreturned_descriptor(self):
         real_flock = landing_sqlite_store.fcntl.flock

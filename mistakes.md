@@ -798,3 +798,5 @@ I generated invariant/forbidden-outcome strings although change-spec v2 requires
 - 2026-09-13: A shell-tool result with nonzero exit status was treated as successful, starting verification and creating a successor before its source commit existed. Root cause was assuming returned command errors throw; all dependent operations now inspect exit_code before proceeding, and the interrupted run is retained as invalid evidence.
 
 - 2026-09-13: Validating only the staged delta missed whitespace already committed in inherited raw RED logs; A/B full suites passed but cumulative git-diff-check failed. Preserve noisy logs losslessly in JSON and check both genuine route and actual-main ranges before starting a full verification run.
+
+- 2026-09-13: Exact source extraction and passing host tests did not establish the direct FactorySettings/server entrypoint invariants: // aliases bypassed lexical disjointness and one cleanup exception skipped later cleanup. Independent real-SQLite review reproduced both; validate shared path shape before I/O and isolate every owned cleanup stage with finally, then add direct-entrypoint regressions.
