@@ -1375,9 +1375,11 @@
         "factory/contracts/openapi",
         "factory/src/adaptive_factory/api.py",
         "factory/src/adaptive_factory/cli.py",
+        "factory/src/adaptive_factory/landing_host.py",
         "factory/src/adaptive_factory/landing_server.py",
         "factory/src/adaptive_factory/server.py",
         "factory/src/adaptive_factory/settings.py",
+        "factory/tests/test_landing_host.py",
         "factory/tests/test_landing_server.py",
         "factory/tests/test_server.py"
       ],

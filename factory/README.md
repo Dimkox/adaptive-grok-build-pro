@@ -1,6 +1,6 @@
 # Adaptive Factory M4-M8 control/evaluation and default-off L5 landing runtime
 
-L5 delivery slice D adds bounded HTTP/media normalization and durable runtime composition. HTTP evidence emits v2; native and fixture evidence retains v1, and retained readers accept both. The sealed source is `fde60e040167c10975b00d11f578c4da6763069a` / `21817e70e079b772e1f3114a80dfc0320d1ada91` with 22 publishable files. Rollback after v2 records exist requires a compatible reader or a consistent pre-v2 snapshot.
+L5 delivery slice E adds a dedicated Unix landing host and closed private configuration to bounded HTTP/media normalization and durable runtime composition. HTTP evidence emits v2; native and fixture evidence retains v1, and retained readers accept both. The sealed source is `fde60e040167c10975b00d11f578c4da6763069a` / `21817e70e079b772e1f3114a80dfc0320d1ada91` with 22 publishable files. Rollback after v2 records exist requires a compatible reader or a consistent pre-v2 snapshot.
 
 
 This nested Python package is a source-only, local control plane. It validates immutable M1/M2/M3/M0-bound intake, stores operational truth in an isolated PostgreSQL `factory` schema, schedules work with database leases and monotonic fences, enforces 20 global readers / 10 readers per repository / one writer, bounds retries and budgets, retains hash-chained audit, and performs restart-safe reconciliation.
@@ -9,7 +9,7 @@ It does not make a live provider call, execute repository commands, access Git/G
 
 Current status is bounded by the [root current-state summary](../README.md), [program roadmap](../DARK_FACTORY_ROADMAP.md), and milestone change packages. This M4-M8 source was delivered to `main` by PR #22 and published in `v2.0.13`; the checked head was `b5eba759c309a92f92f4d4003d025795c7f8a1f9` and the merge was `8599d45f4f28285381b05a53feb3059de92eb2a8`. Repository delivery does not authorize deployment, live-provider action, persistent database mutation, M8 activation, or production acceptance.
 
-Published `v2.0.14` introduced the separate L5 store and four authenticated local operations. This branch advances the exact source and current deploy inventory to 22 files while retaining historical 19/20-member layouts. Default-off composition can persist unavailable operation in SQLite; explicitly enabled HTTP composition normalizes, renders, evaluates and seals candidates. The publication port remains unavailable here and every result has `live_url` null. Dedicated host, filesystem publication and backup are subsequent delivery slices.
+Published `v2.0.14` introduced the separate L5 store and four authenticated local operations. This branch advances the exact source and current deploy inventory to 22 files while retaining historical 19/20-member layouts. Default-off composition can persist unavailable operation in SQLite; explicitly enabled HTTP composition normalizes, renders, evaluates and seals candidates. The publication port remains unavailable here and every result has `live_url` null. The dedicated host is available here; filesystem publication, backup and operational templates are subsequent delivery slices.
 
 ## Local disposable verification
 
@@ -52,7 +52,7 @@ PDF text extraction uses packaged `pypdf==6.18.1` in a bounded child process. Sc
 
 The existing `adaptive-factory-server` composes durable unavailable mode when `FACTORY_LANDING_STATE_PATH` and the private runtime paths are set. Explicit `FACTORY_LANDING_LIVE_ENABLED=true`, a named provider and complete state/quarantine/source/scratch/output paths select HTTP execution. The source is validated before credentials, and the SQLite lifetime writer lock precedes quarantine recovery and credential acquisition. Source delivery does not activate the server or call a provider.
 
-`compose_server_landing` accepts an explicit `qwen_env_file` for Qwen profiles. It must remain outside the control repository and runtime/source roots and pass private-file validation. Only `DASHSCOPE_API_KEY` is selected; the file is not executed or imported into the process environment. Explicit file errors fail closed and disabled mode does not read it. Otherwise the selected provider uses its existing environment credential loader. Dedicated host CLI support arrives in E.
+`compose_server_landing` accepts an explicit `qwen_env_file` for Qwen profiles. It must remain outside the control repository and runtime/source roots and pass private-file validation. Only `DASHSCOPE_API_KEY` is selected; the file is not executed or imported into the process environment. Explicit file errors fail closed and disabled mode does not read it. Otherwise the selected provider uses its existing environment credential loader. The dedicated host accepts the same explicit file through `--qwen-env-file`.
 
 The explicit synthetic probe is available when separately invoked with factory dependencies installed:
 
@@ -62,3 +62,9 @@ PYTHONPATH=factory/src python -m adaptive_factory.landing_live_executors \
 ```
 
 It sends one fixed synthetic request and prints bounded status, profile/model, digests, usage and elapsed time. It does not start a service or publish a site. This command is documentation; the source extraction and automated tests do not execute it.
+
+## Dedicated Unix landing host
+
+`adaptive-landing-server --config /absolute/private/landing-host.json` loads a closed private configuration and composes only landing routes, health and authenticated metrics. It uses SQLite and an operator-owned Unix socket, with no PostgreSQL store or project database connection. Configuration validates absolute, non-overlapping control/runtime/source roots and credential placement before composition. SQLite ownership spans application lifetime; owned resources close after startup failure and normal or exceptional shutdown.
+
+Provider execution requires explicit `live_enabled=true` and a selected profile. Default-off operation does not acquire a provider credential. For a regional Qwen profile the optional `--qwen-env-file /absolute/private/provider.env` selects the validated key file; otherwise the existing selected-provider environment loader applies. Installation/config templates arrive in G, and this source delivery does not start or install the host.

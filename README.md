@@ -4,7 +4,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## Current state
 
-Active L5 split D (`feat/l5-split-d-http-runtime`) adds bounded Qwen/Grok HTTP normalization, isolated PDF extraction, media/SSE validation and durable SQLite composition to the existing server. Provider execution remains disabled by default; explicit opt-in selects a pinned profile after source and writer-ownership checks. HTTP evidence uses v2 while retained v1 remains readable. Dedicated host, publication and backup follow in E–G. See [the slice D package](engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/brief.md). Local evidence does not establish external Trust CI acceptance or operational readiness.
+Active L5 split E (`feat/l5-split-e-unix-host`) adds a dedicated Unix landing host and closed private configuration on top of the bounded HTTP/media and durable SQLite runtime. Landing-only composition avoids the broader Factory PostgreSQL/project database path and keeps provider execution disabled by default. Filesystem publication, backup and installation templates follow in F–G. See [the slice E package](engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/brief.md). Local evidence does not establish external Trust CI acceptance or operational readiness.
 
 
 Execution usage accounting supports the legacy V1 aggregate payload and a closed V2 payload with input, output, reasoning, cached-input, and cache-write buckets. V2 binds a canonical price table digest and derives integer micro-USD cost server-side; it never accepts an adapter total.

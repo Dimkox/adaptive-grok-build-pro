@@ -21,7 +21,7 @@ OFFLINE = frozenset(PREFIX + name for name in (
 GROUPS = {
     "offline": OFFLINE,
     "sqlite": frozenset({PREFIX + "landing_sqlite_store.py"}),
-    "host": frozenset({PREFIX + "landing_server.py"}),
+    "host": frozenset({PREFIX + "landing_host.py", PREFIX + "landing_server.py"}),
     "live": frozenset({PREFIX + "landing_live_executors.py"}),
 }
 OWNERS = {

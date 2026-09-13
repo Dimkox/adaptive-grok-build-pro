@@ -511,3 +511,5 @@ A dedicated same-repository evidence worktree can hold the exact change-package 
 - 2026-09-13: Direct FactorySettings with real temporary SQLite isolates runtime ownership tests from the later dedicated-host slice. Data analysis additionally found an initialization-interruption cleanup gap; reproducing and narrowly fixing it before delivery gives independently reviewable ownership behavior without changing the schema.
 
 - 2026-09-13: Writer ownership is tested with a second real SQLite opener after injected startup failures, rather than by inspecting private descriptor flags. Four reproduced interruption/close-failure paths required only three cleanup hunks, retaining schema and durable reader bytes.
+
+- 2026-09-13: Complete the helper-only host_config in E together with its dedicated host tests, keeping D independently runnable. Runtime templates stay deferred until their publication/backup entrypoints exist in G.

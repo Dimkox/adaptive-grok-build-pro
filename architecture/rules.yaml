@@ -694,6 +694,7 @@
       "id": "FIT-FACTORY-LANDING-HOST-BOUNDARY",
       "severity": "error",
       "source_prefixes": [
+        "factory/src/adaptive_factory/landing_host.py",
         "factory/src/adaptive_factory/landing_server.py"
       ]
     },
