@@ -2,10 +2,10 @@
   "schema_version": 2,
   "repository": "Dimkox/adaptive-grok-build-pro",
   "default_branch": "main",
-  "observed_at": "2026-09-04T16:58:48Z",
-  "observed_main_sha": "1751b5855e46782b9a1bfceb6e1ab0102cba03b0",
-  "product_version": "2.0.15",
-  "latest_published_release": "v2.0.14",
+  "observed_at": "2026-09-13T19:25:00Z",
+  "observed_main_sha": "1a8c89170349fcc2597be0a1665b0e0a31d124e0",
+  "product_version": "2.0.16",
+  "latest_published_release": "v2.0.15",
   "bootstrap_entrypoint": "START_HERE.md",
   "engineering_contract": "AGENTS.md",
   "roadmap": "DARK_FACTORY_ROADMAP.md",
@@ -34,33 +34,64 @@
     "M9"
   ],
   "published_release": {
-    "tag": "v2.0.14",
-    "published_at": "2026-09-04T16:58:48Z",
-    "pull_request": 24,
-    "checked_head": "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57",
-    "merge_commit": "1751b5855e46782b9a1bfceb6e1ab0102cba03b0",
-    "merged_at": "2026-09-04T16:56:37Z",
-    "tree": "618df086920c92179aa0e22a8c8d4ad30ebd9230",
+    "tag": "v2.0.15",
+    "published_at": "2026-09-05T20:17:20Z",
+    "pull_request": 27,
+    "checked_head": "9fcc9d943c74260c02a920a59490143f91cb38b2",
+    "merge_commit": "fd51dcfed6b33f4a8707c0db602328146df17cc9",
+    "merged_at": "2026-09-05T20:14:37Z",
+    "tag_object": "ec4c399a858c6249252bf62313abf8df9d0b2298",
+    "tree": "f01e9b0d1f80fb6731c68079540fd98e5c1f64ac",
     "artifact": {
-      "path": "packages/adaptive-grok-build-pro-v2.0.14.zip",
-      "sha256": "b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264",
-      "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.14.zip.sha256",
-      "sidecar_sha256": "1a961c35b8f12fa02579ec7888c889f0ae7ca8656b158eb731681ef8357caf3c",
+      "path": "packages/adaptive-grok-build-pro-v2.0.15.zip",
+      "sha256": "1f0f64557fd258df7e533f674bb4e7c55d4a1a51454d48bcfecfa5487d08e9d7",
+      "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.15.zip.sha256",
+      "sidecar_sha256": "8f3ed4b8eb96f7984eb38b0c988bd8a8cee8cdc789bca52527084b78fd791c6d",
       "binding": "immutable_release_tag"
     },
     "trust_ci": {
       "name": "adaptive-trust-ci/verified@06ecf1c875bc",
       "conclusion": "SUCCESS",
-      "check_run_id": 101099224099,
-      "attestation_id": "9defb556-f703-4a13-b20a-8b88aa6781b4",
-      "signer": "0519cf1d47436f2e"
+      "check_run_id": 101365945968,
+      "attestation_id": "4a13e71c-25e7-4272-80fa-8153590edc84",
+      "signer": "0519cf1d47436f2e",
+      "github_app_id": 4694114
     },
     "gitguardian": {
-      "conclusion": "SUCCESS"
+      "conclusion": "SKIPPED",
+      "check_run_id": 101365931711,
+      "caveat": "GitHub reported the run skipped after the operator dispositioned its finding on the public landing CSP digest as a false positive; it is not credential evidence and not merge authority. Branch protection binds only adaptive-trust-ci/verified@06ecf1c875bc."
     },
-    "notes": "The artifact is bound to the immutable v2.0.14 tag target. Repository publication does not establish an operational landing provider or host, M8 cohort/activation, or real M9 deployment."
+    "notes": "The artifact is bound to the immutable v2.0.15 tag target. Repository publication does not establish an operational landing provider or host, M8 cohort/activation, or real M9 deployment, and the design-partner pilot's first live model attempt remains blocked by landing target drift (6990103 -> observed 80d6215)."
   },
   "prior_published_releases": [
+    {
+      "tag": "v2.0.14",
+      "published_at": "2026-09-04T16:58:48Z",
+      "pull_request": 24,
+      "checked_head": "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57",
+      "merge_commit": "1751b5855e46782b9a1bfceb6e1ab0102cba03b0",
+      "merged_at": "2026-09-04T16:56:37Z",
+      "tree": "618df086920c92179aa0e22a8c8d4ad30ebd9230",
+      "artifact": {
+        "path": "packages/adaptive-grok-build-pro-v2.0.14.zip",
+        "sha256": "b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264",
+        "sidecar_path": "packages/adaptive-grok-build-pro-v2.0.14.zip.sha256",
+        "sidecar_sha256": "1a961c35b8f12fa02579ec7888c889f0ae7ca8656b158eb731681ef8357caf3c",
+        "binding": "immutable_release_tag"
+      },
+      "trust_ci": {
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "conclusion": "SUCCESS",
+        "check_run_id": 101099224099,
+        "attestation_id": "9defb556-f703-4a13-b20a-8b88aa6781b4",
+        "signer": "0519cf1d47436f2e"
+      },
+      "gitguardian": {
+        "conclusion": "SUCCESS"
+      },
+      "notes": "The artifact is bound to the immutable v2.0.14 tag target. Repository publication does not establish an operational landing provider or host, M8 cohort/activation, or real M9 deployment."
+    },
     {
       "tag": "v2.0.13",
       "published_at": "2026-09-04T08:33:19Z",
@@ -82,146 +113,219 @@
     }
   ],
   "current_unreleased_change": {
-    "change_id": "20260905-feature-implement-a-single-operator-codex-github-0ce2d6",
-    "route_id": "0ce2d62a018e",
-    "branch": "feature/design-partner-pilot",
-    "status": "bounded_review_repairs_pending_final_artifact_evidence",
-    "stage": "local_pr_candidate",
-    "source_base": "6f3b6ed2853b7a6f78804888cffca578d4dc9448",
-    "change_package": "engineering/changes/20260905-feature-implement-a-single-operator-codex-github-0ce2d6",
-    "predecessor_change": "20260905-l5-single-operator-live-mvp-local-runtime-65b201",
-    "landing_source": {
-      "repository_id": "github.com/Dimkox/ai-dark-factory-landing",
-      "commit": "699010380f4f90a0193a9c22090c35e6aded7d2c",
-      "tree": "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4",
-      "default_branch": "main",
-      "read_only": true
-    },
-    "observed_target_drift": {
-      "observed_at": "2026-09-05T17:17:00Z",
-      "commit": "80d621545938e24c296420d7f685f2d0b2b5785e",
-      "tree": "a1c2eff37ec808a53b2aeec089a5f6d7cb72bd55",
-      "status": "blocked_before_model_attempt",
-      "required_action": "review target-policy refresh preserving newer analytics and deployment-archive coherence"
-    },
-    "issue_number": 1,
-    "write_paths": [
-      ".htaccess",
-      "index.html",
-      "km/index.html",
-      "ko/index.html",
-      "lv/index.html",
-      "nl/index.html",
-      "tests/test_landing.py",
-      "zh-cn/index.html"
+    "change_id": null,
+    "route_id": null,
+    "branch": null,
+    "change_package": null,
+    "identity": "v2.0.16 release sync (identity bump + bootstrap-state refresh)",
+    "status": "pending_route_dispatch",
+    "stage": "identity_bump_not_yet_committed",
+    "source_base": "1a8c89170349fcc2597be0a1665b0e0a31d124e0",
+    "target_version": "2.0.16",
+    "scope": [
+      "VERSION, .grok-stack/adaptive_grok/__init__.py, README.md H1/Identity, CHANGELOG.md top entry and DARK_FACTORY_ROADMAP.md move to 2.0.16",
+      "this record: product identity, v2.0.15 published_release, prior list, observed main SHA, local_candidate slot",
+      "START_HERE.md and GROK_BUILD_HANDOFF.md statements that still deny v2.0.15 publication or the L5 landing"
     ],
-    "protected_source_member": "index.css",
-    "execution": {
-      "profile": "landing-design-partner-699010",
-      "default": "unavailable",
-      "cli_phases": [
-        "prepare",
-        "publish-branch",
-        "publish-proposal",
-        "status"
-      ],
-      "provider_mode": "app_server_chatgpt",
-      "model": "gpt-6-astra",
-      "host_auth": "opaque_path_capability_never_read_or_copied",
-      "command_permissions": "pilot_confined",
-      "sandbox_proof": "same_pinned_config_outside_read_write_git_network_unix_socket_denials",
-      "max_codex_starts": 1,
-      "max_test_starts": 1,
-      "automatic_retry": false,
-      "live_model_invoked": false
-    },
-    "local_store": {
-      "engine": "stdlib_sqlite",
-      "scope": "single_operator_private_runtime_root",
-      "journal_mode": "WAL",
-      "synchronous": "FULL",
-      "startup_recovery_limit": 100,
-      "status_access": "read_only_query_only",
-      "workspace_recovery": "deterministic_exact_identity_fail_closed",
-      "automatic_external_replay": false
-    },
-    "publication": {
-      "branch_push": "exact_resource_non_force_only",
-      "proposal": "exact_resource_draft_only",
-      "transport": "pinned_narrow_gh_and_git_commands",
-      "runtime_grant_binding": "current_origin_route_change_head_tree_fingerprint",
-      "ambiguous_recovery": "observation_only",
-      "merge_close_deploy": false,
-      "landing_trust_ci_profile": null,
-      "branch_protection_observation": "unavailable_private_plan_403"
-    },
+    "predecessors": [
+      {
+        "kind": "l5_union",
+        "pull_request": 75,
+        "head": "ac7ae2def67a267c227ab5703843337d4bb6f4be",
+        "merge_commit": "eb9df64bca333f30ec58f8c725a021360e22ed92",
+        "merged_at": "2026-09-13T17:35:51Z",
+        "check_run_id": 103760385178,
+        "check_completed_at": "2026-09-13T17:33:02Z",
+        "attestation_id": "e859743f-d0ed-48f0-a389-f5637e645c30"
+      },
+      {
+        "kind": "l5_evidence_ledger",
+        "pull_request": 72,
+        "head": "05e7ff6a9cd2848622db77c107b443bdd28e2f64",
+        "merge_commit": "e737dd5c338793e274285d657354e74ecc812f89",
+        "merged_at": "2026-09-13T18:26:32Z",
+        "check_run_id": 103767410361,
+        "check_completed_at": "2026-09-13T18:24:30Z",
+        "attestation_id": "495d3613-3aa8-4632-b3eb-d21fb703459c"
+      },
+      {
+        "kind": "post_landing_hardening",
+        "pull_request": 77,
+        "change_id": "20260913-post-landing-hardening-60-derived-invariant-61-p-353f1a",
+        "route_id": "353f1aaf7abd",
+        "head": "e46b642a2e41cde5f6f8b77308b2dfc821584721",
+        "merge_commit": "1a8c89170349fcc2597be0a1665b0e0a31d124e0",
+        "merged_at": "2026-09-13T19:11:28Z",
+        "check_run_id": 103773842716,
+        "check_completed_at": "2026-09-13T19:10:18Z",
+        "attestation_id": "a27a7440-8e09-4b43-aaec-41ddb0ce043f",
+        "issues_closed": [
+          60,
+          61,
+          63
+        ],
+        "note": "Landed by content: derived architecture-contract inventory, production-scope PROHIBITED_DEPLOY_MEMBERS gate, real PDF-worker execution tests, and the l5 block restatement."
+      }
+    ],
+    "artifact_child": "packages/adaptive-grok-build-pro-v2.0.16.zip and its .sha256 sidecar do not exist yet; they must be present in the tree of the commit whose local_candidate names them",
+    "tag_and_release": "not created; no v2.0.16 tag or GitHub Release exists at observation time",
     "frozen": {
-      "published_release": "v2.0.14",
+      "published_release": "v2.0.15",
       "package_bytes": true,
       "postgresql_migrations": "001-018"
     },
-    "focused_tests": {
-      "status": "task6_affected_tests_passed_before_source_freeze",
-      "contracts_architecture": 5,
-      "issue_store_workspace_codex_recovery": 9,
-      "validation": 4,
-      "authority_publication": 4,
-      "coordinator_cli": 3,
-      "task6_app_server": 4,
-      "task6_cli": 3,
-      "task6_coordinator_recovery": 2,
-      "task6_live_phases": 4,
-      "task6_pinned_github": 2,
-      "task6_runtime_authority": 2,
-      "task6_store": 3,
-      "task6_workspace": 3
-    },
-    "full_verifier": "original_2405b013_failed_one_postgres_method_then_targeted_recovery_passed_unchanged_tree",
-    "final_verification": "fresh_affected_checks_plus_identity_bound_unchanged_evidence_not_a_second_full_suite_pass",
-    "independent_reviews": "original_fail_reports_preserved_existing_three_reviewers_recheck_final_repaired_artifact",
-    "package_rebuild": "source_parent_R_then_zip_sidecar_only_child_A",
     "external_effect": false,
     "operational_activation": false,
-    "next_action": "Freeze corrected source R, build matching 2.0.15 ZIP+sidecar in two private exact-R clones and import only that pair as child A. Bind fresh affected checks and retained unchanged-component evidence to A, then obtain the existing three independent reviews; do not repeat unaffected PostgreSQL/root suites. Primary /root is the explicitly user-approved sole fallback writer. The live attempt remains blocked until the trusted landing profile is refreshed for observed target drift."
+    "next_action": "Dispatch the release-sync route on the current main, land the 2.0.16 identity commit and its ZIP+sidecar artifact child on their own exact-head App check, then create the v2.0.16 tag and GitHub Release from the exact merged commit."
+  },
+  "delivered_change_history": {
+    "design_partner_pilot": {
+      "delivered_as": "v2.0.15",
+      "delivered_pull_request": 27,
+      "delivered_merge_commit": "fd51dcfed6b33f4a8707c0db602328146df17cc9",
+      "published_at": "2026-09-05T20:17:20Z",
+      "record": {
+        "change_id": "20260905-feature-implement-a-single-operator-codex-github-0ce2d6",
+        "route_id": "0ce2d62a018e",
+        "branch": "feature/design-partner-pilot",
+        "status": "bounded_review_repairs_pending_final_artifact_evidence",
+        "stage": "local_pr_candidate",
+        "source_base": "6f3b6ed2853b7a6f78804888cffca578d4dc9448",
+        "change_package": "engineering/changes/20260905-feature-implement-a-single-operator-codex-github-0ce2d6",
+        "predecessor_change": "20260905-l5-single-operator-live-mvp-local-runtime-65b201",
+        "landing_source": {
+          "repository_id": "github.com/Dimkox/ai-dark-factory-landing",
+          "commit": "699010380f4f90a0193a9c22090c35e6aded7d2c",
+          "tree": "f7dbbd80c6e95d2a365109d937f5be76d8fe0bd4",
+          "default_branch": "main",
+          "read_only": true
+        },
+        "observed_target_drift": {
+          "observed_at": "2026-09-05T17:17:00Z",
+          "commit": "80d621545938e24c296420d7f685f2d0b2b5785e",
+          "tree": "a1c2eff37ec808a53b2aeec089a5f6d7cb72bd55",
+          "status": "blocked_before_model_attempt",
+          "required_action": "review target-policy refresh preserving newer analytics and deployment-archive coherence"
+        },
+        "issue_number": 1,
+        "write_paths": [
+          ".htaccess",
+          "index.html",
+          "km/index.html",
+          "ko/index.html",
+          "lv/index.html",
+          "nl/index.html",
+          "tests/test_landing.py",
+          "zh-cn/index.html"
+        ],
+        "protected_source_member": "index.css",
+        "execution": {
+          "profile": "landing-design-partner-699010",
+          "default": "unavailable",
+          "cli_phases": [
+            "prepare",
+            "publish-branch",
+            "publish-proposal",
+            "status"
+          ],
+          "provider_mode": "app_server_chatgpt",
+          "model": "gpt-6-astra",
+          "host_auth": "opaque_path_capability_never_read_or_copied",
+          "command_permissions": "pilot_confined",
+          "sandbox_proof": "same_pinned_config_outside_read_write_git_network_unix_socket_denials",
+          "max_codex_starts": 1,
+          "max_test_starts": 1,
+          "automatic_retry": false,
+          "live_model_invoked": false
+        },
+        "local_store": {
+          "engine": "stdlib_sqlite",
+          "scope": "single_operator_private_runtime_root",
+          "journal_mode": "WAL",
+          "synchronous": "FULL",
+          "startup_recovery_limit": 100,
+          "status_access": "read_only_query_only",
+          "workspace_recovery": "deterministic_exact_identity_fail_closed",
+          "automatic_external_replay": false
+        },
+        "publication": {
+          "branch_push": "exact_resource_non_force_only",
+          "proposal": "exact_resource_draft_only",
+          "transport": "pinned_narrow_gh_and_git_commands",
+          "runtime_grant_binding": "current_origin_route_change_head_tree_fingerprint",
+          "ambiguous_recovery": "observation_only",
+          "merge_close_deploy": false,
+          "landing_trust_ci_profile": null,
+          "branch_protection_observation": "unavailable_private_plan_403"
+        },
+        "frozen": {
+          "published_release": "v2.0.14",
+          "package_bytes": true,
+          "postgresql_migrations": "001-018"
+        },
+        "focused_tests": {
+          "status": "task6_affected_tests_passed_before_source_freeze",
+          "contracts_architecture": 5,
+          "issue_store_workspace_codex_recovery": 9,
+          "validation": 4,
+          "authority_publication": 4,
+          "coordinator_cli": 3,
+          "task6_app_server": 4,
+          "task6_cli": 3,
+          "task6_coordinator_recovery": 2,
+          "task6_live_phases": 4,
+          "task6_pinned_github": 2,
+          "task6_runtime_authority": 2,
+          "task6_store": 3,
+          "task6_workspace": 3
+        },
+        "full_verifier": "original_2405b013_failed_one_postgres_method_then_targeted_recovery_passed_unchanged_tree",
+        "final_verification": "fresh_affected_checks_plus_identity_bound_unchanged_evidence_not_a_second_full_suite_pass",
+        "independent_reviews": "original_fail_reports_preserved_existing_three_reviewers_recheck_final_repaired_artifact",
+        "package_rebuild": "source_parent_R_then_zip_sidecar_only_child_A",
+        "external_effect": false,
+        "operational_activation": false,
+        "next_action": "Freeze corrected source R, build matching 2.0.15 ZIP+sidecar in two private exact-R clones and import only that pair as child A. Bind fresh affected checks and retained unchanged-component evidence to A, then obtain the existing three independent reviews; do not repeat unaffected PostgreSQL/root suites. Primary /root is the explicitly user-approved sole fallback writer. The live attempt remains blocked until the trusted landing profile is refreshed for observed target drift."
+      }
+    }
   },
   "local_candidate": {
-    "version": "2.0.14",
-    "status": "published",
-    "route_id": "9f67efd2575c",
-    "branch": "feature/l5-multimodal-landing-factory",
-    "change_package": "engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef",
-    "source_base": "b10a5c474883e30dcaf781d104cbb804f031b52f",
-    "reviewed_product_head": "5f47508f3c0d52b71a3c866969cc28b6476a9d99",
-    "reviewed_product_tree": "0ae72773d73a294b88a398cec9926f6fca2f5555",
-    "reviewed_policy_head": "58c9caed5d2c8f9febba297430a0782438505d82",
-    "reviewed_policy_tree": "975bf7a21784bf91279a684bdeb5f5394fb715a1",
-    "source_gate_status": "passed_for_artifact_head",
-    "review_status": "four_route_selected_reviews_passed",
-    "checked_head": "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57",
-    "merge_commit": "1751b5855e46782b9a1bfceb6e1ab0102cba03b0",
-    "tree": "618df086920c92179aa0e22a8c8d4ad30ebd9230",
-    "pull_request": 24,
-    "artifact_status": "published_tag_bound",
+    "version": "2.0.16",
+    "status": "pending_release",
+    "route_id": null,
+    "branch": null,
+    "change_package": null,
+    "source_base": "1a8c89170349fcc2597be0a1665b0e0a31d124e0",
+    "reviewed_product_head": null,
+    "reviewed_product_tree": null,
+    "source_gate_status": "pending_route_dispatch",
+    "review_status": "pending",
+    "checked_head": null,
+    "merge_commit": null,
+    "tree": null,
+    "pull_request": null,
+    "artifact_status": "pending_unpublished_artifact_child",
     "artifact_child": {
       "identity": "A",
-      "source_parent": "5b33a384e853ad6e1b945898f9ed5e54329dd2ad",
-      "source_parent_tree": "b4b0c5cc45469e57c7c8f5d1a4a4a31182c1dfce",
-      "commit": "66a7fe5c4a59b3ea7e1350b34e0a547faf5a9f57",
-      "tree": "618df086920c92179aa0e22a8c8d4ad30ebd9230",
+      "source_parent": null,
+      "source_parent_tree": null,
+      "commit": null,
+      "tree": null,
       "delta_paths": [
-        "packages/adaptive-grok-build-pro-v2.0.14.zip",
-        "packages/adaptive-grok-build-pro-v2.0.14.zip.sha256"
+        "packages/adaptive-grok-build-pro-v2.0.16.zip",
+        "packages/adaptive-grok-build-pro-v2.0.16.zip.sha256"
       ],
-      "zip_sha256": "b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264",
-      "sidecar_sha256": "1a961c35b8f12fa02579ec7888c889f0ae7ca8656b158eb731681ef8357caf3c",
-      "status": "published_as_v2.0.14"
+      "zip_sha256": null,
+      "sidecar_sha256": null,
+      "status": "not_built",
+      "requirement": "The separate artifact-child commit adds both delta_paths files built from the merged release-sync tree and flips published, artifact_status and the artifact identities; until that commit exists this record intentionally ships without those bytes and grants no publication authority."
     },
-    "published": true,
-    "published_at": "2026-09-04T16:58:48Z",
-    "external_effect": true,
-    "external_effect_scope": "github_repository_delivery_and_release_only",
+    "published": false,
+    "published_at": null,
+    "external_effect": false,
+    "external_effect_scope": null,
     "operational_activation": false,
-    "notes": "The L5 landing source and artifact are published as repository product v2.0.14. Provider and publisher defaults remain unavailable, with no operational provider, target mutation, hosting, indexing, deployment, M8 activation, or production authority."
+    "notes": "2.0.16 is the unpublished identity that will carry the assembled L5 stack (union eb9df64, PR #75), the delivery ledger (e737dd5, PR #72) and post-landing hardening (1a8c891, PR #77). Nothing is built, tagged or released for 2.0.16; provider live egress stays default-off and the systemd/install templates remain inert and uninstalled."
   },
   "delivered_non_milestone_work": [
     {
@@ -250,11 +354,11 @@
     "branch": "feature/l5-multimodal-landing-factory",
     "pull_request": 24,
     "change_package": "engineering/changes/20260904-l5-multimodal-landing-dogfood-9f67ef",
-    "status": "v2.0.14_published_repository_delivery_complete",
+    "status": "v2.0.15 published; L5 stack delivered to main at eb9df64; v2.0.16 release sync pending",
     "highest_implemented_milestone": "M9",
     "current_provisional_milestone": null,
     "next_roadmap_milestone": null,
-    "next_action": "No repository-release action remains for v2.0.14. Any operational landing provider, target mutation, hosting/indexing/deployment, factual M8 cohort/activation, or real M9 qualification requires a separate routed change, evidence, and explicit authority.",
+    "next_action": "v2.0.16 tag and GitHub Release are pending after the sync merges land: the L5 union (#75), the evidence ledger (#72) and post-landing hardening (#77) are on main, so the remaining work is the 2.0.16 identity commit with its ZIP+sidecar artifact child on its own exact-head App check. Any operational landing provider, target mutation, hosting/indexing/deployment, factual M8 cohort/activation, or real M9 qualification still requires a separate routed change, evidence, and explicit authority.",
     "local_source_gate": {
       "status": "passed_for_artifact_head",
       "product_head": "5f47508f3c0d52b71a3c866969cc28b6476a9d99",
@@ -1007,10 +1111,10 @@
     "host-local deployment overlays and scratch"
   ],
   "l5_production_preparation": {
-    "status": "landed_main_eb9df64_release_and_activation_separate",
+    "status": "delivered_to_main_at_eb9df64_pending_v2_0_16_release",
     "branch": "main",
     "route_id": "2a890b6485a5",
-    "actual_main_observation": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
+    "actual_main_observation": "eb9df64bca333f30ec58f8c725a021360e22ed92",
     "frozen_reconstruction_reference": "f31406e970d67f7cd59694da5de88915adb0fa68",
     "change_package": "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b",
     "evidence_branch": "docs/l5-split-verification-evidence",
@@ -1058,6 +1162,7 @@
     "current_verification": "recorded separately after source freeze; no historical counts promoted",
     "landed_main_commit": "eb9df64bca333f30ec58f8c725a021360e22ed92",
     "landed_at": "2026-09-13T17:35:51Z",
-    "landing_method": "slice A squash #65 + tree-identical union #75 (tree == attested e6a813e); slices B-G closed landed-by-content"
+    "landing_method": "slice A squash #65 + tree-identical union #75 (tree == attested e6a813e); slices B-G closed landed-by-content",
+    "actual_main_observation_note": "main then advanced by PR #72 to 1a8c891; see observed_main_sha"
   }
 }

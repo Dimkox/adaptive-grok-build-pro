@@ -1,27 +1,48 @@
 # Grok Build handoff — self-hosted Trust CI
 
+## Status — historical P0 handoff; Trust CI is deployed and serving (2026-09-13)
+
+This file documents the P0 bootstrap of the self-hosted Trust CI control plane. It is no longer the working plan and none of its steps are open. The facts below are visible from this repository and from the service itself:
+
+- PR #2 (`P0: self-hosted Trust CI control plane`) merged at `2026-08-23T22:05:31Z` as `73e4ae7c68a95d3a7440378964b8cc1879df9b89`, which is the original planning baseline recorded in `DARK_FACTORY_ROADMAP.md` section 2;
+- the control-plane source lives on `main` under `trust-ci/` and runs on the CI host `claw` as `adaptive-trust-ci-api-1`, `adaptive-trust-ci-worker-1`, `adaptive-trust-ci-docker-engine-1` (isolated runner) and `adaptive-trust-ci-postgres-1` (`postgres:17.6-bookworm`) — the compose topology documented in `trust-ci/README.md`;
+- the API serves `GET http://127.0.0.1:18080/health/ready` with `"status":"ready"`, policy digest `06ecf1c875bc12fa696956998983e04b102f28571a586bc3bb7a2fff5083fdb2`, `status_context` `adaptive-trust-ci/verified`, publisher `worker-github-app` and one active approval key;
+- protected `main` binds the required status check `adaptive-trust-ci/verified@06ecf1c875bc` to GitHub App ID `4694114`, with strict up-to-date checks, administrator enforcement, and force pushes and branch deletion disabled;
+- that check is the live merge gate and is minting verdicts today: it passed on the L5 union head `ac7ae2def67a267c227ab5703843337d4bb6f4be` (check run `103760385178`) before PR #75 merged as `eb9df64bca333f30ec58f8c725a021360e22ed92` at `2026-09-13T17:35:51Z`, and the evidence follow-up PR #72 merged as `e737dd5c338793e274285d657354e74ecc812f89` at `2026-09-13T18:26:32Z`.
+
+Everything under "Non-negotiable constraints", "User standing consent" and the deployment prerequisites remains binding policy. The numbered execution order and the "Definition of done" below are completed history: read them as how the running service was proven, not as what to do next. See **Next actions** at the end of this file for the current work.
+
 ## Working branch
+
+```text
+main    (product source of truth; every change starts from a fresh branch cut from current main)
+```
+
+The former P0 branch:
 
 ```text
 feat/trust-ci-control-plane
 ```
 
+was merged and is retained history only — its tip `d0e251594c17884dbae4882ff3a8864edd8f0171` is an ancestor of `main`. Do not continue work on it.
+
 Pull request:
 
 ```text
-#2 — P0: self-hosted Trust CI control plane (no GitHub Actions)
+#2 — P0: self-hosted Trust CI control plane (no GitHub Actions) — MERGED 2026-08-23T22:05:31Z
 ```
 
-The PR is intentionally draft until the external GitHub App-owned check is produced for its exact head SHA.
+The PR was intentionally draft until the external GitHub App-owned check was produced for its exact head SHA; that check now exists, is named `adaptive-trust-ci/verified@<policy-sha12>`, and is the app-bound required status on protected `main`.
 
 ## Pull into Grok Build
 
 ```bash
 git fetch origin
-git switch feat/trust-ci-control-plane
-git pull --ff-only origin feat/trust-ci-control-plane
+git switch --create <branch-name> origin/main
 git status --short --branch
 ```
+
+Delivery is PR-only: push the branch, open a pull request, earn the App-owned policy-epoch check on the exact head SHA, and merge by human action after review. Direct push to `main` is prohibited and blocked by branch protection.
 
 Do not start from `hardening/trust-boundary-v2-1`. That branch and closed PR #1 contain a GitHub Actions-based implementation that is superseded by this self-hosted contour.
 
@@ -75,7 +96,7 @@ A local grant may authorize the exact requested push, tag, release, protected-pa
 
 ## Current code state
 
-Implemented in the branch:
+Implemented in `trust-ci/` on `main` (service identity `2.1.0`, `trust-ci/pyproject.toml`):
 
 - PostgreSQL jobs, attempts, leases, heartbeats, approval replay protection, events, and signed attestations;
 - HMAC-verified pull-request webhook intake;
@@ -194,7 +215,7 @@ Do not colocate a Docker-socket worker with production workloads.
 
 ### 6. Register and prove the webhook flow
 
-Register a pull-request webhook with HMAC secret. Update PR #2 and verify:
+Register a pull-request webhook with HMAC secret. Update the pull request and verify (live intake is the GitHub App `pull_request` webhook plus loopback HMAC characterization, and this is the flow the deployed service has run for every pull request since, including the L5 union #75; no repository webhook is added):
 
 ```text
 webhook accepted
@@ -241,7 +262,7 @@ branch deletion disabled
 
 Test that direct push and merge without the external check fail.
 
-### 9. Finish PR #2
+### 9. Finish the pull request
 
 Update the PR with:
 
@@ -256,7 +277,7 @@ branch-protection verification
 remaining residual risks
 ```
 
-Only then mark PR #2 ready for review. Do not merge automatically unless the user explicitly orders it after reviewing the external evidence.
+Only then mark the pull request ready for review. Do not merge automatically unless the user explicitly orders it after reviewing the external evidence.
 
 ## Definition of done
 
@@ -274,3 +295,12 @@ main requires the app-bound policy-epoch check
 direct push and bypass attempts fail
 PR #2 contains the final evidence
 ```
+
+Each condition above held when P0 closed and PR #2 carried the final evidence; they remain the standing acceptance bar for the running service, and `.github/workflows/` still does not exist in this repository.
+
+## Next actions (2026-09-13)
+
+1. The `v2.0.16` identity sync (VERSION, README, CHANGELOG, START_HERE, PROJECT_STATE, ROADMAP, this file and the `tests/test_structure.py` assertions) is delivered by PR #78. Remaining release work: the artifact-child PR adds `packages/adaptive-grok-build-pro-v2.0.16.zip` plus sidecar built from the merged sync tree and flips the pending candidate to delivered bytes; only then may tag `v2.0.16` and the GitHub Release bind to that exact merged commit under their own delegated grants.
+2. Disposition the open pull requests on their own exact-head evidence: #13 repository-scoped Trust CI profiles (App check `SUCCESS` on `9bdffde938b35fefe18b12f77a369b69af80e726`), #64 M8 cross-project confirmation (`SUCCESS`), #33 and #15 (App check `FAILURE`; cause not inspected). PR #28, the earlier `v2.0.15` documentation sync, was closed without merging and is replaced by the sync in item 1.
+3. Keep L5 operational activation out of the release sync. The stack is source on `main` at `eb9df64bca333f30ec58f8c725a021360e22ed92`; installation, service enablement, provider credentials, publication, hosting and production each need their own exact delegated authority and a fresh exact-head check.
+4. Trust CI operations stay outside the pull-request trust domain: any change to deployed policy, holdout bundle, images, PostgreSQL state, App key, human trust store or branch protection requires a new policy epoch, a new required check name, fresh external approvals, and re-binding branch protection only after the new App-owned check has been observed. Approval private keys are generated and used only on human-controlled machines, never here.

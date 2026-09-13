@@ -1,0 +1,29 @@
+# Code-quality review — `1a8c891..55364a4` (feature/v2.0.16-release-sync)
+
+**VERDICT: PASS** — no false-green and no false-red in this tree state. 2 medium coverage-strength findings worth a follow-up commit; none block merge.
+
+Test runs (all on the worktree HEAD `55364a4`):
+`python3 -m unittest tests.test_project_state -q` → **Ran 14 tests … OK**
+`tests.test_structure tests.test_architecture_model -q` → **Ran 86 … OK** · `tests.test_manifest_package -q` → **Ran 56 … OK** (156 green total)
+
+## (1) OBSERVED_MAIN_SHA / V2015_* split — historically true
+`OBSERVED_MAIN_SHA` is truthful: `git rev-parse origin/main` = `1a8c8917…`. `V2015_CHECKED_HEAD`/`V2015_MERGE_COMMIT`/`1a8c891` all exist as commits; `fd51dcfe` is an ancestor of the observed tip; `V2015_ZIP_SHA256`/`SIDECAR` match `sha256sum` on `packages/adaptive-grok-build-pro-v2.0.15.zip{,.sha256}` byte-for-byte. Every remaining `CURRENT_MAIN_SHA` use is still correct as the v2.0.14 merge (`:362` prior[0], `:545`/`:572` git-object + non-ancestor proof, `:715`/`:758` inventory, `:825-826` mutation fixture).
+- **[medium] `tests/test_project_state.py:624`** — `assertIn(CURRENT_MAIN_SHA, section)` used to prove README/START_HERE currency because that SHA *was* main. It no longer does: `1a8c8917…` appears **0** times in `README.md` and `START_HERE.md`, so a "Current state" section two releases stale still passes. Add `OBSERVED_MAIN_SHA` (or `v2.0.15`) to the loop at `:620-624`.
+- **[low] `:16`** — `CURRENT_MAIN_SHA` is now purely historical yet keeps the "CURRENT" name and 9 live-looking uses. Rename to `V2014_MERGE_COMMIT`; the inline `# v2.0.14 merge` comment is not enough.
+
+## (2) Pilot repoint — clean move, nothing lost
+`tests/test_project_state.py:129` now reads `delivered_change_history.design_partner_pilot.record`. Flattening old `current_unreleased_change` against the archived record: **0 keys missing, 0 value changes** across the whole subtree, so all ~40 assertions at `L124-190` (`execution`, `local_store`, `publication`, `landing_source`, `focused_tests`, `write_paths`, `issue_number`, …) still bind to the same bytes. Only the locator line changed — no assertion was dropped or loosened.
+- **[low]** `delivered_change_history` is referenced by exactly one line in all of `tests/`; nothing pins the container shape (`{"<slug>": {"record": …}}`) or that future changes append a key instead of overwriting `design_partner_pilot`. One `assertIn("design_partner_pilot", …)` + schema check would lock the archive contract.
+
+## (3) PROJECT_STATE.json splice — no accidental reflow
+Re-parses (`25` top-level keys). `git diff --ignore-all-space … | grep -c '^[+-]'` = **189** vs **407** raw → 218 whitespace-only lines; all sit inside the 6 hunks (`@@ -2`, `-34`, `-82`, `-250`, `-1007`, `-1058`) and are the expected re-indent of the pilot subtree moved one level deeper, not drift outside the regions. A recursive key-level diff confirms only intended edits: `+delivered_change_history`, `prior_published_releases 1→2` (prepend of v2.0.14), `published_release` +`tag_object`/`trust_ci.github_app_id`/`gitguardian.*`, `l5_production_preparation` +`actual_main_observation_note`, and `current_unreleased_change` rebuilt as the 2.0.16 slot.
+- **[medium] `:369-390` vs old `:340-385`** — `local_candidate` went from **full-dict equality** to 12 per-field asserts, so **10 of its 22 keys are now unpinned** (`checked_head`, `merge_commit`, `tree`, `published_at`, `reviewed_product_head`, `reviewed_product_tree`, `source_gate_status`, `review_status`, `external_effect_scope`, `notes`); `reviewed_policy_head`/`reviewed_policy_tree` were deleted and are referenced **nowhere** in `tests/`. Values are truthful today (all publication SHAs are `null`), so this is not a live false-green — but the safety invariant "a *pending* candidate must not name any commit or tree" is no longer enforced: stuffing a real SHA into `local_candidate.checked_head` passes. Fix cheaply with a null-group loop while `artifact_status.startswith('pending_')`.
+- **[low] `tests/test_manifest_package.py:1432-1436`** — the new `if published:` split is right (the pending pair genuinely does not exist; `ls packages/ | grep -c v2.0.16` = 0), but the guard is state-driven, so add `self.assertFalse(state['local_candidate']['published'])` there to make the taken branch explicit rather than incidental.
+- **[low] `PROJECT_STATE.json:115`** — `current_unreleased_change.stage = "identity_bump_not_yet_committed"` / `status = "pending_route_dispatch"` are self-falsifying inside the commit that *is* the identity bump, and 8 of its keys duplicate `local_candidate` (`route_id`, `branch`, `change_package`, `source_base`, `external_effect`, `operational_activation`, …) with no cross-check test. Rewrite the stage on the next state commit or drop the duplicate keys.
+
+## (4) Lockstep completeness — no stale literal left behind
+Recursive `grep -rnE "2\.0\.1[1-7]|published_tag_bound|pending_unpublished" tests/ --include=*.py` returns exactly 8 hits, all correct: `test_project_state.py:95,360,371,717,761` (95/371 = new 2.0.16; 360/717/761 = historical v2.0.14 records, fine), `test_manifest_package.py:1422,1439`, `test_structure.py:254`. `test_manifest_package.py:285` writes `'2.0.13'` into a tempdir fixture — unrelated. **`tests/test_architecture_model.py` contains no version/tag literals at all**, so it required no move (verified via the same grep, not assumed). Pilot/landing tests (`test_landing_architecture_boundaries.py`, `test_seo_landing_side_project.py`) carry no release-version or `published_tag_bound` assertion. Nothing else in the tree asserts `published_tag_bound`.
+**Broken: 0. Historical-and-correct: `:360`, `:717`, `:761`, `:285`.**
+
+## Scope note
+Read-only review; no repository file was modified. Evidence scripts written to `/tmp/jsondiff.py`, `/tmp/ws.diff`, `/tmp/full.diff`.
