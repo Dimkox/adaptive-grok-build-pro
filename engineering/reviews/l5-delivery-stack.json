@@ -11,7 +11,7 @@
       "route_id": "d20205a1a318",
       "base": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
       "change_id": "20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205",
-      "state": "draft_pull_request_open",
+      "state": "merged",
       "final_verifier": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-a-full-final.json",
       "reviews": {
         "code_review": "pass",
@@ -35,9 +35,9 @@
         "baseRefName": "main",
         "baseRefOid": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
         "headRefOid": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
-        "isDraft": true,
+        "isDraft": false,
         "number": 65,
-        "state": "OPEN"
+        "state": "MERGED"
       },
       "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
       "all_observed_checks": [
@@ -67,7 +67,8 @@
       "landing": {
         "mode": "merged-via-squash-#65",
         "main": "ede6686"
-      }
+      },
+      "state_observed_at": "2026-09-13T17:45:13.891265+00:00"
     },
     {
       "id": "B",
@@ -77,7 +78,7 @@
       "route_id": "0fd5ffd2100f",
       "base": "fb582c91cd80c042d26b7467679d27a295a2396b",
       "change_id": "20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff",
-      "state": "draft_pull_request_open",
+      "state": "closed-landed-by-content",
       "final_verifier": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-b-full-final.json",
       "reviews": {
         "code_review": "pass",
@@ -101,9 +102,9 @@
         "baseRefName": "feat/l5-split-a-boundaries",
         "baseRefOid": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
         "headRefOid": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
-        "isDraft": true,
+        "isDraft": false,
         "number": 66,
-        "state": "OPEN"
+        "state": "CLOSED"
       },
       "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
       "all_observed_checks": [
@@ -134,7 +135,8 @@
         "mode": "landed-by-content-via-union-#75",
         "main": "eb9df64bca333f30ec58f8c725a021360e22ed92",
         "closure_pr": "#66"
-      }
+      },
+      "state_observed_at": "2026-09-13T17:45:13.891265+00:00"
     },
     {
       "id": "C",
@@ -144,7 +146,7 @@
       "route_id": "00652f60f78c",
       "base": "c46f14f6a39ca8dc778f8a179ab4f61cdfe13599",
       "change_id": "20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f",
-      "state": "draft_pull_request_open",
+      "state": "closed-landed-by-content",
       "final_verifier": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-full-final.json",
       "reviews": {
         "code_review": "pass",
@@ -168,9 +170,9 @@
         "baseRefName": "feat/l5-split-b-source-epoch",
         "baseRefOid": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
         "headRefOid": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
-        "isDraft": true,
+        "isDraft": false,
         "number": 67,
-        "state": "OPEN"
+        "state": "CLOSED"
       },
       "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
       "all_observed_checks": [
@@ -201,7 +203,8 @@
         "mode": "landed-by-content-via-union-#75",
         "main": "eb9df64bca333f30ec58f8c725a021360e22ed92",
         "closure_pr": "#67"
-      }
+      },
+      "state_observed_at": "2026-09-13T17:45:13.891265+00:00"
     },
     {
       "id": "D",
@@ -211,7 +214,7 @@
       "route_id": "bec1fcdde794",
       "base": "a75b3cd639a1483533069e8634759cdfc6612310",
       "change_id": "20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc",
-      "state": "draft_pull_request_open",
+      "state": "closed-landed-by-content",
       "final_verifier": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-full-final.json",
       "reviews": {
         "code_review": "pass",
@@ -238,9 +241,9 @@
         "baseRefName": "feat/l5-split-c-evidence-v2",
         "baseRefOid": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
         "headRefOid": "bb93885034e52b80653efd96602fec182f7db10a",
-        "isDraft": true,
+        "isDraft": false,
         "number": 68,
-        "state": "OPEN"
+        "state": "CLOSED"
       },
       "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
       "all_observed_checks": [
@@ -271,7 +274,8 @@
         "mode": "landed-by-content-via-union-#75",
         "main": "eb9df64bca333f30ec58f8c725a021360e22ed92",
         "closure_pr": "#68"
-      }
+      },
+      "state_observed_at": "2026-09-13T17:45:13.891265+00:00"
     },
     {
       "id": "E",
@@ -281,7 +285,7 @@
       "route_id": "ae4f5afb69ca",
       "base": "d1fdb7aec61b242c1a2fc5fc0ced1809e1b79c76",
       "change_id": "20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a",
-      "state": "draft_pull_request_open",
+      "state": "closed-landed-by-content",
       "final_verifier": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-e-full-final.json",
       "reviews": {
         "code_review": "pass",
@@ -305,9 +309,9 @@
         "baseRefName": "feat/l5-split-d-http-runtime",
         "baseRefOid": "bb93885034e52b80653efd96602fec182f7db10a",
         "headRefOid": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
-        "isDraft": true,
+        "isDraft": false,
         "number": 69,
-        "state": "OPEN"
+        "state": "CLOSED"
       },
       "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
       "all_observed_checks": [
@@ -338,7 +342,8 @@
         "mode": "landed-by-content-via-union-#75",
         "main": "eb9df64bca333f30ec58f8c725a021360e22ed92",
         "closure_pr": "#69"
-      }
+      },
+      "state_observed_at": "2026-09-13T17:45:13.891265+00:00"
     },
     {
       "id": "F",
@@ -348,7 +353,7 @@
       "base": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
       "route_id": "a15f467e4575",
       "change_id": "20260913-l5-split-f-current-base-authorized-publication-a-a15f46",
-      "state": "draft_pull_request_open",
+      "state": "closed-landed-by-content",
       "final_verifier": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f2-full-final.json",
       "reviews": {
         "code_review": "pass",
@@ -375,9 +380,9 @@
         "baseRefName": "feat/l5-split-e-unix-host",
         "baseRefOid": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
         "headRefOid": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
-        "isDraft": true,
+        "isDraft": false,
         "number": 70,
-        "state": "OPEN"
+        "state": "CLOSED"
       },
       "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
       "all_observed_checks": [
@@ -408,7 +413,8 @@
         "mode": "landed-by-content-via-union-#75",
         "main": "eb9df64bca333f30ec58f8c725a021360e22ed92",
         "closure_pr": "#70"
-      }
+      },
+      "state_observed_at": "2026-09-13T17:45:13.891265+00:00"
     },
     {
       "id": "G",
@@ -419,7 +425,7 @@
       "pr_base_head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
       "route_id": "2a890b6485a5",
       "change_id": "20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b",
-      "state": "draft_pull_request_open",
+      "state": "closed-superseded-by-union",
       "final_verifier": "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b/evidence/split-g3-full-final.json",
       "reviews": {
         "code_review": "pass",
@@ -444,9 +450,9 @@
         "baseRefName": "feat/l5-split-f-publication-current-base",
         "baseRefOid": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
         "headRefOid": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
-        "isDraft": true,
+        "isDraft": false,
         "number": 71,
-        "state": "OPEN"
+        "state": "CLOSED"
       },
       "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
       "all_observed_checks": [
@@ -459,7 +465,8 @@
           "conclusion": "failure",
           "started_at": "2026-09-13T15:55:08Z",
           "completed_at": "2026-09-13T15:55:09Z",
-          "details_url": "https://dashboard.gitguardian.com"
+          "details_url": "https://dashboard.gitguardian.com",
+          "disposition": "GitGuardian generic-detector false positive on authorization_tree_fingerprint 64-hex grant digests (issue #73). Not a credential; not a merge gate (protection requires only the App policy-epoch check)."
         },
         {
           "id": 103754091998,
@@ -477,7 +484,8 @@
         "mode": "landed-by-content-via-union-#75",
         "main": "eb9df64bca333f30ec58f8c725a021360e22ed92",
         "closure_pr": "#71"
-      }
+      },
+      "state_observed_at": "2026-09-13T17:45:13.891265+00:00"
     }
   ],
   "remaining": [],
@@ -581,7 +589,7 @@
     "outcomes": {
       "provider_probe": "One fixed synthetic brief on current head reached state normalized via the explicit Singapore profile: 735 input / 116 output units in 3,352 ms. Not Omni/multimodal or hosting acceptance.",
       "host_first_attempt": "Startup refused before credential acquisition or provider request because the original source checkout and its parent directory were mode 0775, violating dedicated-host trusted ancestry. Fail-closed, source clean after.",
-      "host_disposable_run": "A private 0700 clone served the fixed synthetic gardening task over a private Unix socket: health ready, submit HTTP 202, job closed needs_human with reason http_outcome_unusable, no artifact, unauthenticated job status HTTP 401, no service persistence; the operator stopped the disposable host at 16:17:58 UTC when scope was questioned.",
+      "host_disposable_run": "A private 0700 clone served the fixed synthetic gardening task over a private Unix socket: health ready, submit HTTP 202, job closed needs_human with reason http_outcome_unusable, no artifact, unauthenticated job status HTTP 401, no service persistence; the operator stopped the disposable host process at 16:17:58 UTC when scope was questioned; per its own record (socket_removed: false) the two disposable runtime roots and private sockets remain on disk under /tmp as forensic residue, and no system service was ever created.",
       "grants_expired": true,
       "production_installation": false,
       "site_publication": false
