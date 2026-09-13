@@ -143,3 +143,7 @@ Use Puls Pump Selector (stand acceptance), Google Ads Automation main (Ads/Postg
 ## 2026-09-01 — Keep SEO landing generation isolated and repository-scoped
 
 Embedding the Codex skill under `.agents/skills/` and its showcase under `side-projects/` makes the capability available on demand without changing Trust CI runtime behavior. The showcase remains `noindex, nofollow` until a real production origin is supplied and verified.
+
+## 2026-09-13 — Absent Trust CI check run on a fresh head means queued, not lost
+
+The self-hosted runner processes policy-epoch verifications serially (~18–20 min per PR head); the stacked L5 heads A–G each verified only after the predecessor's job completed. A missing `adaptive-trust-ci/verified@…` run was confirmed queue state via the live `TRUST_CI_PR_NUMBER` job, so no head re-push or dispatch retry was attempted. Never churn a PR head to "wake" a check — a new commit invalidates the exact-SHA attestation chain.
