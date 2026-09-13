@@ -39,19 +39,8 @@
         "number": 65,
         "state": "OPEN"
       },
-      "external_observed_at": "2026-09-13T16:33:48.521255+00:00",
+      "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
       "all_observed_checks": [
-        {
-          "id": 103739437925,
-          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-          "app_id": 4694114,
-          "head": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
-          "status": "completed",
-          "conclusion": "success",
-          "started_at": "2026-09-13T14:36:58Z",
-          "completed_at": "2026-09-13T14:55:25Z",
-          "details_url": "http://127.0.0.1:18080/jobs/83c0826e-9b02-4cfe-87a1-196bfb46ea12"
-        },
         {
           "id": 103739434471,
           "name": "GitGuardian Security Checks",
@@ -62,6 +51,17 @@
           "started_at": "2026-09-13T14:36:58Z",
           "completed_at": "2026-09-13T14:36:58Z",
           "details_url": "https://dashboard.gitguardian.com"
+        },
+        {
+          "id": 103739437925,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T14:36:58Z",
+          "completed_at": "2026-09-13T14:55:25Z",
+          "details_url": "http://127.0.0.1:18080/jobs/83c0826e-9b02-4cfe-87a1-196bfb46ea12"
         }
       ]
     },
@@ -101,19 +101,8 @@
         "number": 66,
         "state": "OPEN"
       },
-      "external_observed_at": "2026-09-13T16:33:48.521255+00:00",
+      "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
       "all_observed_checks": [
-        {
-          "id": 103741784270,
-          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-          "app_id": 4694114,
-          "head": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
-          "status": "completed",
-          "conclusion": "success",
-          "started_at": "2026-09-13T14:55:26Z",
-          "completed_at": "2026-09-13T15:13:55Z",
-          "details_url": "http://127.0.0.1:18080/jobs/dacf9bda-3bbf-4926-8b1b-9d79f037c942"
-        },
         {
           "id": 103740559806,
           "name": "GitGuardian Security Checks",
@@ -124,6 +113,17 @@
           "started_at": "2026-09-13T14:45:49Z",
           "completed_at": "2026-09-13T14:45:57Z",
           "details_url": "https://dashboard.gitguardian.com"
+        },
+        {
+          "id": 103741784270,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T14:55:26Z",
+          "completed_at": "2026-09-13T15:13:55Z",
+          "details_url": "http://127.0.0.1:18080/jobs/dacf9bda-3bbf-4926-8b1b-9d79f037c942"
         }
       ]
     },
@@ -163,19 +163,8 @@
         "number": 67,
         "state": "OPEN"
       },
-      "external_observed_at": "2026-09-13T16:33:48.521255+00:00",
+      "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
       "all_observed_checks": [
-        {
-          "id": 103744221871,
-          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-          "app_id": 4694114,
-          "head": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
-          "status": "completed",
-          "conclusion": "success",
-          "started_at": "2026-09-13T15:13:56Z",
-          "completed_at": "2026-09-13T15:32:41Z",
-          "details_url": "http://127.0.0.1:18080/jobs/38dc25a7-29fc-4246-81e5-065a37390782"
-        },
         {
           "id": 103740569972,
           "name": "GitGuardian Security Checks",
@@ -186,6 +175,17 @@
           "started_at": "2026-09-13T14:45:54Z",
           "completed_at": "2026-09-13T14:46:08Z",
           "details_url": "https://dashboard.gitguardian.com"
+        },
+        {
+          "id": 103744221871,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T15:13:56Z",
+          "completed_at": "2026-09-13T15:32:41Z",
+          "details_url": "http://127.0.0.1:18080/jobs/38dc25a7-29fc-4246-81e5-065a37390782"
         }
       ]
     },
@@ -228,19 +228,8 @@
         "number": 68,
         "state": "OPEN"
       },
-      "external_observed_at": "2026-09-13T16:33:48.521255+00:00",
+      "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
       "all_observed_checks": [
-        {
-          "id": 103746737270,
-          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-          "app_id": 4694114,
-          "head": "bb93885034e52b80653efd96602fec182f7db10a",
-          "status": "completed",
-          "conclusion": "success",
-          "started_at": "2026-09-13T15:32:42Z",
-          "completed_at": "2026-09-13T15:51:11Z",
-          "details_url": "http://127.0.0.1:18080/jobs/a3285c3b-3770-4454-9ecb-8def82721a48"
-        },
         {
           "id": 103744882631,
           "name": "GitGuardian Security Checks",
@@ -251,6 +240,17 @@
           "started_at": "2026-09-13T15:18:53Z",
           "completed_at": "2026-09-13T15:18:54Z",
           "details_url": "https://dashboard.gitguardian.com"
+        },
+        {
+          "id": 103746737270,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "bb93885034e52b80653efd96602fec182f7db10a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T15:32:42Z",
+          "completed_at": "2026-09-13T15:51:11Z",
+          "details_url": "http://127.0.0.1:18080/jobs/a3285c3b-3770-4454-9ecb-8def82721a48"
         }
       ]
     },
@@ -290,19 +290,8 @@
         "number": 69,
         "state": "OPEN"
       },
-      "external_observed_at": "2026-09-13T16:33:48.521255+00:00",
+      "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
       "all_observed_checks": [
-        {
-          "id": 103749191245,
-          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-          "app_id": 4694114,
-          "head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
-          "status": "completed",
-          "conclusion": "success",
-          "started_at": "2026-09-13T15:51:13Z",
-          "completed_at": "2026-09-13T16:09:30Z",
-          "details_url": "http://127.0.0.1:18080/jobs/a97927da-1700-4e8d-859d-48ffb4d81f02"
-        },
         {
           "id": 103745019956,
           "name": "GitGuardian Security Checks",
@@ -313,6 +302,17 @@
           "started_at": "2026-09-13T15:19:55Z",
           "completed_at": "2026-09-13T15:19:56Z",
           "details_url": "https://dashboard.gitguardian.com"
+        },
+        {
+          "id": 103749191245,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T15:51:13Z",
+          "completed_at": "2026-09-13T16:09:30Z",
+          "details_url": "http://127.0.0.1:18080/jobs/a97927da-1700-4e8d-859d-48ffb4d81f02"
         }
       ]
     },
@@ -355,19 +355,8 @@
         "number": 70,
         "state": "OPEN"
       },
-      "external_observed_at": "2026-09-13T16:33:48.521255+00:00",
+      "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
       "all_observed_checks": [
-        {
-          "id": 103751615594,
-          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-          "app_id": 4694114,
-          "head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
-          "status": "completed",
-          "conclusion": "success",
-          "started_at": "2026-09-13T16:09:30Z",
-          "completed_at": "2026-09-13T16:27:56Z",
-          "details_url": "http://127.0.0.1:18080/jobs/2f1cd1c9-315a-4ddd-a3c6-0f83a4412362"
-        },
         {
           "id": 103748857521,
           "name": "GitGuardian Security Checks",
@@ -378,6 +367,17 @@
           "started_at": "2026-09-13T15:48:43Z",
           "completed_at": "2026-09-13T15:48:44Z",
           "details_url": "https://dashboard.gitguardian.com"
+        },
+        {
+          "id": 103751615594,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T16:09:30Z",
+          "completed_at": "2026-09-13T16:27:56Z",
+          "details_url": "http://127.0.0.1:18080/jobs/2f1cd1c9-315a-4ddd-a3c6-0f83a4412362"
         }
       ]
     },
@@ -403,10 +403,10 @@
         "name": "adaptive-trust-ci/verified@06ecf1c875bc",
         "app_id": 4694114,
         "head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
-        "status": "in_progress",
-        "conclusion": null,
+        "status": "completed",
+        "conclusion": "success",
         "started_at": "2026-09-13T16:27:57Z",
-        "completed_at": null,
+        "completed_at": "2026-09-13T16:46:55Z",
         "details_url": "http://127.0.0.1:18080/jobs/a954971e-6e3e-4195-99b9-a21b8ffb117a"
       },
       "assembly_audit": "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b/evidence/split-g3-final-tree-audit.json",
@@ -419,19 +419,8 @@
         "number": 71,
         "state": "OPEN"
       },
-      "external_observed_at": "2026-09-13T16:33:48.521255+00:00",
+      "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
       "all_observed_checks": [
-        {
-          "id": 103754091998,
-          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
-          "app_id": 4694114,
-          "head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
-          "status": "in_progress",
-          "conclusion": null,
-          "started_at": "2026-09-13T16:27:57Z",
-          "completed_at": null,
-          "details_url": "http://127.0.0.1:18080/jobs/a954971e-6e3e-4195-99b9-a21b8ffb117a"
-        },
         {
           "id": 103749698672,
           "name": "GitGuardian Security Checks",
@@ -442,6 +431,17 @@
           "started_at": "2026-09-13T15:55:08Z",
           "completed_at": "2026-09-13T15:55:09Z",
           "details_url": "https://dashboard.gitguardian.com"
+        },
+        {
+          "id": 103754091998,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T16:27:57Z",
+          "completed_at": "2026-09-13T16:46:55Z",
+          "details_url": "http://127.0.0.1:18080/jobs/a954971e-6e3e-4195-99b9-a21b8ffb117a"
         }
       ]
     }
@@ -553,5 +553,5 @@
       "site_publication": false
     }
   },
-  "delivery_state": "seven_draft_pull_requests_open_all_local_evidence_current_with_source_live_verification_waiting_external_checks"
+  "delivery_state": "seven_draft_pull_requests_open_all_local_evidence_current_with_source_live_verification_all_external_trust_ci_checks_success"
 }
