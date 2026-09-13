@@ -380,6 +380,13 @@ class ProjectStateTests(unittest.TestCase):
         self.assertFalse(local["operational_activation"])
         self.assertIsNone(local["artifact_child"]["zip_sha256"])
         self.assertIsNone(local["artifact_child"]["sidecar_sha256"])
+        for key in ("reviewed_product_head", "reviewed_product_tree",
+                    "checked_head", "merge_commit", "tree"):
+            self.assertIsNone(local[key], f"pending candidate must not name {key}")
+        for key in ("source_parent", "source_parent_tree", "commit", "tree"):
+            self.assertIsNone(local["artifact_child"][key],
+                              f"pending artifact child must not name {key}")
+        self.assertEqual(local["source_base"], OBSERVED_MAIN_SHA)
         self.assertEqual(
             local["artifact_child"]["delta_paths"],
             [

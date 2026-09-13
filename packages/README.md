@@ -4,7 +4,7 @@ Tracked release artifacts. Scratch rebuilds go to `dist/` (gitignored). `adaptiv
 
 Historical `adaptive-grok-build-pro-v2.0.13.zip` remains bound to tag/merge `8599d45f4f28285381b05a53feb3059de92eb2a8`, tree `03e122a30fb2dbb59907f4c4c28e17f93cbf0751`, and SHA-256 `3d5179f589c507143f4b93a98d2518e37e470e8566a62f77b31c35743ed8240c`. Neither published artifact is restacked for documentation-only successors.
 
-The `2.0.15` PR candidate uses source parent `R` and a local artifact-only child `A` that adds only `adaptive-grok-build-pro-v2.0.15.zip` plus its sidecar after two exact-head private builds agree. That pair is not published; exact identities live in ignored finalization evidence until external delivery is separately authorized.
+`2.0.15` was published as [GitHub Release v2.0.15](https://github.com/Dimkox/adaptive-grok-build-pro/releases/tag/v2.0.15) on 2026-09-05T20:17:20Z; its pair below is the immutable shipped artifact. The `2.0.16` candidate follows the same source-parent-`R` plus artifact-only-child-`A` shape once `R` merges.
 
 | File | Version |
 | --- | --- |
@@ -23,7 +23,7 @@ The `2.0.15` PR candidate uses source parent `R` and a local artifact-only child
 | `adaptive-grok-build-pro-v2.0.12.zip` | 2.0.12 |
 | `adaptive-grok-build-pro-v2.0.13.zip` | 2.0.13 (published) |
 | `adaptive-grok-build-pro-v2.0.14.zip` | 2.0.14 (published) |
-| `adaptive-grok-build-pro-v2.0.15.zip` | 2.0.15 (local unpublished candidate; artifact child A) |
+| `adaptive-grok-build-pro-v2.0.15.zip` | 2.0.15 (published 2026-09-05T20:17:20Z) |
 
 Each zip has a sibling `.sha256`. Build a future candidate into ignored scratch output with:
 
