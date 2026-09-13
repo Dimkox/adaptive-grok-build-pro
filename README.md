@@ -4,7 +4,7 @@ A commercial-grade product for **Grok Build** — free of charge, public, and MI
 
 ## Current state
 
-Active L5 split E (`feat/l5-split-e-unix-host`) adds a dedicated Unix landing host and closed private configuration on top of the bounded HTTP/media and durable SQLite runtime. Landing-only composition avoids the broader Factory PostgreSQL/project database path and keeps provider execution disabled by default. Filesystem publication, backup and installation templates follow in F–G. See [the slice E package](engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/brief.md). Local evidence does not establish external Trust CI acceptance or operational readiness.
+Active L5 split F (`feat/l5-split-f-publication-current-base`) adds owner-controlled filesystem publication with a separate request contract, durable intent, observation-only reconciliation and an exact-authority repository wrapper. It builds on the dedicated Unix host, bounded Qwen/Grok runtime and dual-version SQLite readers. The landing v1 API retains `live_url=null`; backup and installation templates follow in G. See [the slice F package](engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/brief.md). Local evidence does not establish external Trust CI acceptance or operational readiness.
 
 
 Execution usage accounting supports the legacy V1 aggregate payload and a closed V2 payload with input, output, reasoning, cached-input, and cache-write buckets. V2 binds a canonical price table digest and derives integer micro-USD cost server-side; it never accepts an adapter total.

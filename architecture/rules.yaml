@@ -636,6 +636,7 @@
         "factory/src/adaptive_factory/landing_media.py",
         "factory/src/adaptive_factory/landing_normalizer.py",
         "factory/src/adaptive_factory/landing_provider.py",
+        "factory/src/adaptive_factory/landing_publication_cli.py",
         "factory/src/adaptive_factory/landing_renderer.py",
         "factory/src/adaptive_factory/landing_runtime.py",
         "factory/src/adaptive_factory/landing_service.py",

@@ -1,0 +1,95 @@
+{
+  "route_id": "a15f467e4575",
+  "base_commit": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
+  "checkout_head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
+  "archive_source": "517741da6e883c5feacbd2f029d745ffc5e2fec0",
+  "frozen_reference": "f31406e970d67f7cd59694da5de88915adb0fa68",
+  "archive_equivalent": true,
+  "paths": {
+    "architecture/rules.yaml": {
+      "sha256": "8dee19526f86a19a9605e6b03765af970768d0aeb975eb2a33ddff99f6da34fb",
+      "git_blob": "3d14a23c767e64404f36400f85999af532e0ab99",
+      "git_mode": "100644",
+      "selection": "exact_archive_blob",
+      "original_selection": "F CLI offline prefix only"
+    },
+    "architecture/system.yaml": {
+      "sha256": "31f7287fe41d860a78354e2f1817b9629972e9021e68fd2ce1d8fec62fdf6361",
+      "git_blob": "6d1a93b7cc01fb9e1aeadae0858910aee1fc083b",
+      "git_mode": "100644",
+      "selection": "exact_archive_blob",
+      "original_selection": "F CLI owner and request schema owner only"
+    },
+    "delivery/contracts/jsonschema/landing-publication-request.v1.schema.json": {
+      "sha256": "410dd65aa998765155dfda257551ecc1326592d2efc55759f7a04c415937ef28",
+      "git_blob": "77296e30976fa5c11ebcb3876fac4f77eb0090d3",
+      "git_mode": "100644",
+      "selection": "exact_archive_blob",
+      "original_selection": "whole_frozen"
+    },
+    "delivery/src/adaptive_delivery/landing_filesystem.py": {
+      "sha256": "ba8f64de4d47a08c48fcdd2929ec4076be27a56315237c20cee66efde936a9f2",
+      "git_blob": "70b43abc0c55908286082a62fa9ca7c07a4d2a00",
+      "git_mode": "100644",
+      "selection": "exact_archive_blob",
+      "original_selection": "whole_frozen"
+    },
+    "delivery/src/adaptive_delivery/landing_publication.py": {
+      "sha256": "1ff0576faa5953596a2447e855742afd4926c91b09189b524e0627b2e09cd9c9",
+      "git_blob": "9e282e684d8744cfee984f35ca34152fedcb5867",
+      "git_mode": "100644",
+      "selection": "exact_archive_blob",
+      "original_selection": "approved supported-v1 schema validation correction"
+    },
+    "delivery/src/adaptive_delivery/landing_publication_contracts.py": {
+      "sha256": "9e2b0078e39b56928ca854b69d2563e1d5785d37d7c24736991a0dfaba275a9a",
+      "git_blob": "eba47143979c6a9f51d2320c90b113eee9df9d0b",
+      "git_mode": "100644",
+      "selection": "exact_archive_blob",
+      "original_selection": "whole_frozen"
+    },
+    "factory/src/adaptive_factory/landing_publication_cli.py": {
+      "sha256": "f2540419d229ec9a2e653e778da5524549946071f1e4a5271a816d66c59faa31",
+      "git_blob": "d110abbf00ed2ca6995018c2e426adbf0b4fe3c1",
+      "git_mode": "100644",
+      "selection": "exact_archive_blob",
+      "original_selection": "whole_frozen"
+    },
+    "factory/tests/__init__.py": {
+      "sha256": "c06f966e59d3defd98992ccf5a9df9ea69ba807c9269a2344b5c1b839bb4b5a7",
+      "git_blob": "7017c81dfe7030fa4b428ba0e0be22991886dbea",
+      "git_mode": "100644",
+      "selection": "exact_archive_blob",
+      "original_selection": "whole_frozen"
+    },
+    "factory/tests/test_landing_publication_cli.py": {
+      "sha256": "53a6970d2006d6b56df85752f26af29ae3064b7dbe8fd62f4a32e048f9f4519b",
+      "git_blob": "c0087e0d84140cdfc1c9b279f377ef44a766ec6a",
+      "git_mode": "100644",
+      "selection": "exact_archive_blob",
+      "original_selection": "frozen suite plus schema/restart/restore and readonly lock absence regressions"
+    },
+    "scripts/grok_landing_publish.py": {
+      "sha256": "7d13529a5b3418238fc10d1521bf8a2f0b4e04dff078c48f95e8a0c6a8261cea",
+      "git_blob": "86a91bcfc4603c315bf808a15e799c9c2c576536",
+      "git_mode": "100644",
+      "selection": "exact_archive_blob",
+      "original_selection": "whole_frozen"
+    },
+    "tests/test_landing_architecture_boundaries.py": {
+      "sha256": "31f5ab4c96265966e78c4556ae17dcf6795c5d183ac656492c99d922588e57ed",
+      "git_blob": "ef86049a648dc1157460ee37a167e60a0591c0a7",
+      "git_mode": "100644",
+      "selection": "exact_archive_blob",
+      "original_selection": "actual21-module inventory only"
+    }
+  },
+  "production_deviations": [
+    {
+      "path": "delivery/src/adaptive_delivery/landing_publication.py",
+      "evidence": "split-f-publication-frozen-deviation.patch",
+      "reason": "Fail closed on unsupported publication schema semantics and extra objects; initialization schema and coordinator/recovery methods unchanged."
+    }
+  ],
+  "current_scope": "exactly the archived eleven F paths; all other product content inherited unchanged from repaired E"
+}

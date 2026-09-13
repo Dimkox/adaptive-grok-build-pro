@@ -15,7 +15,7 @@ OFFLINE = frozenset(PREFIX + name for name in (
     "landing_coordinator.py", "landing_evaluation.py", "landing_intake.py",
     "landing_normalizer.py", "landing_provider.py", "landing_renderer.py",
     "landing_runtime.py", "landing_service.py", "landing_http.py",
-    "landing_media.py", "landing_sse.py", "landing_host_config.py",
+    "landing_media.py", "landing_sse.py", "landing_publication_cli.py", "landing_host_config.py",
     "resources/landing_pdf_worker.py",
 ))
 GROUPS = {

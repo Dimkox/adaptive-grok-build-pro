@@ -513,3 +513,5 @@ A dedicated same-repository evidence worktree can hold the exact change-package 
 - 2026-09-13: Writer ownership is tested with a second real SQLite opener after injected startup failures, rather than by inspecting private descriptor flags. Four reproduced interruption/close-failure paths required only three cleanup hunks, retaining schema and durable reader bytes.
 
 - 2026-09-13: Complete the helper-only host_config in E together with its dedicated host tests, keeping D independently runnable. Runtime templates stay deferred until their publication/backup entrypoints exist in G.
+
+- 2026-09-13: After an independent predecessor repair, recreate the remaining unsubmitted publication slice on the actual corrected predecessor and verify its unchanged product projection. Preserving the old route/failure and starting from a clean real base avoids attributing an inherited server change to publication or inventing comparison authority.

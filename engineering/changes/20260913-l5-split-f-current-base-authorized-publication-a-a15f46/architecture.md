@@ -1,0 +1,5 @@
+# Architecture
+
+Take frozen delivery landing_filesystem, landing_publication, landing_publication_contracts and request-v1 schema; factory landing_publication_cli and its tests; scripts/grok_landing_publish; factory/tests/__init__.py bootstrap. Add exact request-schema owner and offline CLI source/rule/inventory, reaching 21 actual modules. Existing staged-delivery urllib.parse exception remains exact, with no broader urllib/network allowance. Do not introduce backup or its imports until G. No factory console script change belongs to F. Preserve C/D/E code and tests, especially D lock cleanup.
+
+F data analysis identifies a frozen-source validation gap: application/version and column names alone accept a v1 table without request-id uniqueness or with added triggers. Sole writer must reproduce the supplied temporary-database RED cases and apply the smallest fail-closed supported-v1-schema validation. Disclose the exact tested correction from frozen source; do not add migration, new state or a framework.

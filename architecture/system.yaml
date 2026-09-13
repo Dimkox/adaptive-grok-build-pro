@@ -1961,6 +1961,7 @@
         "factory/src/adaptive_factory/landing_media.py",
         "factory/src/adaptive_factory/landing_normalizer.py",
         "factory/src/adaptive_factory/landing_provider.py",
+        "factory/src/adaptive_factory/landing_publication_cli.py",
         "factory/src/adaptive_factory/landing_renderer.py",
         "factory/src/adaptive_factory/landing_runtime.py",
         "factory/src/adaptive_factory/landing_service.py",
@@ -2037,6 +2038,7 @@
       "owner": "repository engineering",
       "public_contracts": [],
       "repository_paths": [
+        "delivery/contracts/jsonschema/landing-publication-request.v1.schema.json",
         "delivery/pyproject.toml",
         "delivery/src/adaptive_delivery",
         "delivery/tests"
