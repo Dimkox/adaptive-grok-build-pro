@@ -67,7 +67,7 @@ It sends one fixed synthetic request and prints bounded status, profile/model, d
 
 ## Dedicated Unix landing host
 
-`adaptive-landing-server --config /absolute/private/landing-host.json` loads a closed private configuration and composes only landing routes, health and authenticated metrics. It uses SQLite and an operator-owned Unix socket, with no PostgreSQL store or project database connection. Configuration validates absolute, non-overlapping control/runtime/source roots and credential placement before composition. SQLite ownership spans application lifetime; owned resources close after startup failure and normal or exceptional shutdown.
+`adaptive-landing-server --config /absolute/private/landing-host.json` loads a closed private configuration and composes authenticated landing routes and health endpoints. The dedicated host returns 404 for `/metrics`; Factory task, worker and metrics operations remain outside this host. It uses SQLite and an operator-owned Unix socket, with no PostgreSQL store or project database connection. Configuration validates absolute, non-overlapping control/runtime/source roots and credential placement before composition. SQLite ownership spans application lifetime; owned resources close after startup failure and normal or exceptional shutdown.
 
 Provider execution requires explicit `live_enabled=true` and a selected profile. Default-off operation does not acquire a provider credential. For a regional Qwen profile the optional `--qwen-env-file /absolute/private/provider.env` selects the validated key file; otherwise the existing selected-provider environment loader applies. Installation/config templates arrive in G, and this source delivery does not start or install the host.
 

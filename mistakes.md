@@ -837,3 +837,7 @@ Two closed Factory schema catalogs still omitted additive evidence v2 after focu
 ## 2026-09-13 — PRAGMA shape does not capture SQLite conflict semantics
 
 The publication schema validator checked column/index structure but SQLite PRAGMAs omit ON CONFLICT behavior; REPLACE could pass and overwrite a durable request. Bind the complete supported declaration and explicitly abort insertion collisions, then prove stored-intent preservation with altered-schema regressions.
+
+## 2026-09-13 — Finish operator-document checks before source freeze
+
+Starting the final verifier before the independent documentation audit completed preserved an overstated metrics claim and forced a restart when it was corrected. Bind operator-facing endpoint claims to actual route behavior and finish that audit before freezing source and launching long checks.
