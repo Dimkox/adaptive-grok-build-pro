@@ -790,3 +790,7 @@ An initial split analysis inferred cumulative code budgets from the verifier's r
 ## 2026-09-13 — Count the sealed inventory from its actual constant
 
 Earlier L5 handoff text repeated a 24-member inventory without checking DEPLOY_MEMBERS. The frozen implementation lists 22 publication members (20 prior plus analytics.js/css); source-owned fixture documents are excluded, so delivery documentation now uses the actual constant and source hashes.
+
+## 2026-09-13 — Validate typed change documents before a long verifier run
+
+I generated invariant/forbidden-outcome strings although change-spec v2 requires objects with IDs and evidence mappings, and skipped the available gate validator. The full A verifier then raised during receipt recording instead of returning its report; B was interrupted before the same failure. Correct the object shape and validate every newly generated spec before source freeze; neither attempt is passing evidence.

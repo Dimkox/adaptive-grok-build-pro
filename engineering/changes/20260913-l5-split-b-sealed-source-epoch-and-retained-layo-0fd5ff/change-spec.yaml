@@ -38,11 +38,35 @@
     "openapi": []
   },
   "forbidden_outcomes": [
-    "Shipping future HTTP, host, publication or backup imports before their owning unit."
+    {
+      "id": "FORBID-001",
+      "statement": "Shipping future HTTP, host, publication or backup imports before their owning unit.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
   ],
   "invariants": [
-    "Provider evidence remains original v1 in this slice.",
-    "Original contract and all code budget values remain unchanged."
+    {
+      "id": "INV-001",
+      "statement": "Provider evidence remains original v1 in this slice.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Original contract and all code budget values remain unchanged.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    }
   ],
   "objective": {
     "id": "OBJ-001",
