@@ -1419,25 +1419,30 @@ module.main()
         state = json.loads((ROOT / 'PROJECT_STATE.json').read_text(encoding='utf-8'))
         published = state['published_release']
         candidate_version = (ROOT / 'VERSION').read_text(encoding='utf-8').strip()
-        self.assertEqual(candidate_version, '2.0.15')
+        self.assertEqual(candidate_version, '2.0.16')
         self.assertEqual(state['product_version'], candidate_version)
         self.assertEqual(
             state['local_candidate']['artifact_status'],
-            'published_tag_bound',
+            'pending_unpublished_artifact_child',
         )
         candidate_pair = tuple(
             ROOT / path
             for path in state['local_candidate']['artifact_child']['delta_paths']
         )
-        self.assertEqual(len(tuple(path for path in candidate_pair if path.exists())), 2)
+        # A pending candidate names the pair the artifact child will add; only a
+        # published local_candidate may claim bytes that are already in the tree.
+        if state['local_candidate']['published']:
+            self.assertEqual(len(tuple(p for p in candidate_pair if p.exists())), 2)
+        else:
+            self.assertEqual(tuple(p for p in candidate_pair if p.exists()), ())
         published_version = published['tag'].removeprefix('v')
-        self.assertEqual(published_version, '2.0.14')
+        self.assertEqual(published_version, '2.0.15')
         self.assertEqual(state['latest_published_release'], published['tag'])
         artifact = published['artifact']
         self.assertEqual(artifact['binding'], 'immutable_release_tag')
         expected_relative = f'packages/adaptive-grok-build-pro-v{published_version}.zip'
         self.assertEqual(artifact['path'], expected_relative)
-        expected_digest = 'b03c64e67ac757f7d84abfed407cbd0ace2771afd960c67e24684099b3cc0264'
+        expected_digest = '1f0f64557fd258df7e533f674bb4e7c55d4a1a51454d48bcfecfa5487d08e9d7'
         self.assertEqual(artifact['sha256'], expected_digest)
 
         zip_path = ROOT / expected_relative

@@ -251,12 +251,12 @@ class StructureTests(unittest.TestCase):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
         roadmap = (ROOT / "DARK_FACTORY_ROADMAP.md").read_text(encoding="utf-8")
-        self.assertEqual(version, "2.0.15")
+        self.assertEqual(version, "2.0.16")
         self.assertTrue(readme.startswith(f"# Adaptive Grok Build Pro v{version}\n"))
-        self.assertIn("Identity: **2.0.15**", readme)
-        self.assertTrue(changelog.startswith("# Changelog\n\n## 2.0.15 — 2026-09-05 (unreleased)\n"))
+        self.assertIn("Identity: **2.0.16**", readme)
+        self.assertTrue(changelog.startswith("# Changelog\n\n## 2.0.16 — 2026-09-13\n"))
         self.assertIn(
-            "product version: 2.0.15 (unreleased pilot candidate; published release v2.0.14 and v2.0.13 retained as immutable history)",
+            "product version: 2.0.16 (unreleased assembled-L5 release candidate; published release v2.0.15 and v2.0.14 retained as immutable history)",
             roadmap,
         )
         sys.path.insert(0, str(ROOT / ".grok-stack"))

@@ -1,0 +1,119 @@
+{
+  "schema_version": 2,
+  "change_id": "20260913-v2-0-16-release-sync-identity-bump-to-2-0-16-pub-105344",
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Establish honest v2.0.16 product identity on main: VERSION/README/CHANGELOG/START_HERE/ROADMAP/HANDOFF/__version__ bumped, published_release promoted to the actually-published v2.0.15 (re-derived tag/check/attestation/asset facts), v2.0.14 demoted into prior_published_releases, the pilot change archived into delivered_change_history, local_candidate opened as a pending 2.0.16 slot, and every coupled test literal moved in the same commit (lockstep-proven).",
+    "success_metric": "tests.test_project_state + tests.test_structure + tests.test_manifest_package green in a frozen tree; parallel and serial grok_verify --mode pr both PASS; tag v2.0.16 later targets the exact merged artifact-child commit",
+    "target": "main"
+  },
+  "risk": {
+    "tier": "red",
+    "domains": [
+      "release-governance",
+      "documentation",
+      "test-infra"
+    ]
+  },
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Version identity is coherent everywhere: VERSION=2.0.16 equals README H1, __version__, CHANGELOG top section, ROADMAP product line, PROJECT_STATE.product_version and latest_published_release=v2.0.15.",
+      "evidence": [
+        {
+          "test": "tests/test_structure.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "published_release describes the real v2.0.15 (tag fd51dcfe, PR 27, check 101365945968, attestation 4a13e71c-25e7-4272-80fa-8153590edc84, GitGuardian SKIPPED caveat, zip 1f0f6455, sidecar 8f3ed4b8) with v2.0.14 moved to prior_published_releases and every historical SHA/label elsewhere untouched.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "local_candidate is a pending 2.0.16 artifact slot: null identities, published False, delta pair naming packages/v2.0.16 assets asserted ABSENT until the separate artifact-child commit supplies them.",
+      "evidence": [
+        {
+          "test": "tests/test_manifest_package.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Bootstrap docs (START_HERE/README current-state) tell the landed-L5/awaiting-release truth with re-derived check identifiers; the v2.0.14 merge anchor stays quoted as history where tests couple to it.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "No historical assertion value (M0-M9 commits, prior release identifiers, schedule dates, forbidden phrases, README K22 graph) changes in this commit.",
+      "evidence": [
+        {
+          "test": "tests/test_project_state.py"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Nothing published: no tag, no GitHub Release, no artifact bytes, no installation, no provider activation exists after this commit; those are later exact-delegated steps.",
+      "evidence": [
+        {
+          "receipt": "release_review"
+        }
+      ]
+    }
+  ],
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "Claiming a v2.0.16 release, artifact or activation while none exists.",
+      "evidence": [
+        {
+          "test": "tests/test_manifest_package.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "Any credential value, private path beyond established repo patterns, or machine identity entering the diff.",
+      "evidence": [
+        {
+          "receipt": "security_review"
+        }
+      ]
+    }
+  ],
+  "contracts": {
+    "openapi": [],
+    "json_schema": [],
+    "events": []
+  },
+  "observability": [
+    {
+      "id": "SIG-001",
+      "metric": "Exact-head adaptive-trust-ci/verified@06ecf1c875bc on this PR plus the three coupled unittest modules green in the frozen tree",
+      "proves": [
+        "OBJ-001"
+      ]
+    }
+  ],
+  "rollback": {
+    "strategy": "forward_fix",
+    "maximum_steps": 2
+  },
+  "approvals": {
+    "required_scopes": [
+      "pull-request-merge"
+    ]
+  }
+}
