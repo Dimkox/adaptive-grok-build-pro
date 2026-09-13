@@ -1,0 +1,53 @@
+{
+  "base_sha": "fb582c91cd80c042d26b7467679d27a295a2396b",
+  "frozen_source_sha": "f31406e970d67f7cd59694da5de88915adb0fa68",
+  "head_sha": "fb582c91cd80c042d26b7467679d27a295a2396b",
+  "paths": {
+    "factory/src/adaptive_factory/landing_artifact.py": {
+      "git_blob": "e7aad41d1f2f4aee8fa4163e6f6fbfddacb11b77",
+      "selection": "whole_frozen",
+      "sha256": "2452174a5d1e7188e3de0902534a0f9599583d6def0b673b2e2100850f5c42e3"
+    },
+    "factory/src/adaptive_factory/landing_artifact_retention.py": {
+      "git_blob": "d05d435c2edb1008f60825eb80709e5d8592e8f2",
+      "selection": "three_source_layout_hunks",
+      "sha256": "19d138896f5f64b517468b4a575883f51f277950a92964143a273a3c62c04cc5"
+    },
+    "factory/src/adaptive_factory/landing_evaluation.py": {
+      "git_blob": "7535e4d10fc2d6cdfd4ebd4aeb4c8912cbe61994",
+      "selection": "whole_frozen",
+      "sha256": "677d4d59e23731e912d89b6214b3d75dca9b98e343d4cf284ab21affea141741"
+    },
+    "factory/src/adaptive_factory/landing_renderer.py": {
+      "git_blob": "bcf35122a71274093f48e599bc086a0d83b6dd3b",
+      "selection": "whole_frozen",
+      "sha256": "270b623ae19a01a9c97f6a1ea3874a02eac5fa1832ebf55a3d3f73facc48b8bf"
+    },
+    "factory/tests/test_landing_api.py": {
+      "git_blob": "e2bd51971fa55fd5d7021837382732deb9bf322f",
+      "selection": "whole_frozen",
+      "sha256": "41fdce38d6643d6a24bb505d513a5720079cea0263ad8424e8ca369110db49f5"
+    },
+    "factory/tests/test_landing_artifact.py": {
+      "git_blob": "63e470577fbaa17fc58b86b0d61303a583edb1f4",
+      "selection": "whole_frozen",
+      "sha256": "7ca401cbb66c6a63bcd9c4e797d6b5f214709aa0b5a50a58d2512c464ec747c4"
+    },
+    "factory/tests/test_landing_live.py": {
+      "git_blob": "fc0c5df5bfb32cd18f7fb6652e4dd1abdcffaaf4",
+      "selection": "whole_frozen",
+      "sha256": "3795a2ba99c2f00f6d84f14beb67f67639848711c50334e4a11a647db005de0f"
+    },
+    "factory/tests/test_landing_renderer.py": {
+      "git_blob": "722a966ea75a8d32a60b2f4d759d6f5ad4834f56",
+      "selection": "whole_frozen",
+      "sha256": "ecb087b7a38fa2c3d9432e1dd203c0abdd21ce5a493ba478524dd406b28da005"
+    },
+    "factory/tests/test_landing_sqlite_store.py": {
+      "git_blob": "15e0f33d9fbd18f9368c20d34d274dee0d62bc77",
+      "selection": "whole_frozen",
+      "sha256": "07217325095ab1ea293b768a830a0acc125bf89d63cc05d1743617c56380c4ea"
+    }
+  },
+  "route_id": "0fd5ffd2100f"
+}

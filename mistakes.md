@@ -786,3 +786,7 @@ Root cause: public analysis replaced source names with case labels while retaini
 ## 2026-09-13 — Trace the actual fitness input before inferring its base
 
 An initial split analysis inferred cumulative code budgets from the verifier's range-union inventory. The architecture check independently constructs its diff from the adopted-model route predecessor; tracing that call path corrected the conclusion before any refs or budgets were changed.
+
+## 2026-09-13 — Count the sealed inventory from its actual constant
+
+Earlier L5 handoff text repeated a 24-member inventory without checking DEPLOY_MEMBERS. The frozen implementation lists 22 publication members (20 prior plus analytics.js/css); source-owned fixture documents are excluded, so delivery documentation now uses the actual constant and source hashes.

@@ -1,5 +1,8 @@
 # Adaptive Factory M4-M8 control/evaluation and offline L5 landing source
 
+L5 delivery slice B updates the sealed landing source epoch to `fde60e040167c10975b00d11f578c4da6763069a` / `21817e70e079b772e1f3114a80dfc0320d1ada91`, preserves approved analytics/privacy and emits the exact 22-file publication inventory. Older explicitly supported retained layouts remain readable; provider evidence is still v1 in this slice. This source preparation does not activate a model or host.
+
+
 This nested Python package is a source-only, local control plane. It validates immutable M1/M2/M3/M0-bound intake, stores operational truth in an isolated PostgreSQL `factory` schema, schedules work with database leases and monotonic fences, enforces 20 global readers / 10 readers per repository / one writer, bounds retries and budgets, retains hash-chained audit, and performs restart-safe reconciliation.
 
 It does not make a live provider call, execute repository commands, access Git/GitHub or Trust CI credentials, activate systemd, deploy, publish, or perform an external/production write. `ready_for_human` remains M4's positive terminal state. M5 adds immutable execution packets/manifests, closed provider-neutral protocols and APIs, offline ineligible adapters, trusted proposal/workspace boundaries, atomic terminal finalization, and bounded factual recovery. Shipped execution remains disabled by default.

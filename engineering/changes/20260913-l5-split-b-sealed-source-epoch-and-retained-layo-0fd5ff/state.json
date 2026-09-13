@@ -1,0 +1,41 @@
+{
+  "change_id": "20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff",
+  "created_at": "2026-09-13T13:38:59+00:00",
+  "history": [
+    {
+      "at": "2026-09-13T13:38:59+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-13T13:39:49+00:00",
+      "from": "draft",
+      "reason": "Frozen-source five-role analysis and B-specific hunk ruling incorporated",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-13T13:39:49+00:00",
+      "from": "scoped",
+      "reason": "User approved seven-unit plan; no named route gate",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-13T13:39:49+00:00",
+      "from": "approved",
+      "reason": "Begin B source reconstruction through selected sole general_implementer",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-13T13:47:14+00:00",
+      "from": "implementing",
+      "reason": "Nine-file B extraction and focused tests pass; all genuine-predecessor architecture gates pass",
+      "to": "verifying"
+    }
+  ],
+  "route_id": "0fd5ffd2100f",
+  "schema_version": 1,
+  "status": "verifying",
+  "title": "L5 split B: sealed source epoch and retained layouts",
+  "updated_at": "2026-09-13T13:47:14+00:00"
+}

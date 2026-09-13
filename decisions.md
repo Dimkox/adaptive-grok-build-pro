@@ -503,3 +503,7 @@ Separate PR pagination completeness from task-inventory completeness, and report
 ## 2026-09-13 — Reconstruct delivery slices against genuine predecessors
 
 The import-only prerequisite can be extracted onto actual main while later slices introduce their modules, schemas and test dependencies together. Keep architecture fitness on each new route's genuine predecessor and retain the separate cumulative main inventory; neither refs nor budgets need to change.
+
+## 2026-09-13 — Keep final review evidence beside an immutable source checkout
+
+A dedicated same-repository evidence worktree can hold the exact change-package reports while source commits stay unchanged. Recording fresh independent reviews by absolute report path preserves the original verification fingerprint and avoids rerunning the product suite for paperwork; the evidence checkout's commit is never represented as a tested source identity.
