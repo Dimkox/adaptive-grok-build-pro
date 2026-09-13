@@ -24,6 +24,7 @@ Historical `adaptive-grok-build-pro-v2.0.13.zip` remains bound to tag/merge `859
 | `adaptive-grok-build-pro-v2.0.13.zip` | 2.0.13 (published) |
 | `adaptive-grok-build-pro-v2.0.14.zip` | 2.0.14 (published) |
 | `adaptive-grok-build-pro-v2.0.15.zip` | 2.0.15 (published 2026-09-05T20:17:20Z) |
+| `adaptive-grok-build-pro-v2.0.16.zip` | 2.0.16 (artifact bytes delivered; tag and release pending) |
 
 Each zip has a sibling `.sha256`. Build a future candidate into ignored scratch output with:
 
