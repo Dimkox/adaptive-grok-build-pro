@@ -318,7 +318,7 @@
       "zip_sha256": null,
       "sidecar_sha256": null,
       "status": "not_built",
-      "requirement": "Both delta_paths files must exist in the tree of the commit that carries this record; neither exists on main at observation time"
+      "requirement": "The separate artifact-child commit adds both delta_paths files built from the merged release-sync tree and flips published, artifact_status and the artifact identities; until that commit exists this record intentionally ships without those bytes and grants no publication authority."
     },
     "published": false,
     "published_at": null,
