@@ -1,0 +1,165 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-001",
+      "statement": "Apply requires a callable authority before config/state access; exact saved-request grant validation precedes inflight transition and filesystem effects, rejecting tampered/foreign artifacts and stale/duplicate/foreign grants.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_publication_cli.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-002",
+      "statement": "Durable intent and filesystem observation preserve ambiguity and do not replay an uncertain pointer change.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_publication_cli.py"
+        },
+        {
+          "test": "delivery/tests/test_landing_publisher.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-003",
+      "statement": "Closed publication request v1 and precise offline/module ownership accompany all new components.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_publication_cli.py"
+        },
+        {
+          "test": "tests/test_landing_architecture_boundaries.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-004",
+      "statement": "Special-character SQLite URIs roundtrip and read-only opens do not create missing databases.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_publication_cli.py"
+        }
+      ]
+    },
+    {
+      "id": "AC-005",
+      "statement": "Publication SQLite v1 validation rejects missing uniqueness/primary-key/strict/type constraints and unexpected schema objects before accepting unsupported state.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_publication_cli.py"
+        }
+      ]
+    }
+  ],
+  "approvals": {
+    "required_scopes": [
+      "scope_and_design_approval",
+      "migration_or_external_write_approval"
+    ]
+  },
+  "change_id": "20260913-l5-split-f-authorized-filesystem-publication-and-5bc0f4",
+  "contracts": {
+    "events": [],
+    "json_schema": [
+      "delivery/contracts/jsonschema/landing-publication-request.v1.schema.json"
+    ],
+    "openapi": []
+  },
+  "forbidden_outcomes": [
+    {
+      "id": "FORBID-001",
+      "statement": "No publication apply without exact action/resource/current identity authority.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_publication_cli.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-002",
+      "statement": "No replay of an uncertain external pointer mutation during reconciliation.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_publication_cli.py"
+        }
+      ]
+    },
+    {
+      "id": "FORBID-003",
+      "statement": "No production site mutation or real delegated grant materialization in source tests.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_publication_cli.py"
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "statement": "Public landing API v1 remains unchanged and live_url remains null.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "INV-002",
+      "statement": "Publication adapter stays independent of the governance package; the supported wrapper injects authorization.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "INV-003",
+      "statement": "C/D independent regressions and D SQLite cleanup correction remain intact.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "INV-004",
+      "statement": "No deployed trust boundary or architecture budget changes.",
+      "evidence": [
+        {
+          "receipt": "verification"
+        }
+      ]
+    },
+    {
+      "id": "INV-005",
+      "statement": "Observation-only reconciliation may persist local intent observations without a grant, but never repeats filesystem effects.",
+      "evidence": [
+        {
+          "test": "factory/tests/test_landing_publication_cli.py"
+        }
+      ]
+    }
+  ],
+  "objective": {
+    "id": "OBJ-001",
+    "statement": "Implement approved L5 delivery slice F: offline filesystem publication, SQLite intent reconciliation and exact delegated external-write authorization. Source extraction only.",
+    "success_metric": "owner-controlled filesystem publication uses exact injected authority, durable intent and observation-only reconciliation",
+    "target": "21 classified landing modules; publication/data/authorization regression suites and unchanged budgets pass"
+  },
+  "observability": [],
+  "risk": {
+    "domains": [
+      "api",
+      "data",
+      "security"
+    ],
+    "tier": "red"
+  },
+  "rollback": {
+    "maximum_steps": 1,
+    "strategy": "forward_fix"
+  },
+  "schema_version": 2
+}

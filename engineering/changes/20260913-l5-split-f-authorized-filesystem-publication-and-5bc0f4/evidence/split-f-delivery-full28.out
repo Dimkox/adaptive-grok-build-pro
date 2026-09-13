@@ -1,0 +1,92 @@
+bringing up nodes...
+bringing up nodes...
+
+..                                                                       [100%]
+==================================== ERRORS ====================================
+______________ ERROR collecting delivery/tests/test_contracts.py _______________
+ImportError while importing test module '/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f/delivery/tests/test_contracts.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+delivery/tests/test_contracts.py:6: in <module>
+    from delivery.tests.synthetic_fixtures import synthetic_m8_evidence
+delivery/tests/synthetic_fixtures.py:14: in <module>
+    from adaptive_delivery.contracts import (
+delivery/src/adaptive_delivery/contracts.py:12: in <module>
+    from .m8_boundary import M8BoundaryError, M8DeliveryHandoffV1
+delivery/src/adaptive_delivery/m8_boundary.py:18: in <module>
+    from adaptive_factory.autonomy import (
+E   ModuleNotFoundError: No module named 'adaptive_factory'
+______________ ERROR collecting delivery/tests/test_controller.py ______________
+ImportError while importing test module '/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f/delivery/tests/test_controller.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+delivery/tests/test_controller.py:7: in <module>
+    from delivery.tests.synthetic_fixtures import (
+delivery/tests/synthetic_fixtures.py:14: in <module>
+    from adaptive_delivery.contracts import (
+delivery/src/adaptive_delivery/contracts.py:12: in <module>
+    from .m8_boundary import M8BoundaryError, M8DeliveryHandoffV1
+delivery/src/adaptive_delivery/m8_boundary.py:18: in <module>
+    from adaptive_factory.autonomy import (
+E   ModuleNotFoundError: No module named 'adaptive_factory'
+______________ ERROR collecting delivery/tests/test_evaluator.py _______________
+ImportError while importing test module '/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f/delivery/tests/test_evaluator.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+delivery/tests/test_evaluator.py:4: in <module>
+    from delivery.tests.synthetic_fixtures import (
+delivery/tests/synthetic_fixtures.py:14: in <module>
+    from adaptive_delivery.contracts import (
+delivery/src/adaptive_delivery/contracts.py:12: in <module>
+    from .m8_boundary import M8BoundaryError, M8DeliveryHandoffV1
+delivery/src/adaptive_delivery/m8_boundary.py:18: in <module>
+    from adaptive_factory.autonomy import (
+E   ModuleNotFoundError: No module named 'adaptive_factory'
+_____________ ERROR collecting delivery/tests/test_m8_boundary.py ______________
+ImportError while importing test module '/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f/delivery/tests/test_m8_boundary.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+delivery/tests/test_m8_boundary.py:5: in <module>
+    from delivery.tests.synthetic_fixtures import (
+delivery/tests/synthetic_fixtures.py:14: in <module>
+    from adaptive_delivery.contracts import (
+delivery/src/adaptive_delivery/contracts.py:12: in <module>
+    from .m8_boundary import M8BoundaryError, M8DeliveryHandoffV1
+delivery/src/adaptive_delivery/m8_boundary.py:18: in <module>
+    from adaptive_factory.autonomy import (
+E   ModuleNotFoundError: No module named 'adaptive_factory'
+_______________ ERROR collecting delivery/tests/test_recovery.py _______________
+ImportError while importing test module '/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f/delivery/tests/test_recovery.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+delivery/tests/test_recovery.py:3: in <module>
+    from delivery.tests.synthetic_fixtures import (
+delivery/tests/synthetic_fixtures.py:14: in <module>
+    from adaptive_delivery.contracts import (
+delivery/src/adaptive_delivery/contracts.py:12: in <module>
+    from .m8_boundary import M8BoundaryError, M8DeliveryHandoffV1
+delivery/src/adaptive_delivery/m8_boundary.py:18: in <module>
+    from adaptive_factory.autonomy import (
+E   ModuleNotFoundError: No module named 'adaptive_factory'
+=========================== short test summary info ============================
+ERROR delivery/tests/test_contracts.py - ImportError while importing test mod...
+ERROR delivery/tests/test_controller.py - ImportError while importing test mo...
+ERROR delivery/tests/test_evaluator.py - ImportError while importing test mod...
+ERROR delivery/tests/test_m8_boundary.py - ImportError while importing test m...
+ERROR delivery/tests/test_recovery.py - ImportError while importing test modu...
+2 passed, 5 errors in 2.64s

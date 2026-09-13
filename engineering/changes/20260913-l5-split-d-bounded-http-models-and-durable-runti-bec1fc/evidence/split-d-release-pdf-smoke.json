@@ -1,0 +1,14 @@
+{
+  "status": "pass",
+  "head": "bb93885034e52b80653efd96602fec182f7db10a",
+  "worker_sha256": "55d527a6fbaa3e54340cb0fba9764c4b3682610b38c6b4d7555304b9432454ae",
+  "synthetic_pdf_bytes": 591,
+  "input_sha256": "00d0ca40ec56dbb1231620b8f4f06d7caecd5909895f81f98083a869889f0b9b",
+  "result": {
+    "schema_version": 1,
+    "text": "Bounded PDF brief"
+  },
+  "credential_environment": false,
+  "provider_calls": 0,
+  "limitation": "One harmless valid text PDF smoke; not adversarial parser assurance or kernel sandbox proof."
+}

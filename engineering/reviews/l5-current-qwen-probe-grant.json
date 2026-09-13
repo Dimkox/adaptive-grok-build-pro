@@ -1,0 +1,23 @@
+{
+  "schema_version": 2,
+  "id": "eeb826a1ffc1f9e6",
+  "authorization": "delegated-local-grant",
+  "source": "explicit-user-consent",
+  "scope": "external-write",
+  "actions": [
+    "external-write"
+  ],
+  "resources": [
+    "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions"
+  ],
+  "reason": "User requested launch of Qwen now; authorize one fixed synthetic gardening-brief probe on the current final assembly using the explicitly authorized /home/pall/.qwen/.env file, with only bounded result facts retained",
+  "repository": "Dimkox/adaptive-grok-build-pro",
+  "route_id": "2a890b6485a5",
+  "change_id": "20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b",
+  "git_head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
+  "tree_fingerprint": "d462d16bbd7f26d6f2dac6fc4b2ae4c5b9bc44d437898297cf3ca524c7b0028b",
+  "created_at": "2026-09-13T16:10:21+00:00",
+  "expires_at": "2026-09-13T16:25:21+00:00",
+  "external_trust_ci_authority": false,
+  "notice": "This delegated local grant authorizes only the listed operation on the exact current tree. It cannot create adaptive-trust-ci/verified or a human-signed Trust CI approval."
+}

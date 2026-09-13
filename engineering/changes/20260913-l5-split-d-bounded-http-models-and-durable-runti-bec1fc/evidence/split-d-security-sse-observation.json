@@ -1,0 +1,38 @@
+{
+  "head": "bb93885034e52b80653efd96602fec182f7db10a",
+  "network": "httpx.MockTransport only",
+  "credentials": "synthetic constructor value only; no key/env files read",
+  "observations": [
+    {
+      "field": "finish_reason",
+      "value_type": "dict",
+      "decoder_exception": "TypeError",
+      "message": "unhashable type: 'dict'"
+    },
+    {
+      "field": "finish_reason",
+      "value_type": "list",
+      "decoder_exception": "TypeError",
+      "message": "unhashable type: 'list'"
+    },
+    {
+      "field": "role",
+      "value_type": "dict",
+      "decoder_exception": "TypeError",
+      "message": "unhashable type: 'dict'"
+    },
+    {
+      "field": "role",
+      "value_type": "list",
+      "decoder_exception": "TypeError",
+      "message": "unhashable type: 'list'"
+    },
+    {
+      "service_state": "needs_human",
+      "reason_code": "internal_failure",
+      "artifact_is_none": true,
+      "provider_evidence_digest": null,
+      "quarantine_files_after_submit": 0
+    }
+  ]
+}

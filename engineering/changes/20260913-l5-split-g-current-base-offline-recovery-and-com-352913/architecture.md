@@ -1,0 +1,7 @@
+# Architecture and analysis provenance
+
+Follow evidence/split-final-integration.md G hunks. Add backup module/test, backup console entrypoint, three runtime files and exact architecture classification; restore deferred final Qwen test tail. Preserve D test_landing_server ownership and all current repairs. No new service/database/dependency/schema migration is introduced by this extraction.
+
+The six selected analysis roles were dispatched during the continuing seven-slice analysis. Their existing reports are retained with their original route/source provenance: repo_explorer baseline, task_analyst acceptance, architect split ruling, docs_researcher final G documentation, integration_architect final shared-hunk map, data_architect G SQLite analysis. Reuse is based on exact current F2 product parity with archived F and the G data source-hash check; the prior reports are not current verification. Fresh G2 data attribution is supplementary.
+
+Budget ruling: preserve the 4 GiB total operation I/O cap and common deadline. Restore preflight must reject when its known second copy pass cannot fit remaining budget, before creating destination roots. Do not redefine I/O bytes, double the cap or reset accounting. Restore payload therefore must fit two passes, at most 2 GiB under the byte cap, additionally constrained by other bounds. Later unpredictable I/O failure may leave partial inactive roots.

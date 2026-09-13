@@ -1,0 +1,6 @@
+{
+  "status": "interrupted",
+  "exit": 130,
+  "cause": "Controller continued after failed commit check because subprocess result was not guarded. Raw pytest log whitespace was encoded losslessly as JSON, source committed, then verification restarted.",
+  "passing_test_claim": false
+}

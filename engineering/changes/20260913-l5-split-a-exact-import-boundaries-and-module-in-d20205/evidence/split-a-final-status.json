@@ -1,0 +1,89 @@
+{
+  "route": {
+    "allowed_agents": [
+      "repo_explorer",
+      "architect",
+      "docs_researcher",
+      "integration_architect",
+      "code_reviewer",
+      "test_reviewer",
+      "integration_implementer"
+    ],
+    "analysis_agents": [
+      "repo_explorer",
+      "architect",
+      "docs_researcher",
+      "integration_architect"
+    ],
+    "base_commit": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
+    "base_fingerprint": "0e33c43193d91bf4d79eb1eb6a4b7226e1116ccbf8815be9b5809ed316aa3efc",
+    "change_id": "20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205",
+    "complexity": "standard",
+    "created_at": "2026-09-13T13:27:18+00:00",
+    "delivery_expected": true,
+    "domains": [
+      "api"
+    ],
+    "human_gates": [],
+    "intent": "bugfix",
+    "primary_skill": "adaptive-delivery",
+    "quality_profiles": [
+      "base",
+      "contracts"
+    ],
+    "rationale": [
+      "medium-risk integration, contract, data, AI, or modernization work",
+      "intent=bugfix",
+      "domains=api",
+      "repository=generic",
+      "write-owner=integration_implementer",
+      "analysis-wave=4/10"
+    ],
+    "repo": {
+      "bitrix_modules": [],
+      "domains": [
+        "api"
+      ],
+      "kind": "generic",
+      "languages": [],
+      "package_scripts": [],
+      "signals": [
+        "contract:engineering/contracts/openapi"
+      ]
+    },
+    "required_evidence": [
+      "verification",
+      "code_review",
+      "test_review"
+    ],
+    "review_agents": [
+      "code_reviewer",
+      "test_reviewer"
+    ],
+    "risk": "medium",
+    "route_id": "d20205a1a318",
+    "schema_version": 1,
+    "session_id": "l5-split-a",
+    "status": "verifying",
+    "task": "Implement the approved L5 delivery split A: preserve existing behavior while adding exact-module import exceptions, qualified relative import validation and complete landing module inventory; no API change",
+    "task_domains": [
+      "api"
+    ],
+    "updated_at": "2026-09-13T13:38:43+00:00",
+    "workflow_skills": [
+      "adaptive-delivery",
+      "bugfix-workflow",
+      "api-event-change"
+    ],
+    "write_agent": "integration_implementer"
+  },
+  "change": {
+    "change_id": "20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205",
+    "path": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205"
+  },
+  "agents": {
+    "active": {},
+    "history": []
+  },
+  "evidence_gaps": []
+}

@@ -1,0 +1,6 @@
+{
+  "status": "interrupted",
+  "exit_code": 130,
+  "source_head": "3d72361e85c48060ab1c2230c63ac6d74b4d8178",
+  "reason": "D direct-entrypoint review defects require predecessor repair and fresh descendant verification; no completed F report existed."
+}

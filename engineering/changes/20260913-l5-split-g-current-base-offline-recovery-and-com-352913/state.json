@@ -1,0 +1,41 @@
+{
+  "change_id": "20260913-l5-split-g-current-base-offline-recovery-and-com-352913",
+  "created_at": "2026-09-13T15:03:37+00:00",
+  "history": [
+    {
+      "at": "2026-09-13T15:03:37+00:00",
+      "from": null,
+      "reason": "created",
+      "to": "draft"
+    },
+    {
+      "at": "2026-09-13T15:04:59+00:00",
+      "from": "draft",
+      "reason": "Typed approved G scope, six selected prior analyses and exact predecessor provenance recorded",
+      "to": "scoped"
+    },
+    {
+      "at": "2026-09-13T15:04:59+00:00",
+      "from": "scoped",
+      "reason": "User approved seven-slice delivery and said Делай; G has no named human gate; no operational action",
+      "to": "approved"
+    },
+    {
+      "at": "2026-09-13T15:04:59+00:00",
+      "from": "approved",
+      "reason": "Selected data_implementer owns G product and tests; root owns documentation and evidence",
+      "to": "implementing"
+    },
+    {
+      "at": "2026-09-13T15:14:07+00:00",
+      "from": "implementing",
+      "reason": "G product and reconciled documentation frozen; focused evidence and ten explicit final product dispositions recorded",
+      "to": "verifying"
+    }
+  ],
+  "route_id": "3529132ae173",
+  "schema_version": 1,
+  "status": "verifying",
+  "title": "L5 split G current base: offline recovery and complete inactive runtime",
+  "updated_at": "2026-09-13T15:14:07+00:00"
+}

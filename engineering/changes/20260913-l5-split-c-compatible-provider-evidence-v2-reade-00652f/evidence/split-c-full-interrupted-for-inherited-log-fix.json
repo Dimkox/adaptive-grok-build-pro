@@ -1,0 +1,6 @@
+{
+  "status": "interrupted",
+  "exit_code": 130,
+  "reason": "Inherited A raw evidence whitespace fails cumulative diff check; no final verification result exists for this run.",
+  "source_head": "a75b3cd639a1483533069e8634759cdfc6612310"
+}

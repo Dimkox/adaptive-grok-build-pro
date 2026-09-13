@@ -1,0 +1,91 @@
+{
+  "route": {
+    "allowed_agents": [
+      "repo_explorer",
+      "task_analyst",
+      "architect",
+      "docs_researcher",
+      "integration_architect",
+      "code_reviewer",
+      "test_reviewer",
+      "integration_implementer"
+    ],
+    "analysis_agents": [
+      "repo_explorer",
+      "task_analyst",
+      "architect",
+      "docs_researcher",
+      "integration_architect"
+    ],
+    "base_commit": "d1fdb7aec61b242c1a2fc5fc0ced1809e1b79c76",
+    "base_fingerprint": "ccc95dcd73e25b8a2ab1dbb21f6acaa23f43e03201a4af941b4fac1ff19ec379",
+    "change_id": "20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a",
+    "complexity": "standard",
+    "created_at": "2026-09-13T14:21:08+00:00",
+    "delivery_expected": true,
+    "domains": [
+      "api"
+    ],
+    "human_gates": [],
+    "intent": "feature",
+    "primary_skill": "adaptive-delivery",
+    "quality_profiles": [
+      "base",
+      "contracts"
+    ],
+    "rationale": [
+      "medium-risk integration, contract, data, AI, or modernization work",
+      "intent=feature",
+      "domains=api",
+      "repository=generic",
+      "write-owner=integration_implementer",
+      "analysis-wave=5/10"
+    ],
+    "repo": {
+      "bitrix_modules": [],
+      "domains": [
+        "api"
+      ],
+      "kind": "generic",
+      "languages": [],
+      "package_scripts": [],
+      "signals": [
+        "contract:engineering/contracts/openapi"
+      ]
+    },
+    "required_evidence": [
+      "verification",
+      "code_review",
+      "test_review"
+    ],
+    "review_agents": [
+      "code_reviewer",
+      "test_reviewer"
+    ],
+    "risk": "medium",
+    "route_id": "ae4f5afb69ca",
+    "schema_version": 1,
+    "session_id": "l5-split-e",
+    "status": "verifying",
+    "task": "Implement approved L5 delivery slice E: dedicated Unix host and private configuration with landing-only API, safe credentials and owned lifecycle. Source extraction only.",
+    "task_domains": [
+      "api"
+    ],
+    "updated_at": "2026-09-13T14:26:56+00:00",
+    "workflow_skills": [
+      "adaptive-delivery",
+      "feature-workflow",
+      "api-event-change"
+    ],
+    "write_agent": "integration_implementer"
+  },
+  "change": {
+    "change_id": "20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a",
+    "path": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a"
+  },
+  "agents": {
+    "active": {},
+    "history": []
+  },
+  "evidence_gaps": []
+}

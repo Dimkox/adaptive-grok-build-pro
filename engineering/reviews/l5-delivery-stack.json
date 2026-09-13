@@ -1,0 +1,625 @@
+{
+  "schema_version": 1,
+  "frozen_reference": "f31406e970d67f7cd59694da5de88915adb0fa68",
+  "initial_main": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
+  "units": [
+    {
+      "id": "A",
+      "source_checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-a",
+      "branch": "feat/l5-split-a-boundaries",
+      "head": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
+      "route_id": "d20205a1a318",
+      "base": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
+      "change_id": "20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205",
+      "state": "merged",
+      "final_verifier": "engineering/changes/20260913-l5-split-a-exact-import-boundaries-and-module-in-d20205/evidence/split-a-full-final.json",
+      "reviews": {
+        "code_review": "pass",
+        "test_review": "pass"
+      },
+      "pull_request": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/65",
+      "external_gate": {
+        "id": 103739437925,
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "app_id": 4694114,
+        "head": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-09-13T14:36:58Z",
+        "completed_at": "2026-09-13T14:55:25Z",
+        "details_url": "http://127.0.0.1:18080/jobs/83c0826e-9b02-4cfe-87a1-196bfb46ea12"
+      },
+      "tree_fingerprint": "5fd67748cbd9bc382997b4b132d67a88f8f0874a5d6fda73ef63e4ddf48d0e77",
+      "pr_base_head": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
+      "pr_observation": {
+        "baseRefName": "main",
+        "baseRefOid": "4b3ad5e8ec1e9fc426caaacd3cbf3f4d6e72c102",
+        "headRefOid": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
+        "isDraft": false,
+        "number": 65,
+        "state": "MERGED"
+      },
+      "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
+      "all_observed_checks": [
+        {
+          "id": 103739434471,
+          "name": "GitGuardian Security Checks",
+          "app_id": 46505,
+          "head": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T14:36:58Z",
+          "completed_at": "2026-09-13T14:36:58Z",
+          "details_url": "https://dashboard.gitguardian.com"
+        },
+        {
+          "id": 103739437925,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T14:36:58Z",
+          "completed_at": "2026-09-13T14:55:25Z",
+          "details_url": "http://127.0.0.1:18080/jobs/83c0826e-9b02-4cfe-87a1-196bfb46ea12"
+        }
+      ],
+      "landing": {
+        "mode": "merged-via-squash-#65",
+        "main": "ede6686"
+      },
+      "state_observed_at": "2026-09-13T17:45:13.891265+00:00"
+    },
+    {
+      "id": "B",
+      "source_checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-b",
+      "branch": "feat/l5-split-b-source-epoch",
+      "head": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
+      "route_id": "0fd5ffd2100f",
+      "base": "fb582c91cd80c042d26b7467679d27a295a2396b",
+      "change_id": "20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff",
+      "state": "closed-landed-by-content",
+      "final_verifier": "engineering/changes/20260913-l5-split-b-sealed-source-epoch-and-retained-layo-0fd5ff/evidence/split-b-full-final.json",
+      "reviews": {
+        "code_review": "pass",
+        "test_review": "pass"
+      },
+      "pull_request": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/66",
+      "external_gate": {
+        "id": 103741784270,
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "app_id": 4694114,
+        "head": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-09-13T14:55:26Z",
+        "completed_at": "2026-09-13T15:13:55Z",
+        "details_url": "http://127.0.0.1:18080/jobs/dacf9bda-3bbf-4926-8b1b-9d79f037c942"
+      },
+      "tree_fingerprint": "455a0faf93a69d81645eb5d47e1bb64d8f8cb74dfc20415d2fc2db888de4288b",
+      "pr_base_head": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
+      "pr_observation": {
+        "baseRefName": "feat/l5-split-a-boundaries",
+        "baseRefOid": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
+        "headRefOid": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
+        "isDraft": false,
+        "number": 66,
+        "state": "CLOSED"
+      },
+      "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
+      "all_observed_checks": [
+        {
+          "id": 103740559806,
+          "name": "GitGuardian Security Checks",
+          "app_id": 46505,
+          "head": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T14:45:49Z",
+          "completed_at": "2026-09-13T14:45:57Z",
+          "details_url": "https://dashboard.gitguardian.com"
+        },
+        {
+          "id": 103741784270,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T14:55:26Z",
+          "completed_at": "2026-09-13T15:13:55Z",
+          "details_url": "http://127.0.0.1:18080/jobs/dacf9bda-3bbf-4926-8b1b-9d79f037c942"
+        }
+      ],
+      "landing": {
+        "mode": "landed-by-content-via-union-#75",
+        "main": "eb9df64bca333f30ec58f8c725a021360e22ed92",
+        "closure_pr": "#66"
+      },
+      "state_observed_at": "2026-09-13T17:45:13.891265+00:00"
+    },
+    {
+      "id": "C",
+      "source_checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-c",
+      "branch": "feat/l5-split-c-evidence-v2",
+      "head": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
+      "route_id": "00652f60f78c",
+      "base": "c46f14f6a39ca8dc778f8a179ab4f61cdfe13599",
+      "change_id": "20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f",
+      "state": "closed-landed-by-content",
+      "final_verifier": "engineering/changes/20260913-l5-split-c-compatible-provider-evidence-v2-reade-00652f/evidence/split-c-full-final.json",
+      "reviews": {
+        "code_review": "pass",
+        "test_review": "pass"
+      },
+      "pull_request": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/67",
+      "external_gate": {
+        "id": 103744221871,
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "app_id": 4694114,
+        "head": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-09-13T15:13:56Z",
+        "completed_at": "2026-09-13T15:32:41Z",
+        "details_url": "http://127.0.0.1:18080/jobs/38dc25a7-29fc-4246-81e5-065a37390782"
+      },
+      "tree_fingerprint": "b08cf1e0ea54ad38e3a8d25895603670b460a01e3b65428365ff51751d8bffd3",
+      "pr_base_head": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
+      "pr_observation": {
+        "baseRefName": "feat/l5-split-b-source-epoch",
+        "baseRefOid": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
+        "headRefOid": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
+        "isDraft": false,
+        "number": 67,
+        "state": "CLOSED"
+      },
+      "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
+      "all_observed_checks": [
+        {
+          "id": 103740569972,
+          "name": "GitGuardian Security Checks",
+          "app_id": 46505,
+          "head": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T14:45:54Z",
+          "completed_at": "2026-09-13T14:46:08Z",
+          "details_url": "https://dashboard.gitguardian.com"
+        },
+        {
+          "id": 103744221871,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T15:13:56Z",
+          "completed_at": "2026-09-13T15:32:41Z",
+          "details_url": "http://127.0.0.1:18080/jobs/38dc25a7-29fc-4246-81e5-065a37390782"
+        }
+      ],
+      "landing": {
+        "mode": "landed-by-content-via-union-#75",
+        "main": "eb9df64bca333f30ec58f8c725a021360e22ed92",
+        "closure_pr": "#67"
+      },
+      "state_observed_at": "2026-09-13T17:45:13.891265+00:00"
+    },
+    {
+      "id": "D",
+      "source_checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-d",
+      "branch": "feat/l5-split-d-http-runtime",
+      "head": "bb93885034e52b80653efd96602fec182f7db10a",
+      "route_id": "bec1fcdde794",
+      "base": "a75b3cd639a1483533069e8634759cdfc6612310",
+      "change_id": "20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc",
+      "state": "closed-landed-by-content",
+      "final_verifier": "engineering/changes/20260913-l5-split-d-bounded-http-models-and-durable-runti-bec1fc/evidence/split-d-full-final.json",
+      "reviews": {
+        "code_review": "pass",
+        "test_review": "pass",
+        "security_review": "pass",
+        "data_review": "pass",
+        "release_review": "pass"
+      },
+      "pull_request": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/68",
+      "external_gate": {
+        "id": 103746737270,
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "app_id": 4694114,
+        "head": "bb93885034e52b80653efd96602fec182f7db10a",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-09-13T15:32:42Z",
+        "completed_at": "2026-09-13T15:51:11Z",
+        "details_url": "http://127.0.0.1:18080/jobs/a3285c3b-3770-4454-9ecb-8def82721a48"
+      },
+      "tree_fingerprint": "1a7e327a57a74acdb38f883a7496e52eb97732c42c42026a22f2a102e7018999",
+      "pr_base_head": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
+      "pr_observation": {
+        "baseRefName": "feat/l5-split-c-evidence-v2",
+        "baseRefOid": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
+        "headRefOid": "bb93885034e52b80653efd96602fec182f7db10a",
+        "isDraft": false,
+        "number": 68,
+        "state": "CLOSED"
+      },
+      "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
+      "all_observed_checks": [
+        {
+          "id": 103744882631,
+          "name": "GitGuardian Security Checks",
+          "app_id": 46505,
+          "head": "bb93885034e52b80653efd96602fec182f7db10a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T15:18:53Z",
+          "completed_at": "2026-09-13T15:18:54Z",
+          "details_url": "https://dashboard.gitguardian.com"
+        },
+        {
+          "id": 103746737270,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "bb93885034e52b80653efd96602fec182f7db10a",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T15:32:42Z",
+          "completed_at": "2026-09-13T15:51:11Z",
+          "details_url": "http://127.0.0.1:18080/jobs/a3285c3b-3770-4454-9ecb-8def82721a48"
+        }
+      ],
+      "landing": {
+        "mode": "landed-by-content-via-union-#75",
+        "main": "eb9df64bca333f30ec58f8c725a021360e22ed92",
+        "closure_pr": "#68"
+      },
+      "state_observed_at": "2026-09-13T17:45:13.891265+00:00"
+    },
+    {
+      "id": "E",
+      "source_checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-e",
+      "branch": "feat/l5-split-e-unix-host",
+      "head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
+      "route_id": "ae4f5afb69ca",
+      "base": "d1fdb7aec61b242c1a2fc5fc0ced1809e1b79c76",
+      "change_id": "20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a",
+      "state": "closed-landed-by-content",
+      "final_verifier": "engineering/changes/20260913-l5-split-e-private-configuration-and-dedicated-u-ae4f5a/evidence/split-e-full-final.json",
+      "reviews": {
+        "code_review": "pass",
+        "test_review": "pass"
+      },
+      "pull_request": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/69",
+      "external_gate": {
+        "id": 103749191245,
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "app_id": 4694114,
+        "head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-09-13T15:51:13Z",
+        "completed_at": "2026-09-13T16:09:30Z",
+        "details_url": "http://127.0.0.1:18080/jobs/a97927da-1700-4e8d-859d-48ffb4d81f02"
+      },
+      "pr_base_head": "bb93885034e52b80653efd96602fec182f7db10a",
+      "tree_fingerprint": "51779c0ff12044c794cd706c892e6881c194c9fb13af84c6f147f5e921dbe885",
+      "pr_observation": {
+        "baseRefName": "feat/l5-split-d-http-runtime",
+        "baseRefOid": "bb93885034e52b80653efd96602fec182f7db10a",
+        "headRefOid": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
+        "isDraft": false,
+        "number": 69,
+        "state": "CLOSED"
+      },
+      "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
+      "all_observed_checks": [
+        {
+          "id": 103745019956,
+          "name": "GitGuardian Security Checks",
+          "app_id": 46505,
+          "head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T15:19:55Z",
+          "completed_at": "2026-09-13T15:19:56Z",
+          "details_url": "https://dashboard.gitguardian.com"
+        },
+        {
+          "id": 103749191245,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T15:51:13Z",
+          "completed_at": "2026-09-13T16:09:30Z",
+          "details_url": "http://127.0.0.1:18080/jobs/a97927da-1700-4e8d-859d-48ffb4d81f02"
+        }
+      ],
+      "landing": {
+        "mode": "landed-by-content-via-union-#75",
+        "main": "eb9df64bca333f30ec58f8c725a021360e22ed92",
+        "closure_pr": "#69"
+      },
+      "state_observed_at": "2026-09-13T17:45:13.891265+00:00"
+    },
+    {
+      "id": "F",
+      "source_checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f2",
+      "branch": "feat/l5-split-f-publication-current-base",
+      "head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+      "base": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
+      "route_id": "a15f467e4575",
+      "change_id": "20260913-l5-split-f-current-base-authorized-publication-a-a15f46",
+      "state": "closed-landed-by-content",
+      "final_verifier": "engineering/changes/20260913-l5-split-f-current-base-authorized-publication-a-a15f46/evidence/split-f2-full-final.json",
+      "reviews": {
+        "code_review": "pass",
+        "test_review": "pass",
+        "security_review": "pass",
+        "data_review": "pass",
+        "release_review": "pass"
+      },
+      "pull_request": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/70",
+      "external_gate": {
+        "id": 103751615594,
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "app_id": 4694114,
+        "head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-09-13T16:09:30Z",
+        "completed_at": "2026-09-13T16:27:56Z",
+        "details_url": "http://127.0.0.1:18080/jobs/2f1cd1c9-315a-4ddd-a3c6-0f83a4412362"
+      },
+      "pr_base_head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
+      "tree_fingerprint": "aa60705bc8c9bbae34517a480ed842254c8b67db86b8b0a6cd3a119b6740cff5",
+      "pr_observation": {
+        "baseRefName": "feat/l5-split-e-unix-host",
+        "baseRefOid": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
+        "headRefOid": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+        "isDraft": false,
+        "number": 70,
+        "state": "CLOSED"
+      },
+      "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
+      "all_observed_checks": [
+        {
+          "id": 103748857521,
+          "name": "GitGuardian Security Checks",
+          "app_id": 46505,
+          "head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T15:48:43Z",
+          "completed_at": "2026-09-13T15:48:44Z",
+          "details_url": "https://dashboard.gitguardian.com"
+        },
+        {
+          "id": 103751615594,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T16:09:30Z",
+          "completed_at": "2026-09-13T16:27:56Z",
+          "details_url": "http://127.0.0.1:18080/jobs/2f1cd1c9-315a-4ddd-a3c6-0f83a4412362"
+        }
+      ],
+      "landing": {
+        "mode": "landed-by-content-via-union-#75",
+        "main": "eb9df64bca333f30ec58f8c725a021360e22ed92",
+        "closure_pr": "#70"
+      },
+      "state_observed_at": "2026-09-13T17:45:13.891265+00:00"
+    },
+    {
+      "id": "G",
+      "source_checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g3",
+      "branch": "feat/l5-split-g-final-runtime",
+      "head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
+      "base": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+      "pr_base_head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+      "route_id": "2a890b6485a5",
+      "change_id": "20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b",
+      "state": "closed-superseded-by-union",
+      "final_verifier": "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b/evidence/split-g3-full-final.json",
+      "reviews": {
+        "code_review": "pass",
+        "test_review": "pass",
+        "data_review": "pass"
+      },
+      "pull_request": "https://github.com/Dimkox/adaptive-grok-build-pro/pull/71",
+      "external_gate": {
+        "id": 103754091998,
+        "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+        "app_id": 4694114,
+        "head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2026-09-13T16:27:57Z",
+        "completed_at": "2026-09-13T16:46:55Z",
+        "details_url": "http://127.0.0.1:18080/jobs/a954971e-6e3e-4195-99b9-a21b8ffb117a"
+      },
+      "assembly_audit": "engineering/changes/20260913-l5-split-g-final-base-offline-recovery-and-assem-2a890b/evidence/split-g3-final-tree-audit.json",
+      "tree_fingerprint": "d462d16bbd7f26d6f2dac6fc4b2ae4c5b9bc44d437898297cf3ca524c7b0028b",
+      "pr_observation": {
+        "baseRefName": "feat/l5-split-f-publication-current-base",
+        "baseRefOid": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+        "headRefOid": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
+        "isDraft": false,
+        "number": 71,
+        "state": "CLOSED"
+      },
+      "external_observed_at": "2026-09-13T16:49:00.487949+00:00",
+      "all_observed_checks": [
+        {
+          "id": 103749698672,
+          "name": "GitGuardian Security Checks",
+          "app_id": 46505,
+          "head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
+          "status": "completed",
+          "conclusion": "failure",
+          "started_at": "2026-09-13T15:55:08Z",
+          "completed_at": "2026-09-13T15:55:09Z",
+          "details_url": "https://dashboard.gitguardian.com",
+          "disposition": "GitGuardian generic-detector false positive on authorization_tree_fingerprint 64-hex grant digests (issue #73). Not a credential; not a merge gate (protection requires only the App policy-epoch check)."
+        },
+        {
+          "id": 103754091998,
+          "name": "adaptive-trust-ci/verified@06ecf1c875bc",
+          "app_id": 4694114,
+          "head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-09-13T16:27:57Z",
+          "completed_at": "2026-09-13T16:46:55Z",
+          "details_url": "http://127.0.0.1:18080/jobs/a954971e-6e3e-4195-99b9-a21b8ffb117a"
+        }
+      ],
+      "landing": {
+        "mode": "landed-by-content-via-union-#75",
+        "main": "eb9df64bca333f30ec58f8c725a021360e22ed92",
+        "closure_pr": "#71"
+      },
+      "state_observed_at": "2026-09-13T17:45:13.891265+00:00"
+    }
+  ],
+  "remaining": [],
+  "source_heads_immutable_after_verification": true,
+  "merge_authority": "external exact-SHA GitHub App check plus any required separately signed scopes",
+  "evidence_location_policy": {
+    "source_checkout": "Immutable after the source/docs commit used by the full verifier.",
+    "reports": "Matching engineering/changes/<change>/evidence in this separate same-repository checkout.",
+    "receipts": "Run grok_review from the unchanged source checkout with an absolute report path; retain original verifier receipt.",
+    "completion": "Confirm current source grok_status gaps; never stamp old tests onto a newer HEAD or mutate frozen source state.json solely to say ready."
+  },
+  "archival_attempts": [
+    {
+      "unit": "F",
+      "checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-f",
+      "head": "517741da6e883c5feacbd2f029d745ffc5e2fec0",
+      "route_id": "5bc0f4cdffc5",
+      "reason": "Old-E range includes inherited D server repair, causing unsupported background-job provenance; exact F product projection re-extracted on genuine corrected E."
+    },
+    {
+      "unit": "G",
+      "checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g",
+      "head": "517741da6e883c5feacbd2f029d745ffc5e2fec0",
+      "route_id": "0e93bc421bdb",
+      "reason": "Draft route only; no G product implementation began before predecessor F re-extraction."
+    },
+    {
+      "unit": "G",
+      "checkout": "/home/pall/grok-projects/adaptive-grok-build-pro-l5-split-g2",
+      "head": "7e7b7453d12b59d690f51a4519a1ee5aceb63985",
+      "route_id": "3529132ae173",
+      "reason": "G2 full interrupted exit130 to preserve corrected F conflict-policy predecessor; exact ten G product blobs re-extracted on genuine corrected F."
+    }
+  ],
+  "final_local_audit": {
+    "status": "pass",
+    "units": [
+      {
+        "slice": "A",
+        "head": "450d62d41ab5f94b72217a1e18f9f60231d6af6f",
+        "required_reviews": 2,
+        "evidence_gaps": 0,
+        "source_clean": true
+      },
+      {
+        "slice": "B",
+        "head": "d4d070a2defd9d0f8921331e38fb746fc95f38fe",
+        "required_reviews": 2,
+        "evidence_gaps": 0,
+        "source_clean": true
+      },
+      {
+        "slice": "C",
+        "head": "9ce156e0128b4f18b3fccfeca9a8edc7175da090",
+        "required_reviews": 2,
+        "evidence_gaps": 0,
+        "source_clean": true
+      },
+      {
+        "slice": "D",
+        "head": "bb93885034e52b80653efd96602fec182f7db10a",
+        "required_reviews": 5,
+        "evidence_gaps": 0,
+        "source_clean": true
+      },
+      {
+        "slice": "E",
+        "head": "d33e8d8b2aa06a76f32724d08d79a21f3604ce42",
+        "required_reviews": 2,
+        "evidence_gaps": 0,
+        "source_clean": true
+      },
+      {
+        "slice": "F",
+        "head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+        "required_reviews": 5,
+        "evidence_gaps": 0,
+        "source_clean": true
+      },
+      {
+        "slice": "G",
+        "head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
+        "required_reviews": 3,
+        "evidence_gaps": 0,
+        "source_clean": true
+      }
+    ]
+  },
+  "current_source_live_verification": {
+    "source_head": "e6a813e4c16543f262ced2d9ea353caaad9452d1",
+    "tree_fingerprint": "d462d16bbd7f26d6f2dac6fc4b2ae4c5b9bc44d437898297cf3ca524c7b0028b",
+    "observed_at": "2026-09-13T16:31:00+00:00",
+    "authorization": "Two separate expiring user-delegated local grants on the exact G head; no merge, publication or service-activation authority",
+    "records": {
+      "provider_probe": "engineering/reviews/l5-current-qwen-live-probe.json",
+      "provider_probe_grant": "engineering/reviews/l5-current-qwen-probe-grant.json",
+      "host_first_attempt_failed_closed": "engineering/reviews/l5-local-qwen-runtime-before-private-clone.json",
+      "host_disposable_run": "engineering/reviews/l5-local-qwen-runtime.json",
+      "host_grant": "engineering/reviews/l5-local-qwen-runtime-grant.json"
+    },
+    "outcomes": {
+      "provider_probe": "One fixed synthetic brief on current head reached state normalized via the explicit Singapore profile: 735 input / 116 output units in 3,352 ms. Not Omni/multimodal or hosting acceptance.",
+      "host_first_attempt": "Startup refused before credential acquisition or provider request because the original source checkout and its parent directory were mode 0775, violating dedicated-host trusted ancestry. Fail-closed, source clean after.",
+      "host_disposable_run": "A private 0700 clone served the fixed synthetic gardening task over a private Unix socket: health ready, submit HTTP 202, job closed needs_human with reason http_outcome_unusable, no artifact, unauthenticated job status HTTP 401, no service persistence; the operator stopped the disposable host process at 16:17:58 UTC when scope was questioned; per its own record (socket_removed: false) the two disposable runtime roots and private sockets remain on disk under /tmp as forensic residue, and no system service was ever created.",
+      "grants_expired": true,
+      "production_installation": false,
+      "site_publication": false
+    }
+  },
+  "landing": {
+    "authorized_by": "User delegated sequential merge of #65-#71 on 2026-09-13; when the #65 squash removed per-slice commit identities and retargeted #66-#71 hit append-file conflicts (README.md, decisions.md, mistakes.md - issue #60 class), the user selected the tree-identical union variant.",
+    "main_after_slice_A": "ede6686",
+    "slice_A_merge": {
+      "pr": 65,
+      "method": "squash",
+      "merged_at": "2026-09-13T17:07:11Z",
+      "tree_identity": "tree(ede6686) == tree(450d62d)"
+    },
+    "union_merge": {
+      "pr": 75,
+      "head": "ac7ae2def67a267c227ab5703843337d4bb6f4be",
+      "parent": "ede6686",
+      "method": "squash",
+      "merged_at": "2026-09-13T17:35:51Z",
+      "main": "eb9df64bca333f30ec58f8c725a021360e22ed92",
+      "exact_sha_check": "adaptive-trust-ci/verified@06ecf1c875bc success 17:33:28 UTC",
+      "tree_identity": "tree(eb9df64) == tree(e6a813e) == 1c8d72a50c0631c0222d111de1403ace4347aab2 (verified post-merge)"
+    },
+    "slices_B_to_G": {
+      "pr_range": "66-71",
+      "disposition": "closed as landed-by-content with pointers to #75; per-head exact-SHA attestations remain valid evidence"
+    },
+    "release_tagged": false,
+    "operational_activation": false
+  },
+  "delivery_state": "stack_landed_main_eb9df64_all_seven_slice_attestations_and_union_check_success_release_activation_separate"
+}

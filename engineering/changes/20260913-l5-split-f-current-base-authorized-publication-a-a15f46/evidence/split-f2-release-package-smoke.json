@@ -1,0 +1,35 @@
+{
+  "head": "c3f60f09b819c1a246f7af2dcd6664cf3be52dd6",
+  "command": [
+    "uv",
+    "build",
+    "--offline",
+    "--no-python-downloads",
+    "--python",
+    "/tmp/agbp-venv/bin/python",
+    "--wheel",
+    "<temporary exact tracked-source copy>"
+  ],
+  "exit_code": 0,
+  "stdout": "",
+  "stderr": "Building wheel...\nrunning egg_info\ncreating src/adaptive_delivery.egg-info\nwriting src/adaptive_delivery.egg-info/PKG-INFO\nwriting dependency_links to src/adaptive_delivery.egg-info/dependency_links.txt\nwriting top-level names to src/adaptive_delivery.egg-info/top_level.txt\nwriting manifest file 'src/adaptive_delivery.egg-info/SOURCES.txt'\nreading manifest file 'src/adaptive_delivery.egg-info/SOURCES.txt'\nwriting manifest file 'src/adaptive_delivery.egg-info/SOURCES.txt'\nrunning bdist_wheel\nrunning build\nrunning build_py\ncreating build/lib/adaptive_delivery\ncopying src/adaptive_delivery/landing_publication_contracts.py -> build/lib/adaptive_delivery\ncopying src/adaptive_delivery/controller.py -> build/lib/adaptive_delivery\ncopying src/adaptive_delivery/m8_boundary.py -> build/lib/adaptive_delivery\ncopying src/adaptive_delivery/recovery.py -> build/lib/adaptive_delivery\ncopying src/adaptive_delivery/evaluator.py -> build/lib/adaptive_delivery\ncopying src/adaptive_delivery/contracts.py -> build/lib/adaptive_delivery\ncopying src/adaptive_delivery/fake_environment.py -> build/lib/adaptive_delivery\ncopying src/adaptive_delivery/landing_publication.py -> build/lib/adaptive_delivery\ncopying src/adaptive_delivery/landing_publisher.py -> build/lib/adaptive_delivery\ncopying src/adaptive_delivery/landing_filesystem.py -> build/lib/adaptive_delivery\nrunning egg_info\nwriting src/adaptive_delivery.egg-info/PKG-INFO\nwriting dependency_links to src/adaptive_delivery.egg-info/dependency_links.txt\nwriting top-level names to src/adaptive_delivery.egg-info/top_level.txt\nreading manifest file 'src/adaptive_delivery.egg-info/SOURCES.txt'\nwriting manifest file 'src/adaptive_delivery.egg-info/SOURCES.txt'\nwarning: build_py: byte-compiling is disabled, skipping.\n\ninstalling to build/bdist.linux-x86_64/wheel\nrunning install\nrunning install_lib\ncreating build/bdist.linux-x86_64/wheel\ncreating build/bdist.linux-x86_64/wheel/adaptive_delivery\ncopying build/lib/adaptive_delivery/landing_publication_contracts.py -> build/bdist.linux-x86_64/wheel/./adaptive_delivery\ncopying build/lib/adaptive_delivery/controller.py -> build/bdist.linux-x86_64/wheel/./adaptive_delivery\ncopying build/lib/adaptive_delivery/m8_boundary.py -> build/bdist.linux-x86_64/wheel/./adaptive_delivery\ncopying build/lib/adaptive_delivery/recovery.py -> build/bdist.linux-x86_64/wheel/./adaptive_delivery\ncopying build/lib/adaptive_delivery/evaluator.py -> build/bdist.linux-x86_64/wheel/./adaptive_delivery\ncopying build/lib/adaptive_delivery/contracts.py -> build/bdist.linux-x86_64/wheel/./adaptive_delivery\ncopying build/lib/adaptive_delivery/fake_environment.py -> build/bdist.linux-x86_64/wheel/./adaptive_delivery\ncopying build/lib/adaptive_delivery/landing_publication.py -> build/bdist.linux-x86_64/wheel/./adaptive_delivery\ncopying build/lib/adaptive_delivery/landing_publisher.py -> build/bdist.linux-x86_64/wheel/./adaptive_delivery\ncopying build/lib/adaptive_delivery/landing_filesystem.py -> build/bdist.linux-x86_64/wheel/./adaptive_delivery\nwarning: install_lib: byte-compiling is disabled, skipping.\n\nrunning install_egg_info\nCopying src/adaptive_delivery.egg-info to build/bdist.linux-x86_64/wheel/./adaptive_delivery-0.1.0-py3.12.egg-info\nrunning install_scripts\ncreating build/bdist.linux-x86_64/wheel/adaptive_delivery-0.1.0.dist-info/WHEEL\ncreating '/tmp/agbp-f2-release-package-pgnp1ct4/dist/.tmp-zr81gua0/adaptive_delivery-0.1.0-py3-none-any.whl' and adding 'build/bdist.linux-x86_64/wheel' to it\nadding 'adaptive_delivery/contracts.py'\nadding 'adaptive_delivery/controller.py'\nadding 'adaptive_delivery/evaluator.py'\nadding 'adaptive_delivery/fake_environment.py'\nadding 'adaptive_delivery/landing_filesystem.py'\nadding 'adaptive_delivery/landing_publication.py'\nadding 'adaptive_delivery/landing_publication_contracts.py'\nadding 'adaptive_delivery/landing_publisher.py'\nadding 'adaptive_delivery/m8_boundary.py'\nadding 'adaptive_delivery/recovery.py'\nadding 'adaptive_delivery-0.1.0.dist-info/METADATA'\nadding 'adaptive_delivery-0.1.0.dist-info/WHEEL'\nadding 'adaptive_delivery-0.1.0.dist-info/top_level.txt'\nadding 'adaptive_delivery-0.1.0.dist-info/RECORD'\nremoving build/bdist.linux-x86_64/wheel\nSuccessfully built /tmp/agbp-f2-release-package-pgnp1ct4/dist/adaptive_delivery-0.1.0-py3-none-any.whl\n",
+  "module_sha256": {
+    "adaptive_delivery/landing_filesystem.py": "ba8f64de4d47a08c48fcdd2929ec4076be27a56315237c20cee66efde936a9f2",
+    "adaptive_delivery/landing_publication.py": "e17cdf766e17ad8da5136a70bc457e0caddadc44746efa8b239b2c5b2396aebb",
+    "adaptive_delivery/landing_publication_contracts.py": "9e2b0078e39b56928ca854b69d2563e1d5785d37d7c24736991a0dfaba275a9a"
+  },
+  "wheel_sha256": "99c36cf1d33624d1145a60e00f9edc52f16476863aed026660d691e4fcafac42",
+  "wheel_members": 14,
+  "default_deny": {
+    "exit_code": 2,
+    "result": {
+      "reason": "publication_live_disabled",
+      "schema_version": 1,
+      "state": "unavailable"
+    },
+    "config_exists": false,
+    "live": false,
+    "grant_read": false,
+    "external_effect": false
+  }
+}
